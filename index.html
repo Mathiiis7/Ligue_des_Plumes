@@ -441,7 +441,10 @@ function parseCSV(text){
 
 function isNonSpecies(common, sci){
   const s=(sci||'')+' '+(common||'');
-  return /\bsp\.|\bhybrid|\/| x |×|Domestic|\(Domestic/i.test(s);
+  // exclut : « sp. », hybrides, groupes (slash), et formes domestiques eBird « (Domestic type) ».
+  // NB : on cherche « (Domestic », pas « Domestic » seul, sinon on écarterait par erreur
+  // le Moineau domestique (Passer domesticus), dont le nom scientifique contient « domestic ».
+  return /\bsp\.|\bhybrid|\/| x |×|\(Domestic/i.test(s);
 }
 
 function ingest(filename, text){
@@ -652,7 +655,10 @@ function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>
 /* ---------------- Firestore <-> state ---------------- */
 function memberToPerson(id, data, si){
   const species = new Map((data.species||[]).map(e=>[e.k, {
-    common:e.c||e.k, sci:e.s||'', date:e.d||'', loc:e.l||'', obs:e.o||1, nonSpecies:!!e.n
+    common:e.c||e.k, sci:e.s||'', date:e.d||'', loc:e.l||'', obs:e.o||1,
+    // recalculé à la lecture (pas figé au moment de l'upload) : ainsi toute
+    // amélioration du filtre s'applique aux listes déjà enregistrées.
+    nonSpecies: isNonSpecies(e.c||'', e.s||'')
   }]));
   return { id, name:data.name||'Joueur', filename:'', si, species, isMe:id===myUid,
     joinedAt: data.joinedAt?.seconds || 0 };
