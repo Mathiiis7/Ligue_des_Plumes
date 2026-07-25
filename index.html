@@ -257,6 +257,28 @@
     .who .meta{display:block;}
   }
   @media (prefers-reduced-motion: reduce){ *{animation:none!important; transition:none!important;} }
+
+  /* onglets */
+  .tabs { display:flex; gap:4px; margin-top:22px; border-bottom:1px solid var(--line); }
+  .tab { border:none; background:transparent; color:var(--ink-2); font:inherit; font-weight:600;
+    font-size:15px; padding:10px 16px; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; }
+  .tab.on { color:var(--accent-ink); border-bottom-color:var(--accent); }
+  .tab:hover { color:var(--accent-ink); }
+
+  /* trophées */
+  .trophy-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); gap:12px; margin-top:16px; }
+  .trophy { text-align:center; border:1px solid var(--line); border-radius:14px; padding:18px 12px;
+    background:var(--surface-2); transition:transform .1s; }
+  .trophy.on { border-color:color-mix(in srgb,var(--gold) 55%,var(--line));
+    background:color-mix(in srgb,var(--gold) 9%,var(--surface-2)); }
+  .trophy.off { opacity:.6; }
+  .trophy.off .tico { filter:grayscale(1); opacity:.7; }
+  .tico { font-size:40px; line-height:1; }
+  .tname { font-weight:700; font-size:14px; margin-top:9px; text-wrap:balance; }
+  .tdesc { color:var(--ink-2); font-size:12px; margin-top:4px; line-height:1.4; }
+  .tstate { margin-top:9px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+    color:var(--ink-3); font-variant-numeric:tabular-nums; }
+  .trophy.on .tstate { color:var(--gold); }
 </style>
 
 <div class="wrap">
@@ -270,6 +292,12 @@
     <button class="theme-btn" id="themeBtn">◐ Thème</button>
   </header>
 
+  <nav class="tabs">
+    <button class="tab on" data-view="main">Classement</button>
+    <button class="tab" data-view="trophies">🏆 Trophées</button>
+  </nav>
+
+  <div id="viewMain">
   <!-- league: your entry + participants -->
   <section class="panel" id="leaguebar" style="display:none;">
     <div class="league-head">
@@ -359,6 +387,17 @@
       <div class="matrix-cards" id="matrixCards"></div>
     </div>
   </section>
+  </div><!-- /viewMain -->
+
+  <div id="viewTrophies" style="display:none;">
+    <section class="panel" style="padding:20px; margin-top:22px;">
+      <div class="section-head">
+        <div><div class="eyebrow">Vos récompenses</div><h2>Trophées</h2>
+          <p id="trophySummary"></p></div>
+      </div>
+      <div class="trophy-grid" id="trophyGrid"></div>
+    </section>
+  </div>
 
   <footer>
     Ligue Merlin Bird · rareté calculée au sein de votre groupe · données <b>Merlin / eBird</b>, propriété du Cornell Lab of Ornithology.<br>
@@ -529,10 +568,10 @@ function renderMembers(){
 
 function renderResults(){
   const res=$('#results');
-  if(state.people.length===0){ res.classList.remove('show'); return; }
+  if(state.people.length===0){ res.classList.remove('show'); renderTrophies({N:0}); return; }
   res.classList.add('show');
   const data = build();
-  renderTiles(data); renderBoard(); renderMatrix(data);
+  renderTiles(data); renderBoard(); renderMatrix(data); renderTrophies(data);
 }
 
 function fmt(n){ return Math.round(n).toLocaleString('fr-FR'); }
@@ -621,6 +660,63 @@ function renderMatrix({universe,N}){
 }
 
 function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ---------------- trophées ---------------- */
+const TROPHIES = [
+  { icon:'🐣', name:'Premier envol', desc:'Charger votre liste', test:s=>s.total>=1 },
+  { icon:'🔭', name:'Observateur', desc:'25 espèces', test:s=>s.total>=25, prog:s=>[s.total,25] },
+  { icon:'📖', name:'Collectionneur', desc:'50 espèces', test:s=>s.total>=50, prog:s=>[s.total,50] },
+  { icon:'🏅', name:'Centurion', desc:'100 espèces', test:s=>s.total>=100, prog:s=>[s.total,100] },
+  { icon:'🌟', name:'Maître des plumes', desc:'200 espèces', test:s=>s.total>=200, prog:s=>[s.total,200] },
+  { icon:'💎', name:'Perle rare', desc:'1 espèce que vous seul avez vue', test:s=>s.unique>=1, prog:s=>[s.unique,1] },
+  { icon:'🎯', name:'Chasseur de raretés', desc:'5 espèces uniques', test:s=>s.unique>=5, prog:s=>[s.unique,5] },
+  { icon:'🏆', name:'Dénicheur d’exception', desc:'15 espèces uniques', test:s=>s.unique>=15, prog:s=>[s.unique,15] },
+  { icon:'🥉', name:'Sur le podium', desc:'Terminer dans le top 3', test:s=>s.groupN>1 && s.rank<=3 },
+  { icon:'👑', name:'Roi de la Ligue', desc:'Être 1ᵉʳ du classement', test:s=>s.groupN>1 && s.rank===1 },
+  { icon:'🦉', name:'Ami des chouettes', desc:'Voir un rapace nocturne', test:s=>s.owls>=1 },
+  { icon:'🦅', name:'Œil du rapace', desc:'Voir 5 rapaces diurnes', test:s=>s.raptors>=5, prog:s=>[s.raptors,5] },
+  { icon:'🦆', name:'Les pieds dans l’eau', desc:'Voir 10 oiseaux d’eau', test:s=>s.water>=10, prog:s=>[s.water,10] },
+  { icon:'🌊', name:'Loup de mer', desc:'Voir 3 oiseaux marins', test:s=>s.sea>=3, prog:s=>[s.sea,3] },
+];
+const OWL_G=/^(strix|otus|athene|asio|bubo|tyto|aegolius|glaucidium|surnia|ketupa)$/;
+const RAPTOR_G=/^(accipiter|astur|buteo|aquila|circus|milvus|falco|pernis|circaetus|pandion|haliaeetus|gyps|aegypius|gypaetus|neophron|clanga|hieraaetus|elanus|torgos)$/;
+const WATER_G=/^(anas|anser|branta|aythya|spatula|mareca|cygnus|tadorna|netta|bucephala|mergus|mergellus|clangula|somateria|melanitta|polysticta|ardea|egretta|ardeola|botaurus|nycticorax|fulica|gallinula|porphyrio|paragallinula|rallus|zapornia|crex|porzana|podiceps|tachybaptus|podilymbus|phalacrocorax|microcarbo|nannopterum|gulosus|platalea|plegadis|threskiornis|geronticus|ciconia|phoenicopterus|phoeniconaias|recurvirostra|himantopus|vanellus|charadrius|anarhynchus|pluvialis|eudromias|calidris|tringa|actitis|xenus|gallinago|numenius|limosa|arenaria|phalaropus|scolopax|lymnocryptes|bartramia|limnodromus|haematopus|burhinus|alcedo|megaceryle|ceryle|glareola|cursorius)$/;
+const SEA_G=/^(morus|sula|larus|ichthyaetus|chroicocephalus|hydrocoloeus|leucophaeus|rissa|xema|pagophila|rhodostethia|sterna|sternula|thalasseus|gelochelidon|hydroprogne|onychoprion|chlidonias|fratercula|uria|alca|cepphus|alle|pinguinus|fulmarus|puffinus|ardenna|calonectris|hydrobates|oceanites|stercorarius|pterodroma|bulweria|macronectes|daption|fregata|gavia|thalassarche)$/;
+function statsFor(me, N){
+  const ranked=[...state.people].sort((a,b)=>b.score-a.score);
+  const rank=ranked.findIndex(p=>p.id===me.id)+1;
+  let owls=0,raptors=0,water=0,sea=0;
+  for(const v of me._active.values()){
+    const g=(v.sci||'').split(' ')[0].toLowerCase();
+    if(OWL_G.test(g)) owls++;
+    if(RAPTOR_G.test(g)) raptors++;
+    if(WATER_G.test(g)) water++;
+    if(SEA_G.test(g)) sea++;
+  }
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea };
+}
+function renderTrophies(data){
+  const grid=$('#trophyGrid'), summary=$('#trophySummary'); if(!grid) return;
+  const me=state.people.find(p=>p.isMe);
+  if(!me || !me._active){
+    grid.innerHTML='<p class="help" style="margin-top:0;">Chargez votre liste pour commencer à débloquer des trophées 🏆</p>';
+    summary.textContent=''; return;
+  }
+  const s=statsFor(me, data.N);
+  let unlocked=0;
+  grid.innerHTML = TROPHIES.map(t=>{
+    const ok=t.test(s); if(ok) unlocked++;
+    const p=t.prog?t.prog(s):null;
+    const stateTxt = ok ? 'Débloqué ✓' : (p ? `${Math.min(Math.round(p[0]),p[1])} / ${p[1]}` : 'À débloquer');
+    return `<div class="trophy ${ok?'on':'off'}">
+      <div class="tico">${t.icon}</div>
+      <div class="tname">${esc(t.name)}</div>
+      <div class="tdesc">${esc(t.desc)}</div>
+      <div class="tstate">${stateTxt}</div>
+    </div>`;
+  }).join('');
+  summary.textContent = `${unlocked} trophée${unlocked>1?'s':''} sur ${TROPHIES.length} débloqué${unlocked>1?'s':''}`;
+}
 
 /* ---------------- Firestore <-> state ---------------- */
 function memberToPerson(id, data, si){
@@ -765,6 +861,14 @@ $('#removeMineBtn').addEventListener('click',async()=>{
   try{ await deleteDoc(doc(db,'leagues',leagueId,'members',myUid)); $('#myStatus').textContent=''; }
   catch(err){ showError(err); }
 });
+
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  const v=b.dataset.view;
+  $('#viewMain').style.display = v==='main' ? '' : 'none';
+  $('#viewTrophies').style.display = v==='trophies' ? '' : 'none';
+}));
 
 $('#demoBtn').addEventListener('click',()=>{
   demoOn=!demoOn;
