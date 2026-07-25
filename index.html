@@ -156,12 +156,6 @@
   .section-head p { margin:2px 0 0; color:var(--ink-2); font-size:13px; }
 
   /* stat tiles */
-  .tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
-  .tile { padding:16px 16px 14px; }
-  .tile .k { font-family:var(--mono); font-size:30px; font-weight:600; letter-spacing:-.5px;
-    font-variant-numeric:tabular-nums; line-height:1; }
-  .tile .l { color:var(--ink-2); font-size:12.5px; margin-top:7px; }
-  .tile .sub { color:var(--ink-3); font-size:11.5px; margin-top:3px; }
 
   /* scoreboard */
   #board { padding:20px; }
@@ -253,7 +247,7 @@
     #matrix .seg button { flex:1; }
   }
   @media (max-width:560px){
-    h1{font-size:24px;} .tile .k{font-size:26px;}
+    h1{font-size:24px;}
     .who .meta{display:block;}
   }
   @media (prefers-reduced-motion: reduce){ *{animation:none!important; transition:none!important;} }
@@ -356,13 +350,6 @@
 
   <div id="viewRanking" style="display:none;">
   <section id="results">
-    <div class="panel tile-wrap" style="padding:20px;">
-      <div class="section-head">
-        <div><div class="eyebrow">Vue d'ensemble</div><h2>Le bilan du groupe</h2></div>
-      </div>
-      <div class="tiles" id="tiles"></div>
-    </div>
-
     <div class="panel" id="board">
       <div class="section-head">
         <div><div class="eyebrow">Le classement</div><h2>Qui mène la Ligue ?</h2>
@@ -583,23 +570,11 @@ function renderResults(){
   if(state.people.length===0){ res.classList.remove('show'); renderTrophies({N:0}); return; }
   res.classList.add('show');
   const data = build();
-  renderTiles(data); renderBoard(); renderMatrix(data); renderTrophies(data);
+  renderBoard(); renderMatrix(data); renderTrophies(data);
 }
 
 function fmt(n){ return Math.round(n).toLocaleString('fr-FR'); }
 
-function renderTiles({universe,N}){
-  const everyone = universe.filter(u=>u.seenBy.size>=N && N>1).length;
-  const uniques = universe.filter(u=>u.seenBy.size===1 && N>1).length;
-  const tiles=[
-    {k:universe.length, l:'Espèces au total', sub:'dans tout le groupe'},
-    {k:N, l:'Participants', sub:''},
-    {k:everyone, l:'Vues par tout le monde', sub:N>1?'le socle commun':''},
-    {k:uniques, l:'Observations uniques', sub:'vues par une seule personne'},
-  ];
-  $('#tiles').innerHTML = tiles.map(t=>`<div class="tile panel" style="box-shadow:none;background:var(--surface-2);">
-    <div class="k">${fmt(t.k)}</div><div class="l">${t.l}</div>${t.sub?`<div class="sub">${t.sub}</div>`:''}</div>`).join('');
-}
 
 function renderBoard(){
   const ranked=[...state.people].sort((a,b)=>b.score-a.score);
