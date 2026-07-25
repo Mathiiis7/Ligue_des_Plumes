@@ -136,6 +136,8 @@
   .pchip .n { color:var(--ink-3); font-size:12px; font-variant-numeric:tabular-nums; }
   .youtag { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#fff;
     background:var(--accent); border-radius:20px; padding:1px 6px; margin-left:4px; }
+  .demotag { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#fff;
+    background:var(--ink-3); border-radius:20px; padding:1px 6px; margin-left:4px; }
 
   .toggles { display:flex; gap:16px; flex-wrap:wrap; margin-top:16px; font-size:13px; color:var(--ink-2); }
   .toggles label { display:flex; align-items:center; gap:7px; cursor:pointer; }
@@ -314,6 +316,11 @@
 
     <div class="people" id="people"></div>
 
+    <div style="margin-top:14px;">
+      <button class="btn ghost tiny" id="demoBtn">👁 Voir un aperçu à plusieurs (exemple)</button>
+      <span class="help" id="demoHint" style="margin:0 0 0 8px;display:none;">Amis fictifs, non enregistrés — juste pour voir le rendu.</span>
+    </div>
+
     <div class="toggles">
       <label><input type="checkbox" id="tglSpecies" checked> Espèces identifiées seulement (exclure « sp. », hybrides, groupes)</label>
     </div>
@@ -406,6 +413,7 @@ const db = getFirestore(fbApp);
 const SERIES_N = 8;
 const state = { people: [], onlySpecies: true, sort:'rarity', filter:'all', q:'' };
 let myUid = null, leagueId = null, unsub = null, iAmInLeague = false;
+let realPeople = [], demoOn = false;   // aperçu d'exemple (jamais enregistré dans le cloud)
 
 const $ = s=>document.querySelector(s);
 
@@ -538,7 +546,7 @@ function renderMembers(){
   el.innerHTML = state.people.map(p=>`
     <div class="pchip" style="--series:var(--s${p.si})">
       <span class="dot"></span>
-      <span class="pname">${esc(p.name)}${p.isMe?'<span class="youtag">vous</span>':''}</span>
+      <span class="pname">${esc(p.name)}${p.isMe?'<span class="youtag">vous</span>':''}${p.isDemo?'<span class="demotag">exemple</span>':''}</span>
       <span class="n">${p.species.size} obs</span>
     </div>`).join('');
 }
@@ -664,21 +672,41 @@ function memberToPerson(id, data, si){
     joinedAt: data.joinedAt?.seconds || 0 };
 }
 
+/* ---------------- aperçu d'exemple (amis fictifs, JAMAIS envoyés au cloud) ---------------- */
+const DEMO_FRIENDS = [
+  { name:'Léa', sci:['Turdus merula','Parus major','Cyanistes caeruleus','Erithacus rubecula','Passer domesticus','Fringilla coelebs','Carduelis carduelis','Pica pica','Corvus corone','Columba palumbus','Streptopelia decaocto','Sturnus vulgaris','Sylvia atricapilla','Troglodytes troglodytes','Prunella modularis','Aegithalos caudatus','Sitta europaea','Chloris chloris','Buteo buteo','Phylloscopus collybita','Certhia brachydactyla','Turdus philomelos','Regulus regulus','Picus viridis','Garrulus glandarius','Poecile palustris','Dendrocopos major','Motacilla alba','Turdus pilaris','Coccothraustes coccothraustes','Cinclus cinclus','Dryocopus martius','Spinus spinus'] },
+  { name:'Tom', sci:['Turdus merula','Parus major','Cyanistes caeruleus','Erithacus rubecula','Passer domesticus','Fringilla coelebs','Pica pica','Corvus corone','Columba palumbus','Sturnus vulgaris','Buteo buteo','Anas platyrhynchos','Fulica atra','Gallinula chloropus','Ardea cinerea','Chroicocephalus ridibundus','Phalacrocorax carbo','Cygnus olor','Milvus migrans','Falco tinnunculus','Motacilla alba','Circus aeruginosus','Egretta garzetta','Podiceps cristatus','Vanellus vanellus','Aythya ferina','Pandion haliaetus','Alcedo atthis','Himantopus himantopus'] },
+  { name:'Sam', sci:['Turdus merula','Parus major','Cyanistes caeruleus','Erithacus rubecula','Passer domesticus','Carduelis carduelis','Columba palumbus','Sturnus vulgaris','Serinus serinus','Chloris chloris','Merops apiaster','Hirundo rustica','Apus apus','Emberiza cirlus','Phoenicurus ochruros','Upupa epops','Luscinia megarhynchos','Cettia cetti','Delichon urbicum','Coracias garrulus','Monticola solitarius','Galerida cristata'] },
+];
+function demoPeople(startIndex){
+  return DEMO_FRIENDS.map((f,i)=>{
+    const species=new Map();
+    f.sci.forEach(s=>{ species.set(s.toLowerCase(), {
+      common:frName(s,s), sci:s, date:'', loc:'', obs:1, nonSpecies:isNonSpecies('',s) }); });
+    return { id:'demo-'+i, name:f.name, filename:'', si:(startIndex+i)%SERIES_N,
+      species, isMe:false, isDemo:true };
+  });
+}
+function rebuild(){
+  state.people = demoOn ? realPeople.concat(demoPeople(realPeople.length)) : realPeople.slice();
+  renderMembers();
+  renderResults();
+}
+
 function applySnapshot(snap){
   hideError();
   const raw=[];
   snap.forEach(d=> raw.push({ id:d.id, data:d.data() }));
   raw.sort((a,b)=> (a.data.joinedAt?.seconds||0) - (b.data.joinedAt?.seconds||0) || a.id.localeCompare(b.id));
-  state.people = raw.map((m,i)=> memberToPerson(m.id, m.data, i%SERIES_N));
-  iAmInLeague = state.people.some(p=>p.id===myUid);
-  const me = state.people.find(p=>p.id===myUid);
+  realPeople = raw.map((m,i)=> memberToPerson(m.id, m.data, i%SERIES_N));
+  iAmInLeague = realPeople.some(p=>p.id===myUid);
+  const me = realPeople.find(p=>p.id===myUid);
   const nameInput=$('#myName');
   if(me && document.activeElement!==nameInput){ nameInput.value = me.name; }
   $('#myStatus').textContent = me ? `✓ Votre liste : ${me.species.size} espèces` : '';
   $('#removeMineBtn').style.display = me ? 'inline' : 'none';
   $('#dropBig').textContent = me ? 'Remplacer votre liste' : 'Déposez votre fichier MyEBirdData.csv ici';
-  renderMembers();
-  renderResults();
+  rebuild();
 }
 
 function subscribe(){
@@ -770,6 +798,13 @@ $('#removeMineBtn').addEventListener('click',async()=>{
   if(!confirm('Retirer votre liste de cette ligue ?')) return;
   try{ await deleteDoc(doc(db,'leagues',leagueId,'members',myUid)); $('#myStatus').textContent=''; }
   catch(err){ showError(err); }
+});
+
+$('#demoBtn').addEventListener('click',()=>{
+  demoOn=!demoOn;
+  $('#demoBtn').textContent = demoOn ? '✖ Masquer l\'aperçu d\'exemple' : '👁 Voir un aperçu à plusieurs (exemple)';
+  $('#demoHint').style.display = demoOn ? 'inline' : 'none';
+  rebuild();
 });
 
 $('#tglSpecies').addEventListener('change',e=>{ state.onlySpecies=e.target.checked; renderResults(); });
