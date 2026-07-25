@@ -266,6 +266,14 @@
   .tab:hover { color:var(--accent-ink); }
 
   /* trophées */
+  .who-select { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .whochip { display:inline-flex; align-items:center; gap:7px; background:var(--surface-2);
+    border:1px solid var(--line-2); color:var(--ink-2); border-radius:20px; padding:5px 12px;
+    font:inherit; font-size:13px; font-weight:600; cursor:pointer; }
+  .whochip .dot { width:10px; height:10px; border-radius:50%; background:var(--series); flex:none; }
+  .whochip:hover { border-color:var(--accent); }
+  .whochip.on { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .whochip.on .dot { box-shadow:0 0 0 2px rgba(255,255,255,.6); }
   .trophy-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); gap:12px; margin-top:16px; }
   .trophy { text-align:center; border:1px solid var(--line); border-radius:14px; padding:18px 12px;
     background:var(--surface-2); transition:transform .1s; }
@@ -293,11 +301,12 @@
   </header>
 
   <nav class="tabs">
-    <button class="tab on" data-view="main">Classement</button>
+    <button class="tab on" data-view="load">Ma liste</button>
+    <button class="tab" data-view="ranking">Classement</button>
     <button class="tab" data-view="trophies">🏆 Trophées</button>
   </nav>
 
-  <div id="viewMain">
+  <div id="viewLoad">
   <!-- league: your entry + participants -->
   <section class="panel" id="leaguebar" style="display:none;">
     <div class="league-head">
@@ -343,7 +352,9 @@
 
     <div id="fbError"></div>
   </section>
+  </div><!-- /viewLoad -->
 
+  <div id="viewRanking" style="display:none;">
   <section id="results">
     <div class="panel tile-wrap" style="padding:20px;">
       <div class="section-head">
@@ -387,14 +398,15 @@
       <div class="matrix-cards" id="matrixCards"></div>
     </div>
   </section>
-  </div><!-- /viewMain -->
+  </div><!-- /viewRanking -->
 
   <div id="viewTrophies" style="display:none;">
     <section class="panel" style="padding:20px; margin-top:22px;">
       <div class="section-head">
-        <div><div class="eyebrow">Vos récompenses</div><h2>Trophées</h2>
+        <div><div class="eyebrow">Récompenses</div><h2>Trophées</h2>
           <p id="trophySummary"></p></div>
       </div>
+      <div class="who-select" id="trophyWho"></div>
       <div class="trophy-grid" id="trophyGrid"></div>
     </section>
   </div>
@@ -671,6 +683,7 @@ const TROPHIES = [
   { icon:'💎', name:'Perle rare', desc:'1 espèce que vous seul avez vue', test:s=>s.unique>=1, prog:s=>[s.unique,1] },
   { icon:'🎯', name:'Chasseur de raretés', desc:'5 espèces uniques', test:s=>s.unique>=5, prog:s=>[s.unique,5] },
   { icon:'🏆', name:'Dénicheur d’exception', desc:'15 espèces uniques', test:s=>s.unique>=15, prog:s=>[s.unique,15] },
+  { icon:'🐦‍⬛', name:'Le Pic noir', desc:'Avoir vu le Pic noir', test:s=>s.blackWoodpecker },
   { icon:'🥉', name:'Sur le podium', desc:'Terminer dans le top 3', test:s=>s.groupN>1 && s.rank<=3 },
   { icon:'👑', name:'Roi de la Ligue', desc:'Être 1ᵉʳ du classement', test:s=>s.groupN>1 && s.rank===1 },
   { icon:'🦉', name:'Ami des chouettes', desc:'Voir un rapace nocturne', test:s=>s.owls>=1 },
@@ -685,24 +698,32 @@ const SEA_G=/^(morus|sula|larus|ichthyaetus|chroicocephalus|hydrocoloeus|leucoph
 function statsFor(me, N){
   const ranked=[...state.people].sort((a,b)=>b.score-a.score);
   const rank=ranked.findIndex(p=>p.id===me.id)+1;
-  let owls=0,raptors=0,water=0,sea=0;
+  let owls=0,raptors=0,water=0,sea=0,blackWoodpecker=false;
   for(const v of me._active.values()){
-    const g=(v.sci||'').split(' ')[0].toLowerCase();
+    const sci=(v.sci||'').toLowerCase();
+    const g=sci.split(' ')[0];
     if(OWL_G.test(g)) owls++;
     if(RAPTOR_G.test(g)) raptors++;
     if(WATER_G.test(g)) water++;
     if(SEA_G.test(g)) sea++;
+    if(sci==='dryocopus martius') blackWoodpecker=true;
   }
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker };
 }
+let trophyPlayerId = null, trophyData = {N:0};
 function renderTrophies(data){
-  const grid=$('#trophyGrid'), summary=$('#trophySummary'); if(!grid) return;
-  const me=state.people.find(p=>p.isMe);
-  if(!me || !me._active){
+  trophyData = data;
+  const grid=$('#trophyGrid'), summary=$('#trophySummary'), who=$('#trophyWho'); if(!grid) return;
+  const people = state.people;
+  if(!people.length){
+    if(who) who.innerHTML='';
     grid.innerHTML='<p class="help" style="margin-top:0;">Chargez votre liste pour commencer à débloquer des trophées 🏆</p>';
     summary.textContent=''; return;
   }
-  const s=statsFor(me, data.N);
+  let sel = people.find(p=>p.id===trophyPlayerId) || people.find(p=>p.isMe) || people[0];
+  trophyPlayerId = sel.id;
+  if(who) who.innerHTML = people.map(p=>`<button class="whochip ${p.id===sel.id?'on':''}" data-id="${esc(p.id)}" style="--series:var(--s${p.si})"><span class="dot"></span>${esc(p.name)}${p.isMe?' (vous)':''}</button>`).join('');
+  const s=statsFor(sel, data.N);
   let unlocked=0;
   grid.innerHTML = TROPHIES.map(t=>{
     const ok=t.test(s); if(ok) unlocked++;
@@ -715,7 +736,8 @@ function renderTrophies(data){
       <div class="tstate">${stateTxt}</div>
     </div>`;
   }).join('');
-  summary.textContent = `${unlocked} trophée${unlocked>1?'s':''} sur ${TROPHIES.length} débloqué${unlocked>1?'s':''}`;
+  const label = sel.isMe ? 'Vous avez' : esc(sel.name)+' a';
+  summary.textContent = `${label} débloqué ${unlocked} trophée${unlocked>1?'s':''} sur ${TROPHIES.length}`;
 }
 
 /* ---------------- Firestore <-> state ---------------- */
@@ -862,13 +884,17 @@ $('#removeMineBtn').addEventListener('click',async()=>{
   catch(err){ showError(err); }
 });
 
+const VIEWS = { load:'#viewLoad', ranking:'#viewRanking', trophies:'#viewTrophies' };
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
   b.classList.add('on');
-  const v=b.dataset.view;
-  $('#viewMain').style.display = v==='main' ? '' : 'none';
-  $('#viewTrophies').style.display = v==='trophies' ? '' : 'none';
+  Object.entries(VIEWS).forEach(([v,sel])=>{ const el=$(sel); if(el) el.style.display=(b.dataset.view===v)?'':'none'; });
 }));
+
+$('#trophyWho').addEventListener('click',e=>{
+  const b=e.target.closest('.whochip'); if(!b) return;
+  trophyPlayerId=b.dataset.id; renderTrophies(trophyData);
+});
 
 $('#demoBtn').addEventListener('click',()=>{
   demoOn=!demoOn;
