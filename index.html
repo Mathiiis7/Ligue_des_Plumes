@@ -184,15 +184,6 @@
   .bar { position:absolute; left:0; bottom:0; height:3px; background:var(--series); opacity:.9; }
 
   /* rarest finds */
-  #rare { padding:20px; }
-  .finds { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:10px; margin-top:14px; }
-  .find { border:1px solid var(--line); border-left:3px solid var(--series); border-radius:10px;
-    padding:11px 13px; background:var(--surface-2); }
-  .find .sp { font-weight:600; font-size:14.5px; }
-  .find .sci { font-family:var(--serif); font-style:italic; color:var(--ink-3); font-size:12.5px; margin-top:1px; }
-  .find .by { display:flex; align-items:center; gap:7px; margin-top:8px; font-size:12.5px; color:var(--ink-2); }
-  .find .by .dot { width:9px; height:9px; border-radius:50%; background:var(--series); flex:none; }
-  .find .dt { color:var(--ink-3); font-variant-numeric:tabular-nums; }
   .empty-note { color:var(--ink-3); font-size:13px; margin-top:12px; }
 
   /* matrix */
@@ -341,14 +332,6 @@
       <div class="board-list" id="boardList"></div>
     </div>
 
-    <div class="panel" id="rare">
-      <div class="section-head">
-        <div><div class="eyebrow">Les trophées</div><h2>Observations uniques</h2>
-          <p>Les espèces qu'une seule personne du groupe a notées.</p></div>
-      </div>
-      <div class="finds" id="finds"></div>
-      <div class="empty-note" id="findsEmpty" style="display:none;">Aucune espèce unique pour l'instant — tout le monde a vu les mêmes oiseaux !</div>
-    </div>
 
     <div class="panel" id="matrix">
       <div class="section-head">
@@ -549,7 +532,7 @@ function renderResults(){
   if(state.people.length===0){ res.classList.remove('show'); return; }
   res.classList.add('show');
   const data = build();
-  renderTiles(data); renderBoard(); renderFinds(data); renderMatrix(data);
+  renderTiles(data); renderBoard(); renderMatrix(data);
 }
 
 function fmt(n){ return Math.round(n).toLocaleString('fr-FR'); }
@@ -581,20 +564,6 @@ function renderBoard(){
       <div class="bar" style="width:${w}%"></div>
     </div>`;
   }).join('');
-}
-
-function renderFinds({universe,N}){
-  const uniques = universe.filter(u=>u.seenBy.size===1 && N>1)
-    .map(u=>{ const [pidk,rec]=[...u.seenBy.entries()][0]; return {u,p:state.people.find(x=>x.id===pidk),rec}; })
-    .sort((a,b)=> (a.p?a.p.name:'').localeCompare(b.p?b.p.name:''));
-  const wrap=$('#finds'), empty=$('#findsEmpty');
-  if(!uniques.length){ wrap.innerHTML=''; empty.style.display='block'; return; }
-  empty.style.display='none';
-  wrap.innerHTML = uniques.map(({u,p,rec})=>`<div class="find" style="--series:var(--s${p.si})">
-    <div class="sp">${esc(u.common)}</div>
-    ${u.sci?`<div class="sci">${esc(u.sci)}</div>`:''}
-    <div class="by"><span class="dot"></span>${esc(p.name)}${rec.date?` · <span class="dt">${esc(rec.date)}</span>`:''}</div>
-  </div>`).join('');
 }
 
 function renderMatrix({universe,N}){
