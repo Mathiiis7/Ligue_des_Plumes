@@ -1,4 +1,4 @@
-<title>La Ligue des Plumes</title>
+<title>Ligue Merlin Bird</title>
 <style>
   :root {
     --bg: #eef2f1;
@@ -89,7 +89,7 @@
   h2 { font-family:var(--serif); font-weight:600; font-size:21px; margin:0; }
 
   /* ---------- intake / dropzone ---------- */
-  #gate, #leaguebar { margin-top:22px; padding:22px; }
+  #leaguebar { margin-top:22px; padding:22px; }
   .drop { border:1.5px dashed var(--line-2); border-radius:13px; padding:26px 20px; text-align:center;
     background:var(--surface-2); transition:border-color .15s, background .15s; cursor:pointer; }
   .drop.drag { border-color:var(--accent); background:color-mix(in srgb, var(--accent) 9%, var(--surface-2)); }
@@ -274,48 +274,25 @@
     <div class="brand">
       <div class="mark">🐦</div>
       <div>
-        <h1>La Ligue des Plumes</h1>
+        <h1>Ligue Merlin Bird</h1>
       </div>
     </div>
     <button class="theme-btn" id="themeBtn">◐ Thème</button>
   </header>
 
-  <!-- gate: create / join a league -->
-  <section class="panel" id="gate" style="display:none;">
-    <div class="eyebrow">Bienvenue</div>
-    <h2 style="margin:6px 0 6px;">Créez votre ligue ou rejoignez-en une</h2>
-    <p class="tag">Une ligue réunit vos listes à plusieurs. Créez-en une, partagez le lien à vos amis, et chacun ajoute la sienne depuis son appareil.</p>
-
-    <div class="intake-actions">
-      <button class="btn" id="createBtn">＋ Créer une ligue</button>
-    </div>
-
-    <div class="join-row">
-      <div class="search">🔑<input type="text" id="joinCode" placeholder="Code de la ligue (ex. A7X2K)" autocapitalize="characters"></div>
-      <button class="btn ghost" id="joinBtn">Rejoindre</button>
-    </div>
-
-    <div class="help">
-      🔒 La connexion est <b>anonyme</b> — aucun compte ni mot de passe à créer. Vos listes sont stockées dans l'espace privé de la ligue, accessible via son code.
-    </div>
-  </section>
-
   <!-- league: your entry + participants -->
   <section class="panel" id="leaguebar" style="display:none;">
     <div class="league-head">
       <div>
-        <div class="eyebrow">Votre ligue</div>
-        <h2>Ligue <span id="leagueCode"></span></h2>
-      </div>
-      <div class="league-actions">
-        <button class="btn ghost tiny" id="leaveBtn">Changer de ligue</button>
+        <div class="eyebrow">La ligue</div>
+        <h2>Ajoutez votre liste</h2>
       </div>
     </div>
 
-    <p class="tag" style="margin-top:8px;">Partagez ce lien pour que vos amis rejoignent :</p>
+    <p class="tag" style="margin-top:8px;">Partagez cette page à vos amis pour qu'ils ajoutent la leur :</p>
     <div class="linkbox">
       <code id="shareLink"></code>
-      <button class="btn tiny" id="copyLinkBtn">🔗 Copier</button>
+      <button class="btn tiny" id="copyLinkBtn">🔗 Copier le lien</button>
     </div>
 
     <div class="me-panel">
@@ -401,8 +378,8 @@
   </section>
 
   <footer>
-    La Ligue des Plumes · rareté calculée au sein de votre groupe · données <b>Merlin / eBird</b>, propriété du Cornell Lab of Ornithology.<br>
-    Connexion anonyme · vos listes ne sont partagées qu'au sein de votre ligue.
+    Ligue Merlin Bird · rareté calculée au sein de votre groupe · données <b>Merlin / eBird</b>, propriété du Cornell Lab of Ornithology.<br>
+    Connexion anonyme · vos listes ne sont partagées qu'au sein de la ligue.
   </footer>
 </div>
 
@@ -729,42 +706,24 @@ function showError(err){
 }
 function hideError(){ const b=$('#fbError'); if(b) b.style.display='none'; }
 
-/* ---------------- league / routing ---------------- */
-function getLeagueId(){ const m=(location.hash||'').match(/[#&]l=([A-Za-z0-9]+)/); return m?m[1].toUpperCase():null; }
-function newLeagueId(){
-  const a='ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s='';
-  const arr=new Uint32Array(5); crypto.getRandomValues(arr);
-  for(let i=0;i<5;i++) s+=a[arr[i]%a.length];
-  return s;
-}
-function shareUrl(){ return location.origin+location.pathname+'#l='+leagueId; }
+/* ---------------- single fixed league ---------------- */
+const LEAGUE_ID = 'merlin-bird';   // une seule et même ligue pour tout le monde
+leagueId = LEAGUE_ID;
 
-function showGate(){ $('#gate').style.display='block'; $('#leaguebar').style.display='none'; $('#results').classList.remove('show'); }
+function shareUrl(){ return location.origin + location.pathname; }
 function showLeague(){
-  $('#gate').style.display='none'; $('#leaguebar').style.display='block';
-  $('#leagueCode').textContent = leagueId;
+  $('#leaguebar').style.display='block';
   $('#shareLink').textContent = shareUrl();
 }
 
 function boot(){
-  if(!myUid) return;              // wait for auth
-  leagueId = getLeagueId();
-  if(unsub){ unsub(); unsub=null; }
-  state.people=[]; iAmInLeague=false;
-  if(!leagueId){ showGate(); renderResults(); return; }
   showLeague();
+  if(!myUid) return;              // s'abonne une fois la connexion prête
+  if(unsub){ unsub(); unsub=null; }
   subscribe();
 }
 
 /* ---------------- wire up ---------------- */
-$('#createBtn').addEventListener('click',()=>{ location.hash='l='+newLeagueId(); });
-$('#joinBtn').addEventListener('click',()=>{
-  const code=($('#joinCode').value||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
-  if(code) location.hash='l='+code;
-});
-$('#joinCode').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#joinBtn').click(); });
-$('#leaveBtn').addEventListener('click',()=>{ location.hash=''; });
-
 $('#copyLinkBtn').addEventListener('click',async()=>{
   try{ await navigator.clipboard.writeText(shareUrl()); const b=$('#copyLinkBtn');
     const t=b.textContent; b.textContent='✓ Copié'; setTimeout(()=>b.textContent=t,1400);
@@ -775,6 +734,7 @@ const fileInput=$('#file'), drop=$('#drop');
 async function handleFiles(fileList){
   const f=[...fileList].find(x=>/\.csv$/i.test(x.name)||x.type==='text/csv') || fileList[0];
   if(!f) return;
+  if(!myUid){ $('#myStatus').textContent='Connexion en cours, réessayez dans un instant…'; return; }
   let text; try{ text=await f.text(); }catch(e){ $('#myStatus').textContent='Lecture du fichier impossible.'; return; }
   const parsed=ingest(f.name, text);
   if(!parsed){ $('#myStatus').textContent='Fichier non reconnu (est-ce bien un export eBird ?)'; return; }
@@ -824,9 +784,8 @@ $('#themeBtn').addEventListener('click',()=>{
   root.setAttribute('data-theme', isDark?'light':'dark');
 });
 
-window.addEventListener('hashchange', boot);
-
 /* ---------------- go ---------------- */
+showLeague();   // affiche la page tout de suite, sans attendre la connexion
 onAuthStateChanged(auth, user=>{ if(user){ myUid=user.uid; boot(); } });
-signInAnonymously(auth).catch(err=>{ showError(err); $('#gate').style.display='block'; });
+signInAnonymously(auth).catch(err=>{ showError(err); });
 </script>
