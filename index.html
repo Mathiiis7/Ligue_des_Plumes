@@ -1,0 +1,832 @@
+<title>La Ligue des Plumes</title>
+<style>
+  :root {
+    --bg: #eef2f1;
+    --surface: #ffffff;
+    --surface-2: #e7eceb;
+    --surface-3: #dde4e2;
+    --ink: #15201e;
+    --ink-2: #47534f;
+    --ink-3: #7c8783;
+    --line: rgba(21,32,30,0.10);
+    --line-2: rgba(21,32,30,0.16);
+    --accent: #0b7c77;
+    --accent-ink: #075a56;
+    --accent-2: #c05e33;
+    --gold: #b98d22;
+    --shadow: 0 1px 2px rgba(21,32,30,.06), 0 8px 28px rgba(21,32,30,.07);
+
+    /* friend series (validated categorical) */
+    --s0:#2a78d6; --s1:#1baf7a; --s2:#eda100; --s3:#008300;
+    --s4:#4a3aa7; --s5:#e34948; --s6:#e87ba4; --s7:#eb6834;
+
+    /* rarity tiers, cool -> hot */
+    --t-all:#6b7f7a; --t-common:#2f9e6f; --t-uncommon:#c0891f;
+    --t-rare:#df6b34; --t-unique:#c93f66;
+
+    --serif: "Palatino Linotype","Iowan Old Style","Hoefler Text",Georgia,"Times New Roman",serif;
+    --sans: "Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    --mono: "Cascadia Code",Consolas,"SF Mono",ui-monospace,Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#0d1513; --surface:#131f1d; --surface-2:#1a2827; --surface-3:#223231;
+      --ink:#e9f1ef; --ink-2:#a7b6b2; --ink-3:#74827e;
+      --line:rgba(233,241,239,0.10); --line-2:rgba(233,241,239,0.16);
+      --accent:#2bbcb0; --accent-ink:#54cfc4; --accent-2:#e08a4e; --gold:#e0bc59;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+      --s0:#3987e5; --s1:#199e70; --s2:#c98500; --s3:#22a022;
+      --s4:#9085e9; --s5:#e66767; --s6:#d55181; --s7:#d95926;
+      --t-all:#8fa39e; --t-common:#37b784; --t-uncommon:#e4b352;
+      --t-rare:#ef8a54; --t-unique:#e86a92;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#0d1513; --surface:#131f1d; --surface-2:#1a2827; --surface-3:#223231;
+    --ink:#e9f1ef; --ink-2:#a7b6b2; --ink-3:#74827e;
+    --line:rgba(233,241,239,0.10); --line-2:rgba(233,241,239,0.16);
+    --accent:#2bbcb0; --accent-ink:#54cfc4; --accent-2:#e08a4e; --gold:#e0bc59;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    --s0:#3987e5; --s1:#199e70; --s2:#c98500; --s3:#22a022;
+    --s4:#9085e9; --s5:#e66767; --s6:#d55181; --s7:#d95926;
+    --t-all:#8fa39e; --t-common:#37b784; --t-uncommon:#e4b352;
+    --t-rare:#ef8a54; --t-unique:#e86a92;
+  }
+  :root[data-theme="light"] {
+    --bg:#eef2f1; --surface:#ffffff; --surface-2:#e7eceb; --surface-3:#dde4e2;
+    --ink:#15201e; --ink-2:#47534f; --ink-3:#7c8783;
+    --line:rgba(21,32,30,0.10); --line-2:rgba(21,32,30,0.16);
+    --accent:#0b7c77; --accent-ink:#075a56; --accent-2:#c05e33; --gold:#b98d22;
+    --s0:#2a78d6; --s1:#1baf7a; --s2:#eda100; --s3:#008300;
+    --s4:#4a3aa7; --s5:#e34948; --s6:#e87ba4; --s7:#eb6834;
+    --t-all:#6b7f7a; --t-common:#2f9e6f; --t-uncommon:#c0891f;
+    --t-rare:#df6b34; --t-unique:#c93f66;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans);
+    line-height:1.5; -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:1080px; margin:0 auto; padding:28px 20px 80px; }
+
+  /* ---------- header ---------- */
+  header.top { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; flex-wrap:wrap; }
+  .brand { display:flex; gap:14px; align-items:center; }
+  .mark { width:46px; height:46px; flex:none; border-radius:13px;
+    background:linear-gradient(150deg,var(--accent),var(--accent-2)); display:grid; place-items:center;
+    font-size:26px; box-shadow:var(--shadow); }
+  h1 { font-family:var(--serif); font-weight:600; font-size:29px; margin:0; letter-spacing:.2px;
+    text-wrap:balance; }
+  .tag { color:var(--ink-2); font-size:14px; margin-top:2px; max-width:52ch; }
+  .theme-btn { background:var(--surface); border:1px solid var(--line-2); color:var(--ink-2);
+    border-radius:9px; padding:7px 11px; font:inherit; font-size:13px; cursor:pointer; }
+  .theme-btn:hover { border-color:var(--accent); color:var(--accent-ink); }
+
+  /* ---------- panels ---------- */
+  .panel { background:var(--surface); border:1px solid var(--line); border-radius:16px;
+    box-shadow:var(--shadow); }
+  .eyebrow { text-transform:uppercase; letter-spacing:.14em; font-size:11px; font-weight:700;
+    color:var(--ink-3); }
+  h2 { font-family:var(--serif); font-weight:600; font-size:21px; margin:0; }
+
+  /* ---------- intake / dropzone ---------- */
+  #gate, #leaguebar { margin-top:22px; padding:22px; }
+  .drop { border:1.5px dashed var(--line-2); border-radius:13px; padding:26px 20px; text-align:center;
+    background:var(--surface-2); transition:border-color .15s, background .15s; cursor:pointer; }
+  .drop.drag { border-color:var(--accent); background:color-mix(in srgb, var(--accent) 9%, var(--surface-2)); }
+  .drop .big { font-size:15px; font-weight:600; }
+  .drop .small { color:var(--ink-2); font-size:13px; margin-top:5px; }
+  .btn { display:inline-flex; align-items:center; gap:7px; background:var(--accent); color:#fff;
+    border:none; border-radius:9px; padding:9px 15px; font:inherit; font-weight:600; font-size:14px;
+    cursor:pointer; }
+  .btn:hover { filter:brightness(1.06); }
+  .btn.ghost { background:transparent; color:var(--accent-ink); border:1px solid var(--line-2); }
+  .btn.ghost:hover { border-color:var(--accent); }
+  .btn.tiny { padding:5px 10px; font-size:12.5px; }
+  .intake-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; align-items:center; }
+  .help { font-size:12.5px; color:var(--ink-3); margin-top:14px; line-height:1.55; }
+  .help b { color:var(--ink-2); font-weight:600; }
+
+  /* league bar */
+  .league-head { display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+  .league-actions { display:flex; gap:8px; flex-wrap:wrap; }
+  #leagueCode { font-family:var(--mono); color:var(--accent-ink); letter-spacing:1px; }
+  .linkbox { display:flex; align-items:center; gap:8px; margin-top:12px; background:var(--surface-2);
+    border:1px solid var(--line-2); border-radius:9px; padding:8px 11px; max-width:100%; }
+  .linkbox code { font-family:var(--mono); font-size:12.5px; color:var(--ink-2); overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; }
+  .me-panel { margin-top:18px; padding-top:18px; border-top:1px solid var(--line); display:flex;
+    flex-direction:column; gap:12px; }
+  .me-name label { font-size:12.5px; color:var(--ink-2); font-weight:600; }
+  .me-name input { display:block; margin-top:5px; background:var(--surface-2); border:1px solid var(--line-2);
+    border-radius:9px; padding:8px 11px; font:inherit; color:var(--ink); font-size:14px; width:240px; max-width:100%; }
+  .me-name input:focus { outline:2px solid var(--accent); }
+  .mystatus { font-size:13px; color:var(--accent-ink); font-weight:600; }
+  .join-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:16px; }
+  .join-row .search { max-width:280px; }
+  .linkbtn { border:none; background:transparent; color:var(--accent-ink); cursor:pointer; font:inherit;
+    font-size:12.5px; text-decoration:underline; padding:2px; }
+  .linkbtn:hover { color:var(--t-rare); }
+
+  /* people chips */
+  .people { display:flex; flex-wrap:wrap; gap:9px; margin-top:18px; }
+  .pchip { display:flex; align-items:center; gap:8px; background:var(--surface-2);
+    border:1px solid var(--line); border-radius:10px; padding:6px 10px; }
+  .pchip .dot { width:11px; height:11px; border-radius:50%; background:var(--series); flex:none; }
+  .pchip .pname { font-weight:600; font-size:13.5px; }
+  .pchip .n { color:var(--ink-3); font-size:12px; font-variant-numeric:tabular-nums; }
+  .youtag { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#fff;
+    background:var(--accent); border-radius:20px; padding:1px 6px; margin-left:4px; }
+
+  .toggles { display:flex; gap:16px; flex-wrap:wrap; margin-top:16px; font-size:13px; color:var(--ink-2); }
+  .toggles label { display:flex; align-items:center; gap:7px; cursor:pointer; }
+  .toggles input { accent-color:var(--accent); width:15px; height:15px; }
+
+  #fbError { margin-top:16px; padding:12px 14px; border-radius:10px;
+    background:color-mix(in srgb,var(--t-rare) 12%,var(--surface));
+    border:1px solid color-mix(in srgb,var(--t-rare) 40%,transparent); color:var(--ink); font-size:13px;
+    display:none; line-height:1.5; }
+  #fbError code { font-family:var(--mono); font-size:12px; }
+
+  /* ---------- results ---------- */
+  #results { margin-top:22px; display:none; flex-direction:column; gap:22px; }
+  #results.show { display:flex; animation:rise .4s ease both; }
+  @keyframes rise { from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;} }
+
+  .section-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+    margin-bottom:12px; flex-wrap:wrap; }
+  .section-head p { margin:2px 0 0; color:var(--ink-2); font-size:13px; }
+
+  /* stat tiles */
+  .tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
+  .tile { padding:16px 16px 14px; }
+  .tile .k { font-family:var(--mono); font-size:30px; font-weight:600; letter-spacing:-.5px;
+    font-variant-numeric:tabular-nums; line-height:1; }
+  .tile .l { color:var(--ink-2); font-size:12.5px; margin-top:7px; }
+  .tile .sub { color:var(--ink-3); font-size:11.5px; margin-top:3px; }
+
+  /* scoreboard */
+  #board { padding:20px; }
+  .board-list { display:flex; flex-direction:column; gap:10px; margin-top:16px; }
+  .row-p { display:grid; grid-template-columns:34px 1fr auto; align-items:center; gap:14px;
+    padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:var(--surface-2);
+    position:relative; overflow:hidden; }
+  .row-p.lead { border-color:color-mix(in srgb,var(--gold) 55%,var(--line)); }
+  .rank { font-family:var(--mono); font-size:19px; font-weight:600; color:var(--ink-3); text-align:center; }
+  .row-p.lead .rank { color:var(--gold); }
+  .who { display:flex; align-items:center; gap:10px; min-width:0; }
+  .who .dot { width:13px; height:13px; border-radius:50%; background:var(--series); flex:none;
+    box-shadow:0 0 0 3px color-mix(in srgb,var(--series) 20%,transparent); }
+  .who .nm { font-weight:600; font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .who .meta { color:var(--ink-3); font-size:12.5px; font-variant-numeric:tabular-nums; }
+  .pts { text-align:right; }
+  .pts .v { font-family:var(--mono); font-size:24px; font-weight:600; font-variant-numeric:tabular-nums;
+    color:var(--accent-ink); line-height:1; }
+  .pts .u { font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.1em; }
+  .bar { position:absolute; left:0; bottom:0; height:3px; background:var(--series); opacity:.9; }
+
+  /* rarest finds */
+  #rare { padding:20px; }
+  .finds { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:10px; margin-top:14px; }
+  .find { border:1px solid var(--line); border-left:3px solid var(--series); border-radius:10px;
+    padding:11px 13px; background:var(--surface-2); }
+  .find .sp { font-weight:600; font-size:14.5px; }
+  .find .sci { font-family:var(--serif); font-style:italic; color:var(--ink-3); font-size:12.5px; margin-top:1px; }
+  .find .by { display:flex; align-items:center; gap:7px; margin-top:8px; font-size:12.5px; color:var(--ink-2); }
+  .find .by .dot { width:9px; height:9px; border-radius:50%; background:var(--series); flex:none; }
+  .find .dt { color:var(--ink-3); font-variant-numeric:tabular-nums; }
+  .empty-note { color:var(--ink-3); font-size:13px; margin-top:12px; }
+
+  /* matrix */
+  #matrix { padding:20px; }
+  .controls { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:14px 0 6px; }
+  .search { flex:1; min-width:180px; display:flex; align-items:center; gap:8px; background:var(--surface-2);
+    border:1px solid var(--line-2); border-radius:9px; padding:7px 11px; }
+  .search input { border:none; background:transparent; color:var(--ink); font:inherit; font-size:14px;
+    width:100%; }
+  .search input:focus { outline:none; }
+  .seg { display:flex; border:1px solid var(--line-2); border-radius:9px; overflow:hidden; }
+  .seg button { border:none; background:var(--surface); color:var(--ink-2); font:inherit; font-size:12.5px;
+    padding:7px 11px; cursor:pointer; }
+  .seg button.on { background:var(--accent); color:#fff; }
+  .tbl-scroll { overflow-x:auto; margin-top:10px; border:1px solid var(--line); border-radius:11px; }
+  table { border-collapse:collapse; width:100%; font-size:13.5px; }
+  thead th { position:sticky; top:0; background:var(--surface); z-index:2; text-align:left;
+    padding:10px 12px; border-bottom:1px solid var(--line-2); font-size:11.5px; text-transform:uppercase;
+    letter-spacing:.06em; color:var(--ink-3); font-weight:700; white-space:nowrap; }
+  thead th.pcol { text-align:center; }
+  thead th.pcol .cap { display:inline-flex; align-items:center; gap:6px; }
+  thead th.pcol .dot { width:9px; height:9px; border-radius:50%; background:var(--series); }
+  tbody td { padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  tbody tr:last-child td { border-bottom:none; }
+  tbody tr:hover td { background:var(--surface-2); }
+  td.sp { font-weight:600; }
+  td.sp .sci { display:block; font-family:var(--serif); font-style:italic; font-weight:400;
+    color:var(--ink-3); font-size:12px; }
+  td.pcol { text-align:center; }
+  .seen { width:15px; height:15px; border-radius:50%; background:var(--series); display:inline-block;
+    box-shadow:0 0 0 2px var(--surface); }
+  tr:hover .seen { box-shadow:0 0 0 2px var(--surface-2); }
+  .unseen { color:var(--line-2); }
+  .chip { display:inline-block; font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px;
+    white-space:nowrap; background:color-mix(in srgb,var(--tc) 16%,transparent); color:var(--tc);
+    border:1px solid color-mix(in srgb,var(--tc) 30%,transparent); }
+  .cnt { font-variant-numeric:tabular-nums; color:var(--ink-2); text-align:center; }
+
+  /* matrix — mobile card variant (shown < 640px) */
+  .matrix-cards { display:none; }
+  .mcard { border:1px solid var(--line); border-left:3px solid var(--line-2); border-radius:11px;
+    padding:12px 13px; background:var(--surface-2); }
+  .mc-head { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+  .mc-sp { font-weight:600; font-size:14.5px; min-width:0; }
+  .mc-sci { display:block; font-family:var(--serif); font-style:italic; font-weight:400;
+    color:var(--ink-3); font-size:12px; margin-top:1px; }
+  .mc-count { flex:none; font-family:var(--mono); font-size:12.5px; font-variant-numeric:tabular-nums;
+    color:var(--ink-2); background:var(--surface-3); border-radius:7px; padding:2px 8px; }
+  .mc-row { display:flex; align-items:center; flex-wrap:wrap; gap:8px 10px; margin-top:10px; }
+  .mc-people { display:flex; flex-wrap:wrap; gap:6px; }
+  .mc-person { display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:var(--ink-2);
+    background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:3px 9px 3px 7px; }
+  .mc-person .dot { width:9px; height:9px; border-radius:50%; background:var(--series); flex:none; }
+
+  footer { margin-top:30px; color:var(--ink-3); font-size:12px; text-align:center; line-height:1.6; }
+  footer a { color:var(--accent-ink); }
+  .legend-tiers { display:flex; gap:14px; flex-wrap:wrap; margin-top:6px; font-size:12px; color:var(--ink-2); }
+  .legend-tiers span { display:inline-flex; align-items:center; gap:6px; }
+  .legend-tiers i { width:10px; height:10px; border-radius:3px; background:var(--tc); }
+
+  @media (max-width:640px){
+    #matrix .tbl-scroll { display:none; }
+    .matrix-cards { display:flex; flex-direction:column; gap:10px; margin-top:12px; }
+    #matrix .controls { gap:8px; }
+    #matrix .search { flex:1 1 100%; }
+    #matrix .seg { flex:1 1 auto; }
+    #matrix .seg button { flex:1; }
+  }
+  @media (max-width:560px){
+    h1{font-size:24px;} .tile .k{font-size:26px;}
+    .who .meta{display:block;}
+  }
+  @media (prefers-reduced-motion: reduce){ *{animation:none!important; transition:none!important;} }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="mark">🐦</div>
+      <div>
+        <h1>La Ligue des Plumes</h1>
+      </div>
+    </div>
+    <button class="theme-btn" id="themeBtn">◐ Thème</button>
+  </header>
+
+  <!-- gate: create / join a league -->
+  <section class="panel" id="gate" style="display:none;">
+    <div class="eyebrow">Bienvenue</div>
+    <h2 style="margin:6px 0 6px;">Créez votre ligue ou rejoignez-en une</h2>
+    <p class="tag">Une ligue réunit vos listes à plusieurs. Créez-en une, partagez le lien à vos amis, et chacun ajoute la sienne depuis son appareil.</p>
+
+    <div class="intake-actions">
+      <button class="btn" id="createBtn">＋ Créer une ligue</button>
+    </div>
+
+    <div class="join-row">
+      <div class="search">🔑<input type="text" id="joinCode" placeholder="Code de la ligue (ex. A7X2K)" autocapitalize="characters"></div>
+      <button class="btn ghost" id="joinBtn">Rejoindre</button>
+    </div>
+
+    <div class="help">
+      🔒 La connexion est <b>anonyme</b> — aucun compte ni mot de passe à créer. Vos listes sont stockées dans l'espace privé de la ligue, accessible via son code.
+    </div>
+  </section>
+
+  <!-- league: your entry + participants -->
+  <section class="panel" id="leaguebar" style="display:none;">
+    <div class="league-head">
+      <div>
+        <div class="eyebrow">Votre ligue</div>
+        <h2>Ligue <span id="leagueCode"></span></h2>
+      </div>
+      <div class="league-actions">
+        <button class="btn ghost tiny" id="leaveBtn">Changer de ligue</button>
+      </div>
+    </div>
+
+    <p class="tag" style="margin-top:8px;">Partagez ce lien pour que vos amis rejoignent :</p>
+    <div class="linkbox">
+      <code id="shareLink"></code>
+      <button class="btn tiny" id="copyLinkBtn">🔗 Copier</button>
+    </div>
+
+    <div class="me-panel">
+      <div class="me-name">
+        <label for="myName">Votre nom</label>
+        <input type="text" id="myName" placeholder="Votre prénom" maxlength="24">
+      </div>
+      <div class="drop" id="drop">
+        <div class="big" id="dropBig">Déposez votre fichier <code>MyEBirdData.csv</code> ici</div>
+        <div class="small" id="dropSmall">ou cliquez pour parcourir — votre liste à vous</div>
+      </div>
+      <input type="file" id="file" accept=".csv,text/csv" hidden>
+      <div class="intake-actions">
+        <button class="btn" id="browseBtn">＋ Charger ma liste</button>
+        <span class="mystatus" id="myStatus"></span>
+      </div>
+      <div style="font-size:12px;"><button class="linkbtn" id="removeMineBtn" style="display:none;">Retirer ma liste de la ligue</button></div>
+    </div>
+
+    <div class="people" id="people"></div>
+
+    <div class="toggles">
+      <label><input type="checkbox" id="tglSpecies" checked> Espèces identifiées seulement (exclure « sp. », hybrides, groupes)</label>
+    </div>
+
+    <div class="help">
+      <b>Comment récupérer votre fichier :</b> sur <b>ebird.org</b> (le compte lié à Merlin) → cliquez sur votre nom → <b>Download My Data</b> / <b>Télécharger mes données</b>. eBird vous envoie par e-mail un <code>MyEBirdData.csv</code> avec toute votre life list. Cette étape se fait plus facilement sur ordinateur.
+    </div>
+
+    <div id="fbError"></div>
+  </section>
+
+  <section id="results">
+    <div class="panel tile-wrap" style="padding:20px;">
+      <div class="section-head">
+        <div><div class="eyebrow">Vue d'ensemble</div><h2>Le bilan du groupe</h2></div>
+      </div>
+      <div class="tiles" id="tiles"></div>
+    </div>
+
+    <div class="panel" id="board">
+      <div class="section-head">
+        <div><div class="eyebrow">Le classement</div><h2>Qui mène la Ligue ?</h2>
+          <p>Points = somme de 100 ÷ (nombre d'amis ayant vu l'espèce). Une espèce que vous seul avez vue rapporte 100 points ; partagée par tous, elle en rapporte peu.</p></div>
+      </div>
+      <div class="board-list" id="boardList"></div>
+    </div>
+
+    <div class="panel" id="rare">
+      <div class="section-head">
+        <div><div class="eyebrow">Les trophées</div><h2>Observations uniques</h2>
+          <p>Les espèces qu'une seule personne du groupe a notées.</p></div>
+      </div>
+      <div class="finds" id="finds"></div>
+      <div class="empty-note" id="findsEmpty" style="display:none;">Aucune espèce unique pour l'instant — tout le monde a vu les mêmes oiseaux !</div>
+    </div>
+
+    <div class="panel" id="matrix">
+      <div class="section-head">
+        <div><div class="eyebrow">Le détail</div><h2>Qui a vu quoi</h2>
+          <div class="legend-tiers" id="tierLegend"></div></div>
+      </div>
+      <div class="controls">
+        <div class="search">🔎<input type="text" id="q" placeholder="Filtrer une espèce…"></div>
+        <div class="seg" id="sortSeg">
+          <button data-sort="rarity" class="on">Par rareté</button>
+          <button data-sort="name">A → Z</button>
+        </div>
+        <div class="seg" id="filterSeg">
+          <button data-filt="all" class="on">Toutes</button>
+          <button data-filt="unique">Uniques</button>
+          <button data-filt="shared">Partagées</button>
+        </div>
+      </div>
+      <div class="tbl-scroll">
+        <table>
+          <thead id="thead"></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="matrix-cards" id="matrixCards"></div>
+    </div>
+  </section>
+
+  <footer>
+    La Ligue des Plumes · rareté calculée au sein de votre groupe · données <b>Merlin / eBird</b>, propriété du Cornell Lab of Ornithology.<br>
+    Connexion anonyme · vos listes ne sont partagées qu'au sein de votre ligue.
+  </footer>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import { getFirestore, doc, setDoc, updateDoc, deleteDoc, collection, onSnapshot, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+/* ---------------- Firebase ---------------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyBaMhPtP-iX7AQeHBN77JCEA1Dh5kVBlWI",
+  authDomain: "ligue-des-plumes.firebaseapp.com",
+  projectId: "ligue-des-plumes",
+  storageBucket: "ligue-des-plumes.firebasestorage.app",
+  messagingSenderId: "41047096362",
+  appId: "1:41047096362:web:f7644fc2abff3eb8dd5753"
+};
+const fbApp = initializeApp(firebaseConfig);
+const auth = getAuth(fbApp);
+const db = getFirestore(fbApp);
+
+/* ---------------- state ---------------- */
+const SERIES_N = 8;
+const state = { people: [], onlySpecies: true, sort:'rarity', filter:'all', q:'' };
+let myUid = null, leagueId = null, unsub = null, iAmInLeague = false;
+
+const $ = s=>document.querySelector(s);
+
+/* ---------------- French bird names (scientific -> FR) ----------------
+   Source: Wikipédia FR « Liste des oiseaux / passereaux en France métropolitaine »
+   (noms normalisés CINFO / Gaudin 2024). 638 espèces de France métropolitaine.
+   Sert à afficher les noms en français même si l'export eBird est en anglais. */
+const FR_NAMES = {"acanthis flammea":"Sizerin flammé","acanthis hornemanni":"Sizerin blanchâtre","acrocephalus agricola":"Rousserolle isabelle","acrocephalus arundinaceus":"Rousserolle turdoïde","acrocephalus dumetorum":"Rousserolle des buissons","acrocephalus melanopogon":"Lusciniole à moustaches","acrocephalus paludicola":"Phragmite aquatique","acrocephalus palustris":"Rousserolle verderolle","acrocephalus schoenobaenus":"Phragmite des joncs","acrocephalus scirpaceus":"Rousserolle effarvatte","actitis hypoleucos":"Chevalier guignette","actitis macularius":"Chevalier grivelé","aegithalos caudatus":"Mésange à longue queue","aegolius funereus":"Nyctale de Tengmalm","aegypius monachus":"Vautour moine","agapornis fischeri":"Inséparable de Fischer","aix galericulata":"Canard mandarin","aix sponsa":"Canard branchu","alauda arvensis":"Alouette des champs","alauda leucoptera":"Alouette leucoptère","alaudala heinei":"Alouette de Heine","alaudala rufescens":"Alouette pispolette","alca torda":"Petit Pingouin","alcedo atthis":"Martin-pêcheur d'Europe","alectoris chukar":"Perdrix choukar","alectoris graeca":"Perdrix bartavelle","alectoris rufa":"Perdrix rouge","alle alle":"Mergule nain","alopochen aegyptiaca":"Ouette d'Égypte","ammomanes cinctura":"Ammomane élégante","anarhynchus alexandrinus":"Pluvier à collier interrompu","anarhynchus asiaticus":"Pluvier asiatique","anarhynchus atrifrons":"Pluvier du Tibet","anarhynchus leschenaultii":"Pluvier de Leschenault","anarhynchus mongolus":"Pluvier de Mongolie","anarhynchus pecuarius":"Pluvier pâtre","anas acuta":"Canard pilet","anas carolinensis":"Sarcelle à ailes vertes","anas crecca":"Sarcelle d'hiver","anas platyrhynchos":"Canard colvert","anas rubripes":"Canard noir","anser albifrons":"Oie rieuse","anser anser":"Oie cendrée","anser brachyrhynchus":"Oie à bec court","anser caerulescens":"Oie des neiges","anser cygnoides":"Oie cygnoïde","anser erythropus":"Oie naine","anser fabalis":"Oie des moissons","anser indicus":"Oie à tête barrée","anser serrirostris":"Oie de la toundra","anthus campestris":"Pipit rousseline","anthus cervinus":"Pipit à gorge rousse","anthus godlewskii":"Pipit de Godlewski","anthus gustavi":"Pipit de la Petchora","anthus hodgsoni":"Pipit à dos olive","anthus japonicus":"Pipit de Sibérie","anthus petrosus":"Pipit maritime","anthus pratensis":"Pipit farlouse","anthus richardi":"Pipit de Richard","anthus rubescens":"Pipit d'Amérique","anthus spinoletta":"Pipit spioncelle","anthus trivialis":"Pipit des arbres","antigone canadensis":"Grue du Canada","apus affinis":"Martinet des maisons","apus apus":"Martinet noir","apus caffer":"Martinet cafre","apus pallidus":"Martinet pâle","aquila adalberti":"Aigle ibérique","aquila chrysaetos":"Aigle royal","aquila fasciata":"Aigle de Bonelli","aquila heliaca":"Aigle impérial","aquila nipalensis":"Aigle des steppes","ardea alba":"Grande Aigrette","ardea cinerea":"Héron cendré","ardea herodias":"Grand Héron","ardea ibis":"Héron garde-bœufs","ardea melanocephala":"Héron mélanocéphale","ardea purpurea":"Héron pourpré","ardenna gravis":"Puffin majeur","ardenna grisea":"Puffin fuligineux","ardenna tenuirostris":"Puffin à bec grêle","ardeola ralloides":"Crabier chevelu","arenaria interpres":"Tournepierre à collier","asio flammeus":"Hibou des marais","asio otus":"Hibou moyen-duc","astur gentilis":"Autour des palombes","athene noctua":"Chevêche d'Athéna","aythya affinis":"Petit Fuligule","aythya collaris":"Fuligule à collier","aythya ferina":"Fuligule milouin","aythya fuligula":"Fuligule morillon","aythya marila":"Fuligule milouinan","aythya nyroca":"Fuligule nyroca","bartramia longicauda":"Maubèche des champs","bombycilla garrulus":"Jaseur boréal","botaurus minutus":"Blongios nain","botaurus stellaris":"Butor étoilé","botaurus sturmii":"Blongios de Sturm","branta bernicla":"Bernache cravant","branta canadensis":"Bernache du Canada","branta leucopsis":"Bernache nonnette","branta ruficollis":"Bernache à cou roux","bubo bubo":"Hibou grand-duc","bubo scandiacus":"Harfang des neiges","bucanetes githagineus":"Roselin githagine","bucephala albeola":"Petit Garrot","bucephala clangula":"Garrot à œil d'or","bucephala islandica":"Garrot d'Islande","bulweria bulwerii":"Pétrel de Bulwer","buteo buteo":"Buse variable","buteo lagopus":"Buse pattue","buteo rufinus":"Buse féroce","butorides virescens":"Héron vert","cairina moschata":"Canard musqué","calandrella brachydactyla":"Alouette calandrelle","calcarius lapponicus":"Bruant lapon","calidris acuminata":"Bécasseau à queue pointue","calidris alba":"Bécasseau sanderling","calidris alpina":"Bécasseau variable","calidris bairdii":"Bécasseau de Baird","calidris canutus":"Bécasseau maubèche","calidris falcinellus":"Bécasseau falcinelle","calidris ferruginea":"Bécasseau cocorli","calidris fuscicollis":"Bécasseau à croupion blanc","calidris himantopus":"Bécasseau à échasses","calidris maritima":"Bécasseau violet","calidris mauri":"Bécasseau d'Alaska","calidris melanotos":"Bécasseau à poitrine cendrée","calidris minuta":"Bécasseau minute","calidris minutilla":"Bécasseau minuscule","calidris pugnax":"Combattant varié","calidris pusilla":"Bécasseau semipalmé","calidris ruficollis":"Bécasseau à col roux","calidris subminuta":"Bécasseau à longs doigts","calidris subruficollis":"Bécasseau roussâtre","calidris temminckii":"Bécasseau de Temminck","callipepla californica":"Colin de Californie","calonectris borealis":"Puffin cendré","calonectris diomedea":"Puffin de Scopoli","caprimulgus europaeus":"Engoulevent d'Europe","caprimulgus ruficollis":"Engoulevent à collier roux","carduelis carduelis":"Chardonneret élégant","carduelis citrinella":"Venturon montagnard","carduelis corsicana":"Venturon corse","carpodacus erythrinus":"Roselin cramoisi","catharus minimus":"Grive à joues grises","catharus ustulatus":"Grive à dos olive","cecropis rufula":"Hirondelle rousseline","cepphus grylle":"Guillemot à miroir","cercotrichas galactotes":"Agrobate roux","certhia brachydactyla":"Grimpereau des jardins","certhia familiaris":"Grimpereau des bois","ceryle rudis":"Martin-pêcheur pie","cettia cetti":"Bouscarle de Cetti","chaetura pelagica":"Martinet ramoneur","charadrius dubius":"Petit Gravelot","charadrius hiaticula":"Pluvier grand-gravelot","charadrius semipalmatus":"Pluvier semipalmé","charadrius vociferus":"Pluvier kildir","chersophilus duponti":"Sirli de Dupont","chlamydotis macqueenii":"Outarde de Macqueen","chlidonias hybrida":"Guifette moustac","chlidonias leucopterus":"Guifette leucoptère","chlidonias niger":"Guifette noire","chloris chloris":"Verdier d'Europe","chordeiles minor":"Engoulevent d'Amérique","chroicocephalus genei":"Goéland railleur","chroicocephalus philadelphia":"Mouette de Bonaparte","chroicocephalus ridibundus":"Mouette rieuse","ciconia ciconia":"Cigogne blanche","ciconia nigra":"Cigogne noire","cinclus cinclus":"Cincle plongeur","circaetus gallicus":"Circaète Jean-le-Blanc","circus aeruginosus":"Busard des roseaux","circus cyaneus":"Busard Saint-Martin","circus hudsonius":"Busard des marais","circus macrourus":"Busard pâle","circus pygargus":"Busard cendré","cisticola juncidis":"Cisticole des joncs","clamator glandarius":"Coucou geai","clanga clanga":"Aigle criard","clanga pomarina":"Aigle pomarin","clangula hyemalis":"Harelde kakawi","coccothraustes coccothraustes":"Gros-bec casse-noyaux","coccyzus americanus":"Coulicou à bec jaune","coccyzus erythropthalmus":"Coulicou à bec noir","colinus virginianus":"Colin de Virginie","coloeus dauuricus":"Choucas de Daourie","coloeus monedula":"Choucas des tours","columba livia":"Pigeon biset","columba oenas":"Pigeon colombin","columba palumbus":"Pigeon ramier","coracias garrulus":"Rollier d'Europe","corvus corax":"Grand Corbeau","corvus cornix":"Corneille mantelée","corvus corone":"Corneille noire","corvus frugilegus":"Corbeau freux","coturnix coturnix":"Caille des blés","crex crex":"Râle des genêts","cuculus canorus":"Coucou gris","curruca cantillans":"Fauvette passerinette","curruca communis":"Fauvette grisette","curruca conspicillata":"Fauvette à lunettes","curruca crassirostris":"Fauvette orphéane","curruca curruca":"Fauvette babillarde","curruca deserti":"Fauvette du désert","curruca deserticola":"Fauvette de l'Atlas","curruca hortensis":"Fauvette orphée","curruca iberiae":"Fauvette passerinette","curruca melanocephala":"Fauvette mélanocéphale","curruca nana":"Fauvette naine","curruca nisoria":"Fauvette épervière","curruca ruppeli":"Fauvette de Rüppell","curruca sarda":"Fauvette sarde","curruca subalpina":"Fauvette de Moltoni","curruca undata":"Fauvette pitchou","cursorius cursor":"Courvite isabelle","cyanistes caeruleus":"Mésange bleue","cyanistes cyanus":"Mésange azurée","cygnus atratus":"Cygne noir","cygnus columbianus":"Cygne siffleur","cygnus cygnus":"Cygne chanteur","cygnus olor":"Cygne tuberculé","daption capense":"Damier du Cap","delichon urbicum":"Hirondelle de fenêtre","dendrocopos leucotos":"Pic à dos blanc","dendrocopos major":"Pic épeiche","dendrocoptes medius":"Pic mar","dendrocygna bicolor":"Dendrocygne fauve","dolichonyx oryzivorus":"Goglu des prés","dryobates minor":"Pic épeichette","dryocopus martius":"Pic noir","egretta garzetta":"Aigrette garzette","egretta gularis":"Aigrette à gorge blanche","emberiza aureola":"Bruant auréole","emberiza bruniceps":"Bruant à tête rousse","emberiza caesia":"Bruant cendrillard","emberiza calandra":"Bruant proyer","emberiza chrysophrys":"Bruant à sourcils jaunes","emberiza cia":"Bruant fou","emberiza cirlus":"Bruant zizi","emberiza citrinella":"Bruant jaune","emberiza hortulana":"Bruant ortolan","emberiza leucocephalos":"Bruant à calotte blanche","emberiza melanocephala":"Bruant mélanocéphale","emberiza pusilla":"Bruant nain","emberiza rustica":"Bruant rustique","emberiza rutila":"Bruant roux","emberiza schoeniclus":"Bruant des roseaux","emberiza spodocephala":"Bruant masqué","eremophila alpestris":"Alouette hausse-col","erithacus rubecula":"Rouge-gorge familier","eudromias morinellus":"Pluvier guignard","euodice malabarica":"Capucin bec-de-plomb","falco biarmicus":"Faucon lanier","falco cherrug":"Faucon sacre","falco columbarius":"Faucon émerillon","falco concolor":"Faucon concolore","falco eleonorae":"Faucon d'Éléonore","falco naumanni":"Faucon crécerellette","falco peregrinus":"Faucon pèlerin","falco rusticolus":"Faucon gerfaut","falco subbuteo":"Faucon hobereau","falco tinnunculus":"Faucon crécerelle","falco vespertinus":"Faucon kobez","ficedula albicollis":"Gobemouche à collier","ficedula hypoleuca":"Gobemouche noir","ficedula parva":"Gobemouche nain","ficedula semitorquata":"Gobemouche à demi-collier","francolinus francolinus":"Francolin noir","fratercula arctica":"Macareux moine","fregata magnificens":"Frégate superbe","fringilla coelebs":"Pinson des arbres","fringilla montifringilla":"Pinson du Nord","fringilla spodiogenys":"Pinson d'Afrique","fulica atra":"Foulque macroule","fulica cristata":"Foulque à crête","fulmarus glacialis":"Fulmar boréal","galerida cristata":"Cochevis huppé","galerida theklae":"Cochevis de Thékla","gallinago delicata":"Bécassine de Wilson","gallinago gallinago":"Bécassine des marais","gallinago media":"Bécassine double","gallinula chloropus":"Gallinule poule-d'eau","garrulus glandarius":"Geai des chênes","gavia arctica":"Plongeon arctique","gavia immer":"Plongeon huard","gavia pacifica":"Plongeon du Pacifique","gavia stellata":"Plongeon catmarin","gelochelidon nilotica":"Sterne hansel","geokichla sibirica":"Grive de Sibérie","geronticus eremita":"Ibis chauve","glareola maldivarum":"Glaréole orientale","glareola nordmanni":"Glaréole à ailes noires","glareola pratincola":"Glaréole à collier","glaucidium passerinum":"Chevêchette d'Europe","grus grus":"Grue cendrée","grus virgo":"Grue demoiselle","gulosus aristotelis":"Cormoran huppé","gypaetus barbatus":"Gypaète barbu","gyps fulvus":"Vautour fauve","gyps rueppelli":"Vautour de Rüppell","haematopus ostralegus":"Huîtrier pie","haliaeetus albicilla":"Pygargue à queue blanche","haliaeetus leucocephalus":"Pygargue à tête blanche","helopsaltes certhiola":"Locustelle de Pallas","helopsaltes fasciolatus":"Locustelle fasciée","hieraaetus pennatus":"Aigle botté","hippolais icterina":"Hypolaïs ictérine","hippolais polyglotta":"Hypolaïs polyglotte","hirundo rustica":"Hirondelle rustique","histrionicus histrionicus":"Arlequin plongeur","hydrobates castro":"Océanite de Castro","hydrobates leucorhous":"Océanite cul-blanc","hydrobates monorhis":"Océanite de Swinhoe","hydrobates pelagicus":"Océanite tempête","hydrocoloeus minutus":"Mouette pygmée","hydroprogne caspia":"Sterne caspienne","ichthyaetus audouinii":"Goéland d'Audouin","ichthyaetus ichthyaetus":"Goéland ichthyaète","ichthyaetus melanocephalus":"Mouette mélanocéphale","icterus galbula":"Oriole de Baltimore","iduna caligata":"Hypolaïs bottée","iduna opaca":"Hypolaïs obscure","iduna pallida":"Hypolaïs pâle","iduna rama":"Hypolaïs rama","jynx torquilla":"Torcol fourmilier","ketupa zeylonensis":"Kétoupa brun","lagopus lagopus":"Lagopède des saules","lagopus muta":"Lagopède alpin","lanius collurio":"Pie-grièche écorcheur","lanius cristatus":"Pie-grièche brune","lanius excubitor":"Pie-grièche grise","lanius isabellinus":"Pie-grièche isabelle","lanius meridionalis":"Pie-grièche méridionale","lanius minor":"Pie-grièche à poitrine rose","lanius nubicus":"Pie-grièche masquée","lanius phoenicuroides":"Pie-grièche du Turkestan","lanius senator":"Pie-grièche à tête rousse","larus argentatus":"Goéland argenté","larus cachinnans":"Goéland pontique","larus canus":"Goéland cendré","larus delawarensis":"Goéland à bec cerclé","larus fuscus":"Goéland brun","larus glaucoides":"Goéland arctique","larus hyperboreus":"Goéland bourgmestre","larus marinus":"Goéland marin","larus michahellis":"Goéland leucophée","larus smithsonianus":"Goéland hudsonien","larus vegae":"Goéland de la Véga","leiothlypis peregrina":"Paruline obscure","leiothrix lutea":"Léiothrix jaune","leucophaeus atricilla":"Mouette atricille","leucophaeus pipixcan":"Mouette de Franklin","limnodromus griseus":"Bécassin roux","limnodromus scolopaceus":"Bécassin à long bec","limosa lapponica":"Barge rousse","limosa limosa":"Barge à queue noire","linaria cannabina":"Linotte mélodieuse","linaria flavirostris":"Linotte à bec jaune","locustella fluviatilis":"Locustelle fluviatile","locustella lanceolata":"Locustelle lancéolée","locustella luscinioides":"Locustelle luscinioïde","locustella naevia":"Locustelle tachetée","lophophanes cristatus":"Mésange huppée","loxia curvirostra":"Bec-croisé des sapins","loxia leucoptera":"Bec-croisé bifascié","loxia pytyopsittacus":"Bec-croisé perroquet","loxia scotica":"Bec-croisé d'Écosse","lullula arborea":"Alouette lulu","luscinia luscinia":"Rossignol progné","luscinia megarhynchos":"Rossignol philomèle","luscinia svecica":"Gorgebleue à miroir","lymnocryptes minimus":"Bécassine sourde","lyrurus tetrix":"Tétras lyre","macronectes giganteus":"Pétrel géant","macronectes halli":"Pétrel de Hall","mareca americana":"Canard d'Amérique","mareca penelope":"Canard siffleur","mareca strepera":"Canard chipeau","marmaronetta angustirostris":"Marmaronette marbrée","megaceryle alcyon":"Martin-pêcheur d'Amérique","melanitta americana":"Macreuse à bec jaune","melanitta deglandi":"Macreuse à ailes blanches","melanitta fusca":"Macreuse brune","melanitta nigra":"Macreuse noire","melanitta perspicillata":"Macreuse à front blanc","melanitta stejnegeri":"Macreuse de Sibérie","melanocorypha bimaculata":"Alouette monticole","melanocorypha calandra":"Alouette calandre","mergellus albellus":"Harle piette","mergus merganser":"Harle bièvre","mergus serrator":"Harle huppé","merops apiaster":"Guêpier d'Europe","merops persicus":"Guêpier de Perse","microcarbo pygmaeus":"Cormoran pygmée","milvus migrans":"Milan noir","milvus milvus":"Milan royal","mniotilta varia":"Paruline noir et blanc","molothrus ater":"Vacher à tête brune","monticola saxatilis":"Monticole merle-de-roche","monticola solitarius":"Monticole merle-bleu","montifringilla nivalis":"Niverolle alpine","morus bassanus":"Fou de Bassan","motacilla alba":"Bergeronnette grise","motacilla cinerea":"Bergeronnette des ruisseaux","motacilla citreola":"Bergeronnette citrine","motacilla flava":"Bergeronnette printanière","motacilla tschutschensis":"Bergeronnette de Béringie","muscicapa striata":"Gobemouche gris","muscicapa tyrrhenica":"Gobemouche tyrrhénien","myiopsitta monachus":"Conure veuve","nannopterum auritum":"Cormoran à aigrettes","neophron percnopterus":"Vautour percnoptère","netta rufina":"Nette rousse","nucifraga caryocatactes":"Cassenoix moucheté","numenius arquata":"Courlis cendré","numenius hudsonicus":"Courlis hudsonien","numenius phaeopus":"Courlis corlieu","numenius tenuirostris":"Courlis à bec grêle","nycticorax nycticorax":"Bihoreau gris","oceanites oceanicus":"Océanite de Wilson","oenanthe deserti":"Traquet du désert","oenanthe hispanica":"Traquet oreillard","oenanthe isabellina":"Traquet isabelle","oenanthe leucopyga":"Traquet à tête blanche","oenanthe leucura":"Traquet rieur","oenanthe melanoleuca":"Traquet noir et blanc","oenanthe oenanthe":"Traquet motteux","oenanthe pleschanka":"Traquet pie","oenanthe seebohmi":"Traquet de Seebohm","oenanthe xanthoprymna":"Traquet kurde","onychoprion anaethetus":"Sterne bridée","onychoprion fuscatus":"Sterne fuligineuse","oriolus oriolus":"Loriot d'Europe","otis tarda":"Grande Outarde","otus scops":"Petit-duc scops","pagophila eburnea":"Mouette blanche","pandion haliaetus":"Balbuzard pêcheur","panurus biarmicus":"Panure à moustaches","paragallinula angulata":"Gallinule africaine","parkesia noveboracensis":"Paruline des ruisseaux","parus major":"Mésange charbonnière","passer domesticus":"Moineau domestique","passer hispaniolensis":"Moineau espagnol","passer italiae":"Moineau cisalpin","passer montanus":"Moineau friquet","pelecanus crispus":"Pélican frisé","pelecanus onocrotalus":"Pélican blanc","pelecanus rufescens":"Pélican gris","perdix perdix":"Perdrix grise","periparus ater":"Mésange noire","pernis apivorus":"Bondrée apivore","petrochelidon pyrrhonota":"Hirondelle à front blanc","petronia petronia":"Moineau soulcie","phalacrocorax carbo":"Grand Cormoran","phalaropus fulicarius":"Phalarope à bec large","phalaropus lobatus":"Phalarope à bec étroit","phalaropus tricolor":"Phalarope de Wilson","phasianus colchicus":"Faisan de Colchide","pheucticus ludovicianus":"Cardinal à poitrine rose","phoeniconaias minor":"Flamant nain","phoenicopterus chilensis":"Flamant du Chili","phoenicopterus roseus":"Flamant rose","phoenicurus moussieri":"Rougequeue de Moussier","phoenicurus ochruros":"Rougequeue noir","phoenicurus phoenicurus":"Rougequeue à front blanc","phylloscopus bonelli":"Pouillot de Bonelli","phylloscopus borealis":"Pouillot boréal","phylloscopus collybita":"Pouillot véloce","phylloscopus coronatus":"Pouillot de Temminck","phylloscopus fuscatus":"Pouillot brun","phylloscopus humei":"Pouillot de Hume","phylloscopus ibericus":"Pouillot ibérique","phylloscopus inornatus":"Pouillot à grands sourcils","phylloscopus nitidus":"Pouillot du Caucase","phylloscopus orientalis":"Pouillot oriental","phylloscopus plumbeitarsus":"Pouillot à pattes sombres","phylloscopus proregulus":"Pouillot de Pallas","phylloscopus schwarzi":"Pouillot de Schwarz","phylloscopus sibilatrix":"Pouillot siffleur","phylloscopus trochiloides":"Pouillot verdâtre","phylloscopus trochilus":"Pouillot fitis","pica pica":"Pie bavarde","picoides tridactylus":"Pic tridactyle","picus canus":"Pic cendré","picus sharpei":"Pic de Sharpe","picus viridis":"Pic vert","pinguinus impennis":"Grand Pingouin","pinicola enucleator":"Durbec des sapins","piranga olivacea":"Piranga écarlate","platalea leucorodia":"Spatule blanche","plectrophenax nivalis":"Bruant des neiges","plegadis falcinellus":"Ibis falcinelle","pluvialis apricaria":"Pluvier doré","pluvialis dominica":"Pluvier bronzé","pluvialis fulva":"Pluvier fauve","pluvialis squatarola":"Pluvier argenté","podiceps auritus":"Grèbe esclavon","podiceps cristatus":"Grèbe huppé","podiceps grisegena":"Grèbe jougris","podiceps nigricollis":"Grèbe à cou noir","podilymbus podiceps":"Grèbe à bec bigarré","poecile montanus":"Mésange boréale","poecile palustris":"Mésange nonnette","polysticta stelleri":"Eider de Steller","porphyrio alleni":"Talève d'Allen","porphyrio martinica":"Talève violacée","porphyrio porphyrio":"Talève sultane","porzana carolina":"Marouette de Caroline","porzana porzana":"Marouette ponctuée","prunella atrogularis":"Accenteur à gorge noire","prunella collaris":"Accenteur alpin","prunella modularis":"Accenteur mouchet","psittacula eupatria":"Perruche alexandre","psittacula krameri":"Perruche à collier","pterocles alchata":"Ganga cata","pterodroma baraui":"Pétrel de Barau","pterodroma feae":"Pétrel gongon","pterodroma madeira":"Pétrel de Madère","ptyonoprogne rupestris":"Hirondelle de rochers","puffinus baroli":"Puffin de Macaronésie","puffinus mauretanicus":"Puffin des Baléares","puffinus puffinus":"Puffin des Anglais","puffinus yelkouan":"Puffin yelkouan","pyrrhocorax graculus":"Chocard à bec jaune","pyrrhocorax pyrrhocorax":"Crave à bec rouge","pyrrhula pyrrhula":"Bouvreuil pivoine","rallus aquaticus":"Râle d'eau","recurvirostra avosetta":"Avocette élégante","regulus ignicapilla":"Roitelet à triple bandeau","regulus regulus":"Roitelet huppé","remiz pendulinus":"Rémiz penduline","rhodostethia rosea":"Mouette rosée","riparia paludicola":"Hirondelle paludicole","riparia riparia":"Hirondelle de rivage","rissa tridactyla":"Mouette tridactyle","saxicola maurus":"Tarier de Sibérie","saxicola rubetra":"Tarier des prés","saxicola rubicola":"Tarier pâtre","scolopax minor":"Bécasse d'Amérique","scolopax rusticola":"Bécasse des bois","seiurus aurocapilla":"Paruline couronnée","serinus serinus":"Serin cini","setophaga aestiva":"Paruline jaune","setophaga americana":"Paruline à collier","setophaga fusca":"Paruline à gorge orangée","setophaga pensylvanica":"Paruline à flancs marron","setophaga ruticilla":"Paruline flamboyante","setophaga striata":"Paruline rayée","sibirionetta formosa":"Sarcelle élégante","sitta europaea":"Sittelle torchepot","sitta whiteheadi":"Sittelle corse","somateria mollissima":"Eider à duvet","somateria spectabilis":"Eider à tête grise","spatula clypeata":"Canard souchet","spatula discors":"Sarcelle à ailes bleues","spatula querquedula":"Sarcelle d'été","spinus spinus":"Tarin des aulnes","stercorarius longicaudus":"Labbe à longue queue","stercorarius maccormicki":"Labbe de McCormick","stercorarius parasiticus":"Labbe parasite","stercorarius pomarinus":"Labbe pomarin","stercorarius skua":"Grand Labbe","sterna dougallii":"Sterne de Dougall","sterna forsteri":"Sterne de Forster","sterna hirundo":"Sterne pierregarin","sterna paradisaea":"Sterne arctique","sternula albifrons":"Sterne naine","streptopelia decaocto":"Tourterelle turque","streptopelia orientalis":"Tourterelle orientale","streptopelia turtur":"Tourterelle des bois","strix aluco":"Chouette hulotte","sula dactylatra":"Fou masqué","sula leucogaster":"Fou brun","sula sula":"Fou à pieds rouges","surnia ulula":"Chouette épervière","sylvia atricapilla":"Fauvette à tête noire","sylvia borin":"Fauvette des jardins","syrmaticus reevesii":"Faisan vénéré","syrrhaptes paradoxus":"Syrrhapte paradoxal","tachybaptus ruficollis":"Grèbe castagneux","tachymarptis melba":"Martinet à ventre blanc","tadorna ferruginea":"Tadorne casarca","tadorna tadorna":"Tadorne de Belon","tarsiger cyanurus":"Rossignol à flancs roux","tetrao urogallus":"Grand Tétras","tetrastes bonasia":"Gélinotte des bois","tetrax tetrax":"Outarde canepetière","thalassarche chlororhynchos":"Albatros à nez jaune","thalassarche melanophris":"Albatros à sourcils noirs","thalasseus bengalensis":"Sterne voyageuse","thalasseus elegans":"Sterne élégante","thalasseus maximus":"Sterne royale","thalasseus sandvicensis":"Sterne caugek","threskiornis aethiopicus":"Ibis sacré","tichodroma muraria":"Tichodrome échelette","torgos tracheliotos":"Vautour oricou","tringa brevipes":"Chevalier de Sibérie","tringa erythropus":"Chevalier arlequin","tringa flavipes":"Petit Chevalier","tringa glareola":"Chevalier sylvain","tringa melanoleuca":"Grand Chevalier","tringa nebularia":"Chevalier aboyeur","tringa ochropus":"Chevalier cul-blanc","tringa semipalmata":"Chevalier semipalmé","tringa solitaria":"Chevalier solitaire","tringa stagnatilis":"Chevalier stagnatile","tringa totanus":"Chevalier gambette","troglodytes troglodytes":"Troglodyte mignon","turdus atrogularis":"Grive à gorge noire","turdus eunomus":"Grive à ailes rousses","turdus iliacus":"Grive mauvis","turdus merula":"Merle noir","turdus naumanni":"Grive de Naumann","turdus obscurus":"Merle obscur","turdus philomelos":"Grive musicienne","turdus pilaris":"Grive litorne","turdus ruficollis":"Grive à gorge rousse","turdus torquatus":"Merle à plastron","turdus viscivorus":"Grive draine","turnix sylvaticus":"Turnix d'Andalousie","tyto alba":"Effraie des clochers","upupa epops":"Huppe fasciée","uria aalge":"Guillemot de Troïl","uria lomvia":"Guillemot de Brünnich","vanellus cinereus":"Vanneau à tête grise","vanellus gregarius":"Vanneau sociable","vanellus leucurus":"Vanneau à queue blanche","vanellus vanellus":"Vanneau huppé","vireo olivaceus":"Viréo aux yeux rouges","xema sabini":"Mouette de Sabine","xenus cinereus":"Chevalier bargette","zapornia parva":"Marouette poussin","zapornia pusilla":"Marouette de Baillon","zonotrichia albicollis":"Bruant à gorge blanche","zonotrichia leucophrys":"Bruant à couronne blanche","zoothera aurea":"Grive dorée"};
+function frName(sci, fallback){
+  const key=(sci||'').trim().toLowerCase();
+  return FR_NAMES[key] || fallback;
+}
+
+/* ---------------- CSV ---------------- */
+function parseCSV(text){
+  const rows=[]; let field='', row=[], inQ=false, i=0;
+  for(; i<text.length; i++){
+    const c=text[i];
+    if(inQ){
+      if(c==='"'){ if(text[i+1]==='"'){field+='"'; i++;} else inQ=false; }
+      else field+=c;
+    } else {
+      if(c==='"') inQ=true;
+      else if(c===',') { row.push(field); field=''; }
+      else if(c==='\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else if(c==='\r'){ /* skip */ }
+      else field+=c;
+    }
+  }
+  if(field.length||row.length){ row.push(field); rows.push(row); }
+  return rows;
+}
+
+function isNonSpecies(common, sci){
+  const s=(sci||'')+' '+(common||'');
+  return /\bsp\.|\bhybrid|\/| x |×|Domestic|\(Domestic/i.test(s);
+}
+
+function ingest(filename, text){
+  const rows = parseCSV(text).filter(r=>r.length>1);
+  if(!rows.length) return null;
+  const header = rows[0].map(h=>h.trim().toLowerCase());
+  const idx = name => header.indexOf(name);
+  let cCommon=idx('common name'), cSci=idx('scientific name'),
+      cDate=idx('date'), cLoc=idx('location'), cCount=idx('count');
+  if(cCommon<0 && cSci<0) return null; // not an eBird file
+  const species = new Map();
+  for(let r=1; r<rows.length; r++){
+    const row=rows[r];
+    const common=(cCommon>=0?row[cCommon]:'')?.trim()||'';
+    const sci=(cSci>=0?row[cSci]:'')?.trim()||'';
+    if(!common && !sci) continue;
+    const key = (sci||common).toLowerCase();
+    const date = cDate>=0 ? (row[cDate]||'').trim() : '';
+    const loc = cLoc>=0 ? (row[cLoc]||'').trim() : '';
+    const existing = species.get(key);
+    if(existing){
+      existing.obs++;
+      if(date && (!existing.date || date<existing.date)){ existing.date=date; existing.loc=loc; }
+    } else {
+      species.set(key, { common:common||sci, sci, date, loc, obs:1,
+        nonSpecies:isNonSpecies(common,sci) });
+    }
+  }
+  if(!species.size) return null;
+  let base = filename.replace(/\.csv$/i,'');
+  if(/myebirddata/i.test(base) || !base) base = '';
+  return { filename, defaultName:base, species };
+}
+
+function cleanName(base, n){
+  let s = (base||'').replace(/[_\-]+/g,' ').replace(/\s+/g,' ').trim();
+  if(!s) return 'Joueur ' + n;
+  return s.charAt(0).toUpperCase()+s.slice(1);
+}
+
+/* ---------------- derive ---------------- */
+function activeSpecies(person){
+  if(!state.onlySpecies) return person.species;
+  const m=new Map();
+  for(const [k,v] of person.species) if(!v.nonSpecies) m.set(k,v);
+  return m;
+}
+
+function tierFor(k, N){
+  if(N<=1) return {id:'solo', label:'—', varc:'--t-all'};
+  if(k>=N) return {id:'all', label:'Vu par tous', varc:'--t-all'};
+  if(k===1) return {id:'unique', label:'Unique', varc:'--t-unique'};
+  const f=k/N;
+  if(f<=0.34) return {id:'rare', label:'Rare', varc:'--t-rare'};
+  if(f<=0.67) return {id:'uncommon', label:'Peu commun', varc:'--t-uncommon'};
+  return {id:'common', label:'Commun', varc:'--t-common'};
+}
+
+function build(){
+  const N = state.people.length;
+  const universe = new Map();
+  state.people.forEach(p=>{
+    p._active = activeSpecies(p);
+    for(const [k,v] of p._active){
+      let u=universe.get(k);
+      if(!u){ u={ key:k, common:frName(v.sci, v.common), sci:v.sci, seenBy:new Map() }; universe.set(k,u); }
+      u.seenBy.set(p.id, v);
+    }
+  });
+  state.people.forEach(p=>{ p.score=0; p.unique=0; p.total = p._active.size; });
+  for(const u of universe.values()){
+    const k = u.seenBy.size;
+    u.tier = tierFor(k, N);
+    const val = 100 / k;
+    for(const pidk of u.seenBy.keys()){
+      const p = state.people.find(x=>x.id===pidk);
+      p.score += val;
+      if(k===1) p.unique++;
+    }
+  }
+  return { universe:[...universe.values()], N };
+}
+
+/* ---------------- render ---------------- */
+function renderMembers(){
+  const el=$('#people'); if(!el) return;
+  if(!state.people.length){
+    el.innerHTML = '<span class="help" style="margin-top:0;">Personne n\'a encore chargé sa liste. Soyez le premier !</span>';
+    return;
+  }
+  el.innerHTML = state.people.map(p=>`
+    <div class="pchip" style="--series:var(--s${p.si})">
+      <span class="dot"></span>
+      <span class="pname">${esc(p.name)}${p.isMe?'<span class="youtag">vous</span>':''}</span>
+      <span class="n">${p.species.size} obs</span>
+    </div>`).join('');
+}
+
+function renderResults(){
+  const res=$('#results');
+  if(state.people.length===0){ res.classList.remove('show'); return; }
+  res.classList.add('show');
+  const data = build();
+  renderTiles(data); renderBoard(); renderFinds(data); renderMatrix(data);
+}
+
+function fmt(n){ return Math.round(n).toLocaleString('fr-FR'); }
+
+function renderTiles({universe,N}){
+  const everyone = universe.filter(u=>u.seenBy.size>=N && N>1).length;
+  const uniques = universe.filter(u=>u.seenBy.size===1 && N>1).length;
+  const tiles=[
+    {k:universe.length, l:'Espèces au total', sub:'dans tout le groupe'},
+    {k:N, l:'Participants', sub:''},
+    {k:everyone, l:'Vues par tout le monde', sub:N>1?'le socle commun':''},
+    {k:uniques, l:'Observations uniques', sub:'vues par une seule personne'},
+  ];
+  $('#tiles').innerHTML = tiles.map(t=>`<div class="tile panel" style="box-shadow:none;background:var(--surface-2);">
+    <div class="k">${fmt(t.k)}</div><div class="l">${t.l}</div>${t.sub?`<div class="sub">${t.sub}</div>`:''}</div>`).join('');
+}
+
+function renderBoard(){
+  const ranked=[...state.people].sort((a,b)=>b.score-a.score);
+  const max=ranked.length?Math.max(1,ranked[0].score):1;
+  $('#boardList').innerHTML = ranked.map((p,i)=>{
+    const w=(p.score/max*100).toFixed(1);
+    return `<div class="row-p ${i===0?'lead':''}" style="--series:var(--s${p.si})">
+      <div class="rank">${i===0?'★':'#'+(i+1)}</div>
+      <div class="who"><span class="dot"></span>
+        <span style="min-width:0;"><span class="nm">${esc(p.name)}</span>
+        <span class="meta"> · ${p.total} espèces · ${p.unique} unique${p.unique>1?'s':''}</span></span></div>
+      <div class="pts"><div class="v">${fmt(p.score)}</div><div class="u">points</div></div>
+      <div class="bar" style="width:${w}%"></div>
+    </div>`;
+  }).join('');
+}
+
+function renderFinds({universe,N}){
+  const uniques = universe.filter(u=>u.seenBy.size===1 && N>1)
+    .map(u=>{ const [pidk,rec]=[...u.seenBy.entries()][0]; return {u,p:state.people.find(x=>x.id===pidk),rec}; })
+    .sort((a,b)=> (a.p?a.p.name:'').localeCompare(b.p?b.p.name:''));
+  const wrap=$('#finds'), empty=$('#findsEmpty');
+  if(!uniques.length){ wrap.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  wrap.innerHTML = uniques.map(({u,p,rec})=>`<div class="find" style="--series:var(--s${p.si})">
+    <div class="sp">${esc(u.common)}</div>
+    ${u.sci?`<div class="sci">${esc(u.sci)}</div>`:''}
+    <div class="by"><span class="dot"></span>${esc(p.name)}${rec.date?` · <span class="dt">${esc(rec.date)}</span>`:''}</div>
+  </div>`).join('');
+}
+
+function renderMatrix({universe,N}){
+  const tiers=[['all','Vu par tous','--t-all'],['common','Commun','--t-common'],
+    ['uncommon','Peu commun','--t-uncommon'],['rare','Rare','--t-rare'],['unique','Unique','--t-unique']];
+  $('#tierLegend').innerHTML = tiers.map(([id,l,v])=>`<span style="--tc:var(${v})"><i></i>${l}</span>`).join('');
+
+  $('#thead').innerHTML = `<tr>
+    <th>Espèce</th><th>Rareté</th>
+    ${state.people.map(p=>`<th class="pcol" style="--series:var(--s${p.si})"><span class="cap"><span class="dot"></span>${esc(p.name)}</span></th>`).join('')}
+    <th class="pcol">Vues</th></tr>`;
+
+  let list=[...universe];
+  if(state.filter==='unique') list=list.filter(u=>u.seenBy.size===1 && N>1);
+  else if(state.filter==='shared') list=list.filter(u=>u.seenBy.size>1);
+  if(state.q){ const q=state.q.toLowerCase();
+    list=list.filter(u=>u.common.toLowerCase().includes(q)||(u.sci||'').toLowerCase().includes(q)); }
+  if(state.sort==='rarity') list.sort((a,b)=> a.seenBy.size-b.seenBy.size || a.common.localeCompare(b.common));
+  else list.sort((a,b)=> a.common.localeCompare(b.common));
+
+  const tb=$('#tbody'), cards=$('#matrixCards');
+  if(!list.length){
+    tb.innerHTML=`<tr><td colspan="${state.people.length+3}" style="text-align:center;color:var(--ink-3);padding:26px;">Aucune espèce ne correspond.</td></tr>`;
+    cards.innerHTML=`<div class="empty-note" style="margin-top:0;">Aucune espèce ne correspond.</div>`;
+    return;
+  }
+  tb.innerHTML = list.map(u=>{
+    const k=u.seenBy.size, t=u.tier;
+    const cells = state.people.map(p=>{
+      const seen=u.seenBy.has(p.id);
+      return `<td class="pcol" style="--series:var(--s${p.si})">${seen?'<span class="seen"></span>':'<span class="unseen">·</span>'}</td>`;
+    }).join('');
+    return `<tr>
+      <td class="sp">${esc(u.common)}${u.sci?`<span class="sci">${esc(u.sci)}</span>`:''}</td>
+      <td><span class="chip" style="--tc:var(${t.varc})">${t.label}</span></td>
+      ${cells}
+      <td class="cnt">${k}/${N}</td></tr>`;
+  }).join('');
+
+  cards.innerHTML = list.map(u=>{
+    const k=u.seenBy.size, t=u.tier;
+    const seers = state.people.filter(p=>u.seenBy.has(p.id))
+      .map(p=>`<span class="mc-person" style="--series:var(--s${p.si})"><span class="dot"></span>${esc(p.name)}</span>`).join('');
+    return `<div class="mcard" style="border-left-color:var(${t.varc})">
+      <div class="mc-head">
+        <div class="mc-sp">${esc(u.common)}${u.sci?`<span class="mc-sci">${esc(u.sci)}</span>`:''}</div>
+        <span class="mc-count">${k}/${N}</span>
+      </div>
+      <div class="mc-row">
+        <span class="chip" style="--tc:var(${t.varc})">${t.label}</span>
+        <div class="mc-people">${seers}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ---------------- Firestore <-> state ---------------- */
+function memberToPerson(id, data, si){
+  const species = new Map((data.species||[]).map(e=>[e.k, {
+    common:e.c||e.k, sci:e.s||'', date:e.d||'', loc:e.l||'', obs:e.o||1, nonSpecies:!!e.n
+  }]));
+  return { id, name:data.name||'Joueur', filename:'', si, species, isMe:id===myUid,
+    joinedAt: data.joinedAt?.seconds || 0 };
+}
+
+function applySnapshot(snap){
+  hideError();
+  const raw=[];
+  snap.forEach(d=> raw.push({ id:d.id, data:d.data() }));
+  raw.sort((a,b)=> (a.data.joinedAt?.seconds||0) - (b.data.joinedAt?.seconds||0) || a.id.localeCompare(b.id));
+  state.people = raw.map((m,i)=> memberToPerson(m.id, m.data, i%SERIES_N));
+  iAmInLeague = state.people.some(p=>p.id===myUid);
+  const me = state.people.find(p=>p.id===myUid);
+  const nameInput=$('#myName');
+  if(me && document.activeElement!==nameInput){ nameInput.value = me.name; }
+  $('#myStatus').textContent = me ? `✓ Votre liste : ${me.species.size} espèces` : '';
+  $('#removeMineBtn').style.display = me ? 'inline' : 'none';
+  $('#dropBig').textContent = me ? 'Remplacer votre liste' : 'Déposez votre fichier MyEBirdData.csv ici';
+  renderMembers();
+  renderResults();
+}
+
+function subscribe(){
+  if(unsub){ unsub(); unsub=null; }
+  unsub = onSnapshot(collection(db,'leagues',leagueId,'members'), applySnapshot,
+    err=>{ console.error(err); showError(err); });
+}
+
+async function saveMyList(name, speciesMap){
+  const arr=[...speciesMap.entries()].map(([k,v])=>({
+    k, c:v.common, s:v.sci, d:v.date, l:v.loc, o:v.obs, n:!!v.nonSpecies }));
+  const ref=doc(db,'leagues',leagueId,'members',myUid);
+  const payload={ name, species:arr, updatedAt: serverTimestamp() };
+  if(!iAmInLeague) payload.joinedAt = serverTimestamp();
+  await setDoc(ref, payload, {merge:true});
+}
+
+/* ---------------- error UI ---------------- */
+function showError(err){
+  const box=$('#fbError'); if(!box) return;
+  let msg;
+  if(err && err.code==='permission-denied'){
+    msg = `⚠️ Accès à la base refusé. Les <b>règles de sécurité Firestore</b> ne sont pas encore configurées. `+
+          `Collez les règles fournies dans la console Firebase (Firestore → Règles), puis rechargez.`;
+  } else if(err && err.code && err.code.startsWith('auth/')){
+    msg = `⚠️ Problème de connexion (<code>${err.code}</code>). Si vous testez en local, vérifiez que le domaine est autorisé dans Firebase → Authentication → Settings.`;
+  } else {
+    msg = `⚠️ Une erreur est survenue : <code>${esc(err?.code||err?.message||String(err))}</code>`;
+  }
+  box.innerHTML = msg; box.style.display='block';
+}
+function hideError(){ const b=$('#fbError'); if(b) b.style.display='none'; }
+
+/* ---------------- league / routing ---------------- */
+function getLeagueId(){ const m=(location.hash||'').match(/[#&]l=([A-Za-z0-9]+)/); return m?m[1].toUpperCase():null; }
+function newLeagueId(){
+  const a='ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s='';
+  const arr=new Uint32Array(5); crypto.getRandomValues(arr);
+  for(let i=0;i<5;i++) s+=a[arr[i]%a.length];
+  return s;
+}
+function shareUrl(){ return location.origin+location.pathname+'#l='+leagueId; }
+
+function showGate(){ $('#gate').style.display='block'; $('#leaguebar').style.display='none'; $('#results').classList.remove('show'); }
+function showLeague(){
+  $('#gate').style.display='none'; $('#leaguebar').style.display='block';
+  $('#leagueCode').textContent = leagueId;
+  $('#shareLink').textContent = shareUrl();
+}
+
+function boot(){
+  if(!myUid) return;              // wait for auth
+  leagueId = getLeagueId();
+  if(unsub){ unsub(); unsub=null; }
+  state.people=[]; iAmInLeague=false;
+  if(!leagueId){ showGate(); renderResults(); return; }
+  showLeague();
+  subscribe();
+}
+
+/* ---------------- wire up ---------------- */
+$('#createBtn').addEventListener('click',()=>{ location.hash='l='+newLeagueId(); });
+$('#joinBtn').addEventListener('click',()=>{
+  const code=($('#joinCode').value||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(code) location.hash='l='+code;
+});
+$('#joinCode').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#joinBtn').click(); });
+$('#leaveBtn').addEventListener('click',()=>{ location.hash=''; });
+
+$('#copyLinkBtn').addEventListener('click',async()=>{
+  try{ await navigator.clipboard.writeText(shareUrl()); const b=$('#copyLinkBtn');
+    const t=b.textContent; b.textContent='✓ Copié'; setTimeout(()=>b.textContent=t,1400);
+  }catch(e){ /* clipboard blocked */ }
+});
+
+const fileInput=$('#file'), drop=$('#drop');
+async function handleFiles(fileList){
+  const f=[...fileList].find(x=>/\.csv$/i.test(x.name)||x.type==='text/csv') || fileList[0];
+  if(!f) return;
+  let text; try{ text=await f.text(); }catch(e){ $('#myStatus').textContent='Lecture du fichier impossible.'; return; }
+  const parsed=ingest(f.name, text);
+  if(!parsed){ $('#myStatus').textContent='Fichier non reconnu (est-ce bien un export eBird ?)'; return; }
+  const name = ($('#myName').value.trim()) || cleanName(parsed.defaultName, state.people.length+1);
+  $('#myName').value = name;
+  $('#myStatus').textContent = '… enregistrement';
+  try{ await saveMyList(name, parsed.species); }
+  catch(e){ showError(e); $('#myStatus').textContent=''; }
+}
+drop.addEventListener('click',()=>fileInput.click());
+$('#browseBtn').addEventListener('click',()=>fileInput.click());
+fileInput.addEventListener('change',e=>{ handleFiles(e.target.files); fileInput.value=''; });
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag');}));
+drop.addEventListener('drop',e=>{ if(e.dataTransfer?.files) handleFiles(e.dataTransfer.files); });
+window.addEventListener('dragover',e=>e.preventDefault());
+window.addEventListener('drop',e=>e.preventDefault());
+
+$('#myName').addEventListener('change',async e=>{
+  const nm=(e.target.value.trim())||'Joueur';
+  e.target.value=nm;
+  if(iAmInLeague){ try{ await updateDoc(doc(db,'leagues',leagueId,'members',myUid),{name:nm}); }catch(err){ showError(err); } }
+});
+
+$('#removeMineBtn').addEventListener('click',async()=>{
+  if(!iAmInLeague) return;
+  if(!confirm('Retirer votre liste de cette ligue ?')) return;
+  try{ await deleteDoc(doc(db,'leagues',leagueId,'members',myUid)); $('#myStatus').textContent=''; }
+  catch(err){ showError(err); }
+});
+
+$('#tglSpecies').addEventListener('change',e=>{ state.onlySpecies=e.target.checked; renderResults(); });
+$('#q').addEventListener('input',e=>{ state.q=e.target.value; renderResults(); });
+$('#sortSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return;
+  $('#sortSeg').querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  state.sort=b.dataset.sort; renderResults(); });
+$('#filterSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return;
+  $('#filterSeg').querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  state.filter=b.dataset.filt; renderResults(); });
+
+// theme toggle
+const root=document.documentElement;
+$('#themeBtn').addEventListener('click',()=>{
+  const cur=root.getAttribute('data-theme');
+  const sysDark=matchMedia('(prefers-color-scheme: dark)').matches;
+  const isDark = cur? cur==='dark' : sysDark;
+  root.setAttribute('data-theme', isDark?'light':'dark');
+});
+
+window.addEventListener('hashchange', boot);
+
+/* ---------------- go ---------------- */
+onAuthStateChanged(auth, user=>{ if(user){ myUid=user.uid; boot(); } });
+signInAnonymously(auth).catch(err=>{ showError(err); $('#gate').style.display='block'; });
+</script>

@@ -1,0 +1,7 @@
+# Notes internes de l'assistant — ne pas publier
+.claude/
+
+# Divers
+*.log
+Thumbs.db
+.DS_Store
