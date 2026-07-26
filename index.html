@@ -124,6 +124,12 @@
   .me-name input { display:block; margin-top:5px; background:var(--surface-2); border:1px solid var(--line-2);
     border-radius:9px; padding:8px 11px; font:inherit; color:var(--ink); font-size:14px; width:240px; max-width:100%; }
   .me-name input:focus { outline:2px solid var(--accent); }
+  .profile { margin-top:18px; padding-top:18px; border-top:1px solid var(--line); }
+  .prof-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; }
+  .prof-grid label { font-size:12.5px; color:var(--ink-2); font-weight:600; display:flex; flex-direction:column; gap:5px; }
+  .prof-grid input, .prof-grid select { background:var(--surface-2); border:1px solid var(--line-2);
+    border-radius:9px; padding:8px 11px; font:inherit; color:var(--ink); font-size:14px; font-weight:400; }
+  .prof-grid input:focus, .prof-grid select:focus { outline:2px solid var(--accent); }
   .mystatus { font-size:13px; color:var(--accent-ink); font-weight:600; }
   .join-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:16px; }
   .join-row .search { max-width:280px; }
@@ -168,6 +174,8 @@
   .board-sheet .who-cell { display:flex; align-items:center; gap:9px; font-weight:600; }
   .board-sheet .who-cell .dot { width:11px; height:11px; border-radius:50%; background:var(--series); flex:none; }
   .c-num { text-align:right !important; font-variant-numeric:tabular-nums; }
+  .board-sheet .c-txt { min-width:120px; max-width:190px; white-space:normal; font-size:13px; }
+  .board-sheet .muted { color:var(--ink-3); }
   .c-rank { text-align:center !important; width:46px; font-family:var(--mono); color:var(--ink-3); font-weight:600; }
   td.strong { font-weight:700; color:var(--accent-ink); }
   tr.lead td { background:color-mix(in srgb,var(--gold) 13%,var(--surface)) !important; }
@@ -337,6 +345,16 @@
       <div style="font-size:12px;"><button class="linkbtn" id="removeMineBtn" style="display:none;">Retirer ma liste de la ligue</button></div>
     </div>
 
+    <div class="profile" id="profile" style="display:none;">
+      <div class="eyebrow" style="margin-bottom:10px;">Votre fiche <span style="text-transform:none;font-weight:400;color:var(--ink-3);">— visible dans le classement par tout le groupe</span></div>
+      <div class="prof-grid">
+        <label>Objectif<input type="text" id="profGoal" maxlength="60" placeholder="ex. 100 espèces"></label>
+        <label>Espèce préférée<select id="profFav"><option value="">— aucune —</option></select></label>
+        <label>Espèce de rêve<input type="text" id="profDream" maxlength="40" placeholder="ex. Gypaète barbu"></label>
+        <label>Intitulé de la colonne « objectif » <span style="text-transform:none;font-weight:400;color:var(--ink-3);">(commun)</span><input type="text" id="goalHeaderInput" maxlength="34" placeholder="Objectif (fin de l'été)"></label>
+      </div>
+    </div>
+
     <div class="people" id="people"></div>
 
     <div style="margin-top:14px;">
@@ -432,8 +450,9 @@ const db = getFirestore(fbApp);
 const SERIES_N = 8;
 const state = { people: [], onlySpecies: true, sort:'rarity', tier:'any', family:'any', q:'' };
 let lastFamKey = '', lastTierKey = '';
-let myUid = null, leagueId = null, unsub = null, iAmInLeague = false;
+let myUid = null, leagueId = null, unsub = null, unsubLeague = null, iAmInLeague = false;
 let realPeople = [], demoOn = false;   // aperçu d'exemple (jamais enregistré dans le cloud)
+let goalHeader = 'Objectif (fin de l\'été)';   // intitulé partagé de la colonne objectif
 
 const $ = s=>document.querySelector(s);
 
@@ -561,6 +580,18 @@ function build(){
       if(k===1) p.unique++;
     }
   }
+  // par joueur : espèce la plus rare (vue par le moins de monde) + dernière acquisition (date la + récente)
+  state.people.forEach(p=>{
+    let rarest=null, rarestK=Infinity, last=null, lastOrd=-1, lastDisp='';
+    for(const [key,v] of p._active){
+      const k=universe.get(key).seenBy.size;
+      const nm=frName(v.sci, v.common);
+      if(k<rarestK || (k===rarestK && rarest && nm.localeCompare(rarest,'fr')<0)){ rarestK=k; rarest=nm; }
+      const pd=parseDate(v.date);
+      if(pd && pd.ord>lastOrd){ lastOrd=pd.ord; last=nm; lastDisp=pd.disp; }
+    }
+    p.rarestName=rarest; p.lastAcqName=last; p.lastAcqDisp=lastDisp;
+  });
   return { universe:[...universe.values()], N };
 }
 
@@ -589,17 +620,44 @@ function renderResults(){
 
 function fmt(n){ return Math.round(n).toLocaleString('fr-FR'); }
 
+const MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+function monNum(w){ w=w.toLowerCase().replace(/\./g,'');
+  if(w.startsWith('juil')) return 7; if(w.startsWith('juin')) return 6;
+  if(w.startsWith('fév')||w.startsWith('fev')) return 2; if(w.startsWith('avr')) return 4;
+  if(w.startsWith('mai')) return 5; if(w.startsWith('aoû')||w.startsWith('aou')) return 8;
+  if(w.startsWith('déc')) return 12; if(w.startsWith('mars')) return 3;
+  return MON[w.slice(0,3)]||0; }
+function parseDate(s){
+  s=(s||'').trim(); if(!s) return null;
+  let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m){ const mm=m[2].padStart(2,'0'), dd=m[3].padStart(2,'0'); return {ord:+(m[1]+mm+dd), disp:`${dd}/${mm}/${m[1].slice(2)}`}; }
+  m=s.match(/^(\d{1,2})\s+([A-Za-zàâäéèêëîïôöùûü]+)\.?\s+(\d{4})/);   // 22 Jul 2026
+  if(m){ const mo=monNum(m[2]); if(mo){ const dd=m[1].padStart(2,'0'), mm=String(mo).padStart(2,'0');
+    return {ord:+(m[3]+mm+dd), disp:`${dd}/${mm}/${m[3].slice(2)}`}; } }
+  return null;
+}
+
 
 function renderBoard(){
   const ranked=[...state.people].sort((a,b)=>b.score-a.score);
+  const dash='<span class="muted">—</span>';
+  const cell=v=>v?esc(v):dash;
   $('#boardList').innerHTML = `<div class="sheet-scroll"><table class="board-sheet">
-    <thead><tr><th class="c-rank">#</th><th>Joueur</th><th class="c-num">Espèces</th><th class="c-num">Uniques</th><th class="c-num">Points</th></tr></thead>
+    <thead><tr>
+      <th class="c-rank">#</th><th>Joueur</th><th class="c-num">Points</th><th class="c-num">Espèces</th>
+      <th class="c-txt">${esc(goalHeader)}</th><th class="c-txt">Espèce préférée</th>
+      <th class="c-txt">La plus rare</th><th class="c-txt">Dernière acquisition</th><th class="c-txt">Espèce de rêve</th>
+    </tr></thead>
     <tbody>${ranked.map((p,i)=>`<tr class="${i===0?'lead':''}">
       <td class="c-rank">${i===0?'★':(i+1)}</td>
       <td class="who-cell" style="--series:var(--s${p.si})"><span class="dot"></span>${esc(p.name)}${p.isMe?'<span class="youtag">vous</span>':''}${p.isDemo?'<span class="demotag">ex.</span>':''}</td>
-      <td class="c-num">${p.total}</td>
-      <td class="c-num">${p.unique}</td>
       <td class="c-num strong">${fmt(p.score)}</td>
+      <td class="c-num">${p.total}</td>
+      <td class="c-txt">${cell(p.goal)}</td>
+      <td class="c-txt">${cell(p.fav)}</td>
+      <td class="c-txt">${cell(p.rarestName)}</td>
+      <td class="c-txt">${p.lastAcqName?esc(p.lastAcqName)+(p.lastAcqDisp?` <span class="muted">${p.lastAcqDisp}</span>`:''):dash}</td>
+      <td class="c-txt">${cell(p.dream)}</td>
     </tr>`).join('')}</tbody></table></div>`;
 }
 
@@ -755,6 +813,7 @@ function memberToPerson(id, data, si){
     nonSpecies: isNonSpecies(e.c||'', e.s||'')
   }]));
   return { id, name:data.name||'Joueur', filename:'', si, species, isMe:id===myUid,
+    goal:data.goal||'', fav:data.fav||'', dream:data.dream||'',
     joinedAt: data.joinedAt?.seconds || 0 };
 }
 
@@ -768,13 +827,23 @@ const DEMO_FRIENDS = [
   { name:'Inès', sci:['Turdus merula','Parus major','Cyanistes caeruleus','Erithacus rubecula','Passer domesticus','Columba palumbus','Streptopelia decaocto','Pica pica','Corvus corone','Carduelis carduelis','Sturnus vulgaris','Fringilla coelebs'] },
   { name:'Karim', sci:['Turdus merula','Parus major','Cyanistes caeruleus','Erithacus rubecula','Passer domesticus','Fringilla coelebs','Carduelis carduelis','Chloris chloris','Pica pica','Corvus corone','Coloeus monedula','Columba palumbus','Streptopelia decaocto','Sturnus vulgaris','Sylvia atricapilla','Phylloscopus collybita','Troglodytes troglodytes','Prunella modularis','Aegithalos caudatus','Sitta europaea','Dendrocopos major','Picus viridis','Buteo buteo','Milvus migrans','Falco tinnunculus','Accipiter nisus','Ardea cinerea','Egretta garzetta','Anas platyrhynchos','Fulica atra','Vanellus vanellus','Circus aeruginosus','Alcedo atthis','Motacilla cinerea','Emberiza citrinella','Saxicola rubicola'] },
 ];
+const DEMO_EXTRA = {
+  'Léa':{goal:'80 espèces',fav:'Rouge-gorge familier',dream:'Martin-pêcheur d\'Europe',date:'2025-07-18'},
+  'Tom':{goal:'Voir 5 rapaces',fav:'Balbuzard pêcheur',dream:'Pygargue à queue blanche',date:'2025-07-20'},
+  'Sam':{goal:'Les oiseaux du Sud',fav:'Guêpier d\'Europe',dream:'Rollier d\'Europe',date:'2025-07-12'},
+  'Chloé':{goal:'La montagne',fav:'Tichodrome échelette',dream:'Gypaète barbu',date:'2025-07-22'},
+  'Hugo':{goal:'100 oiseaux de mer',fav:'Macareux moine',dream:'Océanite tempête',date:'2025-07-19'},
+  'Inès':{goal:'Reconnaître 20 chants',fav:'Mésange bleue',dream:'Huppe fasciée',date:'2025-07-05'},
+  'Karim':{goal:'Battre Mathis',fav:'Faucon crécerelle',dream:'Aigle royal',date:'2025-07-21'},
+};
 function demoPeople(startIndex){
   return DEMO_FRIENDS.map((f,i)=>{
     const species=new Map();
-    f.sci.forEach(s=>{ species.set(s.toLowerCase(), {
-      common:frName(s,s), sci:s, date:'', loc:'', obs:1, nonSpecies:isNonSpecies('',s) }); });
+    const x=DEMO_EXTRA[f.name]||{};
+    f.sci.forEach((s,j)=>{ species.set(s.toLowerCase(), {
+      common:frName(s,s), sci:s, date:(j===f.sci.length-1?(x.date||''):''), loc:'', obs:1, nonSpecies:isNonSpecies('',s) }); });
     return { id:'demo-'+i, name:f.name, filename:'', si:(startIndex+i)%SERIES_N,
-      species, isMe:false, isDemo:true };
+      species, isMe:false, isDemo:true, goal:x.goal||'', fav:x.fav||'', dream:x.dream||'' };
   });
 }
 function rebuild(){
@@ -796,6 +865,7 @@ function applySnapshot(snap){
   $('#myStatus').textContent = me ? `✓ Votre liste : ${me.species.size} espèces` : '';
   $('#removeMineBtn').style.display = me ? 'inline' : 'none';
   $('#dropBig').textContent = me ? 'Remplacer votre liste' : 'Déposez votre fichier MyEBirdData.csv ici';
+  fillProfile(me);
   rebuild();
 }
 
@@ -803,6 +873,27 @@ function subscribe(){
   if(unsub){ unsub(); unsub=null; }
   unsub = onSnapshot(collection(db,'leagues',leagueId,'members'), applySnapshot,
     err=>{ console.error(err); showError(err); });
+  if(unsubLeague){ unsubLeague(); unsubLeague=null; }
+  unsubLeague = onSnapshot(doc(db,'leagues',leagueId), snap=>{
+    const d=snap.data()||{};
+    if(d.goalHeader) goalHeader=d.goalHeader;
+    const gh=$('#goalHeaderInput'); if(gh && document.activeElement!==gh) gh.value=goalHeader;
+    renderResults();
+  }, ()=>{});
+}
+function fillProfile(me){
+  const prof=$('#profile'); if(!prof) return;
+  prof.style.display = me ? 'block' : 'none';
+  if(!me) return;
+  const g=$('#profGoal'), d=$('#profDream'), fav=$('#profFav');
+  if(document.activeElement!==g) g.value=me.goal||'';
+  if(document.activeElement!==d) d.value=me.dream||'';
+  if(document.activeElement!==fav){
+    const names=[...me.species.values()].filter(v=>!isNonSpecies(v.common,v.sci))
+      .map(v=>frName(v.sci,v.common)).sort((a,b)=>a.localeCompare(b,'fr'));
+    fav.innerHTML='<option value="">— aucune —</option>'+names.map(n=>`<option${n===me.fav?' selected':''}>${esc(n)}</option>`).join('');
+    fav.value=me.fav||'';
+  }
 }
 
 async function saveMyList(name, speciesMap){
@@ -881,6 +972,18 @@ $('#myName').addEventListener('change',async e=>{
   const nm=(e.target.value.trim())||'Joueur';
   e.target.value=nm;
   if(iAmInLeague){ try{ await updateDoc(doc(db,'leagues',leagueId,'members',myUid),{name:nm}); }catch(err){ showError(err); } }
+});
+
+async function saveProfile(patch){
+  if(!iAmInLeague){ $('#myStatus').textContent='Chargez d\'abord votre liste pour remplir votre fiche.'; return; }
+  try{ await updateDoc(doc(db,'leagues',leagueId,'members',myUid), patch); }catch(err){ showError(err); }
+}
+$('#profGoal').addEventListener('change',e=>saveProfile({goal:e.target.value.trim()}));
+$('#profDream').addEventListener('change',e=>saveProfile({dream:e.target.value.trim()}));
+$('#profFav').addEventListener('change',e=>saveProfile({fav:e.target.value}));
+$('#goalHeaderInput').addEventListener('change',async e=>{
+  const v=e.target.value.trim()||'Objectif (fin de l\'été)';
+  try{ await setDoc(doc(db,'leagues',leagueId),{goalHeader:v},{merge:true}); }catch(err){ showError(err); }
 });
 
 $('#removeMineBtn').addEventListener('click',async()=>{
