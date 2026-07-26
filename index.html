@@ -560,12 +560,13 @@ function rarityColor(k, N){
   const hue=Math.round((350 + p*140) % 360);   // crimson -> orange -> jaune -> vert
   return `hsl(${hue} 60% 47%)`;
 }
+const LEAGUE_LABELS=['Unique','Très rare','Rare','Peu commun','Assez commun','Commun','Très commun','Vu par tous'];
 function tierFor(k, N){
   let label;
   if(N<=1) label='—';
   else if(k===1) label='Unique';
   else if(k>=N) label='Vu par tous';
-  else label='Vu par '+k;
+  else label=LEAGUE_LABELS[Math.round((k-1)/(N-1)*(LEAGUE_LABELS.length-1))];
   return { id:String(k), count:k, ord:k, label, color:rarityColor(k,N) };
 }
 const REAL_LABELS={1:'Commun',2:'Assez commun',3:'Peu commun',4:'Occasionnel',6:'Rare',8:'Très rare',12:'Exceptionnel'};
