@@ -808,21 +808,11 @@ const ICONS={
   anchor: SW+'<circle cx="12" cy="4.5" r="2"/><path d="M12 6.5v13.5"/><path d="M5 12.5a7 7 0 0 0 14 0"/><path d="M5 12.5H8M19 12.5h-3"/><path d="M9.5 9.5h5"/></svg>',
 };
 const TROPHIES = [
-  { icon:ICONS.egg, name:'Premier envol', desc:'Charger votre liste', test:s=>s.total>=1 },
-  { icon:ICONS.binoculars, name:'Observateur', desc:'25 espèces', test:s=>s.total>=25, prog:s=>[s.total,25] },
-  { icon:ICONS.list, name:'Collectionneur', desc:'50 espèces', test:s=>s.total>=50, prog:s=>[s.total,50] },
   { icon:ICONS.medal, name:'Centurion', desc:'100 espèces', test:s=>s.total>=100, prog:s=>[s.total,100] },
-  { icon:ICONS.feather, name:'Maître des plumes', desc:'200 espèces', test:s=>s.total>=200, prog:s=>[s.total,200] },
-  { icon:ICONS.gem, name:'Perle rare', desc:'1 espèce que vous seul avez vue', test:s=>s.unique>=1, prog:s=>[s.unique,1] },
-  { icon:ICONS.target, name:'Chasseur de raretés', desc:'5 espèces uniques', test:s=>s.unique>=5, prog:s=>[s.unique,5] },
   { icon:ICONS.cup, name:'Dénicheur d’exception', desc:'15 espèces uniques', test:s=>s.unique>=15, prog:s=>[s.unique,15] },
   { icon:ICONS.woodpecker, name:'Le Pic noir', desc:'Avoir vu le Pic noir', test:s=>s.blackWoodpecker },
   { icon:ICONS.podium, name:'Sur le podium', desc:'Terminer dans le top 3', test:s=>s.groupN>1 && s.rank<=3 },
   { icon:ICONS.crown, name:'Roi de la Ligue', desc:'Être 1ᵉʳ du classement', test:s=>s.groupN>1 && s.rank===1 },
-  { icon:ICONS.owl, name:'Ami des chouettes', desc:'Voir un rapace nocturne', test:s=>s.owls>=1 },
-  { icon:ICONS.eye, name:'Œil du rapace', desc:'Voir 5 rapaces diurnes', test:s=>s.raptors>=5, prog:s=>[s.raptors,5] },
-  { icon:ICONS.waves, name:'Les pieds dans l’eau', desc:'Voir 10 oiseaux d’eau', test:s=>s.water>=10, prog:s=>[s.water,10] },
-  { icon:ICONS.anchor, name:'Loup de mer', desc:'Voir 3 oiseaux marins', test:s=>s.sea>=3, prog:s=>[s.sea,3] },
 ];
 const OWL_G=/^(strix|otus|athene|asio|bubo|tyto|aegolius|glaucidium|surnia|ketupa)$/;
 const RAPTOR_G=/^(accipiter|astur|buteo|aquila|circus|milvus|falco|pernis|circaetus|pandion|haliaeetus|gyps|aegypius|gypaetus|neophron|clanga|hieraaetus|elanus|torgos)$/;
