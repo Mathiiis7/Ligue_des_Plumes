@@ -284,8 +284,10 @@
   .trophy.on { border-color:color-mix(in srgb,var(--gold) 55%,var(--line));
     background:color-mix(in srgb,var(--gold) 9%,var(--surface-2)); }
   .trophy.off { opacity:.6; }
-  .trophy.off .tico { filter:grayscale(1); opacity:.7; }
-  .tico { font-size:40px; line-height:1; }
+  .tico { line-height:0; color:var(--accent-ink); }
+  .tico svg { width:42px; height:42px; }
+  .trophy.on .tico { color:var(--gold); }
+  .trophy.off .tico { color:var(--ink-3); opacity:.65; }
   .tname { font-weight:700; font-size:14px; margin-top:9px; text-wrap:balance; }
   .tdesc { color:var(--ink-2); font-size:12px; margin-top:4px; line-height:1.4; }
   .tstate { margin-top:9px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
@@ -787,22 +789,40 @@ function renderMatrix({universe,N}){
 function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 /* ---------------- trophées ---------------- */
+const SW='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">';
+const ICONS={
+  egg: SW+'<path d="M12 3C9 3 6.5 7.5 6.5 11.5a5.5 5.5 0 0 0 11 0C17.5 7.5 15 3 12 3Z"/><path d="M9.5 12l1.5-1 1 1.4 1.5-1"/></svg>',
+  binoculars: SW+'<circle cx="7" cy="15" r="3.3"/><circle cx="17" cy="15" r="3.3"/><path d="M7.2 11.7V6.5A1.5 1.5 0 0 1 8.7 5h.6A1.5 1.5 0 0 1 10.8 6.5V12"/><path d="M13.2 12V6.5A1.5 1.5 0 0 1 14.7 5h.6A1.5 1.5 0 0 1 16.8 6.5v5.2"/><path d="M10.8 14.2h2.4"/></svg>',
+  list: SW+'<rect x="5" y="4" width="14" height="16.5" rx="2"/><path d="M9.5 4V2.8A.8 .8 0 0 1 10.3 2h3.4a.8 .8 0 0 1 .8 .8V4"/><path d="M8.5 10l1.3 1.3 2.2-2.6"/><path d="M14 10h2.5"/><path d="M8.5 15h8"/></svg>',
+  medal: SW+'<circle cx="12" cy="15" r="5"/><path d="M12 12.7v4.6M9.7 15h4.6"/><path d="M9 10.5 7 3M15 10.5 17 3"/></svg>',
+  feather: SW+'<path d="M4 20c1-9 7-15 16-16-1 9-7 15-16 16Z"/><path d="M4 20 10 14M11 8h3M9 11h3"/></svg>',
+  gem: SW+'<path d="M6 4h12l3 5-9 11.5L3 9Z"/><path d="M3 9h18M9 4 6 9l6 11.5L18 9l-3-5"/></svg>',
+  target: SW+'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg>',
+  cup: SW+'<path d="M8 4h8v4.5a4 4 0 0 1-8 0Z"/><path d="M8 5.5H5.5a2 2 0 0 0 2.2 3M16 5.5h2.5a2 2 0 0 1-2.2 3"/><path d="M12 12.5v3M9 19h6M9.7 19l.6-3.5M14.3 19l-.6-3.5"/></svg>',
+  woodpecker: SW+'<path d="M6 3v18"/><path d="M6 8h4.5a3 3 0 0 1 0 6H6"/><path d="M13.5 9.5 18 7.5"/><circle cx="9.3" cy="9.7" r=".6" fill="currentColor" stroke="none"/></svg>',
+  podium: SW+'<path d="M3.5 20.5h17"/><rect x="9.5" y="8" width="5" height="12.5"/><rect x="4.5" y="12" width="5" height="8.5"/><rect x="14.5" y="14" width="5" height="6.5"/></svg>',
+  crown: SW+'<path d="M4 8.5 7.2 16h9.6L20 8.5l-4.3 3-3.7-5.5L8.3 11.5Z"/><path d="M6.8 19.5h10.4"/></svg>',
+  owl: SW+'<path d="M5 5.5 7.5 8M19 5.5 16.5 8"/><path d="M4.5 12a7.5 7.5 0 0 1 15 0 7.5 7.5 0 0 1-15 0Z"/><circle cx="9" cy="11" r="2.2"/><circle cx="15" cy="11" r="2.2"/><path d="M12 13.4l-1.2 1.6h2.4L12 13.4Z"/></svg>',
+  eye: SW+'<path d="M2.5 12S6 6.5 12 6.5 21.5 12 21.5 12 18 17.5 12 17.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>',
+  waves: SW+'<path d="M3 8c1.7-2 3.3-2 5 0s3.3 2 5 0 3.3-2 5 0"/><path d="M3 13c1.7-2 3.3-2 5 0s3.3 2 5 0 3.3-2 5 0"/><path d="M3 18c1.7-2 3.3-2 5 0s3.3 2 5 0 3.3-2 5 0"/></svg>',
+  anchor: SW+'<circle cx="12" cy="4.5" r="2"/><path d="M12 6.5v13.5"/><path d="M5 12.5a7 7 0 0 0 14 0"/><path d="M5 12.5H8M19 12.5h-3"/><path d="M9.5 9.5h5"/></svg>',
+};
 const TROPHIES = [
-  { icon:'🐣', name:'Premier envol', desc:'Charger votre liste', test:s=>s.total>=1 },
-  { icon:'🔭', name:'Observateur', desc:'25 espèces', test:s=>s.total>=25, prog:s=>[s.total,25] },
-  { icon:'📖', name:'Collectionneur', desc:'50 espèces', test:s=>s.total>=50, prog:s=>[s.total,50] },
-  { icon:'🏅', name:'Centurion', desc:'100 espèces', test:s=>s.total>=100, prog:s=>[s.total,100] },
-  { icon:'🌟', name:'Maître des plumes', desc:'200 espèces', test:s=>s.total>=200, prog:s=>[s.total,200] },
-  { icon:'💎', name:'Perle rare', desc:'1 espèce que vous seul avez vue', test:s=>s.unique>=1, prog:s=>[s.unique,1] },
-  { icon:'🎯', name:'Chasseur de raretés', desc:'5 espèces uniques', test:s=>s.unique>=5, prog:s=>[s.unique,5] },
-  { icon:'🏆', name:'Dénicheur d’exception', desc:'15 espèces uniques', test:s=>s.unique>=15, prog:s=>[s.unique,15] },
-  { icon:'🐦‍⬛', name:'Le Pic noir', desc:'Avoir vu le Pic noir', test:s=>s.blackWoodpecker },
-  { icon:'🥉', name:'Sur le podium', desc:'Terminer dans le top 3', test:s=>s.groupN>1 && s.rank<=3 },
-  { icon:'👑', name:'Roi de la Ligue', desc:'Être 1ᵉʳ du classement', test:s=>s.groupN>1 && s.rank===1 },
-  { icon:'🦉', name:'Ami des chouettes', desc:'Voir un rapace nocturne', test:s=>s.owls>=1 },
-  { icon:'🦅', name:'Œil du rapace', desc:'Voir 5 rapaces diurnes', test:s=>s.raptors>=5, prog:s=>[s.raptors,5] },
-  { icon:'🦆', name:'Les pieds dans l’eau', desc:'Voir 10 oiseaux d’eau', test:s=>s.water>=10, prog:s=>[s.water,10] },
-  { icon:'🌊', name:'Loup de mer', desc:'Voir 3 oiseaux marins', test:s=>s.sea>=3, prog:s=>[s.sea,3] },
+  { icon:ICONS.egg, name:'Premier envol', desc:'Charger votre liste', test:s=>s.total>=1 },
+  { icon:ICONS.binoculars, name:'Observateur', desc:'25 espèces', test:s=>s.total>=25, prog:s=>[s.total,25] },
+  { icon:ICONS.list, name:'Collectionneur', desc:'50 espèces', test:s=>s.total>=50, prog:s=>[s.total,50] },
+  { icon:ICONS.medal, name:'Centurion', desc:'100 espèces', test:s=>s.total>=100, prog:s=>[s.total,100] },
+  { icon:ICONS.feather, name:'Maître des plumes', desc:'200 espèces', test:s=>s.total>=200, prog:s=>[s.total,200] },
+  { icon:ICONS.gem, name:'Perle rare', desc:'1 espèce que vous seul avez vue', test:s=>s.unique>=1, prog:s=>[s.unique,1] },
+  { icon:ICONS.target, name:'Chasseur de raretés', desc:'5 espèces uniques', test:s=>s.unique>=5, prog:s=>[s.unique,5] },
+  { icon:ICONS.cup, name:'Dénicheur d’exception', desc:'15 espèces uniques', test:s=>s.unique>=15, prog:s=>[s.unique,15] },
+  { icon:ICONS.woodpecker, name:'Le Pic noir', desc:'Avoir vu le Pic noir', test:s=>s.blackWoodpecker },
+  { icon:ICONS.podium, name:'Sur le podium', desc:'Terminer dans le top 3', test:s=>s.groupN>1 && s.rank<=3 },
+  { icon:ICONS.crown, name:'Roi de la Ligue', desc:'Être 1ᵉʳ du classement', test:s=>s.groupN>1 && s.rank===1 },
+  { icon:ICONS.owl, name:'Ami des chouettes', desc:'Voir un rapace nocturne', test:s=>s.owls>=1 },
+  { icon:ICONS.eye, name:'Œil du rapace', desc:'Voir 5 rapaces diurnes', test:s=>s.raptors>=5, prog:s=>[s.raptors,5] },
+  { icon:ICONS.waves, name:'Les pieds dans l’eau', desc:'Voir 10 oiseaux d’eau', test:s=>s.water>=10, prog:s=>[s.water,10] },
+  { icon:ICONS.anchor, name:'Loup de mer', desc:'Voir 3 oiseaux marins', test:s=>s.sea>=3, prog:s=>[s.sea,3] },
 ];
 const OWL_G=/^(strix|otus|athene|asio|bubo|tyto|aegolius|glaucidium|surnia|ketupa)$/;
 const RAPTOR_G=/^(accipiter|astur|buteo|aquila|circus|milvus|falco|pernis|circaetus|pandion|haliaeetus|gyps|aegypius|gypaetus|neophron|clanga|hieraaetus|elanus|torgos)$/;
