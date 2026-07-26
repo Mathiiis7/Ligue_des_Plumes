@@ -566,8 +566,16 @@ function tierFor(k, N){
   else if(k===1) label='Unique';
   else if(k>=N) label='Vu par tous';
   else label='Vu par '+k;
-  return { id:String(k), count:k, label, color:rarityColor(k,N) };
+  return { id:String(k), count:k, ord:k, label, color:rarityColor(k,N) };
 }
+const REAL_LABELS={1:'Commun',2:'Assez commun',3:'Peu commun',4:'Occasionnel',6:'Rare',8:'Très rare',12:'Exceptionnel'};
+function realColor(w){
+  const steps={1:0,2:0.16,3:0.33,4:0.5,6:0.66,8:0.83,12:1};
+  const p=steps[w]!==undefined?steps[w]:0.5;
+  const hue=Math.round((130 - p*140 + 360) % 360);   // vert (commun) -> crimson (rare)
+  return `hsl(${hue} 60% 47%)`;
+}
+function realTier(sci){ const w=rarityReal(sci); return { id:'r'+w, ord:w, label:REAL_LABELS[w]||('niveau '+w), color:realColor(w) }; }
 
 function build(){
   const N = state.people.length;
@@ -690,21 +698,26 @@ function renderBoard(){
 }
 
 function renderMatrix({universe,N}){
-  // raretés présentes = un niveau par nombre d'observateurs (1..N), du plus rare au plus commun
-  const tiersPresent=[...new Map(universe.map(u=>[u.tier.count,u.tier])).values()].sort((a,b)=>a.count-b.count);
+  // la dimension de rareté de la matrice suit le classement choisi : réelle si mode "real", sinon ligue
+  const rMode = state.boardMode==='real' ? 'real' : 'league';
+  const rarOf = u => rMode==='real' ? realTier(u.sci) : u.tier;
+  const rarHead = rMode==='real' ? 'Rareté réelle' : 'Rareté';
+
+  // raretés présentes, triées du plus commun au plus rare
+  const tiersPresent=[...new Map(universe.map(u=>{const t=rarOf(u); return [t.id,t];})).values()].sort((a,b)=>a.ord-b.ord);
   $('#tierLegend').innerHTML = tiersPresent.map(t=>`<span style="--tc:${t.color}"><i></i>${esc(t.label)}</span>`).join('');
 
-  const tierKey=tiersPresent.map(t=>t.count).join(',');
+  const tierKey=rMode+':'+tiersPresent.map(t=>t.id).join(',');
   if(tierKey!==lastTierKey){
     lastTierKey=tierKey;
     const sel=$('#tierSel');
-    sel.innerHTML='<option value="any">Toutes les raretés</option>'+tiersPresent.map(t=>`<option value="${t.count}">${esc(t.label)} — ${t.count}/${N}</option>`).join('');
-    if(!tiersPresent.some(t=>String(t.count)===state.tier)) state.tier='any';
+    sel.innerHTML='<option value="any">Toutes les raretés</option>'+tiersPresent.map(t=>`<option value="${esc(t.id)}">${esc(t.label)}${rMode==='league'?` — ${t.ord}/${N}`:''}</option>`).join('');
+    if(!tiersPresent.some(t=>t.id===state.tier)) state.tier='any';
     sel.value=state.tier;
   }
 
   $('#thead').innerHTML = `<tr>
-    <th>Espèce</th><th>Rareté</th>
+    <th>Espèce</th><th>${rarHead}</th>
     ${state.people.map(p=>`<th class="pcol" style="--series:var(--s${p.si})"><span class="cap"><span class="dot"></span>${esc(p.name)}</span></th>`).join('')}
     <th class="pcol">Vues</th></tr>`;
 
@@ -720,7 +733,7 @@ function renderMatrix({universe,N}){
   }
 
   let list=[...universe];
-  if(state.tier!=='any') list=list.filter(u=>u.tier.id===state.tier);
+  if(state.tier!=='any') list=list.filter(u=>rarOf(u).id===state.tier);
   if(state.family!=='any') list=list.filter(u=>familyOf(u.sci)===state.family);
   if(state.q){ const q=state.q.toLowerCase();
     list=list.filter(u=>u.common.toLowerCase().includes(q)||(u.sci||'').toLowerCase().includes(q)); }
@@ -734,7 +747,7 @@ function renderMatrix({universe,N}){
     return;
   }
   tb.innerHTML = list.map(u=>{
-    const k=u.seenBy.size, t=u.tier;
+    const k=u.seenBy.size, t=rarOf(u);
     const cells = state.people.map(p=>{
       const seen=u.seenBy.has(p.id);
       return `<td class="pcol${seen?' is-seen':''}">${seen?'<i class="chk">✓</i>':''}</td>`;
@@ -747,7 +760,7 @@ function renderMatrix({universe,N}){
   }).join('');
 
   cards.innerHTML = list.map(u=>{
-    const k=u.seenBy.size, t=u.tier;
+    const k=u.seenBy.size, t=rarOf(u);
     const seers = state.people.filter(p=>u.seenBy.has(p.id))
       .map(p=>`<span class="mc-person" style="--series:var(--s${p.si})"><span class="dot"></span>${esc(p.name)}</span>`).join('');
     return `<div class="mcard" style="border-left-color:${t.color}">
@@ -1012,7 +1025,7 @@ $('#profDream').addEventListener('change',e=>saveProfile({dream:e.target.value.t
 $('#profRare').addEventListener('change',e=>saveProfile({rare:e.target.value.trim()}));
 $('#profFav').addEventListener('change',e=>saveProfile({fav:e.target.value}));
 $('#boardModes').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
-  state.boardMode=b.dataset.mode; renderBoard(); });
+  state.boardMode=b.dataset.mode; renderResults(); });
 $('#goalHeaderInput').addEventListener('change',async e=>{
   const v=e.target.value.trim()||'Objectif (fin de l\'été)';
   try{ await setDoc(doc(db,'leagues',leagueId),{goalHeader:v},{merge:true}); }catch(err){ showError(err); }
