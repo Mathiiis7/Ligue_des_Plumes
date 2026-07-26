@@ -376,11 +376,6 @@
         </div>
         <select class="filt-sel" id="tierSel" aria-label="Filtrer par rareté">
           <option value="any">Toutes les raretés</option>
-          <option value="all">Vu par tous</option>
-          <option value="common">Commun</option>
-          <option value="uncommon">Peu commun</option>
-          <option value="rare">Rare</option>
-          <option value="unique">Unique</option>
         </select>
         <select class="filt-sel" id="familySel" aria-label="Filtrer par famille">
           <option value="any">Toutes les familles</option>
@@ -436,7 +431,7 @@ const db = getFirestore(fbApp);
 /* ---------------- state ---------------- */
 const SERIES_N = 8;
 const state = { people: [], onlySpecies: true, sort:'rarity', tier:'any', family:'any', q:'' };
-let lastFamKey = '';
+let lastFamKey = '', lastTierKey = '';
 let myUid = null, leagueId = null, unsub = null, iAmInLeague = false;
 let realPeople = [], demoOn = false;   // aperçu d'exemple (jamais enregistré dans le cloud)
 
@@ -529,14 +524,19 @@ function activeSpecies(person){
   return m;
 }
 
+function rarityColor(k, N){
+  if(N<=1) return 'hsl(190 10% 46%)';
+  const p=(k-1)/(N-1);                 // 0 = le plus rare (k=1), 1 = le plus commun (k=N)
+  const hue=Math.round((350 + p*140) % 360);   // crimson -> orange -> jaune -> vert
+  return `hsl(${hue} 60% 47%)`;
+}
 function tierFor(k, N){
-  if(N<=1) return {id:'solo', label:'—', varc:'--t-all'};
-  if(k>=N) return {id:'all', label:'Vu par tous', varc:'--t-all'};
-  if(k===1) return {id:'unique', label:'Unique', varc:'--t-unique'};
-  const f=k/N;
-  if(f<=0.34) return {id:'rare', label:'Rare', varc:'--t-rare'};
-  if(f<=0.67) return {id:'uncommon', label:'Peu commun', varc:'--t-uncommon'};
-  return {id:'common', label:'Commun', varc:'--t-common'};
+  let label;
+  if(N<=1) label='—';
+  else if(k===1) label='Unique';
+  else if(k>=N) label='Vu par tous';
+  else label='Vu par '+k;
+  return { id:String(k), count:k, label, color:rarityColor(k,N) };
 }
 
 function build(){
@@ -604,9 +604,18 @@ function renderBoard(){
 }
 
 function renderMatrix({universe,N}){
-  const tiers=[['all','Vu par tous','--t-all'],['common','Commun','--t-common'],
-    ['uncommon','Peu commun','--t-uncommon'],['rare','Rare','--t-rare'],['unique','Unique','--t-unique']];
-  $('#tierLegend').innerHTML = tiers.map(([id,l,v])=>`<span style="--tc:var(${v})"><i></i>${l}</span>`).join('');
+  // raretés présentes = un niveau par nombre d'observateurs (1..N), du plus rare au plus commun
+  const tiersPresent=[...new Map(universe.map(u=>[u.tier.count,u.tier])).values()].sort((a,b)=>a.count-b.count);
+  $('#tierLegend').innerHTML = tiersPresent.map(t=>`<span style="--tc:${t.color}"><i></i>${esc(t.label)}</span>`).join('');
+
+  const tierKey=tiersPresent.map(t=>t.count).join(',');
+  if(tierKey!==lastTierKey){
+    lastTierKey=tierKey;
+    const sel=$('#tierSel');
+    sel.innerHTML='<option value="any">Toutes les raretés</option>'+tiersPresent.map(t=>`<option value="${t.count}">${esc(t.label)} — ${t.count}/${N}</option>`).join('');
+    if(!tiersPresent.some(t=>String(t.count)===state.tier)) state.tier='any';
+    sel.value=state.tier;
+  }
 
   $('#thead').innerHTML = `<tr>
     <th>Espèce</th><th>Rareté</th>
@@ -646,7 +655,7 @@ function renderMatrix({universe,N}){
     }).join('');
     return `<tr>
       <td class="sp">${esc(u.common)}${u.sci?`<span class="sci">${esc(u.sci)}</span>`:''}</td>
-      <td><span class="chip" style="--tc:var(${t.varc})">${t.label}</span></td>
+      <td><span class="chip" style="--tc:${t.color}">${t.label}</span></td>
       ${cells}
       <td class="cnt">${k}/${N}</td></tr>`;
   }).join('');
@@ -655,13 +664,13 @@ function renderMatrix({universe,N}){
     const k=u.seenBy.size, t=u.tier;
     const seers = state.people.filter(p=>u.seenBy.has(p.id))
       .map(p=>`<span class="mc-person" style="--series:var(--s${p.si})"><span class="dot"></span>${esc(p.name)}</span>`).join('');
-    return `<div class="mcard" style="border-left-color:var(${t.varc})">
+    return `<div class="mcard" style="border-left-color:${t.color}">
       <div class="mc-head">
         <div class="mc-sp">${esc(u.common)}${u.sci?`<span class="mc-sci">${esc(u.sci)}</span>`:''}</div>
         <span class="mc-count">${k}/${N}</span>
       </div>
       <div class="mc-row">
-        <span class="chip" style="--tc:var(${t.varc})">${t.label}</span>
+        <span class="chip" style="--tc:${t.color}">${t.label}</span>
         <div class="mc-people">${seers}</div>
       </div>
     </div>`;
