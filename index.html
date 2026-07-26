@@ -188,6 +188,10 @@
   .seg button { border:none; background:var(--surface); color:var(--ink-2); font:inherit; font-size:12.5px;
     padding:7px 11px; cursor:pointer; }
   .seg button.on { background:var(--accent); color:#fff; }
+  .filt-sel { border:1px solid var(--line-2); background:var(--surface); color:var(--ink-2); font:inherit;
+    font-size:12.5px; padding:7px 10px; border-radius:9px; cursor:pointer; max-width:200px; }
+  .filt-sel:hover { border-color:var(--accent); }
+  .filt-sel:focus { outline:2px solid var(--accent); }
   .tbl-scroll { overflow-x:auto; margin-top:10px; border:1px solid var(--line-2); border-radius:10px; }
   table { border-collapse:collapse; width:100%; font-size:13.5px; }
   thead th { position:sticky; top:0; background:var(--surface-2); z-index:2; text-align:left;
@@ -370,11 +374,17 @@
           <button data-sort="rarity" class="on">Par rareté</button>
           <button data-sort="name">A → Z</button>
         </div>
-        <div class="seg" id="filterSeg">
-          <button data-filt="all" class="on">Toutes</button>
-          <button data-filt="unique">Uniques</button>
-          <button data-filt="shared">Partagées</button>
-        </div>
+        <select class="filt-sel" id="tierSel" aria-label="Filtrer par rareté">
+          <option value="any">Toutes les raretés</option>
+          <option value="all">Vu par tous</option>
+          <option value="common">Commun</option>
+          <option value="uncommon">Peu commun</option>
+          <option value="rare">Rare</option>
+          <option value="unique">Unique</option>
+        </select>
+        <select class="filt-sel" id="familySel" aria-label="Filtrer par famille">
+          <option value="any">Toutes les familles</option>
+        </select>
       </div>
       <div class="tbl-scroll">
         <table>
@@ -425,7 +435,8 @@ const db = getFirestore(fbApp);
 
 /* ---------------- state ---------------- */
 const SERIES_N = 8;
-const state = { people: [], onlySpecies: true, sort:'rarity', filter:'all', q:'' };
+const state = { people: [], onlySpecies: true, sort:'rarity', tier:'any', family:'any', q:'' };
+let lastFamKey = '';
 let myUid = null, leagueId = null, unsub = null, iAmInLeague = false;
 let realPeople = [], demoOn = false;   // aperçu d'exemple (jamais enregistré dans le cloud)
 
@@ -440,6 +451,9 @@ function frName(sci, fallback){
   const key=(sci||'').trim().toLowerCase();
   return FR_NAMES[key] || fallback;
 }
+const GENUS_FAMILY = {"acanthis":"Pinsons, chardonnerets…","accipiter":"Rapaces (aigles, buses…)","acrocephalus":"Rousserolles","actitis":"Bécasseaux, chevaliers","aegithalos":"Mésanges à longue queue","aegolius":"Chouettes, hiboux","aegypius":"Rapaces (aigles, buses…)","agapornis":"Perruches","aix":"Canards, oies, cygnes","alauda":"Alouettes","alaudala":"Alouettes","alca":"Pingouins, guillemots","alcedo":"Martins-pêcheurs","alectoris":"Faisans, perdrix, cailles","alle":"Pingouins, guillemots","alopochen":"Canards, oies, cygnes","ammomanes":"Alouettes","anarhynchus":"Pluviers, vanneaux","anas":"Canards, oies, cygnes","anser":"Canards, oies, cygnes","anthus":"Bergeronnettes, pipits","antigone":"Grues","apus":"Martinets","aquila":"Rapaces (aigles, buses…)","ardea":"Hérons, aigrettes","ardenna":"Puffins, pétrels","ardeola":"Hérons, aigrettes","arenaria":"Bécasseaux, chevaliers","asio":"Chouettes, hiboux","astur":"Rapaces (aigles, buses…)","athene":"Chouettes, hiboux","aythya":"Canards, oies, cygnes","bartramia":"Bécasseaux, chevaliers","bombycilla":"Jaseurs","botaurus":"Hérons, aigrettes","branta":"Canards, oies, cygnes","bubo":"Chouettes, hiboux","bucanetes":"Pinsons, chardonnerets…","bucephala":"Canards, oies, cygnes","bulweria":"Puffins, pétrels","burhinus":"Œdicnèmes","buteo":"Rapaces (aigles, buses…)","butorides":"Hérons, aigrettes","cairina":"Canards, oies, cygnes","calandrella":"Alouettes","calcarius":"Bruants des neiges","calidris":"Bécasseaux, chevaliers","callipepla":"Colins","calonectris":"Puffins, pétrels","caprimulgus":"Engoulevents","carduelis":"Pinsons, chardonnerets…","carpodacus":"Pinsons, chardonnerets…","catharus":"Grives, merles","cecropis":"Hirondelles","cepphus":"Pingouins, guillemots","cercotrichas":"Gobemouches, rougegorges…","certhia":"Grimpereaux","ceryle":"Martins-pêcheurs","cettia":"Bouscarles","chaetura":"Martinets","charadrius":"Pluviers, vanneaux","chersophilus":"Alouettes","chlamydotis":"Outardes","chlidonias":"Goélands, mouettes, sternes","chloris":"Pinsons, chardonnerets…","chordeiles":"Engoulevents","chroicocephalus":"Goélands, mouettes, sternes","ciconia":"Cigognes","cinclus":"Cincles","circaetus":"Rapaces (aigles, buses…)","circus":"Rapaces (aigles, buses…)","cisticola":"Cisticoles","clamator":"Coucous","clanga":"Rapaces (aigles, buses…)","clangula":"Canards, oies, cygnes","coccothraustes":"Pinsons, chardonnerets…","coccyzus":"Coucous","colinus":"Colins","coloeus":"Corvidés (corneilles, pies…)","columba":"Pigeons, tourterelles","coracias":"Rolliers","corvus":"Corvidés (corneilles, pies…)","coturnix":"Faisans, perdrix, cailles","crex":"Râles, foulques","cuculus":"Coucous","curruca":"Fauvettes","cursorius":"Glaréoles","cyanistes":"Mésanges","cygnus":"Canards, oies, cygnes","daption":"Puffins, pétrels","delichon":"Hirondelles","dendrocopos":"Pics","dendrocoptes":"Pics","dendrocygna":"Canards, oies, cygnes","dolichonyx":"Icteridés","dryobates":"Pics","dryocopus":"Pics","egretta":"Hérons, aigrettes","elanus":"Rapaces (aigles, buses…)","emberiza":"Bruants","eremophila":"Alouettes","erithacus":"Gobemouches, rougegorges…","eudromias":"Pluviers, vanneaux","euodice":"Estrildidés","falco":"Faucons","ficedula":"Gobemouches, rougegorges…","francolinus":"Faisans, perdrix, cailles","fratercula":"Pingouins, guillemots","fregata":"Fregatidés","fringilla":"Pinsons, chardonnerets…","fulica":"Râles, foulques","fulmarus":"Puffins, pétrels","galerida":"Alouettes","gallinago":"Bécasseaux, chevaliers","gallinula":"Râles, foulques","garrulus":"Corvidés (corneilles, pies…)","gavia":"Plongeons","gelochelidon":"Goélands, mouettes, sternes","geokichla":"Grives, merles","geronticus":"Ibis, spatules","glareola":"Glaréoles","glaucidium":"Chouettes, hiboux","grus":"Grues","gulosus":"Cormorans","gypaetus":"Rapaces (aigles, buses…)","gyps":"Rapaces (aigles, buses…)","haematopus":"Huîtriers","haliaeetus":"Rapaces (aigles, buses…)","helopsaltes":"Locustelles","hieraaetus":"Rapaces (aigles, buses…)","himantopus":"Avocettes, échasses","hippolais":"Rousserolles","hirundo":"Hirondelles","histrionicus":"Canards, oies, cygnes","hydrobates":"Océanites","hydrocoloeus":"Goélands, mouettes, sternes","hydroprogne":"Goélands, mouettes, sternes","ichthyaetus":"Goélands, mouettes, sternes","icterus":"Icteridés","iduna":"Rousserolles","jynx":"Pics","ketupa":"Chouettes, hiboux","lagopus":"Faisans, perdrix, cailles","lanius":"Pies-grièches","larus":"Goélands, mouettes, sternes","leiothlypis":"Parulidés","leiothrix":"Leiothrichidés","leucophaeus":"Goélands, mouettes, sternes","limnodromus":"Bécasseaux, chevaliers","limosa":"Bécasseaux, chevaliers","linaria":"Pinsons, chardonnerets…","locustella":"Locustelles","lophophanes":"Mésanges","loxia":"Pinsons, chardonnerets…","lullula":"Alouettes","luscinia":"Gobemouches, rougegorges…","lymnocryptes":"Bécasseaux, chevaliers","lyrurus":"Faisans, perdrix, cailles","macronectes":"Puffins, pétrels","mareca":"Canards, oies, cygnes","marmaronetta":"Canards, oies, cygnes","megaceryle":"Martins-pêcheurs","melanitta":"Canards, oies, cygnes","melanocorypha":"Alouettes","mergellus":"Canards, oies, cygnes","mergus":"Canards, oies, cygnes","merops":"Guêpiers","microcarbo":"Cormorans","milvus":"Rapaces (aigles, buses…)","mniotilta":"Parulidés","molothrus":"Icteridés","monticola":"Gobemouches, rougegorges…","montifringilla":"Moineaux","morus":"Fous","motacilla":"Bergeronnettes, pipits","muscicapa":"Gobemouches, rougegorges…","myiopsitta":"Perroquets","nannopterum":"Cormorans","neophron":"Rapaces (aigles, buses…)","netta":"Canards, oies, cygnes","nucifraga":"Corvidés (corneilles, pies…)","numenius":"Bécasseaux, chevaliers","nycticorax":"Hérons, aigrettes","oceanites":"Océanites","oenanthe":"Gobemouches, rougegorges…","onychoprion":"Goélands, mouettes, sternes","oriolus":"Loriots","otis":"Outardes","otus":"Chouettes, hiboux","oxyura":"Canards, oies, cygnes","pagophila":"Goélands, mouettes, sternes","pandion":"Balbuzard","panurus":"Panure","paragallinula":"Râles, foulques","parkesia":"Parulidés","parus":"Mésanges","passer":"Moineaux","pastor":"Étourneaux","pavo":"Faisans, perdrix, cailles","pelecanus":"Pélicans","perdix":"Faisans, perdrix, cailles","periparus":"Mésanges","pernis":"Rapaces (aigles, buses…)","petrochelidon":"Hirondelles","petronia":"Moineaux","phalacrocorax":"Cormorans","phalaropus":"Bécasseaux, chevaliers","phasianus":"Faisans, perdrix, cailles","pheucticus":"Cardinalidés","phoeniconaias":"Flamants","phoenicopterus":"Flamants","phoenicurus":"Gobemouches, rougegorges…","phylloscopus":"Pouillots","pica":"Corvidés (corneilles, pies…)","picoides":"Pics","picus":"Pics","pinguinus":"Pingouins, guillemots","pinicola":"Pinsons, chardonnerets…","piranga":"Cardinalidés","platalea":"Ibis, spatules","plectrophenax":"Bruants des neiges","plegadis":"Ibis, spatules","pluvialis":"Pluviers, vanneaux","podiceps":"Grèbes","podilymbus":"Grèbes","poecile":"Mésanges","polysticta":"Canards, oies, cygnes","porphyrio":"Râles, foulques","porzana":"Râles, foulques","prunella":"Accenteurs","psittacula":"Perruches","pterocles":"Gangas","pterodroma":"Puffins, pétrels","ptyonoprogne":"Hirondelles","puffinus":"Puffins, pétrels","pyrrhocorax":"Corvidés (corneilles, pies…)","pyrrhula":"Pinsons, chardonnerets…","rallus":"Râles, foulques","recurvirostra":"Avocettes, échasses","regulus":"Roitelets","remiz":"Rémiz","rhodostethia":"Goélands, mouettes, sternes","riparia":"Hirondelles","rissa":"Goélands, mouettes, sternes","saxicola":"Gobemouches, rougegorges…","scolopax":"Bécasseaux, chevaliers","seiurus":"Parulidés","serinus":"Pinsons, chardonnerets…","setophaga":"Parulidés","sibirionetta":"Canards, oies, cygnes","sitta":"Sittelles","somateria":"Canards, oies, cygnes","spatula":"Canards, oies, cygnes","spinus":"Pinsons, chardonnerets…","stercorarius":"Labbes","sterna":"Goélands, mouettes, sternes","sternula":"Goélands, mouettes, sternes","streptopelia":"Pigeons, tourterelles","strix":"Chouettes, hiboux","sturnus":"Étourneaux","sula":"Fous","surnia":"Chouettes, hiboux","sylvia":"Fauvettes","syrmaticus":"Faisans, perdrix, cailles","syrrhaptes":"Gangas","tachybaptus":"Grèbes","tachymarptis":"Martinets","tadorna":"Canards, oies, cygnes","tarsiger":"Gobemouches, rougegorges…","tetrao":"Faisans, perdrix, cailles","tetrastes":"Faisans, perdrix, cailles","tetrax":"Outardes","thalassarche":"Diomedeidés","thalasseus":"Goélands, mouettes, sternes","threskiornis":"Ibis, spatules","tichodroma":"Tichodrome","torgos":"Rapaces (aigles, buses…)","tringa":"Bécasseaux, chevaliers","troglodytes":"Troglodytes","turdus":"Grives, merles","turnix":"Turnix","tyto":"Effraies","upupa":"Huppes","uria":"Pingouins, guillemots","vanellus":"Pluviers, vanneaux","vireo":"Vireonidés","xema":"Goélands, mouettes, sternes","xenus":"Bécasseaux, chevaliers","zapornia":"Râles, foulques","zonotrichia":"Passerellidés","zoothera":"Grives, merles"};
+function familyOf(sci){ const g=(sci||'').trim().split(' ')[0].toLowerCase(); return GENUS_FAMILY[g] || 'Autres'; }
+
 
 /* ---------------- CSV ---------------- */
 function parseCSV(text){
@@ -599,9 +613,20 @@ function renderMatrix({universe,N}){
     ${state.people.map(p=>`<th class="pcol" style="--series:var(--s${p.si})"><span class="cap"><span class="dot"></span>${esc(p.name)}</span></th>`).join('')}
     <th class="pcol">Vues</th></tr>`;
 
+  // remplit le menu des familles présentes (stable, seulement si la liste change)
+  const fams=[...new Set(universe.map(u=>familyOf(u.sci)))].sort((a,b)=>a.localeCompare(b,'fr'));
+  const famKey=fams.join('|');
+  if(famKey!==lastFamKey){
+    lastFamKey=famKey;
+    const sel=$('#familySel');
+    sel.innerHTML='<option value="any">Toutes les familles</option>'+fams.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('');
+    if(!fams.includes(state.family)) state.family='any';
+    sel.value=state.family;
+  }
+
   let list=[...universe];
-  if(state.filter==='unique') list=list.filter(u=>u.seenBy.size===1 && N>1);
-  else if(state.filter==='shared') list=list.filter(u=>u.seenBy.size>1);
+  if(state.tier!=='any') list=list.filter(u=>u.tier.id===state.tier);
+  if(state.family!=='any') list=list.filter(u=>familyOf(u.sci)===state.family);
   if(state.q){ const q=state.q.toLowerCase();
     list=list.filter(u=>u.common.toLowerCase().includes(q)||(u.sci||'').toLowerCase().includes(q)); }
   if(state.sort==='rarity') list.sort((a,b)=> a.seenBy.size-b.seenBy.size || a.common.localeCompare(b.common));
@@ -879,9 +904,8 @@ $('#q').addEventListener('input',e=>{ state.q=e.target.value; renderResults(); }
 $('#sortSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return;
   $('#sortSeg').querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
   state.sort=b.dataset.sort; renderResults(); });
-$('#filterSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return;
-  $('#filterSeg').querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
-  state.filter=b.dataset.filt; renderResults(); });
+$('#tierSel').addEventListener('change',e=>{ state.tier=e.target.value; renderResults(); });
+$('#familySel').addEventListener('change',e=>{ state.family=e.target.value; renderResults(); });
 
 // logo personnalisé (choisi depuis le site, enregistré sur cet appareil uniquement)
 const LOGO_KEY='mb-logo';
