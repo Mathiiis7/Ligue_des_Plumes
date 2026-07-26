@@ -165,25 +165,17 @@
 
   /* stat tiles */
 
-  /* scoreboard */
+  /* scoreboard (feuille) */
   #board { padding:20px; }
-  .board-list { display:flex; flex-direction:column; gap:10px; margin-top:16px; }
-  .row-p { display:grid; grid-template-columns:34px 1fr auto; align-items:center; gap:14px;
-    padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:var(--surface-2);
-    position:relative; overflow:hidden; }
-  .row-p.lead { border-color:color-mix(in srgb,var(--gold) 55%,var(--line)); }
-  .rank { font-family:var(--mono); font-size:19px; font-weight:600; color:var(--ink-3); text-align:center; }
-  .row-p.lead .rank { color:var(--gold); }
-  .who { display:flex; align-items:center; gap:10px; min-width:0; }
-  .who .dot { width:13px; height:13px; border-radius:50%; background:var(--series); flex:none;
-    box-shadow:0 0 0 3px color-mix(in srgb,var(--series) 20%,transparent); }
-  .who .nm { font-weight:600; font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .who .meta { color:var(--ink-3); font-size:12.5px; font-variant-numeric:tabular-nums; }
-  .pts { text-align:right; }
-  .pts .v { font-family:var(--mono); font-size:24px; font-weight:600; font-variant-numeric:tabular-nums;
-    color:var(--accent-ink); line-height:1; }
-  .pts .u { font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.1em; }
-  .bar { position:absolute; left:0; bottom:0; height:3px; background:var(--series); opacity:.9; }
+  .board-list { margin-top:16px; }
+  .board-list .sheet-scroll { overflow-x:auto; border:1px solid var(--line-2); border-radius:10px; }
+  .board-sheet .who-cell { display:flex; align-items:center; gap:9px; font-weight:600; }
+  .board-sheet .who-cell .dot { width:11px; height:11px; border-radius:50%; background:var(--series); flex:none; }
+  .c-num { text-align:right !important; font-variant-numeric:tabular-nums; }
+  .c-rank { text-align:center !important; width:46px; font-family:var(--mono); color:var(--ink-3); font-weight:600; }
+  td.strong { font-weight:700; color:var(--accent-ink); }
+  tr.lead td { background:color-mix(in srgb,var(--gold) 13%,var(--surface)) !important; }
+  tr.lead .c-rank { color:var(--gold); }
 
   /* rarest finds */
   .empty-note { color:var(--ink-3); font-size:13px; margin-top:12px; }
@@ -200,26 +192,25 @@
   .seg button { border:none; background:var(--surface); color:var(--ink-2); font:inherit; font-size:12.5px;
     padding:7px 11px; cursor:pointer; }
   .seg button.on { background:var(--accent); color:#fff; }
-  .tbl-scroll { overflow-x:auto; margin-top:10px; border:1px solid var(--line); border-radius:11px; }
+  .tbl-scroll { overflow-x:auto; margin-top:10px; border:1px solid var(--line-2); border-radius:10px; }
   table { border-collapse:collapse; width:100%; font-size:13.5px; }
-  thead th { position:sticky; top:0; background:var(--surface); z-index:2; text-align:left;
-    padding:10px 12px; border-bottom:1px solid var(--line-2); font-size:11.5px; text-transform:uppercase;
-    letter-spacing:.06em; color:var(--ink-3); font-weight:700; white-space:nowrap; }
+  thead th { position:sticky; top:0; background:var(--surface-2); z-index:2; text-align:left;
+    padding:9px 12px; border:1px solid var(--line-2); font-size:11.5px; text-transform:uppercase;
+    letter-spacing:.05em; color:var(--ink-3); font-weight:700; white-space:nowrap; }
   thead th.pcol { text-align:center; }
   thead th.pcol .cap { display:inline-flex; align-items:center; gap:6px; }
   thead th.pcol .dot { width:9px; height:9px; border-radius:50%; background:var(--series); }
-  tbody td { padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:middle; }
-  tbody tr:last-child td { border-bottom:none; }
-  tbody tr:hover td { background:var(--surface-2); }
+  tbody td { padding:8px 12px; border:1px solid var(--line-2); vertical-align:middle; }
+  tbody tr:nth-child(even) td { background:color-mix(in srgb,var(--surface-2) 45%,var(--surface)); }
+  tbody tr:hover td { background:color-mix(in srgb,var(--accent) 8%,var(--surface)); }
   td.sp { font-weight:600; }
   td.sp .sci { display:block; font-family:var(--serif); font-style:italic; font-weight:400;
     color:var(--ink-3); font-size:12px; }
-  td.pcol { text-align:center; }
-  .seen { width:15px; height:15px; border-radius:50%; background:var(--series); display:inline-block;
-    box-shadow:0 0 0 2px var(--surface); }
-  tr:hover .seen { box-shadow:0 0 0 2px var(--surface-2); }
-  .unseen { color:var(--line-2); }
-  .chip { display:inline-block; font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px;
+  td.pcol { text-align:center; padding:0; }
+  td.pcol.is-seen { background:color-mix(in srgb,var(--accent) 18%,var(--surface)) !important;
+    color:var(--accent-ink); font-weight:700; }
+  td.pcol .chk { font-style:normal; font-size:13px; }
+  .chip { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:4px;
     white-space:nowrap; background:color-mix(in srgb,var(--tc) 16%,transparent); color:var(--tc);
     border:1px solid color-mix(in srgb,var(--tc) 30%,transparent); }
   .cnt { font-variant-numeric:tabular-nums; color:var(--ink-2); text-align:center; }
@@ -592,18 +583,15 @@ function fmt(n){ return Math.round(n).toLocaleString('fr-FR'); }
 
 function renderBoard(){
   const ranked=[...state.people].sort((a,b)=>b.score-a.score);
-  const max=ranked.length?Math.max(1,ranked[0].score):1;
-  $('#boardList').innerHTML = ranked.map((p,i)=>{
-    const w=(p.score/max*100).toFixed(1);
-    return `<div class="row-p ${i===0?'lead':''}" style="--series:var(--s${p.si})">
-      <div class="rank">${i===0?'★':'#'+(i+1)}</div>
-      <div class="who"><span class="dot"></span>
-        <span style="min-width:0;"><span class="nm">${esc(p.name)}</span>
-        <span class="meta"> · ${p.total} espèces · ${p.unique} unique${p.unique>1?'s':''}</span></span></div>
-      <div class="pts"><div class="v">${fmt(p.score)}</div><div class="u">points</div></div>
-      <div class="bar" style="width:${w}%"></div>
-    </div>`;
-  }).join('');
+  $('#boardList').innerHTML = `<div class="sheet-scroll"><table class="board-sheet">
+    <thead><tr><th class="c-rank">#</th><th>Joueur</th><th class="c-num">Espèces</th><th class="c-num">Uniques</th><th class="c-num">Points</th></tr></thead>
+    <tbody>${ranked.map((p,i)=>`<tr class="${i===0?'lead':''}">
+      <td class="c-rank">${i===0?'★':(i+1)}</td>
+      <td class="who-cell" style="--series:var(--s${p.si})"><span class="dot"></span>${esc(p.name)}${p.isMe?'<span class="youtag">vous</span>':''}${p.isDemo?'<span class="demotag">ex.</span>':''}</td>
+      <td class="c-num">${p.total}</td>
+      <td class="c-num">${p.unique}</td>
+      <td class="c-num strong">${fmt(p.score)}</td>
+    </tr>`).join('')}</tbody></table></div>`;
 }
 
 function renderMatrix({universe,N}){
@@ -634,7 +622,7 @@ function renderMatrix({universe,N}){
     const k=u.seenBy.size, t=u.tier;
     const cells = state.people.map(p=>{
       const seen=u.seenBy.has(p.id);
-      return `<td class="pcol" style="--series:var(--s${p.si})">${seen?'<span class="seen"></span>':'<span class="unseen">·</span>'}</td>`;
+      return `<td class="pcol${seen?' is-seen':''}">${seen?'<i class="chk">✓</i>':''}</td>`;
     }).join('');
     return `<tr>
       <td class="sp">${esc(u.common)}${u.sci?`<span class="sci">${esc(u.sci)}</span>`:''}</td>
