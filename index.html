@@ -663,23 +663,24 @@ function renderBoard(){
   document.querySelectorAll('#boardModes button').forEach(b=>b.classList.toggle('on', b.dataset.mode===mode));
   const dash='<span class="muted">—</span>';
   const cell=v=>v?esc(v):dash;
-  const on=m=>mode===m?' class="c-num strong on-metric"':' class="c-num"';
-  const thon=m=>mode===m?' c-num on-metric':' c-num';
+  // colonnes de score : la métrique du classement choisi, + toujours « Espèces »
+  const scoreCols=[];
+  if(mode==='league') scoreCols.push({h:'Rareté ligue', v:p=>fmt(p.score), active:true});
+  if(mode==='real') scoreCols.push({h:'Rareté réelle', v:p=>fmt(p.scoreReal||0), active:true});
+  scoreCols.push({h:'Espèces', v:p=>p.total, active:mode==='count'});
+  const scoreTh=scoreCols.map(c=>`<th class="c-num${c.active?' on-metric':''}">${c.h}</th>`).join('');
+  const scoreTd=p=>scoreCols.map(c=>`<td class="c-num${c.active?' strong on-metric':''}">${c.v(p)}</td>`).join('');
   $('#boardList').innerHTML = `<div class="sheet-scroll"><table class="board-sheet">
     <thead><tr>
       <th class="c-rank">#</th><th>Joueur</th>
-      <th class="${thon('league')}">Rareté ligue</th>
-      <th class="${thon('real')}">Rareté réelle</th>
-      <th class="${thon('count')}">Espèces</th>
+      ${scoreTh}
       <th class="c-txt">${esc(goalHeader)}</th><th class="c-txt">Espèce préférée</th>
       <th class="c-txt">La plus rare</th><th class="c-txt">Dernière acquisition</th><th class="c-txt">Espèce de rêve</th>
     </tr></thead>
     <tbody>${ranked.map((p,i)=>`<tr class="${i===0?'lead':''}">
       <td class="c-rank">${i===0?'★':(i+1)}</td>
       <td class="who-cell" style="--series:var(--s${p.si})"><span class="dot"></span>${esc(p.name)}${p.isMe?'<span class="youtag">vous</span>':''}${p.isDemo?'<span class="demotag">ex.</span>':''}</td>
-      <td${on('league')}>${fmt(p.score)}</td>
-      <td${on('real')}>${fmt(p.scoreReal||0)}</td>
-      <td${on('count')}>${p.total}</td>
+      ${scoreTd(p)}
       <td class="c-txt">${cell(p.goal)}</td>
       <td class="c-txt">${cell(p.fav)}</td>
       <td class="c-txt">${p.rare?esc(p.rare):(p.rarestName?`<span class="muted">${esc(p.rarestName)}</span>`:dash)}</td>
