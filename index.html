@@ -176,6 +176,9 @@
   .c-num { text-align:right !important; font-variant-numeric:tabular-nums; }
   .board-sheet .c-txt { min-width:120px; max-width:190px; white-space:normal; font-size:13px; }
   .board-sheet .muted { color:var(--ink-3); }
+  .board-sheet th.on-metric, .board-sheet td.on-metric { background:color-mix(in srgb,var(--accent) 12%,var(--surface)) !important; }
+  .board-sheet td.on-metric { color:var(--accent-ink); }
+  #boardModes { width:fit-content; max-width:100%; margin-top:6px; }
   .c-rank { text-align:center !important; width:46px; font-family:var(--mono); color:var(--ink-3); font-weight:600; }
   td.strong { font-weight:700; color:var(--accent-ink); }
   tr.lead td { background:color-mix(in srgb,var(--gold) 13%,var(--surface)) !important; }
@@ -350,6 +353,7 @@
       <div class="prof-grid">
         <label>Objectif<input type="text" id="profGoal" maxlength="60" placeholder="ex. 100 espèces"></label>
         <label>Espèce préférée<select id="profFav"><option value="">— aucune —</option></select></label>
+        <label>Votre espèce la plus rare<input type="text" id="profRare" maxlength="40" placeholder="au choix (sinon calculée)"></label>
         <label>Espèce de rêve<input type="text" id="profDream" maxlength="40" placeholder="ex. Gypaète barbu"></label>
         <label>Intitulé de la colonne « objectif » <span style="text-transform:none;font-weight:400;color:var(--ink-3);">(commun)</span><input type="text" id="goalHeaderInput" maxlength="34" placeholder="Objectif (fin de l'été)"></label>
       </div>
@@ -375,7 +379,12 @@
     <div class="panel" id="board">
       <div class="section-head">
         <div><div class="eyebrow">Le classement</div><h2>Qui mène la Ligue ?</h2>
-          <p>Points = somme de 100 ÷ (nombre d'amis ayant vu l'espèce). Une espèce que vous seul avez vue rapporte 100 points ; partagée par tous, elle en rapporte peu.</p></div>
+          <p id="boardExplain"></p></div>
+      </div>
+      <div class="seg" id="boardModes" style="margin-bottom:4px;">
+        <button data-mode="league" class="on">Rareté (ligue)</button>
+        <button data-mode="real">Rareté réelle</button>
+        <button data-mode="count">Nombre d'espèces</button>
       </div>
       <div class="board-list" id="boardList"></div>
     </div>
@@ -448,7 +457,7 @@ const db = getFirestore(fbApp);
 
 /* ---------------- state ---------------- */
 const SERIES_N = 8;
-const state = { people: [], onlySpecies: true, sort:'rarity', tier:'any', family:'any', q:'' };
+const state = { people: [], onlySpecies: true, sort:'rarity', tier:'any', family:'any', q:'', boardMode:'league' };
 let lastFamKey = '', lastTierKey = '';
 let myUid = null, leagueId = null, unsub = null, unsubLeague = null, iAmInLeague = false;
 let realPeople = [], demoOn = false;   // aperçu d'exemple (jamais enregistré dans le cloud)
@@ -467,6 +476,8 @@ function frName(sci, fallback){
 }
 const GENUS_FAMILY = {"acanthis":"Pinsons, chardonnerets…","accipiter":"Rapaces (aigles, buses…)","acrocephalus":"Rousserolles","actitis":"Bécasseaux, chevaliers","aegithalos":"Mésanges à longue queue","aegolius":"Chouettes, hiboux","aegypius":"Rapaces (aigles, buses…)","agapornis":"Perruches","aix":"Canards, oies, cygnes","alauda":"Alouettes","alaudala":"Alouettes","alca":"Pingouins, guillemots","alcedo":"Martins-pêcheurs","alectoris":"Faisans, perdrix, cailles","alle":"Pingouins, guillemots","alopochen":"Canards, oies, cygnes","ammomanes":"Alouettes","anarhynchus":"Pluviers, vanneaux","anas":"Canards, oies, cygnes","anser":"Canards, oies, cygnes","anthus":"Bergeronnettes, pipits","antigone":"Grues","apus":"Martinets","aquila":"Rapaces (aigles, buses…)","ardea":"Hérons, aigrettes","ardenna":"Puffins, pétrels","ardeola":"Hérons, aigrettes","arenaria":"Bécasseaux, chevaliers","asio":"Chouettes, hiboux","astur":"Rapaces (aigles, buses…)","athene":"Chouettes, hiboux","aythya":"Canards, oies, cygnes","bartramia":"Bécasseaux, chevaliers","bombycilla":"Jaseurs","botaurus":"Hérons, aigrettes","branta":"Canards, oies, cygnes","bubo":"Chouettes, hiboux","bucanetes":"Pinsons, chardonnerets…","bucephala":"Canards, oies, cygnes","bulweria":"Puffins, pétrels","burhinus":"Œdicnèmes","buteo":"Rapaces (aigles, buses…)","butorides":"Hérons, aigrettes","cairina":"Canards, oies, cygnes","calandrella":"Alouettes","calcarius":"Bruants des neiges","calidris":"Bécasseaux, chevaliers","callipepla":"Colins","calonectris":"Puffins, pétrels","caprimulgus":"Engoulevents","carduelis":"Pinsons, chardonnerets…","carpodacus":"Pinsons, chardonnerets…","catharus":"Grives, merles","cecropis":"Hirondelles","cepphus":"Pingouins, guillemots","cercotrichas":"Gobemouches, rougegorges…","certhia":"Grimpereaux","ceryle":"Martins-pêcheurs","cettia":"Bouscarles","chaetura":"Martinets","charadrius":"Pluviers, vanneaux","chersophilus":"Alouettes","chlamydotis":"Outardes","chlidonias":"Goélands, mouettes, sternes","chloris":"Pinsons, chardonnerets…","chordeiles":"Engoulevents","chroicocephalus":"Goélands, mouettes, sternes","ciconia":"Cigognes","cinclus":"Cincles","circaetus":"Rapaces (aigles, buses…)","circus":"Rapaces (aigles, buses…)","cisticola":"Cisticoles","clamator":"Coucous","clanga":"Rapaces (aigles, buses…)","clangula":"Canards, oies, cygnes","coccothraustes":"Pinsons, chardonnerets…","coccyzus":"Coucous","colinus":"Colins","coloeus":"Corvidés (corneilles, pies…)","columba":"Pigeons, tourterelles","coracias":"Rolliers","corvus":"Corvidés (corneilles, pies…)","coturnix":"Faisans, perdrix, cailles","crex":"Râles, foulques","cuculus":"Coucous","curruca":"Fauvettes","cursorius":"Glaréoles","cyanistes":"Mésanges","cygnus":"Canards, oies, cygnes","daption":"Puffins, pétrels","delichon":"Hirondelles","dendrocopos":"Pics","dendrocoptes":"Pics","dendrocygna":"Canards, oies, cygnes","dolichonyx":"Icteridés","dryobates":"Pics","dryocopus":"Pics","egretta":"Hérons, aigrettes","elanus":"Rapaces (aigles, buses…)","emberiza":"Bruants","eremophila":"Alouettes","erithacus":"Gobemouches, rougegorges…","eudromias":"Pluviers, vanneaux","euodice":"Estrildidés","falco":"Faucons","ficedula":"Gobemouches, rougegorges…","francolinus":"Faisans, perdrix, cailles","fratercula":"Pingouins, guillemots","fregata":"Fregatidés","fringilla":"Pinsons, chardonnerets…","fulica":"Râles, foulques","fulmarus":"Puffins, pétrels","galerida":"Alouettes","gallinago":"Bécasseaux, chevaliers","gallinula":"Râles, foulques","garrulus":"Corvidés (corneilles, pies…)","gavia":"Plongeons","gelochelidon":"Goélands, mouettes, sternes","geokichla":"Grives, merles","geronticus":"Ibis, spatules","glareola":"Glaréoles","glaucidium":"Chouettes, hiboux","grus":"Grues","gulosus":"Cormorans","gypaetus":"Rapaces (aigles, buses…)","gyps":"Rapaces (aigles, buses…)","haematopus":"Huîtriers","haliaeetus":"Rapaces (aigles, buses…)","helopsaltes":"Locustelles","hieraaetus":"Rapaces (aigles, buses…)","himantopus":"Avocettes, échasses","hippolais":"Rousserolles","hirundo":"Hirondelles","histrionicus":"Canards, oies, cygnes","hydrobates":"Océanites","hydrocoloeus":"Goélands, mouettes, sternes","hydroprogne":"Goélands, mouettes, sternes","ichthyaetus":"Goélands, mouettes, sternes","icterus":"Icteridés","iduna":"Rousserolles","jynx":"Pics","ketupa":"Chouettes, hiboux","lagopus":"Faisans, perdrix, cailles","lanius":"Pies-grièches","larus":"Goélands, mouettes, sternes","leiothlypis":"Parulidés","leiothrix":"Leiothrichidés","leucophaeus":"Goélands, mouettes, sternes","limnodromus":"Bécasseaux, chevaliers","limosa":"Bécasseaux, chevaliers","linaria":"Pinsons, chardonnerets…","locustella":"Locustelles","lophophanes":"Mésanges","loxia":"Pinsons, chardonnerets…","lullula":"Alouettes","luscinia":"Gobemouches, rougegorges…","lymnocryptes":"Bécasseaux, chevaliers","lyrurus":"Faisans, perdrix, cailles","macronectes":"Puffins, pétrels","mareca":"Canards, oies, cygnes","marmaronetta":"Canards, oies, cygnes","megaceryle":"Martins-pêcheurs","melanitta":"Canards, oies, cygnes","melanocorypha":"Alouettes","mergellus":"Canards, oies, cygnes","mergus":"Canards, oies, cygnes","merops":"Guêpiers","microcarbo":"Cormorans","milvus":"Rapaces (aigles, buses…)","mniotilta":"Parulidés","molothrus":"Icteridés","monticola":"Gobemouches, rougegorges…","montifringilla":"Moineaux","morus":"Fous","motacilla":"Bergeronnettes, pipits","muscicapa":"Gobemouches, rougegorges…","myiopsitta":"Perroquets","nannopterum":"Cormorans","neophron":"Rapaces (aigles, buses…)","netta":"Canards, oies, cygnes","nucifraga":"Corvidés (corneilles, pies…)","numenius":"Bécasseaux, chevaliers","nycticorax":"Hérons, aigrettes","oceanites":"Océanites","oenanthe":"Gobemouches, rougegorges…","onychoprion":"Goélands, mouettes, sternes","oriolus":"Loriots","otis":"Outardes","otus":"Chouettes, hiboux","oxyura":"Canards, oies, cygnes","pagophila":"Goélands, mouettes, sternes","pandion":"Balbuzard","panurus":"Panure","paragallinula":"Râles, foulques","parkesia":"Parulidés","parus":"Mésanges","passer":"Moineaux","pastor":"Étourneaux","pavo":"Faisans, perdrix, cailles","pelecanus":"Pélicans","perdix":"Faisans, perdrix, cailles","periparus":"Mésanges","pernis":"Rapaces (aigles, buses…)","petrochelidon":"Hirondelles","petronia":"Moineaux","phalacrocorax":"Cormorans","phalaropus":"Bécasseaux, chevaliers","phasianus":"Faisans, perdrix, cailles","pheucticus":"Cardinalidés","phoeniconaias":"Flamants","phoenicopterus":"Flamants","phoenicurus":"Gobemouches, rougegorges…","phylloscopus":"Pouillots","pica":"Corvidés (corneilles, pies…)","picoides":"Pics","picus":"Pics","pinguinus":"Pingouins, guillemots","pinicola":"Pinsons, chardonnerets…","piranga":"Cardinalidés","platalea":"Ibis, spatules","plectrophenax":"Bruants des neiges","plegadis":"Ibis, spatules","pluvialis":"Pluviers, vanneaux","podiceps":"Grèbes","podilymbus":"Grèbes","poecile":"Mésanges","polysticta":"Canards, oies, cygnes","porphyrio":"Râles, foulques","porzana":"Râles, foulques","prunella":"Accenteurs","psittacula":"Perruches","pterocles":"Gangas","pterodroma":"Puffins, pétrels","ptyonoprogne":"Hirondelles","puffinus":"Puffins, pétrels","pyrrhocorax":"Corvidés (corneilles, pies…)","pyrrhula":"Pinsons, chardonnerets…","rallus":"Râles, foulques","recurvirostra":"Avocettes, échasses","regulus":"Roitelets","remiz":"Rémiz","rhodostethia":"Goélands, mouettes, sternes","riparia":"Hirondelles","rissa":"Goélands, mouettes, sternes","saxicola":"Gobemouches, rougegorges…","scolopax":"Bécasseaux, chevaliers","seiurus":"Parulidés","serinus":"Pinsons, chardonnerets…","setophaga":"Parulidés","sibirionetta":"Canards, oies, cygnes","sitta":"Sittelles","somateria":"Canards, oies, cygnes","spatula":"Canards, oies, cygnes","spinus":"Pinsons, chardonnerets…","stercorarius":"Labbes","sterna":"Goélands, mouettes, sternes","sternula":"Goélands, mouettes, sternes","streptopelia":"Pigeons, tourterelles","strix":"Chouettes, hiboux","sturnus":"Étourneaux","sula":"Fous","surnia":"Chouettes, hiboux","sylvia":"Fauvettes","syrmaticus":"Faisans, perdrix, cailles","syrrhaptes":"Gangas","tachybaptus":"Grèbes","tachymarptis":"Martinets","tadorna":"Canards, oies, cygnes","tarsiger":"Gobemouches, rougegorges…","tetrao":"Faisans, perdrix, cailles","tetrastes":"Faisans, perdrix, cailles","tetrax":"Outardes","thalassarche":"Diomedeidés","thalasseus":"Goélands, mouettes, sternes","threskiornis":"Ibis, spatules","tichodroma":"Tichodrome","torgos":"Rapaces (aigles, buses…)","tringa":"Bécasseaux, chevaliers","troglodytes":"Troglodytes","turdus":"Grives, merles","turnix":"Turnix","tyto":"Effraies","upupa":"Huppes","uria":"Pingouins, guillemots","vanellus":"Pluviers, vanneaux","vireo":"Vireonidés","xema":"Goélands, mouettes, sternes","xenus":"Bécasseaux, chevaliers","zapornia":"Râles, foulques","zonotrichia":"Passerellidés","zoothera":"Grives, merles"};
 function familyOf(sci){ const g=(sci||'').trim().split(' ')[0].toLowerCase(); return GENUS_FAMILY[g] || 'Autres'; }
+const REAL_RARITY = {"acanthis flammea":3,"acanthis hornemanni":3,"acrocephalus agricola":3,"acrocephalus arundinaceus":3,"acrocephalus dumetorum":3,"acrocephalus melanopogon":6,"acrocephalus paludicola":3,"actitis hypoleucos":2,"actitis macularius":3,"aegypius monachus":3,"alaudala rufescens":3,"alca torda":2,"alcedo atthis":3,"alectoris graeca":2,"alle alle":4,"anarhynchus alexandrinus":3,"anarhynchus asiaticus":3,"anarhynchus leschenaultii":3,"anarhynchus mongolus":3,"anarhynchus pecuarius":3,"anas carolinensis":3,"anas rubripes":3,"anser albifrons":4,"anser brachyrhynchus":3,"anser caerulescens":3,"anser erythropus":3,"anser fabalis":3,"anthus cervinus":8,"anthus godlewskii":3,"anthus gustavi":3,"anthus hodgsoni":3,"anthus petrosus":2,"anthus pratensis":2,"anthus richardi":3,"anthus rubescens":3,"antigone canadensis":3,"apus affinis":3,"apus apus":2,"aquila adalberti":3,"aquila chrysaetos":3,"aquila fasciata":6,"aquila heliaca":3,"aquila nipalensis":3,"ardea herodias":3,"ardea melanocephala":3,"ardenna gravis":8,"ardenna grisea":8,"asio flammeus":3,"aythya affinis":3,"aythya collaris":3,"aythya marila":2,"aythya nyroca":3,"bartramia longicauda":3,"bombycilla garrulus":3,"botaurus minutus":6,"botaurus stellaris":3,"branta leucopsis":4,"branta ruficollis":3,"bubo scandiacus":3,"bucanetes githagineus":3,"bucephala albeola":3,"bucephala clangula":3,"bucephala islandica":3,"bulweria bulwerii":3,"buteo lagopus":4,"buteo rufinus":3,"butorides virescens":3,"calandrella brachydactyla":6,"calcarius lapponicus":4,"calidris acuminata":3,"calidris bairdii":3,"calidris canutus":2,"calidris falcinellus":3,"calidris fuscicollis":3,"calidris himantopus":3,"calidris maritima":4,"calidris mauri":3,"calidris melanotos":3,"calidris minutilla":3,"calidris pugnax":2,"calidris pusilla":3,"calidris ruficollis":3,"calidris subruficollis":3,"calidris temminckii":4,"calonectris diomedea":3,"caprimulgus ruficollis":3,"carduelis carduelis":3,"carduelis citrinella":2,"carpodacus erythrinus":2,"catharus minimus":3,"catharus ustulatus":3,"cecropis rufula":3,"cepphus grylle":4,"cercotrichas galactotes":3,"cettia cetti":2,"chaetura pelagica":3,"charadrius vociferus":3,"chersophilus duponti":3,"chlamydotis macqueenii":3,"chlidonias hybrida":3,"chlidonias leucopterus":3,"chlidonias niger":2,"chloris chloris":3,"chordeiles minor":3,"chroicocephalus genei":3,"chroicocephalus philadelphia":3,"ciconia nigra":3,"circus aeruginosus":2,"circus macrourus":3,"circus pygargus":2,"cisticola juncidis":3,"clanga clanga":3,"clanga pomarina":3,"clangula hyemalis":4,"coccyzus americanus":3,"coloeus dauuricus":3,"columba livia":2,"coracias garrulus":2,"crex crex":6,"curruca conspicillata":6,"curruca deserti":3,"curruca melanocephala":2,"curruca nana":3,"curruca nisoria":3,"curruca ruppeli":3,"curruca undata":6,"cursorius cursor":3,"cyanistes cyanus":3,"cygnus columbianus":6,"cygnus cygnus":3,"delichon urbicum":2,"dendrocopos leucotos":3,"dolichonyx oryzivorus":3,"dryobates minor":3,"egretta gularis":3,"elanus caeruleus":3,"emberiza aureola":3,"emberiza bruniceps":3,"emberiza caesia":3,"emberiza chrysophrys":3,"emberiza citrinella":3,"emberiza hortulana":6,"emberiza leucocephalos":3,"emberiza melanocephala":3,"emberiza pusilla":3,"emberiza rustica":3,"emberiza rutila":3,"emberiza schoeniclus":4,"emberiza spodocephala":3,"eremophila alpestris":4,"eudromias morinellus":2,"falco biarmicus":3,"falco cherrug":3,"falco columbarius":2,"falco concolor":3,"falco eleonorae":3,"falco naumanni":3,"falco rusticolus":3,"falco tinnunculus":2,"falco vespertinus":3,"ficedula albicollis":2,"ficedula hypoleuca":2,"ficedula parva":3,"ficedula semitorquata":3,"fratercula arctica":8,"fregata magnificens":3,"fringilla montifringilla":2,"fulica cristata":3,"fulmarus glacialis":2,"galerida theklae":6,"gallinago delicata":3,"gallinago gallinago":2,"gallinago media":3,"gavia arctica":2,"gavia immer":3,"gavia stellata":2,"gelochelidon nilotica":3,"geokichla sibirica":3,"glareola nordmanni":3,"glareola pratincola":6,"glaucidium passerinum":2,"grus grus":2,"gypaetus barbatus":6,"haliaeetus albicilla":8,"helopsaltes certhiola":3,"helopsaltes fasciolatus":3,"hieraaetus pennatus":2,"hippolais icterina":3,"hirundo rustica":2,"hydrobates castro":3,"hydrobates leucorhous":3,"hydrobates monorhis":3,"hydrobates pelagicus":3,"hydroprogne caspia":2,"ichthyaetus audouinii":3,"ichthyaetus ichthyaetus":3,"iduna caligata":3,"iduna opaca":3,"iduna pallida":3,"iduna rama":3,"lagopus muta":2,"lanius collurio":2,"lanius cristatus":3,"lanius excubitor":6,"lanius isabellinus":3,"lanius meridionalis":6,"lanius minor":8,"lanius nubicus":3,"lanius senator":3,"larus argentatus":2,"larus cachinnans":4,"larus delawarensis":3,"larus glaucoides":3,"larus hyperboreus":4,"larus smithsonianus":3,"leucophaeus atricilla":3,"leucophaeus pipixcan":3,"limnodromus griseus":3,"limnodromus scolopaceus":3,"limosa limosa":2,"linaria cannabina":3,"linaria flavirostris":4,"locustella fluviatilis":3,"locustella lanceolata":3,"locustella luscinioides":4,"locustella naevia":2,"loxia leucoptera":3,"loxia pytyopsittacus":3,"luscinia luscinia":3,"lymnocryptes minimus":2,"lyrurus tetrix":2,"macronectes giganteus":3,"macronectes halli":3,"mareca americana":3,"marmaronetta angustirostris":3,"melanitta americana":3,"melanitta deglandi":3,"melanitta fusca":6,"melanitta perspicillata":3,"melanocorypha calandra":6,"mergellus albellus":3,"merops persicus":3,"microcarbo pygmaeus":3,"milvus milvus":3,"monticola saxatilis":2,"morus bassanus":2,"motacilla citreola":3,"muscicapa striata":2,"muscicapa tyrrhenica":2,"nannopterum auritum":3,"neophron percnopterus":6,"numenius arquata":2,"numenius phaeopus":3,"numenius tenuirostris":3,"oceanites oceanicus":3,"oenanthe deserti":3,"oenanthe hispanica":6,"oenanthe isabellina":3,"oenanthe leucopyga":3,"oenanthe leucura":3,"oenanthe oenanthe":2,"oenanthe pleschanka":3,"onychoprion anaethetus":3,"onychoprion fuscatus":3,"otis tarda":3,"oxyura leucocephala":3,"pagophila eburnea":3,"parkesia noveboracensis":3,"passer hispaniolensis":3,"passer montanus":6,"pastor roseus":3,"pelecanus onocrotalus":3,"petrochelidon pyrrhonota":3,"phalaropus fulicarius":8,"phalaropus lobatus":3,"phalaropus tricolor":3,"pheucticus ludovicianus":3,"phoenicopterus roseus":3,"phylloscopus borealis":3,"phylloscopus fuscatus":3,"phylloscopus humei":3,"phylloscopus ibericus":3,"phylloscopus inornatus":3,"phylloscopus nitidus":3,"phylloscopus orientalis":3,"phylloscopus plumbeitarsus":3,"phylloscopus proregulus":3,"phylloscopus schwarzi":3,"phylloscopus sibilatrix":2,"phylloscopus trochiloides":3,"phylloscopus trochilus":2,"picoides tridactylus":3,"picus canus":6,"pinicola enucleator":3,"piranga olivacea":3,"platalea leucorodia":2,"plectrophenax nivalis":4,"plegadis falcinellus":2,"pluvialis dominica":3,"pluvialis fulva":3,"podiceps auritus":3,"podiceps grisegena":4,"podilymbus podiceps":3,"poecile montanus":3,"polysticta stelleri":3,"porphyrio alleni":3,"porphyrio porphyrio":3,"porzana carolina":3,"porzana porzana":3,"prunella atrogularis":3,"pterocles alchata":8,"pterodroma feae":3,"pterodroma madeira":3,"puffinus baroli":3,"puffinus mauretanicus":3,"puffinus puffinus":3,"puffinus yelkouan":2,"pyrrhula pyrrhula":3,"rallus aquaticus":2,"regulus regulus":2,"remiz pendulinus":2,"rhodostethia rosea":3,"riparia paludicola":3,"rissa tridactyla":2,"saxicola rubetra":2,"saxicola rubicola":2,"scolopax minor":3,"serinus serinus":3,"setophaga americana":3,"setophaga ruticilla":3,"setophaga striata":3,"sibirionetta formosa":3,"sitta whiteheadi":3,"somateria mollissima":4,"somateria spectabilis":3,"spatula discors":3,"spatula querquedula":2,"stercorarius longicaudus":3,"sterna dougallii":2,"sterna forsteri":3,"streptopelia orientalis":3,"streptopelia turtur":3,"sula dactylatra":3,"surnia ulula":3,"sylvia borin":2,"syrrhaptes paradoxus":3,"tarsiger cyanurus":3,"tetrao urogallus":3,"tetrastes bonasia":2,"tetrax tetrax":4,"thalassarche melanophris":3,"thalasseus bengalensis":3,"thalasseus elegans":3,"thalasseus maximus":3,"tichodroma muraria":2,"torgos tracheliotos":3,"tringa erythropus":2,"tringa flavipes":3,"tringa melanoleuca":3,"tringa semipalmata":3,"tringa solitaria":3,"tringa stagnatilis":3,"turdus atrogularis":8,"turdus eunomus":3,"turdus naumanni":3,"turdus obscurus":3,"turdus ruficollis":3,"uria aalge":2,"uria lomvia":3,"vanellus gregarius":3,"vanellus leucurus":3,"vireo olivaceus":3,"xema sabini":3,"xenus cinereus":3,"zapornia parva":3,"zapornia pusilla":3,"zonotrichia albicollis":3,"zonotrichia leucophrys":3,"zoothera aurea":3};
+function rarityReal(sci){ return REAL_RARITY[(sci||'').trim().toLowerCase()] || 1; }
 
 
 /* ---------------- CSV ---------------- */
@@ -582,15 +593,16 @@ function build(){
   }
   // par joueur : espèce la plus rare (vue par le moins de monde) + dernière acquisition (date la + récente)
   state.people.forEach(p=>{
-    let rarest=null, rarestK=Infinity, last=null, lastOrd=-1, lastDisp='';
+    let rarest=null, rarestK=Infinity, last=null, lastOrd=-1, lastDisp='', real=0;
     for(const [key,v] of p._active){
       const k=universe.get(key).seenBy.size;
       const nm=frName(v.sci, v.common);
       if(k<rarestK || (k===rarestK && rarest && nm.localeCompare(rarest,'fr')<0)){ rarestK=k; rarest=nm; }
       const pd=parseDate(v.date);
       if(pd && pd.ord>lastOrd){ lastOrd=pd.ord; last=nm; lastDisp=pd.disp; }
+      real += rarityReal(v.sci);
     }
-    p.rarestName=rarest; p.lastAcqName=last; p.lastAcqDisp=lastDisp;
+    p.rarestName=rarest; p.lastAcqName=last; p.lastAcqDisp=lastDisp; p.scoreReal=real;
   });
   return { universe:[...universe.values()], N };
 }
@@ -639,23 +651,38 @@ function parseDate(s){
 
 
 function renderBoard(){
-  const ranked=[...state.people].sort((a,b)=>b.score-a.score);
+  const mode=state.boardMode;
+  const keyFn = mode==='count' ? (p=>p.total) : mode==='real' ? (p=>p.scoreReal||0) : (p=>p.score);
+  const ranked=[...state.people].sort((a,b)=>keyFn(b)-keyFn(a));
+  const explain = mode==='count'
+    ? "Classement par nombre d'espèces observées."
+    : mode==='real'
+    ? "Points = rareté réelle des espèces en France (un oiseau commun vaut 1, un oiseau rare ou menacé bien plus) — indépendant de la ligue."
+    : "Points = somme de 100 ÷ (nombre d'amis ayant vu l'espèce). Vue par vous seul = 100 ; vue par tous = peu.";
+  const eb=$('#boardExplain'); if(eb) eb.textContent=explain;
+  document.querySelectorAll('#boardModes button').forEach(b=>b.classList.toggle('on', b.dataset.mode===mode));
   const dash='<span class="muted">—</span>';
   const cell=v=>v?esc(v):dash;
+  const on=m=>mode===m?' class="c-num strong on-metric"':' class="c-num"';
+  const thon=m=>mode===m?' c-num on-metric':' c-num';
   $('#boardList').innerHTML = `<div class="sheet-scroll"><table class="board-sheet">
     <thead><tr>
-      <th class="c-rank">#</th><th>Joueur</th><th class="c-num">Points</th><th class="c-num">Espèces</th>
+      <th class="c-rank">#</th><th>Joueur</th>
+      <th class="${thon('league')}">Rareté ligue</th>
+      <th class="${thon('real')}">Rareté réelle</th>
+      <th class="${thon('count')}">Espèces</th>
       <th class="c-txt">${esc(goalHeader)}</th><th class="c-txt">Espèce préférée</th>
       <th class="c-txt">La plus rare</th><th class="c-txt">Dernière acquisition</th><th class="c-txt">Espèce de rêve</th>
     </tr></thead>
     <tbody>${ranked.map((p,i)=>`<tr class="${i===0?'lead':''}">
       <td class="c-rank">${i===0?'★':(i+1)}</td>
       <td class="who-cell" style="--series:var(--s${p.si})"><span class="dot"></span>${esc(p.name)}${p.isMe?'<span class="youtag">vous</span>':''}${p.isDemo?'<span class="demotag">ex.</span>':''}</td>
-      <td class="c-num strong">${fmt(p.score)}</td>
-      <td class="c-num">${p.total}</td>
+      <td${on('league')}>${fmt(p.score)}</td>
+      <td${on('real')}>${fmt(p.scoreReal||0)}</td>
+      <td${on('count')}>${p.total}</td>
       <td class="c-txt">${cell(p.goal)}</td>
       <td class="c-txt">${cell(p.fav)}</td>
-      <td class="c-txt">${cell(p.rarestName)}</td>
+      <td class="c-txt">${p.rare?esc(p.rare):(p.rarestName?`<span class="muted">${esc(p.rarestName)}</span>`:dash)}</td>
       <td class="c-txt">${p.lastAcqName?esc(p.lastAcqName)+(p.lastAcqDisp?` <span class="muted">${p.lastAcqDisp}</span>`:''):dash}</td>
       <td class="c-txt">${cell(p.dream)}</td>
     </tr>`).join('')}</tbody></table></div>`;
@@ -813,7 +840,7 @@ function memberToPerson(id, data, si){
     nonSpecies: isNonSpecies(e.c||'', e.s||'')
   }]));
   return { id, name:data.name||'Joueur', filename:'', si, species, isMe:id===myUid,
-    goal:data.goal||'', fav:data.fav||'', dream:data.dream||'',
+    goal:data.goal||'', fav:data.fav||'', dream:data.dream||'', rare:data.rare||'',
     joinedAt: data.joinedAt?.seconds || 0 };
 }
 
@@ -885,9 +912,10 @@ function fillProfile(me){
   const prof=$('#profile'); if(!prof) return;
   prof.style.display = me ? 'block' : 'none';
   if(!me) return;
-  const g=$('#profGoal'), d=$('#profDream'), fav=$('#profFav');
+  const g=$('#profGoal'), d=$('#profDream'), fav=$('#profFav'), rr=$('#profRare');
   if(document.activeElement!==g) g.value=me.goal||'';
   if(document.activeElement!==d) d.value=me.dream||'';
+  if(rr && document.activeElement!==rr) rr.value=me.rare||'';
   if(document.activeElement!==fav){
     const names=[...me.species.values()].filter(v=>!isNonSpecies(v.common,v.sci))
       .map(v=>frName(v.sci,v.common)).sort((a,b)=>a.localeCompare(b,'fr'));
@@ -980,7 +1008,10 @@ async function saveProfile(patch){
 }
 $('#profGoal').addEventListener('change',e=>saveProfile({goal:e.target.value.trim()}));
 $('#profDream').addEventListener('change',e=>saveProfile({dream:e.target.value.trim()}));
+$('#profRare').addEventListener('change',e=>saveProfile({rare:e.target.value.trim()}));
 $('#profFav').addEventListener('change',e=>saveProfile({fav:e.target.value}));
+$('#boardModes').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
+  state.boardMode=b.dataset.mode; renderBoard(); });
 $('#goalHeaderInput').addEventListener('change',async e=>{
   const v=e.target.value.trim()||'Objectif (fin de l\'été)';
   try{ await setDoc(doc(db,'leagues',leagueId),{goalHeader:v},{merge:true}); }catch(err){ showError(err); }
