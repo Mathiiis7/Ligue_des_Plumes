@@ -78,10 +78,6 @@
   .mark .edit-hint { position:absolute; inset:0; display:grid; place-items:center; border-radius:13px;
     background:rgba(0,0,0,.42); color:#fff; font-size:15px; opacity:0; transition:opacity .12s; }
   .mark:hover .edit-hint { opacity:1; }
-  .logo-reset { position:absolute; top:-7px; right:-7px; width:18px; height:18px; border-radius:50%;
-    border:2px solid var(--surface); background:var(--ink); color:var(--surface); font-size:10px; line-height:1;
-    cursor:pointer; display:grid; place-items:center; padding:0; z-index:3; }
-  .logo-reset:hover { background:var(--t-rare); }
   h1 { font-family:var(--serif); font-weight:600; font-size:29px; margin:0; letter-spacing:.2px;
     text-wrap:balance; }
   .tag { color:var(--ink-2); font-size:14px; margin-top:2px; max-width:52ch; }
@@ -289,7 +285,6 @@
         <span class="mark-emoji">🐦</span>
         <img id="logoImg" alt="Logo" hidden>
         <span class="edit-hint">✎</span>
-        <button class="logo-reset" id="logoReset" title="Revenir au logo par défaut" hidden>✕</button>
       </div>
       <input type="file" id="logoFile" accept="image/*" hidden>
       <div>
@@ -890,14 +885,12 @@ $('#filterSeg').addEventListener('click',e=>{ const b=e.target.closest('button')
 
 // logo personnalisé (choisi depuis le site, enregistré sur cet appareil uniquement)
 const LOGO_KEY='mb-logo';
-const logoMark=$('#logoMark'), logoFile=$('#logoFile'), logoImg=$('#logoImg'),
-      logoReset=$('#logoReset'), markEmoji=$('.mark-emoji');
+const logoMark=$('#logoMark'), logoFile=$('#logoFile'), logoImg=$('#logoImg'), markEmoji=$('.mark-emoji');
 function showLogo(url){
-  if(url){ logoImg.src=url; logoImg.hidden=false; markEmoji.style.display='none'; logoReset.hidden=false; }
-  else { logoImg.hidden=true; logoImg.removeAttribute('src'); markEmoji.style.display=''; logoReset.hidden=true; }
+  if(url){ logoImg.src=url; logoImg.hidden=false; markEmoji.style.display='none'; }
+  else { logoImg.hidden=true; logoImg.removeAttribute('src'); markEmoji.style.display=''; }
 }
-logoMark.addEventListener('click',e=>{ if(e.target===logoReset) return; logoFile.click(); });
-logoReset.addEventListener('click',e=>{ e.stopPropagation(); try{localStorage.removeItem(LOGO_KEY);}catch(_){ } showLogo(null); });
+logoMark.addEventListener('click',()=>logoFile.click());
 logoFile.addEventListener('change',e=>{
   const f=e.target.files && e.target.files[0]; logoFile.value=''; if(!f) return;
   const rd=new FileReader();
