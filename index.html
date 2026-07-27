@@ -792,7 +792,7 @@ const ICONS={"medal":"<img src=\"t-shirt.png\" alt=\"Centurion\" style=\"width:6
 const TROPHIES = [
   { icon:ICONS.medal, name:'Expert Merlin Bird', desc:'100 espèces (droit de porter le t-shirt Merlin)', test:s=>s.total>=100, prog:s=>[s.total,100] },
   { icon:ICONS.cup, name:'Amateur de birds rares', desc:'10 espèces uniques', test:s=>s.unique>=10, prog:s=>[s.unique,10] },
-  { icon:ICONS.woodpecker, name:'Pic noir', desc:'Avoir coché le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker },
+  { icon:ICONS.woodpecker, name:'Pic noir', desc:'Observer le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker },
   { icon:ICONS.aigle, name:'Armée d’aigles royaux', desc:'Voir au moins 5 rapaces diurnes', test:s=>s.raptors>=5, prog:s=>[s.raptors,5] },
   { icon:ICONS.huitre, name:'Bourriche d’huître', desc:'Observer un oiseau à La Teste-de-Buch', test:s=>s.locTeste },
   { icon:ICONS.crown, name:'Écologue originel', desc:'Être 1ᵉʳ du classement', test:s=>s.groupN>1 && s.rank===1 },
