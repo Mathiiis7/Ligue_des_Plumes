@@ -792,7 +792,7 @@ function renderMatrix({universe,N}){
 function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 /* ---------------- trophées ---------------- */
-const ICONS={"medal":"<img src=\"t-shirt.png\" alt=\"Expert Merlin Bird\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","cup":"<img src=\"diamant.png\" alt=\"Amateur de birds rares\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","woodpecker":"<img src=\"pic-noir.png\" alt=\"Pic noir\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","aigle":"<img src=\"aigle.png\" alt=\"Aigles\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","huitre":"<img src=\"huitre.png\" alt=\"Huître\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bain":"<img src=\"bain.png\" alt=\"Pistoche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","pingouin":"<img src=\"pingouin.png\" alt=\"Happy feet\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","singe":"<img src=\"singe.png\" alt=\"Le coup de Ruff\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","crown":"<img src=\"roi.png\" alt=\"Roi\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","podium":"<img src=\"argent.png\" alt=\"En chef\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bronze":"<img src=\"bronze.png\" alt=\"Chevronné\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","gem":"<img src=\"telescope.png\" alt=\"Apprenti écologue\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","binoculars":"<img src=\"loupe.png\" alt=\"Écologue du dimanche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">"};
+const ICONS={"medal":"<img src=\"t-shirt.png\" alt=\"Expert Merlin Bird\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","cup":"<img src=\"diamant.png\" alt=\"Amateur de birds rares\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","woodpecker":"<img src=\"pic-noir.png\" alt=\"Pic noir\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","aigle":"<img src=\"aigle.png\" alt=\"Aigles\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","huitre":"<img src=\"huitre.png\" alt=\"Huître\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bain":"<img src=\"bain.png\" alt=\"Pistoche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","pingouin":"<img src=\"pingouin.png\" alt=\"Happy feet\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","kangourou":"<img src=\"kangourou.png\" alt=\"Wallaby\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","singe":"<img src=\"singe.png\" alt=\"Le coup de Ruff\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","crown":"<img src=\"roi.png\" alt=\"Roi\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","podium":"<img src=\"argent.png\" alt=\"En chef\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bronze":"<img src=\"bronze.png\" alt=\"Chevronné\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","gem":"<img src=\"telescope.png\" alt=\"Apprenti écologue\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","binoculars":"<img src=\"loupe.png\" alt=\"Écologue du dimanche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">"};
 const TROPHIES = [
   { icon:ICONS.medal, name:'Expert Merlin Bird', desc:'100 espèces (droit de porter le t-shirt Merlin)', test:s=>s.total>=100, prog:s=>[s.total,100] },
   { icon:ICONS.cup, name:'Amateur de birds rares', desc:'10 espèces uniques', test:s=>s.unique>=10, prog:s=>[s.unique,10] },
@@ -801,6 +801,7 @@ const TROPHIES = [
   { icon:ICONS.huitre, name:'Bourriche d’huître', desc:'Observer un oiseau à La Teste-de-Buch', test:s=>s.locTeste },
   { icon:ICONS.bain, name:'Pistoche', desc:'15 oiseaux d’eau + le Martin-pêcheur', test:s=>s.water>=15 && s.hasKingfisher, prog:s=>[s.water,15] },
   { icon:ICONS.pingouin, name:'Happy feet', desc:'Observer un Pingouin', test:s=>s.hasPenguin },
+  { icon:ICONS.kangourou, name:'Wallaby', desc:'Observer le Martin-chasseur à dos de feu', test:s=>s.hasFireKingfisher },
   { icon:ICONS.crown, name:'Écologue originel', desc:'Être 1ᵉʳ du classement', test:s=>s.groupN>1 && s.rank===1 },
   { icon:ICONS.podium, name:'Écologue en chef', desc:'Dans le top 2', test:s=>s.groupN>1 && s.rank<=2 },
   { icon:ICONS.bronze, name:'Écologue chevronné', desc:'Dans le top 3', test:s=>s.groupN>1 && s.rank<=3 },
@@ -815,7 +816,7 @@ const SEA_G=/^(morus|sula|larus|ichthyaetus|chroicocephalus|hydrocoloeus|leucoph
 function statsFor(me, N){
   const ranked=[...state.people].sort((a,b)=>b.score-a.score);
   const rank=ranked.findIndex(p=>p.id===me.id)+1;
-  let owls=0,raptors=0,water=0,sea=0,blackWoodpecker=false,locTeste=false,hasKingfisher=false,hasPenguin=false;
+  let owls=0,raptors=0,water=0,sea=0,blackWoodpecker=false,locTeste=false,hasKingfisher=false,hasPenguin=false,hasFireKingfisher=false;
   for(const v of me._active.values()){
     const sci=(v.sci||'').toLowerCase();
     const g=sci.split(' ')[0];
@@ -826,12 +827,13 @@ function statsFor(me, N){
     if(sci==='dryocopus martius') blackWoodpecker=true;
     if(sci==='alcedo atthis') hasKingfisher=true;
     if(sci==='alca torda' || sci==='pinguinus impennis') hasPenguin=true;
+    if(sci==='todiramphus pyrrhopygius') hasFireKingfisher=true;
     if(/teste[- ]?de[- ]?buch|arcachon/i.test(v.loc||'')) locTeste=true;
   }
   const enzo=state.people.find(p=>p.id!==me.id && /enzo/i.test(p.name));
   let lackEnzoBird=false;
   if(enzo && enzo._active) for(const k of enzo._active.keys()){ if(!me._active.has(k)){ lackEnzoBird=true; break; } }
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, locTeste, lackEnzoBird };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird };
 }
 let trophyPlayerId = null, trophyData = {N:0};
 function renderTrophies(data){
