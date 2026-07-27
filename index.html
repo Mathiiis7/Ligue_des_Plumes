@@ -794,7 +794,7 @@ const TROPHIES = [
   { icon:ICONS.cup, name:'Amateur de birds rares', desc:'10 espèces uniques', test:s=>s.unique>=10, prog:s=>[s.unique,10] },
   { icon:ICONS.woodpecker, name:'Pic noir', desc:'Avoir coché le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker },
   { icon:ICONS.aigle, name:'Armée d’aigles royaux', desc:'Voir au moins 5 rapaces diurnes', test:s=>s.raptors>=5, prog:s=>[s.raptors,5] },
-  { icon:ICONS.huitre, name:'Bourriche d’huître', desc:'(condition à définir)', test:s=>false },
+  { icon:ICONS.huitre, name:'Bourriche d’huître', desc:'Observer un oiseau à La Teste-de-Buch', test:s=>s.locTeste },
   { icon:ICONS.crown, name:'Roi des écologues', desc:'Être 1ᵉʳ du classement', test:s=>s.groupN>1 && s.rank===1 },
   { icon:ICONS.podium, name:'Écologue en chef', desc:'Terminer dans le top 2', test:s=>s.groupN>1 && s.rank<=2 },
   { icon:ICONS.bronze, name:'Écologue chevronné', desc:'Terminer dans le top 3', test:s=>s.groupN>1 && s.rank<=3 },
@@ -808,7 +808,7 @@ const SEA_G=/^(morus|sula|larus|ichthyaetus|chroicocephalus|hydrocoloeus|leucoph
 function statsFor(me, N){
   const ranked=[...state.people].sort((a,b)=>b.score-a.score);
   const rank=ranked.findIndex(p=>p.id===me.id)+1;
-  let owls=0,raptors=0,water=0,sea=0,blackWoodpecker=false;
+  let owls=0,raptors=0,water=0,sea=0,blackWoodpecker=false,locTeste=false;
   for(const v of me._active.values()){
     const sci=(v.sci||'').toLowerCase();
     const g=sci.split(' ')[0];
@@ -817,8 +817,9 @@ function statsFor(me, N){
     if(WATER_G.test(g)) water++;
     if(SEA_G.test(g)) sea++;
     if(sci==='dryocopus martius') blackWoodpecker=true;
+    if(/teste[- ]?de[- ]?buch|arcachon/i.test(v.loc||'')) locTeste=true;
   }
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, locTeste };
 }
 let trophyPlayerId = null, trophyData = {N:0};
 function renderTrophies(data){
