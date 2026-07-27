@@ -7,6 +7,11 @@ logo.png
 # Outil local de création de badge — ne pas publier
 createur-badge.html
 
+# Outils rareté : on garde le générateur (build-rarity.mjs) et l'audit (rarity-data.json),
+# mais pas le cache GBIF ni le fichier intermédiaire (régénérables)
+tools/rarity-cache.json
+tools/real-rarity.generated.js
+
 # Divers
 *.log
 Thumbs.db
