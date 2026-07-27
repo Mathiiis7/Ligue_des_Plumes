@@ -796,9 +796,9 @@ const TROPHIES = [
   { icon:ICONS.aigle, name:'Armée d’aigles royaux', desc:'Voir au moins 5 rapaces diurnes', test:s=>s.raptors>=5, prog:s=>[s.raptors,5] },
   { icon:ICONS.huitre, name:'Bourriche d’huître', desc:'Observer un oiseau à La Teste-de-Buch', test:s=>s.locTeste },
   { icon:ICONS.crown, name:'Écologue originel', desc:'Être 1ᵉʳ du classement', test:s=>s.groupN>1 && s.rank===1 },
-  { icon:ICONS.podium, name:'Écologue en chef', desc:'Terminer dans le top 2', test:s=>s.groupN>1 && s.rank<=2 },
-  { icon:ICONS.bronze, name:'Écologue chevronné', desc:'Terminer dans le top 3', test:s=>s.groupN>1 && s.rank<=3 },
-  { icon:ICONS.gem, name:'Apprenti écologue', desc:'Terminer dans le top 5', test:s=>s.groupN>1 && s.rank<=5 },
+  { icon:ICONS.podium, name:'Écologue en chef', desc:'Dans le top 2', test:s=>s.groupN>1 && s.rank<=2 },
+  { icon:ICONS.bronze, name:'Écologue chevronné', desc:'Dans le top 3', test:s=>s.groupN>1 && s.rank<=3 },
+  { icon:ICONS.gem, name:'Apprenti écologue', desc:'Dans le top 5', test:s=>s.groupN>1 && s.rank<=5 },
   { icon:ICONS.binoculars, name:'Écologue du dimanche', desc:'En dehors du top 5', test:s=>s.groupN>1 && s.rank>5 },
 ];
 const OWL_G=/^(strix|otus|athene|asio|bubo|tyto|aegolius|glaucidium|surnia|ketupa)$/;
