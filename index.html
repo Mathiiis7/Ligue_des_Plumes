@@ -296,6 +296,19 @@
   .tstate { margin-top:9px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
     color:var(--ink-3); font-variant-numeric:tabular-nums; }
   .trophy.on .tstate { color:var(--gold); }
+  .trophy.clic { cursor:pointer; }
+  .trophy.clic:hover { border-color:color-mix(in srgb,var(--gold) 55%,var(--line)); }
+  .tmodal { display:none; position:fixed; inset:0; z-index:60; background:rgba(0,0,0,.5);
+    align-items:center; justify-content:center; padding:20px; }
+  .tmodal.open { display:flex; }
+  .tmodal-box { background:var(--surface); border:1px solid var(--line-2); border-radius:16px;
+    max-width:440px; width:100%; max-height:80vh; overflow:auto; padding:22px 24px; position:relative;
+    box-shadow:var(--shadow); }
+  .tmodal-x { position:absolute; top:12px; right:12px; border:none; background:var(--surface-2);
+    color:var(--ink-2); border-radius:8px; width:28px; height:28px; cursor:pointer; font-size:13px; }
+  .tmodal-box h3 { font-family:var(--serif); font-weight:600; margin:0 0 12px; }
+  .tmodal-list { margin:0; padding-left:20px; color:var(--ink); }
+  .tmodal-list li { margin:5px 0; }
 </style>
 
 <div class="wrap">
@@ -433,6 +446,13 @@
       <div class="who-select" id="trophyWho"></div>
       <div class="trophy-grid" id="trophyGrid"></div>
     </section>
+    <div id="trophyModal" class="tmodal">
+      <div class="tmodal-box">
+        <button class="tmodal-x" id="tmodalX" aria-label="Fermer">✕</button>
+        <h3 id="tmodalTitle"></h3>
+        <div id="tmodalBody"></div>
+      </div>
+    </div>
   </div>
 
   <footer>
@@ -609,9 +629,12 @@ function build(){
       if(k===1) p.unique++;
     }
   }
+  // l'espèce la plus rare (rareté réelle) présente dans toute la ligue
+  let maxRW=1;
+  for(const u of universe.values()){ const w=rarityReal(u.sci); if(w>maxRW) maxRW=w; }
   // par joueur : espèce la plus rare (vue par le moins de monde) + dernière acquisition (date la + récente)
   state.people.forEach(p=>{
-    let rarest=null, rarestK=Infinity, last=null, lastOrd=-1, lastDisp='', real=0;
+    let rarest=null, rarestK=Infinity, last=null, lastOrd=-1, lastDisp='', real=0, holdsRarest=false;
     for(const [key,v] of p._active){
       const k=universe.get(key).seenBy.size;
       const nm=frName(v.sci, v.common);
@@ -619,8 +642,9 @@ function build(){
       const pd=parseDate(v.date);
       if(pd && pd.ord>lastOrd){ lastOrd=pd.ord; last=nm; lastDisp=pd.disp; }
       real += rarityReal(v.sci);
+      if(maxRW>1 && rarityReal(v.sci)===maxRW) holdsRarest=true;
     }
-    p.rarestName=rarest; p.lastAcqName=last; p.lastAcqDisp=lastDisp; p.scoreReal=real;
+    p.rarestName=rarest; p.lastAcqName=last; p.lastAcqDisp=lastDisp; p.scoreReal=real; p.holdsRarest=holdsRarest;
   });
   return { universe:[...universe.values()], N };
 }
@@ -792,10 +816,11 @@ function renderMatrix({universe,N}){
 function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 /* ---------------- trophées ---------------- */
-const ICONS={"medal":"<img src=\"t-shirt.png\" alt=\"Expert Merlin Bird\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","cup":"<img src=\"diamant.png\" alt=\"Amateur de birds rares\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","woodpecker":"<img src=\"pic-noir.png\" alt=\"Pic noir\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","aigle":"<img src=\"aigle.png\" alt=\"Aigles\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","huitre":"<img src=\"huitre.png\" alt=\"Huître\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bain":"<img src=\"bain.png\" alt=\"Pistoche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","pingouin":"<img src=\"pingouin.png\" alt=\"Happy feet\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","kangourou":"<img src=\"kangourou.png\" alt=\"Wallaby\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","singe":"<img src=\"singe.png\" alt=\"Le coup de Ruff\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","crown":"<img src=\"roi.png\" alt=\"Roi\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","podium":"<img src=\"argent.png\" alt=\"En chef\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bronze":"<img src=\"bronze.png\" alt=\"Chevronné\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","gem":"<img src=\"telescope.png\" alt=\"Apprenti écologue\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","binoculars":"<img src=\"loupe.png\" alt=\"Écologue du dimanche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">"};
+const ICONS={"medal":"<img src=\"t-shirt.png\" alt=\"Expert Merlin Bird\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","cup":"<img src=\"diamant.png\" alt=\"Amateur de birds rares\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","graal":"<span style=\"display:inline-grid;place-items:center;width:54px;height:54px;border-radius:50%;background:#E8C24A;border:4px solid #B8912A;font-size:27px;line-height:1\">✨</span>","woodpecker":"<img src=\"pic-noir.png\" alt=\"Pic noir\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","aigle":"<img src=\"aigle.png\" alt=\"Aigles\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","huitre":"<img src=\"huitre.png\" alt=\"Huître\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bain":"<img src=\"bain.png\" alt=\"Pistoche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","pingouin":"<img src=\"pingouin.png\" alt=\"Happy feet\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","kangourou":"<img src=\"kangourou.png\" alt=\"Wallaby\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","singe":"<img src=\"singe.png\" alt=\"Le coup de Ruff\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","crown":"<img src=\"roi.png\" alt=\"Roi\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","podium":"<img src=\"argent.png\" alt=\"En chef\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bronze":"<img src=\"bronze.png\" alt=\"Chevronné\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","gem":"<img src=\"telescope.png\" alt=\"Apprenti écologue\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","binoculars":"<img src=\"loupe.png\" alt=\"Écologue du dimanche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">"};
 const TROPHIES = [
   { icon:ICONS.medal, name:'Expert Merlin Bird', desc:'100 espèces (droit de porter le t-shirt Merlin)', test:s=>s.total>=100, prog:s=>[s.total,100] },
-  { icon:ICONS.cup, name:'Amateur de birds rares', desc:'10 espèces uniques', test:s=>s.unique>=10, prog:s=>[s.unique,10] },
+  { icon:ICONS.cup, name:'Amateur de birds rares', desc:'Avoir l’oiseau le plus rare de la ligue', test:s=>s.holdsRarest },
+  { icon:ICONS.graal, name:'Le Saint-Graal', desc:'Observer un oiseau Exceptionnel ou Très rare', test:s=>s.megaList.length>0, list:s=>s.megaList },
   { icon:ICONS.woodpecker, name:'Pic noir', desc:'Observer le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker },
   { icon:ICONS.aigle, name:'Armée d’aigles royaux', desc:'Voir au moins 5 rapaces diurnes', test:s=>s.raptors>=5, prog:s=>[s.raptors,5] },
   { icon:ICONS.huitre, name:'Bourriche d’huître', desc:'Observer un oiseau à La Teste-de-Buch', test:s=>s.locTeste },
@@ -817,6 +842,7 @@ function statsFor(me, N){
   const ranked=[...state.people].sort((a,b)=>b.score-a.score);
   const rank=ranked.findIndex(p=>p.id===me.id)+1;
   let owls=0,raptors=0,water=0,sea=0,blackWoodpecker=false,locTeste=false,hasKingfisher=false,hasPenguin=false,hasFireKingfisher=false;
+  const megaList=[];
   for(const v of me._active.values()){
     const sci=(v.sci||'').toLowerCase();
     const g=sci.split(' ')[0];
@@ -828,14 +854,16 @@ function statsFor(me, N){
     if(sci==='alcedo atthis') hasKingfisher=true;
     if(sci==='alca torda' || sci==='pinguinus impennis') hasPenguin=true;
     if(sci==='todiramphus pyrrhopygius') hasFireKingfisher=true;
+    if(rarityReal(sci)>=8) megaList.push(frName(v.sci, v.common));
     if(/teste[- ]?de[- ]?buch|arcachon/i.test(v.loc||'')) locTeste=true;
   }
+  megaList.sort((a,b)=>a.localeCompare(b,'fr'));
   const enzo=state.people.find(p=>p.id!==me.id && /enzo/i.test(p.name));
   let lackEnzoBird=false;
   if(enzo && enzo._active) for(const k of enzo._active.keys()){ if(!me._active.has(k)){ lackEnzoBird=true; break; } }
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, holdsRarest:!!me.holdsRarest, megaList };
 }
-let trophyPlayerId = null, trophyData = {N:0};
+let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
   trophyData = data;
   const grid=$('#trophyGrid'), summary=$('#trophySummary'), who=$('#trophyWho'); if(!grid) return;
@@ -850,11 +878,15 @@ function renderTrophies(data){
   if(who) who.innerHTML = people.map(p=>`<button class="whochip ${p.id===sel.id?'on':''}" data-id="${esc(p.id)}" style="--series:var(--s${p.si})"><span class="dot"></span>${esc(p.name)}${p.isMe?' (vous)':''}</button>`).join('');
   const s=statsFor(sel, data.N);
   let unlocked=0;
-  grid.innerHTML = TROPHIES.map(t=>{
+  trophyDetails={};
+  grid.innerHTML = TROPHIES.map((t,i)=>{
     const ok=t.test(s); if(ok) unlocked++;
     const p=t.prog?t.prog(s):null;
-    const stateTxt = ok ? 'Débloqué ✓' : (p ? `${Math.min(Math.round(p[0]),p[1])} / ${p[1]}` : 'À débloquer');
-    return `<div class="trophy ${ok?'on':'off'}">
+    const detail = (ok && t.list) ? t.list(s) : null;
+    const clic = detail && detail.length;
+    if(clic) trophyDetails[i]={ name:t.name, list:detail };
+    const stateTxt = ok ? (clic ? `Débloqué ✓ · voir (${detail.length})` : 'Débloqué ✓') : (p ? `${Math.min(Math.round(p[0]),p[1])} / ${p[1]}` : 'À débloquer');
+    return `<div class="trophy ${ok?'on':'off'}${clic?' clic':''}"${clic?` data-detail="${i}"`:''}>
       <div class="tico">${t.icon}</div>
       <div class="tname">${esc(t.name)}</div>
       <div class="tdesc">${esc(t.desc)}</div>
@@ -1069,6 +1101,15 @@ $('#trophyWho').addEventListener('click',e=>{
   const b=e.target.closest('.whochip'); if(!b) return;
   trophyPlayerId=b.dataset.id; renderTrophies(trophyData);
 });
+$('#trophyGrid').addEventListener('click',e=>{
+  const card=e.target.closest('.trophy.clic'); if(!card) return;
+  const d=trophyDetails[card.dataset.detail]; if(!d) return;
+  $('#tmodalTitle').textContent=d.name;
+  $('#tmodalBody').innerHTML='<ul class="tmodal-list">'+d.list.map(n=>`<li>${esc(n)}</li>`).join('')+'</ul>';
+  $('#trophyModal').classList.add('open');
+});
+$('#tmodalX').addEventListener('click',()=>$('#trophyModal').classList.remove('open'));
+$('#trophyModal').addEventListener('click',e=>{ if(e.target.id==='trophyModal') $('#trophyModal').classList.remove('open'); });
 
 $('#demoBtn').addEventListener('click',()=>{
   demoOn=!demoOn;
