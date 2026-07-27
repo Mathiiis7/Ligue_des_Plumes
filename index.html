@@ -288,6 +288,9 @@
   .chat-name { flex:0 0 130px; min-width:100px; padding:10px 12px; border:1px solid var(--line-2); border-radius:10px; font:inherit; background:var(--surface); color:var(--ink); }
   .chat-input { flex:1; min-width:150px; padding:10px 12px; border:1px solid var(--line-2); border-radius:10px; font:inherit; background:var(--surface); color:var(--ink); }
   .chat-send { flex:0 0 auto; }
+  .msg-guest { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#fff;
+    background:var(--ink-3); padding:1px 5px; border-radius:6px; vertical-align:middle; margin-left:4px; }
+  .chat-name.locked { background:var(--surface-2); color:var(--ink-2); cursor:not-allowed; }
 
   /* trophées */
   .who-select { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
@@ -491,7 +494,7 @@
   </div>
 
   <div id="viewChat" style="display:none;">
-    <section class="panel chat-panel" style="margin-top:22px;">
+    <section class="panel chat-panel" style="padding:20px; margin-top:22px;">
       <div class="section-head">
         <div><div class="eyebrow">La ligue papote</div><h2>💬 Tchat</h2>
           <p class="help" style="margin-top:2px;">Discutez avec toute la ligue — les messages sont partagés en direct.</p></div>
@@ -535,7 +538,7 @@ const SERIES_N = 8;
 const state = { people: [], onlySpecies: true, sort:'rarity', tier:'any', family:'any', q:'', boardMode:'league', showMissing:false };
 let lastFamKey = '', lastTierKey = '';
 let myUid = null, leagueId = null, unsub = null, unsubLeague = null, iAmInLeague = false;
-let unsubChat = null;
+let unsubChat = null, lastChatMsgs = [];
 let realPeople = [], demoOn = false;   // aperçu d'exemple (jamais enregistré dans le cloud)
 let goalHeader = 'Objectif (fin de l\'été)';   // intitulé partagé de la colonne objectif
 
@@ -1043,6 +1046,8 @@ function rebuild(){
   state.people = demoOn ? realPeople.concat(demoPeople(realPeople.length)) : realPeople.slice();
   renderMembers();
   renderResults();
+  updateChatIdentity();
+  if(lastChatMsgs.length) renderChat(lastChatMsgs);
 }
 
 function applySnapshot(snap){
@@ -1079,23 +1084,31 @@ function subscribe(){
 }
 function renderChat(msgs){
   const box=$('#chatMessages'); if(!box) return;
+  lastChatMsgs = msgs;
+  const byId = new Map(realPeople.map(p=>[p.id, p.name]));   // nom autoritatif par uid (anti-usurpation)
   const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
   if(!msgs.length){ box.innerHTML='<div class="chat-empty">Aucun message. Lancez la conversation ! 🐦</div>'; return; }
   box.innerHTML = msgs.map(m=>{
     const mine = m.uid===myUid;
+    const authoritative = byId.get(m.uid);
+    const nm = authoritative || (m.name||'Invité');
+    const guestTag = authoritative ? '' : ' <span class="msg-guest">invité</span>';
     const t = m.createdAt && m.createdAt.toDate ? m.createdAt.toDate() : null;
     const time = t ? t.toLocaleString('fr-FR',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'}) : '…';
     return `<div class="msg${mine?' mine':''}">
-      <div class="msg-name">${esc(m.name||'Anonyme')}</div>
+      <div class="msg-name">${esc(nm)}${guestTag}</div>
       <div class="msg-bubble">${esc(m.text||'')}</div>
       <div class="msg-time">${esc(time)}</div>
     </div>`;
   }).join('');
   if(nearBottom) box.scrollTop = box.scrollHeight;
 }
-function chatNameDefault(){
-  const mine = state.people.find(p=>p.id===myUid);
-  return ($('#myName')?.value.trim()) || (mine&&mine.name) || localStorage.getItem('mb-chatname') || '';
+function myMemberName(){ const me=realPeople.find(p=>p.id===myUid); return me ? me.name : ''; }
+function updateChatIdentity(){
+  const ni=$('#chatName'); if(!ni) return;
+  const mn=myMemberName();
+  if(mn){ if(document.activeElement!==ni) ni.value=mn; ni.readOnly=true; ni.classList.add('locked'); ni.title='Votre nom de la ligue (non modifiable)'; }
+  else { ni.readOnly=false; ni.classList.remove('locked'); ni.title=''; ni.placeholder='Votre nom (invité)'; if(!ni.value) ni.value=localStorage.getItem('mb-chatname')||''; }
 }
 function fillProfile(me){
   const prof=$('#profile'); if(!prof) return;
@@ -1215,7 +1228,7 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   b.classList.add('on');
   Object.entries(VIEWS).forEach(([v,sel])=>{ const el=$(sel); if(el) el.style.display=(b.dataset.view===v)?'':'none'; });
   if(b.dataset.view==='chat'){
-    const ni=$('#chatName'); if(ni && !ni.value.trim()) ni.value=chatNameDefault();
+    updateChatIdentity();
     const box=$('#chatMessages'); if(box) box.scrollTop=box.scrollHeight;
     $('#chatText')?.focus();
   }
@@ -1224,11 +1237,12 @@ $('#chatName')?.addEventListener('change',e=>{ localStorage.setItem('mb-chatname
 $('#chatForm')?.addEventListener('submit',async e=>{
   e.preventDefault();
   const text=$('#chatText').value.trim();
-  let name=$('#chatName').value.trim() || chatNameDefault();
+  const mn=myMemberName();
+  const name = mn || $('#chatName').value.trim() || localStorage.getItem('mb-chatname') || '';
   if(!myUid){ showError(new Error('Connexion en cours, réessayez dans un instant.')); return; }
   if(!name){ $('#chatName').focus(); return; }
   if(!text) return;
-  $('#chatName').value=name; localStorage.setItem('mb-chatname', name);
+  if(!mn){ $('#chatName').value=name; localStorage.setItem('mb-chatname', name); }  // pseudo invité mémorisé
   $('#chatText').value='';
   try{
     await addDoc(collection(db,'leagues',leagueId,'chat'), { uid:myUid, name, text, createdAt:serverTimestamp() });
