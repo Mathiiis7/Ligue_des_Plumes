@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /leagues/{leagueId} {
+      // Doc de la ligue (ex. intitulé de colonne) : lecture/écriture par tout utilisateur connecté (anonyme OK)
+      allow read, write: if request.auth != null;
+
+      // Membres : chacun voit tout le monde, mais n'écrit que sa propre fiche
+      match /members/{memberId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && request.auth.uid == memberId;
+      }
+
+      // Tchat : lecture par tout connecté ; chacun ne peut créer QUE ses propres messages ; pas de modif/suppression
+      match /chat/{msgId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null
+                      && request.resource.data.uid == request.auth.uid
+                      && request.resource.data.text is string
+                      && request.resource.data.text.size() > 0
+                      && request.resource.data.text.size() <= 500;
+        allow update, delete: if false;
+      }
+    }
+  }
+}
