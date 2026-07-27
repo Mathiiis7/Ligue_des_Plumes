@@ -861,7 +861,7 @@ const TROPHIES = [
   { icon:ICONS.podium, name:'Écologue en chef', desc:'Dans le top 2', test:s=>s.groupN>1 && s.rank<=2 },
   { icon:ICONS.bronze, name:'Écologue chevronné', desc:'Dans le top 3', test:s=>s.groupN>1 && s.rank<=3 },
   { icon:ICONS.gem, name:'Apprenti écologue', desc:'Dans le top 5', test:s=>s.groupN>1 && s.rank<=5 },
-  { icon:ICONS.binoculars, name:'Écologue du dimanche', desc:'En dehors du top 5', test:s=>s.groupN>1 && s.rank>5 },
+  { icon:ICONS.binoculars, name:'Écologue du dimanche', desc:'Faire partie de la ligue', test:s=>s.groupN>1 },
   { icon:ICONS.singe, name:'Le coup de Ruff', desc:'Ne pas avoir un oiseau qu’Enzo a vu #honteux', test:s=>s.lackEnzoBird },
 ];
 const OWL_G=/^(strix|otus|athene|asio|bubo|tyto|aegolius|glaucidium|surnia|ketupa)$/;
