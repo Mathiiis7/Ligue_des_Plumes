@@ -56,6 +56,21 @@ function weightFor(count) {
   return 9; // < 100
 }
 
+// Alias : certaines espèces (taxonomie eBird récente) ne sont pas dans le backbone
+// GBIF sous leur nom actuel -> GBIF retombe sur un taxon SUPÉRIEUR (genre, voire racine)
+// et renvoie un comptage aberrant. On requête alors sous l'ancien nom reconnu par GBIF,
+// où les occurrences françaises sont réellement classées.
+const GBIF_ALIAS = {
+  'astur gentilis':      'accipiter gentilis',   // Autour des palombes
+  'botaurus minutus':    'ixobrychus minutus',   // Blongios nain
+  'botaurus sturmii':    'ixobrychus sturmii',   // Blongios de Sturm
+  'anarhynchus mongolus':'charadrius mongolus',  // Pluvier de Mongolie
+  'anarhynchus atrifrons':'charadrius atrifrons', // Pluvier du Tibet
+  'anarhynchus pecuarius':'charadrius pecuarius', // Pluvier pâtre
+  'anthus japonicus':    'anthus rubescens',     // Pipit de Sibérie (proxy : complexe rubescens)
+  'cecropis rufula':     'cecropis daurica',     // Hirondelle rousseline
+};
+
 // --- Récupère le dictionnaire FR_NAMES depuis index.html ---
 function loadSpecies() {
   const html = readFileSync(join(ROOT, 'index.html'), 'utf8');
@@ -86,17 +101,21 @@ async function fetchJSON(url, tries = 4) {
 }
 
 async function gbifCount(sci) {
-  if (cache[sci] && cache[sci].key) return cache[sci]; // on refait les entrées sans usageKey
+  if (cache[sci] && cache[sci].reliable) return cache[sci]; // réutilise seulement les matchs fiables
+  const queryName = GBIF_ALIAS[sci] || sci;
   // class=Aves + kingdom=Animalia : évite les collisions de noms de genre avec des plantes
   // (ex. "Chloris chloris" l'oiseau vs "Chloris" la graminée)
-  const match = await fetchJSON('https://api.gbif.org/v1/species/match?class=Aves&kingdom=Animalia&name=' + encodeURIComponent(sci));
-  const key = match.usageKey || match.acceptedUsageKey || null;
+  const match = await fetchJSON('https://api.gbif.org/v1/species/match?class=Aves&kingdom=Animalia&name=' + encodeURIComponent(queryName));
+  const rank = match.rank || '';
+  // fiable = match exact/fuzzy AU NIVEAU ESPÈCE (sinon GBIF a retombé sur un taxon supérieur)
+  const reliable = (match.matchType === 'EXACT' || match.matchType === 'FUZZY') && (rank === 'SPECIES' || rank === 'SUBSPECIES');
+  const key = reliable ? (match.usageKey || match.acceptedUsageKey || null) : null;
   let count = 0;
   if (key) {
     const occ = await fetchJSON('https://api.gbif.org/v1/occurrence/search?country=FR&limit=0&taxonKey=' + key);
     count = occ.count || 0;
   }
-  const rec = { key, matchType: match.matchType || 'NONE', count };
+  const rec = { key, matchType: match.matchType || 'NONE', rank, reliable, alias: GBIF_ALIAS[sci] || null, count };
   cache[sci] = rec;
   return rec;
 }
@@ -128,7 +147,9 @@ async function mapPool(items, size, fn, onTick) {
     try {
       const r = await gbifCount(sci);
       if (++sinceSave >= 25) { saveCache(); sinceSave = 0; }
-      return { sci, name: FR[sci], key: r.key, matchType: r.matchType, count: r.count, weight: weightFor(r.count) };
+      const reliable = r.reliable !== undefined ? r.reliable : !!r.key;
+      const weight = reliable ? weightFor(r.count) : 9; // match non fiable -> traité comme Exceptionnel
+      return { sci, name: FR[sci], key: r.key, matchType: r.matchType, alias: r.alias || null, count: r.count, weight };
     } catch (e) {
       return { sci, name: FR[sci], key: null, matchType: 'ERROR', count: 0, weight: null, error: String(e) };
     }
