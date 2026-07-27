@@ -855,7 +855,7 @@ const TROPHIES = [
   { icon:ICONS.aigle, name:'Armée d’aigles royaux', desc:'Voir au moins 5 rapaces diurnes', test:s=>s.raptors>=5, prog:s=>[s.raptors,5] },
   { icon:ICONS.huitre, name:'Bourriche d’huître', desc:'Observer un oiseau à La Teste-de-Buch', test:s=>s.locTeste },
   { icon:ICONS.bain, name:'Pistoche', desc:'15 oiseaux d’eau + le Martin-pêcheur', test:s=>s.water>=15 && s.hasKingfisher, prog:s=>[s.water,15] },
-  { icon:ICONS.pingouin, name:'Happy feet', desc:'Observer un Pingouin', test:s=>s.hasPenguin },
+  { icon:ICONS.pingouin, name:'Happy feet', desc:'Observer un Alcidé (pingouin, macareux, guillemot…)', test:s=>s.hasPenguin },
   { icon:ICONS.kangourou, name:'Wallaby', desc:'Observer le Martin-chasseur à dos de feu', test:s=>s.hasFireKingfisher },
   { icon:ICONS.crown, name:'Écologue originel', desc:'Être 1ᵉʳ du classement', test:s=>s.groupN>1 && s.rank===1 },
   { icon:ICONS.podium, name:'Écologue en chef', desc:'Dans le top 2', test:s=>s.groupN>1 && s.rank<=2 },
@@ -866,6 +866,8 @@ const TROPHIES = [
 ];
 const OWL_G=/^(strix|otus|athene|asio|bubo|tyto|aegolius|glaucidium|surnia|ketupa)$/;
 const RAPTOR_G=/^(accipiter|astur|buteo|aquila|circus|milvus|falco|pernis|circaetus|pandion|haliaeetus|gyps|aegypius|gypaetus|neophron|clanga|hieraaetus|elanus|torgos)$/;
+// Alcidés = les "pingouins" de l'hémisphère nord (pingouins, macareux, mergule, guillemots)
+const ALCID_G=/^(alca|pinguinus|fratercula|alle|uria|cepphus)$/;
 const WATER_G=/^(anas|anser|branta|aythya|spatula|mareca|cygnus|tadorna|netta|bucephala|mergus|mergellus|clangula|somateria|melanitta|polysticta|ardea|egretta|ardeola|botaurus|nycticorax|fulica|gallinula|porphyrio|paragallinula|rallus|zapornia|crex|porzana|podiceps|tachybaptus|podilymbus|phalacrocorax|microcarbo|nannopterum|gulosus|platalea|plegadis|threskiornis|geronticus|ciconia|phoenicopterus|phoeniconaias|recurvirostra|himantopus|vanellus|charadrius|anarhynchus|pluvialis|eudromias|calidris|tringa|actitis|xenus|gallinago|numenius|limosa|arenaria|phalaropus|scolopax|lymnocryptes|bartramia|limnodromus|haematopus|burhinus|alcedo|megaceryle|ceryle|glareola|cursorius)$/;
 const SEA_G=/^(morus|sula|larus|ichthyaetus|chroicocephalus|hydrocoloeus|leucophaeus|rissa|xema|pagophila|rhodostethia|sterna|sternula|thalasseus|gelochelidon|hydroprogne|onychoprion|chlidonias|fratercula|uria|alca|cepphus|alle|pinguinus|fulmarus|puffinus|ardenna|calonectris|hydrobates|oceanites|stercorarius|pterodroma|bulweria|macronectes|daption|fregata|gavia|thalassarche)$/;
 function statsFor(me, N){
@@ -882,7 +884,7 @@ function statsFor(me, N){
     if(SEA_G.test(g)) sea++;
     if(sci==='dryocopus martius') blackWoodpecker=true;
     if(sci==='alcedo atthis') hasKingfisher=true;
-    if(sci==='alca torda' || sci==='pinguinus impennis') hasPenguin=true;
+    if(ALCID_G.test(g)) hasPenguin=true;
     if(sci==='todiramphus pyrrhopygius') hasFireKingfisher=true;
     if(rarityReal(sci)>=8){ megaList.push(frName(v.sci, v.common)); megaOwnedSet.add(sci); }
     if(/teste[- ]?de[- ]?buch|arcachon/i.test(v.loc||'')) locTeste=true;
