@@ -1096,7 +1096,10 @@ const TROPHIES = [
   { icon:ICONS.aigle, name:'Armée d’aigles royaux', desc:'Voir au moins 5 rapaces diurnes', test:s=>s.raptors>=5, prog:s=>[s.raptors,5], alwaysList:true, list:s=>RAPTOR_CATALOG.map(m=>({ name:m.name, owned:s.raptorOwnedSet.has(m.sci) })) },
   { icon:ICONS.huitre, name:'Bourriche d’huître', desc:'Observer un oiseau à La Teste-de-Buch', test:s=>s.locTeste },
   { icon:ICONS.bain, name:'Pistoche', desc:'15 oiseaux d’eau + le Martin-pêcheur', test:s=>s.water>=15 && s.hasKingfisher, prog:s=>[s.water,15] },
-  { icon:ICONS.pingouin, name:'Happy feet', desc:'Observer un Alcidé (pingouin, macareux, guillemot…)', test:s=>s.hasPenguin, alwaysList:true, list:s=>ALCID_CATALOG.map(m=>({ name:m.name, owned:s.alcidOwnedSet.has(m.sci) })) },
+  { icon:ICONS.pingouin, name:'Happy feet', desc:'Observer un pingouin, un manchot ou un cousin (macareux, guillemot…)', test:s=>s.hasPenguin, alwaysList:true,
+    list:s=> ALCID_CATALOG.map(m=>({ name:m.name, section:'Alcidés — nos « pingouins » (hémisphère nord)', owned:s.alcidOwnedSet.has(m.sci) }))
+      .concat(MANCHOT_CATALOG.map(m=>({ name:m.name, section:'Manchots — les vrais (hémisphère sud)', owned:(s.manchotOwnedSet&&s.manchotOwnedSet.has(m.sci)) }))),
+    note:s=>{ const o=s.alcidOwnedSet.size+(s.manchotOwnedSet?s.manchotOwnedSet.size:0); const tot=ALCID_CATALOG.length+MANCHOT_CATALOG.length; return o+' déjà observé'+(o>1?'s':'')+' sur '+tot; } },
   { icon:ICONS.kangourou, name:'Wallaby', desc:'Observer le Martin-chasseur à dos de feu', test:s=>s.hasFireKingfisher },
   { icon:ICONS.saisons, name:'Les 4 Saisons', desc:'Chope un oiseau spécifique à chaque saison tah Vivaldi', test:s=>s.seasonCount>=4, prog:s=>[s.seasonCount,4], alwaysList:true, list:s=>SEASON_CATALOG.map(m=>({ name:m.name, section:m.section, owned:s.seasonOwnedSet.has(m.sci) })), note:s=>`${s.seasonCount} saison${s.seasonCount>1?'s':''} validée${s.seasonCount>1?'s':''} sur 4` },
   { icon:ICONS.bebe, name:'Gros Bébé', desc:'Observer des oiseaux avec Samuel Fillon (preuve demandée)', special:'vote', test:s=>(s.grosBebeVotes||0)>=3 },
@@ -1130,13 +1133,22 @@ const groupCatalog = re => Object.keys(FR_NAMES).filter(sci=>re.test(sci.split('
   .map(sci=>({ sci, name:frName(sci,sci) })).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
 const ALCID_CATALOG = groupCatalog(ALCID_G);
 const RAPTOR_CATALOG = groupCatalog(RAPTOR_G);
+// Vrais manchots (hémisphère sud) — clin d'œil "Happy feet". Absents de la liste FR, on les code à part.
+const MANCHOT_CATALOG = [
+  ['aptenodytes forsteri','Manchot empereur'],['aptenodytes patagonicus','Manchot royal'],
+  ['pygoscelis papua','Manchot papou'],['pygoscelis adeliae','Manchot d\'Adélie'],['pygoscelis antarcticus','Manchot à jugulaire'],
+  ['eudyptula minor','Manchot pygmée'],['megadyptes antipodes','Manchot antipode'],
+  ['spheniscus demersus','Manchot du Cap'],['spheniscus humboldti','Manchot de Humboldt'],['spheniscus magellanicus','Manchot de Magellan'],['spheniscus mendiculus','Manchot des Galápagos'],
+  ['eudyptes chrysocome','Gorfou sauteur'],['eudyptes moseleyi','Gorfou de Moseley'],['eudyptes chrysolophus','Gorfou doré'],['eudyptes schlegeli','Gorfou de Schlegel'],['eudyptes sclateri','Gorfou huppé'],['eudyptes pachyrhynchus','Gorfou du Fiordland'],['eudyptes robustus','Gorfou des Snares']
+].map(([sci,name])=>({sci,name})).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+const MANCHOT_SET = new Set(MANCHOT_CATALOG.map(m=>m.sci));
 function statsFor(me, N){
   const ranked=[...state.people].sort((a,b)=>b.score-a.score);
   const rank=ranked.findIndex(p=>p.id===me.id)+1;
   let owls=0,raptors=0,water=0,sea=0,blackWoodpecker=false,locTeste=false,hasKingfisher=false,hasPenguin=false,hasFireKingfisher=false;
   const megaList=[]; const megaOwnedSet=new Set();
   const seasonHit={}; SEASON_ORDER.forEach(s=>seasonHit[s]=false); const seasonOwnedSet=new Set();
-  const raptorOwnedSet=new Set(), alcidOwnedSet=new Set();
+  const raptorOwnedSet=new Set(), alcidOwnedSet=new Set(), manchotOwnedSet=new Set();
   for(const v of me._active.values()){
     const sci=(v.sci||'').toLowerCase();
     const g=sci.split(' ')[0];
@@ -1148,6 +1160,7 @@ function statsFor(me, N){
     if(sci==='dryocopus martius') blackWoodpecker=true;
     if(sci==='alcedo atthis') hasKingfisher=true;
     if(ALCID_G.test(g)){ hasPenguin=true; alcidOwnedSet.add(sci); }
+    if(MANCHOT_SET.has(sci)){ hasPenguin=true; manchotOwnedSet.add(sci); }
     if(sci==='todiramphus pyrrhopygius') hasFireKingfisher=true;
     if(rarityReal(sci)>=8){ megaList.push(frName(v.sci, v.common)); megaOwnedSet.add(sci); }
     if(/teste[- ]?de[- ]?buch|arcachon/i.test(v.loc||'')) locTeste=true;
@@ -1157,7 +1170,7 @@ function statsFor(me, N){
   let lackEnzoBird=false;
   if(enzo && enzo._active) for(const k of enzo._active.keys()){ if(!me._active.has(k)){ lackEnzoBird=true; break; } }
   const seasonCount=SEASON_ORDER.filter(s=>seasonHit[s]).length;
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, holdsRarest:!!me.holdsRarest, rarestRealName:me.rarestRealName||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, alcidOwnedSet, grosBebeVotes:(votesMap.get(me.id)?.size)||0 };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, holdsRarest:!!me.holdsRarest, rarestRealName:me.rarestRealName||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, alcidOwnedSet, manchotOwnedSet, grosBebeVotes:(votesMap.get(me.id)?.size)||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
