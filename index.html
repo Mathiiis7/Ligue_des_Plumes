@@ -1,5 +1,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b7c77">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Ligue Plumes">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="icon" href="logo.png">
 <title>Ligue Merlin Bird</title>
 <style>
   :root {
@@ -337,12 +344,20 @@
   .stat-fam-row { display:flex; justify-content:space-between; font-size:12.5px; color:var(--ink-2); margin-bottom:3px; }
   .stat-fam-bar { height:7px; border-radius:4px; background:var(--line); overflow:hidden; }
   .stat-fam-bar div { height:100%; background:var(--accent); border-radius:4px; }
+  .goal-prog { margin:16px 0 4px; }
+  .goal-row { display:flex; justify-content:space-between; font-size:13.5px; color:var(--ink-2); margin-bottom:6px; }
+  .goal-bar { height:12px; border-radius:6px; background:var(--line); overflow:hidden; }
+  .goal-bar div { height:100%; background:var(--accent); border-radius:6px; transition:width .3s; }
+  .goal-done { font-size:12.5px; color:#2ecc71; font-weight:700; margin-top:6px; }
+  .goal-left { font-size:11.5px; color:var(--ink-3); margin-top:5px; }
   .feed-list { display:flex; flex-direction:column; }
   .feed-item { display:flex; align-items:flex-start; gap:10px; padding:9px 4px; border-bottom:1px solid var(--line); }
   .feed-item:last-child { border-bottom:none; }
   .feed-dot { width:10px; height:10px; border-radius:50%; flex:none; margin-top:5px; }
   .feed-body { font-size:14px; color:var(--ink); }
   .feed-date { font-size:11.5px; color:var(--ink-3); margin-top:1px; }
+  .feed-rar { font-weight:600; }
+  .feed-item .react-bar { margin:6px 0 0; }
   .react-bar { display:flex; gap:5px; flex-wrap:wrap; margin:3px 10px 0; align-items:center; }
   .msg.mine .react-bar { justify-content:flex-end; }
   .react-chip { font:inherit; font-size:12px; padding:1px 7px; border-radius:11px; border:1px solid var(--line);
@@ -543,7 +558,7 @@
       <div class="profile" id="profile" style="display:none;">
         <div class="eyebrow" style="margin-bottom:10px;">Votre fiche <span style="text-transform:none;font-weight:400;color:var(--ink-3);">— visible dans le classement par tout le groupe</span></div>
         <div class="prof-grid">
-          <label>Objectif<input type="text" id="profGoal" maxlength="60" placeholder="ex. 100 espèces"></label>
+          <label>Objectif (nombre d'espèces)<input type="number" id="profGoal" min="1" max="2000" placeholder="ex. 100"></label>
           <label>Espèce préférée<select id="profFav"><option value="">— aucune —</option></select></label>
           <label>Votre espèce la plus rare<input type="text" id="profRare" maxlength="40" placeholder="au choix (sinon calculée)"></label>
           <label>Espèce de rêve<input type="text" id="profDream" maxlength="40" placeholder="ex. Gypaète barbu"></label>
@@ -964,14 +979,14 @@ function renderBoard(){
     <thead><tr>
       <th class="c-rank">#</th><th>Joueur</th>
       ${scoreTh}
-      <th class="c-txt">${esc(goalHeader)}</th><th class="c-txt">Espèce préférée</th>
+      <th class="c-txt">Objectif</th><th class="c-txt">Espèce préférée</th>
       <th class="c-txt">La plus rare</th><th class="c-txt">Dernière acquisition</th><th class="c-txt">Espèce de rêve</th>
     </tr></thead>
     <tbody>${ranked.map((p,i)=>`<tr class="${i===0?'lead':''}">
       <td class="c-rank">${i===0?'★':(i+1)}</td>
       <td class="who-cell" style="--series:var(--s${p.si})"><span class="dot"></span>${isOnline(p.id)?'<span class="pname-dot" title="en ligne"></span>':''}${esc(p.name)}${p.isMe?'<span class="youtag">vous</span>':''}${p.isDemo?'<span class="demotag">ex.</span>':''}</td>
       ${scoreTd(p)}
-      <td class="c-txt">${cell(p.goal)}</td>
+      <td class="c-txt">${parseInt(p.goal,10)>0 ? `${p.total} / ${parseInt(p.goal,10)}` : cell(p.goal)}</td>
       <td class="c-txt">${cell(p.fav)}</td>
       <td class="c-txt">${p.rare?esc(p.rare):(p.rarestName?`<span class="muted">${esc(p.rarestName)}</span>`:dash)}</td>
       <td class="c-txt">${p.lastAcqName?esc(p.lastAcqName)+(p.lastAcqDisp?` <span class="muted">${p.lastAcqDisp}</span>`:''):dash}</td>
@@ -1215,13 +1230,13 @@ const DEMO_FRIENDS = [
   { name:'Karim', sci:['Turdus merula','Parus major','Cyanistes caeruleus','Erithacus rubecula','Passer domesticus','Fringilla coelebs','Carduelis carduelis','Chloris chloris','Pica pica','Corvus corone','Coloeus monedula','Columba palumbus','Streptopelia decaocto','Sturnus vulgaris','Sylvia atricapilla','Phylloscopus collybita','Troglodytes troglodytes','Prunella modularis','Aegithalos caudatus','Sitta europaea','Dendrocopos major','Picus viridis','Buteo buteo','Milvus migrans','Falco tinnunculus','Accipiter nisus','Ardea cinerea','Egretta garzetta','Anas platyrhynchos','Fulica atra','Vanellus vanellus','Circus aeruginosus','Alcedo atthis','Motacilla cinerea','Emberiza citrinella','Saxicola rubicola'] },
 ];
 const DEMO_EXTRA = {
-  'Léa':{goal:'80 espèces',fav:'Rouge-gorge familier',dream:'Martin-pêcheur d\'Europe',date:'2025-07-18'},
-  'Tom':{goal:'Voir 5 rapaces',fav:'Balbuzard pêcheur',dream:'Pygargue à queue blanche',date:'2025-07-20'},
-  'Sam':{goal:'Les oiseaux du Sud',fav:'Guêpier d\'Europe',dream:'Rollier d\'Europe',date:'2025-07-12'},
-  'Chloé':{goal:'La montagne',fav:'Tichodrome échelette',dream:'Gypaète barbu',date:'2025-07-22'},
-  'Hugo':{goal:'100 oiseaux de mer',fav:'Macareux moine',dream:'Océanite tempête',date:'2025-07-19'},
-  'Inès':{goal:'Reconnaître 20 chants',fav:'Mésange bleue',dream:'Huppe fasciée',date:'2025-07-05'},
-  'Karim':{goal:'Battre Mathis',fav:'Faucon crécerelle',dream:'Aigle royal',date:'2025-07-21'},
+  'Léa':{goal:'50',fav:'Rouge-gorge familier',dream:'Martin-pêcheur d\'Europe',date:'2025-07-18'},
+  'Tom':{goal:'45',fav:'Balbuzard pêcheur',dream:'Pygargue à queue blanche',date:'2025-07-20'},
+  'Sam':{goal:'35',fav:'Guêpier d\'Europe',dream:'Rollier d\'Europe',date:'2025-07-12'},
+  'Chloé':{goal:'30',fav:'Tichodrome échelette',dream:'Gypaète barbu',date:'2025-07-22'},
+  'Hugo':{goal:'40',fav:'Macareux moine',dream:'Océanite tempête',date:'2025-07-19'},
+  'Inès':{goal:'20',fav:'Mésange bleue',dream:'Huppe fasciée',date:'2025-07-05'},
+  'Karim':{goal:'60',fav:'Faucon crécerelle',dream:'Aigle royal',date:'2025-07-21'},
 };
 function demoPeople(startIndex){
   return DEMO_FRIENDS.map((f,i)=>{
@@ -1287,7 +1302,7 @@ function subscribe(){
   unsubReactions = onSnapshot(collection(db,'leagues',leagueId,'reactions'), snap=>{
     const m=new Map();
     snap.forEach(d=>{ const v=d.data()||{}; if(v.target && v.emoji && v.uid){ if(!m.has(v.target)) m.set(v.target,new Map()); const em=m.get(v.target); if(!em.has(v.emoji)) em.set(v.emoji,new Set()); em.get(v.emoji).add(v.uid); } });
-    reactionsMap=m; if(lastChatMsgs.length) renderChat(lastChatMsgs); renderPhotos();
+    reactionsMap=m; if(lastChatMsgs.length) renderChat(lastChatMsgs); renderPhotos(); renderFeed();
   }, ()=>{});
   if(unsubPhotos){ unsubPhotos(); unsubPhotos=null; }
   unsubPhotos = onSnapshot(query(collection(db,'leagues',leagueId,'photos'), orderBy('createdAt','desc'), limit(60)),
@@ -1407,15 +1422,17 @@ function renderFeed(){
     const active=p._active||p.species; if(!active) continue;
     for(const v of active.values()){
       const pd=parseDate(v.date);
-      if(pd) items.push({ name:p.name, bird:frName(v.sci,v.common), sci:v.sci, ord:pd.ord, disp:pd.disp });
+      if(pd) items.push({ name:p.name, uid:p.id, bird:frName(v.sci,v.common), sci:(v.sci||''), ord:pd.ord, disp:pd.disp });
     }
   }
   items.sort((a,b)=>b.ord-a.ord);
   const top=items.slice(0,60);
   if(!top.length){ el.innerHTML='<p class="help" style="margin:0;">Aucune observation datée pour le moment. Chargez vos listes ! 🐦</p>'; return; }
-  el.innerHTML=top.map(it=>{ const tt=realTier(it.sci);
-    return `<div class="feed-item"><span class="feed-dot" style="background:${tt.color}" title="${esc(tt.label)}"></span>
-      <div class="feed-body"><div><b>${esc(it.name)}</b> a observé <b>${esc(it.bird)}</b></div><div class="feed-date">${esc(it.disp)}</div></div></div>`;
+  el.innerHTML=top.map(it=>{ const tt=realTier(it.sci); const target='obs:'+it.uid+':'+it.sci.toLowerCase();
+    return `<div class="feed-item"><span class="feed-dot" style="background:${tt.color}"></span>
+      <div class="feed-body"><div><b>${esc(it.name)}</b> a observé <b>${esc(it.bird)}</b></div>
+      <div class="feed-date">${esc(it.disp)} · <span class="feed-rar" style="color:${tt.color}">${esc(tt.label)}</span></div>
+      ${reactionBar(target)}</div></div>`;
   }).join('');
 }
 // ---- Fiche perso / stats ----
@@ -1433,12 +1450,18 @@ function renderStats(me){
   const maxFam=fams.length?fams[0][1]:1;
   const ranked=[...state.people].sort((a,b)=>b.score-a.score);
   const rank=ranked.findIndex(p=>p.id===me.id)+1;
+  const goal=parseInt(me.goal,10);
+  const goalHtml = (goal>0) ? (()=>{ const pct=Math.min(100,Math.round(total/goal*100)); const done=total>=goal;
+    return `<div class="goal-prog"><div class="goal-row"><span>🎯 Objectif</span><span><b>${total}</b> / ${goal}</span></div>
+      <div class="goal-bar"><div style="width:${pct}%${done?';background:#2ecc71':''}"></div></div>
+      ${done?'<div class="goal-done">Objectif atteint ! 🎉</div>':`<div class="goal-left">Encore ${goal-total} pour l'atteindre</div>`}</div>`; })() : '';
   box.innerHTML=`<div class="eyebrow" style="margin-bottom:10px;">Vos statistiques</div>
     <div class="stat-tiles">
       <div class="stat-tile"><div class="stat-num">${total}</div><div class="stat-lbl">espèces</div></div>
       <div class="stat-tile"><div class="stat-num">${state.people.length>1?('#'+rank):'—'}</div><div class="stat-lbl">au classement</div></div>
       <div class="stat-tile"><div class="stat-num small">${esc(rareName)}</div><div class="stat-lbl">votre plus rare${rareTier?' · '+esc(rareTier.label):''}</div></div>
     </div>`+
+    goalHtml+
     (fams.length?`<div class="stat-fam-title">Vos familles</div><div class="stat-fams">`+fams.map(([f,n])=>`<div class="stat-fam"><div class="stat-fam-row"><span>${esc(f)}</span><span>${n}</span></div><div class="stat-fam-bar"><div style="width:${Math.round(n/maxFam*100)}%"></div></div></div>`).join('')+`</div>`:'');
 }
 // ---- Pastilles "non lu" (Tchat / Photos) ----
@@ -1680,6 +1703,10 @@ $('#photoGrid')?.addEventListener('click', async e=>{
     try{ await deleteDoc(doc(db,'leagues',leagueId,'photos',del.dataset.id)); }catch(err){ showError(err); } return; }
   const img=e.target.closest('.photo-img'); if(img){ $('#imgModalImg').src=img.src; $('#imgModal').classList.add('open'); }
 });
+$('#feedList')?.addEventListener('click', e=>{
+  const chip=e.target.closest('.react-chip'); if(chip){ toggleReaction(chip.dataset.target, chip.dataset.emoji); return; }
+  const addb=e.target.closest('.react-add'); if(addb){ openEmojiPop({type:'react', target:addb.dataset.target}); }
+});
 $('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove('open'); $('#imgModalImg').src=''; });
 
 $('#trophyWho').addEventListener('click',e=>{
@@ -1832,4 +1859,6 @@ onAuthStateChanged(auth, user=>{
   if(user){ myUid=user.uid; updateAuthUI(user); boot(); }
   else { myUid=null; signInAnonymously(auth).catch(err=>{ showError(err); }); }
 });
+// PWA : installation sur l'écran d'accueil
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
 </script>
