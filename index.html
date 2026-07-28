@@ -995,7 +995,8 @@ function renderMatrix({universe,N}){
   // jamais observés par personne s'affichent simplement en "Non observé".
   const rMode = state.boardMode==='real' ? 'real' : 'league';
   const NONE_TIER={ id:'none', ord:-1, label:'Non observé', color:'#9aa5b1' };
-  const rarOf = u => u.missing ? NONE_TIER : (rMode==='real' ? realTier(u.sci) : u.tier);
+  // Non observés : en rareté réelle -> on montre leur vraie rareté ; en rareté ligue -> "Non observé"
+  const rarOf = u => (u.missing && rMode!=='real') ? NONE_TIER : (rMode==='real' ? realTier(u.sci) : u.tier);
   const rarHead = rMode==='real' ? 'Rareté réelle' : 'Rareté';
 
   // option : ajouter tous les oiseaux de France non encore observés par le groupe
