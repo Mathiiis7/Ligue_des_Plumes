@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <title>Ligue Merlin Bird</title>
 <style>
   :root {
@@ -340,6 +340,16 @@
   .feed-dot { width:10px; height:10px; border-radius:50%; flex:none; margin-top:5px; }
   .feed-body { font-size:14px; color:var(--ink); }
   .feed-date { font-size:11.5px; color:var(--ink-3); margin-top:1px; }
+  .cmp-pick { font-size:14px; color:var(--ink-2); margin:2px 0 12px; }
+  .cmp-pick select { font:inherit; padding:6px 10px; border:1px solid var(--line-2); border-radius:9px; background:var(--surface); color:var(--ink); }
+  .cmp-cols { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .cmp-col { border:1px solid var(--line); border-radius:12px; padding:12px; background:var(--surface-2); }
+  .cmp-head { font-size:12.5px; font-weight:700; color:var(--ink-2); margin-bottom:8px; line-height:1.35; }
+  .cmp-head span { color:var(--ink-3); font-weight:400; }
+  .cmp-list { margin:0; padding-left:18px; color:var(--ink); font-size:13px; max-height:280px; overflow-y:auto; }
+  .cmp-list li { margin:3px 0; }
+  .cmp-none { font-size:13px; color:var(--ink-3); margin:0; }
+  @media (max-width:640px){ .cmp-cols { grid-template-columns:1fr; } }
   .react-bar { display:flex; gap:5px; flex-wrap:wrap; margin:3px 10px 0; align-items:center; }
   .msg.mine .react-bar { justify-content:flex-end; }
   .react-chip { font:inherit; font-size:12px; padding:1px 7px; border-radius:11px; border:1px solid var(--line);
@@ -560,6 +570,13 @@
       <div class="board-list" id="boardList"></div>
     </div>
 
+    <div class="panel" id="compare" style="padding:20px;">
+      <div class="section-head">
+        <div><div class="eyebrow">Duel</div><h2>⚔️ Comparaison 1 contre 1</h2></div>
+      </div>
+      <div class="cmp-pick">Vous <b>vs</b> <select id="compareWho"></select></div>
+      <div id="compareOut"></div>
+    </div>
 
     <div class="panel" id="matrix">
       <div class="section-head">
@@ -1233,6 +1250,7 @@ function rebuild(){
   if(lastChatMsgs.length) renderChat(lastChatMsgs);
   renderFeed();
   renderStats(realPeople.find(p=>p.id===myUid));
+  renderCompare();
 }
 
 function applySnapshot(snap){
@@ -1433,6 +1451,27 @@ function renderStats(me){
     </div>`+
     (fams.length?`<div class="stat-fam-title">Vos familles</div><div class="stat-fams">`+fams.map(([f,n])=>`<div class="stat-fam"><div class="stat-fam-row"><span>${esc(f)}</span><span>${n}</span></div><div class="stat-fam-bar"><div style="width:${Math.round(n/maxFam*100)}%"></div></div></div>`).join('')+`</div>`:'');
 }
+// ---- Comparaison 1 contre 1 ----
+let comparePid=null;
+function renderCompare(){
+  const sel=$('#compareWho'), out=$('#compareOut'); if(!sel||!out) return;
+  const me=realPeople.find(p=>p.id===myUid);
+  const others=state.people.filter(p=>p.id!==myUid && (p._active||p.species));
+  if(!me || !me._active){ sel.innerHTML=''; out.innerHTML='<p class="help" style="margin:0;">Chargez votre liste pour vous comparer aux autres.</p>'; return; }
+  if(!others.length){ sel.innerHTML=''; out.innerHTML='<p class="help" style="margin:0;">Personne d\'autre dans la ligue pour l\'instant.</p>'; return; }
+  const cur=(comparePid && others.find(p=>p.id===comparePid))?comparePid:others[0].id; comparePid=cur;
+  sel.innerHTML=others.map(p=>`<option value="${esc(p.id)}"${p.id===cur?' selected':''}>${esc(p.name)}</option>`).join('');
+  const friend=others.find(p=>p.id===cur);
+  const meSci=new Map(); for(const v of me._active.values()) meSci.set((v.sci||'').toLowerCase(), frName(v.sci,v.common));
+  const frMap=new Map(); for(const v of (friend._active||friend.species).values()) frMap.set((v.sci||'').toLowerCase(), frName(v.sci,v.common));
+  const onlyFriend=[...frMap].filter(([k])=>k && !meSci.has(k)).map(([,n])=>n).sort((a,b)=>a.localeCompare(b,'fr'));
+  const onlyMe=[...meSci].filter(([k])=>k && !frMap.has(k)).map(([,n])=>n).sort((a,b)=>a.localeCompare(b,'fr'));
+  const col=(title,arr,empty)=>`<div class="cmp-col"><div class="cmp-head">${title} <span>(${arr.length})</span></div>`+(arr.length?'<ul class="cmp-list">'+arr.map(n=>`<li>${esc(n)}</li>`).join('')+'</ul>':`<p class="cmp-none">${empty}</p>`)+`</div>`;
+  out.innerHTML=`<div class="cmp-cols">`+
+    col(`À rattraper — que <b>${esc(friend.name)}</b> a`, onlyFriend, `Vous avez déjà tout ce que ${esc(friend.name)} a ! 💪`)+
+    col(`Votre avance — que vous seul avez`, onlyMe, `${esc(friend.name)} a tout ce que vous avez.`)+
+  `</div>`;
+}
 // ---- Pastilles "non lu" (Tchat / Photos) ----
 let chatLatest=0, photosLatest=0;
 function updateTabDots(){
@@ -1521,6 +1560,7 @@ $('#copyLinkBtn').addEventListener('click',async()=>{
   }catch(e){ /* clipboard blocked */ }
 });
 $('#inviteBtn')?.addEventListener('click', doInvite);
+$('#compareWho')?.addEventListener('change', e=>{ comparePid=e.target.value; renderCompare(); });
 
 const fileInput=$('#file'), drop=$('#drop');
 async function handleFiles(fileList){
