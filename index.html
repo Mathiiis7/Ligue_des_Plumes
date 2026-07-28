@@ -1131,7 +1131,19 @@ const SEASON_CATALOG = SEASON_ORDER.flatMap(seas =>
 // catalogues par groupe (pour afficher la liste des possibles au clic sur le trophée)
 const groupCatalog = re => Object.keys(FR_NAMES).filter(sci=>re.test(sci.split(' ')[0]))
   .map(sci=>({ sci, name:frName(sci,sci) })).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
-const ALCID_CATALOG = groupCatalog(ALCID_G);
+// Famille complète des Alcidés (monde entier, hémisphère nord)
+const ALCID_CATALOG = [
+  ['alca torda','Petit Pingouin'],['pinguinus impennis','Grand Pingouin'],['alle alle','Mergule nain'],
+  ['uria aalge','Guillemot de Troïl'],['uria lomvia','Guillemot de Brünnich'],
+  ['cepphus grylle','Guillemot à miroir'],['cepphus columba','Guillemot colombin'],['cepphus carbo','Guillemot à lunettes'],
+  ['brachyramphus marmoratus','Guillemot marbré'],['brachyramphus brevirostris','Guillemot de Kittlitz'],['brachyramphus perdix','Guillemot à long bec'],
+  ['synthliboramphus antiquus','Guillemot antique'],['synthliboramphus wumizusume','Guillemot du Japon'],['synthliboramphus hypoleucus','Guillemot de Xantus'],['synthliboramphus scrippsi','Guillemot de Scripps'],['synthliboramphus craveri','Guillemot de Craveri'],
+  ['ptychoramphus aleuticus','Starique de Cassin'],
+  ['aethia psittacula','Starique perroquet'],['aethia cristatella','Starique cristatelle'],['aethia pygmaea','Starique pygmée'],['aethia pusilla','Starique minuscule'],
+  ['cerorhinca monocerata','Macareux rhinocéros'],
+  ['fratercula arctica','Macareux moine'],['fratercula corniculata','Macareux cornu'],['fratercula cirrhata','Macareux huppé']
+].map(([sci,name])=>({sci,name})).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+const ALCID_SET = new Set(ALCID_CATALOG.map(m=>m.sci));
 const RAPTOR_CATALOG = groupCatalog(RAPTOR_G);
 // Vrais manchots (hémisphère sud) — clin d'œil "Happy feet". Absents de la liste FR, on les code à part.
 const MANCHOT_CATALOG = [
@@ -1159,7 +1171,7 @@ function statsFor(me, N){
     if(SEA_G.test(g)) sea++;
     if(sci==='dryocopus martius') blackWoodpecker=true;
     if(sci==='alcedo atthis') hasKingfisher=true;
-    if(ALCID_G.test(g)){ hasPenguin=true; alcidOwnedSet.add(sci); }
+    if(ALCID_SET.has(sci)){ hasPenguin=true; alcidOwnedSet.add(sci); }
     if(MANCHOT_SET.has(sci)){ hasPenguin=true; manchotOwnedSet.add(sci); }
     if(sci==='todiramphus pyrrhopygius') hasFireKingfisher=true;
     if(rarityReal(sci)>=8){ megaList.push(frName(v.sci, v.common)); megaOwnedSet.add(sci); }
