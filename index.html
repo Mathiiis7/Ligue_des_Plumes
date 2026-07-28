@@ -269,9 +269,12 @@
   @media (prefers-reduced-motion: reduce){ *{animation:none!important; transition:none!important;} }
 
   /* onglets */
-  .tabs { display:flex; gap:4px; margin-top:22px; border-bottom:1px solid var(--line); }
+  .tabs { display:flex; gap:4px; margin-top:22px; border-bottom:1px solid var(--line);
+    overflow-x:auto; flex-wrap:nowrap; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .tabs::-webkit-scrollbar { display:none; }
   .tab { border:none; background:transparent; color:var(--ink-2); font:inherit; font-weight:600;
-    font-size:15px; padding:10px 16px; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; }
+    font-size:15px; padding:10px 16px; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px;
+    flex:0 0 auto; white-space:nowrap; }
   .tab.on { color:var(--accent-ink); border-bottom-color:var(--accent); }
   .tab:hover { color:var(--accent-ink); }
   .auth-fields { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
@@ -340,16 +343,6 @@
   .feed-dot { width:10px; height:10px; border-radius:50%; flex:none; margin-top:5px; }
   .feed-body { font-size:14px; color:var(--ink); }
   .feed-date { font-size:11.5px; color:var(--ink-3); margin-top:1px; }
-  .cmp-pick { font-size:14px; color:var(--ink-2); margin:2px 0 12px; }
-  .cmp-pick select { font:inherit; padding:6px 10px; border:1px solid var(--line-2); border-radius:9px; background:var(--surface); color:var(--ink); }
-  .cmp-cols { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-  .cmp-col { border:1px solid var(--line); border-radius:12px; padding:12px; background:var(--surface-2); }
-  .cmp-head { font-size:12.5px; font-weight:700; color:var(--ink-2); margin-bottom:8px; line-height:1.35; }
-  .cmp-head span { color:var(--ink-3); font-weight:400; }
-  .cmp-list { margin:0; padding-left:18px; color:var(--ink); font-size:13px; max-height:280px; overflow-y:auto; }
-  .cmp-list li { margin:3px 0; }
-  .cmp-none { font-size:13px; color:var(--ink-3); margin:0; }
-  @media (max-width:640px){ .cmp-cols { grid-template-columns:1fr; } }
   .react-bar { display:flex; gap:5px; flex-wrap:wrap; margin:3px 10px 0; align-items:center; }
   .msg.mine .react-bar { justify-content:flex-end; }
   .react-chip { font:inherit; font-size:12px; padding:1px 7px; border-radius:11px; border:1px solid var(--line);
@@ -458,6 +451,7 @@
 
   <nav class="tabs">
     <button class="tab on" data-view="load">Ma liste</button>
+    <button class="tab" data-view="profil">👤 Profil</button>
     <button class="tab" data-view="ranking">Classement</button>
     <button class="tab" data-view="trophies">🏆 Trophées</button>
     <button class="tab" data-view="chat">💬 Tchat</button>
@@ -531,18 +525,6 @@
       <div style="font-size:12px;"><button class="linkbtn" id="removeMineBtn" style="display:none;">Retirer ma liste de la ligue</button></div>
     </div>
 
-    <div class="profile" id="profile" style="display:none;">
-      <div class="eyebrow" style="margin-bottom:10px;">Votre fiche <span style="text-transform:none;font-weight:400;color:var(--ink-3);">— visible dans le classement par tout le groupe</span></div>
-      <div class="prof-grid">
-        <label>Objectif<input type="text" id="profGoal" maxlength="60" placeholder="ex. 100 espèces"></label>
-        <label>Espèce préférée<select id="profFav"><option value="">— aucune —</option></select></label>
-        <label>Votre espèce la plus rare<input type="text" id="profRare" maxlength="40" placeholder="au choix (sinon calculée)"></label>
-        <label>Espèce de rêve<input type="text" id="profDream" maxlength="40" placeholder="ex. Gypaète barbu"></label>
-      </div>
-    </div>
-
-    <div class="statsbox" id="statsBox" style="display:none;"></div>
-
     <div class="people" id="people"></div>
 
     <div style="margin-top:14px;">
@@ -553,6 +535,23 @@
     <div id="fbError"></div>
   </section>
   </div><!-- /viewLoad -->
+
+  <div id="viewProfil" style="display:none;">
+    <section class="panel" style="padding:20px; margin-top:22px;">
+      <div class="section-head"><div><div class="eyebrow">Vous</div><h2>👤 Mon profil</h2></div></div>
+      <div id="profilEmpty" class="help" style="margin:6px 0 0;">Chargez votre liste (onglet « Ma liste ») pour compléter votre profil et voir vos stats.</div>
+      <div class="profile" id="profile" style="display:none;">
+        <div class="eyebrow" style="margin-bottom:10px;">Votre fiche <span style="text-transform:none;font-weight:400;color:var(--ink-3);">— visible dans le classement par tout le groupe</span></div>
+        <div class="prof-grid">
+          <label>Objectif<input type="text" id="profGoal" maxlength="60" placeholder="ex. 100 espèces"></label>
+          <label>Espèce préférée<select id="profFav"><option value="">— aucune —</option></select></label>
+          <label>Votre espèce la plus rare<input type="text" id="profRare" maxlength="40" placeholder="au choix (sinon calculée)"></label>
+          <label>Espèce de rêve<input type="text" id="profDream" maxlength="40" placeholder="ex. Gypaète barbu"></label>
+        </div>
+      </div>
+      <div class="statsbox" id="statsBox" style="display:none;"></div>
+    </section>
+  </div>
 
   <div id="viewRanking" style="display:none;">
   <section id="results">
@@ -568,14 +567,6 @@
       </div>
       <div class="real-scale" id="realScale" style="display:none;"></div>
       <div class="board-list" id="boardList"></div>
-    </div>
-
-    <div class="panel" id="compare" style="padding:20px;">
-      <div class="section-head">
-        <div><div class="eyebrow">Duel</div><h2>⚔️ Comparaison 1 contre 1</h2></div>
-      </div>
-      <div class="cmp-pick">Vous <b>vs</b> <select id="compareWho"></select></div>
-      <div id="compareOut"></div>
     </div>
 
     <div class="panel" id="matrix">
@@ -1250,7 +1241,6 @@ function rebuild(){
   if(lastChatMsgs.length) renderChat(lastChatMsgs);
   renderFeed();
   renderStats(realPeople.find(p=>p.id===myUid));
-  renderCompare();
 }
 
 function applySnapshot(snap){
@@ -1451,27 +1441,6 @@ function renderStats(me){
     </div>`+
     (fams.length?`<div class="stat-fam-title">Vos familles</div><div class="stat-fams">`+fams.map(([f,n])=>`<div class="stat-fam"><div class="stat-fam-row"><span>${esc(f)}</span><span>${n}</span></div><div class="stat-fam-bar"><div style="width:${Math.round(n/maxFam*100)}%"></div></div></div>`).join('')+`</div>`:'');
 }
-// ---- Comparaison 1 contre 1 ----
-let comparePid=null;
-function renderCompare(){
-  const sel=$('#compareWho'), out=$('#compareOut'); if(!sel||!out) return;
-  const me=realPeople.find(p=>p.id===myUid);
-  const others=state.people.filter(p=>p.id!==myUid && (p._active||p.species));
-  if(!me || !me._active){ sel.innerHTML=''; out.innerHTML='<p class="help" style="margin:0;">Chargez votre liste pour vous comparer aux autres.</p>'; return; }
-  if(!others.length){ sel.innerHTML=''; out.innerHTML='<p class="help" style="margin:0;">Personne d\'autre dans la ligue pour l\'instant.</p>'; return; }
-  const cur=(comparePid && others.find(p=>p.id===comparePid))?comparePid:others[0].id; comparePid=cur;
-  sel.innerHTML=others.map(p=>`<option value="${esc(p.id)}"${p.id===cur?' selected':''}>${esc(p.name)}</option>`).join('');
-  const friend=others.find(p=>p.id===cur);
-  const meSci=new Map(); for(const v of me._active.values()) meSci.set((v.sci||'').toLowerCase(), frName(v.sci,v.common));
-  const frMap=new Map(); for(const v of (friend._active||friend.species).values()) frMap.set((v.sci||'').toLowerCase(), frName(v.sci,v.common));
-  const onlyFriend=[...frMap].filter(([k])=>k && !meSci.has(k)).map(([,n])=>n).sort((a,b)=>a.localeCompare(b,'fr'));
-  const onlyMe=[...meSci].filter(([k])=>k && !frMap.has(k)).map(([,n])=>n).sort((a,b)=>a.localeCompare(b,'fr'));
-  const col=(title,arr,empty)=>`<div class="cmp-col"><div class="cmp-head">${title} <span>(${arr.length})</span></div>`+(arr.length?'<ul class="cmp-list">'+arr.map(n=>`<li>${esc(n)}</li>`).join('')+'</ul>':`<p class="cmp-none">${empty}</p>`)+`</div>`;
-  out.innerHTML=`<div class="cmp-cols">`+
-    col(`À rattraper — que <b>${esc(friend.name)}</b> a`, onlyFriend, `Vous avez déjà tout ce que ${esc(friend.name)} a ! 💪`)+
-    col(`Votre avance — que vous seul avez`, onlyMe, `${esc(friend.name)} a tout ce que vous avez.`)+
-  `</div>`;
-}
 // ---- Pastilles "non lu" (Tchat / Photos) ----
 let chatLatest=0, photosLatest=0;
 function updateTabDots(){
@@ -1498,6 +1467,7 @@ function updateChatIdentity(){
 function fillProfile(me){
   const prof=$('#profile'); if(!prof) return;
   prof.style.display = me ? 'block' : 'none';
+  const empty=$('#profilEmpty'); if(empty) empty.style.display = me ? 'none' : '';
   if(!me) return;
   const g=$('#profGoal'), d=$('#profDream'), fav=$('#profFav'), rr=$('#profRare');
   if(document.activeElement!==g) g.value=me.goal||'';
@@ -1560,7 +1530,6 @@ $('#copyLinkBtn').addEventListener('click',async()=>{
   }catch(e){ /* clipboard blocked */ }
 });
 $('#inviteBtn')?.addEventListener('click', doInvite);
-$('#compareWho')?.addEventListener('change', e=>{ comparePid=e.target.value; renderCompare(); });
 
 const fileInput=$('#file'), drop=$('#drop');
 async function handleFiles(fileList){
@@ -1609,7 +1578,7 @@ $('#removeMineBtn').addEventListener('click',async()=>{
   catch(err){ showError(err); }
 });
 
-const VIEWS = { load:'#viewLoad', ranking:'#viewRanking', trophies:'#viewTrophies', chat:'#viewChat', photos:'#viewPhotos', feed:'#viewFeed' };
+const VIEWS = { load:'#viewLoad', profil:'#viewProfil', ranking:'#viewRanking', trophies:'#viewTrophies', chat:'#viewChat', photos:'#viewPhotos', feed:'#viewFeed' };
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
   b.classList.add('on');
@@ -1623,6 +1592,7 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   }
   if(b.dataset.view==='photos'){ renderPhotos(); markSeen('photos'); }
   if(b.dataset.view==='feed') renderFeed();
+  if(b.dataset.view==='profil'){ const me=realPeople.find(p=>p.id===myUid); fillProfile(me); renderStats(me); }
 }));
 let pendingImage = null;
 async function compressImage(file, maxDim=1000, maxLen=700000){
