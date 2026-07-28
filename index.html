@@ -315,6 +315,29 @@
   .img-modal { display:none; position:fixed; inset:0; z-index:70; background:rgba(0,0,0,.82); align-items:center; justify-content:center; padding:20px; cursor:zoom-out; }
   .img-modal.open { display:flex; }
   .img-modal img { max-width:96vw; max-height:92vh; border-radius:10px; }
+  .tab { position:relative; }
+  .tab.has-new::after { content:''; position:absolute; top:5px; right:6px; width:7px; height:7px; border-radius:50%; background:#e74c3c; }
+  .import-guide { margin:12px 0 2px; font-size:13px; }
+  .import-guide summary { cursor:pointer; font-weight:600; color:var(--accent-ink); }
+  .import-guide ol { margin:9px 0 0; padding-left:20px; color:var(--ink-2); line-height:1.65; }
+  .import-guide li { margin:3px 0; }
+  .statsbox { margin:16px 0 4px; padding:15px 16px; background:var(--surface-2); border:1px solid var(--line); border-radius:14px; }
+  .stat-tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; }
+  .stat-tile { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 10px; text-align:center; }
+  .stat-num { font-family:var(--serif); font-size:26px; font-weight:600; color:var(--ink); line-height:1.1; }
+  .stat-num.small { font-size:15px; line-height:1.25; }
+  .stat-lbl { font-size:11px; color:var(--ink-3); margin-top:4px; }
+  .stat-fam-title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-2); margin:16px 0 8px; }
+  .stat-fams { display:flex; flex-direction:column; gap:8px; }
+  .stat-fam-row { display:flex; justify-content:space-between; font-size:12.5px; color:var(--ink-2); margin-bottom:3px; }
+  .stat-fam-bar { height:7px; border-radius:4px; background:var(--line); overflow:hidden; }
+  .stat-fam-bar div { height:100%; background:var(--accent); border-radius:4px; }
+  .feed-list { display:flex; flex-direction:column; }
+  .feed-item { display:flex; align-items:flex-start; gap:10px; padding:9px 4px; border-bottom:1px solid var(--line); }
+  .feed-item:last-child { border-bottom:none; }
+  .feed-dot { width:10px; height:10px; border-radius:50%; flex:none; margin-top:5px; }
+  .feed-body { font-size:14px; color:var(--ink); }
+  .feed-date { font-size:11.5px; color:var(--ink-3); margin-top:1px; }
   .react-bar { display:flex; gap:5px; flex-wrap:wrap; margin:3px 10px 0; align-items:center; }
   .msg.mine .react-bar { justify-content:flex-end; }
   .react-chip { font:inherit; font-size:12px; padding:1px 7px; border-radius:11px; border:1px solid var(--line);
@@ -427,6 +450,7 @@
     <button class="tab" data-view="trophies">🏆 Trophées</button>
     <button class="tab" data-view="chat">💬 Tchat</button>
     <button class="tab" data-view="photos">📸 Photos</button>
+    <button class="tab" data-view="feed">🆕 Fil</button>
   </nav>
 
   <div id="viewLoad">
@@ -465,7 +489,18 @@
     <div class="linkbox">
       <code id="shareLink"></code>
       <button class="btn tiny" id="copyLinkBtn">🔗 Copier le lien</button>
+      <button class="btn tiny" id="inviteBtn">📨 Inviter</button>
     </div>
+    <details class="import-guide">
+      <summary>📥 Comment exporter ma liste depuis eBird ?</summary>
+      <ol>
+        <li>Connectez-vous sur <b>ebird.org</b>.</li>
+        <li>Ouvrez <b>ebird.org/downloadMyData</b> (menu → « Télécharger mes données »).</li>
+        <li>Cliquez sur <b>Submit</b> : eBird vous envoie un <b>email</b> avec un lien (quelques minutes).</li>
+        <li>Téléchargez le <b>.zip</b>, dézippez-le → vous obtenez <code>MyEBirdData.csv</code>.</li>
+        <li>Déposez ce fichier ci-dessous. 🎉</li>
+      </ol>
+    </details>
 
     <div class="me-panel">
       <div class="me-name">
@@ -493,6 +528,8 @@
         <label>Espèce de rêve<input type="text" id="profDream" maxlength="40" placeholder="ex. Gypaète barbu"></label>
       </div>
     </div>
+
+    <div class="statsbox" id="statsBox" style="display:none;"></div>
 
     <div class="people" id="people"></div>
 
@@ -613,6 +650,16 @@
         </div>
       </div>
       <div class="photo-grid" id="photoGrid"></div>
+    </section>
+  </div>
+
+  <div id="viewFeed" style="display:none;">
+    <section class="panel" style="padding:20px; margin-top:22px;">
+      <div class="section-head">
+        <div><div class="eyebrow">Quoi de neuf</div><h2>🆕 Le fil des obs</h2>
+          <p class="help" style="margin-top:2px;">Les dernières observations de la ligue, les plus récentes en haut.</p></div>
+      </div>
+      <div class="feed-list" id="feedList"></div>
     </section>
   </div>
 
@@ -1186,6 +1233,8 @@ function rebuild(){
   renderResults();
   updateChatIdentity();
   if(lastChatMsgs.length) renderChat(lastChatMsgs);
+  renderFeed();
+  renderStats(realPeople.find(p=>p.id===myUid));
 }
 
 function applySnapshot(snap){
@@ -1217,7 +1266,8 @@ function subscribe(){
   }, ()=>{});
   if(unsubChat){ unsubChat(); unsubChat=null; }
   unsubChat = onSnapshot(query(collection(db,'leagues',leagueId,'chat'), orderBy('createdAt','desc'), limit(200)),
-    snap=>{ const msgs=[]; snap.forEach(d=>msgs.push({id:d.id, ...d.data()})); msgs.reverse(); renderChat(msgs); },
+    snap=>{ const msgs=[]; snap.forEach(d=>msgs.push({id:d.id, ...d.data()})); msgs.reverse(); renderChat(msgs);
+      chatLatest=msgs.reduce((m,x)=>Math.max(m, x.createdAt&&x.createdAt.toMillis?x.createdAt.toMillis():0),0); updateTabDots(); },
     err=>{ console.error(err); const box=$('#chatMessages'); if(box) box.innerHTML='<div class="chat-empty">Le tchat n\'est pas encore activé (règles Firebase).</div>'; });
   subscribePresence();
   startPresence();
@@ -1235,7 +1285,8 @@ function subscribe(){
   }, ()=>{});
   if(unsubPhotos){ unsubPhotos(); unsubPhotos=null; }
   unsubPhotos = onSnapshot(query(collection(db,'leagues',leagueId,'photos'), orderBy('createdAt','desc'), limit(60)),
-    snap=>{ const arr=[]; snap.forEach(d=>arr.push({id:d.id, ...d.data()})); photos=arr; renderPhotos(); },
+    snap=>{ const arr=[]; snap.forEach(d=>arr.push({id:d.id, ...d.data()})); photos=arr; renderPhotos();
+      photosLatest=arr.reduce((m,x)=>Math.max(m, x.createdAt&&x.createdAt.toMillis?x.createdAt.toMillis():0),0); updateTabDots(); },
     ()=>{});
 }
 // ---- Présence "en ligne" ----
@@ -1342,6 +1393,65 @@ function renderPhotos(){
     </div>`;
   }).join('');
 }
+// ---- Fil des observations ----
+function renderFeed(){
+  const el=$('#feedList'); if(!el) return;
+  const items=[];
+  for(const p of realPeople){
+    const active=p._active||p.species; if(!active) continue;
+    for(const v of active.values()){
+      const pd=parseDate(v.date);
+      if(pd) items.push({ name:p.name, bird:frName(v.sci,v.common), sci:v.sci, ord:pd.ord, disp:pd.disp });
+    }
+  }
+  items.sort((a,b)=>b.ord-a.ord);
+  const top=items.slice(0,60);
+  if(!top.length){ el.innerHTML='<p class="help" style="margin:0;">Aucune observation datée pour le moment. Chargez vos listes ! 🐦</p>'; return; }
+  el.innerHTML=top.map(it=>{ const tt=realTier(it.sci);
+    return `<div class="feed-item"><span class="feed-dot" style="background:${tt.color}" title="${esc(tt.label)}"></span>
+      <div class="feed-body"><div><b>${esc(it.name)}</b> a observé <b>${esc(it.bird)}</b></div><div class="feed-date">${esc(it.disp)}</div></div></div>`;
+  }).join('');
+}
+// ---- Fiche perso / stats ----
+function renderStats(me){
+  const box=$('#statsBox'); if(!box) return;
+  if(!me || !me._active){ box.style.display='none'; box.innerHTML=''; return; }
+  box.style.display='';
+  const active=me._active; const total=active.size;
+  let rareName='—', rareTier=null, maxW=0; const famCount={};
+  for(const v of active.values()){
+    const w=rarityReal(v.sci); if(w>maxW){ maxW=w; rareName=frName(v.sci,v.common); rareTier=realTier(v.sci); }
+    const f=familyOf(v.sci); famCount[f]=(famCount[f]||0)+1;
+  }
+  const fams=Object.entries(famCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const maxFam=fams.length?fams[0][1]:1;
+  const ranked=[...state.people].sort((a,b)=>b.score-a.score);
+  const rank=ranked.findIndex(p=>p.id===me.id)+1;
+  box.innerHTML=`<div class="eyebrow" style="margin-bottom:10px;">Vos statistiques</div>
+    <div class="stat-tiles">
+      <div class="stat-tile"><div class="stat-num">${total}</div><div class="stat-lbl">espèces</div></div>
+      <div class="stat-tile"><div class="stat-num">${state.people.length>1?('#'+rank):'—'}</div><div class="stat-lbl">au classement</div></div>
+      <div class="stat-tile"><div class="stat-num small">${esc(rareName)}</div><div class="stat-lbl">votre plus rare${rareTier?' · '+esc(rareTier.label):''}</div></div>
+    </div>`+
+    (fams.length?`<div class="stat-fam-title">Vos familles</div><div class="stat-fams">`+fams.map(([f,n])=>`<div class="stat-fam"><div class="stat-fam-row"><span>${esc(f)}</span><span>${n}</span></div><div class="stat-fam-bar"><div style="width:${Math.round(n/maxFam*100)}%"></div></div></div>`).join('')+`</div>`:'');
+}
+// ---- Pastilles "non lu" (Tchat / Photos) ----
+let chatLatest=0, photosLatest=0;
+function updateTabDots(){
+  [['chat',chatLatest],['photos',photosLatest]].forEach(([v,latest])=>{
+    const btn=[...document.querySelectorAll('.tab')].find(b=>b.dataset.view===v); if(!btn) return;
+    let seen=0; try{ seen=+localStorage.getItem('mb-seen-'+v)||0; }catch(_){ }
+    const isActive=document.querySelector('.tab.on')?.dataset.view===v;
+    btn.classList.toggle('has-new', latest>seen && !isActive);
+  });
+}
+function markSeen(v){ try{ localStorage.setItem('mb-seen-'+v, String(Date.now())); }catch(_){ } updateTabDots(); }
+// ---- Inviter ----
+async function doInvite(){
+  const url=shareUrl(); const text='Rejoins notre Ligue Merlin Bird 🐦 — compare tes listes d\'oiseaux avec nous !';
+  if(navigator.share){ try{ await navigator.share({title:'Ligue Merlin Bird', text, url}); return; }catch(_){ return; } }
+  try{ await navigator.clipboard.writeText(text+' '+url); const b=$('#inviteBtn'); if(b){ const t=b.textContent; b.textContent='✓ Copié !'; setTimeout(()=>b.textContent=t,1600); } }catch(_){ }
+}
 function updateChatIdentity(){
   const ni=$('#chatName'); if(!ni) return;
   const mn=myMemberName();
@@ -1412,6 +1522,7 @@ $('#copyLinkBtn').addEventListener('click',async()=>{
     const t=b.textContent; b.textContent='✓ Copié'; setTimeout(()=>b.textContent=t,1400);
   }catch(e){ /* clipboard blocked */ }
 });
+$('#inviteBtn')?.addEventListener('click', doInvite);
 
 const fileInput=$('#file'), drop=$('#drop');
 async function handleFiles(fileList){
@@ -1460,7 +1571,7 @@ $('#removeMineBtn').addEventListener('click',async()=>{
   catch(err){ showError(err); }
 });
 
-const VIEWS = { load:'#viewLoad', ranking:'#viewRanking', trophies:'#viewTrophies', chat:'#viewChat', photos:'#viewPhotos' };
+const VIEWS = { load:'#viewLoad', ranking:'#viewRanking', trophies:'#viewTrophies', chat:'#viewChat', photos:'#viewPhotos', feed:'#viewFeed' };
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
   b.classList.add('on');
@@ -1470,8 +1581,10 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
     renderOnline();
     const box=$('#chatMessages'); if(box) box.scrollTop=box.scrollHeight;
     $('#chatText')?.focus();
+    markSeen('chat');
   }
-  if(b.dataset.view==='photos') renderPhotos();
+  if(b.dataset.view==='photos'){ renderPhotos(); markSeen('photos'); }
+  if(b.dataset.view==='feed') renderFeed();
 }));
 let pendingImage = null;
 async function compressImage(file, maxDim=1000, maxLen=700000){
