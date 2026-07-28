@@ -24,7 +24,8 @@ service cloud.firestore {
              )
           && (!('text' in request.resource.data) || (request.resource.data.text is string && request.resource.data.text.size() <= 500))
           && (!('image' in request.resource.data) || (request.resource.data.image is string && request.resource.data.image.size() <= 950000));
-        allow update, delete: if false;
+        allow update: if false;
+        allow delete: if request.auth != null && resource.data.uid == request.auth.uid; // chacun supprime SES messages
       }
 
       // Présence "en ligne" : lecture par tout connecté ; chacun n'écrit que sa propre présence.

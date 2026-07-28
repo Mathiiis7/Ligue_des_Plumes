@@ -290,6 +290,8 @@
     color:var(--ink); font-size:14px; line-height:1.4; word-wrap:break-word; white-space:pre-wrap; }
   .msg.mine .msg-bubble { background:color-mix(in srgb,var(--accent) 16%,var(--surface)); border-color:color-mix(in srgb,var(--accent) 30%,var(--line)); }
   .msg-time { font-size:10px; color:var(--ink-3); margin:2px 10px 0; }
+  .msg-del { font:inherit; font-size:10px; color:var(--ink-3); background:none; border:none; padding:0; cursor:pointer; text-decoration:underline; }
+  .msg-del:hover { color:#c0392b; }
   .msg.mine .msg-time { text-align:right; }
   .chat-compose { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
   .chat-name { flex:0 0 130px; min-width:100px; padding:10px 12px; border:1px solid var(--line-2); border-radius:10px; font:inherit; background:var(--surface); color:var(--ink); }
@@ -1188,7 +1190,7 @@ function renderChat(msgs){
     return `<div class="msg${mine?' mine':''}">
       <div class="msg-name">${esc(nm)}${guestTag}</div>
       <div class="msg-bubble">${imgHtml}${txtHtml}</div>
-      <div class="msg-time">${esc(time)}</div>
+      <div class="msg-time">${esc(time)}${mine?` · <button class="msg-del" data-id="${esc(m.id)}">supprimer</button>`:''}</div>
     </div>`;
   }).join('');
   if(nearBottom) box.scrollTop = box.scrollHeight;
@@ -1363,7 +1365,12 @@ $('#chatForm')?.addEventListener('submit',async e=>{
   try{ await addDoc(collection(db,'leagues',leagueId,'chat'), payload); }
   catch(err){ $('#chatText').value=text; if(img){ pendingImage=img; $('#chatPreviewImg').src=img; $('#chatPreview').style.display=''; } showError(err); }
 });
-$('#chatMessages')?.addEventListener('click', e=>{ const im=e.target.closest('.msg-img'); if(!im) return; $('#imgModalImg').src=im.src; $('#imgModal').classList.add('open'); });
+$('#chatMessages')?.addEventListener('click', async e=>{
+  const del=e.target.closest('.msg-del');
+  if(del){ const id=del.dataset.id; if(!id) return; if(!confirm('Supprimer ce message ?')) return;
+    try{ await deleteDoc(doc(db,'leagues',leagueId,'chat',id)); }catch(err){ showError(err); } return; }
+  const im=e.target.closest('.msg-img'); if(!im) return; $('#imgModalImg').src=im.src; $('#imgModal').classList.add('open');
+});
 $('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove('open'); $('#imgModalImg').src=''; });
 
 $('#trophyWho').addEventListener('click',e=>{
