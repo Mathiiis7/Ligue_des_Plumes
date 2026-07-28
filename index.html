@@ -315,6 +315,33 @@
   .img-modal { display:none; position:fixed; inset:0; z-index:70; background:rgba(0,0,0,.82); align-items:center; justify-content:center; padding:20px; cursor:zoom-out; }
   .img-modal.open { display:flex; }
   .img-modal img { max-width:96vw; max-height:92vh; border-radius:10px; }
+  .react-bar { display:flex; gap:5px; flex-wrap:wrap; margin:3px 10px 0; align-items:center; }
+  .msg.mine .react-bar { justify-content:flex-end; }
+  .react-chip { font:inherit; font-size:12px; padding:1px 7px; border-radius:11px; border:1px solid var(--line);
+    background:var(--surface); color:var(--ink-2); cursor:pointer; line-height:1.6; }
+  .react-chip.mine { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 14%,var(--surface)); color:var(--accent-ink); }
+  .react-add { font:inherit; font-size:13px; width:22px; height:22px; border-radius:50%; border:1px dashed var(--line-2);
+    background:none; color:var(--ink-3); cursor:pointer; padding:0; line-height:1; }
+  .react-add:hover { color:var(--accent-ink); border-color:var(--accent); }
+  .emoji-pop { display:none; position:fixed; inset:0; z-index:66; }
+  .emoji-pop.open { display:block; }
+  .emoji-pop-inner { position:absolute; left:50%; bottom:18px; transform:translateX(-50%); background:var(--surface);
+    border:1px solid var(--line-2); border-radius:14px; padding:8px; display:flex; gap:4px; flex-wrap:wrap; max-width:300px; box-shadow:var(--shadow); }
+  .emoji-opt { font-size:23px; background:none; border:none; cursor:pointer; padding:4px 5px; border-radius:9px; line-height:1; }
+  .emoji-opt:hover { background:var(--surface-2); }
+  .photo-upload { margin:4px 0 16px; }
+  .photo-draft { margin-top:12px; display:flex; flex-direction:column; gap:8px; max-width:320px; }
+  .photo-draft img { max-width:100%; max-height:220px; border-radius:12px; border:1px solid var(--line); object-fit:contain; }
+  .photo-draft input { padding:9px 12px; border:1px solid var(--line-2); border-radius:10px; font:inherit; background:var(--surface); color:var(--ink); }
+  .photo-draft-actions { display:flex; gap:8px; }
+  .photo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:14px; }
+  .photo-card { border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--surface-2); display:flex; flex-direction:column; }
+  .photo-img { width:100%; aspect-ratio:1/1; object-fit:cover; cursor:pointer; display:block; }
+  .photo-cap { padding:9px 11px 4px; font-size:13.5px; color:var(--ink); line-height:1.4; }
+  .photo-meta { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:5px 11px; font-size:11px; color:var(--ink-3); }
+  .photo-del { font:inherit; font-size:11px; color:var(--ink-3); background:none; border:none; padding:0; cursor:pointer; text-decoration:underline; }
+  .photo-del:hover { color:#c0392b; }
+  .photo-card .react-bar { padding:0 11px 10px; margin:0; }
 
   /* trophées */
   .who-select { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
@@ -399,6 +426,7 @@
     <button class="tab" data-view="ranking">Classement</button>
     <button class="tab" data-view="trophies">🏆 Trophées</button>
     <button class="tab" data-view="chat">💬 Tchat</button>
+    <button class="tab" data-view="photos">📸 Photos</button>
   </nav>
 
   <div id="viewLoad">
@@ -561,12 +589,36 @@
       <form class="chat-compose" id="chatForm" autocomplete="off">
         <input id="chatName" class="chat-name" placeholder="Votre nom" maxlength="24">
         <label class="chat-imgbtn" title="Ajouter une image">🖼️<input type="file" id="chatImgInput" accept="image/*" hidden></label>
+        <button type="button" class="chat-imgbtn" id="chatEmojiBtn" title="Emoji">😊</button>
         <input id="chatText" class="chat-input" placeholder="Votre message…" maxlength="500">
         <button type="submit" class="btn chat-send">Envoyer</button>
       </form>
     </section>
     <div id="imgModal" class="img-modal"><img id="imgModalImg" alt=""></div>
   </div>
+
+  <div id="viewPhotos" style="display:none;">
+    <section class="panel" style="padding:20px; margin-top:22px;">
+      <div class="section-head">
+        <div><div class="eyebrow">Le mur d'obs</div><h2>📸 Photos</h2>
+          <p class="help" style="margin-top:2px;">Partagez vos photos d'observation avec une description — et réagissez avec des emojis.</p></div>
+      </div>
+      <div class="photo-upload">
+        <label class="btn ghost" id="photoAddLabel">🖼️ Ajouter une photo<input type="file" id="photoInput" accept="image/*" hidden></label>
+        <div class="photo-draft" id="photoDraft" style="display:none;">
+          <img id="photoDraftImg" alt="aperçu">
+          <input id="photoCaption" placeholder="Une petite description…" maxlength="200">
+          <div class="photo-draft-actions">
+            <button type="button" class="btn" id="photoPublish">Publier</button>
+            <button type="button" class="btn ghost" id="photoCancel">Annuler</button>
+          </div>
+        </div>
+      </div>
+      <div class="photo-grid" id="photoGrid"></div>
+    </section>
+  </div>
+
+  <div id="emojiPop" class="emoji-pop"><div class="emoji-pop-inner"></div></div>
 
   <footer>
     Ligue Merlin Bird · rareté calculée au sein de votre groupe · données <b>Merlin / eBird</b>, propriété du Cornell Lab of Ornithology.<br>
@@ -601,6 +653,8 @@ let myUid = null, leagueId = null, unsub = null, unsubLeague = null, iAmInLeague
 let unsubChat = null, lastChatMsgs = [];
 let unsubPresence = null, onlineMap = new Map(), presenceTimer = null, presenceWired = false;
 let unsubVotes = null, votesMap = new Map();
+let unsubReactions = null, reactionsMap = new Map(), unsubPhotos = null, photos = [];
+const EMOJIS = ['👍','❤️','😂','😮','😢','🔥','🐦','👏','🎉','😍'];
 let realPeople = [], demoOn = false;   // aperçu d'exemple (jamais enregistré dans le cloud)
 let goalHeader = 'Objectif (fin de l\'été)';   // intitulé partagé de la colonne objectif
 
@@ -1163,6 +1217,16 @@ function subscribe(){
     snap.forEach(d=>{ const v=d.data()||{}; if(v.trophy==='grosBebe' && v.target && v.voter){ if(!m.has(v.target)) m.set(v.target,new Set()); m.get(v.target).add(v.voter); } });
     votesMap=m; renderTrophies(trophyData);
   }, ()=>{});
+  if(unsubReactions){ unsubReactions(); unsubReactions=null; }
+  unsubReactions = onSnapshot(collection(db,'leagues',leagueId,'reactions'), snap=>{
+    const m=new Map();
+    snap.forEach(d=>{ const v=d.data()||{}; if(v.target && v.emoji && v.uid){ if(!m.has(v.target)) m.set(v.target,new Map()); const em=m.get(v.target); if(!em.has(v.emoji)) em.set(v.emoji,new Set()); em.get(v.emoji).add(v.uid); } });
+    reactionsMap=m; if(lastChatMsgs.length) renderChat(lastChatMsgs); renderPhotos();
+  }, ()=>{});
+  if(unsubPhotos){ unsubPhotos(); unsubPhotos=null; }
+  unsubPhotos = onSnapshot(query(collection(db,'leagues',leagueId,'photos'), orderBy('createdAt','desc'), limit(60)),
+    snap=>{ const arr=[]; snap.forEach(d=>arr.push({id:d.id, ...d.data()})); photos=arr; renderPhotos(); },
+    ()=>{});
 }
 // ---- Présence "en ligne" ----
 function presenceBeat(){
@@ -1215,12 +1279,59 @@ function renderChat(msgs){
     return `<div class="msg${mine?' mine':''}">
       <div class="msg-name">${esc(nm)}${guestTag}</div>
       <div class="msg-bubble">${imgHtml}${txtHtml}</div>
+      ${reactionBar('chat:'+m.id)}
       <div class="msg-time">${esc(time)}${mine?` · <button class="msg-del" data-id="${esc(m.id)}">supprimer</button>`:''}</div>
     </div>`;
   }).join('');
   if(nearBottom) box.scrollTop = box.scrollHeight;
 }
 function myMemberName(){ const me=realPeople.find(p=>p.id===myUid); return me ? me.name : ''; }
+// ---- Réactions emoji (partagé tchat + photos) ----
+function reactionBar(target){
+  const rm=reactionsMap.get(target);
+  let chips='';
+  if(rm){ for(const [emoji,voters] of rm){ if(voters.size>0){ const mine=voters.has(myUid);
+    chips+=`<button class="react-chip${mine?' mine':''}" data-target="${esc(target)}" data-emoji="${esc(emoji)}">${emoji} ${voters.size}</button>`; } } }
+  const add = myUid ? `<button class="react-add" data-target="${esc(target)}" title="Réagir">＋</button>` : '';
+  return `<div class="react-bar">${chips}${add}</div>`;
+}
+async function toggleReaction(target, emoji){
+  if(!myUid) return;
+  const ref=doc(db,'leagues',leagueId,'reactions',target+'__'+myUid+'__'+emoji);
+  const has=reactionsMap.get(target)?.get(emoji)?.has(myUid);
+  try{ if(has) await deleteDoc(ref); else await setDoc(ref,{ target, uid:myUid, emoji, createdAt:serverTimestamp() }); }
+  catch(err){ showError(err); }
+}
+// ---- Sélecteur d'emojis (insertion texte OU réaction) ----
+let emojiContext=null;
+function openEmojiPop(ctx){
+  emojiContext=ctx;
+  const inner=$('#emojiPop .emoji-pop-inner'); if(!inner) return;
+  inner.innerHTML=EMOJIS.map(e=>`<button type="button" class="emoji-opt" data-emoji="${e}">${e}</button>`).join('');
+  $('#emojiPop').classList.add('open');
+}
+function closeEmojiPop(){ $('#emojiPop')?.classList.remove('open'); emojiContext=null; }
+// ---- Galerie photos ----
+function renderPhotos(){
+  const grid=$('#photoGrid'); if(!grid) return;
+  const byId=new Map(realPeople.map(p=>[p.id,p.name]));
+  if(!photos.length){ grid.innerHTML='<p class="help" style="grid-column:1/-1;margin:0;">Aucune photo pour l\'instant. Partagez la première ! 📸</p>'; return; }
+  grid.innerHTML=photos.map(ph=>{
+    const authoritative=byId.get(ph.uid);
+    const nm=authoritative||ph.name||'Invité';
+    const guest=authoritative?'':' <span class="msg-guest">invité</span>';
+    const t=ph.createdAt&&ph.createdAt.toDate?ph.createdAt.toDate():null;
+    const time=t?t.toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'…';
+    const safeImg=(typeof ph.image==='string'&&/^data:image\//.test(ph.image))?ph.image.replace(/"/g,'%22'):'';
+    const del=ph.uid===myUid?`<button class="photo-del" data-id="${esc(ph.id)}">supprimer</button>`:'';
+    return `<div class="photo-card">
+      <img class="photo-img" src="${safeImg}" alt="photo d'observation">
+      ${ph.caption?`<div class="photo-cap">${esc(ph.caption)}</div>`:''}
+      <div class="photo-meta"><span>${esc(nm)}${guest} · ${esc(time)}</span>${del}</div>
+      ${reactionBar('photo:'+ph.id)}
+    </div>`;
+  }).join('');
+}
 function updateChatIdentity(){
   const ni=$('#chatName'); if(!ni) return;
   const mn=myMemberName();
@@ -1339,7 +1450,7 @@ $('#removeMineBtn').addEventListener('click',async()=>{
   catch(err){ showError(err); }
 });
 
-const VIEWS = { load:'#viewLoad', ranking:'#viewRanking', trophies:'#viewTrophies', chat:'#viewChat' };
+const VIEWS = { load:'#viewLoad', ranking:'#viewRanking', trophies:'#viewTrophies', chat:'#viewChat', photos:'#viewPhotos' };
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
   b.classList.add('on');
@@ -1350,6 +1461,7 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
     const box=$('#chatMessages'); if(box) box.scrollTop=box.scrollHeight;
     $('#chatText')?.focus();
   }
+  if(b.dataset.view==='photos') renderPhotos();
 }));
 let pendingImage = null;
 async function compressImage(file, maxDim=1000, maxLen=700000){
@@ -1391,10 +1503,51 @@ $('#chatForm')?.addEventListener('submit',async e=>{
   catch(err){ $('#chatText').value=text; if(img){ pendingImage=img; $('#chatPreviewImg').src=img; $('#chatPreview').style.display=''; } showError(err); }
 });
 $('#chatMessages')?.addEventListener('click', async e=>{
+  const chip=e.target.closest('.react-chip'); if(chip){ toggleReaction(chip.dataset.target, chip.dataset.emoji); return; }
+  const addb=e.target.closest('.react-add'); if(addb){ openEmojiPop({type:'react', target:addb.dataset.target}); return; }
   const del=e.target.closest('.msg-del');
   if(del){ const id=del.dataset.id; if(!id) return; if(!confirm('Supprimer ce message ?')) return;
     try{ await deleteDoc(doc(db,'leagues',leagueId,'chat',id)); }catch(err){ showError(err); } return; }
   const im=e.target.closest('.msg-img'); if(!im) return; $('#imgModalImg').src=im.src; $('#imgModal').classList.add('open');
+});
+// bouton emoji du composeur + sélecteur
+$('#chatEmojiBtn')?.addEventListener('click', ()=>openEmojiPop({type:'text'}));
+$('#emojiPop')?.addEventListener('click', async e=>{
+  if(e.target.id==='emojiPop'){ closeEmojiPop(); return; }
+  const b=e.target.closest('.emoji-opt'); if(!b) return;
+  const emoji=b.dataset.emoji;
+  if(emojiContext?.type==='text'){ const ti=$('#chatText'); if(ti){ ti.value+=emoji; ti.focus(); } }
+  else if(emojiContext?.type==='react'){ await toggleReaction(emojiContext.target, emoji); }
+  closeEmojiPop();
+});
+// ---- Photos : upload + galerie ----
+let photoDraft=null;
+$('#photoInput')?.addEventListener('change', async e=>{
+  const f=e.target.files && e.target.files[0]; e.target.value='';
+  if(!f || !/^image\//.test(f.type)) return;
+  try{ photoDraft=await compressImage(f, 1200, 850000); $('#photoDraftImg').src=photoDraft; $('#photoDraft').style.display=''; }
+  catch(err){ showError(new Error('Image illisible.')); }
+});
+$('#photoCancel')?.addEventListener('click', ()=>{ photoDraft=null; $('#photoDraft').style.display='none'; $('#photoDraftImg').src=''; $('#photoCaption').value=''; });
+$('#photoPublish')?.addEventListener('click', async ()=>{
+  if(!photoDraft){ return; }
+  if(!myUid){ showError(new Error('Connexion en cours, réessayez.')); return; }
+  const caption=$('#photoCaption').value.trim();
+  const name=myMemberName() || localStorage.getItem('mb-chatname') || 'Invité';
+  const payload={ uid:myUid, name, image:photoDraft, createdAt:serverTimestamp() };
+  if(caption) payload.caption=caption;
+  const btn=$('#photoPublish'); btn.disabled=true;
+  try{ await addDoc(collection(db,'leagues',leagueId,'photos'), payload);
+    photoDraft=null; $('#photoDraft').style.display='none'; $('#photoDraftImg').src=''; $('#photoCaption').value='';
+  }catch(err){ showError(err); }
+  btn.disabled=false;
+});
+$('#photoGrid')?.addEventListener('click', async e=>{
+  const chip=e.target.closest('.react-chip'); if(chip){ toggleReaction(chip.dataset.target, chip.dataset.emoji); return; }
+  const addb=e.target.closest('.react-add'); if(addb){ openEmojiPop({type:'react', target:addb.dataset.target}); return; }
+  const del=e.target.closest('.photo-del'); if(del){ if(!confirm('Supprimer cette photo ?')) return;
+    try{ await deleteDoc(doc(db,'leagues',leagueId,'photos',del.dataset.id)); }catch(err){ showError(err); } return; }
+  const img=e.target.closest('.photo-img'); if(img){ $('#imgModalImg').src=img.src; $('#imgModal').classList.add('open'); }
 });
 $('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove('open'); $('#imgModalImg').src=''; });
 
