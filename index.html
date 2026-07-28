@@ -1093,10 +1093,10 @@ const TROPHIES = [
   { icon:ICONS.cup, name:'Mike Horn', desc:'Avoir l’oiseau le plus rare de la ligue', test:s=>s.holdsRarest, tip:s=>s.holdsRarest&&s.rarestRealName?'Espèce la plus rare : '+s.rarestRealName:'' },
   { icon:ICONS.graal, name:'Le Saint-Graal', desc:'Observer un oiseau Exceptionnel ou Très rare', test:s=>s.megaList.length>0, alwaysList:true, list:s=>MEGA_CATALOG.map(m=>({ name:m.name, section:m.w===9?'Exceptionnel':'Très rare', owned:s.megaOwnedSet.has(m.sci) })) },
   { icon:ICONS.woodpecker, name:'Pic noir', desc:'Observer le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker },
-  { icon:ICONS.aigle, name:'Armée d’aigles royaux', desc:'Voir au moins 5 rapaces diurnes', test:s=>s.raptors>=5, prog:s=>[s.raptors,5] },
+  { icon:ICONS.aigle, name:'Armée d’aigles royaux', desc:'Voir au moins 5 rapaces diurnes', test:s=>s.raptors>=5, prog:s=>[s.raptors,5], alwaysList:true, list:s=>RAPTOR_CATALOG.map(m=>({ name:m.name, owned:s.raptorOwnedSet.has(m.sci) })) },
   { icon:ICONS.huitre, name:'Bourriche d’huître', desc:'Observer un oiseau à La Teste-de-Buch', test:s=>s.locTeste },
   { icon:ICONS.bain, name:'Pistoche', desc:'15 oiseaux d’eau + le Martin-pêcheur', test:s=>s.water>=15 && s.hasKingfisher, prog:s=>[s.water,15] },
-  { icon:ICONS.pingouin, name:'Happy feet', desc:'Observer un Alcidé (pingouin, macareux, guillemot…)', test:s=>s.hasPenguin },
+  { icon:ICONS.pingouin, name:'Happy feet', desc:'Observer un Alcidé (pingouin, macareux, guillemot…)', test:s=>s.hasPenguin, alwaysList:true, list:s=>ALCID_CATALOG.map(m=>({ name:m.name, owned:s.alcidOwnedSet.has(m.sci) })) },
   { icon:ICONS.kangourou, name:'Wallaby', desc:'Observer le Martin-chasseur à dos de feu', test:s=>s.hasFireKingfisher },
   { icon:ICONS.saisons, name:'Les 4 Saisons', desc:'Chope un oiseau spécifique à chaque saison tah Vivaldi', test:s=>s.seasonCount>=4, prog:s=>[s.seasonCount,4], alwaysList:true, list:s=>SEASON_CATALOG.map(m=>({ name:m.name, section:m.section, owned:s.seasonOwnedSet.has(m.sci) })), note:s=>`${s.seasonCount} saison${s.seasonCount>1?'s':''} validée${s.seasonCount>1?'s':''} sur 4` },
   { icon:ICONS.bebe, name:'Gros Bébé', desc:'Observer des oiseaux avec Samuel Fillon (preuve demandée)', special:'vote', test:s=>(s.grosBebeVotes||0)>=3 },
@@ -1125,23 +1125,29 @@ const SEASON_OF = {}; for(const s of SEASON_ORDER) for(const sci of SEASON_BIRDS
 const SEASON_CATALOG = SEASON_ORDER.flatMap(seas =>
   SEASON_BIRDS[seas].map(sci=>({ sci, name:frName(sci, sci), section:seas }))
     .sort((a,b)=>a.name.localeCompare(b.name,'fr')));
+// catalogues par groupe (pour afficher la liste des possibles au clic sur le trophée)
+const groupCatalog = re => Object.keys(FR_NAMES).filter(sci=>re.test(sci.split(' ')[0]))
+  .map(sci=>({ sci, name:frName(sci,sci) })).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+const ALCID_CATALOG = groupCatalog(ALCID_G);
+const RAPTOR_CATALOG = groupCatalog(RAPTOR_G);
 function statsFor(me, N){
   const ranked=[...state.people].sort((a,b)=>b.score-a.score);
   const rank=ranked.findIndex(p=>p.id===me.id)+1;
   let owls=0,raptors=0,water=0,sea=0,blackWoodpecker=false,locTeste=false,hasKingfisher=false,hasPenguin=false,hasFireKingfisher=false;
   const megaList=[]; const megaOwnedSet=new Set();
   const seasonHit={}; SEASON_ORDER.forEach(s=>seasonHit[s]=false); const seasonOwnedSet=new Set();
+  const raptorOwnedSet=new Set(), alcidOwnedSet=new Set();
   for(const v of me._active.values()){
     const sci=(v.sci||'').toLowerCase();
     const g=sci.split(' ')[0];
     const seas=SEASON_OF[sci]; if(seas){ seasonHit[seas]=true; seasonOwnedSet.add(sci); }
     if(OWL_G.test(g)) owls++;
-    if(RAPTOR_G.test(g)) raptors++;
+    if(RAPTOR_G.test(g)){ raptors++; raptorOwnedSet.add(sci); }
     if(WATER_G.test(g)) water++;
     if(SEA_G.test(g)) sea++;
     if(sci==='dryocopus martius') blackWoodpecker=true;
     if(sci==='alcedo atthis') hasKingfisher=true;
-    if(ALCID_G.test(g)) hasPenguin=true;
+    if(ALCID_G.test(g)){ hasPenguin=true; alcidOwnedSet.add(sci); }
     if(sci==='todiramphus pyrrhopygius') hasFireKingfisher=true;
     if(rarityReal(sci)>=8){ megaList.push(frName(v.sci, v.common)); megaOwnedSet.add(sci); }
     if(/teste[- ]?de[- ]?buch|arcachon/i.test(v.loc||'')) locTeste=true;
@@ -1151,7 +1157,7 @@ function statsFor(me, N){
   let lackEnzoBird=false;
   if(enzo && enzo._active) for(const k of enzo._active.keys()){ if(!me._active.has(k)){ lackEnzoBird=true; break; } }
   const seasonCount=SEASON_ORDER.filter(s=>seasonHit[s]).length;
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, holdsRarest:!!me.holdsRarest, rarestRealName:me.rarestRealName||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, grosBebeVotes:(votesMap.get(me.id)?.size)||0 };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, holdsRarest:!!me.holdsRarest, rarestRealName:me.rarestRealName||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, alcidOwnedSet, grosBebeVotes:(votesMap.get(me.id)?.size)||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
@@ -1732,7 +1738,7 @@ $('#trophyGrid').addEventListener('click',async e=>{
     for(const sec of sections){
       const items=d.list.filter(x=>x.section===sec);
       const secOwned=items.filter(x=>x.owned).length;
-      html+='<h4 class="tmodal-h">'+esc(sec)+' <span>('+secOwned+'/'+items.length+')</span></h4><ul class="tmodal-list mega">'+
+      html+=(sec?'<h4 class="tmodal-h">'+esc(sec)+' <span>('+secOwned+'/'+items.length+')</span></h4>':'')+'<ul class="tmodal-list mega">'+
         items.map(x=>'<li class="'+(x.owned?'own':'')+'">'+(x.owned?'✓ ':'')+esc(x.name)+'</li>').join('')+'</ul>';
     }
   } else {
