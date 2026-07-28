@@ -1444,7 +1444,11 @@ logoFile.addEventListener('change',e=>{
   };
   rd.readAsDataURL(f);
 });
-try{ const saved=localStorage.getItem(LOGO_KEY); if(saved) showLogo(saved); }catch(_){ }
+function showDefaultLogo(){
+  logoImg.onerror=()=>{ logoImg.onerror=null; logoImg.hidden=true; logoImg.removeAttribute('src'); markEmoji.style.display=''; };
+  logoImg.src='logo.png'; logoImg.hidden=false; markEmoji.style.display='none';
+}
+try{ const saved=localStorage.getItem(LOGO_KEY); if(saved) showLogo(saved); else showDefaultLogo(); }catch(_){ showDefaultLogo(); }
 
 // theme toggle
 const root=document.documentElement;
