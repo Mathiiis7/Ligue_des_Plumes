@@ -12,15 +12,25 @@ service cloud.firestore {
         allow write: if request.auth != null && request.auth.uid == memberId;
       }
 
-      // Tchat : lecture par tout connecté ; chacun ne peut créer QUE ses propres messages ; pas de modif/suppression
+      // Tchat : lecture par tout connecté ; chacun ne crée QUE ses propres messages ;
+      // un message doit avoir du texte (1..500) OU une image ; pas de modif/suppression.
       match /chat/{msgId} {
         allow read: if request.auth != null;
         allow create: if request.auth != null
-                      && request.resource.data.uid == request.auth.uid
-                      && request.resource.data.text is string
-                      && request.resource.data.text.size() > 0
-                      && request.resource.data.text.size() <= 500;
+          && request.resource.data.uid == request.auth.uid
+          && (
+               (request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 500)
+               || (request.resource.data.image is string && request.resource.data.image.size() > 0)
+             )
+          && (!('text' in request.resource.data) || (request.resource.data.text is string && request.resource.data.text.size() <= 500))
+          && (!('image' in request.resource.data) || (request.resource.data.image is string && request.resource.data.image.size() <= 950000));
         allow update, delete: if false;
+      }
+
+      // Présence "en ligne" : lecture par tout connecté ; chacun n'écrit que sa propre présence.
+      match /presence/{uid} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && request.auth.uid == uid;
       }
     }
   }

@@ -298,6 +298,21 @@
   .msg-guest { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#fff;
     background:var(--ink-3); padding:1px 5px; border-radius:6px; vertical-align:middle; margin-left:4px; }
   .chat-name.locked { background:var(--surface-2); color:var(--ink-2); cursor:not-allowed; }
+  .chat-online { font-size:12.5px; color:var(--ink-2); margin:2px 0 2px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .online-dot { width:9px; height:9px; border-radius:50%; background:#2ecc71; box-shadow:0 0 0 2px color-mix(in srgb,#2ecc71 30%,transparent); flex:none; }
+  .online-dot.off { background:var(--ink-3); box-shadow:none; }
+  .pname-dot { width:8px; height:8px; border-radius:50%; background:#2ecc71; display:inline-block; margin-right:5px; vertical-align:middle; flex:none; }
+  .chat-imgbtn { display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; font-size:20px;
+    border:1px solid var(--line-2); border-radius:10px; cursor:pointer; background:var(--surface); flex:0 0 auto; }
+  .chat-imgbtn:hover { border-color:var(--accent); }
+  .chat-preview { position:relative; display:inline-block; margin:8px 0 0; }
+  .chat-preview img { max-width:120px; max-height:120px; border-radius:10px; border:1px solid var(--line); display:block; }
+  #chatPreviewRemove { position:absolute; top:-8px; right:-8px; width:22px; height:22px; border-radius:50%; border:none;
+    background:var(--ink); color:#fff; cursor:pointer; font-size:12px; line-height:1; }
+  .msg-img { max-width:min(240px,60vw); max-height:300px; border-radius:12px; display:block; margin-top:2px; cursor:pointer; }
+  .img-modal { display:none; position:fixed; inset:0; z-index:70; background:rgba(0,0,0,.82); align-items:center; justify-content:center; padding:20px; cursor:zoom-out; }
+  .img-modal.open { display:flex; }
+  .img-modal img { max-width:96vw; max-height:92vh; border-radius:10px; }
 
   /* trophées */
   .who-select { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
@@ -529,13 +544,20 @@
         <div><div class="eyebrow">La ligue papote</div><h2>💬 Tchat</h2>
           <p class="help" style="margin-top:2px;">Discutez avec toute la ligue — les messages sont partagés en direct.</p></div>
       </div>
+      <div class="chat-online" id="chatOnline"></div>
       <div class="chat-box" id="chatMessages"><div class="chat-empty">Chargement…</div></div>
+      <div class="chat-preview" id="chatPreview" style="display:none;">
+        <img id="chatPreviewImg" alt="aperçu">
+        <button type="button" id="chatPreviewRemove" title="Retirer l'image">✕</button>
+      </div>
       <form class="chat-compose" id="chatForm" autocomplete="off">
         <input id="chatName" class="chat-name" placeholder="Votre nom" maxlength="24">
+        <label class="chat-imgbtn" title="Ajouter une image">🖼️<input type="file" id="chatImgInput" accept="image/*" hidden></label>
         <input id="chatText" class="chat-input" placeholder="Votre message…" maxlength="500">
         <button type="submit" class="btn chat-send">Envoyer</button>
       </form>
     </section>
+    <div id="imgModal" class="img-modal"><img id="imgModalImg" alt=""></div>
   </div>
 
   <footer>
@@ -569,6 +591,7 @@ const state = { people: [], onlySpecies: true, sort:'rarity', tier:'any', family
 let lastFamKey = '', lastTierKey = '';
 let myUid = null, leagueId = null, unsub = null, unsubLeague = null, iAmInLeague = false;
 let unsubChat = null, lastChatMsgs = [];
+let unsubPresence = null, onlineMap = new Map(), presenceTimer = null, presenceWired = false;
 let realPeople = [], demoOn = false;   // aperçu d'exemple (jamais enregistré dans le cloud)
 let goalHeader = 'Objectif (fin de l\'été)';   // intitulé partagé de la colonne objectif
 
@@ -750,7 +773,7 @@ function renderMembers(){
   el.innerHTML = state.people.map(p=>`
     <div class="pchip" style="--series:var(--s${p.si})">
       <span class="dot"></span>
-      <span class="pname">${esc(p.name)}${p.isMe?'<span class="youtag">vous</span>':''}${p.isDemo?'<span class="demotag">exemple</span>':''}</span>
+      <span class="pname">${isOnline(p.id)?'<span class="pname-dot" title="en ligne"></span>':''}${esc(p.name)}${p.isMe?'<span class="youtag">vous</span>':''}${p.isDemo?'<span class="demotag">exemple</span>':''}</span>
       <span class="n">${p.species.size} obs</span>
     </div>`).join('');
 }
@@ -822,7 +845,7 @@ function renderBoard(){
     </tr></thead>
     <tbody>${ranked.map((p,i)=>`<tr class="${i===0?'lead':''}">
       <td class="c-rank">${i===0?'★':(i+1)}</td>
-      <td class="who-cell" style="--series:var(--s${p.si})"><span class="dot"></span>${esc(p.name)}${p.isMe?'<span class="youtag">vous</span>':''}${p.isDemo?'<span class="demotag">ex.</span>':''}</td>
+      <td class="who-cell" style="--series:var(--s${p.si})"><span class="dot"></span>${isOnline(p.id)?'<span class="pname-dot" title="en ligne"></span>':''}${esc(p.name)}${p.isMe?'<span class="youtag">vous</span>':''}${p.isDemo?'<span class="demotag">ex.</span>':''}</td>
       ${scoreTd(p)}
       <td class="c-txt">${cell(p.goal)}</td>
       <td class="c-txt">${cell(p.fav)}</td>
@@ -1111,7 +1134,41 @@ function subscribe(){
   unsubChat = onSnapshot(query(collection(db,'leagues',leagueId,'chat'), orderBy('createdAt','desc'), limit(200)),
     snap=>{ const msgs=[]; snap.forEach(d=>msgs.push({id:d.id, ...d.data()})); msgs.reverse(); renderChat(msgs); },
     err=>{ console.error(err); const box=$('#chatMessages'); if(box) box.innerHTML='<div class="chat-empty">Le tchat n\'est pas encore activé (règles Firebase).</div>'; });
+  subscribePresence();
+  startPresence();
 }
+// ---- Présence "en ligne" ----
+function presenceBeat(){
+  if(!myUid || document.visibilityState==='hidden') return;
+  const nm = myMemberName() || $('#chatName')?.value.trim() || localStorage.getItem('mb-chatname') || 'Invité';
+  setDoc(doc(db,'leagues',leagueId,'presence',myUid), { name:nm, lastSeen:serverTimestamp() }, {merge:true}).catch(()=>{});
+}
+function startPresence(){
+  if(!myUid) return;
+  presenceBeat();
+  if(presenceTimer) clearInterval(presenceTimer);
+  presenceTimer = setInterval(presenceBeat, 25000);
+  if(!presenceWired){ presenceWired=true; document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') presenceBeat(); }); }
+}
+function subscribePresence(){
+  if(unsubPresence){ unsubPresence(); unsubPresence=null; }
+  unsubPresence = onSnapshot(collection(db,'leagues',leagueId,'presence'), snap=>{
+    const now=Date.now(); const on=new Map();
+    snap.forEach(d=>{ const v=d.data()||{}; const t=(v.lastSeen&&v.lastSeen.toMillis)?v.lastSeen.toMillis():0; if(now-t < 70000) on.set(d.id, v.name||'Invité'); });
+    onlineMap=on; renderOnline(); renderMembers(); renderResults();
+    if(lastChatMsgs.length) renderChat(lastChatMsgs);
+  }, ()=>{});
+}
+function renderOnline(){
+  const el=$('#chatOnline'); if(!el) return;
+  const byId=new Map(realPeople.map(p=>[p.id,p.name]));
+  const names=[...onlineMap.keys()].map(uid=> byId.get(uid) || onlineMap.get(uid)).filter(Boolean);
+  const uniq=[...new Set(names)];
+  el.innerHTML = uniq.length
+    ? `<span class="online-dot"></span> En ligne (${uniq.length}) : ${uniq.map(esc).join(', ')}`
+    : `<span class="online-dot off"></span> Personne en ligne pour le moment`;
+}
+function isOnline(uid){ return onlineMap.has(uid); }
 function renderChat(msgs){
   const box=$('#chatMessages'); if(!box) return;
   lastChatMsgs = msgs;
@@ -1125,9 +1182,12 @@ function renderChat(msgs){
     const guestTag = authoritative ? '' : ' <span class="msg-guest">invité</span>';
     const t = m.createdAt && m.createdAt.toDate ? m.createdAt.toDate() : null;
     const time = t ? t.toLocaleString('fr-FR',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'}) : '…';
+    const safeImg = (typeof m.image==='string' && /^data:image\//.test(m.image)) ? m.image.replace(/"/g,'%22') : '';
+    const imgHtml = safeImg ? `<img class="msg-img" src="${safeImg}" alt="image partagée">` : '';
+    const txtHtml = m.text ? `<div>${esc(m.text)}</div>` : '';
     return `<div class="msg${mine?' mine':''}">
       <div class="msg-name">${esc(nm)}${guestTag}</div>
-      <div class="msg-bubble">${esc(m.text||'')}</div>
+      <div class="msg-bubble">${imgHtml}${txtHtml}</div>
       <div class="msg-time">${esc(time)}</div>
     </div>`;
   }).join('');
@@ -1259,10 +1319,32 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   Object.entries(VIEWS).forEach(([v,sel])=>{ const el=$(sel); if(el) el.style.display=(b.dataset.view===v)?'':'none'; });
   if(b.dataset.view==='chat'){
     updateChatIdentity();
+    renderOnline();
     const box=$('#chatMessages'); if(box) box.scrollTop=box.scrollHeight;
     $('#chatText')?.focus();
   }
 }));
+let pendingImage = null;
+async function compressImage(file, maxDim=1000, maxLen=700000){
+  const img = await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>rej(new Error('img')); i.src=URL.createObjectURL(file); });
+  let w=img.naturalWidth, h=img.naturalHeight;
+  const s=Math.min(1, maxDim/Math.max(w,h)); w=Math.max(1,Math.round(w*s)); h=Math.max(1,Math.round(h*s));
+  const cv=document.createElement('canvas');
+  const draw=()=>{ cv.width=w; cv.height=h; cv.getContext('2d').drawImage(img,0,0,w,h); };
+  draw();
+  let q=0.72, url=cv.toDataURL('image/jpeg',q);
+  while(url.length>maxLen && q>0.4){ q-=0.1; url=cv.toDataURL('image/jpeg',q); }
+  while(url.length>maxLen && Math.max(w,h)>480){ w=Math.round(w*0.85); h=Math.round(h*0.85); draw(); url=cv.toDataURL('image/jpeg',0.6); }
+  URL.revokeObjectURL(img.src);
+  return url;
+}
+$('#chatImgInput')?.addEventListener('change', async e=>{
+  const f=e.target.files && e.target.files[0]; e.target.value='';
+  if(!f || !/^image\//.test(f.type)) return;
+  try{ pendingImage=await compressImage(f); $('#chatPreviewImg').src=pendingImage; $('#chatPreview').style.display=''; }
+  catch(err){ showError(new Error('Image illisible.')); }
+});
+$('#chatPreviewRemove')?.addEventListener('click', ()=>{ pendingImage=null; $('#chatPreview').style.display='none'; $('#chatPreviewImg').src=''; });
 $('#chatName')?.addEventListener('change',e=>{ localStorage.setItem('mb-chatname', e.target.value.trim()); });
 $('#chatForm')?.addEventListener('submit',async e=>{
   e.preventDefault();
@@ -1271,13 +1353,18 @@ $('#chatForm')?.addEventListener('submit',async e=>{
   const name = mn || $('#chatName').value.trim() || localStorage.getItem('mb-chatname') || '';
   if(!myUid){ showError(new Error('Connexion en cours, réessayez dans un instant.')); return; }
   if(!name){ $('#chatName').focus(); return; }
-  if(!text) return;
+  if(!text && !pendingImage) return;
   if(!mn){ $('#chatName').value=name; localStorage.setItem('mb-chatname', name); }  // pseudo invité mémorisé
-  $('#chatText').value='';
-  try{
-    await addDoc(collection(db,'leagues',leagueId,'chat'), { uid:myUid, name, text, createdAt:serverTimestamp() });
-  }catch(err){ $('#chatText').value=text; showError(err); }
+  const img=pendingImage;
+  $('#chatText').value=''; pendingImage=null; $('#chatPreview').style.display='none'; $('#chatPreviewImg').src='';
+  const payload={ uid:myUid, name, createdAt:serverTimestamp() };
+  if(text) payload.text=text;
+  if(img) payload.image=img;
+  try{ await addDoc(collection(db,'leagues',leagueId,'chat'), payload); }
+  catch(err){ $('#chatText').value=text; if(img){ pendingImage=img; $('#chatPreviewImg').src=img; $('#chatPreview').style.display=''; } showError(err); }
 });
+$('#chatMessages')?.addEventListener('click', e=>{ const im=e.target.closest('.msg-img'); if(!im) return; $('#imgModalImg').src=im.src; $('#imgModal').classList.add('open'); });
+$('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove('open'); $('#imgModalImg').src=''; });
 
 $('#trophyWho').addEventListener('click',e=>{
   const b=e.target.closest('.whochip'); if(!b) return;
