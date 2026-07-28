@@ -5,8 +5,9 @@
     "key": 5231630,
     "matchType": "EXACT",
     "alias": null,
-    "count": 12785,
-    "weight": 5
+    "mergedFrom": "carduelis flammea",
+    "count": 18228,
+    "weight": 4
   },
   {
     "sci": "acanthis hornemanni",
@@ -14,8 +15,9 @@
     "key": 5231646,
     "matchType": "EXACT",
     "alias": null,
-    "count": 273,
-    "weight": 8
+    "mergedFrom": "carduelis hornemanni",
+    "count": 539,
+    "weight": 7
   },
   {
     "sci": "accipiter nisus",
@@ -23,6 +25,7 @@
     "key": 2480637,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 257664,
     "weight": 2
   },
@@ -32,6 +35,7 @@
     "key": 2493137,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 398,
     "weight": 8
   },
@@ -41,6 +45,7 @@
     "key": 2493128,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 41086,
     "weight": 4
   },
@@ -50,6 +55,7 @@
     "key": 2493145,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 386,
     "weight": 8
   },
@@ -59,6 +65,7 @@
     "key": 2493124,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 14017,
     "weight": 5
   },
@@ -68,6 +75,7 @@
     "key": 2493114,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 8789,
     "weight": 5
   },
@@ -77,6 +85,7 @@
     "key": 2493136,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 30545,
     "weight": 4
   },
@@ -86,6 +95,7 @@
     "key": 2493129,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 114073,
     "weight": 3
   },
@@ -95,6 +105,7 @@
     "key": 2493118,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 220952,
     "weight": 2
   },
@@ -104,6 +115,7 @@
     "key": 2481800,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 165663,
     "weight": 2
   },
@@ -113,6 +125,7 @@
     "key": 2481798,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 202,
     "weight": 8
   },
@@ -122,6 +135,7 @@
     "key": 2495000,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 390087,
     "weight": 2
   },
@@ -131,6 +145,7 @@
     "key": 5739298,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 13408,
     "weight": 5
   },
@@ -140,6 +155,7 @@
     "key": 5229165,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 10766,
     "weight": 5
   },
@@ -149,6 +165,7 @@
     "key": 2479544,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 184,
     "weight": 8
   },
@@ -158,6 +175,7 @@
     "key": 2498388,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 7699,
     "weight": 5
   },
@@ -167,6 +185,7 @@
     "key": 2498387,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 2064,
     "weight": 6
   },
@@ -176,6 +195,7 @@
     "key": 8077224,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 527818,
     "weight": 1
   },
@@ -185,6 +205,7 @@
     "key": 7607411,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 3,
     "weight": 9
   },
@@ -194,6 +215,7 @@
     "key": 11234805,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -203,6 +225,7 @@
     "key": 8728578,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 7,
     "weight": 9
   },
@@ -212,6 +235,7 @@
     "key": 8277073,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 17067,
     "weight": 4
   },
@@ -221,6 +245,7 @@
     "key": 2475532,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 289354,
     "weight": 2
   },
@@ -230,6 +255,7 @@
     "key": 2474029,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 274,
     "weight": 8
   },
@@ -239,6 +265,7 @@
     "key": 2474055,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 18940,
     "weight": 4
   },
@@ -248,6 +275,7 @@
     "key": 2474051,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 107538,
     "weight": 3
   },
@@ -257,6 +285,7 @@
     "key": 2481299,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 881,
     "weight": 7
   },
@@ -266,6 +295,7 @@
     "key": 2498252,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 27739,
     "weight": 4
   },
@@ -275,6 +305,7 @@
     "key": 7340809,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 46,
     "weight": 9
   },
@@ -284,6 +315,7 @@
     "key": 9372299,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 10450,
     "weight": 5
   },
@@ -293,6 +325,7 @@
     "key": 9490752,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 7,
     "weight": 9
   },
@@ -302,6 +335,7 @@
     "key": 11705322,
     "matchType": "EXACT",
     "alias": "charadrius atrifrons",
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -311,6 +345,7 @@
     "key": 9278976,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 48,
     "weight": 9
   },
@@ -320,6 +355,7 @@
     "key": 9722670,
     "matchType": "EXACT",
     "alias": "charadrius mongolus",
+    "mergedFrom": null,
     "count": 13,
     "weight": 9
   },
@@ -329,6 +365,7 @@
     "key": 2480317,
     "matchType": "EXACT",
     "alias": "charadrius pecuarius",
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -338,6 +375,7 @@
     "key": 2498112,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 63670,
     "weight": 3
   },
@@ -347,6 +385,7 @@
     "key": 2498125,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 599,
     "weight": 7
   },
@@ -356,6 +395,7 @@
     "key": 8214667,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 213503,
     "weight": 2
   },
@@ -365,6 +405,7 @@
     "key": 9761484,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 743602,
     "weight": 1
   },
@@ -374,6 +415,7 @@
     "key": 9581438,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 5,
     "weight": 9
   },
@@ -383,6 +425,7 @@
     "key": 2498017,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 8143,
     "weight": 5
   },
@@ -392,6 +435,7 @@
     "key": 2498036,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 75699,
     "weight": 3
   },
@@ -401,6 +445,7 @@
     "key": 2498024,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1668,
     "weight": 6
   },
@@ -410,6 +455,7 @@
     "key": 2498167,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 231,
     "weight": 8
   },
@@ -419,6 +465,7 @@
     "key": 2498034,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1100,
     "weight": 7
   },
@@ -428,6 +475,7 @@
     "key": 2498026,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 378,
     "weight": 8
   },
@@ -437,6 +485,7 @@
     "key": 2498027,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 2515,
     "weight": 6
   },
@@ -446,6 +495,7 @@
     "key": 2498035,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 3918,
     "weight": 6
   },
@@ -455,6 +505,7 @@
     "key": 7340170,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 899,
     "weight": 7
   },
@@ -464,6 +515,7 @@
     "key": 2490274,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 46123,
     "weight": 4
   },
@@ -473,6 +525,7 @@
     "key": 2490283,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 2265,
     "weight": 6
   },
@@ -482,6 +535,7 @@
     "key": 2490264,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 148,
     "weight": 8
   },
@@ -491,6 +545,7 @@
     "key": 2490281,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 36,
     "weight": 9
   },
@@ -500,6 +555,7 @@
     "key": 2490244,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 538,
     "weight": 7
   },
@@ -509,6 +565,7 @@
     "key": 2490263,
     "matchType": "EXACT",
     "alias": "anthus rubescens",
+    "mergedFrom": null,
     "count": 140,
     "weight": 8
   },
@@ -518,6 +575,7 @@
     "key": 2490275,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 15066,
     "weight": 4
   },
@@ -527,6 +585,7 @@
     "key": 2490266,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 229615,
     "weight": 2
   },
@@ -536,6 +595,7 @@
     "key": 9465111,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 2718,
     "weight": 6
   },
@@ -545,6 +605,7 @@
     "key": 2490263,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 140,
     "weight": 8
   },
@@ -554,6 +615,7 @@
     "key": 2490255,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 86842,
     "weight": 3
   },
@@ -563,6 +625,7 @@
     "key": 2490246,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 171930,
     "weight": 2
   },
@@ -572,6 +635,7 @@
     "key": 9036008,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1,
     "weight": 9
   },
@@ -581,6 +645,7 @@
     "key": 5228662,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 15,
     "weight": 9
   },
@@ -590,6 +655,7 @@
     "key": 5228676,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 321388,
     "weight": 2
   },
@@ -599,6 +665,7 @@
     "key": 5228644,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 337,
     "weight": 8
   },
@@ -608,6 +675,7 @@
     "key": 5228695,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 11314,
     "weight": 5
   },
@@ -617,6 +685,7 @@
     "key": 2480510,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 276,
     "weight": 8
   },
@@ -626,6 +695,7 @@
     "key": 2480506,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 68158,
     "weight": 3
   },
@@ -635,6 +705,7 @@
     "key": 5844449,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 26245,
     "weight": 4
   },
@@ -644,6 +715,7 @@
     "key": 2480500,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 532,
     "weight": 7
   },
@@ -653,6 +725,7 @@
     "key": 2480513,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 270,
     "weight": 8
   },
@@ -662,6 +735,7 @@
     "key": 9752617,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 331666,
     "weight": 2
   },
@@ -671,6 +745,7 @@
     "key": 9797180,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 644200,
     "weight": 1
   },
@@ -680,6 +755,7 @@
     "key": 9630752,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 4,
     "weight": 9
   },
@@ -689,6 +765,7 @@
     "key": 4408439,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 43692,
     "weight": 4
   },
@@ -698,6 +775,7 @@
     "key": 2480923,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 10,
     "weight": 9
   },
@@ -707,6 +785,7 @@
     "key": 2480934,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 69187,
     "weight": 3
   },
@@ -716,6 +795,7 @@
     "key": 8596590,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1070,
     "weight": 7
   },
@@ -725,6 +805,7 @@
     "key": 8249990,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1660,
     "weight": 6
   },
@@ -734,6 +815,7 @@
     "key": 7456133,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 3,
     "weight": 9
   },
@@ -743,6 +825,7 @@
     "key": 2480906,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 19222,
     "weight": 4
   },
@@ -752,6 +835,7 @@
     "key": 2481776,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 50746,
     "weight": 3
   },
@@ -761,6 +845,7 @@
     "key": 2497295,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 12200,
     "weight": 5
   },
@@ -770,6 +855,7 @@
     "key": 2497306,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 46166,
     "weight": 4
   },
@@ -779,6 +865,7 @@
     "key": 2480589,
     "matchType": "EXACT",
     "alias": "accipiter gentilis",
+    "mergedFrom": null,
     "count": 36175,
     "weight": 4
   },
@@ -788,6 +875,7 @@
     "key": 2497266,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 111231,
     "weight": 3
   },
@@ -797,6 +885,7 @@
     "key": 2498257,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 629,
     "weight": 7
   },
@@ -806,6 +895,7 @@
     "key": 2498264,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1052,
     "weight": 7
   },
@@ -815,6 +905,7 @@
     "key": 2498255,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 168923,
     "weight": 2
   },
@@ -824,6 +915,7 @@
     "key": 2498261,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 150433,
     "weight": 2
   },
@@ -833,6 +925,7 @@
     "key": 2498265,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 7466,
     "weight": 5
   },
@@ -842,6 +935,7 @@
     "key": 2498259,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 7070,
     "weight": 5
   },
@@ -851,6 +945,7 @@
     "key": 2481705,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 78,
     "weight": 9
   },
@@ -860,6 +955,7 @@
     "key": 2484605,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 2536,
     "weight": 6
   },
@@ -869,6 +965,7 @@
     "key": 2480850,
     "matchType": "EXACT",
     "alias": "ixobrychus minutus",
+    "mergedFrom": null,
     "count": 25369,
     "weight": 4
   },
@@ -878,6 +975,7 @@
     "key": 2480910,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 22464,
     "weight": 4
   },
@@ -887,6 +985,7 @@
     "key": 2480845,
     "matchType": "EXACT",
     "alias": "ixobrychus sturmii",
+    "mergedFrom": null,
     "count": 1,
     "weight": 9
   },
@@ -896,6 +995,7 @@
     "key": 5232446,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 39735,
     "weight": 4
   },
@@ -905,6 +1005,7 @@
     "key": 5232437,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 62708,
     "weight": 3
   },
@@ -914,6 +1015,7 @@
     "key": 5232464,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 9237,
     "weight": 5
   },
@@ -923,6 +1025,7 @@
     "key": 5232451,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 497,
     "weight": 8
   },
@@ -932,6 +1035,7 @@
     "key": 5959092,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 40825,
     "weight": 4
   },
@@ -941,6 +1045,7 @@
     "key": 5959143,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 392,
     "weight": 8
   },
@@ -950,6 +1055,7 @@
     "key": 2494394,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 380,
     "weight": 8
   },
@@ -959,6 +1065,7 @@
     "key": 2498329,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 37,
     "weight": 9
   },
@@ -968,6 +1075,7 @@
     "key": 2498326,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 24533,
     "weight": 4
   },
@@ -977,6 +1085,7 @@
     "key": 2498325,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 261,
     "weight": 8
   },
@@ -986,6 +1095,7 @@
     "key": 2481606,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 387,
     "weight": 8
   },
@@ -995,6 +1105,7 @@
     "key": 2482100,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 80196,
     "weight": 3
   },
@@ -1004,6 +1115,7 @@
     "key": 2480537,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 749639,
     "weight": 1
   },
@@ -1013,6 +1125,7 @@
     "key": 2480524,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1863,
     "weight": 6
   },
@@ -1022,6 +1135,7 @@
     "key": 2480564,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 968,
     "weight": 7
   },
@@ -1031,6 +1145,7 @@
     "key": 9539567,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 38,
     "weight": 9
   },
@@ -1040,6 +1155,7 @@
     "key": 9751099,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1588,
     "weight": 6
   },
@@ -1049,6 +1165,7 @@
     "key": 2490681,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 8761,
     "weight": 5
   },
@@ -1058,6 +1175,7 @@
     "key": 2491678,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 2354,
     "weight": 6
   },
@@ -1067,6 +1185,7 @@
     "key": 2481769,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 96,
     "weight": 9
   },
@@ -1076,6 +1195,7 @@
     "key": 2481748,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 34165,
     "weight": 4
   },
@@ -1085,6 +1205,7 @@
     "key": 2481759,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 98028,
     "weight": 3
   },
@@ -1094,6 +1215,7 @@
     "key": 2481770,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 150,
     "weight": 8
   },
@@ -1103,6 +1225,7 @@
     "key": 2481765,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 21471,
     "weight": 4
   },
@@ -1112,6 +1235,7 @@
     "key": 7537888,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1586,
     "weight": 6
   },
@@ -1121,6 +1245,7 @@
     "key": 2481741,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 18109,
     "weight": 4
   },
@@ -1130,6 +1255,7 @@
     "key": 2481756,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 203,
     "weight": 8
   },
@@ -1139,6 +1265,7 @@
     "key": 5229400,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 29,
     "weight": 9
   },
@@ -1148,6 +1275,7 @@
     "key": 2481743,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 6578,
     "weight": 5
   },
@@ -1157,6 +1285,7 @@
     "key": 2481742,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 10,
     "weight": 9
   },
@@ -1166,6 +1295,7 @@
     "key": 2481744,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1453,
     "weight": 7
   },
@@ -1175,6 +1305,7 @@
     "key": 2481749,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 33641,
     "weight": 4
   },
@@ -1184,6 +1315,7 @@
     "key": 2481745,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 60,
     "weight": 9
   },
@@ -1193,6 +1325,7 @@
     "key": 8250742,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 47962,
     "weight": 4
   },
@@ -1202,6 +1335,7 @@
     "key": 2481764,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 99,
     "weight": 9
   },
@@ -1211,6 +1345,7 @@
     "key": 2481746,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 62,
     "weight": 9
   },
@@ -1220,6 +1355,7 @@
     "key": 2481750,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 8,
     "weight": 9
   },
@@ -1229,6 +1365,7 @@
     "key": 8292425,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 707,
     "weight": 7
   },
@@ -1238,6 +1375,7 @@
     "key": 2481740,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 6955,
     "weight": 5
   },
@@ -1247,6 +1385,7 @@
     "key": 5228080,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 423,
     "weight": 8
   },
@@ -1256,6 +1395,7 @@
     "key": 4847282,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 770,
     "weight": 7
   },
@@ -1265,6 +1405,7 @@
     "key": 2481521,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 11023,
     "weight": 5
   },
@@ -1274,6 +1415,7 @@
     "key": 8109681,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 45961,
     "weight": 4
   },
@@ -1283,6 +1425,7 @@
     "key": 9411857,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 326,
     "weight": 8
   },
@@ -1292,6 +1435,7 @@
     "key": 2494686,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 796365,
     "weight": 1
   },
@@ -1301,6 +1445,7 @@
     "key": 2494632,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 20813,
     "weight": 4
   },
@@ -1310,6 +1455,7 @@
     "key": 4408961,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 3515,
     "weight": 6
   },
@@ -1319,6 +1465,7 @@
     "key": 2494459,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1085,
     "weight": 7
   },
@@ -1328,6 +1475,7 @@
     "key": 2490826,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 21,
     "weight": 9
   },
@@ -1337,6 +1485,7 @@
     "key": 2490821,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 62,
     "weight": 9
   },
@@ -1346,6 +1495,7 @@
     "key": 9717283,
     "matchType": "EXACT",
     "alias": "cecropis daurica",
+    "mergedFrom": null,
     "count": 7089,
     "weight": 5
   },
@@ -1355,6 +1505,7 @@
     "key": 2481312,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 437,
     "weight": 8
   },
@@ -1364,6 +1515,7 @@
     "key": 2492478,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 284,
     "weight": 8
   },
@@ -1373,6 +1525,7 @@
     "key": 7806848,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 408586,
     "weight": 2
   },
@@ -1382,6 +1535,7 @@
     "key": 2487603,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 37285,
     "weight": 4
   },
@@ -1391,6 +1545,7 @@
     "key": 2475679,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -1400,6 +1555,7 @@
     "key": 2493012,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 254140,
     "weight": 2
   },
@@ -1409,6 +1565,7 @@
     "key": 4409023,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 4,
     "weight": 9
   },
@@ -1418,6 +1575,7 @@
     "key": 7937336,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 66806,
     "weight": 3
   },
@@ -1427,6 +1585,7 @@
     "key": 9566659,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 76321,
     "weight": 3
   },
@@ -1436,6 +1595,7 @@
     "key": 2480295,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 14,
     "weight": 9
   },
@@ -1445,6 +1605,7 @@
     "key": 2480320,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 60,
     "weight": 9
   },
@@ -1454,6 +1615,7 @@
     "key": 2490674,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 260,
     "weight": 8
   },
@@ -1463,6 +1625,7 @@
     "key": 2474863,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -1472,6 +1635,7 @@
     "key": 2481121,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 32874,
     "weight": 4
   },
@@ -1481,6 +1645,7 @@
     "key": 2481120,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 2705,
     "weight": 6
   },
@@ -1490,6 +1655,7 @@
     "key": 2481119,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 26705,
     "weight": 4
   },
@@ -1499,7 +1665,8 @@
     "key": 5845582,
     "matchType": "EXACT",
     "alias": null,
-    "count": 731513,
+    "mergedFrom": "carduelis chloris",
+    "count": 1018170,
     "weight": 1
   },
   {
@@ -1508,6 +1675,7 @@
     "key": 2497035,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 13,
     "weight": 9
   },
@@ -1517,7 +1685,8 @@
     "key": 6065810,
     "matchType": "EXACT",
     "alias": null,
-    "count": 28892,
+    "mergedFrom": "larus genei",
+    "count": 29923,
     "weight": 4
   },
   {
@@ -1526,7 +1695,8 @@
     "key": 6065818,
     "matchType": "EXACT",
     "alias": null,
-    "count": 153,
+    "mergedFrom": "larus philadelphia",
+    "count": 173,
     "weight": 8
   },
   {
@@ -1535,7 +1705,8 @@
     "key": 6065824,
     "matchType": "EXACT",
     "alias": null,
-    "count": 455395,
+    "mergedFrom": "larus ridibundus",
+    "count": 484361,
     "weight": 2
   },
   {
@@ -1544,6 +1715,7 @@
     "key": 2481912,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 164146,
     "weight": 2
   },
@@ -1553,6 +1725,7 @@
     "key": 2481909,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 49101,
     "weight": 4
   },
@@ -1562,6 +1735,7 @@
     "key": 2495093,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 75388,
     "weight": 3
   },
@@ -1571,6 +1745,7 @@
     "key": 2480666,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 151537,
     "weight": 2
   },
@@ -1580,6 +1755,7 @@
     "key": 2480482,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 187017,
     "weight": 2
   },
@@ -1589,6 +1765,7 @@
     "key": 2480487,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 161471,
     "weight": 2
   },
@@ -1598,6 +1775,7 @@
     "key": 6101217,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 76,
     "weight": 9
   },
@@ -1607,6 +1785,7 @@
     "key": 2480491,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1964,
     "weight": 6
   },
@@ -1616,6 +1795,7 @@
     "key": 2480495,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 106387,
     "weight": 3
   },
@@ -1625,6 +1805,7 @@
     "key": 2492822,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 150500,
     "weight": 2
   },
@@ -1634,6 +1815,7 @@
     "key": 2496464,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 13529,
     "weight": 5
   },
@@ -1643,8 +1825,9 @@
     "key": 7477624,
     "matchType": "EXACT",
     "alias": null,
-    "count": 1215,
-    "weight": 7
+    "mergedFrom": "aquila clanga",
+    "count": 7170,
+    "weight": 5
   },
   {
     "sci": "clanga pomarina",
@@ -1652,8 +1835,9 @@
     "key": 8256382,
     "matchType": "EXACT",
     "alias": null,
-    "count": 275,
-    "weight": 8
+    "mergedFrom": "aquila pomarina",
+    "count": 912,
+    "weight": 7
   },
   {
     "sci": "clangula hyemalis",
@@ -1661,6 +1845,7 @@
     "key": 2498273,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 3419,
     "weight": 6
   },
@@ -1670,6 +1855,7 @@
     "key": 2494329,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 194881,
     "weight": 2
   },
@@ -1679,6 +1865,7 @@
     "key": 2496287,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 5,
     "weight": 9
   },
@@ -1688,6 +1875,7 @@
     "key": 2496286,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 2,
     "weight": 9
   },
@@ -1697,6 +1885,7 @@
     "key": 9791464,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1327,
     "weight": 7
   },
@@ -1706,6 +1895,7 @@
     "key": 6100955,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": "corvus dauuricus",
     "count": 0,
     "weight": 9
   },
@@ -1715,8 +1905,9 @@
     "key": 6100954,
     "matchType": "EXACT",
     "alias": null,
-    "count": 328552,
-    "weight": 2
+    "mergedFrom": "corvus monedula",
+    "count": 569329,
+    "weight": 1
   },
   {
     "sci": "columba livia",
@@ -1724,6 +1915,7 @@
     "key": 2495414,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 237871,
     "weight": 2
   },
@@ -1733,6 +1925,7 @@
     "key": 2495471,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 116903,
     "weight": 3
   },
@@ -1742,6 +1935,7 @@
     "key": 2495455,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1424021,
     "weight": 1
   },
@@ -1751,6 +1945,7 @@
     "key": 2475365,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 67964,
     "weight": 3
   },
@@ -1760,6 +1955,7 @@
     "key": 2482492,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 150517,
     "weight": 2
   },
@@ -1769,6 +1965,7 @@
     "key": 2482515,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 17138,
     "weight": 4
   },
@@ -1778,6 +1975,7 @@
     "key": 9409796,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1177510,
     "weight": 1
   },
@@ -1787,6 +1985,7 @@
     "key": 2482513,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 142131,
     "weight": 3
   },
@@ -1796,6 +1995,7 @@
     "key": 2474156,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 90646,
     "weight": 3
   },
@@ -1805,6 +2005,7 @@
     "key": 4408498,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 7533,
     "weight": 5
   },
@@ -1814,6 +2015,7 @@
     "key": 5231918,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 301665,
     "weight": 2
   },
@@ -1823,6 +2025,7 @@
     "key": 9317615,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": "sylvia cantillans",
     "count": 40480,
     "weight": 4
   },
@@ -1832,6 +2035,7 @@
     "key": 10507373,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": "sylvia communis",
     "count": 316546,
     "weight": 2
   },
@@ -1841,6 +2045,7 @@
     "key": 9868071,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": "sylvia conspicillata",
     "count": 7322,
     "weight": 5
   },
@@ -1850,6 +2055,7 @@
     "key": 11098086,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": "sylvia crassirostris",
     "count": 0,
     "weight": 9
   },
@@ -1859,6 +2065,7 @@
     "key": 11034996,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": "sylvia curruca",
     "count": 50093,
     "weight": 3
   },
@@ -1868,6 +2075,7 @@
     "key": 11016136,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": "sylvia deserti",
     "count": 0,
     "weight": 9
   },
@@ -1877,6 +2085,7 @@
     "key": 11091935,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": "sylvia deserticola",
     "count": 7,
     "weight": 9
   },
@@ -1886,6 +2095,7 @@
     "key": 10630343,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": "sylvia hortensis",
     "count": 17819,
     "weight": 4
   },
@@ -1895,6 +2105,7 @@
     "key": 10700636,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 5179,
     "weight": 5
   },
@@ -1904,6 +2115,7 @@
     "key": 9990095,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": "sylvia melanocephala",
     "count": 222713,
     "weight": 2
   },
@@ -1913,6 +2125,7 @@
     "key": 9039514,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": "sylvia nana",
     "count": 17,
     "weight": 9
   },
@@ -1922,6 +2135,7 @@
     "key": 10983621,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": "sylvia nisoria",
     "count": 651,
     "weight": 7
   },
@@ -1931,6 +2145,7 @@
     "key": 10449569,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": "sylvia ruppeli",
     "count": 406,
     "weight": 8
   },
@@ -1940,6 +2155,7 @@
     "key": 10233847,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": "sylvia sarda",
     "count": 3922,
     "weight": 6
   },
@@ -1949,6 +2165,7 @@
     "key": 9478399,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": "sylvia subalpina",
     "count": 2421,
     "weight": 6
   },
@@ -1958,6 +2175,7 @@
     "key": 10355796,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": "sylvia undata",
     "count": 66361,
     "weight": 3
   },
@@ -1967,6 +2185,7 @@
     "key": 2480740,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 124,
     "weight": 8
   },
@@ -1976,7 +2195,8 @@
     "key": 2487879,
     "matchType": "EXACT",
     "alias": null,
-    "count": 1442338,
+    "mergedFrom": "parus caeruleus",
+    "count": 1529259,
     "weight": 1
   },
   {
@@ -1985,8 +2205,9 @@
     "key": 2487877,
     "matchType": "EXACT",
     "alias": null,
-    "count": 311,
-    "weight": 8
+    "mergedFrom": "parus cyanus",
+    "count": 591,
+    "weight": 7
   },
   {
     "sci": "cygnus atratus",
@@ -1994,6 +2215,7 @@
     "key": 2498344,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 12144,
     "weight": 5
   },
@@ -2003,6 +2225,7 @@
     "key": 2498338,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 6339,
     "weight": 5
   },
@@ -2012,6 +2235,7 @@
     "key": 2498347,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 3901,
     "weight": 6
   },
@@ -2021,6 +2245,7 @@
     "key": 2498343,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 335204,
     "weight": 2
   },
@@ -2030,6 +2255,7 @@
     "key": 2481545,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 126,
     "weight": 8
   },
@@ -2039,6 +2265,7 @@
     "key": 2489214,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 273075,
     "weight": 2
   },
@@ -2048,6 +2275,7 @@
     "key": 2477927,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 3754,
     "weight": 6
   },
@@ -2057,6 +2285,7 @@
     "key": 2477968,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 555645,
     "weight": 1
   },
@@ -2066,8 +2295,9 @@
     "key": 8773033,
     "matchType": "EXACT",
     "alias": null,
-    "count": 80717,
-    "weight": 3
+    "mergedFrom": "dendrocopos medius",
+    "count": 151176,
+    "weight": 2
   },
   {
     "sci": "dendrocygna bicolor",
@@ -2075,6 +2305,7 @@
     "key": 2498402,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 267,
     "weight": 8
   },
@@ -2084,6 +2315,7 @@
     "key": 2484417,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1,
     "weight": 9
   },
@@ -2093,8 +2325,9 @@
     "key": 9015784,
     "matchType": "EXACT",
     "alias": null,
-    "count": 92583,
-    "weight": 3
+    "mergedFrom": "dendrocopos minor",
+    "count": 175526,
+    "weight": 2
   },
   {
     "sci": "dryocopus martius",
@@ -2102,6 +2335,7 @@
     "key": 2477872,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 155400,
     "weight": 2
   },
@@ -2111,6 +2345,7 @@
     "key": 2480876,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 358130,
     "weight": 2
   },
@@ -2120,6 +2355,7 @@
     "key": 2480898,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 351,
     "weight": 8
   },
@@ -2129,6 +2365,7 @@
     "key": 2480372,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 34356,
     "weight": 4
   },
@@ -2138,6 +2375,7 @@
     "key": 2491518,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 260,
     "weight": 8
   },
@@ -2147,6 +2385,7 @@
     "key": 2491521,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 272,
     "weight": 8
   },
@@ -2156,6 +2395,7 @@
     "key": 2491490,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 260,
     "weight": 8
   },
@@ -2165,6 +2405,7 @@
     "key": 7634625,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 205484,
     "weight": 2
   },
@@ -2174,6 +2415,7 @@
     "key": 2491530,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -2183,6 +2425,7 @@
     "key": 2491498,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 38210,
     "weight": 4
   },
@@ -2192,6 +2435,7 @@
     "key": 7626513,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 269858,
     "weight": 2
   },
@@ -2201,6 +2445,7 @@
     "key": 2491534,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 290988,
     "weight": 2
   },
@@ -2210,6 +2455,7 @@
     "key": 2491482,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 25626,
     "weight": 4
   },
@@ -2219,6 +2465,7 @@
     "key": 2491472,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 479,
     "weight": 8
   },
@@ -2228,6 +2475,7 @@
     "key": 9613112,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 603,
     "weight": 7
   },
@@ -2237,6 +2485,7 @@
     "key": 2491544,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1214,
     "weight": 7
   },
@@ -2246,6 +2495,7 @@
     "key": 2491582,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 410,
     "weight": 8
   },
@@ -2255,6 +2505,7 @@
     "key": 2491517,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 16,
     "weight": 9
   },
@@ -2264,6 +2515,7 @@
     "key": 2491557,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 255001,
     "weight": 2
   },
@@ -2273,6 +2525,7 @@
     "key": 2491522,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 40,
     "weight": 9
   },
@@ -2282,6 +2535,7 @@
     "key": 9415596,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 2047,
     "weight": 6
   },
@@ -2291,6 +2545,7 @@
     "key": 2492462,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1518409,
     "weight": 1
   },
@@ -2300,6 +2555,7 @@
     "key": 2480282,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 2242,
     "weight": 6
   },
@@ -2309,6 +2565,7 @@
     "key": 5789082,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 10468,
     "weight": 5
   },
@@ -2318,6 +2575,7 @@
     "key": 8014966,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 496,
     "weight": 8
   },
@@ -2327,6 +2585,7 @@
     "key": 2481034,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 326,
     "weight": 8
   },
@@ -2336,6 +2595,7 @@
     "key": 9813242,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 27701,
     "weight": 4
   },
@@ -2345,6 +2605,7 @@
     "key": 2481061,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 5,
     "weight": 9
   },
@@ -2354,6 +2615,7 @@
     "key": 2481037,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 4837,
     "weight": 6
   },
@@ -2363,6 +2625,7 @@
     "key": 9584698,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 14948,
     "weight": 5
   },
@@ -2372,6 +2635,7 @@
     "key": 2481047,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 116959,
     "weight": 3
   },
@@ -2381,6 +2645,7 @@
     "key": 8069880,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 276,
     "weight": 8
   },
@@ -2390,6 +2655,7 @@
     "key": 2481035,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 97769,
     "weight": 3
   },
@@ -2399,6 +2665,7 @@
     "key": 9616058,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 585508,
     "weight": 1
   },
@@ -2408,6 +2675,7 @@
     "key": 2481062,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 8723,
     "weight": 5
   },
@@ -2417,6 +2685,7 @@
     "key": 2492601,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 3894,
     "weight": 6
   },
@@ -2426,6 +2695,7 @@
     "key": 2492606,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 97766,
     "weight": 3
   },
@@ -2435,6 +2705,7 @@
     "key": 2492605,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1282,
     "weight": 7
   },
@@ -2444,6 +2715,7 @@
     "key": 2492608,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 265,
     "weight": 8
   },
@@ -2453,6 +2725,7 @@
     "key": 5227919,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 254,
     "weight": 8
   },
@@ -2462,6 +2735,7 @@
     "key": 2481353,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 2912,
     "weight": 6
   },
@@ -2471,6 +2745,7 @@
     "key": 2480189,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 128,
     "weight": 8
   },
@@ -2480,6 +2755,7 @@
     "key": 2494422,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1789032,
     "weight": 1
   },
@@ -2489,6 +2765,7 @@
     "key": 2494441,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 142473,
     "weight": 3
   },
@@ -2498,6 +2775,7 @@
     "key": 12217905,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -2507,6 +2785,7 @@
     "key": 2474377,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 440099,
     "weight": 2
   },
@@ -2516,6 +2795,7 @@
     "key": 2474381,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 269,
     "weight": 8
   },
@@ -2525,6 +2805,7 @@
     "key": 2481433,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 14487,
     "weight": 5
   },
@@ -2534,6 +2815,7 @@
     "key": 2490669,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 64759,
     "weight": 3
   },
@@ -2543,6 +2825,7 @@
     "key": 9330514,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 3205,
     "weight": 6
   },
@@ -2552,6 +2835,7 @@
     "key": 2481817,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 7,
     "weight": 9
   },
@@ -2561,6 +2845,7 @@
     "key": 2481819,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 151188,
     "weight": 2
   },
@@ -2570,6 +2855,7 @@
     "key": 2481831,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 793,
     "weight": 7
   },
@@ -2579,6 +2865,7 @@
     "key": 5228199,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 341547,
     "weight": 2
   },
@@ -2588,6 +2875,7 @@
     "key": 5229493,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 673254,
     "weight": 1
   },
@@ -2597,6 +2885,7 @@
     "key": 2481959,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 8060,
     "weight": 5
   },
@@ -2606,6 +2895,7 @@
     "key": 2481962,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 9610,
     "weight": 5
   },
@@ -2615,6 +2905,7 @@
     "key": 2481955,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 10,
     "weight": 9
   },
@@ -2624,6 +2915,7 @@
     "key": 2481958,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 11013,
     "weight": 5
   },
@@ -2633,6 +2925,7 @@
     "key": 2481263,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 19644,
     "weight": 4
   },
@@ -2642,6 +2935,7 @@
     "key": 6100888,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 6,
     "weight": 9
   },
@@ -2651,6 +2945,7 @@
     "key": 2480770,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 149,
     "weight": 8
   },
@@ -2660,6 +2955,7 @@
     "key": 2480759,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1,
     "weight": 9
   },
@@ -2669,6 +2965,7 @@
     "key": 2480758,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 450,
     "weight": 8
   },
@@ -2678,6 +2975,7 @@
     "key": 2480757,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 6027,
     "weight": 5
   },
@@ -2687,6 +2985,7 @@
     "key": 5232162,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 13963,
     "weight": 5
   },
@@ -2696,6 +2995,7 @@
     "key": 2474950,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 154896,
     "weight": 2
   },
@@ -2705,6 +3005,7 @@
     "key": 5789355,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 24,
     "weight": 9
   },
@@ -2714,6 +3015,7 @@
     "key": 10943800,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 11899,
     "weight": 5
   },
@@ -2723,6 +3025,7 @@
     "key": 2480649,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 30169,
     "weight": 4
   },
@@ -2732,6 +3035,7 @@
     "key": 2480389,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 106005,
     "weight": 3
   },
@@ -2741,6 +3045,7 @@
     "key": 2480384,
     "matchType": "FUZZY",
     "alias": null,
+    "mergedFrom": null,
     "count": 27,
     "weight": 9
   },
@@ -2750,6 +3055,7 @@
     "key": 7788295,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 59774,
     "weight": 3
   },
@@ -2759,6 +3065,7 @@
     "key": 2480449,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 4757,
     "weight": 6
   },
@@ -2768,6 +3075,7 @@
     "key": 2480446,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 3,
     "weight": 9
   },
@@ -2777,6 +3085,7 @@
     "key": 10273344,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1,
     "weight": 9
   },
@@ -2786,6 +3095,7 @@
     "key": 10258717,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -2795,6 +3105,7 @@
     "key": 2480685,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 35493,
     "weight": 4
   },
@@ -2804,6 +3115,7 @@
     "key": 5229126,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 123100,
     "weight": 3
   },
@@ -2813,6 +3125,7 @@
     "key": 2493220,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 7824,
     "weight": 5
   },
@@ -2822,6 +3135,7 @@
     "key": 2493214,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 183006,
     "weight": 2
   },
@@ -2831,6 +3145,7 @@
     "key": 9515886,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 597696,
     "weight": 1
   },
@@ -2840,6 +3155,7 @@
     "key": 2498224,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 260,
     "weight": 8
   },
@@ -2849,6 +3165,7 @@
     "key": 9272607,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 2,
     "weight": 9
   },
@@ -2858,6 +3175,7 @@
     "key": 9461262,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 615,
     "weight": 7
   },
@@ -2867,6 +3185,7 @@
     "key": 9378883,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -2876,6 +3195,7 @@
     "key": 4408455,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 6979,
     "weight": 5
   },
@@ -2885,7 +3205,8 @@
     "key": 6065841,
     "matchType": "EXACT",
     "alias": null,
-    "count": 22607,
+    "mergedFrom": "larus minutus",
+    "count": 25424,
     "weight": 4
   },
   {
@@ -2894,6 +3215,7 @@
     "key": 2481236,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 18608,
     "weight": 4
   },
@@ -2903,7 +3225,8 @@
     "key": 7406504,
     "matchType": "EXACT",
     "alias": null,
-    "count": 2922,
+    "mergedFrom": "larus audouinii",
+    "count": 4131,
     "weight": 6
   },
   {
@@ -2912,8 +3235,9 @@
     "key": 8028588,
     "matchType": "EXACT",
     "alias": null,
-    "count": 254,
-    "weight": 8
+    "mergedFrom": "larus ichthyaetus",
+    "count": 508,
+    "weight": 7
   },
   {
     "sci": "ichthyaetus melanocephalus",
@@ -2921,7 +3245,8 @@
     "key": 8151548,
     "matchType": "EXACT",
     "alias": null,
-    "count": 157469,
+    "mergedFrom": "larus melanocephalus",
+    "count": 182937,
     "weight": 2
   },
   {
@@ -2930,6 +3255,7 @@
     "key": 2484340,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 53,
     "weight": 9
   },
@@ -2939,6 +3265,7 @@
     "key": 5739359,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 356,
     "weight": 8
   },
@@ -2948,6 +3275,7 @@
     "key": 5739355,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 5,
     "weight": 9
   },
@@ -2957,6 +3285,7 @@
     "key": 5739361,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 290,
     "weight": 8
   },
@@ -2966,6 +3295,7 @@
     "key": 5739357,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -2975,6 +3305,7 @@
     "key": 8012314,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 56669,
     "weight": 3
   },
@@ -2984,6 +3315,7 @@
     "key": 5232229,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -2993,6 +3325,7 @@
     "key": 2473421,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 866,
     "weight": 7
   },
@@ -3002,6 +3335,7 @@
     "key": 5227679,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 21881,
     "weight": 4
   },
@@ -3011,6 +3345,7 @@
     "key": 7745240,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 199369,
     "weight": 2
   },
@@ -3020,6 +3355,7 @@
     "key": 2492846,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 87,
     "weight": 9
   },
@@ -3029,6 +3365,7 @@
     "key": 9444556,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 24949,
     "weight": 4
   },
@@ -3038,6 +3375,7 @@
     "key": 2492865,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 161,
     "weight": 8
   },
@@ -3047,6 +3385,7 @@
     "key": 7341500,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 23204,
     "weight": 4
   },
@@ -3056,6 +3395,7 @@
     "key": 2492854,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 2208,
     "weight": 6
   },
@@ -3065,6 +3405,7 @@
     "key": 2492855,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 273,
     "weight": 8
   },
@@ -3074,6 +3415,7 @@
     "key": 4408670,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 7,
     "weight": 9
   },
@@ -3083,6 +3425,7 @@
     "key": 2492867,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 37334,
     "weight": 4
   },
@@ -3092,6 +3435,7 @@
     "key": 2481139,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 771329,
     "weight": 1
   },
@@ -3101,6 +3445,7 @@
     "key": 2481181,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 8689,
     "weight": 5
   },
@@ -3110,6 +3455,7 @@
     "key": 7982160,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 44193,
     "weight": 4
   },
@@ -3119,6 +3465,7 @@
     "key": 2481134,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 906,
     "weight": 7
   },
@@ -3128,6 +3475,7 @@
     "key": 2481174,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 820097,
     "weight": 1
   },
@@ -3137,6 +3485,7 @@
     "key": 2481156,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1227,
     "weight": 7
   },
@@ -3146,6 +3495,7 @@
     "key": 2481127,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1251,
     "weight": 7
   },
@@ -3155,6 +3505,7 @@
     "key": 2481172,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 66401,
     "weight": 3
   },
@@ -3164,6 +3515,7 @@
     "key": 9413670,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 311648,
     "weight": 2
   },
@@ -3173,6 +3525,7 @@
     "key": 4848480,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 35,
     "weight": 9
   },
@@ -3182,6 +3535,7 @@
     "key": 5789289,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -3191,6 +3545,7 @@
     "key": 7415507,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 2,
     "weight": 9
   },
@@ -3200,6 +3555,7 @@
     "key": 5231398,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 5447,
     "weight": 5
   },
@@ -3209,7 +3565,8 @@
     "key": 6065844,
     "matchType": "EXACT",
     "alias": null,
-    "count": 116,
+    "mergedFrom": "larus atricilla",
+    "count": 156,
     "weight": 8
   },
   {
@@ -3218,8 +3575,9 @@
     "key": 5846430,
     "matchType": "EXACT",
     "alias": null,
-    "count": 78,
-    "weight": 9
+    "mergedFrom": "larus pipixcan",
+    "count": 100,
+    "weight": 8
   },
   {
     "sci": "limnodromus griseus",
@@ -3227,6 +3585,7 @@
     "key": 2481672,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 28,
     "weight": 9
   },
@@ -3236,6 +3595,7 @@
     "key": 2481670,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 215,
     "weight": 8
   },
@@ -3245,6 +3605,7 @@
     "key": 2481681,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 26765,
     "weight": 4
   },
@@ -3254,6 +3615,7 @@
     "key": 2481685,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 54893,
     "weight": 3
   },
@@ -3263,8 +3625,9 @@
     "key": 8104397,
     "matchType": "EXACT",
     "alias": null,
-    "count": 341168,
-    "weight": 2
+    "mergedFrom": "carduelis cannabina",
+    "count": 549449,
+    "weight": 1
   },
   {
     "sci": "linaria flavirostris",
@@ -3272,7 +3635,8 @@
     "key": 7668711,
     "matchType": "EXACT",
     "alias": null,
-    "count": 928,
+    "mergedFrom": "carduelis flavirostris",
+    "count": 1429,
     "weight": 7
   },
   {
@@ -3281,6 +3645,7 @@
     "key": 2493549,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 321,
     "weight": 8
   },
@@ -3290,6 +3655,7 @@
     "key": 2493550,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 257,
     "weight": 8
   },
@@ -3299,6 +3665,7 @@
     "key": 2493551,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 19301,
     "weight": 4
   },
@@ -3308,6 +3675,7 @@
     "key": 2493548,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 48172,
     "weight": 4
   },
@@ -3317,7 +3685,8 @@
     "key": 2487883,
     "matchType": "EXACT",
     "alias": null,
-    "count": 216891,
+    "mergedFrom": "parus cristatus",
+    "count": 252843,
     "weight": 2
   },
   {
@@ -3326,6 +3695,7 @@
     "key": 9629160,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 53781,
     "weight": 3
   },
@@ -3335,6 +3705,7 @@
     "key": 8144830,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 280,
     "weight": 8
   },
@@ -3344,6 +3715,7 @@
     "key": 2494154,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 328,
     "weight": 8
   },
@@ -3353,6 +3725,7 @@
     "key": 2494177,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 270,
     "weight": 8
   },
@@ -3362,6 +3735,7 @@
     "key": 2490604,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 246317,
     "weight": 2
   },
@@ -3371,6 +3745,7 @@
     "key": 2492542,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 314,
     "weight": 8
   },
@@ -3380,6 +3755,7 @@
     "key": 7660710,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 418283,
     "weight": 2
   },
@@ -3389,6 +3765,7 @@
     "key": 4408732,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 86099,
     "weight": 3
   },
@@ -3398,6 +3775,7 @@
     "key": 2481835,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 12660,
     "weight": 5
   },
@@ -3407,6 +3785,7 @@
     "key": 2473682,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 35661,
     "weight": 4
   },
@@ -3416,6 +3795,7 @@
     "key": 2481515,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 126,
     "weight": 8
   },
@@ -3425,6 +3805,7 @@
     "key": 2481516,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -3434,7 +3815,8 @@
     "key": 2498155,
     "matchType": "EXACT",
     "alias": null,
-    "count": 141,
+    "mergedFrom": "anas americana",
+    "count": 197,
     "weight": 8
   },
   {
@@ -3443,7 +3825,8 @@
     "key": 8000602,
     "matchType": "EXACT",
     "alias": null,
-    "count": 83877,
+    "mergedFrom": "anas penelope",
+    "count": 127890,
     "weight": 3
   },
   {
@@ -3452,8 +3835,9 @@
     "key": 9362027,
     "matchType": "EXACT",
     "alias": null,
-    "count": 137809,
-    "weight": 3
+    "mergedFrom": "anas strepera",
+    "count": 205551,
+    "weight": 2
   },
   {
     "sci": "marmaronetta angustirostris",
@@ -3461,6 +3845,7 @@
     "key": 2498390,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 482,
     "weight": 8
   },
@@ -3470,6 +3855,7 @@
     "key": 2475472,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 80,
     "weight": 9
   },
@@ -3479,6 +3865,7 @@
     "key": 2498250,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 17,
     "weight": 9
   },
@@ -3488,6 +3875,7 @@
     "key": 2498243,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -3497,6 +3885,7 @@
     "key": 2498238,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 8388,
     "weight": 5
   },
@@ -3506,6 +3895,7 @@
     "key": 2498247,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 14389,
     "weight": 5
   },
@@ -3515,6 +3905,7 @@
     "key": 2498246,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 166,
     "weight": 8
   },
@@ -3524,6 +3915,7 @@
     "key": 10056448,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -3533,6 +3925,7 @@
     "key": 2490609,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -3542,6 +3935,7 @@
     "key": 2490613,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 5511,
     "weight": 5
   },
@@ -3551,6 +3945,7 @@
     "key": 2498285,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 9258,
     "weight": 5
   },
@@ -3560,6 +3955,7 @@
     "key": 9537647,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 42456,
     "weight": 4
   },
@@ -3569,6 +3965,7 @@
     "key": 2498375,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 21540,
     "weight": 4
   },
@@ -3578,6 +3975,7 @@
     "key": 2475443,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 104975,
     "weight": 3
   },
@@ -3587,6 +3985,7 @@
     "key": 2475419,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 266,
     "weight": 8
   },
@@ -3596,6 +3995,7 @@
     "key": 10095118,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 602,
     "weight": 7
   },
@@ -3605,6 +4005,7 @@
     "key": 5229167,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 355959,
     "weight": 2
   },
@@ -3614,6 +4015,7 @@
     "key": 5229168,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 258430,
     "weight": 2
   },
@@ -3623,6 +4025,7 @@
     "key": 2489613,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 10,
     "weight": 9
   },
@@ -3632,6 +4035,7 @@
     "key": 2484391,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -3641,6 +4045,7 @@
     "key": 2490956,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 13703,
     "weight": 5
   },
@@ -3650,6 +4055,7 @@
     "key": 2490955,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 15293,
     "weight": 4
   },
@@ -3659,6 +4065,7 @@
     "key": 2492371,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 11998,
     "weight": 5
   },
@@ -3668,6 +4075,7 @@
     "key": 2480964,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 104220,
     "weight": 3
   },
@@ -3677,6 +4085,7 @@
     "key": 9687165,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 568042,
     "weight": 1
   },
@@ -3686,6 +4095,7 @@
     "key": 2490310,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 198729,
     "weight": 2
   },
@@ -3695,6 +4105,7 @@
     "key": 2490307,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 476,
     "weight": 8
   },
@@ -3704,6 +4115,7 @@
     "key": 9701857,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 191191,
     "weight": 2
   },
@@ -3713,6 +4125,7 @@
     "key": 2490303,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 202,
     "weight": 8
   },
@@ -3722,6 +4135,7 @@
     "key": 2492576,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 87660,
     "weight": 3
   },
@@ -3731,6 +4145,7 @@
     "key": 9559647,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 486,
     "weight": 8
   },
@@ -3740,6 +4155,7 @@
     "key": 2479407,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 586,
     "weight": 7
   },
@@ -3749,6 +4165,7 @@
     "key": 9275717,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -3758,6 +4175,7 @@
     "key": 2480696,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 14717,
     "weight": 5
   },
@@ -3767,6 +4185,7 @@
     "key": 2498180,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 63934,
     "weight": 3
   },
@@ -3776,6 +4195,7 @@
     "key": 2482613,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 28896,
     "weight": 4
   },
@@ -3785,6 +4205,7 @@
     "key": 2481792,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 144116,
     "weight": 3
   },
@@ -3794,6 +4215,7 @@
     "key": 4408523,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 5,
     "weight": 9
   },
@@ -3803,6 +4225,7 @@
     "key": 2481784,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 37437,
     "weight": 4
   },
@@ -3812,6 +4235,7 @@
     "key": 2481789,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 25,
     "weight": 9
   },
@@ -3821,6 +4245,7 @@
     "key": 2480863,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 56531,
     "weight": 3
   },
@@ -3830,6 +4255,7 @@
     "key": 5229419,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 424,
     "weight": 8
   },
@@ -3839,6 +4265,7 @@
     "key": 5231244,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 597,
     "weight": 7
   },
@@ -3848,6 +4275,7 @@
     "key": 5231235,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 5172,
     "weight": 5
   },
@@ -3857,6 +4285,7 @@
     "key": 5231245,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 494,
     "weight": 8
   },
@@ -3866,6 +4295,7 @@
     "key": 5231253,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 9,
     "weight": 9
   },
@@ -3875,6 +4305,7 @@
     "key": 5231236,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 333,
     "weight": 8
   },
@@ -3884,6 +4315,7 @@
     "key": 5788869,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 26,
     "weight": 9
   },
@@ -3893,6 +4325,7 @@
     "key": 5231240,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 128265,
     "weight": 3
   },
@@ -3902,6 +4335,7 @@
     "key": 5231233,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 607,
     "weight": 7
   },
@@ -3911,6 +4345,7 @@
     "key": 8236049,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 3,
     "weight": 9
   },
@@ -3920,6 +4355,7 @@
     "key": 5231239,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 255,
     "weight": 8
   },
@@ -3929,6 +4365,7 @@
     "key": 5789286,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 156,
     "weight": 8
   },
@@ -3938,6 +4375,7 @@
     "key": 5789284,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 917,
     "weight": 7
   },
@@ -3947,6 +4385,7 @@
     "key": 2488949,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 191092,
     "weight": 2
   },
@@ -3956,6 +4395,7 @@
     "key": 2474921,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 418,
     "weight": 8
   },
@@ -3965,6 +4405,7 @@
     "key": 2497701,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 39521,
     "weight": 4
   },
@@ -3974,6 +4415,7 @@
     "key": 2498305,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 6858,
     "weight": 5
   },
@@ -3983,6 +4425,7 @@
     "key": 2498302,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 495,
     "weight": 8
   },
@@ -3992,6 +4435,7 @@
     "key": 2481202,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 303,
     "weight": 8
   },
@@ -4001,6 +4445,7 @@
     "key": 2480726,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 49722,
     "weight": 4
   },
@@ -4010,6 +4455,7 @@
     "key": 2493367,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 27349,
     "weight": 4
   },
@@ -4019,6 +4465,7 @@
     "key": 9120951,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 7,
     "weight": 9
   },
@@ -4028,6 +4475,7 @@
     "key": 6093856,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 6,
     "weight": 9
   },
@@ -4037,6 +4485,7 @@
     "key": 9705453,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1798166,
     "weight": 1
   },
@@ -4046,6 +4495,7 @@
     "key": 5231190,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1256661,
     "weight": 1
   },
@@ -4055,6 +4505,7 @@
     "key": 5231209,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 471,
     "weight": 8
   },
@@ -4064,6 +4515,7 @@
     "key": 8426551,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 9056,
     "weight": 5
   },
@@ -4073,6 +4525,7 @@
     "key": 5231198,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 119610,
     "weight": 3
   },
@@ -4082,6 +4535,7 @@
     "key": 5845386,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1797,
     "weight": 6
   },
@@ -4091,6 +4545,7 @@
     "key": 9451184,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 993,
     "weight": 7
   },
@@ -4100,6 +4555,7 @@
     "key": 2480353,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 368,
     "weight": 8
   },
@@ -4109,6 +4565,7 @@
     "key": 2480350,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 599,
     "weight": 7
   },
@@ -4118,6 +4575,7 @@
     "key": 2480352,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 649,
     "weight": 7
   },
@@ -4127,6 +4585,7 @@
     "key": 2473958,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 68210,
     "weight": 3
   },
@@ -4136,7 +4595,8 @@
     "key": 2487871,
     "matchType": "EXACT",
     "alias": null,
-    "count": 237295,
+    "mergedFrom": "parus ater",
+    "count": 275328,
     "weight": 2
   },
   {
@@ -4145,6 +4605,7 @@
     "key": 2480420,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 123095,
     "weight": 3
   },
@@ -4154,6 +4615,7 @@
     "key": 2489169,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 34,
     "weight": 9
   },
@@ -4163,6 +4625,7 @@
     "key": 2492350,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 20272,
     "weight": 4
   },
@@ -4172,6 +4635,7 @@
     "key": 2481890,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 464981,
     "weight": 2
   },
@@ -4181,6 +4645,7 @@
     "key": 5229390,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 2948,
     "weight": 6
   },
@@ -4190,6 +4655,7 @@
     "key": 5739290,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 2223,
     "weight": 6
   },
@@ -4199,6 +4665,7 @@
     "key": 5229389,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 315,
     "weight": 8
   },
@@ -4208,6 +4675,7 @@
     "key": 9752149,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 216797,
     "weight": 2
   },
@@ -4217,6 +4685,7 @@
     "key": 2490494,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 6,
     "weight": 9
   },
@@ -4226,6 +4695,7 @@
     "key": 2481104,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 747,
     "weight": 7
   },
@@ -4235,6 +4705,7 @@
     "key": 2481110,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 539,
     "weight": 7
   },
@@ -4244,6 +4715,7 @@
     "key": 4352332,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 129862,
     "weight": 3
   },
@@ -4253,6 +4725,7 @@
     "key": 5231221,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 94,
     "weight": 9
   },
@@ -4262,6 +4735,7 @@
     "key": 5739315,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 590878,
     "weight": 1
   },
@@ -4271,6 +4745,7 @@
     "key": 5739317,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 181271,
     "weight": 2
   },
@@ -4280,6 +4755,7 @@
     "key": 2493070,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 107728,
     "weight": 3
   },
@@ -4289,6 +4765,7 @@
     "key": 2493071,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 322,
     "weight": 8
   },
@@ -4298,6 +4775,7 @@
     "key": 2493091,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 876782,
     "weight": 1
   },
@@ -4307,6 +4785,7 @@
     "key": 2493060,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -4316,6 +4795,7 @@
     "key": 2493075,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 435,
     "weight": 8
   },
@@ -4325,6 +4805,7 @@
     "key": 7341522,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 478,
     "weight": 8
   },
@@ -4334,6 +4815,7 @@
     "key": 7341585,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 776,
     "weight": 7
   },
@@ -4343,6 +4825,7 @@
     "key": 2493095,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 6574,
     "weight": 5
   },
@@ -4352,6 +4835,7 @@
     "key": 9584952,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -4361,6 +4845,7 @@
     "key": 4408827,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 39,
     "weight": 9
   },
@@ -4370,6 +4855,7 @@
     "key": 4408813,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 23,
     "weight": 9
   },
@@ -4379,6 +4865,7 @@
     "key": 2493090,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1179,
     "weight": 7
   },
@@ -4388,6 +4875,7 @@
     "key": 2493063,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 159,
     "weight": 8
   },
@@ -4397,6 +4885,7 @@
     "key": 8128385,
     "matchType": "FUZZY",
     "alias": null,
+    "mergedFrom": null,
     "count": 39074,
     "weight": 4
   },
@@ -4406,6 +4895,7 @@
     "key": 2493084,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 312,
     "weight": 8
   },
@@ -4415,6 +4905,7 @@
     "key": 2493052,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 178334,
     "weight": 2
   },
@@ -4424,6 +4915,7 @@
     "key": 5229490,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1078660,
     "weight": 1
   },
@@ -4433,6 +4925,7 @@
     "key": 2477804,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1068,
     "weight": 7
   },
@@ -4442,6 +4935,7 @@
     "key": 2478548,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 13695,
     "weight": 5
   },
@@ -4451,6 +4945,7 @@
     "key": 9029556,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 8787,
     "weight": 5
   },
@@ -4460,6 +4955,7 @@
     "key": 2478523,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 566074,
     "weight": 1
   },
@@ -4469,6 +4965,7 @@
     "key": 5229273,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 4,
     "weight": 9
   },
@@ -4478,6 +4975,7 @@
     "key": 2494771,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 255,
     "weight": 8
   },
@@ -4487,6 +4985,7 @@
     "key": 2488517,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -4496,6 +4995,7 @@
     "key": 2480801,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 111193,
     "weight": 3
   },
@@ -4505,6 +5005,7 @@
     "key": 2491719,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 5768,
     "weight": 5
   },
@@ -4514,6 +5015,7 @@
     "key": 2480773,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 43807,
     "weight": 4
   },
@@ -4523,6 +5025,7 @@
     "key": 2480332,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 61878,
     "weight": 3
   },
@@ -4532,6 +5035,7 @@
     "key": 2480328,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 350,
     "weight": 8
   },
@@ -4541,6 +5045,7 @@
     "key": 2480331,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 286,
     "weight": 8
   },
@@ -4550,6 +5055,7 @@
     "key": 2480327,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 57741,
     "weight": 3
   },
@@ -4559,6 +5065,7 @@
     "key": 2482059,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 8126,
     "weight": 5
   },
@@ -4568,6 +5075,7 @@
     "key": 2482054,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 324716,
     "weight": 2
   },
@@ -4577,6 +5085,7 @@
     "key": 2482051,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 5114,
     "weight": 5
   },
@@ -4586,6 +5095,7 @@
     "key": 2482065,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 58376,
     "weight": 3
   },
@@ -4595,6 +5105,7 @@
     "key": 2482077,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 218,
     "weight": 8
   },
@@ -4604,8 +5115,9 @@
     "key": 2487866,
     "matchType": "EXACT",
     "alias": null,
-    "count": 39700,
-    "weight": 4
+    "mergedFrom": "parus montanus",
+    "count": 64130,
+    "weight": 3
   },
   {
     "sci": "poecile palustris",
@@ -4613,7 +5125,8 @@
     "key": 2487843,
     "matchType": "EXACT",
     "alias": null,
-    "count": 290679,
+    "mergedFrom": "parus palustris",
+    "count": 325981,
     "weight": 2
   },
   {
@@ -4622,6 +5135,7 @@
     "key": 5232431,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 255,
     "weight": 8
   },
@@ -4631,6 +5145,7 @@
     "key": 4408502,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 6,
     "weight": 9
   },
@@ -4640,6 +5155,7 @@
     "key": 5228136,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 4,
     "weight": 9
   },
@@ -4649,6 +5165,7 @@
     "key": 2474416,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 17456,
     "weight": 4
   },
@@ -4658,6 +5175,7 @@
     "key": 2474639,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 21,
     "weight": 9
   },
@@ -4667,6 +5185,7 @@
     "key": 2474621,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 7096,
     "weight": 5
   },
@@ -4676,6 +5195,7 @@
     "key": 5231766,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 287,
     "weight": 8
   },
@@ -4685,6 +5205,7 @@
     "key": 5231770,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 24556,
     "weight": 4
   },
@@ -4694,6 +5215,7 @@
     "key": 5231763,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 533060,
     "weight": 1
   },
@@ -4703,6 +5225,7 @@
     "key": 5229055,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 242,
     "weight": 8
   },
@@ -4712,6 +5235,7 @@
     "key": 2479226,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 82469,
     "weight": 3
   },
@@ -4721,6 +5245,7 @@
     "key": 2480204,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 9677,
     "weight": 5
   },
@@ -4730,6 +5255,7 @@
     "key": 2481475,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1,
     "weight": 9
   },
@@ -4739,6 +5265,7 @@
     "key": 2481473,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 384,
     "weight": 8
   },
@@ -4748,6 +5275,7 @@
     "key": 2481463,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1,
     "weight": 9
   },
@@ -4757,6 +5285,7 @@
     "key": 4408796,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 90726,
     "weight": 3
   },
@@ -4766,6 +5295,7 @@
     "key": 5843955,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 438,
     "weight": 8
   },
@@ -4775,6 +5305,7 @@
     "key": 5229360,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 7368,
     "weight": 5
   },
@@ -4784,6 +5315,7 @@
     "key": 5229380,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 5327,
     "weight": 5
   },
@@ -4793,6 +5325,7 @@
     "key": 5229377,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 9598,
     "weight": 5
   },
@@ -4802,6 +5335,7 @@
     "key": 2482553,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 35806,
     "weight": 4
   },
@@ -4811,6 +5345,7 @@
     "key": 2482552,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 46386,
     "weight": 4
   },
@@ -4820,6 +5355,7 @@
     "key": 2494543,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 184373,
     "weight": 2
   },
@@ -4829,6 +5365,7 @@
     "key": 2474831,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 102587,
     "weight": 3
   },
@@ -4838,6 +5375,7 @@
     "key": 2480259,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 94391,
     "weight": 3
   },
@@ -4847,6 +5385,7 @@
     "key": 6093527,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 233825,
     "weight": 2
   },
@@ -4856,6 +5395,7 @@
     "key": 2484596,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 163892,
     "weight": 2
   },
@@ -4865,6 +5405,7 @@
     "key": 2487385,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 32316,
     "weight": 4
   },
@@ -4874,6 +5415,7 @@
     "key": 2481218,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 163,
     "weight": 8
   },
@@ -4883,6 +5425,7 @@
     "key": 5230750,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 2,
     "weight": 9
   },
@@ -4892,6 +5435,7 @@
     "key": 2489160,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 83544,
     "weight": 3
   },
@@ -4901,6 +5445,7 @@
     "key": 2481205,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 32256,
     "weight": 4
   },
@@ -4910,6 +5455,7 @@
     "key": 5846290,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 146,
     "weight": 8
   },
@@ -4919,6 +5465,7 @@
     "key": 2492521,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 84877,
     "weight": 3
   },
@@ -4928,6 +5475,7 @@
     "key": 4408759,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 277772,
     "weight": 2
   },
@@ -4937,6 +5485,7 @@
     "key": 2481695,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -4946,6 +5495,7 @@
     "key": 2481700,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 142862,
     "weight": 3
   },
@@ -4955,6 +5505,7 @@
     "key": 2489590,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 10,
     "weight": 9
   },
@@ -4964,6 +5515,7 @@
     "key": 2494200,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 317403,
     "weight": 2
   },
@@ -4973,6 +5525,7 @@
     "key": 8378494,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 21,
     "weight": 9
   },
@@ -4982,6 +5535,7 @@
     "key": 6093345,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 6,
     "weight": 9
   },
@@ -4991,6 +5545,7 @@
     "key": 6093199,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -5000,6 +5555,7 @@
     "key": 6092942,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 2,
     "weight": 9
   },
@@ -5009,6 +5565,7 @@
     "key": 2489985,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 9,
     "weight": 9
   },
@@ -5018,6 +5575,7 @@
     "key": 6092935,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 18,
     "weight": 9
   },
@@ -5027,8 +5585,9 @@
     "key": 9235549,
     "matchType": "EXACT",
     "alias": null,
-    "count": 97,
-    "weight": 9
+    "mergedFrom": "anas formosa",
+    "count": 132,
+    "weight": 8
   },
   {
     "sci": "sitta europaea",
@@ -5036,6 +5595,7 @@
     "key": 2484916,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 475493,
     "weight": 2
   },
@@ -5045,6 +5605,7 @@
     "key": 2484886,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 5465,
     "weight": 5
   },
@@ -5054,6 +5615,7 @@
     "key": 2498352,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 9388,
     "weight": 5
   },
@@ -5063,6 +5625,7 @@
     "key": 2498350,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 484,
     "weight": 8
   },
@@ -5072,7 +5635,8 @@
     "key": 8332393,
     "matchType": "EXACT",
     "alias": null,
-    "count": 154693,
+    "mergedFrom": "anas clypeata",
+    "count": 229295,
     "weight": 2
   },
   {
@@ -5081,7 +5645,8 @@
     "key": 9422220,
     "matchType": "EXACT",
     "alias": null,
-    "count": 128,
+    "mergedFrom": "anas discors",
+    "count": 172,
     "weight": 8
   },
   {
@@ -5090,8 +5655,9 @@
     "key": 9274012,
     "matchType": "EXACT",
     "alias": null,
-    "count": 48437,
-    "weight": 4
+    "mergedFrom": "anas querquedula",
+    "count": 75702,
+    "weight": 3
   },
   {
     "sci": "spinus spinus",
@@ -5099,7 +5665,8 @@
     "key": 6092830,
     "matchType": "EXACT",
     "alias": null,
-    "count": 192599,
+    "mergedFrom": "carduelis spinus",
+    "count": 286181,
     "weight": 2
   },
   {
@@ -5108,6 +5675,7 @@
     "key": 2481613,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 872,
     "weight": 7
   },
@@ -5117,6 +5685,7 @@
     "key": 2481616,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 129,
     "weight": 8
   },
@@ -5126,6 +5695,7 @@
     "key": 2481621,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 6374,
     "weight": 5
   },
@@ -5135,6 +5705,7 @@
     "key": 2481609,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 2219,
     "weight": 6
   },
@@ -5144,6 +5715,7 @@
     "key": 2481618,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 9516,
     "weight": 5
   },
@@ -5153,6 +5725,7 @@
     "key": 5229249,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 903,
     "weight": 7
   },
@@ -5162,6 +5735,7 @@
     "key": 5229247,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 93,
     "weight": 9
   },
@@ -5171,6 +5745,7 @@
     "key": 9367409,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 105171,
     "weight": 3
   },
@@ -5180,6 +5755,7 @@
     "key": 5229230,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 2441,
     "weight": 6
   },
@@ -5189,6 +5765,7 @@
     "key": 5789279,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 37888,
     "weight": 4
   },
@@ -5198,6 +5775,7 @@
     "key": 2495696,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1011907,
     "weight": 1
   },
@@ -5207,6 +5785,7 @@
     "key": 2495681,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 26,
     "weight": 9
   },
@@ -5216,6 +5795,7 @@
     "key": 2495708,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 250195,
     "weight": 2
   },
@@ -5225,6 +5805,7 @@
     "key": 9282206,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 148958,
     "weight": 3
   },
@@ -5234,6 +5815,7 @@
     "key": 2489104,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 5517,
     "weight": 5
   },
@@ -5243,6 +5825,7 @@
     "key": 9809229,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 978765,
     "weight": 1
   },
@@ -5252,6 +5835,7 @@
     "key": 2480967,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 12,
     "weight": 9
   },
@@ -5261,6 +5845,7 @@
     "key": 2480975,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 290,
     "weight": 8
   },
@@ -5270,6 +5855,7 @@
     "key": 2480972,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 157,
     "weight": 8
   },
@@ -5279,6 +5865,7 @@
     "key": 2497894,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 259,
     "weight": 8
   },
@@ -5288,6 +5875,7 @@
     "key": 2492956,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1231600,
     "weight": 1
   },
@@ -5297,6 +5885,7 @@
     "key": 2492942,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 151063,
     "weight": 2
   },
@@ -5306,6 +5895,7 @@
     "key": 2473477,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 2970,
     "weight": 6
   },
@@ -5315,6 +5905,7 @@
     "key": 2480208,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 7,
     "weight": 9
   },
@@ -5324,6 +5915,7 @@
     "key": 2482048,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 217776,
     "weight": 2
   },
@@ -5333,6 +5925,7 @@
     "key": 2477411,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 37092,
     "weight": 4
   },
@@ -5342,6 +5935,7 @@
     "key": 2498015,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 7522,
     "weight": 5
   },
@@ -5351,6 +5945,7 @@
     "key": 2498009,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 213787,
     "weight": 2
   },
@@ -5360,6 +5955,7 @@
     "key": 2492509,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 481,
     "weight": 8
   },
@@ -5369,6 +5965,7 @@
     "key": 2473577,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 11521,
     "weight": 5
   },
@@ -5378,6 +5975,7 @@
     "key": 2473663,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 10729,
     "weight": 5
   },
@@ -5387,6 +5985,7 @@
     "key": 5228228,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 62478,
     "weight": 3
   },
@@ -5396,6 +5995,7 @@
     "key": 2481399,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 124,
     "weight": 8
   },
@@ -5405,6 +6005,7 @@
     "key": 2481410,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 136,
     "weight": 8
   },
@@ -5414,6 +6015,7 @@
     "key": 6065833,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 356,
     "weight": 8
   },
@@ -5423,6 +6025,7 @@
     "key": 2481285,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 419,
     "weight": 8
   },
@@ -5432,6 +6035,7 @@
     "key": 5789281,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 174,
     "weight": 8
   },
@@ -5441,6 +6045,7 @@
     "key": 2481240,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 68439,
     "weight": 3
   },
@@ -5450,6 +6055,7 @@
     "key": 2480764,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 6937,
     "weight": 5
   },
@@ -5459,6 +6065,7 @@
     "key": 2484918,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 22937,
     "weight": 4
   },
@@ -5468,6 +6075,7 @@
     "key": 5788496,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -5477,6 +6085,7 @@
     "key": 2481722,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 108,
     "weight": 8
   },
@@ -5486,6 +6095,7 @@
     "key": 2481725,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 37516,
     "weight": 4
   },
@@ -5495,6 +6105,7 @@
     "key": 2481721,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 363,
     "weight": 8
   },
@@ -5504,6 +6115,7 @@
     "key": 2481713,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 45801,
     "weight": 4
   },
@@ -5513,6 +6125,7 @@
     "key": 2481720,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 11,
     "weight": 9
   },
@@ -5522,6 +6135,7 @@
     "key": 2481726,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 79411,
     "weight": 3
   },
@@ -5531,6 +6145,7 @@
     "key": 2481728,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 123941,
     "weight": 3
   },
@@ -5540,6 +6155,7 @@
     "key": 5789298,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 3,
     "weight": 9
   },
@@ -5549,6 +6165,7 @@
     "key": 2481710,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 38,
     "weight": 9
   },
@@ -5558,6 +6175,7 @@
     "key": 2481719,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 4630,
     "weight": 6
   },
@@ -5567,6 +6185,7 @@
     "key": 2481714,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 109924,
     "weight": 3
   },
@@ -5576,6 +6195,7 @@
     "key": 5231438,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 771675,
     "weight": 1
   },
@@ -5585,6 +6205,7 @@
     "key": 4408790,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 1,
     "weight": 9
   },
@@ -5594,6 +6215,7 @@
     "key": 9615912,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 4,
     "weight": 9
   },
@@ -5603,6 +6225,7 @@
     "key": 2490781,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 115190,
     "weight": 3
   },
@@ -5612,6 +6235,7 @@
     "key": 2490719,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 2058535,
     "weight": 1
   },
@@ -5621,6 +6245,7 @@
     "key": 8294007,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 15,
     "weight": 9
   },
@@ -5630,6 +6255,7 @@
     "key": 2490728,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 8,
     "weight": 9
   },
@@ -5639,6 +6265,7 @@
     "key": 7901064,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 630133,
     "weight": 1
   },
@@ -5648,6 +6275,7 @@
     "key": 2490737,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 159883,
     "weight": 2
   },
@@ -5657,6 +6285,7 @@
     "key": 2490740,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 267,
     "weight": 8
   },
@@ -5666,6 +6295,7 @@
     "key": 7865305,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 30199,
     "weight": 4
   },
@@ -5675,6 +6305,7 @@
     "key": 2490774,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 351732,
     "weight": 2
   },
@@ -5684,6 +6315,7 @@
     "key": 2475001,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 254,
     "weight": 8
   },
@@ -5693,6 +6325,7 @@
     "key": 2497921,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 102995,
     "weight": 3
   },
@@ -5702,6 +6335,7 @@
     "key": 2498415,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 190176,
     "weight": 2
   },
@@ -5711,6 +6345,7 @@
     "key": 2481342,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 30626,
     "weight": 4
   },
@@ -5720,6 +6355,7 @@
     "key": 2481339,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 276,
     "weight": 8
   },
@@ -5729,6 +6365,7 @@
     "key": 5229145,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 0,
     "weight": 9
   },
@@ -5738,6 +6375,7 @@
     "key": 5229138,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 745,
     "weight": 7
   },
@@ -5747,6 +6385,7 @@
     "key": 5229147,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 284,
     "weight": 8
   },
@@ -5756,6 +6395,7 @@
     "key": 2480242,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 283340,
     "weight": 2
   },
@@ -5765,6 +6405,7 @@
     "key": 2487430,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 107,
     "weight": 8
   },
@@ -5774,6 +6415,7 @@
     "key": 2481221,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 2030,
     "weight": 6
   },
@@ -5783,6 +6425,7 @@
     "key": 2481703,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 866,
     "weight": 7
   },
@@ -5792,8 +6435,9 @@
     "key": 9272513,
     "matchType": "EXACT",
     "alias": null,
-    "count": 789,
-    "weight": 7
+    "mergedFrom": "porzana parva",
+    "count": 2677,
+    "weight": 6
   },
   {
     "sci": "zapornia pusilla",
@@ -5801,8 +6445,9 @@
     "key": 9299354,
     "matchType": "EXACT",
     "alias": null,
-    "count": 483,
-    "weight": 8
+    "mergedFrom": "porzana pusilla",
+    "count": 1518,
+    "weight": 6
   },
   {
     "sci": "zonotrichia albicollis",
@@ -5810,6 +6455,7 @@
     "key": 5231140,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 110,
     "weight": 8
   },
@@ -5819,6 +6465,7 @@
     "key": 5231132,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 4,
     "weight": 9
   },
@@ -5828,6 +6475,7 @@
     "key": 4408785,
     "matchType": "EXACT",
     "alias": null,
+    "mergedFrom": null,
     "count": 309,
     "weight": 8
   }

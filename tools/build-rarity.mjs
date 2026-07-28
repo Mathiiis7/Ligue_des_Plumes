@@ -71,6 +71,19 @@ const GBIF_ALIAS = {
   'cecropis rufula':     'cecropis daurica',     // Hirondelle rousseline
 };
 
+// Genres récemment scindés : GBIF garde l'ancien nom (ancien genre + MÊME épithète)
+// comme taxon DISTINCT, où sont la plupart des obs historiques -> on somme les deux.
+const GENUS_SPLIT = {
+  curruca:'sylvia',                                                 // Fauvettes
+  mareca:'anas', spatula:'anas', sibirionetta:'anas',               // Canards
+  poecile:'parus', lophophanes:'parus', periparus:'parus', cyanistes:'parus', // Mésanges
+  chroicocephalus:'larus', hydrocoloeus:'larus', ichthyaetus:'larus', leucophaeus:'larus', // Mouettes/goélands
+  coloeus:'corvus',                                                 // Choucas
+  linaria:'carduelis', spinus:'carduelis', acanthis:'carduelis', chloris:'carduelis', // Fringilles
+  dryobates:'dendrocopos', dendrocoptes:'dendrocopos',              // Pics
+  clanga:'aquila', zapornia:'porzana',
+};
+
 // --- Récupère le dictionnaire FR_NAMES depuis index.html ---
 function loadSpecies() {
   const html = readFileSync(join(ROOT, 'index.html'), 'utf8');
@@ -115,12 +128,11 @@ async function gbifCount(sci) {
     const occ = await fetchJSON('https://api.gbif.org/v1/occurrence/search?country=FR&limit=0&taxonKey=' + key);
     count = occ.count || 0;
   }
-  // Genre récemment scindé Sylvia -> Curruca (Fauvettes) : GBIF garde l'ancien nom
-  // "Sylvia <epithete>" comme taxon DISTINCT, où sont la plupart des obs historiques.
-  // On somme les deux pour ne pas sous-estimer ces oiseaux communs.
+  // Genre récemment scindé (voir GENUS_SPLIT) : on somme l'ancien nom, taxon distinct.
   let mergedFrom = null;
-  if (sci.split(' ')[0] === 'curruca') {
-    const oldName = 'sylvia ' + sci.split(' ').slice(1).join(' ');
+  const oldGenus = GENUS_SPLIT[sci.split(' ')[0]];
+  if (oldGenus) {
+    const oldName = oldGenus + ' ' + sci.split(' ').slice(1).join(' ');
     try {
       const m2 = await fetchJSON('https://api.gbif.org/v1/species/match?class=Aves&kingdom=Animalia&name=' + encodeURIComponent(oldName));
       const k2 = m2.usageKey || m2.acceptedUsageKey || null;
@@ -164,7 +176,7 @@ async function mapPool(items, size, fn, onTick) {
       if (++sinceSave >= 25) { saveCache(); sinceSave = 0; }
       const reliable = r.reliable !== undefined ? r.reliable : !!r.key;
       const weight = reliable ? weightFor(r.count) : 9; // match non fiable -> traité comme Exceptionnel
-      return { sci, name: FR[sci], key: r.key, matchType: r.matchType, alias: r.alias || null, count: r.count, weight };
+      return { sci, name: FR[sci], key: r.key, matchType: r.matchType, alias: r.alias || null, mergedFrom: r.mergedFrom || null, count: r.count, weight };
     } catch (e) {
       return { sci, name: FR[sci], key: null, matchType: 'ERROR', count: 0, weight: null, error: String(e) };
     }
