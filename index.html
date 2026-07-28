@@ -339,6 +339,12 @@
   .tstate { margin-top:9px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
     color:var(--ink-3); font-variant-numeric:tabular-nums; }
   .trophy.on .tstate { color:var(--gold); }
+  .vote-btn { margin-top:10px; font:inherit; font-size:12px; font-weight:700; padding:6px 14px; border-radius:9px;
+    border:1px solid var(--accent); background:var(--accent); color:#fff; cursor:pointer; }
+  .vote-btn:hover { filter:brightness(1.06); }
+  .vote-btn.voted { background:var(--surface); color:var(--accent-ink); }
+  .vote-btn:disabled { opacity:.5; cursor:default; }
+  .vote-note { margin-top:10px; font-size:11px; color:var(--ink-3); line-height:1.4; }
   .trophy.clic { cursor:pointer; }
   .trophy.clic:hover { border-color:color-mix(in srgb,var(--gold) 55%,var(--line)); }
   .tmodal { display:none; position:fixed; inset:0; z-index:60; background:rgba(0,0,0,.5);
@@ -594,6 +600,7 @@ let lastFamKey = '', lastTierKey = '';
 let myUid = null, leagueId = null, unsub = null, unsubLeague = null, iAmInLeague = false;
 let unsubChat = null, lastChatMsgs = [];
 let unsubPresence = null, onlineMap = new Map(), presenceTimer = null, presenceWired = false;
+let unsubVotes = null, votesMap = new Map();
 let realPeople = [], demoOn = false;   // aperçu d'exemple (jamais enregistré dans le cloud)
 let goalHeader = 'Objectif (fin de l\'été)';   // intitulé partagé de la colonne objectif
 
@@ -952,7 +959,7 @@ function renderMatrix({universe,N}){
 function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 /* ---------------- trophées ---------------- */
-const ICONS={"medal":"<img src=\"t-shirt.png\" alt=\"Expert Merlin Bird\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","cup":"<img src=\"etoile.png\" alt=\"Mike Horn\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","graal":"<img src=\"diamant.png\" alt=\"Le Saint-Graal\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","woodpecker":"<img src=\"pic-noir.png\" alt=\"Pic noir\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","aigle":"<img src=\"aigle.png\" alt=\"Aigles\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","huitre":"<img src=\"huitre.png\" alt=\"Huître\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bain":"<img src=\"bain.png\" alt=\"Pistoche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","pingouin":"<img src=\"pingouin.png\" alt=\"Happy feet\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","kangourou":"<img src=\"kangourou.png\" alt=\"Wallaby\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","singe":"<img src=\"singe.png\" alt=\"Le coup de Ruff\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","crown":"<img src=\"roi.png\" alt=\"Roi\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","podium":"<img src=\"argent.png\" alt=\"En chef\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bronze":"<img src=\"bronze.png\" alt=\"Chevronné\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","gem":"<img src=\"telescope.png\" alt=\"Apprenti écologue\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","binoculars":"<img src=\"loupe.png\" alt=\"Écologue du dimanche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","saisons":"<img src=\"son.png\" alt=\"Les 4 Saisons\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">"};
+const ICONS={"medal":"<img src=\"t-shirt.png\" alt=\"Expert Merlin Bird\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","cup":"<img src=\"etoile.png\" alt=\"Mike Horn\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","graal":"<img src=\"diamant.png\" alt=\"Le Saint-Graal\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","woodpecker":"<img src=\"pic-noir.png\" alt=\"Pic noir\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","aigle":"<img src=\"aigle.png\" alt=\"Aigles\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","huitre":"<img src=\"huitre.png\" alt=\"Huître\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bain":"<img src=\"bain.png\" alt=\"Pistoche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","pingouin":"<img src=\"pingouin.png\" alt=\"Happy feet\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","kangourou":"<img src=\"kangourou.png\" alt=\"Wallaby\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","singe":"<img src=\"singe.png\" alt=\"Le coup de Ruff\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","crown":"<img src=\"roi.png\" alt=\"Roi\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","podium":"<img src=\"argent.png\" alt=\"En chef\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bronze":"<img src=\"bronze.png\" alt=\"Chevronné\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","gem":"<img src=\"telescope.png\" alt=\"Apprenti écologue\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","binoculars":"<img src=\"loupe.png\" alt=\"Écologue du dimanche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","saisons":"<img src=\"son.png\" alt=\"Les 4 Saisons\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bebe":"<img src=\"bebe.png\" alt=\"Gros Bébé\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">"};
 const TROPHIES = [
   { icon:ICONS.medal, name:'Expert Merlin Bird', desc:'100 espèces (droit de porter le t-shirt Merlin)', test:s=>s.total>=100, prog:s=>[s.total,100] },
   { icon:ICONS.cup, name:'Mike Horn', desc:'Avoir l’oiseau le plus rare de la ligue', test:s=>s.holdsRarest, tip:s=>s.holdsRarest&&s.rarestRealName?'Espèce la plus rare : '+s.rarestRealName:'' },
@@ -964,6 +971,7 @@ const TROPHIES = [
   { icon:ICONS.pingouin, name:'Happy feet', desc:'Observer un Alcidé (pingouin, macareux, guillemot…)', test:s=>s.hasPenguin },
   { icon:ICONS.kangourou, name:'Wallaby', desc:'Observer le Martin-chasseur à dos de feu', test:s=>s.hasFireKingfisher },
   { icon:ICONS.saisons, name:'Les 4 Saisons', desc:'Chope un oiseau spécifique à chaque saison tah Vivaldi', test:s=>s.seasonCount>=4, prog:s=>[s.seasonCount,4], alwaysList:true, list:s=>SEASON_CATALOG.map(m=>({ name:m.name, section:m.section, owned:s.seasonOwnedSet.has(m.sci) })), note:s=>`${s.seasonCount} saison${s.seasonCount>1?'s':''} validée${s.seasonCount>1?'s':''} sur 4` },
+  { icon:ICONS.bebe, name:'Gros Bébé', desc:'Observer des oiseaux avec Samuel Fillon (preuve demandée)', special:'vote', test:s=>(s.grosBebeVotes||0)>=3 },
   { icon:ICONS.crown, name:'Écologue originel', desc:'Être 1ᵉʳ du classement', test:s=>s.groupN>1 && s.rank===1 },
   { icon:ICONS.podium, name:'Écologue en chef', desc:'Dans le top 2', test:s=>s.groupN>1 && s.rank<=2 },
   { icon:ICONS.bronze, name:'Écologue chevronné', desc:'Dans le top 3', test:s=>s.groupN>1 && s.rank<=3 },
@@ -1015,7 +1023,7 @@ function statsFor(me, N){
   let lackEnzoBird=false;
   if(enzo && enzo._active) for(const k of enzo._active.keys()){ if(!me._active.has(k)){ lackEnzoBird=true; break; } }
   const seasonCount=SEASON_ORDER.filter(s=>seasonHit[s]).length;
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, holdsRarest:!!me.holdsRarest, rarestRealName:me.rarestRealName||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, holdsRarest:!!me.holdsRarest, rarestRealName:me.rarestRealName||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, grosBebeVotes:(votesMap.get(me.id)?.size)||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
@@ -1044,11 +1052,22 @@ function renderTrophies(data){
     if(ok) stateTxt = clic ? 'Débloqué ✓ · voir la liste' : 'Débloqué ✓';
     else stateTxt = clic ? prog+' · voir la liste' : prog;
     const tip = t.tip ? t.tip(s) : '';
+    let extra='';
+    if(t.special==='vote'){
+      const votes = s.grosBebeVotes||0;
+      stateTxt = ok ? `Validé ✓ · ${votes} votes` : `${votes} / 3 votes`;
+      if(sel.id===myUid){ extra = `<div class="vote-note">👶 Les autres votent pour vous (partagez la preuve dans le tchat)</div>`; }
+      else if(myMemberName()){
+        const iVoted = votesMap.get(sel.id)?.has(myUid);
+        extra = `<button class="vote-btn${iVoted?' voted':''}" data-vote-target="${esc(sel.id)}">${iVoted?'✓ Voté — retirer':'Valider ✅'}</button>`;
+      } else { extra = `<div class="vote-note">Connecte-toi pour pouvoir voter</div>`; }
+    }
     return `<div class="trophy ${ok?'on':'off'}${clic?' clic':''}"${clic?` data-detail="${i}"`:''}${tip?` title="${esc(tip)}"`:''}>
       <div class="tico">${t.icon}</div>
       <div class="tname">${esc(t.name)}</div>
       <div class="tdesc">${esc(t.desc)}</div>
       <div class="tstate">${stateTxt}</div>
+      ${extra}
     </div>`;
   }).join('');
   const label = sel.isMe ? 'Vous avez' : esc(sel.name)+' a';
@@ -1138,6 +1157,12 @@ function subscribe(){
     err=>{ console.error(err); const box=$('#chatMessages'); if(box) box.innerHTML='<div class="chat-empty">Le tchat n\'est pas encore activé (règles Firebase).</div>'; });
   subscribePresence();
   startPresence();
+  if(unsubVotes){ unsubVotes(); unsubVotes=null; }
+  unsubVotes = onSnapshot(collection(db,'leagues',leagueId,'votes'), snap=>{
+    const m=new Map();
+    snap.forEach(d=>{ const v=d.data()||{}; if(v.trophy==='grosBebe' && v.target && v.voter){ if(!m.has(v.target)) m.set(v.target,new Set()); m.get(v.target).add(v.voter); } });
+    votesMap=m; renderTrophies(trophyData);
+  }, ()=>{});
 }
 // ---- Présence "en ligne" ----
 function presenceBeat(){
@@ -1377,7 +1402,17 @@ $('#trophyWho').addEventListener('click',e=>{
   const b=e.target.closest('.whochip'); if(!b) return;
   trophyPlayerId=b.dataset.id; renderTrophies(trophyData);
 });
-$('#trophyGrid').addEventListener('click',e=>{
+$('#trophyGrid').addEventListener('click',async e=>{
+  const vb=e.target.closest('.vote-btn');
+  if(vb){
+    const target=vb.dataset.voteTarget; if(!target || !myUid || target===myUid) return;
+    const ref=doc(db,'leagues',leagueId,'votes','grosBebe__'+target+'__'+myUid);
+    const iVoted = votesMap.get(target)?.has(myUid);
+    vb.disabled=true;
+    try{ if(iVoted) await deleteDoc(ref); else await setDoc(ref,{ trophy:'grosBebe', target, voter:myUid, createdAt:serverTimestamp() }); }
+    catch(err){ showError(err); }
+    return;
+  }
   const card=e.target.closest('.trophy.clic'); if(!card) return;
   const d=trophyDetails[card.dataset.detail]; if(!d) return;
   $('#tmodalTitle').textContent=d.name;
