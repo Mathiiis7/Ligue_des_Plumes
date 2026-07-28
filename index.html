@@ -272,6 +272,13 @@
     font-size:15px; padding:10px 16px; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; }
   .tab.on { color:var(--accent-ink); border-bottom-color:var(--accent); }
   .tab:hover { color:var(--accent-ink); }
+  .auth-fields { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+  .auth-fields input { flex:1; min-width:180px; padding:10px 12px; border:1px solid var(--line-2); border-radius:10px; font:inherit; background:var(--surface); color:var(--ink); }
+  .auth-actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .auth-msg { font-size:13px; margin-top:10px; min-height:0; }
+  .auth-msg.ok { color:var(--accent-ink); }
+  .auth-msg.err { color:#c0392b; }
+  .auth-info-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:4px; font-size:14px; color:var(--ink-2); }
   .chat-box { display:flex; flex-direction:column; gap:8px; height:min(58vh,520px); overflow-y:auto;
     padding:14px; background:var(--surface-2); border:1px solid var(--line); border-radius:14px; margin-top:10px; }
   .chat-empty { margin:auto; color:var(--ink-3); font-size:14px; }
@@ -372,6 +379,29 @@
   </nav>
 
   <div id="viewLoad">
+  <section class="panel auth-box" id="authBox" style="display:none; padding:18px 20px; margin-bottom:16px;">
+    <div id="authForm">
+      <div class="eyebrow">Connexion</div>
+      <p class="help" style="margin:4px 0 12px;">Crée ton compte (ou connecte-toi) pour retrouver ta liste et ton identité sur <b>tous tes appareils</b>. Ta liste actuelle sur cet appareil sera conservée.</p>
+      <div class="auth-fields">
+        <input type="email" id="authEmail" placeholder="Email" autocomplete="email">
+        <input type="password" id="authPass" placeholder="Mot de passe (6 caractères min.)" autocomplete="current-password">
+      </div>
+      <div class="auth-actions">
+        <button class="btn" id="authSignup">Créer mon compte</button>
+        <button class="btn ghost" id="authSignin">J'ai déjà un compte</button>
+        <button class="linkbtn" id="authReset">Mot de passe oublié ?</button>
+      </div>
+      <div class="auth-msg" id="authMsg"></div>
+    </div>
+    <div id="authInfo" style="display:none;">
+      <div class="eyebrow">Connexion</div>
+      <div class="auth-info-row">
+        <span>Connecté : <b id="authWho"></b></span>
+        <button class="linkbtn" id="authSignout">Se déconnecter</button>
+      </div>
+    </div>
+  </section>
   <!-- league: your entry + participants -->
   <section class="panel" id="leaguebar" style="display:none;">
     <div class="league-head">
@@ -516,7 +546,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, EmailAuthProvider, linkWithCredential } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import { getFirestore, doc, setDoc, updateDoc, deleteDoc, collection, onSnapshot, serverTimestamp, addDoc, query, orderBy, limit }
   from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
@@ -1333,6 +1363,56 @@ $('#themeBtn').addEventListener('click',()=>{
 
 /* ---------------- go ---------------- */
 showLeague();   // affiche la page tout de suite, sans attendre la connexion
-onAuthStateChanged(auth, user=>{ if(user){ myUid=user.uid; boot(); } });
-signInAnonymously(auth).catch(err=>{ showError(err); });
+/* ---------------- connexion email ---------------- */
+function isRealAccount(u){ return !!u && !u.isAnonymous; }
+function authErr(e){
+  const c=(e&&e.code)||'';
+  if(c==='auth/invalid-email') return 'Email invalide.';
+  if(c==='auth/weak-password') return 'Mot de passe trop court (6 caractères minimum).';
+  if(c==='auth/email-already-in-use') return 'Cet email a déjà un compte — clique sur « J\'ai déjà un compte ».';
+  if(c==='auth/credential-already-in-use') return 'Ce compte existe déjà — connecte-toi avec « J\'ai déjà un compte ».';
+  if(c==='auth/invalid-credential'||c==='auth/wrong-password'||c==='auth/user-not-found') return 'Email ou mot de passe incorrect.';
+  if(c==='auth/missing-password') return 'Entre ton mot de passe.';
+  if(c==='auth/too-many-requests') return 'Trop de tentatives, réessaie dans un moment.';
+  if(c==='auth/operation-not-allowed') return 'La connexion par email n\'est pas encore activée côté Firebase.';
+  return (e&&e.message)||'Erreur.';
+}
+function authMsg(txt, ok){ const el=$('#authMsg'); if(!el) return; el.textContent=txt||''; el.className='auth-msg'+(txt?(ok?' ok':' err'):''); }
+function updateAuthUI(user){
+  const box=$('#authBox'); if(!box) return;
+  box.style.display='';
+  const real=isRealAccount(user);
+  $('#authForm').style.display = real?'none':'';
+  $('#authInfo').style.display = real?'':'none';
+  if(real) $('#authWho').textContent = user.email||'';
+}
+$('#authSignup')?.addEventListener('click', async ()=>{
+  const email=$('#authEmail').value.trim(), pass=$('#authPass').value;
+  if(!email||!pass){ authMsg('Entre un email et un mot de passe.'); return; }
+  authMsg('…', true);
+  const cur=auth.currentUser;
+  try{
+    if(cur && cur.isAnonymous){ await linkWithCredential(cur, EmailAuthProvider.credential(email, pass)); authMsg('Compte créé — ta liste est conservée ✓', true); }
+    else { await createUserWithEmailAndPassword(auth, email, pass); authMsg('Compte créé ✓', true); }
+    $('#authPass').value=''; updateAuthUI(auth.currentUser);
+  }catch(e){ authMsg(authErr(e)); }
+});
+$('#authSignin')?.addEventListener('click', async ()=>{
+  const email=$('#authEmail').value.trim(), pass=$('#authPass').value;
+  if(!email||!pass){ authMsg('Entre ton email et ton mot de passe.'); return; }
+  authMsg('…', true);
+  try{ await signInWithEmailAndPassword(auth, email, pass); $('#authPass').value=''; authMsg('Connecté ✓', true); updateAuthUI(auth.currentUser); }
+  catch(e){ authMsg(authErr(e)); }
+});
+$('#authSignout')?.addEventListener('click', async ()=>{ try{ await signOut(auth); authMsg(''); }catch(e){ showError(e); } });
+$('#authReset')?.addEventListener('click', async ()=>{
+  const email=$('#authEmail').value.trim();
+  if(!email){ authMsg('Entre ton email d\'abord, puis clique sur « Mot de passe oublié ».'); return; }
+  try{ await sendPasswordResetEmail(auth, email); authMsg('Email de réinitialisation envoyé à '+email+' ✓', true); }
+  catch(e){ authMsg(authErr(e)); }
+});
+onAuthStateChanged(auth, user=>{
+  if(user){ myUid=user.uid; updateAuthUI(user); boot(); }
+  else { myUid=null; signInAnonymously(auth).catch(err=>{ showError(err); }); }
+});
 </script>
