@@ -208,7 +208,7 @@
   },
   {
     "sci": "alca torda",
-    "name": "Petit Pingouin",
+    "name": "Pingouin torda",
     "key": 8277073,
     "matchType": "EXACT",
     "alias": null,
@@ -1823,8 +1823,8 @@
     "key": 9317615,
     "matchType": "EXACT",
     "alias": null,
-    "count": 180,
-    "weight": 8
+    "count": 40480,
+    "weight": 4
   },
   {
     "sci": "curruca communis",
@@ -1832,8 +1832,8 @@
     "key": 10507373,
     "matchType": "EXACT",
     "alias": null,
-    "count": 31522,
-    "weight": 4
+    "count": 316546,
+    "weight": 2
   },
   {
     "sci": "curruca conspicillata",
@@ -1841,8 +1841,8 @@
     "key": 9868071,
     "matchType": "EXACT",
     "alias": null,
-    "count": 2183,
-    "weight": 6
+    "count": 7322,
+    "weight": 5
   },
   {
     "sci": "curruca crassirostris",
@@ -1859,8 +1859,8 @@
     "key": 11034996,
     "matchType": "EXACT",
     "alias": null,
-    "count": 4788,
-    "weight": 6
+    "count": 50093,
+    "weight": 3
   },
   {
     "sci": "curruca deserti",
@@ -1877,7 +1877,7 @@
     "key": 11091935,
     "matchType": "EXACT",
     "alias": null,
-    "count": 2,
+    "count": 7,
     "weight": 9
   },
   {
@@ -1886,8 +1886,8 @@
     "key": 10630343,
     "matchType": "EXACT",
     "alias": null,
-    "count": 1770,
-    "weight": 6
+    "count": 17819,
+    "weight": 4
   },
   {
     "sci": "curruca iberiae",
@@ -1904,8 +1904,8 @@
     "key": 9990095,
     "matchType": "EXACT",
     "alias": null,
-    "count": 44242,
-    "weight": 4
+    "count": 222713,
+    "weight": 2
   },
   {
     "sci": "curruca nana",
@@ -1913,7 +1913,7 @@
     "key": 9039514,
     "matchType": "EXACT",
     "alias": null,
-    "count": 8,
+    "count": 17,
     "weight": 9
   },
   {
@@ -1922,8 +1922,8 @@
     "key": 10983621,
     "matchType": "EXACT",
     "alias": null,
-    "count": 127,
-    "weight": 8
+    "count": 651,
+    "weight": 7
   },
   {
     "sci": "curruca ruppeli",
@@ -1931,8 +1931,8 @@
     "key": 10449569,
     "matchType": "EXACT",
     "alias": null,
-    "count": 37,
-    "weight": 9
+    "count": 406,
+    "weight": 8
   },
   {
     "sci": "curruca sarda",
@@ -1940,8 +1940,8 @@
     "key": 10233847,
     "matchType": "EXACT",
     "alias": null,
-    "count": 1359,
-    "weight": 7
+    "count": 3922,
+    "weight": 6
   },
   {
     "sci": "curruca subalpina",
@@ -1949,7 +1949,7 @@
     "key": 9478399,
     "matchType": "EXACT",
     "alias": null,
-    "count": 1660,
+    "count": 2421,
     "weight": 6
   },
   {
@@ -1958,8 +1958,8 @@
     "key": 10355796,
     "matchType": "EXACT",
     "alias": null,
-    "count": 6898,
-    "weight": 5
+    "count": 66361,
+    "weight": 3
   },
   {
     "sci": "cursorius cursor",

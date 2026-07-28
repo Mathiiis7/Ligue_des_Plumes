@@ -115,7 +115,22 @@ async function gbifCount(sci) {
     const occ = await fetchJSON('https://api.gbif.org/v1/occurrence/search?country=FR&limit=0&taxonKey=' + key);
     count = occ.count || 0;
   }
-  const rec = { key, matchType: match.matchType || 'NONE', rank, reliable, alias: GBIF_ALIAS[sci] || null, count };
+  // Genre récemment scindé Sylvia -> Curruca (Fauvettes) : GBIF garde l'ancien nom
+  // "Sylvia <epithete>" comme taxon DISTINCT, où sont la plupart des obs historiques.
+  // On somme les deux pour ne pas sous-estimer ces oiseaux communs.
+  let mergedFrom = null;
+  if (sci.split(' ')[0] === 'curruca') {
+    const oldName = 'sylvia ' + sci.split(' ').slice(1).join(' ');
+    try {
+      const m2 = await fetchJSON('https://api.gbif.org/v1/species/match?class=Aves&kingdom=Animalia&name=' + encodeURIComponent(oldName));
+      const k2 = m2.usageKey || m2.acceptedUsageKey || null;
+      if (k2 && k2 !== key && (m2.matchType === 'EXACT' || m2.matchType === 'FUZZY') && (m2.rank === 'SPECIES' || m2.rank === 'SUBSPECIES')) {
+        const occ2 = await fetchJSON('https://api.gbif.org/v1/occurrence/search?country=FR&limit=0&taxonKey=' + k2);
+        count += occ2.count || 0; mergedFrom = oldName;
+      }
+    } catch (_) {}
+  }
+  const rec = { key, matchType: match.matchType || 'NONE', rank, reliable, alias: GBIF_ALIAS[sci] || null, mergedFrom, count };
   cache[sci] = rec;
   return rec;
 }
