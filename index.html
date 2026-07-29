@@ -1886,13 +1886,13 @@ function _mapMarker(pt, groupSize){
   const cc = pt.cc ? ` · ${esc(countryLabel(pt.cc))}` : '';
   const loc = pt.loc ? esc(pt.loc) : '';
   const groupNote = groupSize>1 ? `<br><span class="p-meta">Vu ici avec ${groupSize-1} autre${groupSize-1>1?'s':''} espèce${groupSize-1>1?'s':''}</span>` : '';
-  // Lien vers eBird (hotspot public si l'ID en est un ; sinon page login pour lieu perso — inévitable).
-  const ebLink = pt.locId ? `<br><a href="https://ebird.org/hotspot/${esc(pt.locId)}" target="_blank" rel="noopener" class="p-link">🔗 Voir sur eBird</a>` : '';
+  // Lien Google Maps : toujours fiable (basé sur lat/lon) — remplace le lien eBird qui échoue pour les lieux perso.
+  const gmLink = `<br><a href="https://www.google.com/maps?q=${pt.lat},${pt.lon}" target="_blank" rel="noopener" class="p-link">🗺️ Voir sur Google Maps</a>`;
   m.bindPopup(
     `<b>${esc(pt.common)}</b> <span class="p-sci">${esc(pt.sci)}</span><br>`+
     `<span class="p-meta">Vu par <b>${esc(pt.who)}</b>${loc?' à '+loc:''}${cc}${date}</span><br>`+
     `<span class="p-meta">Rareté : <b>${pt.w}</b> · ${REAL_LABELS[pt.w]||'niveau '+pt.w}</span>`+
-    groupNote + ebLink
+    groupNote + gmLink
   );
   return m;
 }
