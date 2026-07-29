@@ -814,6 +814,16 @@ function ingest(filename, text){
   const idx = name => header.indexOf(name);
   let cCommon=idx('common name'), cSci=idx('scientific name'),
       cDate=idx('date'), cLoc=idx('location'), cCount=idx('count');
+  // Colonne pays : présente dans l'export complet (MyEBirdData) et souvent la life list.
+  // State/Province = codes ISO type "FR-69", "US-NY", "ES-CT" ; sinon colonne Country.
+  let cState=idx('state/province'); if(cState<0)cState=idx('state'); if(cState<0)cState=idx('s/p');
+  let cCountry=idx('country'); if(cCountry<0)cCountry=idx('country/region'); if(cCountry<0)cCountry=idx('country code');
+  const hasGeo = cState>=0 || cCountry>=0;   // sait-on situer les obs ?
+  const isFR = row => {
+    const st=(cState>=0?(row[cState]||''):'').trim();
+    const co=(cCountry>=0?(row[cCountry]||''):'').trim();
+    return /^FR(-|$)/i.test(st) || /^(FR|France)$/i.test(co);
+  };
   if(cCommon<0 && cSci<0) return null; // not an eBird file
   const species = new Map();
   for(let r=1; r<rows.length; r++){
@@ -824,12 +834,15 @@ function ingest(filename, text){
     const key = (sci||common).toLowerCase();
     const date = cDate>=0 ? (row[cDate]||'').trim() : '';
     const loc = cLoc>=0 ? (row[cLoc]||'').trim() : '';
+    const inFR = hasGeo && isFR(row);
     const existing = species.get(key);
     if(existing){
       existing.obs++;
+      if(inFR) existing.fr = true;                 // au moins une obs en France
       if(date && (!existing.date || date<existing.date)){ existing.date=date; existing.loc=loc; }
     } else {
       species.set(key, { common:common||sci, sci, date, loc, obs:1,
+        fr: hasGeo ? inFR : undefined,             // undefined = pays inconnu (pas de colonne)
         nonSpecies:isNonSpecies(common,sci) });
     }
   }
@@ -874,12 +887,18 @@ function realColor(w){
   const hue=Math.round((130 - p*140 + 360) % 360);
   return `hsl(${hue} 60% 47%)`;
 }
-function realTier(sci){
+function realTier(sci, abroad){
   if(isExotic(sci)) return { id:'exo', ord:0, label:'Exotique', color:'#7e8a99' };
   const key=(sci||'').trim().toLowerCase();
-  // Espèce hors référence France (probablement observée à l'étranger par un ami,
-  // ou échappée/exotique rare) : ne pas prétendre "Très commun", classe "Étranger".
-  if(!(key in REAL_RARITY) && !(key in FR_NAMES)) return { id:'etr', ord:0, label:'Étranger', color:'#8a7fb3' };
+  // Espèce hors des 648 de référence France : ne pas prétendre "Très commun".
+  // Si les données eBird (colonne State/Province) confirment qu'elle n'a été vue
+  // qu'à l'étranger -> "Étranger" ; sinon (pas d'info pays, ou vue en France :
+  // échappée/rareté) -> "Hors référence".
+  if(!(key in REAL_RARITY) && !(key in FR_NAMES)){
+    return abroad
+      ? { id:'etr', ord:0, label:'Étranger', color:'#8a7fb3' }
+      : { id:'hr', ord:0, label:'Hors référence', color:'#9aa5b1' };
+  }
   const w=rarityReal(sci); return { id:'r'+w, ord:w, label:REAL_LABELS[w]||('niveau '+w), color:realColor(w) };
 }
 
@@ -890,8 +909,9 @@ function build(){
     p._active = activeSpecies(p);
     for(const [k,v] of p._active){
       let u=universe.get(k);
-      if(!u){ u={ key:k, common:frName(v.sci, v.common), sci:v.sci, seenBy:new Map() }; universe.set(k,u); }
+      if(!u){ u={ key:k, common:frName(v.sci, v.common), sci:v.sci, seenBy:new Map(), anyFR:false, anyAbroad:false }; universe.set(k,u); }
       u.seenBy.set(p.id, v);
+      if(v.fr===true) u.anyFR=true; else if(v.fr===false) u.anyAbroad=true;
     }
   });
   state.people.forEach(p=>{ p.score=0; p.unique=0; p.total = p._active.size; });
@@ -1026,7 +1046,7 @@ function renderMatrix({universe,N}){
   const rMode = state.boardMode==='real' ? 'real' : 'league';
   const NONE_TIER={ id:'none', ord:-1, label:'Non observé', color:'#9aa5b1' };
   // Non observés : en rareté réelle -> on montre leur vraie rareté ; en rareté ligue -> "Non observé"
-  const rarOf = u => (u.missing && rMode!=='real') ? NONE_TIER : (rMode==='real' ? realTier(u.sci) : u.tier);
+  const rarOf = u => (u.missing && rMode!=='real') ? NONE_TIER : (rMode==='real' ? realTier(u.sci, u.anyAbroad && !u.anyFR) : u.tier);
   const rarHead = rMode==='real' ? 'Rareté réelle' : 'Rareté';
 
   // option : ajouter tous les oiseaux de France non encore observés par le groupe
@@ -1278,6 +1298,7 @@ function renderTrophies(data){
 function memberToPerson(id, data, si){
   const species = new Map((data.species||[]).map(e=>[e.k, {
     common:e.c||e.k, sci:e.s||'', date:e.d||'', loc:e.l||'', obs:e.o||1,
+    fr: e.f===undefined ? undefined : !!e.f,   // pays : true/false, ou undefined si inconnu
     // recalculé à la lecture (pas figé au moment de l'upload) : ainsi toute
     // amélioration du filtre s'applique aux listes déjà enregistrées.
     nonSpecies: isNonSpecies(e.c||'', e.s||'')
@@ -1490,13 +1511,13 @@ function renderFeed(){
     const active=p._active||p.species; if(!active) continue;
     for(const v of active.values()){
       const pd=parseDate(v.date);
-      if(pd) items.push({ name:p.name, uid:p.id, bird:frName(v.sci,v.common), sci:(v.sci||''), ord:pd.ord, disp:pd.disp });
+      if(pd) items.push({ name:p.name, uid:p.id, bird:frName(v.sci,v.common), sci:(v.sci||''), abroad:v.fr===false, ord:pd.ord, disp:pd.disp });
     }
   }
   items.sort((a,b)=>b.ord-a.ord);
   const top=items.slice(0,60);
   if(!top.length){ el.innerHTML='<p class="help" style="margin:0;">Aucune observation datée pour le moment. Chargez vos listes ! 🐦</p>'; return; }
-  el.innerHTML=top.map(it=>{ const tt=realTier(it.sci); const target='obs:'+it.uid+':'+it.sci.toLowerCase();
+  el.innerHTML=top.map(it=>{ const tt=realTier(it.sci, it.abroad); const target='obs:'+it.uid+':'+it.sci.toLowerCase();
     return `<div class="feed-item"><span class="feed-dot" style="background:${tt.color}"></span>
       <div class="feed-body"><div><b>${esc(it.name)}</b> a observé <b>${esc(it.bird)}</b></div>
       <div class="feed-date">${esc(it.disp)} · <span class="feed-rar" style="color:${tt.color}">${esc(tt.label)}</span></div>
@@ -1511,7 +1532,7 @@ function renderStats(me){
   const active=me._active; const total=active.size;
   let rareName='—', rareTier=null, maxW=0; const famCount={};
   for(const v of active.values()){
-    const w=rarityReal(v.sci); if(w>maxW){ maxW=w; rareName=frName(v.sci,v.common); rareTier=realTier(v.sci); }
+    const w=rarityReal(v.sci); if(w>maxW){ maxW=w; rareName=frName(v.sci,v.common); rareTier=realTier(v.sci, v.fr===false); }
     const f=familyOf(v.sci); famCount[f]=(famCount[f]||0)+1;
   }
   const fams=Object.entries(famCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
@@ -1573,8 +1594,10 @@ function fillProfile(me){
 }
 
 async function saveMyList(name, speciesMap){
-  const arr=[...speciesMap.entries()].map(([k,v])=>({
-    k, c:v.common, s:v.sci, d:v.date, l:v.loc, o:v.obs, n:!!v.nonSpecies }));
+  const arr=[...speciesMap.entries()].map(([k,v])=>{
+    const e={ k, c:v.common, s:v.sci, d:v.date, l:v.loc, o:v.obs, n:!!v.nonSpecies };
+    if(v.fr!==undefined) e.f = v.fr?1:0;   // 1=vu en France, 0=uniquement étranger, absent=inconnu
+    return e; });
   const ref=doc(db,'leagues',leagueId,'members',myUid);
   const payload={ name, species:arr, updatedAt: serverTimestamp() };
   if(!iAmInLeague) payload.joinedAt = serverTimestamp();
