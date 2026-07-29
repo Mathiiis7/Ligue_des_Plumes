@@ -8,6 +8,9 @@
 <link rel="apple-touch-icon" href="logo.png">
 <link rel="icon" href="logo.png">
 <title>Ligue Merlin Bird</title>
+<!-- Leaflet (carte OpenStreetMap) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <style>
   :root {
     --bg: #eef2f1;
@@ -411,6 +414,15 @@
   .req-status.select:hover { border-color:currentColor; }
   .req-del { background:none; border:none; color:var(--ink-3); cursor:pointer; font-size:11.5px; padding:0; }
   .req-del:hover { color:#c33; text-decoration:underline; }
+  .map-controls { display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 10px; align-items:center; }
+  .map-count { margin-left:auto; font-size:12.5px; color:var(--ink-3); font-weight:600; }
+  .map-el { height:520px; width:100%; border-radius:12px; overflow:hidden; border:1px solid var(--line); background:var(--surface-2); }
+  .map-el .leaflet-popup-content { font:inherit; font-size:13px; line-height:1.45; color:var(--ink); margin:8px 12px; }
+  .map-el .leaflet-popup-content b { color:var(--ink); }
+  .map-el .leaflet-popup-content .p-sci { font-style:italic; color:var(--ink-3); font-size:11.5px; }
+  .map-el .leaflet-popup-content .p-meta { font-size:11.5px; color:var(--ink-3); margin-top:3px; }
+  .map-el .leaflet-container { font:inherit; }
+  @media (max-width: 700px){ .map-el { height:420px; } }
   .react-bar { display:flex; gap:5px; flex-wrap:wrap; margin:3px 10px 0; align-items:center; }
   .msg.mine .react-bar { justify-content:flex-end; }
   .react-chip { font:inherit; font-size:12px; padding:1px 7px; border-radius:11px; border:1px solid var(--line);
@@ -538,6 +550,7 @@
     <button class="tab on" data-view="load">Ma liste</button>
     <button class="tab" data-view="profil">👤 Profil</button>
     <button class="tab" data-view="ranking">Classement</button>
+    <button class="tab" data-view="map">📍 Carte</button>
     <button class="tab" data-view="trophies">🏆 Trophées</button>
     <button class="tab" data-view="chat">💬 Tchat</button>
     <button class="tab" data-view="photos">📸 Photos</button>
@@ -592,7 +605,7 @@
         <li>Déposez ce fichier ci-dessous. 🎉</li>
       </ol>
       <p style="margin:8px 0 0; color:var(--ink-3); font-size:12px;">Ce fichier contient le <b>lieu de chaque espèce</b> (colonne <code>S/P</code>), donc la ligue reconnaît vos oiseaux <b>vus en France</b> et met à part ceux vus <b>à l'étranger</b> — le tout sans email.</p>
-      <p style="margin:6px 0 0; color:var(--ink-3); font-size:12px;">Variante la plus complète (par email) : <a href="https://ebird.org/downloadMyData" target="_blank" rel="noopener">ebird.org/downloadMyData</a> → « Submit » → <code>MyEBirdData.csv</code>. Utile seulement si vous avez vu une espèce à l'étranger <i>avant</i> de la voir en France.</p>
+      <p style="margin:6px 0 0; color:var(--ink-3); font-size:12px;"><b>Pour avoir vos observations sur la carte 📍</b> (position exacte de chaque oiseau vu) : téléchargez <a href="https://ebird.org/downloadMyData" target="_blank" rel="noopener">ebird.org/downloadMyData</a> → « Submit » (fichier <code>MyEBirdData.csv</code> reçu par email en quelques minutes). Ce fichier contient les coordonnées GPS de chaque obs — la life list simple ne les a pas.</p>
     </details>
 
     <div class="me-panel">
@@ -726,6 +739,30 @@
     </div>
   </section>
   </div><!-- /viewRanking -->
+
+  <div id="viewMap" style="display:none;">
+    <section class="panel" style="padding:20px; margin-top:22px;">
+      <div class="section-head">
+        <div><div class="eyebrow">Où on birde</div><h2>📍 Carte des observations</h2>
+          <p class="help" style="margin-top:2px;">Une punaise par oiseau vu (position exacte selon eBird). Utilisez les filtres pour explorer.</p></div>
+      </div>
+      <div class="map-controls">
+        <select class="filt-sel" id="mapPlayerSel" aria-label="Filtrer par personne">
+          <option value="all">Toutes les personnes</option>
+        </select>
+        <select class="filt-sel" id="mapTierSel" aria-label="Filtrer par rareté réelle">
+          <option value="any">Toutes les raretés</option>
+        </select>
+        <select class="filt-sel" id="mapCountrySel" aria-label="Filtrer par pays">
+          <option value="any">Tous les pays</option>
+        </select>
+        <span class="map-count" id="mapCount"></span>
+      </div>
+      <div id="mapNote" class="help" style="margin:6px 0 8px; display:none;"></div>
+      <div id="mapEl" class="map-el"></div>
+      <p class="help" style="margin-top:10px; font-size:11px;">Fond de carte : © OpenStreetMap · positions : votre export MyEBirdData eBird.</p>
+    </section>
+  </div>
 
   <div id="viewTrophies" style="display:none;">
     <section class="panel" style="padding:20px; margin-top:22px;">
@@ -936,6 +973,8 @@ function ingest(filename, text){
   // State/Province = codes ISO type "FR-69", "US-NY", "ES-CT" ; sinon colonne Country.
   let cState=idx('state/province'); if(cState<0)cState=idx('state'); if(cState<0)cState=idx('s/p');
   let cCountry=idx('country'); if(cCountry<0)cCountry=idx('country/region'); if(cCountry<0)cCountry=idx('country code');
+  // Colonnes lat/lon : présentes UNIQUEMENT dans MyEBirdData (Download My Data). Absentes de la life list.
+  const cLat = idx('latitude'), cLon = idx('longitude');
   const hasGeo = cState>=0 || cCountry>=0;   // sait-on situer les obs ?
   const countryOf = row => {                 // code pays ISO 2 lettres (FR, ES, US...)
     const st=(cState>=0?(row[cState]||''):'').trim();
@@ -958,15 +997,23 @@ function ingest(filename, text){
     const loc = cLoc>=0 ? (row[cLoc]||'').trim() : '';
     const cc = hasGeo ? countryOf(row) : null;
     const inFR = cc==='FR';
+    // Lat/lon (MyEBirdData) : parseFloat tolère "-.434299" (négatif sans zéro) et vide.
+    const lat = cLat>=0 ? parseFloat((row[cLat]||'').trim()) : NaN;
+    const lon = cLon>=0 ? parseFloat((row[cLon]||'').trim()) : NaN;
+    const hasCoords = !isNaN(lat) && !isNaN(lon);
     const existing = species.get(key);
     if(existing){
       existing.obs++;
       if(inFR) existing.fr = true;                 // au moins une obs en France
-      if(date && (!existing.date || date<existing.date)){ existing.date=date; existing.loc=loc; existing.country=cc; }
+      if(date && (!existing.date || date<existing.date)){
+        existing.date=date; existing.loc=loc; existing.country=cc;
+        if(hasCoords){ existing.lat=lat; existing.lon=lon; }
+      }
     } else {
       species.set(key, { common:common||sci, sci, date, loc, obs:1,
         fr: hasGeo ? inFR : undefined,             // undefined = pays inconnu (pas de colonne)
         country: cc,                               // pays de la 1re obs (code ISO) — pour le filtre
+        lat: hasCoords?lat:null, lon: hasCoords?lon:null,  // coords de la 1re obs (pour la carte)
         nonSpecies:isNonSpecies(common,sci) });
     }
   }
@@ -1501,6 +1548,8 @@ function memberToPerson(id, data, si){
     common:e.c||e.k, sci:e.s||'', date:e.d||'', loc:e.l||'', obs:e.o||1,
     fr: e.f===undefined ? undefined : !!e.f,   // vu en France ? true/false, ou undefined si inconnu
     country: e.co||null,                       // code pays de la 1re obs (pour le filtre)
+    lat: (typeof e.la==='number')?e.la:null,   // coords éventuelles (MyEBirdData)
+    lon: (typeof e.lo==='number')?e.lo:null,
     // recalculé à la lecture (pas figé au moment de l'upload) : ainsi toute
     // amélioration du filtre s'applique aux listes déjà enregistrées.
     nonSpecies: isNonSpecies(e.c||'', e.s||'')
@@ -1745,6 +1794,104 @@ function renderRequests(){
     </div>`;
   }).join('');
 }
+// ---- Carte des observations ----
+let _map=null, _mapLayer=null;
+let mapFilter = { player:'all', tier:'any', country:'any' };
+function _fillMapSelects(pts){
+  const pl=$('#mapPlayerSel'); if(pl){
+    const cur=pl.value||'all';
+    const names=[...new Map(pts.map(p=>[p.uid, p.who])).entries()].sort((a,b)=>a[1].localeCompare(b[1],'fr'));
+    pl.innerHTML='<option value="all">Toutes les personnes</option>'+names.map(([uid,nm])=>`<option value="${esc(uid)}">${esc(nm)}</option>`).join('');
+    if([...pl.options].some(o=>o.value===cur)) pl.value=cur;
+  }
+  const ti=$('#mapTierSel'); if(ti){
+    const cur=ti.value||'any';
+    const tiers=[...new Set(pts.map(p=>p.w))].sort((a,b)=>b-a);
+    ti.innerHTML='<option value="any">Toutes les raretés</option>'+tiers.map(w=>`<option value="${w}">${w} · ${REAL_LABELS[w]||('niveau '+w)}</option>`).join('');
+    if([...ti.options].some(o=>o.value===cur)) ti.value=cur;
+  }
+  const co=$('#mapCountrySel'); if(co){
+    const cur=co.value||'any';
+    const codes=[...new Set(pts.map(p=>p.cc).filter(Boolean))].sort((a,b)=>a==='FR'?-1:b==='FR'?1:countryLabel(a).localeCompare(countryLabel(b),'fr'));
+    co.innerHTML='<option value="any">Tous les pays</option>'+codes.map(c=>`<option value="${esc(c)}">${esc(countryLabel(c))}</option>`).join('');
+    if([...co.options].some(o=>o.value===cur)) co.value=cur;
+  }
+}
+function _mapCollectPoints(){
+  const pts=[];
+  for(const p of state.people){
+    const active = p._active || p.species; if(!active) continue;
+    for(const v of active.values()){
+      if(typeof v.lat!=='number' || typeof v.lon!=='number') continue;
+      if(v.lat<-90||v.lat>90||v.lon<-180||v.lon>180) continue;
+      pts.push({ uid:p.id, who:p.name, si:p.si, sci:v.sci, common:frName(v.sci,v.common),
+        lat:v.lat, lon:v.lon, loc:v.loc||'', date:v.date||'', cc:v.country||null,
+        w:rarityReal(v.sci) });
+    }
+  }
+  return pts;
+}
+function _mapMarker(pt){
+  const color = realColor(pt.w);
+  const m = L.circleMarker([pt.lat, pt.lon], { radius:6, weight:1.5, color:'#fff', fillColor:color, fillOpacity:.85, opacity:1 });
+  const date = pt.date ? ` <span class="p-meta">· ${esc(pt.date)}</span>` : '';
+  const cc = pt.cc ? ` · ${esc(countryLabel(pt.cc))}` : '';
+  const loc = pt.loc ? esc(pt.loc) : '';
+  m.bindPopup(
+    `<b>${esc(pt.common)}</b> <span class="p-sci">${esc(pt.sci)}</span><br>`+
+    `<span class="p-meta">Vu par <b>${esc(pt.who)}</b>${loc?' à '+loc:''}${cc}${date}</span><br>`+
+    `<span class="p-meta">Rareté : <b>${pt.w}</b> · ${REAL_LABELS[pt.w]||'niveau '+pt.w}</span>`
+  );
+  return m;
+}
+function renderMap(){
+  const el = document.getElementById('mapEl'); if(!el || !window.L) return;
+  const note = $('#mapNote');
+  const allPts = _mapCollectPoints();
+  _fillMapSelects(allPts);
+  const withoutCoords = state.people.reduce((n,p)=>{
+    const a=p._active||p.species; if(!a) return n;
+    let c=0; for(const v of a.values()) if(typeof v.lat!=='number') c++;
+    return n+c;
+  },0);
+  if(withoutCoords>0){ note.style.display=''; note.innerHTML=`💡 ${withoutCoords} observation${withoutCoords>1?'s':''} sans coordonnées (import ancien ou life list simple). <b>Réimportez via <a href="https://ebird.org/downloadMyData" target="_blank" rel="noopener">Download My Data</a></b> pour les afficher.`; }
+  else note.style.display='none';
+  // init leaflet (une seule fois)
+  if(!_map){
+    _map = L.map(el, { zoomControl:true, minZoom:2, worldCopyJump:true }).setView([46.6, 2.5], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:'© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom:19
+    }).addTo(_map);
+  }
+  if(_mapLayer){ _mapLayer.remove(); _mapLayer=null; }
+  // filtre
+  const f = mapFilter;
+  const pts = allPts.filter(p=>{
+    if(f.player!=='all' && p.uid!==f.player) return false;
+    if(f.tier!=='any' && String(p.w)!==f.tier) return false;
+    if(f.country!=='any' && p.cc!==f.country) return false;
+    return true;
+  });
+  const layer = L.layerGroup(pts.map(_mapMarker));
+  layer.addTo(_map);
+  _mapLayer = layer;
+  const cnt = $('#mapCount'); if(cnt) cnt.textContent = `${pts.length} obs affichée${pts.length>1?'s':''}`;
+  // fit bounds si des points
+  if(pts.length){
+    const b = L.latLngBounds(pts.map(p=>[p.lat,p.lon]));
+    // ne pas trop dézoomer sur un seul point : fit avec padding
+    _map.fitBounds(b, { padding:[30,30], maxZoom:14 });
+  }
+  // le map peut mal se dimensionner s'il est instancié caché : rafraîchir la taille
+  setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
+}
+document.addEventListener('change', e=>{
+  if(e.target.id==='mapPlayerSel'){ mapFilter.player=e.target.value; renderMap(); }
+  else if(e.target.id==='mapTierSel'){ mapFilter.tier=e.target.value; renderMap(); }
+  else if(e.target.id==='mapCountrySel'){ mapFilter.country=e.target.value; renderMap(); }
+});
+
 function renderStats(me){
   const box=$('#statsBox'); if(!box) return;
   if(!me || !me._active){ box.style.display='none'; box.innerHTML=''; return; }
@@ -1820,6 +1967,7 @@ async function saveMyList(name, speciesMap){
     const e={ k, c:v.common, s:v.sci, d:v.date, l:v.loc, o:v.obs, n:!!v.nonSpecies };
     if(v.fr!==undefined) e.f = v.fr?1:0;   // 1=vu en France, 0=uniquement étranger, absent=inconnu
     if(v.country) e.co = v.country;        // code pays de la 1re obs (FR, ES, US...)
+    if(v.lat!=null && v.lon!=null){ e.la = v.lat; e.lo = v.lon; }   // coords pour la carte (MyEBirdData)
     return e; });
   const ref=doc(db,'leagues',leagueId,'members',myUid);
   const payload={ name, species:arr, updatedAt: serverTimestamp() };
@@ -1878,6 +2026,20 @@ async function handleFiles(fileList){
   if(!parsed){ $('#myStatus').textContent='Fichier non reconnu (est-ce bien un export eBird ?)'; return; }
   const name = ($('#myName').value.trim()) || cleanName(parsed.defaultName, state.people.length+1);
   $('#myName').value = name;
+  // Préserver les coords GPS déjà connues : si l'espèce était déjà là avec lat/lon
+  // et que le nouveau CSV ne fournit pas de coords (ex. life list simple),
+  // on garde les anciennes. La liste des espèces reste dictée par le CSV.
+  const prev = realPeople.find(p=>p.id===myUid)?.species;
+  if(prev){
+    let kept=0;
+    for(const [k,v] of parsed.species){
+      if((v.lat==null||v.lon==null) && prev.has(k)){
+        const old=prev.get(k);
+        if(typeof old.lat==='number' && typeof old.lon==='number'){ v.lat=old.lat; v.lon=old.lon; kept++; }
+      }
+    }
+    if(kept) console.log('Ré-import : '+kept+' coords GPS préservées.');
+  }
   $('#myStatus').textContent = '… enregistrement';
   try{ await saveMyList(name, parsed.species); }
   catch(e){ showError(e); $('#myStatus').textContent=''; }
@@ -2010,7 +2172,7 @@ $('#manualAddBtn')?.addEventListener('click', async ()=>{
   btn.disabled=false;
 });
 
-const VIEWS = { load:'#viewLoad', profil:'#viewProfil', ranking:'#viewRanking', trophies:'#viewTrophies', chat:'#viewChat', photos:'#viewPhotos', feed:'#viewFeed', requests:'#viewRequests' };
+const VIEWS = { load:'#viewLoad', profil:'#viewProfil', ranking:'#viewRanking', map:'#viewMap', trophies:'#viewTrophies', chat:'#viewChat', photos:'#viewPhotos', feed:'#viewFeed', requests:'#viewRequests' };
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
   b.classList.add('on');
@@ -2026,6 +2188,7 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   if(b.dataset.view==='feed') renderFeed();
   if(b.dataset.view==='profil'){ const me=realPeople.find(p=>p.id===myUid); fillProfile(me); renderStats(me); }
   if(b.dataset.view==='requests') renderRequests();
+  if(b.dataset.view==='map') renderMap();
 }));
 let pendingImage = null;
 async function compressImage(file, maxDim=1000, maxLen=700000){
