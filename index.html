@@ -943,6 +943,7 @@ const inRef = sci => { const k=(sci||'').trim().toLowerCase(); return (k in REAL
 //  eBird ne garde que la 1re obs, donc son lieu n'est pas fiable pour l'exclure.)
 const foreignTick = v => v.fr===false && !inRef(v.sci);
 const countsFR = v => !foreignTick(v);           // compte sauf vrai cochage étranger
+const seenFR = v => !v.country || v.country==='FR';  // observé EN France (ou pays inconnu) — pour Mike Horn
 const holdersFR = u => u.counts!=null ? u.counts : [...u.seenBy.values()].filter(countsFR).length;
 // Pays (code ISO 2 lettres)
 // Drapeau emoji : marche sur mobile mais s'affiche « US »/« FR » sur Windows desktop.
@@ -1004,12 +1005,12 @@ function build(){
   // d'oiseaux il a à ce niveau. Départage final : plus d'oiseaux au top, puis score réel.
   state.people.forEach(p=>{
     let w=0, f=Infinity, name='';
-    for(const [key,v] of p._active){ if(!countsFR(v)) continue;
+    for(const [key,v] of p._active){ if(!countsFR(v) || !seenFR(v)) continue;   // Mike Horn = rareté vue EN France
       const rw=rarityReal(v.sci), rf=realFreq(v.sci);
       if(rw>w || (rw===w && rf<f)){ w=rw; f=rf; name=frName(v.sci,v.common); }
       else if(rw===w && rf===f){ const nm=frName(v.sci,v.common); if(nm.localeCompare(name,'fr')<0) name=nm; }
     }
-    let cnt=0; for(const [key,v] of p._active){ if(!countsFR(v)) continue; if(rarityReal(v.sci)===w && realFreq(v.sci)===f) cnt++; }
+    let cnt=0; for(const [key,v] of p._active){ if(!countsFR(v) || !seenFR(v)) continue; if(rarityReal(v.sci)===w && realFreq(v.sci)===f) cnt++; }
     p._mike={ w, f, name, cnt };
   });
   const cands=state.people.filter(p=>p._mike.w>1);
