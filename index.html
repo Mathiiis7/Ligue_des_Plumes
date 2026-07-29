@@ -1942,22 +1942,6 @@ function renderMap(){
       return div;
     };
     fitBtn.addTo(_map);
-    // Bouton "Ma position" (géolocalisation navigateur)
-    const posBtn = L.control({ position:'topleft' });
-    posBtn.onAdd = () => {
-      const div = L.DomUtil.create('div', 'leaflet-bar map-custom-btn');
-      div.innerHTML = '<a href="#" title="Ma position">📍</a>';
-      L.DomEvent.on(div, 'click', e=>{ L.DomEvent.stop(e);
-        if(!navigator.geolocation){ alert('Géolocalisation non disponible'); return; }
-        const a = div.querySelector('a'); const prev=a.textContent; a.textContent='⏳';
-        navigator.geolocation.getCurrentPosition(
-          pos=>{ _map.setView([pos.coords.latitude,pos.coords.longitude], 12); a.textContent=prev; },
-          err=>{ alert('Impossible de vous localiser : '+(err.message||err.code)); a.textContent=prev; },
-          { enableHighAccuracy:false, timeout:8000 });
-      });
-      return div;
-    };
-    posBtn.addTo(_map);
   }
   if(_mapLayer){ _mapLayer.remove(); _mapLayer=null; }
   // filtre
