@@ -226,7 +226,9 @@
   td.sp { font-weight:600; }
   td.sp .sci { display:block; font-family:var(--serif); font-style:italic; font-weight:400;
     color:var(--ink-3); font-size:12px; }
-  td.pcol { text-align:center; padding:0; }
+  td.pcol { text-align:center; padding:0; position:relative; }
+  .abroad-mark { position:absolute; bottom:0; right:1px; font-size:8px; line-height:1; opacity:.7; pointer-events:none; }
+  .abroad-mark-inline { font-size:9px; margin-left:3px; opacity:.7; }
   td.pcol.is-seen { background:color-mix(in srgb,var(--accent) 18%,var(--surface)) !important;
     color:var(--accent-ink); font-weight:700; }
   td.pcol.is-foreign { background:color-mix(in srgb,#8a7fb3 16%,var(--surface)) !important; }
@@ -1193,9 +1195,9 @@ function renderMatrix({universe,N}){
     const k=holdersFR(u), t=rarOf(u);
     const cells = state.people.map(p=>{
       const v=u.seenBy.get(p.id); if(!v) return '<td class="pcol"></td>';
-      const foreign=foreignTick(v); const cc=v.country;
-      const ttl = (cc&&cc!=='FR') ? `Vu en ${countryLabel(cc)}${foreign?' — hors compétition':''}` : (foreign?"Vu à l'étranger — hors compétition":'');
-      return `<td class="pcol is-seen${foreign?' is-foreign':''}"${ttl?` title="${esc(ttl)}"`:''}><i class="chk">✓</i></td>`;
+      const foreign=foreignTick(v); const cc=v.country; const abroad=cc&&cc!=='FR';
+      const ttl = abroad ? `Vu en ${countryLabel(cc)}${foreign?' — hors compétition':''}` : (foreign?"Vu à l'étranger — hors compétition":'');
+      return `<td class="pcol is-seen${foreign?' is-foreign':''}"${ttl?` title="${esc(ttl)}"`:''}><i class="chk">✓</i>${abroad?'<span class="abroad-mark">🌍</span>':''}</td>`;
     }).join('');
     return `<tr class="${u.missing?'missing':''}">
       <td class="sp">${esc(u.common)}${u.sci?`<span class="sci">${esc(u.sci)}</span>`:''}</td>
@@ -1207,9 +1209,9 @@ function renderMatrix({universe,N}){
   cards.innerHTML = list.map(u=>{
     const k=holdersFR(u), t=rarOf(u);
     const seers = state.people.filter(p=>u.seenBy.has(p.id))
-      .map(p=>{ const v=u.seenBy.get(p.id); const foreign=foreignTick(v); const cc=v.country;
-        const ttl = (cc&&cc!=='FR')?`Vu en ${countryLabel(cc)}${foreign?' — hors compétition':''}`:'';
-        return `<span class="mc-person${foreign?' is-foreign':''}" style="--series:var(--s${p.si})"${ttl?` title="${esc(ttl)}"`:''}><span class="dot"></span>${esc(p.name)}</span>`; }).join('');
+      .map(p=>{ const v=u.seenBy.get(p.id); const foreign=foreignTick(v); const cc=v.country; const abroad=cc&&cc!=='FR';
+        const ttl = abroad?`Vu en ${countryLabel(cc)}${foreign?' — hors compétition':''}`:'';
+        return `<span class="mc-person${foreign?' is-foreign':''}" style="--series:var(--s${p.si})"${ttl?` title="${esc(ttl)}"`:''}><span class="dot"></span>${esc(p.name)}${abroad?'<span class="abroad-mark-inline">🌍</span>':''}</span>`; }).join('');
     return `<div class="mcard ${u.missing?'missing':''}" style="border-left-color:${t.color}">
       <div class="mc-head">
         <div class="mc-sp">${esc(u.common)}${u.sci?`<span class="mc-sci">${esc(u.sci)}</span>`:''}</div>
