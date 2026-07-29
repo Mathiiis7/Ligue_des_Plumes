@@ -334,6 +334,7 @@
   .msg-bubble { padding:8px 12px; border-radius:14px; background:var(--surface); border:1px solid var(--line);
     color:var(--ink); font-size:14px; line-height:1.4; word-wrap:break-word; white-space:pre-wrap; }
   .msg.mine .msg-bubble { background:color-mix(in srgb,var(--accent) 16%,var(--surface)); border-color:color-mix(in srgb,var(--accent) 30%,var(--line)); }
+  .msg-bubble.emoji-only, .msg.mine .msg-bubble.emoji-only { background:transparent; border:none; padding:0 4px; font-size:40px; line-height:1.1; }
   .msg-time { font-size:10px; color:var(--ink-3); margin:2px 10px 0; }
   .mention { color:var(--accent-ink); font-weight:600; }
   .mention.self { background:color-mix(in srgb, #ffd54f 55%, transparent); padding:0 3px; border-radius:4px; }
@@ -1749,10 +1750,11 @@ function renderChat(msgs){
     const time = t ? t.toLocaleString('fr-FR',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'}) : '…';
     const safeImg = (typeof m.image==='string' && /^data:image\//.test(m.image)) ? m.image.replace(/"/g,'%22') : '';
     const imgHtml = safeImg ? `<img class="msg-img" src="${safeImg}" alt="image partagée">` : '';
+    const emojiOnly = !safeImg && _isEmojiOnly(m.text);
     const txtHtml = m.text ? `<div>${_renderMentions(esc(m.text), byId)}</div>` : '';
     return `<div class="msg${mine?' mine':''}">
       <div class="msg-name">${esc(nm)}${guestTag}</div>
-      <div class="msg-bubble">${imgHtml}${txtHtml}</div>
+      <div class="msg-bubble${emojiOnly?' emoji-only':''}">${imgHtml}${txtHtml}</div>
       ${reactionBar('chat:'+m.id)}
       <div class="msg-time">${esc(time)}${mine?` · <button class="msg-del" data-id="${esc(m.id)}">supprimer</button>`:''}</div>
     </div>`;
@@ -1760,6 +1762,15 @@ function renderChat(msgs){
   if(nearBottom) box.scrollTop = box.scrollHeight;
 }
 function myMemberName(){ const me=realPeople.find(p=>p.id===myUid); return me ? me.name : ''; }
+// Un message est "emoji seul" si, hors espaces, il ne contient QUE des emojis (pictographes + modifiers + ZWJ + variation selectors).
+function _isEmojiOnly(t){
+  if(!t) return false;
+  const noSpace = t.replace(/\s+/g,''); if(!noSpace) return false;
+  try{
+    const leftover = noSpace.replace(/[\p{Extended_Pictographic}\p{Emoji_Modifier}\p{Regional_Indicator}‍️]/gu,'');
+    return leftover.length===0;
+  } catch(_){ return false; }
+}
 // Détecte les @Nom (prénom ou nom complet, insensible à la casse et aux accents)
 // et les met en gras. Marque .self quand c'est l'utilisateur courant.
 function _renderMentions(escText, byId){
