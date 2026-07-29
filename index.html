@@ -460,6 +460,29 @@
   .map-timeline select { padding:5px 8px; font-size:12px; }
   #mapTlPlay { min-width:36px; font-size:12px; }
   #mapTlPlay.playing { background:var(--accent); color:#fff; }
+  .explorer-controls { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:6px 0 14px; }
+  .explorer-lbl { font-size:12px; font-weight:600; color:var(--ink-3); }
+  .ex-section { margin-top:20px; }
+  .ex-section h3 { font-size:15px; margin:0 0 2px; color:var(--ink); font-weight:700; }
+  .ex-list { display:flex; flex-direction:column; gap:8px; }
+  .ex-item { display:flex; gap:12px; padding:9px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface-2); align-items:center; }
+  .ex-item .ex-w { min-width:34px; height:34px; display:flex; align-items:center; justify-content:center; border-radius:50%; color:#fff; font-weight:800; font-size:13px; flex:none; box-shadow:inset 0 -1px 0 rgba(0,0,0,.1); }
+  .ex-item .ex-body { flex:1; min-width:0; }
+  .ex-item .ex-name { font-size:14px; color:var(--ink); font-weight:600; }
+  .ex-item .ex-name .sci { font-size:11.5px; color:var(--ink-3); font-style:italic; font-weight:400; margin-left:6px; }
+  .ex-item .ex-meta { font-size:11.5px; color:var(--ink-3); margin-top:2px; }
+  .ex-item .ex-loc { font-weight:600; color:var(--ink-2); }
+  .ex-item .ex-links { display:flex; gap:6px; flex:none; }
+  .ex-item .ex-links a { font-size:11px; color:var(--accent-ink); text-decoration:none; padding:4px 8px; border:1px solid var(--line); border-radius:6px; white-space:nowrap; }
+  .ex-item .ex-links a:hover { background:var(--surface); border-color:var(--accent); }
+  .ex-hotspot { display:flex; gap:12px; padding:9px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface-2); align-items:center; }
+  .ex-hotspot .ex-rank { min-width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:50%; background:var(--accent); color:#fff; font-weight:800; font-size:12px; flex:none; }
+  .ex-hotspot .ex-body { flex:1; min-width:0; }
+  .ex-hotspot .ex-name { font-size:14px; color:var(--ink); font-weight:600; }
+  .ex-hotspot .ex-meta { font-size:11.5px; color:var(--ink-3); margin-top:2px; }
+  .ex-hotspot .ex-species { min-width:60px; text-align:right; font-size:13px; font-weight:700; color:var(--accent-ink); }
+  .ex-empty { padding:12px; color:var(--ink-3); font-size:13px; text-align:center; }
+  .ex-error { padding:12px; color:#c33; font-size:13px; }
   .map-el .leaflet-container { font:inherit; }
   @media (max-width: 700px){ .map-el { height:420px; } }
   .react-bar { display:flex; gap:5px; flex-wrap:wrap; margin:3px 10px 0; align-items:center; }
@@ -590,6 +613,7 @@
     <button class="tab" data-view="profil">👤 Profil</button>
     <button class="tab" data-view="ranking">Classement</button>
     <button class="tab" data-view="map">📍 Carte</button>
+    <button class="tab" data-view="explorer">🔎 Explorer</button>
     <button class="tab" data-view="trophies">🏆 Trophées</button>
     <button class="tab" data-view="chat">💬 Tchat</button>
     <button class="tab" data-view="photos">📸 Photos</button>
@@ -822,6 +846,59 @@
       </div>
       <div id="mapStats" class="map-stats"></div>
       <p class="help" style="margin-top:10px; font-size:11px;">Fond de carte : © OpenStreetMap · positions : votre export MyEBirdData eBird.</p>
+    </section>
+  </div>
+
+  <div id="viewExplorer" style="display:none;">
+    <section class="panel" style="padding:20px; margin-top:22px;">
+      <div class="section-head">
+        <div><div class="eyebrow">Données eBird en direct</div><h2>🔎 Explorer autour de vous</h2>
+          <p class="help" style="margin-top:2px;">Ce qui a été signalé récemment par la communauté eBird — filtré sur ce qui manque à votre liste.</p></div>
+      </div>
+      <div class="explorer-controls">
+        <label class="explorer-lbl">Région</label>
+        <select id="exRegion" class="filt-sel">
+          <option value="FR" selected>🇫🇷 France entière</option>
+          <option value="FR-ARA">Auvergne-Rhône-Alpes</option>
+          <option value="FR-BFC">Bourgogne-Franche-Comté</option>
+          <option value="FR-BRE">Bretagne</option>
+          <option value="FR-CVL">Centre-Val de Loire</option>
+          <option value="FR-COR">Corse</option>
+          <option value="FR-IDF">Île-de-France</option>
+          <option value="FR-NAQ">Nouvelle-Aquitaine</option>
+          <option value="FR-NOR">Normandie</option>
+          <option value="FR-OCC">Occitanie</option>
+          <option value="FR-HDF">Hauts-de-France</option>
+          <option value="FR-PDL">Pays de la Loire</option>
+          <option value="FR-PAC">Provence-Alpes-Côte d'Azur</option>
+          <option value="FR-GES">Grand Est</option>
+        </select>
+        <label class="explorer-lbl">Derniers</label>
+        <select id="exDays" class="filt-sel">
+          <option value="7">7 jours</option>
+          <option value="14" selected>14 jours</option>
+          <option value="30">30 jours</option>
+        </select>
+        <button class="btn tiny" id="exRefresh" title="Rafraîchir">🔄</button>
+      </div>
+
+      <div class="ex-section">
+        <h3>🐦 Ce qui vous manque en <span id="exMissRegion">France</span></h3>
+        <p class="help" style="margin:2px 0 8px;">Espèces signalées récemment que vous n'avez pas encore vues. Les plus rares en haut.</p>
+        <div id="exMissList" class="ex-list"><p class="help">Chargement…</p></div>
+      </div>
+
+      <div class="ex-section">
+        <h3>🚨 Raretés du moment en France</h3>
+        <p class="help" style="margin:2px 0 8px;">Observations notables signalées par la communauté eBird (vagabonds, méga-raretés).</p>
+        <div id="exNotableList" class="ex-list"><p class="help">Chargement…</p></div>
+      </div>
+
+      <div class="ex-section">
+        <h3>🏞️ Top hotspots en <span id="exHotRegion">France</span></h3>
+        <p class="help" style="margin:2px 0 8px;">Les meilleurs coins de birding (nombre d'espèces vues au total).</p>
+        <div id="exHotspotsList" class="ex-list"><p class="help">Chargement…</p></div>
+      </div>
     </section>
   </div>
 
@@ -2112,6 +2189,105 @@ document.addEventListener('click', e=>{
   else if(e.target.id==='mapTlReset'){ _tlStop(); _tlStartIdx=0; _tlEndIdx=_tlDates.length-1; _tlPlayPos=_tlEndIdx; renderMap(); }
 });
 
+// ---- Explorer (données eBird en direct) ----
+// Clé publique du compte Mathis. Visible dans le source (JS client), donc régénérable si abus.
+const EBIRD_KEY = 'dbflh4atmsom';
+const _ebCache = new Map();   // clé = URL, valeur = { ts, data }
+async function _ebFetch(url){
+  const cached = _ebCache.get(url);
+  if(cached && (Date.now()-cached.ts) < 5*60*1000) return cached.data;   // TTL 5 min
+  const r = await fetch(url, { headers:{ 'X-eBirdApiToken':EBIRD_KEY, 'Accept-Language':'fr' } });
+  if(!r.ok) throw new Error('eBird API '+r.status);
+  const data = await r.json();
+  _ebCache.set(url, { ts:Date.now(), data });
+  return data;
+}
+const REGION_LABEL = { 'FR':'France', 'FR-ARA':'Auvergne-Rhône-Alpes','FR-BFC':'Bourgogne-Franche-Comté','FR-BRE':'Bretagne','FR-CVL':'Centre-Val de Loire','FR-COR':'Corse','FR-IDF':'Île-de-France','FR-NAQ':'Nouvelle-Aquitaine','FR-NOR':'Normandie','FR-OCC':'Occitanie','FR-HDF':'Hauts-de-France','FR-PDL':'Pays de la Loire','FR-PAC':"Provence-Alpes-Côte d'Azur",'FR-GES':'Grand Est' };
+function _exFrName(sci, en){ return FR_NAMES[(sci||'').toLowerCase()] || en || sci; }
+function _exRarityChip(w){ return `<div class="ex-w" style="background:${realColor(w)}" title="Rareté ${w} : ${REAL_LABELS[w]||''}">${w}</div>`; }
+function _exObsItem(o){
+  const sci = (o.sciName||'').toLowerCase();
+  const w = rarityReal(sci);
+  const nm = _exFrName(sci, o.comName);
+  const gm = (typeof o.lat==='number' && typeof o.lng==='number') ? `<a href="https://www.google.com/maps?q=${o.lat},${o.lng}" target="_blank" rel="noopener">📍 carte</a>` : '';
+  const eb = o.locId ? `<a href="https://ebird.org/hotspot/${esc(o.locId)}" target="_blank" rel="noopener">eBird</a>` : '';
+  const date = o.obsDt ? esc(o.obsDt.replace(/T.*/,'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$3/$2/$1')) : '';
+  return `<div class="ex-item">${_exRarityChip(w)}
+    <div class="ex-body">
+      <div class="ex-name">${esc(nm)} <span class="sci">${esc(o.sciName||'')}</span></div>
+      <div class="ex-meta"><span class="ex-loc">${esc(o.locName||'?')}</span> · ${date}${o.howMany?' · '+o.howMany:''}</div>
+    </div>
+    <div class="ex-links">${gm}${eb}</div></div>`;
+}
+async function _exRenderMissing(region, days, listEl){
+  try{
+    const url = `https://api.ebird.org/v2/data/obs/${region}/recent?back=${days}&maxResults=500&locale=fr`;
+    const data = await _ebFetch(url);
+    // liste de mes espèces vues (pour filtrer)
+    const me = realPeople.find(p=>p.id===myUid);
+    const mine = new Set(me ? [...me.species.keys()] : []);
+    // dedup par sciName, garde la plus récente ; filtre celles que je n'ai pas
+    const byKey = new Map();
+    for(const o of data){
+      const k = (o.sciName||'').toLowerCase();
+      if(!k || mine.has(k)) continue;
+      const ex = byKey.get(k);
+      if(!ex || (o.obsDt||'') > (ex.obsDt||'')) byKey.set(k, o);
+    }
+    const list = [...byKey.values()].sort((a,b)=> rarityReal(b.sciName)-rarityReal(a.sciName) || (b.obsDt||'').localeCompare(a.obsDt||''));
+    if(!list.length){ listEl.innerHTML = `<div class="ex-empty">Rien de nouveau à cocher — vous les avez déjà toutes vues dans ${esc(REGION_LABEL[region]||region)} ces ${days} derniers jours ! 🎯</div>`; return; }
+    listEl.innerHTML = list.slice(0,50).map(_exObsItem).join('') + (list.length>50 ? `<div class="ex-empty">… et ${list.length-50} autres.</div>` : '');
+  } catch(e){ listEl.innerHTML = `<div class="ex-error">Erreur eBird : ${esc(e.message)}</div>`; }
+}
+async function _exRenderNotable(days, listEl){
+  try{
+    const url = `https://api.ebird.org/v2/data/obs/FR/recent/notable?back=${days}&maxResults=200&locale=fr`;
+    const data = await _ebFetch(url);
+    // dedup par (sciName, locId) pour éviter les doublons de la même obs
+    const seen = new Set(); const list = [];
+    for(const o of data){ const k=(o.sciName||'')+'@'+(o.locId||''); if(seen.has(k))continue; seen.add(k); list.push(o); }
+    list.sort((a,b)=>(b.obsDt||'').localeCompare(a.obsDt||''));
+    if(!list.length){ listEl.innerHTML = `<div class="ex-empty">Aucune rareté signalée ces ${days} derniers jours.</div>`; return; }
+    listEl.innerHTML = list.slice(0,30).map(_exObsItem).join('') + (list.length>30 ? `<div class="ex-empty">… et ${list.length-30} autres.</div>` : '');
+  } catch(e){ listEl.innerHTML = `<div class="ex-error">Erreur eBird : ${esc(e.message)}</div>`; }
+}
+async function _exRenderHotspots(region, listEl){
+  try{
+    const url = `https://api.ebird.org/v2/ref/hotspot/${region}?fmt=json`;
+    const data = await _ebFetch(url);
+    const list = data.filter(h=>h.numSpeciesAllTime).sort((a,b)=> b.numSpeciesAllTime - a.numSpeciesAllTime).slice(0,20);
+    if(!list.length){ listEl.innerHTML = `<div class="ex-empty">Aucun hotspot listé pour cette région.</div>`; return; }
+    listEl.innerHTML = list.map((h,i)=>{
+      const gm = (typeof h.lat==='number' && typeof h.lng==='number') ? `<a href="https://www.google.com/maps?q=${h.lat},${h.lng}" target="_blank" rel="noopener">📍 carte</a>` : '';
+      const eb = `<a href="https://ebird.org/hotspot/${esc(h.locId)}" target="_blank" rel="noopener">eBird</a>`;
+      return `<div class="ex-hotspot"><div class="ex-rank">${i+1}</div>
+        <div class="ex-body">
+          <div class="ex-name">${esc(h.locName||h.name||'?')}</div>
+          <div class="ex-meta">${h.subnational2Name?esc(h.subnational2Name)+' · ':''}${esc(h.subnational1Name||'')}${h.latestObsDt?' · dernière obs '+esc(h.latestObsDt.slice(0,10)):''}</div>
+        </div>
+        <div class="ex-species">${h.numSpeciesAllTime} esp.</div>
+        <div class="ex-links">${gm}${eb}</div></div>`;
+    }).join('');
+  } catch(e){ listEl.innerHTML = `<div class="ex-error">Erreur eBird : ${esc(e.message)}</div>`; }
+}
+function renderExplorer(){
+  const region = $('#exRegion')?.value || 'FR';
+  const days = +($('#exDays')?.value || 14);
+  const lbl = esc(REGION_LABEL[region]||region);
+  $('#exMissRegion').textContent = lbl;
+  $('#exHotRegion').textContent = lbl;
+  const miss = $('#exMissList'), nota = $('#exNotableList'), hot = $('#exHotspotsList');
+  if(miss){ miss.innerHTML='<p class="help">Chargement…</p>'; _exRenderMissing(region, days, miss); }
+  if(nota){ nota.innerHTML='<p class="help">Chargement…</p>'; _exRenderNotable(days, nota); }
+  if(hot){ hot.innerHTML='<p class="help">Chargement…</p>'; _exRenderHotspots(region, hot); }
+}
+document.addEventListener('change', e=>{
+  if(e.target.id==='exRegion' || e.target.id==='exDays') renderExplorer();
+});
+document.addEventListener('click', e=>{
+  if(e.target.id==='exRefresh'){ _ebCache.clear(); renderExplorer(); }
+});
+
 function renderStats(me){
   const box=$('#statsBox'); if(!box) return;
   if(!me || !me._active){ box.style.display='none'; box.innerHTML=''; return; }
@@ -2393,7 +2569,7 @@ $('#manualAddBtn')?.addEventListener('click', async ()=>{
   btn.disabled=false;
 });
 
-const VIEWS = { load:'#viewLoad', profil:'#viewProfil', ranking:'#viewRanking', map:'#viewMap', trophies:'#viewTrophies', chat:'#viewChat', photos:'#viewPhotos', feed:'#viewFeed', requests:'#viewRequests' };
+const VIEWS = { load:'#viewLoad', profil:'#viewProfil', ranking:'#viewRanking', map:'#viewMap', explorer:'#viewExplorer', trophies:'#viewTrophies', chat:'#viewChat', photos:'#viewPhotos', feed:'#viewFeed', requests:'#viewRequests' };
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
   b.classList.add('on');
@@ -2410,6 +2586,7 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   if(b.dataset.view==='profil'){ const me=realPeople.find(p=>p.id===myUid); fillProfile(me); renderStats(me); }
   if(b.dataset.view==='requests'){ renderRequests(); markSeen('requests'); }
   if(b.dataset.view==='map') renderMap();
+  if(b.dataset.view==='explorer') renderExplorer();
   try{ localStorage.setItem('mb-last-tab', b.dataset.view); }catch(_){ }
 }));
 // Restaure l'onglet visité la dernière fois (par défaut Ma liste)
