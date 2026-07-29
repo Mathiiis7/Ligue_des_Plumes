@@ -626,6 +626,9 @@
         <select class="filt-sel" id="playerSel" aria-label="Filtrer par personne">
           <option value="any">Toutes les personnes</option>
         </select>
+        <select class="filt-sel" id="countrySel" aria-label="Filtrer par pays d'observation">
+          <option value="any">Tous les pays</option>
+        </select>
         <label class="miss-toggle"><input type="checkbox" id="showMissing"> Oiseaux de France non observés</label>
       </div>
       <div class="tbl-scroll">
@@ -738,8 +741,8 @@ const db = getFirestore(fbApp);
 
 /* ---------------- state ---------------- */
 const SERIES_N = 8;
-const state = { people: [], onlySpecies: true, sort:'rarity', tier:'any', family:'any', player:'any', q:'', boardMode:'league', showMissing:false };
-let lastFamKey = '', lastTierKey = '', lastPlayerKey = '';
+const state = { people: [], onlySpecies: true, sort:'rarity', tier:'any', family:'any', player:'any', country:'any', q:'', boardMode:'league', showMissing:false };
+let lastFamKey = '', lastTierKey = '', lastPlayerKey = '', lastCountryKey = '';
 let myUid = null, leagueId = null, unsub = null, unsubLeague = null, iAmInLeague = false;
 let unsubChat = null, lastChatMsgs = [];
 let unsubPresence = null, onlineMap = new Map(), presenceTimer = null, presenceWired = false;
@@ -826,11 +829,15 @@ function ingest(filename, text){
   let cState=idx('state/province'); if(cState<0)cState=idx('state'); if(cState<0)cState=idx('s/p');
   let cCountry=idx('country'); if(cCountry<0)cCountry=idx('country/region'); if(cCountry<0)cCountry=idx('country code');
   const hasGeo = cState>=0 || cCountry>=0;   // sait-on situer les obs ?
-  const isFR = row => {
+  const countryOf = row => {                 // code pays ISO 2 lettres (FR, ES, US...)
     const st=(cState>=0?(row[cState]||''):'').trim();
+    if(st){ const cc=st.split('-')[0].toUpperCase(); if(/^[A-Z]{2}$/.test(cc)) return cc; }
     const co=(cCountry>=0?(row[cCountry]||''):'').trim();
-    return /^FR(-|$)/i.test(st) || /^(FR|France)$/i.test(co);
+    if(/^France$/i.test(co)) return 'FR';
+    if(/^[A-Z]{2}$/.test(co)) return co.toUpperCase();
+    return null;
   };
+  const isFR = row => countryOf(row)==='FR';
   if(cCommon<0 && cSci<0) return null; // not an eBird file
   const species = new Map();
   for(let r=1; r<rows.length; r++){
@@ -841,15 +848,17 @@ function ingest(filename, text){
     const key = (sci||common).toLowerCase();
     const date = cDate>=0 ? (row[cDate]||'').trim() : '';
     const loc = cLoc>=0 ? (row[cLoc]||'').trim() : '';
-    const inFR = hasGeo && isFR(row);
+    const cc = hasGeo ? countryOf(row) : null;
+    const inFR = cc==='FR';
     const existing = species.get(key);
     if(existing){
       existing.obs++;
       if(inFR) existing.fr = true;                 // au moins une obs en France
-      if(date && (!existing.date || date<existing.date)){ existing.date=date; existing.loc=loc; }
+      if(date && (!existing.date || date<existing.date)){ existing.date=date; existing.loc=loc; existing.country=cc; }
     } else {
       species.set(key, { common:common||sci, sci, date, loc, obs:1,
         fr: hasGeo ? inFR : undefined,             // undefined = pays inconnu (pas de colonne)
+        country: cc,                               // pays de la 1re obs (code ISO) — pour le filtre
         nonSpecies:isNonSpecies(common,sci) });
     }
   }
@@ -918,6 +927,10 @@ const inRef = sci => { const k=(sci||'').trim().toLowerCase(); return (k in REAL
 const foreignTick = v => v.fr===false && !inRef(v.sci);
 const countsFR = v => !foreignTick(v);           // compte sauf vrai cochage étranger
 const holdersFR = u => u.counts!=null ? u.counts : [...u.seenBy.values()].filter(countsFR).length;
+// Pays (code ISO 2 lettres) -> drapeau emoji + nom lisible
+function countryFlag(cc){ cc=(cc||'').toUpperCase(); if(!/^[A-Z]{2}$/.test(cc)) return ''; return String.fromCodePoint(...[...cc].map(c=>0x1F1E6+c.charCodeAt(0)-65)); }
+const COUNTRY_NAMES={FR:'France',ES:'Espagne',PT:'Portugal',IT:'Italie',DE:'Allemagne',GB:'Royaume-Uni',IE:'Irlande',BE:'Belgique',NL:'Pays-Bas',LU:'Luxembourg',CH:'Suisse',AT:'Autriche',GR:'Grèce',HR:'Croatie',NO:'Norvège',SE:'Suède',FI:'Finlande',DK:'Danemark',IS:'Islande',PL:'Pologne',CZ:'Tchéquie',HU:'Hongrie',RO:'Roumanie',BG:'Bulgarie',TR:'Turquie',MA:'Maroc',TN:'Tunisie',DZ:'Algérie',EG:'Égypte',SN:'Sénégal',ZA:'Afrique du Sud',KE:'Kenya',TZ:'Tanzanie',US:'États-Unis',CA:'Canada',MX:'Mexique',CR:'Costa Rica',BR:'Brésil',PE:'Pérou',EC:'Équateur',AR:'Argentine',CL:'Chili',IN:'Inde',TH:'Thaïlande',JP:'Japon',CN:'Chine',AU:'Australie',NZ:'Nouvelle-Zélande'};
+function countryLabel(cc){ cc=(cc||'').toUpperCase(); return ((countryFlag(cc)+' '+(COUNTRY_NAMES[cc]||cc)).trim())||cc; }
 
 function build(){
   const N = state.people.length;
@@ -1120,10 +1133,29 @@ function renderMatrix({universe,N}){
     sel.value=state.player;
   }
 
+  // remplit le menu des pays où des obs ont été faites (France + étranger)
+  const countriesSet=new Set();
+  for(const u of uni){ for(const v of u.seenBy.values()){ if(v.country) countriesSet.add(v.country); } }
+  const countries=[...countriesSet].sort((a,b)=> a==='FR'?-1 : b==='FR'?1 : countryLabel(a).localeCompare(countryLabel(b),'fr'));
+  const coKey=countries.join('|');
+  const coSel=$('#countrySel');
+  if(coKey!==lastCountryKey){
+    lastCountryKey=coKey;
+    coSel.innerHTML='<option value="any">Tous les pays</option>'+countries.map(c=>`<option value="${esc(c)}">${esc(countryLabel(c))}</option>`).join('');
+    if(!countries.includes(state.country)) state.country='any';
+    coSel.value=state.country;
+  }
+  // masqué tant qu'il n'y a pas au moins un pays étranger en plus de la France
+  coSel.style.display = countries.some(c=>c!=='FR') ? '' : 'none';
+
   let list=[...uni];
   if(state.tier!=='any') list=list.filter(u=>rarOf(u).id===state.tier);
   if(state.family!=='any') list=list.filter(u=>familyOf(u.sci)===state.family);
   if(state.player!=='any') list=list.filter(u=>u.seenBy.has(state.player));
+  if(state.country!=='any') list=list.filter(u=>{
+    for(const [pid,v] of u.seenBy){ if(state.player!=='any'&&pid!==state.player) continue; if(v.country===state.country) return true; }
+    return false;
+  });
   if(state.q){ const q=state.q.toLowerCase();
     list=list.filter(u=>u.common.toLowerCase().includes(q)||(u.sci||'').toLowerCase().includes(q)); }
   if(state.sort==='rarity'){
@@ -1142,8 +1174,10 @@ function renderMatrix({universe,N}){
     const k=holdersFR(u), t=rarOf(u);
     const cells = state.people.map(p=>{
       const v=u.seenBy.get(p.id); if(!v) return '<td class="pcol"></td>';
-      const foreign=foreignTick(v);
-      return `<td class="pcol is-seen${foreign?' is-foreign':''}"${foreign?' title="Vu à l\'étranger — hors compétition"':''}><i class="chk">${foreign?'🌍':'✓'}</i></td>`;
+      const foreign=foreignTick(v); const cc=v.country; const abroad=cc&&cc!=='FR';
+      const ttl = abroad ? `Vu en ${countryLabel(cc)}${foreign?' — hors compétition':''}` : (foreign?"Vu à l'étranger — hors compétition":'');
+      const mark = abroad ? (countryFlag(cc)||'🌍') : '✓';
+      return `<td class="pcol is-seen${foreign?' is-foreign':''}"${ttl?` title="${esc(ttl)}"`:''}><i class="chk">${mark}</i></td>`;
     }).join('');
     return `<tr class="${u.missing?'missing':''}">
       <td class="sp">${esc(u.common)}${u.sci?`<span class="sci">${esc(u.sci)}</span>`:''}</td>
@@ -1155,8 +1189,9 @@ function renderMatrix({universe,N}){
   cards.innerHTML = list.map(u=>{
     const k=holdersFR(u), t=rarOf(u);
     const seers = state.people.filter(p=>u.seenBy.has(p.id))
-      .map(p=>{ const foreign=foreignTick(u.seenBy.get(p.id));
-        return `<span class="mc-person${foreign?' is-foreign':''}" style="--series:var(--s${p.si})" title="${foreign?'Vu à l\'étranger — hors compétition':''}"><span class="dot"></span>${esc(p.name)}${foreign?' 🌍':''}</span>`; }).join('');
+      .map(p=>{ const v=u.seenBy.get(p.id); const foreign=foreignTick(v); const cc=v.country; const abroad=cc&&cc!=='FR';
+        const ttl = abroad?`Vu en ${countryLabel(cc)}${foreign?' — hors compétition':''}`:'';
+        return `<span class="mc-person${foreign?' is-foreign':''}" style="--series:var(--s${p.si})"${ttl?` title="${esc(ttl)}"`:''}><span class="dot"></span>${esc(p.name)}${abroad?' '+(countryFlag(cc)||'🌍'):''}</span>`; }).join('');
     return `<div class="mcard ${u.missing?'missing':''}" style="border-left-color:${t.color}">
       <div class="mc-head">
         <div class="mc-sp">${esc(u.common)}${u.sci?`<span class="mc-sci">${esc(u.sci)}</span>`:''}</div>
@@ -1323,7 +1358,8 @@ function renderTrophies(data){
 function memberToPerson(id, data, si){
   const species = new Map((data.species||[]).map(e=>[e.k, {
     common:e.c||e.k, sci:e.s||'', date:e.d||'', loc:e.l||'', obs:e.o||1,
-    fr: e.f===undefined ? undefined : !!e.f,   // pays : true/false, ou undefined si inconnu
+    fr: e.f===undefined ? undefined : !!e.f,   // vu en France ? true/false, ou undefined si inconnu
+    country: e.co||null,                       // code pays de la 1re obs (pour le filtre)
     // recalculé à la lecture (pas figé au moment de l'upload) : ainsi toute
     // amélioration du filtre s'applique aux listes déjà enregistrées.
     nonSpecies: isNonSpecies(e.c||'', e.s||'')
@@ -1624,6 +1660,7 @@ async function saveMyList(name, speciesMap){
   const arr=[...speciesMap.entries()].map(([k,v])=>{
     const e={ k, c:v.common, s:v.sci, d:v.date, l:v.loc, o:v.obs, n:!!v.nonSpecies };
     if(v.fr!==undefined) e.f = v.fr?1:0;   // 1=vu en France, 0=uniquement étranger, absent=inconnu
+    if(v.country) e.co = v.country;        // code pays de la 1re obs (FR, ES, US...)
     return e; });
   const ref=doc(db,'leagues',leagueId,'members',myUid);
   const payload={ name, species:arr, updatedAt: serverTimestamp() };
@@ -1873,6 +1910,7 @@ $('#sortSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); 
 $('#tierSel').addEventListener('change',e=>{ state.tier=e.target.value; renderResults(); });
 $('#familySel').addEventListener('change',e=>{ state.family=e.target.value; renderResults(); });
 $('#playerSel').addEventListener('change',e=>{ state.player=e.target.value; renderResults(); });
+$('#countrySel').addEventListener('change',e=>{ state.country=e.target.value; renderResults(); });
 $('#showMissing').addEventListener('change',e=>{ state.showMissing=e.target.checked; renderResults(); });
 
 // logo personnalisé (choisi depuis le site, enregistré sur cet appareil uniquement)
