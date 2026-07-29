@@ -335,6 +335,8 @@
     color:var(--ink); font-size:14px; line-height:1.4; word-wrap:break-word; white-space:pre-wrap; }
   .msg.mine .msg-bubble { background:color-mix(in srgb,var(--accent) 16%,var(--surface)); border-color:color-mix(in srgb,var(--accent) 30%,var(--line)); }
   .msg-time { font-size:10px; color:var(--ink-3); margin:2px 10px 0; }
+  .mention { color:var(--accent-ink); font-weight:600; }
+  .mention.self { background:color-mix(in srgb, #ffd54f 55%, transparent); padding:0 3px; border-radius:4px; }
   .msg-del { font:inherit; font-size:10px; color:var(--ink-3); background:none; border:none; padding:0; cursor:pointer; text-decoration:underline; }
   .msg-del:hover { color:#c0392b; }
   .msg.mine .msg-time { text-align:right; }
@@ -440,6 +442,11 @@
   .map-el .map-custom-btn a:hover { background:#f4f4f4; }
   .map-stats { margin-top:10px; font-size:13px; color:var(--ink-2); padding:6px 10px; background:var(--surface-2); border:1px solid var(--line); border-radius:8px; display:inline-block; }
   .map-stats .muted { color:var(--ink-3); }
+  .map-timeline { display:flex; align-items:center; gap:10px; margin-top:10px; padding:8px 12px; background:var(--surface-2); border:1px solid var(--line); border-radius:8px; }
+  .map-timeline input[type=range] { flex:1; min-width:120px; accent-color:var(--accent); }
+  .map-timeline .tl-label { font-size:12.5px; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; min-width:130px; text-align:center; }
+  #mapTlPlay { min-width:36px; font-size:12px; }
+  #mapTlPlay.playing { background:var(--accent); color:#fff; }
   .map-el .leaflet-container { font:inherit; }
   @media (max-width: 700px){ .map-el { height:420px; } }
   .react-bar { display:flex; gap:5px; flex-wrap:wrap; margin:3px 10px 0; align-items:center; }
@@ -783,6 +790,12 @@
       </div>
       <div id="mapNote" class="help" style="margin:6px 0 8px; display:none;"></div>
       <div id="mapEl" class="map-el"></div>
+      <div class="map-timeline" id="mapTimeline" style="display:none;">
+        <button class="btn tiny" id="mapTlPlay" title="Lancer l'animation dans le temps">▶</button>
+        <input type="range" id="mapTlSlider" min="0" max="0" value="0" step="1">
+        <span class="tl-label" id="mapTlLabel">—</span>
+        <button class="btn tiny ghost" id="mapTlReset" title="Voir toute la période">↺ Tout</button>
+      </div>
       <div id="mapStats" class="map-stats"></div>
       <p class="help" style="margin-top:10px; font-size:11px;">Fond de carte : © OpenStreetMap · positions : votre export MyEBirdData eBird.</p>
     </section>
@@ -1585,7 +1598,8 @@ function memberToPerson(id, data, si){
   }]));
   return { id, name:data.name||'Joueur', filename:'', si, species, isMe:id===myUid,
     goal:data.goal||'', fav:data.fav||'', dream:data.dream||'', rare:data.rare||'',
-    joinedAt: data.joinedAt?.seconds || 0 };
+    joinedAt: data.joinedAt?.seconds || 0,
+    updatedAt: data.updatedAt?.toMillis ? data.updatedAt.toMillis() : 0 };
 }
 
 function rebuild(){
@@ -1595,6 +1609,7 @@ function rebuild(){
   updateChatIdentity();
   if(lastChatMsgs.length) renderChat(lastChatMsgs);
   renderFeed();
+  feedLatest = realPeople.reduce((m,p)=>Math.max(m, p.updatedAt||0), 0); updateTabDots();
   renderStats(realPeople.find(p=>p.id===myUid));
   // Rafraîchit la carte si elle est visible (sinon vide au 1er chargement quand données arrivent après)
   if(document.querySelector('.tab.on')?.dataset.view==='map') renderMap();
@@ -1654,7 +1669,8 @@ function subscribe(){
     ()=>{});
   if(unsubRequests){ unsubRequests(); unsubRequests=null; }
   unsubRequests = onSnapshot(query(collection(db,'leagues',leagueId,'requests'), orderBy('createdAt','desc'), limit(200)),
-    snap=>{ const arr=[]; snap.forEach(d=>arr.push({id:d.id, ...d.data()})); requests=arr; renderRequests(); },
+    snap=>{ const arr=[]; snap.forEach(d=>arr.push({id:d.id, ...d.data()})); requests=arr; renderRequests();
+      requestsLatest = arr.reduce((m,x)=>Math.max(m, x.createdAt&&x.createdAt.toMillis?x.createdAt.toMillis():0),0); updateTabDots(); },
     err=>{ const box=$('#reqList'); if(box) box.innerHTML='<p class="help" style="margin:0;">Les requêtes ne sont pas encore activées (règles Firebase à ajouter).</p>'; });
   if(unsubReqVotes){ unsubReqVotes(); unsubReqVotes=null; }
   unsubReqVotes = onSnapshot(collection(db,'leagues',leagueId,'requestVotes'),
@@ -1708,7 +1724,7 @@ function renderChat(msgs){
     const time = t ? t.toLocaleString('fr-FR',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'}) : '…';
     const safeImg = (typeof m.image==='string' && /^data:image\//.test(m.image)) ? m.image.replace(/"/g,'%22') : '';
     const imgHtml = safeImg ? `<img class="msg-img" src="${safeImg}" alt="image partagée">` : '';
-    const txtHtml = m.text ? `<div>${esc(m.text)}</div>` : '';
+    const txtHtml = m.text ? `<div>${_renderMentions(esc(m.text), byId)}</div>` : '';
     return `<div class="msg${mine?' mine':''}">
       <div class="msg-name">${esc(nm)}${guestTag}</div>
       <div class="msg-bubble">${imgHtml}${txtHtml}</div>
@@ -1719,6 +1735,20 @@ function renderChat(msgs){
   if(nearBottom) box.scrollTop = box.scrollHeight;
 }
 function myMemberName(){ const me=realPeople.find(p=>p.id===myUid); return me ? me.name : ''; }
+// Détecte les @Nom (prénom ou nom complet, insensible à la casse et aux accents)
+// et les met en gras. Marque .self quand c'est l'utilisateur courant.
+function _renderMentions(escText, byId){
+  if(!/@/.test(escText)) return escText;
+  const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,'');
+  const members = [...byId.entries()].map(([uid,name])=>({ uid, name,
+    first:(name||'').split(/\s+/)[0]||name, normFirst:norm((name||'').split(/\s+/)[0]||name), normFull:norm(name) }));
+  return escText.replace(/@([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'\-]*)/g, (all, word)=>{
+    const nw = norm(word);
+    const m = members.find(x=>x.normFirst===nw || x.normFull===nw);
+    if(!m) return all;
+    return `<b class="mention${m.uid===myUid?' self':''}">@${esc(m.first)}</b>`;
+  });
+}
 // ---- Réactions emoji (partagé tchat + photos) ----
 function reactionBar(target){
   const rm=reactionsMap.get(target);
@@ -1828,6 +1858,10 @@ function renderRequests(){
 // ---- Carte des observations ----
 let _map=null, _mapLayer=null, _allBounds=null;
 let mapFilter = { player:'all', tier:'any', country:'any' };
+let _tlDates=[], _tlIdx=-1, _tlPlayId=null, _tlSkipFit=false;   // timeline : dates uniques triées + curseur (-1 = tout)
+// ord (YYYYMMDD int) -> texte lisible en français
+function _fmtOrd(ord){ const y=Math.floor(ord/10000), m=Math.floor((ord%10000)/100), d=ord%100;
+  const mo=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'][m-1]||''; return d+' '+mo+' '+y; }
 function _fillMapSelects(pts){
   const pl=$('#mapPlayerSel'); if(pl){
     const cur=pl.value||'all';
@@ -1855,8 +1889,9 @@ function _mapCollectPoints(){
     for(const v of active.values()){
       if(typeof v.lat!=='number' || typeof v.lon!=='number') continue;
       if(v.lat<-90||v.lat>90||v.lon<-180||v.lon>180) continue;
+      const pd = parseDate(v.date||''); const ord = pd?pd.ord:null;
       pts.push({ uid:p.id, who:p.name, si:p.si, sci:v.sci, common:frName(v.sci,v.common),
-        lat:v.lat, lon:v.lon, loc:v.loc||'', date:v.date||'', cc:v.country||null,
+        lat:v.lat, lon:v.lon, loc:v.loc||'', date:v.date||'', dateOrd:ord, cc:v.country||null,
         locId:v.locId||null, w:rarityReal(v.sci) });
     }
   }
@@ -1944,12 +1979,25 @@ function renderMap(){
     fitBtn.addTo(_map);
   }
   if(_mapLayer){ _mapLayer.remove(); _mapLayer=null; }
-  // filtre
+  // Timeline : construit la liste des dates uniques présentes dans allPts (post filtres non-temps).
+  _tlDates = [...new Set(allPts.map(p=>p.dateOrd).filter(x=>x!=null))].sort((a,b)=>a-b);
+  const tlEl = $('#mapTimeline'), tlSlider = $('#mapTlSlider'), tlLabel = $('#mapTlLabel');
+  if(tlEl && _tlDates.length>1){
+    tlEl.style.display='';
+    tlSlider.max = _tlDates.length-1;
+    if(_tlIdx<0 || _tlIdx>_tlDates.length-1) _tlIdx = _tlDates.length-1;   // par défaut : tout
+    tlSlider.value = _tlIdx;
+    const cutoff = _tlDates[_tlIdx];
+    tlLabel.textContent = (_tlIdx===_tlDates.length-1) ? 'Jusqu\'à aujourd\'hui' : ('Jusqu\'au '+_fmtOrd(cutoff));
+  } else if(tlEl){ tlEl.style.display='none'; _tlIdx=-1; }
+  // filtre (personne / rareté / pays / temps)
   const f = mapFilter;
+  const cutoffOrd = (_tlIdx>=0 && _tlIdx < _tlDates.length-1) ? _tlDates[_tlIdx] : Infinity;
   const pts = allPts.filter(p=>{
     if(f.player!=='all' && p.uid!==f.player) return false;
     if(f.tier!=='any' && String(p.w)!==f.tier) return false;
     if(f.country!=='any' && p.cc!==f.country) return false;
+    if(cutoffOrd!==Infinity && p.dateOrd!=null && p.dateOrd>cutoffOrd) return false;
     return true;
   });
   // Groupe par position exacte pour éparpiller en spirale (visuel seulement, popup garde le vrai lieu).
@@ -1970,12 +2018,15 @@ function renderMap(){
   if(stats){
     stats.innerHTML = pts.length ? `<b>${pts.length}</b> obs · <b>${groups.size}</b> lieu${groups.size>1?'x':''} · <b>${uniqCountries}</b> pays · <b>${uniqPersons}</b> personne${uniqPersons>1?'s':''}` : '<span class="muted">Aucune obs à afficher avec ces filtres.</span>';
   }
-  // fit bounds si des points
+  // fit bounds si des points ; _allBounds toujours mémorisé (pour le bouton "Voir tout")
   if(pts.length){
-    const b = L.latLngBounds(pts.map(p=>[p.lat,p.lon]));
-    _allBounds = b;   // mémorisé pour le bouton "Voir tout"
-    _map.fitBounds(b, { padding:[30,30], maxZoom:14 });
+    _allBounds = L.latLngBounds(allPts.map(p=>[p.lat,p.lon]));   // englobe TOUS les points (utile même pdt le play)
+    if(!_tlSkipFit){
+      const b = L.latLngBounds(pts.map(p=>[p.lat,p.lon]));
+      _map.fitBounds(b, { padding:[30,30], maxZoom:14 });
+    }
   }
+  _tlSkipFit = false;   // reset après usage
   // le map peut mal se dimensionner s'il est instancié caché : rafraîchir la taille
   setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
 }
@@ -1983,6 +2034,28 @@ document.addEventListener('change', e=>{
   if(e.target.id==='mapPlayerSel'){ mapFilter.player=e.target.value; renderMap(); }
   else if(e.target.id==='mapTierSel'){ mapFilter.tier=e.target.value; renderMap(); }
   else if(e.target.id==='mapCountrySel'){ mapFilter.country=e.target.value; renderMap(); }
+});
+// Timeline : glisser (input), lecture, reset
+document.addEventListener('input', e=>{
+  if(e.target.id==='mapTlSlider'){ _tlIdx = +e.target.value; _tlSkipFit=true; renderMap(); }
+});
+function _tlStop(){ if(_tlPlayId){ clearInterval(_tlPlayId); _tlPlayId=null; } const b=$('#mapTlPlay'); if(b){ b.textContent='▶'; b.classList.remove('playing'); b.title='Lancer l\'animation'; } }
+function _tlPlay(){
+  if(!_tlDates.length) return;
+  _tlStop();
+  if(_tlIdx>=_tlDates.length-1) _tlIdx=0;   // si on est à la fin, on repart du début
+  _tlSkipFit=true; renderMap();
+  const b=$('#mapTlPlay'); if(b){ b.textContent='⏸'; b.classList.add('playing'); b.title='Pause'; }
+  const stepMs = Math.max(60, Math.min(180, 8000/_tlDates.length));   // ~8 s pour l'animation totale
+  _tlPlayId = setInterval(()=>{
+    _tlIdx++;
+    if(_tlIdx>=_tlDates.length-1){ _tlIdx=_tlDates.length-1; _tlSkipFit=true; renderMap(); _tlStop(); return; }
+    _tlSkipFit=true; renderMap();
+  }, stepMs);
+}
+document.addEventListener('click', e=>{
+  if(e.target.id==='mapTlPlay'){ if(_tlPlayId) _tlStop(); else _tlPlay(); }
+  else if(e.target.id==='mapTlReset'){ _tlStop(); _tlIdx=_tlDates.length-1; renderMap(); }   // reset -> tout + re-fit
 });
 
 function renderStats(me){
@@ -2015,10 +2088,10 @@ function renderStats(me){
     goalHtml+
     (fams.length?`<div class="stat-fam-title">Vos familles</div><div class="stat-fams">`+fams.map(([f,n])=>`<div class="stat-fam"><div class="stat-fam-row"><span>${esc(f)}</span><span>${n}</span></div><div class="stat-fam-bar"><div style="width:${Math.round(n/maxFam*100)}%"></div></div></div>`).join('')+`</div>`:'');
 }
-// ---- Pastilles "non lu" (Tchat / Photos) ----
-let chatLatest=0, photosLatest=0;
+// ---- Pastilles "non lu" (Tchat / Photos / Fil / Requêtes) ----
+let chatLatest=0, photosLatest=0, feedLatest=0, requestsLatest=0;
 function updateTabDots(){
-  [['chat',chatLatest],['photos',photosLatest]].forEach(([v,latest])=>{
+  [['chat',chatLatest],['photos',photosLatest],['feed',feedLatest],['requests',requestsLatest]].forEach(([v,latest])=>{
     const btn=[...document.querySelectorAll('.tab')].find(b=>b.dataset.view===v); if(!btn) return;
     let seen=0; try{ seen=+localStorage.getItem('mb-seen-'+v)||0; }catch(_){ }
     const isActive=document.querySelector('.tab.on')?.dataset.view===v;
@@ -2279,11 +2352,20 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
     markSeen('chat');
   }
   if(b.dataset.view==='photos'){ renderPhotos(); markSeen('photos'); }
-  if(b.dataset.view==='feed') renderFeed();
+  if(b.dataset.view==='feed'){ renderFeed(); markSeen('feed'); }
   if(b.dataset.view==='profil'){ const me=realPeople.find(p=>p.id===myUid); fillProfile(me); renderStats(me); }
-  if(b.dataset.view==='requests') renderRequests();
+  if(b.dataset.view==='requests'){ renderRequests(); markSeen('requests'); }
   if(b.dataset.view==='map') renderMap();
+  try{ localStorage.setItem('mb-last-tab', b.dataset.view); }catch(_){ }
 }));
+// Restaure l'onglet visité la dernière fois (par défaut Ma liste)
+try{
+  const last = localStorage.getItem('mb-last-tab');
+  if(last && last!=='load'){
+    const btn = [...document.querySelectorAll('.tab')].find(x=>x.dataset.view===last);
+    if(btn) btn.click();
+  }
+}catch(_){ }
 let pendingImage = null;
 async function compressImage(file, maxDim=1000, maxLen=700000){
   const img = await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>rej(new Error('img')); i.src=URL.createObjectURL(file); });
