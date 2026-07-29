@@ -427,6 +427,19 @@
   .map-el .leaflet-popup-content .p-list li:last-child { border-bottom:none; }
   .map-el .leaflet-popup-content .p-dot { display:inline-block; width:8px; height:8px; border-radius:50%; flex:none; align-self:center; box-shadow:0 0 0 1.5px #fff, 0 0 0 2px rgba(0,0,0,.15); }
   .map-el .map-count-lbl { display:flex; align-items:center; justify-content:center; font:700 11px/1 system-ui, sans-serif; color:#fff; text-shadow:0 0 3px rgba(0,0,0,.5); pointer-events:none; background:transparent; border:none; }
+  .map-el .leaflet-popup-content .p-link { display:inline-block; margin-top:6px; font-size:12px; color:var(--accent-ink); text-decoration:none; font-weight:600; }
+  .map-el .leaflet-popup-content .p-link:hover { text-decoration:underline; }
+  .map-el .map-legend { background:rgba(255,255,255,.95); border-radius:8px; padding:8px 10px; box-shadow:0 1px 4px rgba(0,0,0,.15); font-size:11.5px; line-height:1.35; color:#15201e; max-height:calc(100% - 40px); overflow-y:auto; }
+  .map-el .map-legend .ml-title { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; color:#47534f; }
+  .map-el .map-legend .ml-row { display:flex; align-items:center; gap:6px; padding:1px 0; }
+  .map-el .map-legend .ml-dot { width:10px; height:10px; border-radius:50%; flex:none; border:1.5px solid #fff; box-shadow:0 0 0 .5px rgba(0,0,0,.2); }
+  .map-el .map-legend .ml-txt { white-space:nowrap; }
+  .map-el .leaflet-control-layers { background:rgba(255,255,255,.95); border-radius:8px; padding:4px 8px; font-size:12px; font-weight:600; }
+  .map-el .leaflet-control-layers label { display:flex; align-items:center; gap:4px; margin:2px 0; }
+  .map-el .map-custom-btn a { width:30px; height:30px; line-height:30px; text-align:center; font-size:16px; text-decoration:none; color:#333; background:#fff; display:block; }
+  .map-el .map-custom-btn a:hover { background:#f4f4f4; }
+  .map-stats { margin-top:10px; font-size:13px; color:var(--ink-2); padding:6px 10px; background:var(--surface-2); border:1px solid var(--line); border-radius:8px; display:inline-block; }
+  .map-stats .muted { color:var(--ink-3); }
   .map-el .leaflet-container { font:inherit; }
   @media (max-width: 700px){ .map-el { height:420px; } }
   .react-bar { display:flex; gap:5px; flex-wrap:wrap; margin:3px 10px 0; align-items:center; }
@@ -770,6 +783,7 @@
       </div>
       <div id="mapNote" class="help" style="margin:6px 0 8px; display:none;"></div>
       <div id="mapEl" class="map-el"></div>
+      <div id="mapStats" class="map-stats"></div>
       <p class="help" style="margin-top:10px; font-size:11px;">Fond de carte : © OpenStreetMap · positions : votre export MyEBirdData eBird.</p>
     </section>
   </div>
@@ -985,6 +999,7 @@ function ingest(filename, text){
   let cCountry=idx('country'); if(cCountry<0)cCountry=idx('country/region'); if(cCountry<0)cCountry=idx('country code');
   // Colonnes lat/lon : présentes UNIQUEMENT dans MyEBirdData (Download My Data). Absentes de la life list.
   const cLat = idx('latitude'), cLon = idx('longitude');
+  const cLocId = idx('location id');   // eBird LocID (LxxxxxxxK) -> lien vers ebird.org/hotspot/{id} pour les hotspots publics
   const hasGeo = cState>=0 || cCountry>=0;   // sait-on situer les obs ?
   const countryOf = row => {                 // code pays ISO 2 lettres (FR, ES, US...)
     const st=(cState>=0?(row[cState]||''):'').trim();
@@ -1011,6 +1026,7 @@ function ingest(filename, text){
     const lat = cLat>=0 ? parseFloat((row[cLat]||'').trim()) : NaN;
     const lon = cLon>=0 ? parseFloat((row[cLon]||'').trim()) : NaN;
     const hasCoords = !isNaN(lat) && !isNaN(lon);
+    const locId = cLocId>=0 ? (row[cLocId]||'').trim() : '';
     const existing = species.get(key);
     if(existing){
       existing.obs++;
@@ -1018,12 +1034,14 @@ function ingest(filename, text){
       if(date && (!existing.date || date<existing.date)){
         existing.date=date; existing.loc=loc; existing.country=cc;
         if(hasCoords){ existing.lat=lat; existing.lon=lon; }
+        if(locId) existing.locId=locId;
       }
     } else {
       species.set(key, { common:common||sci, sci, date, loc, obs:1,
         fr: hasGeo ? inFR : undefined,             // undefined = pays inconnu (pas de colonne)
         country: cc,                               // pays de la 1re obs (code ISO) — pour le filtre
         lat: hasCoords?lat:null, lon: hasCoords?lon:null,  // coords de la 1re obs (pour la carte)
+        locId: locId||null,                        // eBird LocID (pour lien vers hotspot)
         nonSpecies:isNonSpecies(common,sci) });
     }
   }
@@ -1560,6 +1578,7 @@ function memberToPerson(id, data, si){
     country: e.co||null,                       // code pays de la 1re obs (pour le filtre)
     lat: (typeof e.la==='number')?e.la:null,   // coords éventuelles (MyEBirdData)
     lon: (typeof e.lo==='number')?e.lo:null,
+    locId: e.li||null,                         // LocID eBird pour lien hotspot
     // recalculé à la lecture (pas figé au moment de l'upload) : ainsi toute
     // amélioration du filtre s'applique aux listes déjà enregistrées.
     nonSpecies: isNonSpecies(e.c||'', e.s||'')
@@ -1807,7 +1826,7 @@ function renderRequests(){
   }).join('');
 }
 // ---- Carte des observations ----
-let _map=null, _mapLayer=null;
+let _map=null, _mapLayer=null, _allBounds=null;
 let mapFilter = { player:'all', tier:'any', country:'any' };
 function _fillMapSelects(pts){
   const pl=$('#mapPlayerSel'); if(pl){
@@ -1838,7 +1857,7 @@ function _mapCollectPoints(){
       if(v.lat<-90||v.lat>90||v.lon<-180||v.lon>180) continue;
       pts.push({ uid:p.id, who:p.name, si:p.si, sci:v.sci, common:frName(v.sci,v.common),
         lat:v.lat, lon:v.lon, loc:v.loc||'', date:v.date||'', cc:v.country||null,
-        w:rarityReal(v.sci) });
+        locId:v.locId||null, w:rarityReal(v.sci) });
     }
   }
   return pts;
@@ -1867,11 +1886,13 @@ function _mapMarker(pt, groupSize){
   const cc = pt.cc ? ` · ${esc(countryLabel(pt.cc))}` : '';
   const loc = pt.loc ? esc(pt.loc) : '';
   const groupNote = groupSize>1 ? `<br><span class="p-meta">Vu ici avec ${groupSize-1} autre${groupSize-1>1?'s':''} espèce${groupSize-1>1?'s':''}</span>` : '';
+  // Lien vers eBird (hotspot public si l'ID en est un ; sinon page login pour lieu perso — inévitable).
+  const ebLink = pt.locId ? `<br><a href="https://ebird.org/hotspot/${esc(pt.locId)}" target="_blank" rel="noopener" class="p-link">🔗 Voir sur eBird</a>` : '';
   m.bindPopup(
     `<b>${esc(pt.common)}</b> <span class="p-sci">${esc(pt.sci)}</span><br>`+
     `<span class="p-meta">Vu par <b>${esc(pt.who)}</b>${loc?' à '+loc:''}${cc}${date}</span><br>`+
     `<span class="p-meta">Rareté : <b>${pt.w}</b> · ${REAL_LABELS[pt.w]||'niveau '+pt.w}</span>`+
-    groupNote
+    groupNote + ebLink
   );
   return m;
 }
@@ -1890,10 +1911,53 @@ function renderMap(){
   // init leaflet (une seule fois)
   if(!_map){
     _map = L.map(el, { zoomControl:true, minZoom:2, worldCopyJump:true }).setView([46.6, 2.5], 5);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution:'© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom:19
-    }).addTo(_map);
+    // 3 fonds de carte : Plan (OSM), Sombre (CartoDB), Satellite (Esri).
+    const planLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:'© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom:19 });
+    const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution:'© OpenStreetMap · © <a href="https://carto.com/attributions">CARTO</a>', maxZoom:20, subdomains:'abcd' });
+    const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution:'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics', maxZoom:19 });
+    // Défaut : sombre si le système est en mode sombre, sinon plan
+    const preferDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    (preferDark?darkLayer:planLayer).addTo(_map);
+    L.control.layers({ 'Plan':planLayer, 'Sombre':darkLayer, 'Satellite':satLayer }, {}, { position:'topright', collapsed:false }).addTo(_map);
+    // Légende des couleurs (bas-droite)
+    const legend = L.control({ position:'bottomright' });
+    legend.onAdd = () => {
+      const div = L.DomUtil.create('div', 'map-legend');
+      const tiers = [1,2,3,4,5,6,7,8,9];
+      div.innerHTML = '<div class="ml-title">Rareté</div>' + tiers.map(w=>
+        `<div class="ml-row"><span class="ml-dot" style="background:${realColor(w)}"></span><span class="ml-txt"><b>${w}</b> ${esc(REAL_LABELS[w]||'')}</span></div>`).join('');
+      L.DomEvent.disableClickPropagation(div);
+      return div;
+    };
+    legend.addTo(_map);
+    // Bouton "Voir tout" (recentrer sur tous les points filtrés)
+    const fitBtn = L.control({ position:'topleft' });
+    fitBtn.onAdd = () => {
+      const div = L.DomUtil.create('div', 'leaflet-bar map-custom-btn');
+      div.innerHTML = '<a href="#" title="Voir tous les points">🔎</a>';
+      L.DomEvent.on(div, 'click', e=>{ L.DomEvent.stop(e); if(_allBounds) _map.fitBounds(_allBounds, { padding:[30,30], maxZoom:14 }); });
+      return div;
+    };
+    fitBtn.addTo(_map);
+    // Bouton "Ma position" (géolocalisation navigateur)
+    const posBtn = L.control({ position:'topleft' });
+    posBtn.onAdd = () => {
+      const div = L.DomUtil.create('div', 'leaflet-bar map-custom-btn');
+      div.innerHTML = '<a href="#" title="Ma position">📍</a>';
+      L.DomEvent.on(div, 'click', e=>{ L.DomEvent.stop(e);
+        if(!navigator.geolocation){ alert('Géolocalisation non disponible'); return; }
+        const a = div.querySelector('a'); const prev=a.textContent; a.textContent='⏳';
+        navigator.geolocation.getCurrentPosition(
+          pos=>{ _map.setView([pos.coords.latitude,pos.coords.longitude], 12); a.textContent=prev; },
+          err=>{ alert('Impossible de vous localiser : '+(err.message||err.code)); a.textContent=prev; },
+          { enableHighAccuracy:false, timeout:8000 });
+      });
+      return div;
+    };
+    posBtn.addTo(_map);
   }
   if(_mapLayer){ _mapLayer.remove(); _mapLayer=null; }
   // filtre
@@ -1915,10 +1979,17 @@ function renderMap(){
   layer.addTo(_map);
   _mapLayer = layer;
   const cnt = $('#mapCount'); if(cnt) cnt.textContent = `${pts.length} obs · ${groups.size} lieu${groups.size>1?'x':''}`;
+  // récap détaillé sous la carte
+  const uniqPersons = new Set(pts.map(p=>p.uid)).size;
+  const uniqCountries = new Set(pts.map(p=>p.cc).filter(Boolean)).size;
+  const stats = $('#mapStats');
+  if(stats){
+    stats.innerHTML = pts.length ? `<b>${pts.length}</b> obs · <b>${groups.size}</b> lieu${groups.size>1?'x':''} · <b>${uniqCountries}</b> pays · <b>${uniqPersons}</b> personne${uniqPersons>1?'s':''}` : '<span class="muted">Aucune obs à afficher avec ces filtres.</span>';
+  }
   // fit bounds si des points
   if(pts.length){
     const b = L.latLngBounds(pts.map(p=>[p.lat,p.lon]));
-    // ne pas trop dézoomer sur un seul point : fit avec padding
+    _allBounds = b;   // mémorisé pour le bouton "Voir tout"
     _map.fitBounds(b, { padding:[30,30], maxZoom:14 });
   }
   // le map peut mal se dimensionner s'il est instancié caché : rafraîchir la taille
@@ -2006,6 +2077,7 @@ async function saveMyList(name, speciesMap){
     if(v.fr!==undefined) e.f = v.fr?1:0;   // 1=vu en France, 0=uniquement étranger, absent=inconnu
     if(v.country) e.co = v.country;        // code pays de la 1re obs (FR, ES, US...)
     if(v.lat!=null && v.lon!=null){ e.la = v.lat; e.lo = v.lon; }   // coords pour la carte (MyEBirdData)
+    if(v.locId) e.li = v.locId;                                     // LocID eBird -> lien vers hotspot
     return e; });
   const ref=doc(db,'leagues',leagueId,'members',myUid);
   const payload={ name, species:arr, updatedAt: serverTimestamp() };
@@ -2071,10 +2143,10 @@ async function handleFiles(fileList){
   if(prev){
     let kept=0;
     for(const [k,v] of parsed.species){
-      if((v.lat==null||v.lon==null) && prev.has(k)){
-        const old=prev.get(k);
-        if(typeof old.lat==='number' && typeof old.lon==='number'){ v.lat=old.lat; v.lon=old.lon; kept++; }
-      }
+      if(!prev.has(k)) continue;
+      const old=prev.get(k);
+      if((v.lat==null||v.lon==null) && typeof old.lat==='number' && typeof old.lon==='number'){ v.lat=old.lat; v.lon=old.lon; kept++; }
+      if(!v.locId && old.locId){ v.locId=old.locId; }
     }
     if(kept) console.log('Ré-import : '+kept+' coords GPS préservées.');
   }
