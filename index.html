@@ -908,9 +908,15 @@ function realTier(sci, abroad){
   }
   const w=rarityReal(sci); return { id:'r'+w, ord:w, label:REAL_LABELS[w]||('niveau '+w), color:realColor(w) };
 }
-// Cochage hors compétition (vu uniquement à l'étranger) : visible mais non compté.
+// Cochage hors compétition : visible mais non compté.
 const FOREIGN_TIER = { id:'etr', ord:-1, label:'Étranger', color:'#8a7fb3' };
-const countsFR = v => v.fr!==false;              // compte pour la France ? (false = étranger confirmé)
+// Espèce faisant partie de l'avifaune française (observable en France) ?
+const inRef = sci => { const k=(sci||'').trim().toLowerCase(); return (k in REAL_RARITY) || (k in FR_NAMES) || isExotic(k); };
+// Vrai cochage étranger = vu SEULEMENT à l'étranger ET pas une espèce de France.
+// (Un oiseau français vu d'abord à l'étranger — ex. Pinson — reste compté : la life list
+//  eBird ne garde que la 1re obs, donc son lieu n'est pas fiable pour l'exclure.)
+const foreignTick = v => v.fr===false && !inRef(v.sci);
+const countsFR = v => !foreignTick(v);           // compte sauf vrai cochage étranger
 const holdersFR = u => u.counts!=null ? u.counts : [...u.seenBy.values()].filter(countsFR).length;
 
 function build(){
@@ -1136,7 +1142,7 @@ function renderMatrix({universe,N}){
     const k=holdersFR(u), t=rarOf(u);
     const cells = state.people.map(p=>{
       const v=u.seenBy.get(p.id); if(!v) return '<td class="pcol"></td>';
-      const foreign=v.fr===false;
+      const foreign=foreignTick(v);
       return `<td class="pcol is-seen${foreign?' is-foreign':''}"${foreign?' title="Vu à l\'étranger — hors compétition"':''}><i class="chk">${foreign?'🌍':'✓'}</i></td>`;
     }).join('');
     return `<tr class="${u.missing?'missing':''}">
@@ -1149,7 +1155,7 @@ function renderMatrix({universe,N}){
   cards.innerHTML = list.map(u=>{
     const k=holdersFR(u), t=rarOf(u);
     const seers = state.people.filter(p=>u.seenBy.has(p.id))
-      .map(p=>{ const foreign=u.seenBy.get(p.id).fr===false;
+      .map(p=>{ const foreign=foreignTick(u.seenBy.get(p.id));
         return `<span class="mc-person${foreign?' is-foreign':''}" style="--series:var(--s${p.si})" title="${foreign?'Vu à l\'étranger — hors compétition':''}"><span class="dot"></span>${esc(p.name)}${foreign?' 🌍':''}</span>`; }).join('');
     return `<div class="mcard ${u.missing?'missing':''}" style="border-left-color:${t.color}">
       <div class="mc-head">
@@ -1530,7 +1536,7 @@ function renderFeed(){
     const active=p._active||p.species; if(!active) continue;
     for(const v of active.values()){
       const pd=parseDate(v.date);
-      if(pd) items.push({ name:p.name, uid:p.id, bird:frName(v.sci,v.common), sci:(v.sci||''), abroad:v.fr===false, ord:pd.ord, disp:pd.disp });
+      if(pd) items.push({ name:p.name, uid:p.id, bird:frName(v.sci,v.common), sci:(v.sci||''), abroad:foreignTick(v), ord:pd.ord, disp:pd.disp });
     }
   }
   items.sort((a,b)=>b.ord-a.ord);
