@@ -1841,30 +1841,36 @@ function _mapCollectPoints(){
   }
   return pts;
 }
-// Regroupe les obs par position exacte -> un marqueur par lieu, popup listant toutes les espèces.
-// Rayon du marqueur = f(nombre d'obs) ; couleur = rareté MAX du lieu (le plus rare observé ici).
-function _mapMarkersForGroup(group){
-  const first = group[0];
-  const maxW = group.reduce((m,p)=>Math.max(m,p.w),0);
-  const color = realColor(maxW);
-  const n = group.length;
-  const radius = n===1 ? 6 : n<=3 ? 8 : n<=10 ? 10 : n<=25 ? 12 : 14;
-  const m = L.circleMarker([first.lat, first.lon], { radius, weight:1.5, color:'#fff', fillColor:color, fillOpacity:.85, opacity:1 });
-  // libellé au centre pour les groupes
-  if(n>1){
-    const icon = L.divIcon({ className:'map-count-lbl', html:String(n), iconSize:[24,24], iconAnchor:[12,12] });
-    m._countMarker = L.marker([first.lat, first.lon], { icon, interactive:false, keyboard:false });
+// Un marqueur par espèce. Quand plusieurs obs partagent la position exacte,
+// on éparpille en spirale (Fibonacci "sunflower") pour éviter la superposition.
+// Le popup indique le vrai lieu (loc) — le décalage est purement visuel.
+function _spreadGroup(group){
+  const n=group.length; if(n<=1){ group[0].dispLat=group[0].lat; group[0].dispLon=group[0].lon; return; }
+  const GOLDEN=Math.PI*(3-Math.sqrt(5));
+  // rayon max ~50 m : proche à haut zoom, invisible à faible zoom
+  const maxDeg = 0.00045 * Math.sqrt(n/8);   // grandit un peu avec la taille du groupe
+  for(let i=0;i<n;i++){
+    const r = maxDeg * Math.sqrt((i+0.5)/n);
+    const th = i * GOLDEN;
+    const dLat = r*Math.cos(th);
+    const dLon = r*Math.sin(th)/Math.max(0.1, Math.cos(group[i].lat*Math.PI/180));
+    group[i].dispLat = group[i].lat + dLat;
+    group[i].dispLon = group[i].lon + dLon;
   }
-  const loc = first.loc ? esc(first.loc) : '';
-  const cc = first.cc ? esc(countryLabel(first.cc)) : '';
-  const heading = `<div class="p-head"><b>${loc||(cc||'Position')}</b>${cc&&loc?` <span class="p-meta">· ${cc}</span>`:''}<br><span class="p-meta">${n} espèce${n>1?'s':''} observée${n>1?'s':''} ici</span></div>`;
-  // liste des espèces triée par rareté DESC puis nom
-  const sorted = [...group].sort((a,b)=> (b.w-a.w) || a.common.localeCompare(b.common,'fr'));
-  const items = sorted.map(p=>{
-    const date = p.date ? `<span class="p-meta"> · ${esc(p.date)}</span>` : '';
-    return `<li><span class="p-dot" style="background:${realColor(p.w)}"></span><b>${esc(p.common)}</b> <span class="p-meta">· ${esc(p.who)}${date}</span></li>`;
-  }).join('');
-  m.bindPopup(`${heading}<ul class="p-list">${items}</ul>`, { maxWidth:280, maxHeight:280 });
+}
+function _mapMarker(pt, groupSize){
+  const color = realColor(pt.w);
+  const m = L.circleMarker([pt.dispLat, pt.dispLon], { radius:6, weight:1.5, color:'#fff', fillColor:color, fillOpacity:.85, opacity:1 });
+  const date = pt.date ? ` <span class="p-meta">· ${esc(pt.date)}</span>` : '';
+  const cc = pt.cc ? ` · ${esc(countryLabel(pt.cc))}` : '';
+  const loc = pt.loc ? esc(pt.loc) : '';
+  const groupNote = groupSize>1 ? `<br><span class="p-meta">Vu ici avec ${groupSize-1} autre${groupSize-1>1?'s':''} espèce${groupSize-1>1?'s':''}</span>` : '';
+  m.bindPopup(
+    `<b>${esc(pt.common)}</b> <span class="p-sci">${esc(pt.sci)}</span><br>`+
+    `<span class="p-meta">Vu par <b>${esc(pt.who)}</b>${loc?' à '+loc:''}${cc}${date}</span><br>`+
+    `<span class="p-meta">Rareté : <b>${pt.w}</b> · ${REAL_LABELS[pt.w]||'niveau '+pt.w}</span>`+
+    groupNote
+  );
   return m;
 }
 function renderMap(){
@@ -1896,11 +1902,11 @@ function renderMap(){
     if(f.country!=='any' && p.cc!==f.country) return false;
     return true;
   });
-  // Groupe par position (arrondi à 5 décimales ~1 m) pour éviter les punaises superposées.
+  // Groupe par position exacte pour éparpiller en spirale (visuel seulement, popup garde le vrai lieu).
   const groups = new Map();
   for(const p of pts){ const k = p.lat.toFixed(5)+','+p.lon.toFixed(5); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(p); }
-  const markers = [];
-  for(const g of groups.values()){ const m = _mapMarkersForGroup(g); markers.push(m); if(m._countMarker) markers.push(m._countMarker); }
+  for(const g of groups.values()) _spreadGroup(g);
+  const markers = pts.map(p=>_mapMarker(p, groups.get(p.lat.toFixed(5)+','+p.lon.toFixed(5)).length));
   const layer = L.layerGroup(markers);
   layer.addTo(_map);
   _mapLayer = layer;
