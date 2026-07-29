@@ -1849,8 +1849,8 @@ function _mapCollectPoints(){
 function _spreadGroup(group){
   const n=group.length; if(n<=1){ group[0].dispLat=group[0].lat; group[0].dispLon=group[0].lon; return; }
   const GOLDEN=Math.PI*(3-Math.sqrt(5));
-  // rayon max ~50 m : proche à haut zoom, invisible à faible zoom
-  const maxDeg = 0.00045 * Math.sqrt(n/8);   // grandit un peu avec la taille du groupe
+  // rayon max ~120 m : visible dès un zoom modéré
+  const maxDeg = 0.0011 * Math.sqrt(n/8);   // grandit un peu avec la taille du groupe
   for(let i=0;i<n;i++){
     const r = maxDeg * Math.sqrt((i+0.5)/n);
     const th = i * GOLDEN;
@@ -1908,7 +1908,9 @@ function renderMap(){
   const groups = new Map();
   for(const p of pts){ const k = p.lat.toFixed(5)+','+p.lon.toFixed(5); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(p); }
   for(const g of groups.values()) _spreadGroup(g);
-  const markers = pts.map(p=>_mapMarker(p, groups.get(p.lat.toFixed(5)+','+p.lon.toFixed(5)).length));
+  // Tri : les plus rares en dernier -> dessinés au-dessus dans le SVG Leaflet
+  const ordered = [...pts].sort((a,b)=> a.w - b.w);
+  const markers = ordered.map(p=>_mapMarker(p, groups.get(p.lat.toFixed(5)+','+p.lon.toFixed(5)).length));
   const layer = L.layerGroup(markers);
   layer.addTo(_map);
   _mapLayer = layer;
