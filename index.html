@@ -229,6 +229,9 @@
   td.pcol { text-align:center; padding:0; }
   td.pcol.is-seen { background:color-mix(in srgb,var(--accent) 18%,var(--surface)) !important;
     color:var(--accent-ink); font-weight:700; }
+  td.pcol.is-foreign { background:color-mix(in srgb,#8a7fb3 16%,var(--surface)) !important; }
+  td.pcol.is-foreign .chk { font-size:11px; }
+  .mc-person.is-foreign { opacity:.7; }
   td.pcol .chk { font-style:normal; font-size:13px; }
   .chip { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:4px;
     white-space:nowrap; background:color-mix(in srgb,var(--tc) 16%,transparent); color:var(--tc);
@@ -902,6 +905,10 @@ function realTier(sci, abroad){
   }
   const w=rarityReal(sci); return { id:'r'+w, ord:w, label:REAL_LABELS[w]||('niveau '+w), color:realColor(w) };
 }
+// Cochage hors compétition (vu uniquement à l'étranger) : visible mais non compté.
+const FOREIGN_TIER = { id:'etr', ord:-1, label:'Étranger', color:'#8a7fb3' };
+const countsFR = v => v.fr!==false;              // compte pour la France ? (false = étranger confirmé)
+const holdersFR = u => u.counts!=null ? u.counts : [...u.seenBy.values()].filter(countsFR).length;
 
 function build(){
   const N = state.people.length;
@@ -915,26 +922,30 @@ function build(){
       if(v.fr===true) u.anyFR=true; else if(v.fr===false) u.anyAbroad=true;
     }
   });
-  state.people.forEach(p=>{ p.score=0; p.unique=0; p.total = p._active.size; });
+  // Compétition = France seule : un cochage vu uniquement à l'étranger (fr===false)
+  // reste visible mais ne rapporte ni espèce ni point dans les 3 classements.
+  state.people.forEach(p=>{ p.score=0; p.unique=0; let t=0; for(const v of p._active.values()) if(countsFR(v)) t++; p.total=t; });
   for(const u of universe.values()){
-    const k = u.seenBy.size;
-    u.tier = tierFor(k, N);
-    const val = 100 / k;
-    for(const pidk of u.seenBy.keys()){
-      const p = state.people.find(x=>x.id===pidk);
-      p.score += val;
-      if(k===1) p.unique++;
-    }
+    let k=0; for(const v of u.seenBy.values()) if(countsFR(v)) k++;   // détenteurs "France"
+    u.counts=k;
+    u.tier = k===0 ? FOREIGN_TIER : tierFor(k, N);
+    if(k>0){ const val = 100 / k;
+      for(const [pidk,v] of u.seenBy){ if(!countsFR(v)) continue;
+        const p = state.people.find(x=>x.id===pidk);
+        p.score += val;
+        if(k===1) p.unique++;
+      } }
   }
-  // l'espèce la plus rare (rareté réelle) présente dans toute la ligue
+  // l'espèce la plus rare (rareté réelle) présente dans la ligue — France seule
   let maxRW=1;
-  for(const u of universe.values()){ const w=rarityReal(u.sci); if(w>maxRW) maxRW=w; }
+  for(const u of universe.values()){ if(u.counts===0) continue; const w=rarityReal(u.sci); if(w>maxRW) maxRW=w; }
   // par joueur : espèce la plus rare (vue par le moins de monde) + dernière acquisition (date la + récente)
   state.people.forEach(p=>{
     let rarest=null, rarestK=Infinity, last=null, lastOrd=-1, lastDisp='', real=0, holdsRarest=false;
     const rrNames=[];
     for(const [key,v] of p._active){
-      const k=universe.get(key).seenBy.size;
+      if(!countsFR(v)) continue;   // hors compétition (étranger)
+      const k=universe.get(key).counts;
       const nm=frName(v.sci, v.common);
       if(k<rarestK || (k===rarestK && rarest && nm.localeCompare(rarest,'fr')<0)){ rarestK=k; rarest=nm; }
       const pd=parseDate(v.date);
@@ -1047,7 +1058,9 @@ function renderMatrix({universe,N}){
   const rMode = state.boardMode==='real' ? 'real' : 'league';
   const NONE_TIER={ id:'none', ord:-1, label:'Non observé', color:'#9aa5b1' };
   // Non observés : en rareté réelle -> on montre leur vraie rareté ; en rareté ligue -> "Non observé"
-  const rarOf = u => (u.missing && rMode!=='real') ? NONE_TIER : (rMode==='real' ? realTier(u.sci, u.anyAbroad && !u.anyFR) : u.tier);
+  const rarOf = u => u.missing ? (rMode!=='real' ? NONE_TIER : realTier(u.sci, false))
+    : (u.counts===0 ? FOREIGN_TIER                              // vu seulement à l'étranger : hors compétition, même affichage partout
+    : (rMode==='real' ? realTier(u.sci, false) : u.tier));
   const rarHead = rMode==='real' ? 'Rareté réelle' : 'Rareté';
 
   // option : ajouter tous les oiseaux de France non encore observés par le groupe
@@ -1106,7 +1119,7 @@ function renderMatrix({universe,N}){
     list=list.filter(u=>u.common.toLowerCase().includes(q)||(u.sci||'').toLowerCase().includes(q)); }
   if(state.sort==='rarity'){
     if(rMode==='real') list.sort((a,b)=> rarOf(b).ord-rarOf(a).ord || a.common.localeCompare(b.common));  // plus rare d'abord
-    else list.sort((a,b)=> (a.missing?1:0)-(b.missing?1:0) || a.seenBy.size-b.seenBy.size || a.common.localeCompare(b.common)); // observés (unique d'abord), manquants en bas
+    else list.sort((a,b)=> (a.missing?1:0)-(b.missing?1:0) || holdersFR(a)-holdersFR(b) || a.common.localeCompare(b.common)); // observés (unique d'abord), manquants en bas
   }
   else list.sort((a,b)=> a.common.localeCompare(b.common));
 
@@ -1117,10 +1130,11 @@ function renderMatrix({universe,N}){
     return;
   }
   tb.innerHTML = list.map(u=>{
-    const k=u.seenBy.size, t=rarOf(u);
+    const k=holdersFR(u), t=rarOf(u);
     const cells = state.people.map(p=>{
-      const seen=u.seenBy.has(p.id);
-      return `<td class="pcol${seen?' is-seen':''}">${seen?'<i class="chk">✓</i>':''}</td>`;
+      const v=u.seenBy.get(p.id); if(!v) return '<td class="pcol"></td>';
+      const foreign=v.fr===false;
+      return `<td class="pcol is-seen${foreign?' is-foreign':''}"${foreign?' title="Vu à l\'étranger — hors compétition"':''}><i class="chk">${foreign?'🌍':'✓'}</i></td>`;
     }).join('');
     return `<tr class="${u.missing?'missing':''}">
       <td class="sp">${esc(u.common)}${u.sci?`<span class="sci">${esc(u.sci)}</span>`:''}</td>
@@ -1130,9 +1144,10 @@ function renderMatrix({universe,N}){
   }).join('');
 
   cards.innerHTML = list.map(u=>{
-    const k=u.seenBy.size, t=rarOf(u);
+    const k=holdersFR(u), t=rarOf(u);
     const seers = state.people.filter(p=>u.seenBy.has(p.id))
-      .map(p=>`<span class="mc-person" style="--series:var(--s${p.si})"><span class="dot"></span>${esc(p.name)}</span>`).join('');
+      .map(p=>{ const foreign=u.seenBy.get(p.id).fr===false;
+        return `<span class="mc-person${foreign?' is-foreign':''}" style="--series:var(--s${p.si})" title="${foreign?'Vu à l\'étranger — hors compétition':''}"><span class="dot"></span>${esc(p.name)}${foreign?' 🌍':''}</span>`; }).join('');
     return `<div class="mcard ${u.missing?'missing':''}" style="border-left-color:${t.color}">
       <div class="mc-head">
         <div class="mc-sp">${esc(u.common)}${u.sci?`<span class="mc-sci">${esc(u.sci)}</span>`:''}</div>
@@ -1530,10 +1545,12 @@ function renderStats(me){
   const box=$('#statsBox'); if(!box) return;
   if(!me || !me._active){ box.style.display='none'; box.innerHTML=''; return; }
   box.style.display='';
-  const active=me._active; const total=active.size;
-  let rareName='—', rareTier=null, maxW=0; const famCount={};
+  const active=me._active;
+  let total=0, rareName='—', rareTier=null, maxW=0; const famCount={};
   for(const v of active.values()){
-    const w=rarityReal(v.sci); if(w>maxW){ maxW=w; rareName=frName(v.sci,v.common); rareTier=realTier(v.sci, v.fr===false); }
+    if(!countsFR(v)) continue;   // France seule (cohérent avec le classement)
+    total++;
+    const w=rarityReal(v.sci); if(w>maxW){ maxW=w; rareName=frName(v.sci,v.common); rareTier=realTier(v.sci, false); }
     const f=familyOf(v.sci); famCount[f]=(famCount[f]||0)+1;
   }
   const fams=Object.entries(famCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
