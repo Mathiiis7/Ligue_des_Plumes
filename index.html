@@ -527,14 +527,14 @@
     </div>
     <details class="import-guide">
       <summary>📥 Comment récupérer ma liste eBird ?</summary>
-      <p style="margin:8px 0 0;"><b>Méthode recommandée</b> (fichier complet, avec les pays) :</p>
+      <p style="margin:8px 0 0;"><b>Le plus simple — sans email :</b></p>
       <ol>
-        <li>Connectez-vous sur eBird (le compte lié à Merlin), puis allez sur <a href="https://ebird.org/downloadMyData" target="_blank" rel="noopener">ebird.org/downloadMyData</a>.</li>
-        <li>Cliquez sur <b>« Submit »</b> : eBird vous envoie par email un fichier <code>MyEBirdData.csv</code> (ça arrive en quelques minutes).</li>
+        <li>Connectez-vous sur eBird (le compte lié à Merlin), puis ouvrez votre liste mondiale : <a href="https://ebird.org/lifelist?r=world&time=life" target="_blank" rel="noopener">ebird.org/lifelist</a> (région <b>« World / Monde »</b>).</li>
+        <li>En haut à droite, cliquez sur <b>☁ Download (csv)</b> : le fichier se télécharge <b>directement, sans email</b>.</li>
         <li>Déposez ce fichier ci-dessous. 🎉</li>
       </ol>
-      <p style="margin:8px 0 0; color:var(--ink-3); font-size:12px;">Pourquoi ce fichier ? Il contient le <b>lieu de chaque observation</b>, ce qui permet à la ligue de distinguer vos oiseaux <b>vus en France</b> de ceux vus <b>à l'étranger</b>.</p>
-      <p style="margin:6px 0 0; color:var(--ink-3); font-size:12px;">Option rapide, sans email (mais sans info pays) : ouvrez <a href="https://ebird.org/lifelist/FR" target="_blank" rel="noopener">ebird.org/lifelist/FR</a> → <b>☁ Télécharger (csv)</b>, puis déposez le fichier.</p>
+      <p style="margin:8px 0 0; color:var(--ink-3); font-size:12px;">Ce fichier contient le <b>lieu de chaque espèce</b> (colonne <code>S/P</code>), donc la ligue reconnaît vos oiseaux <b>vus en France</b> et met à part ceux vus <b>à l'étranger</b> — le tout sans email.</p>
+      <p style="margin:6px 0 0; color:var(--ink-3); font-size:12px;">Variante la plus complète (par email) : <a href="https://ebird.org/downloadMyData" target="_blank" rel="noopener">ebird.org/downloadMyData</a> → « Submit » → <code>MyEBirdData.csv</code>. Utile seulement si vous avez vu une espèce à l'étranger <i>avant</i> de la voir en France.</p>
     </details>
 
     <div class="me-panel">
@@ -543,7 +543,7 @@
         <input type="text" id="myName" placeholder="Votre prénom" maxlength="24">
       </div>
       <div class="drop" id="drop">
-        <div class="big" id="dropBig">Déposez votre fichier <code>MyEBirdData.csv</code> ici</div>
+        <div class="big" id="dropBig">Déposez votre fichier eBird <code>.csv</code> ici</div>
         <div class="small" id="dropSmall">ou cliquez pour parcourir — votre liste à vous</div>
       </div>
       <input type="file" id="file" accept=".csv,text/csv" hidden>
@@ -1375,7 +1375,7 @@ function applySnapshot(snap){
   if(me && document.activeElement!==nameInput){ nameInput.value = me.name; }
   $('#myStatus').textContent = me ? `✓ Votre liste : ${me.species.size} espèces` : '';
   $('#removeMineBtn').style.display = me ? 'inline' : 'none';
-  $('#dropBig').textContent = me ? 'Remplacer votre liste' : 'Déposez votre fichier MyEBirdData.csv ici';
+  $('#dropBig').textContent = me ? 'Remplacer votre liste' : 'Déposez votre fichier eBird .csv ici';
   fillProfile(me);
   rebuild();
 }
