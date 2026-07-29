@@ -422,6 +422,8 @@
   .tstate { margin-top:9px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
     color:var(--ink-3); font-variant-numeric:tabular-nums; }
   .trophy.on .tstate { color:var(--gold); }
+  .tinfo { margin-top:6px; font-size:12.5px; font-weight:700; color:var(--ink); background:var(--surface-2);
+    border:1px solid var(--line); border-radius:8px; padding:4px 9px; display:inline-block; }
   .vote-btn { margin-top:10px; font:inherit; font-size:12px; font-weight:700; padding:6px 14px; border-radius:9px;
     border:1px solid var(--accent); background:var(--accent); color:#fff; cursor:pointer; }
   .vote-btn:hover { filter:brightness(1.06); }
@@ -990,8 +992,26 @@ function build(){
       if(maxRW>1 && rarityReal(v.sci)===maxRW){ holdsRarest=true; if(!rrNames.includes(nm)) rrNames.push(nm); }
     }
     rrNames.sort((a,b)=>a.localeCompare(b,'fr'));
-    p.rarestName=rarest; p.lastAcqName=last; p.lastAcqDisp=lastDisp; p.scoreReal=real; p.holdsRarest=holdsRarest; p.rarestRealName=rrNames.join(', ');
+    p.rarestName=rarest; p.lastAcqName=last; p.lastAcqDisp=lastDisp; p.scoreReal=real;
   });
+  // Mike Horn : UNE seule personne = celle qui détient l'oiseau le plus rare de la ligue.
+  // Oiseau le plus rare = poids max, puis le moins partagé, puis nom (déterministe).
+  let mikeId=null, mikeBird='';
+  if(maxRW>1){
+    let bestU=null;
+    for(const u of universe.values()){
+      if(u.counts===0 || rarityReal(u.sci)!==maxRW) continue;
+      if(!bestU || u.counts<bestU.counts || (u.counts===bestU.counts && frName(u.sci,u.common).localeCompare(frName(bestU.sci,bestU.common),'fr')<0)) bestU=u;
+    }
+    if(bestU){
+      mikeBird=frName(bestU.sci,bestU.common);
+      // détenteurs qui comptent -> un seul gagnant (meilleur score réel, puis 1er arrivé, puis id)
+      const holders=[...bestU.seenBy].filter(([pid,v])=>countsFR(v)).map(([pid])=>state.people.find(p=>p.id===pid)).filter(Boolean);
+      holders.sort((a,b)=> (b.scoreReal-a.scoreReal) || ((a.joinedAt||0)-(b.joinedAt||0)) || a.id.localeCompare(b.id));
+      if(holders[0]) mikeId=holders[0].id;
+    }
+  }
+  state.people.forEach(p=>{ p.mikeHorn = p.id===mikeId; p.mikeBird = p.id===mikeId ? mikeBird : ''; });
   return { universe:[...universe.values()], N };
 }
 
@@ -1230,7 +1250,7 @@ function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>
 const ICONS={"medal":"<img src=\"t-shirt.png\" alt=\"Expert Merlin Bird\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","cup":"<img src=\"etoile.png\" alt=\"Mike Horn\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","graal":"<img src=\"diamant.png\" alt=\"Le Saint-Graal\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","woodpecker":"<img src=\"pic-noir.png\" alt=\"Pic noir\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","aigle":"<img src=\"aigle.png\" alt=\"Aigles\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","huitre":"<img src=\"huitre.png\" alt=\"Huître\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bain":"<img src=\"bain.png\" alt=\"Pistoche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","pingouin":"<img src=\"pingouin.png\" alt=\"Happy feet\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","kangourou":"<img src=\"kangourou.png\" alt=\"Wallaby\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","singe":"<img src=\"singe.png\" alt=\"Le coup de Ruff\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","crown":"<img src=\"roi.png\" alt=\"Roi\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","podium":"<img src=\"argent.png\" alt=\"En chef\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bronze":"<img src=\"bronze.png\" alt=\"Chevronné\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","gem":"<img src=\"telescope.png\" alt=\"Apprenti écologue\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","binoculars":"<img src=\"loupe.png\" alt=\"Écologue du dimanche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","saisons":"<img src=\"son.png\" alt=\"Les 4 Saisons\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bebe":"<img src=\"bebe.png\" alt=\"Gros Bébé\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">"};
 const TROPHIES = [
   { icon:ICONS.medal, name:'Expert Merlin Bird', desc:'100 espèces (droit de porter le t-shirt Merlin)', test:s=>s.total>=100, prog:s=>[s.total,100] },
-  { icon:ICONS.cup, name:'Mike Horn', desc:'Avoir l’oiseau le plus rare de la ligue', test:s=>s.holdsRarest, tip:s=>s.holdsRarest&&s.rarestRealName?'Espèce la plus rare : '+s.rarestRealName:'' },
+  { icon:ICONS.cup, name:'Mike Horn', desc:'Avoir l’oiseau le plus rare de la ligue', test:s=>s.mikeHorn, info:s=>s.mikeHorn&&s.mikeBird?'🏅 '+s.mikeBird:'', tip:s=>s.mikeHorn&&s.mikeBird?'Oiseau le plus rare : '+s.mikeBird:'' },
   { icon:ICONS.graal, name:'Le Saint-Graal', desc:'Observer un oiseau Exceptionnel ou Très rare', test:s=>s.megaList.length>0, alwaysList:true, list:s=>MEGA_CATALOG.map(m=>({ name:m.name, section:m.w===9?'Exceptionnel':'Très rare', owned:s.megaOwnedSet.has(m.sci) })) },
   { icon:ICONS.woodpecker, name:'Pic noir', desc:'Observer le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker },
   { icon:ICONS.aigle, name:'Armée d’aigles royaux', desc:'Voir au moins 5 rapaces diurnes', test:s=>s.raptors>=5, prog:s=>[s.raptors,5], alwaysList:true, list:s=>RAPTOR_CATALOG.map(m=>({ name:m.name, owned:s.raptorOwnedSet.has(m.sci) })) },
@@ -1322,7 +1342,7 @@ function statsFor(me, N){
   let lackEnzoBird=false;
   if(enzo && enzo._active) for(const k of enzo._active.keys()){ if(!me._active.has(k)){ lackEnzoBird=true; break; } }
   const seasonCount=SEASON_ORDER.filter(s=>seasonHit[s]).length;
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, holdsRarest:!!me.holdsRarest, rarestRealName:me.rarestRealName||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, alcidOwnedSet, manchotOwnedSet, grosBebeVotes:(votesMap.get(me.id)?.size)||0 };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, alcidOwnedSet, manchotOwnedSet, grosBebeVotes:(votesMap.get(me.id)?.size)||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
@@ -1351,6 +1371,7 @@ function renderTrophies(data){
     if(ok) stateTxt = clic ? 'Débloqué ✓ · voir la liste' : 'Débloqué ✓';
     else stateTxt = clic ? prog+' · voir la liste' : prog;
     const tip = t.tip ? t.tip(s) : '';
+    const info = (ok && t.info) ? t.info(s) : '';
     let extra='';
     if(t.special==='vote'){
       const votes = s.grosBebeVotes||0;
@@ -1366,6 +1387,7 @@ function renderTrophies(data){
       <div class="tname">${esc(t.name)}</div>
       <div class="tdesc">${esc(t.desc)}</div>
       <div class="tstate">${stateTxt}</div>
+      ${info?`<div class="tinfo">${esc(info)}</div>`:''}
       ${extra}
     </div>`;
   }).join('');
