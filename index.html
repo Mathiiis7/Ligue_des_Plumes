@@ -461,6 +461,8 @@
   .map-timeline select { padding:5px 8px; font-size:12px; }
   #mapTlPlay { min-width:36px; font-size:12px; }
   #mapTlPlay.playing { background:var(--accent); color:#fff; }
+  .map-mode { margin:2px 0 10px; flex-wrap:wrap; }
+  .map-mode button { flex:1 1 auto; min-width:120px; }
   .explorer-controls { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:6px 0 14px; }
   .explorer-lbl { font-size:12px; font-weight:600; color:var(--ink-3); }
   .ex-section { margin-top:20px; }
@@ -814,7 +816,13 @@
         <summary>📍 Comment afficher vos observations sur la carte ?</summary>
         <p style="margin:8px 0 0; font-size:13px;">Pour avoir vos observations sur la carte (position exacte de chaque oiseau vu) : téléchargez <a href="https://ebird.org/downloadMyData" target="_blank" rel="noopener">ebird.org/downloadMyData</a> → <b>« Submit »</b> (fichier <code>MyEBirdData.csv</code> reçu par email en quelques minutes). Ce fichier contient les <b>coordonnées GPS</b> de chaque obs — la life list simple ne les a pas. Déposez-le ensuite dans l'onglet <b>Ma liste</b>.</p>
       </details>
-      <div class="map-controls">
+      <div class="seg map-mode" id="mapModes">
+        <button data-mode="mine" class="on">📍 Mes observations</button>
+        <button data-mode="missing">🐦 À aller cocher</button>
+        <button data-mode="notable">🚨 Raretés</button>
+        <button data-mode="hotspots">🏞️ Top hotspots</button>
+      </div>
+      <div class="map-controls" id="mapCtrlsMine">
         <select class="filt-sel" id="mapPlayerSel" aria-label="Filtrer par personne">
           <option value="all">Toutes les personnes</option>
         </select>
@@ -825,6 +833,33 @@
           <option value="any">Tous les pays</option>
         </select>
         <span class="map-count" id="mapCount"></span>
+      </div>
+      <div class="map-controls" id="mapCtrlsEbird" style="display:none;">
+        <label class="explorer-lbl">Région</label>
+        <select class="filt-sel" id="mapEbRegion">
+          <option value="FR" selected>🇫🇷 France entière</option>
+          <option value="FR-ARA">Auvergne-Rhône-Alpes</option>
+          <option value="FR-BFC">Bourgogne-Franche-Comté</option>
+          <option value="FR-BRE">Bretagne</option>
+          <option value="FR-CVL">Centre-Val de Loire</option>
+          <option value="FR-COR">Corse</option>
+          <option value="FR-IDF">Île-de-France</option>
+          <option value="FR-NAQ">Nouvelle-Aquitaine</option>
+          <option value="FR-NOR">Normandie</option>
+          <option value="FR-OCC">Occitanie</option>
+          <option value="FR-HDF">Hauts-de-France</option>
+          <option value="FR-PDL">Pays de la Loire</option>
+          <option value="FR-PAC">Provence-Alpes-Côte d'Azur</option>
+          <option value="FR-GES">Grand Est</option>
+        </select>
+        <label class="explorer-lbl" id="mapEbDaysLbl">Derniers</label>
+        <select class="filt-sel" id="mapEbDays">
+          <option value="7">7 jours</option>
+          <option value="14" selected>14 jours</option>
+          <option value="30">30 jours</option>
+        </select>
+        <button class="btn tiny" id="mapEbRefresh" title="Rafraîchir">🔄</button>
+        <span class="map-count" id="mapEbCount"></span>
       </div>
       <div id="mapNote" class="help" style="margin:6px 0 8px; display:none;"></div>
       <div id="mapEl" class="map-el"></div>
@@ -1972,10 +2007,15 @@ function renderRequests(){
 }
 // ---- Carte des observations ----
 let _map=null, _mapLayer=null, _allBounds=null;
-// Couches eBird "live" (Explorer intégré à la carte)
+// Mode carte : 'mine' (mes obs) | 'missing' (à cocher) | 'notable' (raretés) | 'hotspots'
+let mapMode = 'mine';
+// Couches eBird "live" (une par mode)
 let _lyrMissing=null, _lyrNotable=null, _lyrHotspots=null;
-let _loaded = { missing:'', notable:'', hotspots:'' };   // clé de cache par région chargée
+let _loaded = { missing:'', notable:'', hotspots:'' };   // clé de cache (région+jours)
+// Filtres propres au mode "mine"
 let mapFilter = { player:'all', tier:'any', country:'any' };
+// Filtres propres aux modes eBird
+let ebFilter = { region:'FR', days:14 };
 let _tlDates=[], _tlStartIdx=-1, _tlEndIdx=-1, _tlPlayPos=0, _tlPlayId=null, _tlSpeed=1, _tlSkipFit=false;   // -1 = pas encore initialisé (première ouverture -> toute la période)
 // ord (YYYYMMDD int) -> texte lisible en français
 function _fmtOrd(ord){ const y=Math.floor(ord/10000), m=Math.floor((ord%10000)/100), d=ord%100;
@@ -2051,6 +2091,61 @@ function _mapMarker(pt, groupSize){
 }
 function renderMap(){
   const el = document.getElementById('mapEl'); if(!el || !window.L) return;
+  _ensureMapInit(el);
+  // Affichage des panneaux de filtres selon le mode
+  const mine = mapMode==='mine';
+  $('#mapCtrlsMine').style.display = mine ? '' : 'none';
+  $('#mapCtrlsEbird').style.display = mine ? 'none' : '';
+  $('#mapTimeline').style.display = mine ? '' : 'none';
+  $('#mapStats').style.display = mine ? '' : 'none';
+  $('#mapNote').style.display = 'none';
+  // Cache toutes les couches ; le mode courant remet la sienne
+  if(_mapLayer){ _mapLayer.remove(); }
+  if(_lyrMissing){ _lyrMissing.remove(); }
+  if(_lyrNotable){ _lyrNotable.remove(); }
+  if(_lyrHotspots){ _lyrHotspots.remove(); }
+  // Dispatch
+  if(mine) return _renderModeMine(el);
+  if(mapMode==='missing') return _renderModeMissing();
+  if(mapMode==='notable') return _renderModeNotable();
+  if(mapMode==='hotspots') return _renderModeHotspots();
+}
+function _ensureMapInit(el){
+  if(_map) return;
+  _map = L.map(el, { zoomControl:true, minZoom:2, worldCopyJump:true }).setView([46.6, 2.5], 5);
+  const planLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:'© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom:19 });
+  const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution:'© OpenStreetMap · © <a href="https://carto.com/attributions">CARTO</a>', maxZoom:20, subdomains:'abcd' });
+  const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution:'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics', maxZoom:19 });
+  const preferDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  (preferDark?darkLayer:planLayer).addTo(_map);
+  _lyrMissing = L.layerGroup();
+  _lyrNotable = L.layerGroup();
+  _lyrHotspots = L.layerGroup();
+  L.control.layers({ 'Plan':planLayer, 'Sombre':darkLayer, 'Satellite':satLayer }, {}, { position:'topright', collapsed:false }).addTo(_map);
+  const legend = L.control({ position:'bottomright' });
+  legend.onAdd = () => {
+    const div = L.DomUtil.create('div', 'map-legend');
+    const tiers = [1,2,3,4,5,6,7,8,9];
+    div.innerHTML = '<div class="ml-title">Rareté</div>' + tiers.map(w=>
+      `<div class="ml-row"><span class="ml-dot" style="background:${realColor(w)}"></span><span class="ml-txt"><b>${w}</b> ${esc(REAL_LABELS[w]||'')}</span></div>`).join('');
+    L.DomEvent.disableClickPropagation(div);
+    return div;
+  };
+  legend.addTo(_map);
+  const fitBtn = L.control({ position:'topleft' });
+  fitBtn.onAdd = () => {
+    const div = L.DomUtil.create('div', 'leaflet-bar map-custom-btn');
+    div.innerHTML = '<a href="#" title="Voir tous les points">🔎</a>';
+    L.DomEvent.on(div, 'click', e=>{ L.DomEvent.stop(e); if(_allBounds) _map.fitBounds(_allBounds, { padding:[30,30], maxZoom:14 }); });
+    return div;
+  };
+  fitBtn.addTo(_map);
+}
+// ---- Mode "Mes observations" ----
+function _renderModeMine(el){
   const note = $('#mapNote');
   const allPts = _mapCollectPoints();
   _fillMapSelects(allPts);
@@ -2061,79 +2156,20 @@ function renderMap(){
   },0);
   if(withoutCoords>0){ note.style.display=''; note.innerHTML=`💡 ${withoutCoords} observation${withoutCoords>1?'s':''} sans coordonnées (import ancien ou life list simple). <b>Réimportez via <a href="https://ebird.org/downloadMyData" target="_blank" rel="noopener">Download My Data</a></b> pour les afficher.`; }
   else note.style.display='none';
-  // init leaflet (une seule fois)
-  if(!_map){
-    _map = L.map(el, { zoomControl:true, minZoom:2, worldCopyJump:true }).setView([46.6, 2.5], 5);
-    // 3 fonds de carte : Plan (OSM), Sombre (CartoDB), Satellite (Esri).
-    const planLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution:'© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom:19 });
-    const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution:'© OpenStreetMap · © <a href="https://carto.com/attributions">CARTO</a>', maxZoom:20, subdomains:'abcd' });
-    const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      attribution:'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics', maxZoom:19 });
-    // Défaut : sombre si le système est en mode sombre, sinon plan
-    const preferDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    (preferDark?darkLayer:planLayer).addTo(_map);
-    // Couches eBird "live" (initialement vides ; peuplées à la demande quand cochées)
-    _lyrMissing = L.layerGroup();
-    _lyrNotable = L.layerGroup();
-    _lyrHotspots = L.layerGroup();
-    L.control.layers({ 'Plan':planLayer, 'Sombre':darkLayer, 'Satellite':satLayer }, {
-      '🐦 Ce qui vous manque': _lyrMissing,
-      '🚨 Raretés du moment': _lyrNotable,
-      '🏞️ Top hotspots': _lyrHotspots
-    }, { position:'topright', collapsed:false }).addTo(_map);
-    // Chargement lazy quand l'utilisateur coche
-    _map.on('overlayadd', e=>{
-      const region = _exMapRegion();
-      if(e.layer === _lyrMissing && _loaded.missing !== region+':14'){ _loadMissingLayer(region); }
-      else if(e.layer === _lyrNotable && _loaded.notable !== 'FR:14'){ _loadNotableLayer(); }
-      else if(e.layer === _lyrHotspots && _loaded.hotspots !== region){ _loadHotspotsLayer(region); }
-    });
-    // Légende des couleurs (bas-droite)
-    const legend = L.control({ position:'bottomright' });
-    legend.onAdd = () => {
-      const div = L.DomUtil.create('div', 'map-legend');
-      const tiers = [1,2,3,4,5,6,7,8,9];
-      div.innerHTML = '<div class="ml-title">Rareté</div>' + tiers.map(w=>
-        `<div class="ml-row"><span class="ml-dot" style="background:${realColor(w)}"></span><span class="ml-txt"><b>${w}</b> ${esc(REAL_LABELS[w]||'')}</span></div>`).join('');
-      L.DomEvent.disableClickPropagation(div);
-      return div;
-    };
-    legend.addTo(_map);
-    // Bouton "Voir tout" (recentrer sur tous les points filtrés)
-    const fitBtn = L.control({ position:'topleft' });
-    fitBtn.onAdd = () => {
-      const div = L.DomUtil.create('div', 'leaflet-bar map-custom-btn');
-      div.innerHTML = '<a href="#" title="Voir tous les points">🔎</a>';
-      L.DomEvent.on(div, 'click', e=>{ L.DomEvent.stop(e); if(_allBounds) _map.fitBounds(_allBounds, { padding:[30,30], maxZoom:14 }); });
-      return div;
-    };
-    fitBtn.addTo(_map);
-  }
-  if(_mapLayer){ _mapLayer.remove(); _mapLayer=null; }
-  // Timeline : construit la liste des dates uniques présentes dans allPts.
+  // Timeline
   _tlDates = [...new Set(allPts.map(p=>p.dateOrd).filter(x=>x!=null))].sort((a,b)=>a-b);
-  const tlEl = $('#mapTimeline'), tlStart = $('#mapTlStart'), tlEnd = $('#mapTlEnd'), tlLabel = $('#mapTlLabel');
+  const tlEl=$('#mapTimeline'), tlStart=$('#mapTlStart'), tlEnd=$('#mapTlEnd'), tlLabel=$('#mapTlLabel');
   if(tlEl && _tlDates.length>1){
-    tlEl.style.display='';
-    const max = _tlDates.length-1;
-    tlStart.max = max; tlEnd.max = max;
-    // 1re init OU hors bornes -> fenêtre pleine (0..max)
-    if(_tlEndIdx<0 || _tlEndIdx>max) _tlEndIdx = max;
-    if(_tlStartIdx<0 || _tlStartIdx>max) _tlStartIdx = 0;
-    if(_tlStartIdx>_tlEndIdx) _tlStartIdx = _tlEndIdx;
-    if(_tlPlayPos<_tlStartIdx||_tlPlayPos>_tlEndIdx) _tlPlayPos = _tlEndIdx;
-    tlStart.value = _tlStartIdx; tlEnd.value = _tlEndIdx;
-    const fmt=_fmtOrd;
-    if(_tlPlayId){
-      tlLabel.textContent = 'Le '+fmt(_tlDates[_tlPlayPos])+' →';
-    } else {
-      tlLabel.textContent = (_tlStartIdx===0 && _tlEndIdx===max)
-        ? 'Toute la période' : ('Du '+fmt(_tlDates[_tlStartIdx])+' au '+fmt(_tlDates[_tlEndIdx]));
-    }
+    const max=_tlDates.length-1;
+    tlStart.max=max; tlEnd.max=max;
+    if(_tlEndIdx<0||_tlEndIdx>max) _tlEndIdx=max;
+    if(_tlStartIdx<0||_tlStartIdx>max) _tlStartIdx=0;
+    if(_tlStartIdx>_tlEndIdx) _tlStartIdx=_tlEndIdx;
+    if(_tlPlayPos<_tlStartIdx||_tlPlayPos>_tlEndIdx) _tlPlayPos=_tlEndIdx;
+    tlStart.value=_tlStartIdx; tlEnd.value=_tlEndIdx;
+    tlLabel.textContent = _tlPlayId ? ('Le '+_fmtOrd(_tlDates[_tlPlayPos])+' →')
+      : ((_tlStartIdx===0 && _tlEndIdx===max) ? 'Toute la période' : ('Du '+_fmtOrd(_tlDates[_tlStartIdx])+' au '+_fmtOrd(_tlDates[_tlEndIdx])));
   } else if(tlEl){ tlEl.style.display='none'; }
-  // filtre (personne / rareté / pays / fenêtre temporelle)
   const f = mapFilter;
   const startOrd = _tlDates.length ? _tlDates[_tlStartIdx] : -Infinity;
   const endOrd = _tlDates.length ? _tlDates[_tlPlayId ? _tlPlayPos : _tlEndIdx] : Infinity;
@@ -2144,40 +2180,86 @@ function renderMap(){
     if(p.dateOrd!=null && (p.dateOrd<startOrd || p.dateOrd>endOrd)) return false;
     return true;
   });
-  // Groupe par position exacte pour éparpiller en spirale (visuel seulement, popup garde le vrai lieu).
   const groups = new Map();
   for(const p of pts){ const k = p.lat.toFixed(5)+','+p.lon.toFixed(5); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(p); }
   for(const g of groups.values()) _spreadGroup(g);
-  // Tri : les plus rares en dernier -> dessinés au-dessus dans le SVG Leaflet
   const ordered = [...pts].sort((a,b)=> a.w - b.w);
   const markers = ordered.map(p=>_mapMarker(p, groups.get(p.lat.toFixed(5)+','+p.lon.toFixed(5)).length));
-  const layer = L.layerGroup(markers);
-  layer.addTo(_map);
-  _mapLayer = layer;
-  const cnt = $('#mapCount'); if(cnt) cnt.textContent = `${pts.length} obs · ${groups.size} lieu${groups.size>1?'x':''}`;
-  // récap détaillé sous la carte
-  const uniqPersons = new Set(pts.map(p=>p.uid)).size;
-  const uniqCountries = new Set(pts.map(p=>p.cc).filter(Boolean)).size;
-  const stats = $('#mapStats');
+  _mapLayer = L.layerGroup(markers).addTo(_map);
+  const cnt=$('#mapCount'); if(cnt) cnt.textContent = `${pts.length} obs · ${groups.size} lieu${groups.size>1?'x':''}`;
+  const stats=$('#mapStats');
   if(stats){
+    const uniqPersons=new Set(pts.map(p=>p.uid)).size, uniqCountries=new Set(pts.map(p=>p.cc).filter(Boolean)).size;
     stats.innerHTML = pts.length ? `<b>${pts.length}</b> obs · <b>${groups.size}</b> lieu${groups.size>1?'x':''} · <b>${uniqCountries}</b> pays · <b>${uniqPersons}</b> personne${uniqPersons>1?'s':''}` : '<span class="muted">Aucune obs à afficher avec ces filtres.</span>';
   }
-  // fit bounds si des points ; _allBounds toujours mémorisé (pour le bouton "Voir tout")
   if(pts.length){
-    _allBounds = L.latLngBounds(allPts.map(p=>[p.lat,p.lon]));   // englobe TOUS les points (utile même pdt le play)
-    if(!_tlSkipFit){
-      const b = L.latLngBounds(pts.map(p=>[p.lat,p.lon]));
-      _map.fitBounds(b, { padding:[30,30], maxZoom:14 });
-    }
+    _allBounds = L.latLngBounds(allPts.map(p=>[p.lat,p.lon]));
+    if(!_tlSkipFit){ _map.fitBounds(L.latLngBounds(pts.map(p=>[p.lat,p.lon])), { padding:[30,30], maxZoom:14 }); }
   }
-  _tlSkipFit = false;   // reset après usage
-  // le map peut mal se dimensionner s'il est instancié caché : rafraîchir la taille
+  _tlSkipFit=false;
   setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
+}
+// ---- Modes eBird (missing / notable / hotspots) ----
+async function _renderModeMissing(){
+  const region=ebFilter.region, days=ebFilter.days;
+  const cnt=$('#mapEbCount'); if(cnt) cnt.textContent='… chargement';
+  await _loadMissingLayer(region, days);
+  _lyrMissing.addTo(_map);
+  const n = _lyrMissing.getLayers().length;
+  if(cnt) cnt.textContent = n ? `${n} espèce${n>1?'s':''} à cocher` : 'Rien à cocher — vous les avez toutes ! 🎯';
+  _fitLayer(_lyrMissing);
+  setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
+}
+async function _renderModeNotable(){
+  const cnt=$('#mapEbCount'); if(cnt) cnt.textContent='… chargement';
+  await _loadNotableLayer(ebFilter.days);
+  _lyrNotable.addTo(_map);
+  const n = _lyrNotable.getLayers().length;
+  if(cnt) cnt.textContent = n ? `${n} rareté${n>1?'s':''} signalée${n>1?'s':''}` : 'Aucune rareté récente';
+  _fitLayer(_lyrNotable);
+  setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
+}
+async function _renderModeHotspots(){
+  const region=ebFilter.region;
+  const cnt=$('#mapEbCount'); if(cnt) cnt.textContent='… chargement';
+  await _loadHotspotsLayer(region);
+  _lyrHotspots.addTo(_map);
+  const n = _lyrHotspots.getLayers().length;
+  if(cnt) cnt.textContent = n ? `top ${n} hotspots` : 'Aucun hotspot trouvé';
+  _fitLayer(_lyrHotspots);
+  setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
+}
+function _fitLayer(lyr){
+  const latlngs = []; lyr.eachLayer(l=>{ const ll=l.getLatLng?l.getLatLng():null; if(ll) latlngs.push([ll.lat, ll.lng]); });
+  if(!latlngs.length) return;
+  _allBounds = L.latLngBounds(latlngs);
+  _map.fitBounds(_allBounds, { padding:[30,30], maxZoom:12 });
 }
 document.addEventListener('change', e=>{
   if(e.target.id==='mapPlayerSel'){ mapFilter.player=e.target.value; renderMap(); }
   else if(e.target.id==='mapTierSel'){ mapFilter.tier=e.target.value; renderMap(); }
   else if(e.target.id==='mapCountrySel'){ mapFilter.country=e.target.value; renderMap(); }
+  else if(e.target.id==='mapEbRegion'){ ebFilter.region=e.target.value; _loaded.missing=''; _loaded.hotspots=''; renderMap(); }
+  else if(e.target.id==='mapEbDays'){ ebFilter.days=+e.target.value; _loaded.missing=''; _loaded.notable=''; renderMap(); }
+});
+// Mode selector
+document.addEventListener('click', e=>{
+  const b = e.target.closest('#mapModes button[data-mode]');
+  if(!b) return;
+  mapMode = b.dataset.mode;
+  document.querySelectorAll('#mapModes button').forEach(x=>x.classList.toggle('on', x===b));
+  // Cache le sélecteur "Derniers" en mode hotspots (endpoint sans param days)
+  const daysLbl=$('#mapEbDaysLbl'), daysSel=$('#mapEbDays');
+  const showDays = mapMode!=='hotspots';
+  if(daysLbl) daysLbl.style.display = showDays ? '' : 'none';
+  if(daysSel) daysSel.style.display = showDays ? '' : 'none';
+  renderMap();
+});
+document.addEventListener('click', e=>{
+  if(e.target.id==='mapEbRefresh'){ _ebCache.clear();
+    try{ Object.keys(localStorage).forEach(k=>{ if(k.startsWith('ebc:')) localStorage.removeItem(k); }); }catch(_){}
+    _loaded={missing:'',notable:'',hotspots:''}; renderMap();
+  }
 });
 // Timeline : sliders (Du/Au), vitesse, play/pause, reset
 document.addEventListener('input', e=>{
@@ -2211,11 +2293,12 @@ document.addEventListener('click', e=>{
 // ---- Couches eBird "live" sur la carte ----
 // Région à utiliser pour les endpoints eBird : basé sur le filtre "pays" de la matrice si FR-*, sinon FR par défaut.
 function _exMapRegion(){ const v=$('#exLiveRegion')?.value; return v||'FR'; }
-async function _loadMissingLayer(region){
+async function _loadMissingLayer(region, days=14){
   if(!_lyrMissing) return;
+  const key = region+':'+days;
+  if(_loaded.missing===key && _lyrMissing.getLayers().length) return;   // déjà chargé pour cette combi
   _lyrMissing.clearLayers();
   try{
-    const days=14;
     const url = `https://api.ebird.org/v2/data/obs/${region}/recent?back=${days}&maxResults=500&locale=fr`;
     const data = await _ebFetch(url);
     const me = realPeople.find(p=>p.id===myUid);
@@ -2239,14 +2322,16 @@ async function _loadMissingLayer(region){
         `<span class="p-meta">Rareté : <b>${w}</b> · ${REAL_LABELS[w]||''}</span><br>${gm}`);
       _lyrMissing.addLayer(m);
     }
-    _loaded.missing = region+':'+days;
+    _loaded.missing = key;
   } catch(_){ }
 }
-async function _loadNotableLayer(){
+async function _loadNotableLayer(days=14){
   if(!_lyrNotable) return;
+  const key = 'FR:'+days;
+  if(_loaded.notable===key && _lyrNotable.getLayers().length) return;
   _lyrNotable.clearLayers();
   try{
-    const url = `https://api.ebird.org/v2/data/obs/FR/recent/notable?back=14&maxResults=200&locale=fr`;
+    const url = `https://api.ebird.org/v2/data/obs/FR/recent/notable?back=${days}&maxResults=200&locale=fr`;
     const data = await _ebFetch(url);
     const seen = new Set();
     for(const o of data){
@@ -2263,11 +2348,12 @@ async function _loadNotableLayer(){
         `<span class="p-meta">à ${esc(o.locName||'?')}${o.howMany?' · '+o.howMany:''}</span><br>${gm} ${eb}`);
       _lyrNotable.addLayer(m);
     }
-    _loaded.notable = 'FR:14';
+    _loaded.notable = key;
   } catch(_){ }
 }
 async function _loadHotspotsLayer(region){
   if(!_lyrHotspots) return;
+  if(_loaded.hotspots===region && _lyrHotspots.getLayers().length) return;
   _lyrHotspots.clearLayers();
   try{
     const url = `https://api.ebird.org/v2/ref/hotspot/${region}?fmt=json`;
