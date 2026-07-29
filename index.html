@@ -583,6 +583,7 @@
       <div class="section-head">
         <div><div class="eyebrow">Le classement</div><h2>Qui mène la Ligue ?</h2>
           <p id="boardExplain"></p></div>
+        <button class="btn tiny" id="demoBtn" title="Ajoute des amis fictifs pour voir le rendu — jamais enregistré">👥 Voir un exemple</button>
       </div>
       <div class="seg" id="boardModes" style="margin-bottom:4px;">
         <button data-mode="league" class="on">Rareté (ligue)</button>
@@ -1378,6 +1379,16 @@ const DEMO_FRIENDS = [
   { name:'Hugo', sci:['Larus argentatus','Larus michahellis','Chroicocephalus ridibundus','Phalacrocorax carbo','Sterna hirundo','Anas platyrhynchos','Ardea cinerea','Morus bassanus','Haematopus ostralegus','Calidris alba','Calidris alpina','Arenaria interpres','Numenius arquata','Larus marinus','Gulosus aristotelis','Thalasseus sandvicensis','Recurvirostra avosetta','Charadrius hiaticula','Fratercula arctica'] },
   { name:'Inès', sci:['Turdus merula','Parus major','Cyanistes caeruleus','Erithacus rubecula','Passer domesticus','Columba palumbus','Streptopelia decaocto','Pica pica','Corvus corone','Carduelis carduelis','Sturnus vulgaris','Fringilla coelebs'] },
   { name:'Karim', sci:['Turdus merula','Parus major','Cyanistes caeruleus','Erithacus rubecula','Passer domesticus','Fringilla coelebs','Carduelis carduelis','Chloris chloris','Pica pica','Corvus corone','Coloeus monedula','Columba palumbus','Streptopelia decaocto','Sturnus vulgaris','Sylvia atricapilla','Phylloscopus collybita','Troglodytes troglodytes','Prunella modularis','Aegithalos caudatus','Sitta europaea','Dendrocopos major','Picus viridis','Buteo buteo','Milvus migrans','Falco tinnunculus','Accipiter nisus','Ardea cinerea','Egretta garzetta','Anas platyrhynchos','Fulica atra','Vanellus vanellus','Circus aeruginosus','Alcedo atthis','Motacilla cinerea','Emberiza citrinella','Saxicola rubicola'] },
+  // Nadia : voyageuse — quelques obs à l'étranger pour illustrer le filtre pays.
+  { name:'Nadia', sci:['Turdus merula','Parus major','Cyanistes caeruleus','Erithacus rubecula','Passer domesticus','Fringilla coelebs','Merops apiaster','Upupa epops','Hirundo rustica','Apus apus','Ardea cinerea','Phoenicurus ochruros'],
+    abroad:[
+      { name:'Cardinal rouge', sci:'Cardinalis cardinalis', cc:'US' },   // hors avifaune FR -> Étranger (0 pt)
+      { name:"Merle d'Amérique", sci:'Turdus migratorius', cc:'US' },    // hors réf -> Étranger
+      { name:'Geai bleu', sci:'Cyanocitta cristata', cc:'US' },          // hors réf -> Étranger
+      { name:'Bulbul des jardins', sci:'Pycnonotus barbatus', cc:'MA' }, // hors réf -> Étranger
+      { name:'Cigogne blanche', sci:'Ciconia ciconia', cc:'ES' },        // espèce FR vue en Espagne -> COMPTE, drapeau
+      { name:'Flamant rose', sci:'Phoenicopterus roseus', cc:'ES' },     // espèce FR vue en Espagne -> COMPTE, drapeau
+    ] },
 ];
 const DEMO_EXTRA = {
   'Léa':{goal:'50',fav:'Rouge-gorge familier',dream:'Martin-pêcheur d\'Europe',date:'2025-07-18'},
@@ -1387,13 +1398,18 @@ const DEMO_EXTRA = {
   'Hugo':{goal:'40',fav:'Macareux moine',dream:'Océanite tempête',date:'2025-07-19'},
   'Inès':{goal:'20',fav:'Mésange bleue',dream:'Huppe fasciée',date:'2025-07-05'},
   'Karim':{goal:'60',fav:'Faucon crécerelle',dream:'Aigle royal',date:'2025-07-21'},
+  'Nadia':{goal:'40',fav:'Guêpier d\'Europe',dream:'Quetzal resplendissant',date:'2025-07-23'},
 };
 function demoPeople(startIndex){
   return DEMO_FRIENDS.map((f,i)=>{
     const species=new Map();
     const x=DEMO_EXTRA[f.name]||{};
     f.sci.forEach((s,j)=>{ species.set(s.toLowerCase(), {
-      common:frName(s,s), sci:s, date:(j===f.sci.length-1?(x.date||''):''), loc:'', obs:1, nonSpecies:isNonSpecies('',s) }); });
+      common:frName(s,s), sci:s, date:(j===f.sci.length-1?(x.date||''):''), loc:'', obs:1,
+      fr:true, country:'FR', nonSpecies:isNonSpecies('',s) }); });
+    (f.abroad||[]).forEach(a=>{ species.set(a.sci.toLowerCase(), {
+      common:frName(a.sci, a.name||a.sci), sci:a.sci, date:'', loc:'', obs:1,
+      fr:false, country:a.cc, nonSpecies:isNonSpecies(a.name||'', a.sci) }); });
     return { id:'demo-'+i, name:f.name, filename:'', si:(startIndex+i)%SERIES_N,
       species, isMe:false, isDemo:true, goal:x.goal||'', fav:x.fav||'', dream:x.dream||'' };
   });
@@ -1911,6 +1927,8 @@ $('#tierSel').addEventListener('change',e=>{ state.tier=e.target.value; renderRe
 $('#familySel').addEventListener('change',e=>{ state.family=e.target.value; renderResults(); });
 $('#playerSel').addEventListener('change',e=>{ state.player=e.target.value; renderResults(); });
 $('#countrySel').addEventListener('change',e=>{ state.country=e.target.value; renderResults(); });
+$('#demoBtn')?.addEventListener('click',()=>{ demoOn=!demoOn; const b=$('#demoBtn');
+  b.textContent = demoOn ? '✖ Masquer l\'exemple' : '👥 Voir un exemple'; b.classList.toggle('on',demoOn); rebuild(); });
 $('#showMissing').addEventListener('change',e=>{ state.showMissing=e.target.checked; renderResults(); });
 
 // logo personnalisé (choisi depuis le site, enregistré sur cet appareil uniquement)
