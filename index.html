@@ -1001,7 +1001,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, EmailAuthProvider, linkWithCredential } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import { getFirestore, doc, setDoc, updateDoc, deleteDoc, collection, onSnapshot, serverTimestamp, addDoc, query, orderBy, limit }
+import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, onSnapshot, serverTimestamp, addDoc, query, orderBy, limit }
   from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 /* ---------------- Firebase ---------------- */
@@ -2292,14 +2292,47 @@ async function _loadHotspotsLayer(region){
 // ---- Explorer (données eBird en direct) ----
 // Clé publique du compte Mathis. Visible dans le source (JS client), donc régénérable si abus.
 const EBIRD_KEY = 'dbflh4atmsom';
-const _ebCache = new Map();   // clé = URL, valeur = { ts, data }
+const _ebCache = new Map();                        // niveau 1 : mémoire (5 min)
+const EBIRD_TTL_MS = 6*60*60*1000;                 // 6h : localStorage + Firestore partagé
+const _ebDocId = url => url.replace(/[^A-Za-z0-9]/g,'_').slice(0,200);
 async function _ebFetch(url){
-  const cached = _ebCache.get(url);
-  if(cached && (Date.now()-cached.ts) < 5*60*1000) return cached.data;   // TTL 5 min
+  // 1) Mémoire (5 min)
+  const memHit = _ebCache.get(url);
+  if(memHit && (Date.now()-memHit.ts) < 5*60*1000) return memHit.data;
+  // 2) localStorage (6h — évite les refetch en cas de reload)
+  try{
+    const ls = localStorage.getItem('ebc:'+url);
+    if(ls){ const {ts,data}=JSON.parse(ls);
+      if(Date.now()-ts < EBIRD_TTL_MS){ _ebCache.set(url,{ts,data}); return data; }
+    }
+  }catch(_){ }
+  // 3) Firestore partagé (6h — le 1er ami qui charge remplit pour les autres)
+  try{
+    if(leagueId){
+      const snap = await getDoc(doc(db,'leagues',leagueId,'ebirdCache',_ebDocId(url)));
+      if(snap.exists()){
+        const d = snap.data(); const ts = d.updatedAt?.toMillis?.()||0;
+        if(Date.now()-ts < EBIRD_TTL_MS && d.json){
+          const data = JSON.parse(d.json);
+          _ebCache.set(url,{ts:Date.now(),data});
+          try{ localStorage.setItem('ebc:'+url, JSON.stringify({ts:Date.now(),data})); }catch(_){ }
+          return data;
+        }
+      }
+    }
+  }catch(_){ }
+  // 4) L'appel eBird réel
   const r = await fetch(url, { headers:{ 'X-eBirdApiToken':EBIRD_KEY, 'Accept-Language':'fr' } });
   if(!r.ok) throw new Error('eBird API '+r.status);
   const data = await r.json();
-  _ebCache.set(url, { ts:Date.now(), data });
+  const stamp = Date.now();
+  _ebCache.set(url, { ts:stamp, data });
+  try{ localStorage.setItem('ebc:'+url, JSON.stringify({ts:stamp,data})); }catch(_){ }
+  // fire-and-forget : écrit en Firestore pour partager avec les autres amis
+  if(leagueId){
+    setDoc(doc(db,'leagues',leagueId,'ebirdCache',_ebDocId(url)),
+      { url, json:JSON.stringify(data), updatedAt:serverTimestamp() }).catch(()=>{});
+  }
   return data;
 }
 const REGION_LABEL = { 'FR':'France', 'FR-ARA':'Auvergne-Rhône-Alpes','FR-BFC':'Bourgogne-Franche-Comté','FR-BRE':'Bretagne','FR-CVL':'Centre-Val de Loire','FR-COR':'Corse','FR-IDF':'Île-de-France','FR-NAQ':'Nouvelle-Aquitaine','FR-NOR':'Normandie','FR-OCC':'Occitanie','FR-HDF':'Hauts-de-France','FR-PDL':'Pays de la Loire','FR-PAC':"Provence-Alpes-Côte d'Azur",'FR-GES':'Grand Est' };
