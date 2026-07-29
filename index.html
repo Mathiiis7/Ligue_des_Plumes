@@ -876,6 +876,10 @@ function realColor(w){
 }
 function realTier(sci){
   if(isExotic(sci)) return { id:'exo', ord:0, label:'Exotique', color:'#7e8a99' };
+  const key=(sci||'').trim().toLowerCase();
+  // Espèce hors référence (échappée/hybride/exotique rare d'une liste importée) :
+  // ne pas prétendre "Très commun", afficher "Non classé".
+  if(!(key in REAL_RARITY) && !(key in FR_NAMES)) return { id:'nc', ord:0, label:'Non classé', color:'#9aa5b1' };
   const w=rarityReal(sci); return { id:'r'+w, ord:w, label:REAL_LABELS[w]||('niveau '+w), color:realColor(w) };
 }
 
