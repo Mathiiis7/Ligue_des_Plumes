@@ -2212,7 +2212,7 @@ async function _renderModeMissing(){
 }
 async function _renderModeNotable(){
   const cnt=$('#mapEbCount'); if(cnt) cnt.textContent='… chargement';
-  await _loadNotableLayer(ebFilter.days);
+  await _loadNotableLayer(ebFilter.region, ebFilter.days);
   _lyrNotable.addTo(_map);
   const n = _lyrNotable.getLayers().length;
   if(cnt) cnt.textContent = n ? `${n} rareté${n>1?'s':''} signalée${n>1?'s':''}` : 'Aucune rareté récente';
@@ -2239,7 +2239,7 @@ document.addEventListener('change', e=>{
   if(e.target.id==='mapPlayerSel'){ mapFilter.player=e.target.value; renderMap(); }
   else if(e.target.id==='mapTierSel'){ mapFilter.tier=e.target.value; renderMap(); }
   else if(e.target.id==='mapCountrySel'){ mapFilter.country=e.target.value; renderMap(); }
-  else if(e.target.id==='mapEbRegion'){ ebFilter.region=e.target.value; _loaded.missing=''; _loaded.hotspots=''; renderMap(); }
+  else if(e.target.id==='mapEbRegion'){ ebFilter.region=e.target.value; _loaded.missing=''; _loaded.notable=''; _loaded.hotspots=''; renderMap(); }
   else if(e.target.id==='mapEbDays'){ ebFilter.days=+e.target.value; _loaded.missing=''; _loaded.notable=''; renderMap(); }
 });
 // Mode selector
@@ -2325,13 +2325,13 @@ async function _loadMissingLayer(region, days=14){
     _loaded.missing = key;
   } catch(_){ }
 }
-async function _loadNotableLayer(days=14){
+async function _loadNotableLayer(region='FR', days=14){
   if(!_lyrNotable) return;
-  const key = 'FR:'+days;
+  const key = region+':'+days;
   if(_loaded.notable===key && _lyrNotable.getLayers().length) return;
   _lyrNotable.clearLayers();
   try{
-    const url = `https://api.ebird.org/v2/data/obs/FR/recent/notable?back=${days}&maxResults=200&locale=fr`;
+    const url = `https://api.ebird.org/v2/data/obs/${region}/recent/notable?back=${days}&maxResults=200&locale=fr`;
     const data = await _ebFetch(url);
     const seen = new Set();
     for(const o of data){
