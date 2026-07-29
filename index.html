@@ -1577,6 +1577,8 @@ function rebuild(){
   if(lastChatMsgs.length) renderChat(lastChatMsgs);
   renderFeed();
   renderStats(realPeople.find(p=>p.id===myUid));
+  // Rafraîchit la carte si elle est visible (sinon vide au 1er chargement quand données arrivent après)
+  if(document.querySelector('.tab.on')?.dataset.view==='map') renderMap();
 }
 
 function applySnapshot(snap){
