@@ -155,8 +155,6 @@
   .pchip .n { color:var(--ink-3); font-size:12px; font-variant-numeric:tabular-nums; }
   .youtag { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#fff;
     background:var(--accent); border-radius:20px; padding:1px 6px; margin-left:4px; }
-  .demotag { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#fff;
-    background:var(--ink-3); border-radius:20px; padding:1px 6px; margin-left:4px; }
 
 
   #fbError { margin-top:16px; padding:12px 14px; border-radius:10px;
@@ -593,7 +591,6 @@
       <div class="section-head">
         <div><div class="eyebrow">Le classement</div><h2>Qui mène la Ligue ?</h2>
           <p id="boardExplain"></p></div>
-        <button class="btn tiny" id="demoBtn" title="Ajoute des amis fictifs pour voir le rendu — jamais enregistré">👥 Voir un exemple</button>
       </div>
       <div class="seg" id="boardModes" style="margin-bottom:4px;">
         <button data-mode="league" class="on">Rareté (ligue)</button>
@@ -771,7 +768,7 @@ const EMOJIS = [
   '🍎','🍓','🍉','🍕','🍔','🍟','🎂','🍪','🍺','☕',
   '⚽','🏀','🎾','🎯','🎣','🎮','🔭','🔎','🗺️','🧭','📷','📸'
 ];
-let realPeople = [], demoOn = false;   // aperçu d'exemple (jamais enregistré dans le cloud)
+let realPeople = [];
 let goalHeader = 'Objectif (fin de l\'été)';   // intitulé partagé de la colonne objectif
 
 const $ = s=>document.querySelector(s);
@@ -1006,7 +1003,7 @@ function renderMembers(){
   el.innerHTML = state.people.map(p=>`
     <div class="pchip" style="--series:var(--s${p.si})">
       <span class="dot"></span>
-      <span class="pname">${isOnline(p.id)?'<span class="pname-dot" title="en ligne"></span>':''}${esc(p.name)}${p.isMe?'<span class="youtag">vous</span>':''}${p.isDemo?'<span class="demotag">exemple</span>':''}</span>
+      <span class="pname">${isOnline(p.id)?'<span class="pname-dot" title="en ligne"></span>':''}${esc(p.name)}${p.isMe?'<span class="youtag">vous</span>':''}</span>
       <span class="n">${p.species.size} obs</span>
     </div>`).join('');
 }
@@ -1078,7 +1075,7 @@ function renderBoard(){
     </tr></thead>
     <tbody>${ranked.map((p,i)=>`<tr class="${i===0?'lead':''}">
       <td class="c-rank">${i===0?'★':(i+1)}</td>
-      <td class="who-cell" style="--series:var(--s${p.si})"><span class="dot"></span>${isOnline(p.id)?'<span class="pname-dot" title="en ligne"></span>':''}${esc(p.name)}${p.isMe?'<span class="youtag">vous</span>':''}${p.isDemo?'<span class="demotag">ex.</span>':''}</td>
+      <td class="who-cell" style="--series:var(--s${p.si})"><span class="dot"></span>${isOnline(p.id)?'<span class="pname-dot" title="en ligne"></span>':''}${esc(p.name)}${p.isMe?'<span class="youtag">vous</span>':''}</td>
       ${scoreTd(p)}
       <td class="c-txt">${parseInt(p.goal,10)>0 ? `${p.total} / ${parseInt(p.goal,10)}` : cell(p.goal)}</td>
       <td class="c-txt">${cell(p.fav)}</td>
@@ -1389,52 +1386,8 @@ function memberToPerson(id, data, si){
     joinedAt: data.joinedAt?.seconds || 0 };
 }
 
-/* ---------------- aperçu d'exemple (amis fictifs, JAMAIS envoyés au cloud) ---------------- */
-const DEMO_FRIENDS = [
-  { name:'Léa', sci:['Turdus merula','Parus major','Cyanistes caeruleus','Erithacus rubecula','Passer domesticus','Fringilla coelebs','Carduelis carduelis','Pica pica','Corvus corone','Columba palumbus','Streptopelia decaocto','Sturnus vulgaris','Sylvia atricapilla','Troglodytes troglodytes','Prunella modularis','Aegithalos caudatus','Sitta europaea','Chloris chloris','Buteo buteo','Phylloscopus collybita','Certhia brachydactyla','Turdus philomelos','Regulus regulus','Picus viridis','Garrulus glandarius','Poecile palustris','Dendrocopos major','Motacilla alba','Turdus pilaris','Coccothraustes coccothraustes','Cinclus cinclus','Dryocopus martius','Spinus spinus'] },
-  { name:'Tom', sci:['Turdus merula','Parus major','Cyanistes caeruleus','Erithacus rubecula','Passer domesticus','Fringilla coelebs','Pica pica','Corvus corone','Columba palumbus','Sturnus vulgaris','Buteo buteo','Anas platyrhynchos','Fulica atra','Gallinula chloropus','Ardea cinerea','Chroicocephalus ridibundus','Phalacrocorax carbo','Cygnus olor','Milvus migrans','Falco tinnunculus','Motacilla alba','Circus aeruginosus','Egretta garzetta','Podiceps cristatus','Vanellus vanellus','Aythya ferina','Pandion haliaetus','Alcedo atthis','Himantopus himantopus'] },
-  { name:'Sam', sci:['Turdus merula','Parus major','Cyanistes caeruleus','Erithacus rubecula','Passer domesticus','Carduelis carduelis','Columba palumbus','Sturnus vulgaris','Serinus serinus','Chloris chloris','Merops apiaster','Hirundo rustica','Apus apus','Emberiza cirlus','Phoenicurus ochruros','Upupa epops','Luscinia megarhynchos','Cettia cetti','Delichon urbicum','Coracias garrulus','Monticola solitarius','Galerida cristata'] },
-  { name:'Chloé', sci:['Turdus merula','Parus major','Cyanistes caeruleus','Erithacus rubecula','Fringilla coelebs','Regulus regulus','Pyrrhula pyrrhula','Certhia familiaris','Periparus ater','Lophophanes cristatus','Corvus corax','Turdus torquatus','Anthus spinoletta','Prunella collaris','Pyrrhocorax graculus','Pyrrhocorax pyrrhocorax','Montifringilla nivalis','Tichodroma muraria','Lagopus muta','Tetrao urogallus','Aquila chrysaetos','Gypaetus barbatus'] },
-  { name:'Hugo', sci:['Larus argentatus','Larus michahellis','Chroicocephalus ridibundus','Phalacrocorax carbo','Sterna hirundo','Anas platyrhynchos','Ardea cinerea','Morus bassanus','Haematopus ostralegus','Calidris alba','Calidris alpina','Arenaria interpres','Numenius arquata','Larus marinus','Gulosus aristotelis','Thalasseus sandvicensis','Recurvirostra avosetta','Charadrius hiaticula','Fratercula arctica'] },
-  { name:'Inès', sci:['Turdus merula','Parus major','Cyanistes caeruleus','Erithacus rubecula','Passer domesticus','Columba palumbus','Streptopelia decaocto','Pica pica','Corvus corone','Carduelis carduelis','Sturnus vulgaris','Fringilla coelebs'] },
-  { name:'Karim', sci:['Turdus merula','Parus major','Cyanistes caeruleus','Erithacus rubecula','Passer domesticus','Fringilla coelebs','Carduelis carduelis','Chloris chloris','Pica pica','Corvus corone','Coloeus monedula','Columba palumbus','Streptopelia decaocto','Sturnus vulgaris','Sylvia atricapilla','Phylloscopus collybita','Troglodytes troglodytes','Prunella modularis','Aegithalos caudatus','Sitta europaea','Dendrocopos major','Picus viridis','Buteo buteo','Milvus migrans','Falco tinnunculus','Accipiter nisus','Ardea cinerea','Egretta garzetta','Anas platyrhynchos','Fulica atra','Vanellus vanellus','Circus aeruginosus','Alcedo atthis','Motacilla cinerea','Emberiza citrinella','Saxicola rubicola'] },
-  // Nadia : voyageuse — quelques obs à l'étranger pour illustrer le filtre pays.
-  { name:'Nadia', sci:['Turdus merula','Parus major','Cyanistes caeruleus','Erithacus rubecula','Passer domesticus','Fringilla coelebs','Merops apiaster','Upupa epops','Hirundo rustica','Apus apus','Ardea cinerea','Phoenicurus ochruros'],
-    abroad:[
-      { name:'Cardinal rouge', sci:'Cardinalis cardinalis', cc:'US' },   // hors avifaune FR -> Étranger (0 pt)
-      { name:"Merle d'Amérique", sci:'Turdus migratorius', cc:'US' },    // hors réf -> Étranger
-      { name:'Geai bleu', sci:'Cyanocitta cristata', cc:'US' },          // hors réf -> Étranger
-      { name:'Bulbul des jardins', sci:'Pycnonotus barbatus', cc:'MA' }, // hors réf -> Étranger
-      { name:'Cigogne blanche', sci:'Ciconia ciconia', cc:'ES' },        // espèce FR vue en Espagne -> COMPTE, drapeau
-      { name:'Flamant rose', sci:'Phoenicopterus roseus', cc:'ES' },     // espèce FR vue en Espagne -> COMPTE, drapeau
-    ] },
-];
-const DEMO_EXTRA = {
-  'Léa':{goal:'50',fav:'Rouge-gorge familier',dream:'Martin-pêcheur d\'Europe',date:'2025-07-18'},
-  'Tom':{goal:'45',fav:'Balbuzard pêcheur',dream:'Pygargue à queue blanche',date:'2025-07-20'},
-  'Sam':{goal:'35',fav:'Guêpier d\'Europe',dream:'Rollier d\'Europe',date:'2025-07-12'},
-  'Chloé':{goal:'30',fav:'Tichodrome échelette',dream:'Gypaète barbu',date:'2025-07-22'},
-  'Hugo':{goal:'40',fav:'Macareux moine',dream:'Océanite tempête',date:'2025-07-19'},
-  'Inès':{goal:'20',fav:'Mésange bleue',dream:'Huppe fasciée',date:'2025-07-05'},
-  'Karim':{goal:'60',fav:'Faucon crécerelle',dream:'Aigle royal',date:'2025-07-21'},
-  'Nadia':{goal:'40',fav:'Guêpier d\'Europe',dream:'Quetzal resplendissant',date:'2025-07-23'},
-};
-function demoPeople(startIndex){
-  return DEMO_FRIENDS.map((f,i)=>{
-    const species=new Map();
-    const x=DEMO_EXTRA[f.name]||{};
-    f.sci.forEach((s,j)=>{ species.set(s.toLowerCase(), {
-      common:frName(s,s), sci:s, date:(j===f.sci.length-1?(x.date||''):''), loc:'', obs:1,
-      fr:true, country:'FR', nonSpecies:isNonSpecies('',s) }); });
-    (f.abroad||[]).forEach(a=>{ species.set(a.sci.toLowerCase(), {
-      common:frName(a.sci, a.name||a.sci), sci:a.sci, date:'', loc:'', obs:1,
-      fr:false, country:a.cc, nonSpecies:isNonSpecies(a.name||'', a.sci) }); });
-    return { id:'demo-'+i, name:f.name, filename:'', si:(startIndex+i)%SERIES_N,
-      species, isMe:false, isDemo:true, goal:x.goal||'', fav:x.fav||'', dream:x.dream||'' };
-  });
-}
 function rebuild(){
-  state.people = demoOn ? realPeople.concat(demoPeople(realPeople.length)) : realPeople.slice();
+  state.people = realPeople.slice();
   renderMembers();
   renderResults();
   updateChatIdentity();
@@ -1961,8 +1914,6 @@ $('#tierSel').addEventListener('change',e=>{ state.tier=e.target.value; renderRe
 $('#familySel').addEventListener('change',e=>{ state.family=e.target.value; renderResults(); });
 $('#playerSel').addEventListener('change',e=>{ state.player=e.target.value; renderResults(); });
 $('#countrySel').addEventListener('change',e=>{ state.country=e.target.value; renderResults(); });
-$('#demoBtn')?.addEventListener('click',()=>{ demoOn=!demoOn; const b=$('#demoBtn');
-  b.textContent = demoOn ? '✖ Masquer l\'exemple' : '👥 Voir un exemple'; b.classList.toggle('on',demoOn); rebuild(); });
 $('#showMissing').addEventListener('change',e=>{ state.showMissing=e.target.checked; renderResults(); });
 
 // logo personnalisé (choisi depuis le site, enregistré sur cet appareil uniquement)
