@@ -2432,14 +2432,20 @@ async function _loadHotspotsLayer(region){
     }
     for(const h of top){
       if(typeof h.lat!=='number'||typeof h.lng!=='number') continue;
-      const n = h.allSp||h.numSpeciesAllTime||0;
+      // En "total" : on utilise numSpeciesAllTime (pas d'enrichissement).
+      // En "todo"/"recent" : on utilise SEULEMENT h.allSp (issu de l'enrichissement).
+      // -> évite le fallback trompeur "132 espèces · 0 vues · 0 à cocher" quand l'enrichissement retourne 0.
+      const n = (hotspotSort==='total') ? (h.numSpeciesAllTime||0) : (h.allSp||0);
+      // Passe les hotspots vides en mode enrichi (pas d'activité récente / spplist échouée)
+      if(hotspotSort!=='total' && n===0 && !h.err) continue;
       const r = n>=300?11 : n>=200?9 : n>=100?7 : n>=30?7 : 5;
       const m = L.circleMarker([h.lat,h.lng], { radius:r, weight:1.5, color:'#fff', fillColor:'#1e6091', fillOpacity:.75, opacity:1 });
       const gm = `<a href="https://www.google.com/maps?q=${h.lat},${h.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
       const eb = `<a href="https://ebird.org/hotspot/${esc(h.locId)}" target="_blank" rel="noopener" class="p-link">eBird</a>`;
-      const scope = hotspotSort==='recent' ? 'ces 30 jours' : 'au total';
+      const scope = hotspotSort==='recent' ? 'ces 30 jours' : 'au total (all-time)';
       let cntLine;
       if(hotspotSort==='total') cntLine = `<b>${n}</b> espèces observées ici (all-time)`;
+      else if(h.err) cntLine = `Données indisponibles (${h.numSpeciesAllTime||'?'} all-time)`;
       else cntLine = `<b>${n}</b> espèces ${scope} · <b>${h.mySp}</b> vues par vous · <b>${h.toDo}</b> à cocher`;
       m.bindPopup(`<b>🏞️ ${esc(h.locName||h.name||'?')}</b><br>`+
         `<span class="p-meta">${h.subnational2Name?esc(h.subnational2Name)+' · ':''}${esc(h.subnational1Name||'')}</span><br>`+
