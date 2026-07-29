@@ -421,6 +421,12 @@
   .map-el .leaflet-popup-content b { color:var(--ink); }
   .map-el .leaflet-popup-content .p-sci { font-style:italic; color:var(--ink-3); font-size:11.5px; }
   .map-el .leaflet-popup-content .p-meta { font-size:11.5px; color:var(--ink-3); margin-top:3px; }
+  .map-el .leaflet-popup-content .p-head { margin-bottom:6px; }
+  .map-el .leaflet-popup-content .p-list { list-style:none; padding:0; margin:0; max-height:220px; overflow-y:auto; }
+  .map-el .leaflet-popup-content .p-list li { display:flex; align-items:baseline; gap:6px; padding:3px 0; border-bottom:1px solid var(--line); font-size:12.5px; }
+  .map-el .leaflet-popup-content .p-list li:last-child { border-bottom:none; }
+  .map-el .leaflet-popup-content .p-dot { display:inline-block; width:8px; height:8px; border-radius:50%; flex:none; align-self:center; box-shadow:0 0 0 1.5px #fff, 0 0 0 2px rgba(0,0,0,.15); }
+  .map-el .map-count-lbl { display:flex; align-items:center; justify-content:center; font:700 11px/1 system-ui, sans-serif; color:#fff; text-shadow:0 0 3px rgba(0,0,0,.5); pointer-events:none; background:transparent; border:none; }
   .map-el .leaflet-container { font:inherit; }
   @media (max-width: 700px){ .map-el { height:420px; } }
   .react-bar { display:flex; gap:5px; flex-wrap:wrap; margin:3px 10px 0; align-items:center; }
@@ -1835,17 +1841,30 @@ function _mapCollectPoints(){
   }
   return pts;
 }
-function _mapMarker(pt){
-  const color = realColor(pt.w);
-  const m = L.circleMarker([pt.lat, pt.lon], { radius:6, weight:1.5, color:'#fff', fillColor:color, fillOpacity:.85, opacity:1 });
-  const date = pt.date ? ` <span class="p-meta">· ${esc(pt.date)}</span>` : '';
-  const cc = pt.cc ? ` · ${esc(countryLabel(pt.cc))}` : '';
-  const loc = pt.loc ? esc(pt.loc) : '';
-  m.bindPopup(
-    `<b>${esc(pt.common)}</b> <span class="p-sci">${esc(pt.sci)}</span><br>`+
-    `<span class="p-meta">Vu par <b>${esc(pt.who)}</b>${loc?' à '+loc:''}${cc}${date}</span><br>`+
-    `<span class="p-meta">Rareté : <b>${pt.w}</b> · ${REAL_LABELS[pt.w]||'niveau '+pt.w}</span>`
-  );
+// Regroupe les obs par position exacte -> un marqueur par lieu, popup listant toutes les espèces.
+// Rayon du marqueur = f(nombre d'obs) ; couleur = rareté MAX du lieu (le plus rare observé ici).
+function _mapMarkersForGroup(group){
+  const first = group[0];
+  const maxW = group.reduce((m,p)=>Math.max(m,p.w),0);
+  const color = realColor(maxW);
+  const n = group.length;
+  const radius = n===1 ? 6 : n<=3 ? 8 : n<=10 ? 10 : n<=25 ? 12 : 14;
+  const m = L.circleMarker([first.lat, first.lon], { radius, weight:1.5, color:'#fff', fillColor:color, fillOpacity:.85, opacity:1 });
+  // libellé au centre pour les groupes
+  if(n>1){
+    const icon = L.divIcon({ className:'map-count-lbl', html:String(n), iconSize:[24,24], iconAnchor:[12,12] });
+    m._countMarker = L.marker([first.lat, first.lon], { icon, interactive:false, keyboard:false });
+  }
+  const loc = first.loc ? esc(first.loc) : '';
+  const cc = first.cc ? esc(countryLabel(first.cc)) : '';
+  const heading = `<div class="p-head"><b>${loc||(cc||'Position')}</b>${cc&&loc?` <span class="p-meta">· ${cc}</span>`:''}<br><span class="p-meta">${n} espèce${n>1?'s':''} observée${n>1?'s':''} ici</span></div>`;
+  // liste des espèces triée par rareté DESC puis nom
+  const sorted = [...group].sort((a,b)=> (b.w-a.w) || a.common.localeCompare(b.common,'fr'));
+  const items = sorted.map(p=>{
+    const date = p.date ? `<span class="p-meta"> · ${esc(p.date)}</span>` : '';
+    return `<li><span class="p-dot" style="background:${realColor(p.w)}"></span><b>${esc(p.common)}</b> <span class="p-meta">· ${esc(p.who)}${date}</span></li>`;
+  }).join('');
+  m.bindPopup(`${heading}<ul class="p-list">${items}</ul>`, { maxWidth:280, maxHeight:280 });
   return m;
 }
 function renderMap(){
@@ -1877,10 +1896,15 @@ function renderMap(){
     if(f.country!=='any' && p.cc!==f.country) return false;
     return true;
   });
-  const layer = L.layerGroup(pts.map(_mapMarker));
+  // Groupe par position (arrondi à 5 décimales ~1 m) pour éviter les punaises superposées.
+  const groups = new Map();
+  for(const p of pts){ const k = p.lat.toFixed(5)+','+p.lon.toFixed(5); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(p); }
+  const markers = [];
+  for(const g of groups.values()){ const m = _mapMarkersForGroup(g); markers.push(m); if(m._countMarker) markers.push(m._countMarker); }
+  const layer = L.layerGroup(markers);
   layer.addTo(_map);
   _mapLayer = layer;
-  const cnt = $('#mapCount'); if(cnt) cnt.textContent = `${pts.length} obs affichée${pts.length>1?'s':''}`;
+  const cnt = $('#mapCount'); if(cnt) cnt.textContent = `${pts.length} obs · ${groups.size} lieu${groups.size>1?'x':''}`;
   // fit bounds si des points
   if(pts.length){
     const b = L.latLngBounds(pts.map(p=>[p.lat,p.lon]));
