@@ -1594,8 +1594,14 @@ function myMemberName(){ const me=realPeople.find(p=>p.id===myUid); return me ? 
 function reactionBar(target){
   const rm=reactionsMap.get(target);
   let chips='';
-  if(rm){ for(const [emoji,voters] of rm){ if(voters.size>0){ const mine=voters.has(myUid);
-    chips+=`<button class="react-chip${mine?' mine':''}" data-target="${esc(target)}" data-emoji="${esc(emoji)}">${emoji} ${voters.size}</button>`; } } }
+  if(rm){
+    const byUid=new Map(realPeople.map(p=>[p.id,p.name]));
+    for(const [emoji,voters] of rm){ if(voters.size>0){ const mine=voters.has(myUid);
+      const names=[...voters].map(uid=>uid===myUid?'vous':(byUid.get(uid)||'Invité'))
+        .sort((a,b)=>a==='vous'?-1:b==='vous'?1:a.localeCompare(b,'fr'));
+      const tip = names.join(', ');
+      chips+=`<button class="react-chip${mine?' mine':''}" data-target="${esc(target)}" data-emoji="${esc(emoji)}" title="${esc(tip)}">${emoji} ${voters.size}</button>`; } }
+  }
   const add = myUid ? `<button class="react-add" data-target="${esc(target)}" title="Réagir">＋</button>` : '';
   return `<div class="react-bar">${chips}${add}</div>`;
 }
