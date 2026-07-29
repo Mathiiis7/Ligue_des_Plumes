@@ -1261,7 +1261,9 @@ const TROPHIES = [
   { icon:ICONS.woodpecker, name:'Pic noir', desc:'Observer le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker },
   { icon:ICONS.aigle, name:'Armée d’aigles royaux', desc:'Voir au moins 5 rapaces diurnes', test:s=>s.raptors>=5, prog:s=>[s.raptors,5], alwaysList:true, list:s=>RAPTOR_CATALOG.map(m=>({ name:m.name, owned:s.raptorOwnedSet.has(m.sci) })) },
   { icon:ICONS.huitre, name:'Bourriche d’huître', desc:'Observer un oiseau à La Teste-de-Buch', test:s=>s.locTeste },
-  { icon:ICONS.bain, name:'Pistoche', desc:'15 oiseaux d’eau + le Martin-pêcheur', test:s=>s.water>=15 && s.hasKingfisher, prog:s=>[s.water,15] },
+  { icon:ICONS.bain, name:'Pistoche', desc:'15 oiseaux d’eau + le Martin-pêcheur', test:s=>s.water>=15 && s.hasKingfisher, prog:s=>[s.water,15], alwaysList:true,
+    list:s=>WATER_CATALOG.map(m=>({ name:m.name, owned:s.waterOwnedSet.has(m.sci) })),
+    note:s=>`${s.water} oiseau${s.water>1?'x':''} d’eau observé${s.water>1?'s':''} sur ${WATER_CATALOG.length} possibles${s.hasKingfisher?' · Martin-pêcheur ✓':' · Martin-pêcheur manquant'}` },
   { icon:ICONS.pingouin, name:'Happy feet', desc:'Observer un pingouin, un manchot ou un cousin (macareux, guillemot…)', test:s=>s.hasPenguin, alwaysList:true,
     list:s=> ALCID_CATALOG.map(m=>({ name:m.name, section:'Alcidés — nos « pingouins » (hémisphère nord)', owned:s.alcidOwnedSet.has(m.sci) }))
       .concat(MANCHOT_CATALOG.map(m=>({ name:m.name, section:'Manchots — les vrais (hémisphère sud)', owned:(s.manchotOwnedSet&&s.manchotOwnedSet.has(m.sci)) }))),
@@ -1311,6 +1313,7 @@ const ALCID_CATALOG = [
 ].map(([sci,name])=>({sci,name})).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
 const ALCID_SET = new Set(ALCID_CATALOG.map(m=>m.sci));
 const RAPTOR_CATALOG = groupCatalog(RAPTOR_G);
+const WATER_CATALOG = groupCatalog(WATER_G);
 // Vrais manchots (hémisphère sud) — clin d'œil "Happy feet". Absents de la liste FR, on les code à part.
 const MANCHOT_CATALOG = [
   ['aptenodytes forsteri','Manchot empereur'],['aptenodytes patagonicus','Manchot royal'],
@@ -1326,14 +1329,14 @@ function statsFor(me, N){
   let owls=0,raptors=0,water=0,sea=0,blackWoodpecker=false,locTeste=false,hasKingfisher=false,hasPenguin=false,hasFireKingfisher=false;
   const megaList=[]; const megaOwnedSet=new Set();
   const seasonHit={}; SEASON_ORDER.forEach(s=>seasonHit[s]=false); const seasonOwnedSet=new Set();
-  const raptorOwnedSet=new Set(), alcidOwnedSet=new Set(), manchotOwnedSet=new Set();
+  const raptorOwnedSet=new Set(), alcidOwnedSet=new Set(), manchotOwnedSet=new Set(), waterOwnedSet=new Set();
   for(const v of me._active.values()){
     const sci=(v.sci||'').toLowerCase();
     const g=sci.split(' ')[0];
     const seas=SEASON_OF[sci]; if(seas){ seasonHit[seas]=true; seasonOwnedSet.add(sci); }
     if(OWL_G.test(g)) owls++;
     if(RAPTOR_G.test(g)){ raptors++; raptorOwnedSet.add(sci); }
-    if(WATER_G.test(g)) water++;
+    if(WATER_G.test(g)){ water++; waterOwnedSet.add(sci); }
     if(SEA_G.test(g)) sea++;
     if(sci==='dryocopus martius') blackWoodpecker=true;
     if(sci==='alcedo atthis') hasKingfisher=true;
@@ -1348,7 +1351,7 @@ function statsFor(me, N){
   let lackEnzoBird=false;
   if(enzo && enzo._active) for(const k of enzo._active.keys()){ if(!me._active.has(k)){ lackEnzoBird=true; break; } }
   const seasonCount=SEASON_ORDER.filter(s=>seasonHit[s]).length;
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, alcidOwnedSet, manchotOwnedSet, grosBebeVotes:(votesMap.get(me.id)?.size)||0 };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, grosBebeVotes:(votesMap.get(me.id)?.size)||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
