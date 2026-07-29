@@ -234,7 +234,8 @@
   .mc-person.is-foreign { opacity:.7; }
   td.pcol .chk { font-style:normal; font-size:13px; }
   .flag { display:inline-block; height:13px; width:auto; vertical-align:-2px; border-radius:2px; box-shadow:0 0 0 .5px rgba(0,0,0,.18); }
-  .mc-person .flag { height:12px; vertical-align:-1px; }
+  .country-badge { display:inline-flex; align-items:center; gap:8px; padding:5px 12px; border-radius:20px; background:var(--surface-2); border:1px solid var(--line); font-size:13.5px; font-weight:600; color:var(--ink); white-space:nowrap; }
+  .country-badge .flag { height:16px; vertical-align:0; }
   .chip { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:4px;
     white-space:nowrap; background:color-mix(in srgb,var(--tc) 16%,transparent); color:var(--tc);
     border:1px solid color-mix(in srgb,var(--tc) 30%,transparent); }
@@ -618,6 +619,7 @@
       <div class="section-head">
         <div><div class="eyebrow">Le détail</div><h2>Qui a vu quoi</h2>
           <div class="legend-tiers" id="tierLegend"></div></div>
+        <div class="country-badge" id="countryBadge" style="display:none;"></div>
       </div>
       <div class="controls">
         <div class="search">🔎<input type="text" id="q" placeholder="Filtrer une espèce…"></div>
@@ -1158,6 +1160,12 @@ function renderMatrix({universe,N}){
   }
   // masqué tant qu'il n'y a pas au moins un pays étranger en plus de la France
   coSel.style.display = countries.some(c=>c!=='FR') ? '' : 'none';
+  // badge : drapeau du pays sélectionné, affiché une seule fois en haut
+  const coBadge=$('#countryBadge');
+  if(coBadge){
+    if(state.country!=='any'){ coBadge.innerHTML=(flagImg(state.country)||'')+'<span>'+esc(countryLabel(state.country))+'</span>'; coBadge.style.display=''; }
+    else coBadge.style.display='none';
+  }
 
   let list=[...uni];
   if(state.tier!=='any') list=list.filter(u=>rarOf(u).id===state.tier);
@@ -1186,9 +1194,8 @@ function renderMatrix({universe,N}){
     const cells = state.people.map(p=>{
       const v=u.seenBy.get(p.id); if(!v) return '<td class="pcol"></td>';
       const foreign=foreignTick(v); const cc=v.country;
-      const ttl = cc ? `Vu en ${countryLabel(cc)}${foreign?' — hors compétition':''}` : (foreign?"Vu à l'étranger — hors compétition":'');
-      const mark = cc ? (flagImg(cc)||'🌍') : '✓';   // pays connu -> drapeau (France comprise) ; inconnu -> ✓
-      return `<td class="pcol is-seen${foreign?' is-foreign':''}"${ttl?` title="${esc(ttl)}"`:''}><i class="chk">${mark}</i></td>`;
+      const ttl = (cc&&cc!=='FR') ? `Vu en ${countryLabel(cc)}${foreign?' — hors compétition':''}` : (foreign?"Vu à l'étranger — hors compétition":'');
+      return `<td class="pcol is-seen${foreign?' is-foreign':''}"${ttl?` title="${esc(ttl)}"`:''}><i class="chk">✓</i></td>`;
     }).join('');
     return `<tr class="${u.missing?'missing':''}">
       <td class="sp">${esc(u.common)}${u.sci?`<span class="sci">${esc(u.sci)}</span>`:''}</td>
@@ -1201,8 +1208,8 @@ function renderMatrix({universe,N}){
     const k=holdersFR(u), t=rarOf(u);
     const seers = state.people.filter(p=>u.seenBy.has(p.id))
       .map(p=>{ const v=u.seenBy.get(p.id); const foreign=foreignTick(v); const cc=v.country;
-        const ttl = cc?`Vu en ${countryLabel(cc)}${foreign?' — hors compétition':''}`:'';
-        return `<span class="mc-person${foreign?' is-foreign':''}" style="--series:var(--s${p.si})"${ttl?` title="${esc(ttl)}"`:''}><span class="dot"></span>${esc(p.name)}${cc?' '+(flagImg(cc)||'🌍'):''}</span>`; }).join('');
+        const ttl = (cc&&cc!=='FR')?`Vu en ${countryLabel(cc)}${foreign?' — hors compétition':''}`:'';
+        return `<span class="mc-person${foreign?' is-foreign':''}" style="--series:var(--s${p.si})"${ttl?` title="${esc(ttl)}"`:''}><span class="dot"></span>${esc(p.name)}</span>`; }).join('');
     return `<div class="mcard ${u.missing?'missing':''}" style="border-left-color:${t.color}">
       <div class="mc-head">
         <div class="mc-sp">${esc(u.common)}${u.sci?`<span class="mc-sci">${esc(u.sci)}</span>`:''}</div>
