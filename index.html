@@ -145,6 +145,28 @@
   .linkbtn { border:none; background:transparent; color:var(--accent-ink); cursor:pointer; font:inherit;
     font-size:12.5px; text-decoration:underline; padding:2px; }
   .linkbtn:hover { color:var(--t-rare); }
+  .manual-add { margin-top:14px; border:1px solid var(--line); border-radius:12px; background:var(--surface-2); overflow:visible; }
+  .manual-add > summary { cursor:pointer; list-style:none; padding:10px 14px; font-size:13px; font-weight:700; color:var(--ink-2); }
+  .manual-add > summary::-webkit-details-marker { display:none; }
+  .manual-add > summary:hover { color:var(--ink); }
+  .manual-body { padding:2px 14px 14px; border-top:1px solid var(--line); }
+  .manual-row { display:flex; flex-wrap:wrap; gap:8px; align-items:stretch; }
+  .manual-search { position:relative; flex:1 1 220px; min-width:180px; }
+  .manual-search input { width:100%; box-sizing:border-box; padding:9px 12px; border:1px solid var(--line-2); border-radius:10px; font:inherit; background:var(--surface); color:var(--ink); }
+  .manual-search input:focus { outline:2px solid var(--accent); outline-offset:1px; }
+  .manual-row select, .manual-row input[type=date] { padding:9px 10px; border:1px solid var(--line-2); border-radius:10px; font:inherit; background:var(--surface); color:var(--ink); }
+  .manual-suggest { position:absolute; top:100%; left:0; right:0; margin-top:2px; background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,.08); z-index:10; max-height:280px; overflow-y:auto; display:none; }
+  .manual-suggest.open { display:block; }
+  .manual-suggest-item { padding:8px 12px; cursor:pointer; font-size:13px; border-bottom:1px solid var(--line); }
+  .manual-suggest-item:last-child { border-bottom:none; }
+  .manual-suggest-item:hover, .manual-suggest-item.active { background:color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+  .manual-suggest-item .sci { display:block; font-size:11px; color:var(--ink-3); font-style:italic; }
+  .manual-suggest-item .tag { font-size:10px; background:var(--surface-2); color:var(--ink-3); padding:1px 6px; border-radius:8px; margin-left:6px; }
+  .manual-picked { margin-top:10px; padding:8px 12px; background:color-mix(in srgb, var(--accent) 12%, var(--surface)); border:1px solid var(--accent); border-radius:10px; font-size:13px; color:var(--accent-ink); }
+  .manual-picked .sci { font-style:italic; color:var(--ink-3); font-size:11.5px; margin-left:6px; }
+  .manual-msg { margin-top:8px; font-size:12.5px; min-height:1em; }
+  .manual-msg.err { color:#c33; }
+  .manual-msg.ok { color:#2a8f3a; }
 
   /* people chips */
   .people { display:flex; flex-wrap:wrap; gap:9px; margin-top:18px; }
@@ -589,6 +611,32 @@
       </div>
       <div style="font-size:12px;"><button class="linkbtn" id="removeMineBtn" style="display:none;">Retirer ma liste de la ligue</button></div>
     </div>
+
+    <details class="manual-add" id="manualAdd" style="display:none;">
+      <summary>➕ Ajouter une espèce manuellement</summary>
+      <div class="manual-body">
+        <p class="help" style="margin:6px 0 10px;">Utile pour un oiseau que vous avez vu mais pas encore dans votre export eBird. Tapez le nom (français ou scientifique) et choisissez dans la liste.</p>
+        <div class="manual-row">
+          <div class="manual-search">
+            <input type="text" id="manualSearch" placeholder="Ex. « merle noir », « aegithalos »…" autocomplete="off">
+            <div class="manual-suggest" id="manualSuggest"></div>
+          </div>
+          <select id="manualCountry" title="Pays d'observation">
+            <option value="FR">🇫🇷 France</option>
+            <option value="OTHER">🌍 À l'étranger</option>
+          </select>
+          <input type="date" id="manualDate" title="Date (optionnelle)">
+          <button class="btn" id="manualAddBtn" disabled>Ajouter</button>
+        </div>
+        <div id="manualPicked" class="manual-picked" style="display:none;"></div>
+        <div id="manualCountryPickWrap" style="display:none; margin-top:8px;">
+          <select id="manualCountryPick" title="Choisir le pays">
+            <option value="">— Choisir un pays —</option>
+          </select>
+        </div>
+        <div id="manualMsg" class="manual-msg"></div>
+      </div>
+    </details>
 
     <div class="people" id="people"></div>
 
@@ -1484,6 +1532,7 @@ function applySnapshot(snap){
   if(me && document.activeElement!==nameInput){ nameInput.value = me.name; }
   $('#myStatus').textContent = me ? `✓ Votre liste : ${me.species.size} espèces` : '';
   $('#removeMineBtn').style.display = me ? 'inline' : 'none';
+  const ma=$('#manualAdd'); if(ma) ma.style.display = me ? '' : 'none';
   $('#dropBig').textContent = me ? 'Remplacer votre liste' : 'Déposez votre fichier eBird .csv ici';
   fillProfile(me);
   rebuild();
@@ -1864,6 +1913,101 @@ $('#removeMineBtn').addEventListener('click',async()=>{
   if(!confirm('Retirer votre liste de cette ligue ?')) return;
   try{ await deleteDoc(doc(db,'leagues',leagueId,'members',myUid)); $('#myStatus').textContent=''; }
   catch(err){ showError(err); }
+});
+
+// ---- Ajout manuel d'une espèce ----
+// Index de recherche : { key: sci lowercase, fr: nom français, norm: forme normalisée pour matcher }
+const _mnorm = s => s.toLowerCase().replace(/œ/g,'oe').replace(/æ/g,'ae').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,' ').trim();
+const MANUAL_INDEX = Object.keys(FR_NAMES).map(sci=>({ sci, fr:FR_NAMES[sci], normFr:_mnorm(FR_NAMES[sci]), normSci:_mnorm(sci) }));
+let manualPickedSci = null;
+function manualSearch(q){
+  q = _mnorm(q);
+  if(!q || q.length<2) return [];
+  const starts=[], contains=[];
+  for(const e of MANUAL_INDEX){
+    if(e.normFr.startsWith(q) || e.normSci.startsWith(q)) starts.push(e);
+    else if(e.normFr.includes(' '+q) || e.normFr.includes(q) || e.normSci.includes(q)) contains.push(e);
+  }
+  const words = q.split(/\s+/);
+  const sortKey = e => words.every(w=>e.normFr.includes(w)) ? 0 : 1;
+  starts.sort((a,b)=> sortKey(a)-sortKey(b) || a.fr.localeCompare(b.fr,'fr'));
+  contains.sort((a,b)=> sortKey(a)-sortKey(b) || a.fr.localeCompare(b.fr,'fr'));
+  return starts.concat(contains).slice(0,10);
+}
+function renderManualSuggestions(list){
+  const box=$('#manualSuggest'); if(!box) return;
+  if(!list.length){ box.classList.remove('open'); box.innerHTML=''; return; }
+  const me = realPeople.find(p=>p.id===myUid);
+  const mine = me?.species || new Map();
+  box.innerHTML = list.map(e=>{
+    const already = mine.has(e.sci);
+    return `<div class="manual-suggest-item" data-sci="${esc(e.sci)}">
+      <span>${esc(e.fr)}</span>${already?'<span class="tag">déjà dans votre liste</span>':''}
+      <span class="sci">${esc(e.sci)}</span>
+    </div>`;
+  }).join('');
+  box.classList.add('open');
+}
+function manualPick(sci){
+  const e = MANUAL_INDEX.find(x=>x.sci===sci); if(!e) return;
+  manualPickedSci = sci;
+  $('#manualSearch').value = e.fr;
+  $('#manualSuggest').classList.remove('open');
+  $('#manualPicked').style.display='';
+  $('#manualPicked').innerHTML = `Sélectionné : <b>${esc(e.fr)}</b><span class="sci">${esc(e.sci)}</span>`;
+  $('#manualAddBtn').disabled = false;
+  $('#manualMsg').textContent = '';
+}
+$('#manualSearch')?.addEventListener('input', e=>{
+  manualPickedSci = null; $('#manualAddBtn').disabled = true; $('#manualPicked').style.display='none';
+  renderManualSuggestions(manualSearch(e.target.value));
+});
+$('#manualSearch')?.addEventListener('focus', e=>{ if(e.target.value) renderManualSuggestions(manualSearch(e.target.value)); });
+document.addEventListener('click', e=>{ if(!e.target.closest('.manual-search') && !e.target.closest('#manualSuggest')) $('#manualSuggest')?.classList.remove('open'); });
+$('#manualSuggest')?.addEventListener('click', e=>{ const it=e.target.closest('.manual-suggest-item'); if(it) manualPick(it.dataset.sci); });
+// pays : "à l'étranger" -> affiche un vrai sélecteur de pays
+$('#manualCountry')?.addEventListener('change', e=>{
+  const wrap=$('#manualCountryPickWrap'), sel=$('#manualCountryPick');
+  if(e.target.value==='OTHER'){
+    if(sel.options.length<=1){
+      const codes=Object.keys(COUNTRY_NAMES).filter(c=>c!=='FR').sort((a,b)=>COUNTRY_NAMES[a].localeCompare(COUNTRY_NAMES[b],'fr'));
+      sel.innerHTML = '<option value="">— Choisir un pays —</option>' + codes.map(c=>`<option value="${c}">${esc(COUNTRY_NAMES[c])}</option>`).join('');
+    }
+    wrap.style.display='';
+  } else { wrap.style.display='none'; sel.value=''; }
+});
+$('#manualAddBtn')?.addEventListener('click', async ()=>{
+  const msg=$('#manualMsg'); msg.textContent=''; msg.className='manual-msg';
+  if(!manualPickedSci){ msg.className='manual-msg err'; msg.textContent='Choisissez une espèce dans la liste.'; return; }
+  if(!myUid){ msg.className='manual-msg err'; msg.textContent='Connexion en cours, réessayez.'; return; }
+  const me = realPeople.find(p=>p.id===myUid);
+  if(!me){ msg.className='manual-msg err'; msg.textContent='Chargez d\'abord votre liste principale.'; return; }
+  const key = manualPickedSci; // sci déjà en lowercase
+  if(me.species.has(key)){ msg.className='manual-msg err'; msg.textContent='Cette espèce est déjà dans votre liste.'; return; }
+  // pays
+  const co = $('#manualCountry').value;
+  let country = 'FR';
+  if(co==='OTHER'){ const pick=$('#manualCountryPick').value; if(!pick){ msg.className='manual-msg err'; msg.textContent='Choisissez un pays.'; return; } country=pick; }
+  const date = $('#manualDate').value || '';   // YYYY-MM-DD
+  const sciProper = MANUAL_INDEX.find(x=>x.sci===key).sci.split(' ').map((w,i)=>i===0?w[0].toUpperCase()+w.slice(1):w).join(' ');
+  const entry = { common: FR_NAMES[key], sci: sciProper, date, loc: 'Ajout manuel', obs: 1,
+    fr: country==='FR', country, nonSpecies: false };
+  // mise à jour locale immédiate + sauvegarde
+  me.species.set(key, entry);
+  const btn=$('#manualAddBtn'); btn.disabled=true;
+  try{
+    await saveMyList(me.name, me.species);
+    msg.className='manual-msg ok'; msg.textContent = `✓ Ajouté : ${entry.common}`;
+    // reset formulaire
+    manualPickedSci=null; $('#manualSearch').value=''; $('#manualPicked').style.display='none';
+    $('#manualDate').value=''; $('#manualCountry').value='FR'; $('#manualCountryPickWrap').style.display='none';
+    setTimeout(()=>{ if(msg.className.includes('ok')) msg.textContent=''; }, 3500);
+  }catch(err){
+    // rollback local si l'écriture Firebase échoue
+    me.species.delete(key);
+    msg.className='manual-msg err'; msg.textContent = 'Erreur : '+(err?.message||err);
+  }
+  btn.disabled=false;
 });
 
 const VIEWS = { load:'#viewLoad', profil:'#viewProfil', ranking:'#viewRanking', trophies:'#viewTrophies', chat:'#viewChat', photos:'#viewPhotos', feed:'#viewFeed', requests:'#viewRequests' };
