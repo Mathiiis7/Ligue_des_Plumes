@@ -439,6 +439,7 @@
   .map-el .leaflet-popup-content .p-list li:last-child { border-bottom:none; }
   .map-el .leaflet-popup-content .p-dot { display:inline-block; width:8px; height:8px; border-radius:50%; flex:none; align-self:center; box-shadow:0 0 0 1.5px #fff, 0 0 0 2px rgba(0,0,0,.15); }
   .map-el .map-count-lbl { display:flex; align-items:center; justify-content:center; font:700 11px/1 system-ui, sans-serif; color:#fff; text-shadow:0 0 3px rgba(0,0,0,.5); pointer-events:none; background:transparent; border:none; }
+  .map-el .notable-mark { display:flex; align-items:center; justify-content:center; font-size:20px; text-align:center; line-height:1; background:transparent; border:none; filter:drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
   .map-el .leaflet-popup-content .p-link { display:inline-block; margin-top:6px; font-size:12px; color:var(--accent-ink); text-decoration:none; font-weight:600; }
   .map-el .leaflet-popup-content .p-link:hover { text-decoration:underline; }
   .map-el .map-legend { background:rgba(255,255,255,.95); border-radius:8px; padding:8px 10px; box-shadow:0 1px 4px rgba(0,0,0,.15); font-size:11.5px; line-height:1.35; color:#15201e; max-height:calc(100% - 40px); overflow-y:auto; }
@@ -1971,6 +1972,9 @@ function renderRequests(){
 }
 // ---- Carte des observations ----
 let _map=null, _mapLayer=null, _allBounds=null;
+// Couches eBird "live" (Explorer intégré à la carte)
+let _lyrMissing=null, _lyrNotable=null, _lyrHotspots=null;
+let _loaded = { missing:'', notable:'', hotspots:'' };   // clé de cache par région chargée
 let mapFilter = { player:'all', tier:'any', country:'any' };
 let _tlDates=[], _tlStartIdx=-1, _tlEndIdx=-1, _tlPlayPos=0, _tlPlayId=null, _tlSpeed=1, _tlSkipFit=false;   // -1 = pas encore initialisé (première ouverture -> toute la période)
 // ord (YYYYMMDD int) -> texte lisible en français
@@ -2070,7 +2074,22 @@ function renderMap(){
     // Défaut : sombre si le système est en mode sombre, sinon plan
     const preferDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
     (preferDark?darkLayer:planLayer).addTo(_map);
-    L.control.layers({ 'Plan':planLayer, 'Sombre':darkLayer, 'Satellite':satLayer }, {}, { position:'topright', collapsed:false }).addTo(_map);
+    // Couches eBird "live" (initialement vides ; peuplées à la demande quand cochées)
+    _lyrMissing = L.layerGroup();
+    _lyrNotable = L.layerGroup();
+    _lyrHotspots = L.layerGroup();
+    L.control.layers({ 'Plan':planLayer, 'Sombre':darkLayer, 'Satellite':satLayer }, {
+      '🐦 Ce qui vous manque': _lyrMissing,
+      '🚨 Raretés du moment': _lyrNotable,
+      '🏞️ Top hotspots': _lyrHotspots
+    }, { position:'topright', collapsed:false }).addTo(_map);
+    // Chargement lazy quand l'utilisateur coche
+    _map.on('overlayadd', e=>{
+      const region = _exMapRegion();
+      if(e.layer === _lyrMissing && _loaded.missing !== region+':14'){ _loadMissingLayer(region); }
+      else if(e.layer === _lyrNotable && _loaded.notable !== 'FR:14'){ _loadNotableLayer(); }
+      else if(e.layer === _lyrHotspots && _loaded.hotspots !== region){ _loadHotspotsLayer(region); }
+    });
     // Légende des couleurs (bas-droite)
     const legend = L.control({ position:'bottomright' });
     legend.onAdd = () => {
@@ -2188,6 +2207,87 @@ document.addEventListener('click', e=>{
   if(e.target.id==='mapTlPlay'){ if(_tlPlayId) _tlStop(); else _tlPlay(); }
   else if(e.target.id==='mapTlReset'){ _tlStop(); _tlStartIdx=0; _tlEndIdx=_tlDates.length-1; _tlPlayPos=_tlEndIdx; renderMap(); }
 });
+
+// ---- Couches eBird "live" sur la carte ----
+// Région à utiliser pour les endpoints eBird : basé sur le filtre "pays" de la matrice si FR-*, sinon FR par défaut.
+function _exMapRegion(){ const v=$('#exLiveRegion')?.value; return v||'FR'; }
+async function _loadMissingLayer(region){
+  if(!_lyrMissing) return;
+  _lyrMissing.clearLayers();
+  try{
+    const days=14;
+    const url = `https://api.ebird.org/v2/data/obs/${region}/recent?back=${days}&maxResults=500&locale=fr`;
+    const data = await _ebFetch(url);
+    const me = realPeople.find(p=>p.id===myUid);
+    const mine = new Set(me ? [...me.species.keys()] : []);
+    const byKey = new Map();
+    for(const o of data){
+      const k=(o.sciName||'').toLowerCase(); if(!k||mine.has(k))continue;
+      if(isNonSpecies(o.comName||'', o.sciName||'')) continue;
+      const ex=byKey.get(k);
+      if(!ex||(o.obsDt||'')>(ex.obsDt||'')) byKey.set(k,o);
+    }
+    for(const o of byKey.values()){
+      if(typeof o.lat!=='number'||typeof o.lng!=='number') continue;
+      const w = rarityReal(o.sciName);
+      const nm = FR_NAMES[(o.sciName||'').toLowerCase()] || o.comName || o.sciName;
+      const m = L.circleMarker([o.lat,o.lng], { radius:7, weight:2.5, color:realColor(w), fillColor:'#fff', fillOpacity:.85, opacity:1 });
+      const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
+      m.bindPopup(`<b>${esc(nm)}</b> <span class="p-sci">${esc(o.sciName||'')}</span><br>`+
+        `<span class="p-meta">🐦 <b>Vous ne l'avez pas encore</b></span><br>`+
+        `<span class="p-meta">Vu le ${esc((o.obsDt||'').slice(0,10))} à ${esc(o.locName||'?')}</span><br>`+
+        `<span class="p-meta">Rareté : <b>${w}</b> · ${REAL_LABELS[w]||''}</span><br>${gm}`);
+      _lyrMissing.addLayer(m);
+    }
+    _loaded.missing = region+':'+days;
+  } catch(_){ }
+}
+async function _loadNotableLayer(){
+  if(!_lyrNotable) return;
+  _lyrNotable.clearLayers();
+  try{
+    const url = `https://api.ebird.org/v2/data/obs/FR/recent/notable?back=14&maxResults=200&locale=fr`;
+    const data = await _ebFetch(url);
+    const seen = new Set();
+    for(const o of data){
+      if(isNonSpecies(o.comName||'', o.sciName||'')) continue;
+      const k=(o.sciName||'')+'@'+(o.locId||''); if(seen.has(k))continue; seen.add(k);
+      if(typeof o.lat!=='number'||typeof o.lng!=='number') continue;
+      const nm = FR_NAMES[(o.sciName||'').toLowerCase()] || o.comName || o.sciName;
+      const icon = L.divIcon({ className:'notable-mark', html:'🚨', iconSize:[22,22], iconAnchor:[11,11] });
+      const m = L.marker([o.lat,o.lng], { icon });
+      const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
+      const eb = o.locId ? `<a href="https://ebird.org/hotspot/${esc(o.locId)}" target="_blank" rel="noopener" class="p-link">eBird</a>` : '';
+      m.bindPopup(`<b>🚨 ${esc(nm)}</b> <span class="p-sci">${esc(o.sciName||'')}</span><br>`+
+        `<span class="p-meta">Rareté notable signalée le ${esc((o.obsDt||'').slice(0,10))}</span><br>`+
+        `<span class="p-meta">à ${esc(o.locName||'?')}${o.howMany?' · '+o.howMany:''}</span><br>${gm} ${eb}`);
+      _lyrNotable.addLayer(m);
+    }
+    _loaded.notable = 'FR:14';
+  } catch(_){ }
+}
+async function _loadHotspotsLayer(region){
+  if(!_lyrHotspots) return;
+  _lyrHotspots.clearLayers();
+  try{
+    const url = `https://api.ebird.org/v2/ref/hotspot/${region}?fmt=json`;
+    const data = await _ebFetch(url);
+    const top = data.filter(h=>h.numSpeciesAllTime).sort((a,b)=>b.numSpeciesAllTime-a.numSpeciesAllTime).slice(0,50);
+    for(const h of top){
+      if(typeof h.lat!=='number'||typeof h.lng!=='number') continue;
+      const n = h.numSpeciesAllTime;
+      const r = n>=300?11 : n>=200?9 : n>=100?7 : 5;
+      const m = L.circleMarker([h.lat,h.lng], { radius:r, weight:1.5, color:'#fff', fillColor:'#1e6091', fillOpacity:.75, opacity:1 });
+      const gm = `<a href="https://www.google.com/maps?q=${h.lat},${h.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
+      const eb = `<a href="https://ebird.org/hotspot/${esc(h.locId)}" target="_blank" rel="noopener" class="p-link">eBird</a>`;
+      m.bindPopup(`<b>🏞️ ${esc(h.locName||h.name||'?')}</b><br>`+
+        `<span class="p-meta">${h.subnational2Name?esc(h.subnational2Name)+' · ':''}${esc(h.subnational1Name||'')}</span><br>`+
+        `<span class="p-meta"><b>${n}</b> espèces observées ici</span><br>${gm} ${eb}`);
+      _lyrHotspots.addLayer(m);
+    }
+    _loaded.hotspots = region;
+  } catch(_){ }
+}
 
 // ---- Explorer (données eBird en direct) ----
 // Clé publique du compte Mathis. Visible dans le source (JS client), donc régénérable si abus.
