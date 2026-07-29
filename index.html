@@ -858,6 +858,12 @@
           <option value="14" selected>14 jours</option>
           <option value="30">30 jours</option>
         </select>
+        <label class="explorer-lbl" id="mapEbSortLbl" style="display:none;">Trier par</label>
+        <select class="filt-sel" id="mapEbSort" style="display:none;">
+          <option value="total" selected>Total espèces</option>
+          <option value="todo">Espèces à cocher pour moi</option>
+          <option value="recent">Activité 30 jours</option>
+        </select>
         <button class="btn tiny" id="mapEbRefresh" title="Rafraîchir">🔄</button>
         <span class="map-count" id="mapEbCount"></span>
       </div>
@@ -2016,6 +2022,8 @@ let _loaded = { missing:'', notable:'', hotspots:'' };   // clé de cache (régi
 let mapFilter = { player:'all', tier:'any', country:'any' };
 // Filtres propres aux modes eBird
 let ebFilter = { region:'FR', days:14 };
+let hotspotSort = 'total';   // 'total' | 'todo' | 'recent'
+let _taxMap = null;           // { speciesCode -> sciName lowercase } — cache localStorage
 let _tlDates=[], _tlStartIdx=-1, _tlEndIdx=-1, _tlPlayPos=0, _tlPlayId=null, _tlSpeed=1, _tlSkipFit=false;   // -1 = pas encore initialisé (première ouverture -> toute la période)
 // ord (YYYYMMDD int) -> texte lisible en français
 function _fmtOrd(ord){ const y=Math.floor(ord/10000), m=Math.floor((ord%10000)/100), d=ord%100;
@@ -2249,11 +2257,18 @@ document.addEventListener('click', e=>{
   mapMode = b.dataset.mode;
   document.querySelectorAll('#mapModes button').forEach(x=>x.classList.toggle('on', x===b));
   // Cache le sélecteur "Derniers" en mode hotspots (endpoint sans param days)
-  const daysLbl=$('#mapEbDaysLbl'), daysSel=$('#mapEbDays');
+  // Affiche le sélecteur "Trier par" uniquement en mode hotspots
+  const daysLbl=$('#mapEbDaysLbl'), daysSel=$('#mapEbDays'), srtLbl=$('#mapEbSortLbl'), srtSel=$('#mapEbSort');
   const showDays = mapMode!=='hotspots';
   if(daysLbl) daysLbl.style.display = showDays ? '' : 'none';
   if(daysSel) daysSel.style.display = showDays ? '' : 'none';
+  const showSort = mapMode==='hotspots';
+  if(srtLbl) srtLbl.style.display = showSort ? '' : 'none';
+  if(srtSel) srtSel.style.display = showSort ? '' : 'none';
   renderMap();
+});
+document.addEventListener('change', e=>{
+  if(e.target.id==='mapEbSort'){ hotspotSort=e.target.value; _loaded.hotspots=''; renderMap(); }
 });
 document.addEventListener('click', e=>{
   if(e.target.id==='mapEbRefresh'){ _ebCache.clear();
@@ -2351,27 +2366,87 @@ async function _loadNotableLayer(region='FR', days=14){
     _loaded.notable = key;
   } catch(_){ }
 }
+// Charge la taxonomie eBird (code->sciName). Une fois par navigateur, cache localStorage permanent.
+async function _loadTaxonomy(){
+  if(_taxMap) return _taxMap;
+  try{ const ls=localStorage.getItem('ebird-tax-v1');
+    if(ls){ _taxMap=JSON.parse(ls); return _taxMap; }
+  }catch(_){ }
+  try{
+    const r = await fetch(`https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json&locale=en&cat=species`,
+      { headers:{ 'X-eBirdApiToken':EBIRD_KEY } });
+    if(!r.ok) throw new Error('taxonomy '+r.status);
+    const arr = await r.json();
+    const m={}; for(const t of arr){ if(t.speciesCode && t.sciName) m[t.speciesCode]=t.sciName.toLowerCase(); }
+    _taxMap = m;
+    try{ localStorage.setItem('ebird-tax-v1', JSON.stringify(m)); }catch(_){ }
+    return m;
+  }catch(_){ _taxMap={}; return _taxMap; }
+}
+// Batch d'appels avec concurrence limitée.
+async function _batch(items, n, fn){
+  const out=[]; for(let i=0;i<items.length;i+=n){
+    const chunk=items.slice(i,i+n);
+    const r=await Promise.all(chunk.map(x=>fn(x).catch(()=>null)));
+    out.push(...r);
+  } return out;
+}
+// Enrichit chaque hotspot avec { allSp, mySp, toDo } — via spplist (all-time) OU obs récentes (30j)
+async function _enrichHotspots(hotspots, region, kind){
+  const tax = await _loadTaxonomy();
+  const me = realPeople.find(p=>p.id===myUid);
+  const mine = new Set(me ? [...me.species.keys()] : []);
+  return _batch(hotspots, 8, async h => {
+    try{
+      let sciSet;
+      if(kind==='recent'){
+        const url = `https://api.ebird.org/v2/data/obs/${region}/hotspot/${h.locId}?back=30`;
+        const data = await _ebFetch(url);
+        sciSet = new Set(data.map(o => (o.sciName||'').toLowerCase()).filter(Boolean));
+      } else {
+        const url = `https://api.ebird.org/v2/product/spplist/${h.locId}`;
+        const codes = await _ebFetch(url);
+        sciSet = new Set(codes.map(c => tax[c]).filter(Boolean));
+      }
+      const seen = [...sciSet].filter(s => mine.has(s)).length;
+      return { ...h, allSp:sciSet.size, mySp:seen, toDo:sciSet.size-seen };
+    }catch(_){ return { ...h, allSp:0, mySp:0, toDo:0, err:true }; }
+  });
+}
 async function _loadHotspotsLayer(region){
   if(!_lyrHotspots) return;
-  if(_loaded.hotspots===region && _lyrHotspots.getLayers().length) return;
+  const key = region+':'+hotspotSort;
+  if(_loaded.hotspots===key && _lyrHotspots.getLayers().length) return;
   _lyrHotspots.clearLayers();
   try{
-    const url = `https://api.ebird.org/v2/ref/hotspot/${region}?fmt=json`;
-    const data = await _ebFetch(url);
-    const top = data.filter(h=>h.numSpeciesAllTime).sort((a,b)=>b.numSpeciesAllTime-a.numSpeciesAllTime).slice(0,50);
+    const list = await _ebFetch(`https://api.ebird.org/v2/ref/hotspot/${region}?fmt=json`);
+    // Sélection top par numSpeciesAllTime, avant enrichissement (limite l'API à 30 lieux max)
+    const topRaw = list.filter(h=>h.numSpeciesAllTime).sort((a,b)=>b.numSpeciesAllTime-a.numSpeciesAllTime).slice(0, hotspotSort==='total'?50:30);
+    let top;
+    if(hotspotSort==='total'){
+      top = topRaw.map(h=>({ ...h, allSp:h.numSpeciesAllTime, mySp:null, toDo:null }));
+    } else {
+      top = await _enrichHotspots(topRaw, region, hotspotSort==='recent'?'recent':'all');
+      if(hotspotSort==='todo') top.sort((a,b)=> b.toDo - a.toDo);
+      else if(hotspotSort==='recent') top.sort((a,b)=> b.allSp - a.allSp);   // "activité" = nb esp. vues ces 30j
+    }
     for(const h of top){
       if(typeof h.lat!=='number'||typeof h.lng!=='number') continue;
-      const n = h.numSpeciesAllTime;
-      const r = n>=300?11 : n>=200?9 : n>=100?7 : 5;
+      const n = h.allSp||h.numSpeciesAllTime||0;
+      const r = n>=300?11 : n>=200?9 : n>=100?7 : n>=30?7 : 5;
       const m = L.circleMarker([h.lat,h.lng], { radius:r, weight:1.5, color:'#fff', fillColor:'#1e6091', fillOpacity:.75, opacity:1 });
       const gm = `<a href="https://www.google.com/maps?q=${h.lat},${h.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
       const eb = `<a href="https://ebird.org/hotspot/${esc(h.locId)}" target="_blank" rel="noopener" class="p-link">eBird</a>`;
+      const scope = hotspotSort==='recent' ? 'ces 30 jours' : 'au total';
+      let cntLine;
+      if(hotspotSort==='total') cntLine = `<b>${n}</b> espèces observées ici (all-time)`;
+      else cntLine = `<b>${n}</b> espèces ${scope} · <b>${h.mySp}</b> vues par vous · <b>${h.toDo}</b> à cocher`;
       m.bindPopup(`<b>🏞️ ${esc(h.locName||h.name||'?')}</b><br>`+
         `<span class="p-meta">${h.subnational2Name?esc(h.subnational2Name)+' · ':''}${esc(h.subnational1Name||'')}</span><br>`+
-        `<span class="p-meta"><b>${n}</b> espèces observées ici</span><br>${gm} ${eb}`);
+        `<span class="p-meta">${cntLine}</span><br>${gm} ${eb}`);
       _lyrHotspots.addLayer(m);
     }
-    _loaded.hotspots = region;
+    _loaded.hotspots = key;
   } catch(_){ }
 }
 
