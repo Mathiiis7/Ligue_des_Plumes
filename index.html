@@ -2231,6 +2231,7 @@ async function _exRenderMissing(region, days, listEl){
     for(const o of data){
       const k = (o.sciName||'').toLowerCase();
       if(!k || mine.has(k)) continue;
+      if(isNonSpecies(o.comName||'', o.sciName||'')) continue;   // ignore hybrides, sp., groupes...
       const ex = byKey.get(k);
       if(!ex || (o.obsDt||'') > (ex.obsDt||'')) byKey.set(k, o);
     }
@@ -2243,9 +2244,12 @@ async function _exRenderNotable(days, listEl){
   try{
     const url = `https://api.ebird.org/v2/data/obs/FR/recent/notable?back=${days}&maxResults=200&locale=fr`;
     const data = await _ebFetch(url);
-    // dedup par (sciName, locId) pour éviter les doublons de la même obs
+    // dedup par (sciName, locId) + retire les non-espèces (hybrides "A x B", "sp.", groupes "A/B", formes domestiques)
     const seen = new Set(); const list = [];
-    for(const o of data){ const k=(o.sciName||'')+'@'+(o.locId||''); if(seen.has(k))continue; seen.add(k); list.push(o); }
+    for(const o of data){
+      if(isNonSpecies(o.comName||'', o.sciName||'')) continue;
+      const k=(o.sciName||'')+'@'+(o.locId||''); if(seen.has(k))continue; seen.add(k); list.push(o);
+    }
     list.sort((a,b)=>(b.obsDt||'').localeCompare(a.obsDt||''));
     if(!list.length){ listEl.innerHTML = `<div class="ex-empty">Aucune rareté signalée ces ${days} derniers jours.</div>`; return; }
     listEl.innerHTML = list.slice(0,30).map(_exObsItem).join('') + (list.length>30 ? `<div class="ex-empty">… et ${list.length-30} autres.</div>` : '');
