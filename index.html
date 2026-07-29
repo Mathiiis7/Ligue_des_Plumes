@@ -806,9 +806,12 @@ function parseCSV(text){
 function isNonSpecies(common, sci){
   const s=(sci||'')+' '+(common||'');
   // exclut : « sp. », hybrides, groupes (slash), et formes domestiques eBird « (Domestic type) ».
-  // NB : on cherche « (Domestic », pas « Domestic » seul, sinon on écarterait par erreur
-  // le Moineau domestique (Passer domesticus), dont le nom scientifique contient « domestic ».
-  return /\bsp\.|\bhybrid|\/| x |×|\(Domestic/i.test(s);
+  // NB1 : on cherche « (Domestic », pas « Domestic » seul, sinon on écarterait par erreur
+  //       le Moineau domestique (Passer domesticus), dont le nom scientifique contient « domestic ».
+  // NB2 : « hybrid\b » (et pas « hybrid ») pour ne pas écarter l'épithète « hybrida »
+  //       de la Guifette moustac (Chlidonias hybrida), qui est une vraie espèce.
+  //       Les vrais hybrides eBird portent de toute façon un « x » (« A x B »).
+  return /\bsp\.|\bhybrid\b|\/| x |×|\(Domestic/i.test(s);
 }
 
 function ingest(filename, text){
