@@ -366,6 +366,29 @@
   .feed-date { font-size:11.5px; color:var(--ink-3); margin-top:1px; }
   .feed-rar { font-weight:600; }
   .feed-item .react-bar { margin:6px 0 0; }
+  .req-form { display:flex; gap:10px; margin:6px 0 16px; }
+  .req-form textarea { flex:1; padding:10px 12px; border:1px solid var(--line-2); border-radius:10px; font:inherit; background:var(--surface); color:var(--ink); resize:vertical; min-height:44px; line-height:1.4; }
+  .req-form textarea:focus { outline:2px solid var(--accent); outline-offset:1px; }
+  .req-form .btn { align-self:flex-end; }
+  .req-list { display:flex; flex-direction:column; gap:10px; }
+  .req-item { display:flex; gap:12px; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:var(--surface-2); align-items:flex-start; }
+  .req-item.done { opacity:.55; }
+  .req-vote { display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer; border:1px solid var(--line); background:var(--surface); border-radius:10px; padding:5px 10px; font:inherit; color:var(--ink-2); min-width:52px; flex:none; }
+  .req-vote:hover { border-color:var(--accent); color:var(--accent-ink); }
+  .req-vote.on { background:color-mix(in srgb, var(--accent) 20%, var(--surface)); border-color:var(--accent); color:var(--accent-ink); }
+  .req-vote .n { font-size:15px; font-weight:800; }
+  .req-vote .u { font-size:10px; }
+  .req-body { flex:1; min-width:0; }
+  .req-text { font-size:14px; color:var(--ink); line-height:1.5; white-space:pre-wrap; word-wrap:break-word; }
+  .req-meta { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:6px; font-size:11.5px; color:var(--ink-3); }
+  .req-status { font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px; text-transform:uppercase; letter-spacing:.04em; }
+  .req-status.todo { background:#e8eaee; color:#556; }
+  .req-status.doing { background:#fff2cc; color:#7a5a00; }
+  .req-status.done { background:#d4edda; color:#155724; }
+  .req-status.select { cursor:pointer; border:1px solid transparent; }
+  .req-status.select:hover { border-color:currentColor; }
+  .req-del { background:none; border:none; color:var(--ink-3); cursor:pointer; font-size:11.5px; padding:0; }
+  .req-del:hover { color:#c33; text-decoration:underline; }
   .react-bar { display:flex; gap:5px; flex-wrap:wrap; margin:3px 10px 0; align-items:center; }
   .msg.mine .react-bar { justify-content:flex-end; }
   .react-chip { font:inherit; font-size:12px; padding:1px 7px; border-radius:11px; border:1px solid var(--line);
@@ -497,6 +520,7 @@
     <button class="tab" data-view="chat">💬 Tchat</button>
     <button class="tab" data-view="photos">📸 Photos</button>
     <button class="tab" data-view="feed">🆕 Fil</button>
+    <button class="tab" data-view="requests">💡 Requêtes</button>
   </nav>
 
   <div id="viewLoad">
@@ -725,6 +749,20 @@
     </section>
   </div>
 
+  <div id="viewRequests" style="display:none;">
+    <section class="panel" style="padding:20px; margin-top:22px;">
+      <div class="section-head">
+        <div><div class="eyebrow">Améliorer l'appli</div><h2>💡 Requêtes & suggestions</h2>
+          <p class="help" style="margin-top:2px;">Proposez une amélioration, votez pour celles qui vous plaisent. Les plus populaires en haut.</p></div>
+      </div>
+      <form class="req-form" id="reqForm" autocomplete="off">
+        <textarea id="reqText" placeholder="Votre idée d'amélioration (ex. : ajouter un trophée pour X, améliorer Y…)" maxlength="500" rows="2"></textarea>
+        <button type="submit" class="btn">Proposer</button>
+      </form>
+      <div class="req-list" id="reqList"><p class="help" style="margin:0;">Chargement…</p></div>
+    </section>
+  </div>
+
   <div id="emojiPop" class="emoji-pop"><div class="emoji-pop-inner"></div></div>
 
   <footer>
@@ -761,6 +799,11 @@ let unsubChat = null, lastChatMsgs = [];
 let unsubPresence = null, onlineMap = new Map(), presenceTimer = null, presenceWired = false;
 let unsubVotes = null, votesMap = new Map();
 let unsubReactions = null, reactionsMap = new Map(), unsubPhotos = null, photos = [];
+let unsubRequests = null, requests = [], unsubReqVotes = null, reqVotesMap = new Map();
+// Admin(s) : uid autorisé à changer le statut d'une requête (À faire / En cours / Fait).
+// Mathis (compte email) — ajouter d'autres uid si besoin.
+const ADMIN_UIDS = new Set(['pCf1HuUeIkNJTXC0wujsX04UsFs2']);
+const isAdmin = () => myUid && ADMIN_UIDS.has(myUid);
 const EMOJIS = [
   '👍','👎','❤️','🔥','💯','🎉','✨','⭐','🏆','🥇','🎁','✅','❌','⚠️','🚀','💡','👀','💤',
   '😀','😄','😁','😊','🙂','😉','😍','🥰','😘','😎','🤩','🥳','😂','🤣','🥹','😋','😜','🤪','🤗','🤭','🤔','😴','🥱','😌','😔','😢','😭','😤','😠','😡','🥺','😱','😅','🙄','😏','😐','🤢','🤠','🥲','😈','👻','💀','🤡','👶',
@@ -1480,6 +1523,14 @@ function subscribe(){
     snap=>{ const arr=[]; snap.forEach(d=>arr.push({id:d.id, ...d.data()})); photos=arr; renderPhotos();
       photosLatest=arr.reduce((m,x)=>Math.max(m, x.createdAt&&x.createdAt.toMillis?x.createdAt.toMillis():0),0); updateTabDots(); },
     ()=>{});
+  if(unsubRequests){ unsubRequests(); unsubRequests=null; }
+  unsubRequests = onSnapshot(query(collection(db,'leagues',leagueId,'requests'), orderBy('createdAt','desc'), limit(200)),
+    snap=>{ const arr=[]; snap.forEach(d=>arr.push({id:d.id, ...d.data()})); requests=arr; renderRequests(); },
+    err=>{ const box=$('#reqList'); if(box) box.innerHTML='<p class="help" style="margin:0;">Les requêtes ne sont pas encore activées (règles Firebase à ajouter).</p>'; });
+  if(unsubReqVotes){ unsubReqVotes(); unsubReqVotes=null; }
+  unsubReqVotes = onSnapshot(collection(db,'leagues',leagueId,'requestVotes'),
+    snap=>{ const m=new Map(); snap.forEach(d=>{ const v=d.data()||{}; if(!v.requestId||!v.uid)return; if(!m.has(v.requestId))m.set(v.requestId,new Set()); m.get(v.requestId).add(v.uid); }); reqVotesMap=m; renderRequests(); },
+    ()=>{});
 }
 // ---- Présence "en ligne" ----
 function presenceBeat(){
@@ -1607,6 +1658,38 @@ function renderFeed(){
   }).join('');
 }
 // ---- Fiche perso / stats ----
+// ---- Requêtes / suggestions ----
+const REQ_STATUS = { todo:{label:'À faire', cls:'todo'}, doing:{label:'En cours', cls:'doing'}, done:{label:'Fait ✓', cls:'done'} };
+const REQ_STATUS_ORDER = ['todo','doing','done'];
+function renderRequests(){
+  const box=$('#reqList'); if(!box) return;
+  if(!requests.length){ box.innerHTML='<p class="help" style="margin:0;">Aucune requête pour l\'instant. Soyez le premier à proposer une idée ! 💡</p>'; return; }
+  // enrichir + trier : votes desc, puis date desc
+  const enriched = requests.map(r=>({...r, votes:(reqVotesMap.get(r.id)?.size)||0, iVoted:!!(myUid && reqVotesMap.get(r.id)?.has(myUid))}));
+  enriched.sort((a,b)=> (b.votes-a.votes) || ((b.createdAt?.toMillis?.()||0)-(a.createdAt?.toMillis?.()||0)));
+  const admin = isAdmin();
+  const byUidName = new Map(realPeople.map(p=>[p.id,p.name]));
+  box.innerHTML = enriched.map(r=>{
+    const st = REQ_STATUS[r.status] || REQ_STATUS.todo;
+    const canDelete = myUid && r.uid===myUid;
+    const t = r.createdAt?.toDate ? r.createdAt.toDate() : null;
+    const time = t ? t.toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}) : '';
+    const author = byUidName.get(r.uid) || r.name || 'Invité';
+    return `<div class="req-item ${r.status==='done'?'done':''}">
+      <button type="button" class="req-vote ${r.iVoted?'on':''}" data-vote="${esc(r.id)}" ${myUid?'':'disabled'} title="${r.iVoted?'Retirer votre vote':'Voter pour cette idée'}">
+        <span class="n">${r.votes}</span><span class="u">${r.votes<=1?'vote':'votes'}</span>
+      </button>
+      <div class="req-body">
+        <div class="req-text">${esc(r.text||'')}</div>
+        <div class="req-meta">
+          <span class="req-status ${st.cls}${admin?' select':''}"${admin?` data-status-cycle="${esc(r.id)}" title="Cliquer pour changer le statut"`:''}>${esc(st.label)}</span>
+          <span>par <b>${esc(author)}</b>${time?' · '+esc(time):''}</span>
+          ${canDelete?`<button type="button" class="req-del" data-del="${esc(r.id)}">supprimer</button>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
 function renderStats(me){
   const box=$('#statsBox'); if(!box) return;
   if(!me || !me._active){ box.style.display='none'; box.innerHTML=''; return; }
@@ -1777,7 +1860,7 @@ $('#removeMineBtn').addEventListener('click',async()=>{
   catch(err){ showError(err); }
 });
 
-const VIEWS = { load:'#viewLoad', profil:'#viewProfil', ranking:'#viewRanking', trophies:'#viewTrophies', chat:'#viewChat', photos:'#viewPhotos', feed:'#viewFeed' };
+const VIEWS = { load:'#viewLoad', profil:'#viewProfil', ranking:'#viewRanking', trophies:'#viewTrophies', chat:'#viewChat', photos:'#viewPhotos', feed:'#viewFeed', requests:'#viewRequests' };
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
   b.classList.add('on');
@@ -1792,6 +1875,7 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   if(b.dataset.view==='photos'){ renderPhotos(); markSeen('photos'); }
   if(b.dataset.view==='feed') renderFeed();
   if(b.dataset.view==='profil'){ const me=realPeople.find(p=>p.id===myUid); fillProfile(me); renderStats(me); }
+  if(b.dataset.view==='requests') renderRequests();
 }));
 let pendingImage = null;
 async function compressImage(file, maxDim=1000, maxLen=700000){
@@ -1839,6 +1923,46 @@ $('#chatMessages')?.addEventListener('click', async e=>{
   if(del){ const id=del.dataset.id; if(!id) return; if(!confirm('Supprimer ce message ?')) return;
     try{ await deleteDoc(doc(db,'leagues',leagueId,'chat',id)); }catch(err){ showError(err); } return; }
   const im=e.target.closest('.msg-img'); if(!im) return; $('#imgModalImg').src=im.src; $('#imgModal').classList.add('open');
+});
+// ---- Requêtes : formulaire + interactions ----
+$('#reqForm')?.addEventListener('submit', async e=>{
+  e.preventDefault();
+  const ti=$('#reqText'); const text=(ti?.value||'').trim();
+  if(!text) return;
+  if(!myUid){ showError(new Error('Connexion en cours, réessayez.')); return; }
+  const name = myMemberName() || localStorage.getItem('mb-chatname') || 'Invité';
+  const payload = { uid:myUid, name, text, status:'todo', createdAt:serverTimestamp() };
+  const btn = e.submitter; if(btn) btn.disabled=true;
+  try{ await addDoc(collection(db,'leagues',leagueId,'requests'), payload); ti.value=''; }
+  catch(err){ showError(err); }
+  if(btn) btn.disabled=false;
+});
+$('#reqList')?.addEventListener('click', async e=>{
+  const vote=e.target.closest('button[data-vote]');
+  if(vote){
+    if(!myUid){ showError(new Error('Connexion en cours, réessayez.')); return; }
+    const id=vote.dataset.vote; const ref=doc(db,'leagues',leagueId,'requestVotes', id+'__'+myUid);
+    const has=reqVotesMap.get(id)?.has(myUid);
+    try{ if(has) await deleteDoc(ref); else await setDoc(ref, { requestId:id, uid:myUid, createdAt:serverTimestamp() }); }
+    catch(err){ showError(err); }
+    return;
+  }
+  const cyc=e.target.closest('[data-status-cycle]');
+  if(cyc){
+    if(!isAdmin()) return;
+    const id=cyc.dataset.statusCycle; const r=requests.find(x=>x.id===id); if(!r) return;
+    const cur=REQ_STATUS_ORDER.indexOf(r.status||'todo');
+    const next=REQ_STATUS_ORDER[(cur+1)%REQ_STATUS_ORDER.length];
+    try{ await setDoc(doc(db,'leagues',leagueId,'requests',id), { status:next }, {merge:true}); }
+    catch(err){ showError(err); }
+    return;
+  }
+  const del=e.target.closest('button[data-del]');
+  if(del){
+    if(!confirm('Supprimer cette requête ?')) return;
+    try{ await deleteDoc(doc(db,'leagues',leagueId,'requests', del.dataset.del)); }
+    catch(err){ showError(err); }
+  }
 });
 // bouton emoji du composeur + sélecteur
 $('#chatEmojiBtn')?.addEventListener('click', ()=>openEmojiPop({type:'text'}));
