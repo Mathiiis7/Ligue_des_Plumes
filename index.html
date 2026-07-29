@@ -233,6 +233,8 @@
   td.pcol.is-foreign .chk { font-size:11px; }
   .mc-person.is-foreign { opacity:.7; }
   td.pcol .chk { font-style:normal; font-size:13px; }
+  .flag { display:inline-block; height:13px; width:auto; vertical-align:-2px; border-radius:2px; box-shadow:0 0 0 .5px rgba(0,0,0,.18); }
+  .mc-person .flag { height:12px; vertical-align:-1px; }
   .chip { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:4px;
     white-space:nowrap; background:color-mix(in srgb,var(--tc) 16%,transparent); color:var(--tc);
     border:1px solid color-mix(in srgb,var(--tc) 30%,transparent); }
@@ -928,10 +930,13 @@ const inRef = sci => { const k=(sci||'').trim().toLowerCase(); return (k in REAL
 const foreignTick = v => v.fr===false && !inRef(v.sci);
 const countsFR = v => !foreignTick(v);           // compte sauf vrai cochage étranger
 const holdersFR = u => u.counts!=null ? u.counts : [...u.seenBy.values()].filter(countsFR).length;
-// Pays (code ISO 2 lettres) -> drapeau emoji + nom lisible
+// Pays (code ISO 2 lettres)
+// Drapeau emoji : marche sur mobile mais s'affiche « US »/« FR » sur Windows desktop.
 function countryFlag(cc){ cc=(cc||'').toUpperCase(); if(!/^[A-Z]{2}$/.test(cc)) return ''; return String.fromCodePoint(...[...cc].map(c=>0x1F1E6+c.charCodeAt(0)-65)); }
+// Vraie image de drapeau (flagcdn) : rendue partout, y compris Windows desktop.
+function flagImg(cc){ cc=(cc||'').toLowerCase(); if(!/^[a-z]{2}$/.test(cc)) return ''; return `<img class="flag" src="https://flagcdn.com/w20/${cc}.png" srcset="https://flagcdn.com/w40/${cc}.png 2x" alt="${esc(cc.toUpperCase())}" loading="lazy">`; }
 const COUNTRY_NAMES={FR:'France',ES:'Espagne',PT:'Portugal',IT:'Italie',DE:'Allemagne',GB:'Royaume-Uni',IE:'Irlande',BE:'Belgique',NL:'Pays-Bas',LU:'Luxembourg',CH:'Suisse',AT:'Autriche',GR:'Grèce',HR:'Croatie',NO:'Norvège',SE:'Suède',FI:'Finlande',DK:'Danemark',IS:'Islande',PL:'Pologne',CZ:'Tchéquie',HU:'Hongrie',RO:'Roumanie',BG:'Bulgarie',TR:'Turquie',MA:'Maroc',TN:'Tunisie',DZ:'Algérie',EG:'Égypte',SN:'Sénégal',ZA:'Afrique du Sud',KE:'Kenya',TZ:'Tanzanie',US:'États-Unis',CA:'Canada',MX:'Mexique',CR:'Costa Rica',BR:'Brésil',PE:'Pérou',EC:'Équateur',AR:'Argentine',CL:'Chili',IN:'Inde',TH:'Thaïlande',JP:'Japon',CN:'Chine',AU:'Australie',NZ:'Nouvelle-Zélande'};
-function countryLabel(cc){ cc=(cc||'').toUpperCase(); return ((countryFlag(cc)+' '+(COUNTRY_NAMES[cc]||cc)).trim())||cc; }
+function countryLabel(cc){ cc=(cc||'').toUpperCase(); return COUNTRY_NAMES[cc]||cc; }   // nom seul (pour <option> et tooltips)
 
 function build(){
   const N = state.people.length;
@@ -1177,7 +1182,7 @@ function renderMatrix({universe,N}){
       const v=u.seenBy.get(p.id); if(!v) return '<td class="pcol"></td>';
       const foreign=foreignTick(v); const cc=v.country; const abroad=cc&&cc!=='FR';
       const ttl = abroad ? `Vu en ${countryLabel(cc)}${foreign?' — hors compétition':''}` : (foreign?"Vu à l'étranger — hors compétition":'');
-      const mark = abroad ? (countryFlag(cc)||'🌍') : '✓';
+      const mark = abroad ? (flagImg(cc)||'🌍') : '✓';
       return `<td class="pcol is-seen${foreign?' is-foreign':''}"${ttl?` title="${esc(ttl)}"`:''}><i class="chk">${mark}</i></td>`;
     }).join('');
     return `<tr class="${u.missing?'missing':''}">
@@ -1192,7 +1197,7 @@ function renderMatrix({universe,N}){
     const seers = state.people.filter(p=>u.seenBy.has(p.id))
       .map(p=>{ const v=u.seenBy.get(p.id); const foreign=foreignTick(v); const cc=v.country; const abroad=cc&&cc!=='FR';
         const ttl = abroad?`Vu en ${countryLabel(cc)}${foreign?' — hors compétition':''}`:'';
-        return `<span class="mc-person${foreign?' is-foreign':''}" style="--series:var(--s${p.si})"${ttl?` title="${esc(ttl)}"`:''}><span class="dot"></span>${esc(p.name)}${abroad?' '+(countryFlag(cc)||'🌍'):''}</span>`; }).join('');
+        return `<span class="mc-person${foreign?' is-foreign':''}" style="--series:var(--s${p.si})"${ttl?` title="${esc(ttl)}"`:''}><span class="dot"></span>${esc(p.name)}${abroad?' '+(flagImg(cc)||'🌍'):''}</span>`; }).join('');
     return `<div class="mcard ${u.missing?'missing':''}" style="border-left-color:${t.color}">
       <div class="mc-head">
         <div class="mc-sp">${esc(u.common)}${u.sci?`<span class="mc-sci">${esc(u.sci)}</span>`:''}</div>
