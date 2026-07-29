@@ -378,8 +378,13 @@
   .emoji-opt { font-size:23px; background:none; border:none; cursor:pointer; padding:4px 5px; border-radius:9px; line-height:1; }
   .emoji-opt:hover { background:var(--surface-2); }
   .photo-upload { margin:4px 0 16px; }
-  .photo-draft { margin-top:12px; display:flex; flex-direction:column; gap:8px; max-width:320px; }
-  .photo-draft img { max-width:100%; max-height:220px; border-radius:12px; border:1px solid var(--line); object-fit:contain; }
+  .photo-draft { margin-top:12px; display:flex; flex-direction:column; gap:8px; max-width:460px; }
+  .photo-draft-thumbs { display:flex; flex-wrap:wrap; gap:8px; }
+  .photo-draft-thumb { position:relative; width:88px; height:88px; border-radius:10px; overflow:hidden; border:1px solid var(--line); }
+  .photo-draft-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .photo-draft-thumb button { position:absolute; top:2px; right:2px; width:20px; height:20px; border-radius:50%; border:none; cursor:pointer;
+    background:rgba(0,0,0,.6); color:#fff; font-size:13px; line-height:20px; padding:0; display:flex; align-items:center; justify-content:center; }
+  .photo-draft-thumb button:hover { background:rgba(200,0,0,.85); }
   .photo-draft input { padding:9px 12px; border:1px solid var(--line-2); border-radius:10px; font:inherit; background:var(--surface); color:var(--ink); }
   .photo-draft-actions { display:flex; gap:8px; }
   .photo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:14px; }
@@ -691,10 +696,10 @@
         <div><div class="eyebrow">Le mur d'observation</div><h2>📸 Photos</h2></div>
       </div>
       <div class="photo-upload">
-        <label class="btn ghost" id="photoAddLabel">🖼️ Ajouter une photo<input type="file" id="photoInput" accept="image/*" hidden></label>
+        <label class="btn ghost" id="photoAddLabel">🖼️ Ajouter des photos<input type="file" id="photoInput" accept="image/*" multiple hidden></label>
         <div class="photo-draft" id="photoDraft" style="display:none;">
-          <img id="photoDraftImg" alt="aperçu">
-          <input id="photoCaption" placeholder="Une petite description…" maxlength="200">
+          <div class="photo-draft-thumbs" id="photoDraftThumbs"></div>
+          <input id="photoCaption" placeholder="Une légende (commune à toutes)…" maxlength="200">
           <div class="photo-draft-actions">
             <button type="button" class="btn" id="photoPublish">Publier</button>
             <button type="button" class="btn ghost" id="photoCancel">Annuler</button>
@@ -1180,9 +1185,9 @@ function renderMatrix({universe,N}){
     const k=holdersFR(u), t=rarOf(u);
     const cells = state.people.map(p=>{
       const v=u.seenBy.get(p.id); if(!v) return '<td class="pcol"></td>';
-      const foreign=foreignTick(v); const cc=v.country; const abroad=cc&&cc!=='FR';
-      const ttl = abroad ? `Vu en ${countryLabel(cc)}${foreign?' — hors compétition':''}` : (foreign?"Vu à l'étranger — hors compétition":'');
-      const mark = abroad ? (flagImg(cc)||'🌍') : '✓';
+      const foreign=foreignTick(v); const cc=v.country;
+      const ttl = cc ? `Vu en ${countryLabel(cc)}${foreign?' — hors compétition':''}` : (foreign?"Vu à l'étranger — hors compétition":'');
+      const mark = cc ? (flagImg(cc)||'🌍') : '✓';   // pays connu -> drapeau (France comprise) ; inconnu -> ✓
       return `<td class="pcol is-seen${foreign?' is-foreign':''}"${ttl?` title="${esc(ttl)}"`:''}><i class="chk">${mark}</i></td>`;
     }).join('');
     return `<tr class="${u.missing?'missing':''}">
@@ -1195,9 +1200,9 @@ function renderMatrix({universe,N}){
   cards.innerHTML = list.map(u=>{
     const k=holdersFR(u), t=rarOf(u);
     const seers = state.people.filter(p=>u.seenBy.has(p.id))
-      .map(p=>{ const v=u.seenBy.get(p.id); const foreign=foreignTick(v); const cc=v.country; const abroad=cc&&cc!=='FR';
-        const ttl = abroad?`Vu en ${countryLabel(cc)}${foreign?' — hors compétition':''}`:'';
-        return `<span class="mc-person${foreign?' is-foreign':''}" style="--series:var(--s${p.si})"${ttl?` title="${esc(ttl)}"`:''}><span class="dot"></span>${esc(p.name)}${abroad?' '+(flagImg(cc)||'🌍'):''}</span>`; }).join('');
+      .map(p=>{ const v=u.seenBy.get(p.id); const foreign=foreignTick(v); const cc=v.country;
+        const ttl = cc?`Vu en ${countryLabel(cc)}${foreign?' — hors compétition':''}`:'';
+        return `<span class="mc-person${foreign?' is-foreign':''}" style="--series:var(--s${p.si})"${ttl?` title="${esc(ttl)}"`:''}><span class="dot"></span>${esc(p.name)}${cc?' '+(flagImg(cc)||'🌍'):''}</span>`; }).join('');
     return `<div class="mcard ${u.missing?'missing':''}" style="border-left-color:${t.color}">
       <div class="mc-head">
         <div class="mc-sp">${esc(u.common)}${u.sci?`<span class="mc-sci">${esc(u.sci)}</span>`:''}</div>
@@ -1851,24 +1856,39 @@ $('#emojiPop')?.addEventListener('click', async e=>{
   closeEmojiPop();
 });
 // ---- Photos : upload + galerie ----
-let photoDraft=null;
+let photoDrafts=[];
+function renderPhotoDrafts(){
+  const box=$('#photoDraft'), thumbs=$('#photoDraftThumbs'); if(!box||!thumbs) return;
+  if(!photoDrafts.length){ box.style.display='none'; thumbs.innerHTML=''; return; }
+  box.style.display='';
+  thumbs.innerHTML=photoDrafts.map((src,i)=>`<div class="photo-draft-thumb"><img src="${src}" alt="aperçu"><button type="button" data-i="${i}" title="Retirer">✕</button></div>`).join('');
+  const btn=$('#photoPublish'); if(btn) btn.textContent = photoDrafts.length>1 ? `Publier (${photoDrafts.length})` : 'Publier';
+}
 $('#photoInput')?.addEventListener('change', async e=>{
-  const f=e.target.files && e.target.files[0]; e.target.value='';
-  if(!f || !/^image\//.test(f.type)) return;
-  try{ photoDraft=await compressImage(f, 1200, 850000); $('#photoDraftImg').src=photoDraft; $('#photoDraft').style.display=''; }
-  catch(err){ showError(new Error('Image illisible.')); }
+  const files=[...(e.target.files||[])].filter(f=>/^image\//.test(f.type)); e.target.value='';
+  if(!files.length) return;
+  let done=0;
+  for(const f of files){
+    try{ const img=await compressImage(f, 1200, 850000); photoDrafts.push(img); renderPhotoDrafts(); done++; }
+    catch(err){ /* image illisible : on passe */ }
+  }
+  if(!done) showError(new Error('Aucune image lisible.'));
 });
-$('#photoCancel')?.addEventListener('click', ()=>{ photoDraft=null; $('#photoDraft').style.display='none'; $('#photoDraftImg').src=''; $('#photoCaption').value=''; });
+$('#photoDraftThumbs')?.addEventListener('click', e=>{ const b=e.target.closest('button[data-i]'); if(!b) return; photoDrafts.splice(+b.dataset.i,1); renderPhotoDrafts(); });
+$('#photoCancel')?.addEventListener('click', ()=>{ photoDrafts=[]; $('#photoCaption').value=''; renderPhotoDrafts(); });
 $('#photoPublish')?.addEventListener('click', async ()=>{
-  if(!photoDraft){ return; }
+  if(!photoDrafts.length) return;
   if(!myUid){ showError(new Error('Connexion en cours, réessayez.')); return; }
   const caption=$('#photoCaption').value.trim();
   const name=myMemberName() || localStorage.getItem('mb-chatname') || 'Invité';
-  const payload={ uid:myUid, name, image:photoDraft, createdAt:serverTimestamp() };
-  if(caption) payload.caption=caption;
   const btn=$('#photoPublish'); btn.disabled=true;
-  try{ await addDoc(collection(db,'leagues',leagueId,'photos'), payload);
-    photoDraft=null; $('#photoDraft').style.display='none'; $('#photoDraftImg').src=''; $('#photoCaption').value='';
+  try{
+    for(const image of photoDrafts){
+      const payload={ uid:myUid, name, image, createdAt:serverTimestamp() };
+      if(caption) payload.caption=caption;
+      await addDoc(collection(db,'leagues',leagueId,'photos'), payload);
+    }
+    photoDrafts=[]; $('#photoCaption').value=''; renderPhotoDrafts();
   }catch(err){ showError(err); }
   btn.disabled=false;
 });
