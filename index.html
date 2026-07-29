@@ -337,6 +337,14 @@
   .msg-time { font-size:10px; color:var(--ink-3); margin:2px 10px 0; }
   .mention { color:var(--accent-ink); font-weight:600; }
   .mention.self { background:color-mix(in srgb, #ffd54f 55%, transparent); padding:0 3px; border-radius:4px; }
+  .chat-input-wrap { position:relative; flex:1; display:flex; }
+  .chat-input-wrap .chat-input { flex:1; }
+  .mention-pop { position:absolute; left:0; right:0; bottom:100%; margin-bottom:4px; background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:0 4px 14px rgba(0,0,0,.14); display:none; max-height:220px; overflow-y:auto; z-index:20; }
+  .mention-pop.open { display:block; }
+  .mention-pop-item { padding:8px 12px; cursor:pointer; font-size:13.5px; color:var(--ink); display:flex; align-items:center; gap:8px; }
+  .mention-pop-item.active, .mention-pop-item:hover { background:color-mix(in srgb, var(--accent) 14%, var(--surface)); color:var(--accent-ink); }
+  .mention-pop-item .dot { width:8px; height:8px; border-radius:50%; background:var(--series, var(--accent)); flex:none; }
+  .mention-pop-item .self { margin-left:auto; font-size:10px; color:var(--ink-3); font-weight:600; text-transform:uppercase; }
   .msg-del { font:inherit; font-size:10px; color:var(--ink-3); background:none; border:none; padding:0; cursor:pointer; text-decoration:underline; }
   .msg-del:hover { color:#c0392b; }
   .msg.mine .msg-time { text-align:right; }
@@ -442,9 +450,12 @@
   .map-el .map-custom-btn a:hover { background:#f4f4f4; }
   .map-stats { margin-top:10px; font-size:13px; color:var(--ink-2); padding:6px 10px; background:var(--surface-2); border:1px solid var(--line); border-radius:8px; display:inline-block; }
   .map-stats .muted { color:var(--ink-3); }
-  .map-timeline { display:flex; align-items:center; gap:10px; margin-top:10px; padding:8px 12px; background:var(--surface-2); border:1px solid var(--line); border-radius:8px; }
-  .map-timeline input[type=range] { flex:1; min-width:120px; accent-color:var(--accent); }
-  .map-timeline .tl-label { font-size:12.5px; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; min-width:130px; text-align:center; }
+  .map-timeline { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:10px; padding:8px 12px; background:var(--surface-2); border:1px solid var(--line); border-radius:8px; }
+  .map-timeline .tl-sliders { display:flex; align-items:center; gap:6px; flex:1; min-width:220px; }
+  .map-timeline input[type=range] { flex:1; min-width:80px; accent-color:var(--accent); }
+  .map-timeline .tl-lbl { font-size:11.5px; color:var(--ink-3); font-weight:600; }
+  .map-timeline .tl-label { font-size:12px; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; min-width:170px; text-align:center; }
+  .map-timeline select { padding:5px 8px; font-size:12px; }
   #mapTlPlay { min-width:36px; font-size:12px; }
   #mapTlPlay.playing { background:var(--accent); color:#fff; }
   .map-el .leaflet-container { font:inherit; }
@@ -792,8 +803,19 @@
       <div id="mapEl" class="map-el"></div>
       <div class="map-timeline" id="mapTimeline" style="display:none;">
         <button class="btn tiny" id="mapTlPlay" title="Lancer l'animation dans le temps">▶</button>
-        <input type="range" id="mapTlSlider" min="0" max="0" value="0" step="1">
+        <div class="tl-sliders">
+          <label class="tl-lbl">Du</label>
+          <input type="range" id="mapTlStart" min="0" max="0" value="0" step="1">
+          <label class="tl-lbl">au</label>
+          <input type="range" id="mapTlEnd" min="0" max="0" value="0" step="1">
+        </div>
         <span class="tl-label" id="mapTlLabel">—</span>
+        <select id="mapTlSpeed" class="filt-sel" title="Vitesse d'animation">
+          <option value="0.5">Lent</option>
+          <option value="1" selected>Normal</option>
+          <option value="2">Rapide</option>
+          <option value="4">Très rapide</option>
+        </select>
         <button class="btn tiny ghost" id="mapTlReset" title="Voir toute la période">↺ Tout</button>
       </div>
       <div id="mapStats" class="map-stats"></div>
@@ -834,7 +856,10 @@
         <input id="chatName" class="chat-name" placeholder="Votre nom" maxlength="24">
         <label class="chat-imgbtn" title="Ajouter une image">🖼️<input type="file" id="chatImgInput" accept="image/*" hidden></label>
         <button type="button" class="chat-imgbtn" id="chatEmojiBtn" title="Emoji">😊</button>
-        <input id="chatText" class="chat-input" placeholder="Votre message…" maxlength="500">
+        <div class="chat-input-wrap">
+          <input id="chatText" class="chat-input" placeholder="Votre message…" maxlength="500">
+          <div id="chatMentionPop" class="mention-pop"></div>
+        </div>
         <button type="submit" class="btn chat-send">Envoyer</button>
       </form>
     </section>
@@ -1858,7 +1883,7 @@ function renderRequests(){
 // ---- Carte des observations ----
 let _map=null, _mapLayer=null, _allBounds=null;
 let mapFilter = { player:'all', tier:'any', country:'any' };
-let _tlDates=[], _tlIdx=-1, _tlPlayId=null, _tlSkipFit=false;   // timeline : dates uniques triées + curseur (-1 = tout)
+let _tlDates=[], _tlStartIdx=-1, _tlEndIdx=-1, _tlPlayPos=0, _tlPlayId=null, _tlSpeed=1, _tlSkipFit=false;   // -1 = pas encore initialisé (première ouverture -> toute la période)
 // ord (YYYYMMDD int) -> texte lisible en français
 function _fmtOrd(ord){ const y=Math.floor(ord/10000), m=Math.floor((ord%10000)/100), d=ord%100;
   const mo=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'][m-1]||''; return d+' '+mo+' '+y; }
@@ -1979,25 +2004,36 @@ function renderMap(){
     fitBtn.addTo(_map);
   }
   if(_mapLayer){ _mapLayer.remove(); _mapLayer=null; }
-  // Timeline : construit la liste des dates uniques présentes dans allPts (post filtres non-temps).
+  // Timeline : construit la liste des dates uniques présentes dans allPts.
   _tlDates = [...new Set(allPts.map(p=>p.dateOrd).filter(x=>x!=null))].sort((a,b)=>a-b);
-  const tlEl = $('#mapTimeline'), tlSlider = $('#mapTlSlider'), tlLabel = $('#mapTlLabel');
+  const tlEl = $('#mapTimeline'), tlStart = $('#mapTlStart'), tlEnd = $('#mapTlEnd'), tlLabel = $('#mapTlLabel');
   if(tlEl && _tlDates.length>1){
     tlEl.style.display='';
-    tlSlider.max = _tlDates.length-1;
-    if(_tlIdx<0 || _tlIdx>_tlDates.length-1) _tlIdx = _tlDates.length-1;   // par défaut : tout
-    tlSlider.value = _tlIdx;
-    const cutoff = _tlDates[_tlIdx];
-    tlLabel.textContent = (_tlIdx===_tlDates.length-1) ? 'Jusqu\'à aujourd\'hui' : ('Jusqu\'au '+_fmtOrd(cutoff));
-  } else if(tlEl){ tlEl.style.display='none'; _tlIdx=-1; }
-  // filtre (personne / rareté / pays / temps)
+    const max = _tlDates.length-1;
+    tlStart.max = max; tlEnd.max = max;
+    // 1re init OU hors bornes -> fenêtre pleine (0..max)
+    if(_tlEndIdx<0 || _tlEndIdx>max) _tlEndIdx = max;
+    if(_tlStartIdx<0 || _tlStartIdx>max) _tlStartIdx = 0;
+    if(_tlStartIdx>_tlEndIdx) _tlStartIdx = _tlEndIdx;
+    if(_tlPlayPos<_tlStartIdx||_tlPlayPos>_tlEndIdx) _tlPlayPos = _tlEndIdx;
+    tlStart.value = _tlStartIdx; tlEnd.value = _tlEndIdx;
+    const fmt=_fmtOrd;
+    if(_tlPlayId){
+      tlLabel.textContent = 'Le '+fmt(_tlDates[_tlPlayPos])+' →';
+    } else {
+      tlLabel.textContent = (_tlStartIdx===0 && _tlEndIdx===max)
+        ? 'Toute la période' : ('Du '+fmt(_tlDates[_tlStartIdx])+' au '+fmt(_tlDates[_tlEndIdx]));
+    }
+  } else if(tlEl){ tlEl.style.display='none'; }
+  // filtre (personne / rareté / pays / fenêtre temporelle)
   const f = mapFilter;
-  const cutoffOrd = (_tlIdx>=0 && _tlIdx < _tlDates.length-1) ? _tlDates[_tlIdx] : Infinity;
+  const startOrd = _tlDates.length ? _tlDates[_tlStartIdx] : -Infinity;
+  const endOrd = _tlDates.length ? _tlDates[_tlPlayId ? _tlPlayPos : _tlEndIdx] : Infinity;
   const pts = allPts.filter(p=>{
     if(f.player!=='all' && p.uid!==f.player) return false;
     if(f.tier!=='any' && String(p.w)!==f.tier) return false;
     if(f.country!=='any' && p.cc!==f.country) return false;
-    if(cutoffOrd!==Infinity && p.dateOrd!=null && p.dateOrd>cutoffOrd) return false;
+    if(p.dateOrd!=null && (p.dateOrd<startOrd || p.dateOrd>endOrd)) return false;
     return true;
   });
   // Groupe par position exacte pour éparpiller en spirale (visuel seulement, popup garde le vrai lieu).
@@ -2035,27 +2071,33 @@ document.addEventListener('change', e=>{
   else if(e.target.id==='mapTierSel'){ mapFilter.tier=e.target.value; renderMap(); }
   else if(e.target.id==='mapCountrySel'){ mapFilter.country=e.target.value; renderMap(); }
 });
-// Timeline : glisser (input), lecture, reset
+// Timeline : sliders (Du/Au), vitesse, play/pause, reset
 document.addEventListener('input', e=>{
-  if(e.target.id==='mapTlSlider'){ _tlIdx = +e.target.value; _tlSkipFit=true; renderMap(); }
+  if(e.target.id==='mapTlStart'){ const v=+e.target.value; if(_tlPlayId){ clearInterval(_tlPlayId); _tlPlayId=null; const b=$('#mapTlPlay'); if(b){ b.textContent='▶'; b.classList.remove('playing'); } } _tlStartIdx=v; if(_tlStartIdx>_tlEndIdx){ _tlEndIdx=_tlStartIdx; } _tlSkipFit=true; renderMap(); }
+  else if(e.target.id==='mapTlEnd'){ const v=+e.target.value; if(_tlPlayId){ clearInterval(_tlPlayId); _tlPlayId=null; const b=$('#mapTlPlay'); if(b){ b.textContent='▶'; b.classList.remove('playing'); } } _tlEndIdx=v; if(_tlEndIdx<_tlStartIdx){ _tlStartIdx=_tlEndIdx; } _tlSkipFit=true; renderMap(); }
+});
+document.addEventListener('change', e=>{
+  if(e.target.id==='mapTlSpeed'){ _tlSpeed=+e.target.value; if(_tlPlayId){ const wasPlaying=true; _tlStop(); if(wasPlaying) _tlPlay(); } }
 });
 function _tlStop(){ if(_tlPlayId){ clearInterval(_tlPlayId); _tlPlayId=null; } const b=$('#mapTlPlay'); if(b){ b.textContent='▶'; b.classList.remove('playing'); b.title='Lancer l\'animation'; } }
 function _tlPlay(){
-  if(!_tlDates.length) return;
-  _tlStop();
-  if(_tlIdx>=_tlDates.length-1) _tlIdx=0;   // si on est à la fin, on repart du début
-  _tlSkipFit=true; renderMap();
+  if(!_tlDates.length || _tlStartIdx>=_tlEndIdx) return;
+  if(_tlPlayId){ clearInterval(_tlPlayId); _tlPlayId=null; }
+  _tlPlayPos = _tlStartIdx;   // repart toujours du début de la fenêtre
   const b=$('#mapTlPlay'); if(b){ b.textContent='⏸'; b.classList.add('playing'); b.title='Pause'; }
-  const stepMs = Math.max(60, Math.min(180, 8000/_tlDates.length));   // ~8 s pour l'animation totale
+  const span = _tlEndIdx - _tlStartIdx + 1;
+  const stepMs = Math.max(40, Math.min(400, (8000/_tlSpeed)/span));   // ~8 s à vitesse normale
+  _tlPlayId = 1;   // marqueur "en train de jouer" (le setInterval remplace ensuite)
+  _tlSkipFit=true; renderMap();
   _tlPlayId = setInterval(()=>{
-    _tlIdx++;
-    if(_tlIdx>=_tlDates.length-1){ _tlIdx=_tlDates.length-1; _tlSkipFit=true; renderMap(); _tlStop(); return; }
+    _tlPlayPos++;
+    if(_tlPlayPos>=_tlEndIdx){ _tlPlayPos=_tlEndIdx; _tlSkipFit=true; renderMap(); _tlStop(); return; }
     _tlSkipFit=true; renderMap();
   }, stepMs);
 }
 document.addEventListener('click', e=>{
   if(e.target.id==='mapTlPlay'){ if(_tlPlayId) _tlStop(); else _tlPlay(); }
-  else if(e.target.id==='mapTlReset'){ _tlStop(); _tlIdx=_tlDates.length-1; renderMap(); }   // reset -> tout + re-fit
+  else if(e.target.id==='mapTlReset'){ _tlStop(); _tlStartIdx=0; _tlEndIdx=_tlDates.length-1; _tlPlayPos=_tlEndIdx; renderMap(); }
 });
 
 function renderStats(me){
@@ -2455,6 +2497,50 @@ $('#reqList')?.addEventListener('click', async e=>{
 });
 // bouton emoji du composeur + sélecteur
 $('#chatEmojiBtn')?.addEventListener('click', ()=>openEmojiPop({type:'text'}));
+
+// ---- Autocomplétion @mention dans le chat ----
+let _mnOpen=false, _mnMatches=[], _mnActive=0;
+function _mnNorm(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,''); }
+function _mnClose(){ const p=$('#chatMentionPop'); if(p){ p.classList.remove('open'); p.innerHTML=''; } _mnOpen=false; _mnMatches=[]; _mnActive=0; }
+function _mnRenderUI(){
+  const p=$('#chatMentionPop'); if(!p) return;
+  p.innerHTML = _mnMatches.map((m,i)=>{
+    const self = m.uid===myUid?'<span class="self">vous</span>':'';
+    return `<div class="mention-pop-item ${i===_mnActive?'active':''}" data-idx="${i}" style="--series:var(--s${m.si})">
+      <span class="dot"></span>${esc(m.name)}${self}</div>`;
+  }).join('');
+}
+function _mnInsert(m){
+  const ti=$('#chatText'); if(!ti) return;
+  const val=ti.value, pos=ti.selectionStart||val.length;
+  const before=val.slice(0,pos), after=val.slice(pos);
+  const nb=before.replace(/@([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'\-]*)?$/,'@'+m.first+' ');
+  ti.value=nb+after; ti.selectionStart=ti.selectionEnd=nb.length; ti.focus(); _mnClose();
+}
+function _mnUpdate(){
+  const ti=$('#chatText'); if(!ti) return;
+  const val=ti.value, pos=ti.selectionStart||0, before=val.slice(0,pos);
+  const m = before.match(/(?:^|\s)@([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'\-]*)?$/);
+  if(!m){ _mnClose(); return; }
+  const q = _mnNorm(m[1]||'');
+  const members = realPeople.map(p=>({ uid:p.id, name:p.name, si:p.si,
+    first:(p.name||'').split(/\s+/)[0]||p.name,
+    normF:_mnNorm((p.name||'').split(/\s+/)[0]||p.name), normA:_mnNorm(p.name) }));
+  _mnMatches = members.filter(x=>!q||x.normF.startsWith(q)||x.normA.includes(q)).slice(0,8);
+  if(!_mnMatches.length){ _mnClose(); return; }
+  _mnActive=0; _mnOpen=true; $('#chatMentionPop').classList.add('open'); _mnRenderUI();
+}
+$('#chatText')?.addEventListener('input', _mnUpdate);
+$('#chatText')?.addEventListener('click', _mnUpdate);
+$('#chatText')?.addEventListener('keydown', e=>{
+  if(!_mnOpen) return;
+  if(e.key==='ArrowDown'){ e.preventDefault(); _mnActive=(_mnActive+1)%_mnMatches.length; _mnRenderUI(); }
+  else if(e.key==='ArrowUp'){ e.preventDefault(); _mnActive=(_mnActive-1+_mnMatches.length)%_mnMatches.length; _mnRenderUI(); }
+  else if(e.key==='Enter'||e.key==='Tab'){ if(_mnMatches[_mnActive]){ e.preventDefault(); _mnInsert(_mnMatches[_mnActive]); } }
+  else if(e.key==='Escape'){ e.preventDefault(); _mnClose(); }
+});
+$('#chatMentionPop')?.addEventListener('mousedown', e=>{ e.preventDefault(); const it=e.target.closest('.mention-pop-item'); if(it){ const i=+it.dataset.idx; if(_mnMatches[i]) _mnInsert(_mnMatches[i]); } });
+$('#chatText')?.addEventListener('blur', ()=>setTimeout(_mnClose, 200));
 $('#emojiPop')?.addEventListener('click', async e=>{
   if(e.target.id==='emojiPop'){ closeEmojiPop(); return; }
   const b=e.target.closest('.emoji-opt'); if(!b) return;
