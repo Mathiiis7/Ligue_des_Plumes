@@ -708,6 +708,11 @@
             <option value="">— Choisir un pays —</option>
           </select>
         </div>
+        <div class="manual-row" style="margin-top:8px;">
+          <input type="text" id="manualPlace" placeholder="Lieu pour la carte (ex. Camargue, Bois de Vincennes)" autocomplete="off">
+          <button class="btn tiny" id="manualPlaceFind" title="Trouver les coordonnées">📍 Trouver</button>
+        </div>
+        <div id="manualPlaceStatus" class="manual-msg" style="min-height:0;"></div>
         <div id="manualMsg" class="manual-msg"></div>
       </div>
     </details>
@@ -2745,14 +2750,23 @@ async function handleFiles(fileList){
   // on garde les anciennes. La liste des espèces reste dictée par le CSV.
   const prev = realPeople.find(p=>p.id===myUid)?.species;
   if(prev){
-    let kept=0;
+    let kept=0, manualKept=0;
+    // Pour chaque espèce du CSV : si le CSV n'a pas de coords mais l'ancien oui, on garde.
+    // (En revanche si le CSV apporte des coords, il gagne : c'est la meilleure source.)
     for(const [k,v] of parsed.species){
       if(!prev.has(k)) continue;
       const old=prev.get(k);
       if((v.lat==null||v.lon==null) && typeof old.lat==='number' && typeof old.lon==='number'){ v.lat=old.lat; v.lon=old.lon; kept++; }
       if(!v.locId && old.locId){ v.locId=old.locId; }
     }
+    // Préserve les ajouts MANUELS qui ne sont PAS dans le nouveau CSV
+    // (l'utilisateur les a saisis à la main, ils ne doivent pas disparaître à chaque ré-import).
+    for(const [k,old] of prev){
+      if(parsed.species.has(k)) continue;   // le CSV a une version -> elle gagne
+      if(old.manual){ parsed.species.set(k, old); manualKept++; }
+    }
     if(kept) console.log('Ré-import : '+kept+' coords GPS préservées.');
+    if(manualKept) console.log('Ré-import : '+manualKept+' ajouts manuels préservés.');
   }
   $('#myStatus').textContent = '… enregistrement';
   try{ await saveMyList(name, parsed.species); }
@@ -2792,6 +2806,36 @@ $('#removeMineBtn').addEventListener('click',async()=>{
 });
 
 // ---- Ajout manuel d'une espèce ----
+let _manualPickedLat=null, _manualPickedLon=null;
+// Géocodage via Nominatim (OpenStreetMap, gratuit) — 1 req/sec grand max, User-Agent requis
+async function _geocode(place){
+  const q = encodeURIComponent(place);
+  const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&addressdetails=0`, {
+    headers: { 'Accept-Language':'fr' }
+  });
+  if(!r.ok) throw new Error('géocodage HTTP '+r.status);
+  const data = await r.json();
+  if(!data.length) return null;
+  const d = data[0];
+  return { lat: parseFloat(d.lat), lon: parseFloat(d.lon), display: d.display_name };
+}
+async function _manualFindPlace(){
+  const inp=$('#manualPlace'), st=$('#manualPlaceStatus');
+  const q=(inp?.value||'').trim();
+  _manualPickedLat=_manualPickedLon=null;
+  if(!q){ if(st){ st.className='manual-msg'; st.textContent=''; } return; }
+  if(st){ st.className='manual-msg'; st.textContent='… recherche'; }
+  try{
+    const r = await _geocode(q);
+    if(!r){ if(st){ st.className='manual-msg err'; st.textContent='Lieu introuvable'; } return; }
+    _manualPickedLat = r.lat; _manualPickedLon = r.lon;
+    if(st){ st.className='manual-msg ok'; st.textContent = `📍 ${r.display.slice(0,80)} (${r.lat.toFixed(4)}, ${r.lon.toFixed(4)})`; }
+  }catch(e){ if(st){ st.className='manual-msg err'; st.textContent='Erreur : '+(e.message||e); } }
+}
+$('#manualPlaceFind')?.addEventListener('click', e=>{ e.preventDefault(); _manualFindPlace(); });
+$('#manualPlace')?.addEventListener('input', ()=>{ _manualPickedLat=_manualPickedLon=null; const st=$('#manualPlaceStatus'); if(st){ st.className='manual-msg'; st.textContent=''; } });
+$('#manualPlace')?.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); _manualFindPlace(); } });
+
 // Index de recherche : { key: sci lowercase, fr: nom français, norm: forme normalisée pour matcher }
 const _mnorm = s => s.toLowerCase().replace(/œ/g,'oe').replace(/æ/g,'ae').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,' ').trim();
 const MANUAL_INDEX = Object.keys(FR_NAMES).map(sci=>({ sci, fr:FR_NAMES[sci], normFr:_mnorm(FR_NAMES[sci]), normSci:_mnorm(sci) }));
@@ -2866,8 +2910,12 @@ $('#manualAddBtn')?.addEventListener('click', async ()=>{
   if(co==='OTHER'){ const pick=$('#manualCountryPick').value; if(!pick){ msg.className='manual-msg err'; msg.textContent='Choisissez un pays.'; return; } country=pick; }
   const date = $('#manualDate').value || '';   // YYYY-MM-DD
   const sciProper = MANUAL_INDEX.find(x=>x.sci===key).sci.split(' ').map((w,i)=>i===0?w[0].toUpperCase()+w.slice(1):w).join(' ');
-  const entry = { common: FR_NAMES[key], sci: sciProper, date, loc: 'Ajout manuel', obs: 1,
-    fr: country==='FR', country, nonSpecies: false };
+  // Lieu + coords : si l'utilisateur a résolu un lieu via Nominatim, on stocke tout
+  const placeName = ($('#manualPlace')?.value || '').trim();
+  const loc = placeName || 'Ajout manuel';
+  const entry = { common: FR_NAMES[key], sci: sciProper, date, loc, obs: 1,
+    fr: country==='FR', country, nonSpecies: false, manual: true };
+  if(_manualPickedLat!=null && _manualPickedLon!=null){ entry.lat=_manualPickedLat; entry.lon=_manualPickedLon; }
   // mise à jour locale immédiate + sauvegarde
   me.species.set(key, entry);
   const btn=$('#manualAddBtn'); btn.disabled=true;
@@ -2877,6 +2925,7 @@ $('#manualAddBtn')?.addEventListener('click', async ()=>{
     // reset formulaire
     manualPickedSci=null; $('#manualSearch').value=''; $('#manualPicked').style.display='none';
     $('#manualDate').value=''; $('#manualCountry').value='FR'; $('#manualCountryPickWrap').style.display='none';
+    $('#manualPlace').value=''; $('#manualPlaceStatus').textContent=''; _manualPickedLat=_manualPickedLon=null;
     setTimeout(()=>{ if(msg.className.includes('ok')) msg.textContent=''; }, 3500);
   }catch(err){
     // rollback local si l'écriture Firebase échoue
