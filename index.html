@@ -897,18 +897,18 @@
           <option value="todo">Espèces à cocher pour moi</option>
           <option value="recent">Activité 30 jours</option>
         </select>
-        <label class="explorer-lbl" id="mapEbRarityLbl" style="display:none;" title="Charge toutes les obs de chaque espèce manquante ≥ ce niveau (dispo uniquement sur une région précise)">Rareté min.</label>
+        <label class="explorer-lbl" id="mapEbRarityLbl" style="display:none;" title="Charge toutes les obs de chaque espèce manquante de ce niveau exact (dispo uniquement sur une région précise)">Rareté</label>
         <select class="filt-sel" id="mapEbRarity" style="display:none;">
           <option value="0" selected>— (léger, 1 obs/espèce)</option>
-          <option value="1">≥ 1 · Très commun</option>
-          <option value="2">≥ 2 · Commun</option>
-          <option value="3">≥ 3 · Assez commun</option>
-          <option value="4">≥ 4 · Peu commun</option>
-          <option value="5">≥ 5 · Localisé</option>
-          <option value="6">≥ 6 · Assez rare</option>
-          <option value="7">≥ 7 · Rare</option>
-          <option value="8">≥ 8 · Très rare</option>
-          <option value="9">= 9 · Exceptionnel</option>
+          <option value="1">1 · Très commun</option>
+          <option value="2">2 · Commun</option>
+          <option value="3">3 · Assez commun</option>
+          <option value="4">4 · Peu commun</option>
+          <option value="5">5 · Localisé</option>
+          <option value="6">6 · Assez rare</option>
+          <option value="7">7 · Rare</option>
+          <option value="8">8 · Très rare</option>
+          <option value="9">9 · Exceptionnel</option>
         </select>
         <button class="btn tiny" id="mapEbRefresh" title="Rafraîchir">🔄</button>
         <span class="map-count" id="mapEbCount"></span>
@@ -2065,7 +2065,7 @@ let _loaded = { missing:'', hotspots:'' };   // clé de cache (région+jours)
 // Filtres propres au mode "mine"
 let mapFilter = { player:'all', tier:'any', country:'any' };
 // Filtres propres aux modes eBird
-let ebFilter = { region:'FR', days:14, rarityMin:0 };
+let ebFilter = { region:'FR', days:14, rarity:0 };
 let hotspotSort = 'total';   // 'total' | 'todo' | 'recent'
 let _taxMap = null;           // { speciesCode -> sciName lowercase } — cache localStorage
 let mapSearch = '';          // recherche par nom (espèce/lieu) — filtre client-side
@@ -2087,7 +2087,7 @@ function _mapApplyFilter(){
   const cnt=$('#mapSearchCount'); if(cnt) cnt.textContent = q ? `${visible} / ${total} visible${visible>1?'s':''}` : '';
 }
 $('#mapSearch')?.addEventListener('input', e=>{ mapSearch = e.target.value; _mapApplyFilter(); _updateMapSuggest(); });
-$('#mapSearch')?.addEventListener('focus', ()=>{ if(mapSearch) _updateMapSuggest(); });
+$('#mapSearch')?.addEventListener('focus', ()=>{ _updateMapSuggest(); });
 // ---- Autocomplétion : suggère les espèces/lieux visibles selon le mode courant ----
 function _mapCurrentLayer(){
   if(mapMode==='mine') return _mapLayer;
@@ -2099,17 +2099,28 @@ let _mapSuggestItems = [];
 function _updateMapSuggest(){
   const box = $('#mapSearchSuggest'); if(!box) return;
   const q = _mapNorm(mapSearch).trim();
-  if(!q || q.length<2){ box.classList.remove('open'); box.innerHTML=''; _mapSuggestItems=[]; return; }
   const lyr = _mapCurrentLayer(); if(!lyr){ box.classList.remove('open'); return; }
   const seen = new Set();
   const items = [];
   lyr.eachLayer(m => {
-    if(!m._q || !m._q.includes(q)) return;
+    if(q && (!m._q || !m._q.includes(q))) return;
     const key = m._sciName ? m._sciName.toLowerCase() : (m._q||'');
-    if(seen.has(key)) return; seen.add(key);
+    if(!key || seen.has(key)) return; seen.add(key);
     items.push(m);
   });
-  const top = items.slice(0, 12);
+  // Tri : espèces d'abord (par nom fr), lieux ensuite
+  items.sort((a,b)=>{
+    const aSp = !!a._sciName, bSp = !!b._sciName;
+    if(aSp!==bSp) return aSp ? -1 : 1;
+    if(aSp){
+      const an = (FR_NAMES[(a._sciName||'').toLowerCase()] || a._sciName || '').toLowerCase();
+      const bn = (FR_NAMES[(b._sciName||'').toLowerCase()] || b._sciName || '').toLowerCase();
+      return an.localeCompare(bn,'fr');
+    }
+    return 0;
+  });
+  const CAP = q ? 12 : 30;
+  const top = items.slice(0, CAP);
   if(!top.length){ box.classList.remove('open'); box.innerHTML=''; _mapSuggestItems=[]; return; }
   _mapSuggestItems = top;
   box.innerHTML = top.map((m, i) => {
@@ -2347,7 +2358,7 @@ function _renderModeMine(el){
 }
 // ---- Modes eBird (missing / hotspots) ----
 async function _renderModeMissing(){
-  const region=ebFilter.region, days=ebFilter.days, rar=ebFilter.rarityMin|0;
+  const region=ebFilter.region, days=ebFilter.days, rar=ebFilter.rarity|0;
   const heavy = (region!=='FR') && (rar>0);
   const cnt=$('#mapEbCount'); if(cnt) cnt.textContent='… chargement';
   await _loadMissingLayer(region, days, rar, (done, total)=>{
@@ -2357,7 +2368,7 @@ async function _renderModeMissing(){
   const nObs = _lyrMissing.getLayers().length;
   const nSp = new Set(); _lyrMissing.eachLayer(m=>{ if(m._sciName) nSp.add(m._sciName.toLowerCase()); });
   if(cnt) cnt.textContent = nObs
-    ? (heavy ? `${nObs} obs · ${nSp.size} espèce${nSp.size>1?'s':''} rareté ≥ ${rar}`
+    ? (heavy ? `${nObs} obs · ${nSp.size} espèce${nSp.size>1?'s':''} rareté ${rar}`
              : `${nSp.size} espèce${nSp.size>1?'s':''} à cocher`)
     : 'Rien à cocher — vous les avez toutes ! 🎯';
   _fitLayer(_lyrMissing);
@@ -2416,7 +2427,7 @@ document.addEventListener('change', e=>{
   else if(e.target.id==='mapCountrySel'){ mapFilter.country=e.target.value; renderMap(); }
   else if(e.target.id==='mapEbRegion'){ ebFilter.region=e.target.value; _loaded.missing=''; _loaded.hotspots=''; renderMap(); }
   else if(e.target.id==='mapEbDays'){ ebFilter.days=+e.target.value; _loaded.missing=''; renderMap(); }
-  else if(e.target.id==='mapEbRarity'){ ebFilter.rarityMin=+e.target.value; _loaded.missing=''; renderMap(); }
+  else if(e.target.id==='mapEbRarity'){ ebFilter.rarity=+e.target.value; _loaded.missing=''; renderMap(); }
 });
 // Mode selector
 document.addEventListener('click', e=>{
@@ -2479,12 +2490,12 @@ document.addEventListener('click', e=>{
 });
 
 // ---- Couches eBird "live" sur la carte ----
-async function _loadMissingLayer(region, days=14, rarityMin=0, onProgress){
+async function _loadMissingLayer(region, days=14, rarity=0, onProgress){
   if(!_lyrMissing) return;
   // Fan-out complet UNIQUEMENT si région spécifique (≠ FR national) ET filtre rareté actif.
   // Sinon : mode léger = 1 marqueur par espèce (l'obs la plus récente, dédupliquée par eBird).
-  const heavy = (region !== 'FR') && (rarityMin > 0);
-  const key = region+':'+days+':'+(heavy?rarityMin:'light');
+  const heavy = (region !== 'FR') && (rarity > 0);
+  const key = region+':'+days+':'+(heavy?rarity:'light');
   if(_loaded.missing===key && _lyrMissing.getLayers().length) return;
   _lyrMissing.clearLayers();
   try{
@@ -2510,8 +2521,8 @@ async function _loadMissingLayer(region, days=14, rarityMin=0, onProgress){
         .filter(o => typeof o.lat==='number' && typeof o.lng==='number')
         .map(o => ({ ...o, lon:o.lng }));
     } else {
-      // Mode fan-out : filtre par rareté minimum, puis récupère TOUTES les obs récentes de chaque espèce.
-      const filtered = missingSp.filter(sp => rarityReal(sp.sciName) >= rarityMin);
+      // Mode fan-out : filtre sur le niveau de rareté exact, puis récupère TOUTES les obs récentes de chaque espèce.
+      const filtered = missingSp.filter(sp => rarityReal(sp.sciName) === rarity);
       allObs = []; let done = 0;
       if(onProgress) onProgress(0, filtered.length);
       const CONCURRENCY = 8; let cursor = 0;
