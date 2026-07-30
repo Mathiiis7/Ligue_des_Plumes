@@ -1752,7 +1752,9 @@ function renderTrophies(data){
     if(t.special==='vote'){
       const votes = s.grosBebeVotes||0;
       stateTxt = ok ? `Validé ✓ · ${votes} votes` : `${votes} / 3 votes`;
-      if(sel.id===myUid){ extra = `<div class="vote-note">👶 Les autres votent pour vous (partagez la preuve dans le tchat)</div>`; }
+      // Sam (le sujet du trophée) peut auto-voter : lui seul sait avec qui il a birder, y compris lui-même.
+      const isSam = /sam/i.test(myMemberName()||'');
+      if(sel.id===myUid && !isSam){ extra = `<div class="vote-note">👶 Les autres votent pour vous (partagez la preuve dans le tchat)</div>`; }
       else if(myMemberName()){
         const iVoted = votesMap.get(sel.id)?.has(myUid);
         extra = `<button class="vote-btn${iVoted?' voted':''}" data-vote-target="${esc(sel.id)}">${iVoted?'✓ Voté — retirer':'Valider ✅'}</button>`;
@@ -2629,15 +2631,20 @@ async function _loadHotspotsLayer(region){
   _lyrHotspots.clearLayers();
   try{
     const list = await _ebFetch(`https://api.ebird.org/v2/ref/hotspot/${region}?fmt=json`);
-    // Sélection top par numSpeciesAllTime, avant enrichissement (limite l'API à 30 lieux max)
-    const topRaw = list.filter(h=>h.numSpeciesAllTime).sort((a,b)=>b.numSpeciesAllTime-a.numSpeciesAllTime).slice(0, 50);
+    const CAP = 50;
     let top;
     if(hotspotSort==='total'){
+      const topRaw = list.filter(h=>h.numSpeciesAllTime).sort((a,b)=>b.numSpeciesAllTime-a.numSpeciesAllTime).slice(0, CAP);
       top = topRaw.map(h=>({ ...h, allSp:h.numSpeciesAllTime, mySp:null, toDo:null }));
     } else {
-      top = await _enrichHotspots(topRaw, region, hotspotSort==='recent'?'recent':'all');
-      if(hotspotSort==='todo') top.sort((a,b)=> b.toDo - a.toDo);
-      else if(hotspotSort==='recent') top.sort((a,b)=> b.allSp - a.allSp);   // "activité" = nb esp. vues ces 30j
+      // On enrichit un pool plus large (2×CAP) puis on garde les CAP meilleurs après filtrage des zéros,
+      // pour éviter d'afficher moins de 50 lieux quand des hotspots n'ont pas de données sur 30 j.
+      const poolRaw = list.filter(h=>h.numSpeciesAllTime).sort((a,b)=>b.numSpeciesAllTime-a.numSpeciesAllTime).slice(0, CAP*2);
+      const enriched = await _enrichHotspots(poolRaw, region, hotspotSort==='recent'?'recent':'all');
+      const usable = enriched.filter(h => (h.allSp||0) > 0);
+      if(hotspotSort==='todo') usable.sort((a,b)=> b.toDo - a.toDo);
+      else usable.sort((a,b)=> b.allSp - a.allSp);   // "activité" = nb esp. vues ces 30j
+      top = usable.slice(0, CAP);
     }
     // Spread des hotspots qui partagent les mêmes coords (cas rare : ~6 paires sur 17k)
     const withCoords = top.filter(h=>typeof h.lat==='number' && typeof h.lng==='number').map(h=>({ ...h, lat:h.lat, lon:h.lng }));
@@ -3318,7 +3325,9 @@ $('#trophyWho').addEventListener('click',e=>{
 $('#trophyGrid').addEventListener('click',async e=>{
   const vb=e.target.closest('.vote-btn');
   if(vb){
-    const target=vb.dataset.voteTarget; if(!target || !myUid || target===myUid) return;
+    const target=vb.dataset.voteTarget; if(!target || !myUid) return;
+    // Sam a le droit d'auto-voter pour son propre trophée Gros Bébé ; les autres non.
+    if(target===myUid && !/sam/i.test(myMemberName()||'')) return;
     const ref=doc(db,'leagues',leagueId,'votes','grosBebe__'+target+'__'+myUid);
     const iVoted = votesMap.get(target)?.has(myUid);
     vb.disabled=true;
