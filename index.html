@@ -440,6 +440,8 @@
   .req-del { background:none; border:none; color:var(--ink-3); cursor:pointer; font-size:11.5px; padding:0; }
   .req-del:hover { color:#c33; text-decoration:underline; }
   .map-controls { display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 10px; align-items:center; }
+  /* Retire les flèches spinner natives sur #mapEbMinTodo (on a nos propres boutons +/-) */
+  #mapEbMinTodo::-webkit-outer-spin-button, #mapEbMinTodo::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
   .map-count { margin-left:auto; font-size:12.5px; color:var(--ink-3); font-weight:600; }
   .map-el { height:520px; width:100%; border-radius:12px; overflow:hidden; border:1px solid var(--line); background:var(--surface-2); }
   .map-el .leaflet-popup-content { font:inherit; font-size:13px; line-height:1.45; color:var(--ink); margin:8px 12px; }
@@ -943,9 +945,13 @@
           <option value="9">9 · Exceptionnel</option>
           <option value="exo">Exotique (échappés / introduits)</option>
         </select>
-        <label class="explorer-lbl" id="mapEbMinTodoLbl" style="display:none;">≥ à cocher</label>
-        <input type="number" id="mapEbMinTodo" min="0" max="500" value="0" step="1" style="display:none; width:64px; font-size:12px; padding:3px 6px; border:1px solid var(--line-2); border-radius:6px;" title="Cache les hotspots avec moins de N espèces à cocher">
-        <span id="mapEbMinTodoVal" class="explorer-lbl" style="display:none; visibility:hidden; width:0;">0</span>
+        <label class="explorer-lbl" id="mapEbMinTodoLbl" style="display:none;" title="N'affiche que les hotspots où il te manque au moins N espèces">Cacher hotspots avec moins de</label>
+        <div id="mapEbMinTodoBox" style="display:none; align-items:center; gap:0;">
+          <button type="button" class="btn tiny" id="mapEbMinTodoDec" style="padding:2px 8px; font-size:15px; border-radius:6px 0 0 6px;" title="−1">−</button>
+          <input type="number" id="mapEbMinTodo" min="0" max="500" value="0" step="1" style="width:52px; font-size:12px; padding:3px 4px; border:1px solid var(--line-2); border-left:none; border-right:none; border-radius:0; text-align:center; -moz-appearance:textfield;" title="Espèces à cocher minimum">
+          <button type="button" class="btn tiny" id="mapEbMinTodoInc" style="padding:2px 8px; font-size:15px; border-radius:0 6px 6px 0;" title="+1">+</button>
+        </div>
+        <span id="mapEbMinTodoSuffix" class="explorer-lbl" style="display:none;">espèces à cocher</span>
         <span class="map-count" id="mapEbCount"></span>
       </div>
       <div id="mapNote" class="help" style="margin:6px 0 8px; display:none;"></div>
@@ -1897,13 +1903,13 @@ function subscribe(){
   if(unsub){ unsub(); unsub=null; }
   unsub = onSnapshot(collection(db,'leagues',leagueId,'members'), applySnapshot,
     err=>{ console.error(err); showError(err); });
-  // Favoris hotspots personnels — listener léger, mis à jour à chaque toggle.
+  // Favoris hotspots personnels — stockés sur le doc membre (champ favHotspots)
+  // pour bénéficier des règles Firebase existantes autorisant l'update de son propre membre.
   if(unsubFavs){ unsubFavs(); unsubFavs=null; }
   if(myUid){
-    unsubFavs = onSnapshot(doc(db,'leagues',leagueId,'members',myUid,'favorites','hotspots'),
+    unsubFavs = onSnapshot(doc(db,'leagues',leagueId,'members',myUid),
       snap => {
-        const d=snap.data()||{}; const newSet = new Set(d.locIds||[]);
-        // Ne re-render que si le set a réellement changé (évite les rebonds sur nos propres writes qui ferment le popup).
+        const d=snap.data()||{}; const newSet = new Set(d.favHotspots||[]);
         const same = newSet.size===myFavHotspots.size && [...newSet].every(x=>myFavHotspots.has(x));
         myFavHotspots = newSet;
         if(!same && mapMode==='hotspots'){ _loaded.hotspots=''; renderMap(); }
@@ -2581,10 +2587,17 @@ document.addEventListener('change', e=>{
 // Ces filtres sont client-side mais nécessitent un re-render de la couche → on invalide le cache.
 document.addEventListener('input', e=>{
   if(e.target.id==='mapEbMinTodo'){
-    ebFilter.minTodo = +e.target.value || 0;
-    const v = $('#mapEbMinTodoVal'); if(v) v.textContent = ebFilter.minTodo;
+    ebFilter.minTodo = Math.max(0, +e.target.value || 0);
     _loaded.hotspots=''; renderMap();
   }
+});
+// Boutons +/- pour le champ "min à cocher" (arrondi natif trop petit).
+document.addEventListener('click', e=>{
+  const delta = e.target.id==='mapEbMinTodoInc' ? 1 : e.target.id==='mapEbMinTodoDec' ? -1 : 0;
+  if(!delta) return;
+  const input = document.getElementById('mapEbMinTodo'); if(!input) return;
+  input.value = Math.max(0, (+input.value||0) + delta);
+  input.dispatchEvent(new Event('input', {bubbles:true}));
 });
 // Toggle favori dans les popups hotspots. Optimistic update local + Firestore en fond.
 // On met à jour la couleur du marqueur DIRECTEMENT plutôt que de re-render toute la couche
@@ -2604,8 +2617,8 @@ document.addEventListener('click', async e=>{
       m.setStyle({ weight:isFav?2.5:1.5, color:'#fff', fillColor:isFav?'#f4b400':'#1e6091', fillOpacity:.85 });
     });
   }
-  try{ await setDoc(doc(db,'leagues',leagueId,'members',myUid,'favorites','hotspots'),
-    { locIds:[...myFavHotspots], updatedAt:serverTimestamp() }); }catch(err){ showError(err); }
+  try{ await updateDoc(doc(db,'leagues',leagueId,'members',myUid),
+    { favHotspots:[...myFavHotspots] }); }catch(err){ showError(err); }
 });
 // Mode selector
 document.addEventListener('click', e=>{
@@ -2635,8 +2648,10 @@ document.addEventListener('click', e=>{
   if(monLbl) monLbl.style.display = showMon ? '' : 'none';
   if(monSel) monSel.style.display = showMon ? '' : 'none';
   // Filtres hotspot-only (min à cocher, contient espèce, favoris, géoloc) : visibles uniquement en mode hotspots.
-  ['mapEbMinTodoLbl','mapEbMinTodo','mapEbMinTodoVal'].forEach(id=>{
-    const el = document.getElementById(id); if(el) el.style.display = (mapMode==='hotspots' && hotspotSort!=='total') ? '' : 'none';
+  const showMinTodo = (mapMode==='hotspots' && hotspotSort!=='total');
+  const boxDisp = { mapEbMinTodoBox:'inline-flex' };
+  ['mapEbMinTodoLbl','mapEbMinTodoBox','mapEbMinTodoSuffix'].forEach(id=>{
+    const el = document.getElementById(id); if(el) el.style.display = showMinTodo ? (boxDisp[id]||'') : 'none';
   });
   _refreshDeptSel();
   _updateLegend();
@@ -2650,7 +2665,7 @@ document.addEventListener('change', e=>{
     if(monLbl) monLbl.style.display = showMon ? '' : 'none';
     if(monSel) monSel.style.display = showMon ? '' : 'none';
     // Min-to-do et filtre espèce n'ont de sens qu'en mode enrichi (todo/recent) — on les cache en "total".
-    ['mapEbMinTodoLbl','mapEbMinTodo','mapEbMinTodoVal'].forEach(id=>{
+    ['mapEbMinTodoLbl','mapEbMinTodoBox','mapEbMinTodoSuffix'].forEach(id=>{
       const el = document.getElementById(id); if(el) el.style.display = (hotspotSort!=='total') ? '' : 'none';
     });
     renderMap();
