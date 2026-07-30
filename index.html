@@ -2314,7 +2314,7 @@ async function _loadMissingLayer(region, days=14){
   if(_loaded.missing===key && _lyrMissing.getLayers().length) return;   // déjà chargé pour cette combi
   _lyrMissing.clearLayers();
   try{
-    const url = `https://api.ebird.org/v2/data/obs/${region}/recent?back=${days}&maxResults=500&locale=fr`;
+    const url = `https://api.ebird.org/v2/data/obs/${region}/recent?back=${days}&maxResults=10000&locale=fr`;
     const data = await _ebFetch(url);
     const me = realPeople.find(p=>p.id===myUid);
     const mine = new Set(me ? [...me.species.keys()] : []);
@@ -2520,7 +2520,7 @@ function _exObsItem(o){
 }
 async function _exRenderMissing(region, days, listEl){
   try{
-    const url = `https://api.ebird.org/v2/data/obs/${region}/recent?back=${days}&maxResults=500&locale=fr`;
+    const url = `https://api.ebird.org/v2/data/obs/${region}/recent?back=${days}&maxResults=10000&locale=fr`;
     const data = await _ebFetch(url);
     // liste de mes espèces vues (pour filtrer)
     const me = realPeople.find(p=>p.id===myUid);
