@@ -871,7 +871,6 @@
         <select class="filt-sel" id="mapCountrySel" aria-label="Filtrer par pays">
           <option value="any">Tous les pays</option>
         </select>
-        <span class="map-count" id="mapCount"></span>
       </div>
       <div class="map-controls" id="mapCtrlsEbird" style="display:none;">
         <label class="explorer-lbl">Région</label>
@@ -2134,7 +2133,20 @@ $('#mapSearchSuggest')?.addEventListener('mousedown', e=>{
   const box = $('#mapSearchSuggest'); box.classList.remove('open'); box.innerHTML='';
   const s = $('#mapSearch'); s.value=''; mapSearch=''; _mapApplyFilter();
   if(m._sciName && m._speciesCode){
+    // Mode missing/notable : on récupère toutes les obs récentes de l'espèce
     _showSpeciesDetail(m._sciName, m._speciesCode);
+  } else if(m._sciName && mapMode==='mine' && _mapLayer){
+    // Mode mine : on filtre sur cette espèce et on fitBounds sur toutes ses obs
+    const target = (m._sciName||'').toLowerCase();
+    const latlngs = [];
+    _mapLayer.eachLayer(x => {
+      const sameSp = (x._sciName||'').toLowerCase() === target;
+      const el = x._path || x._icon;
+      if(el) el.style.display = sameSp ? '' : 'none';
+      if(sameSp && x.getLatLng){ const ll=x.getLatLng(); latlngs.push([ll.lat, ll.lng]); }
+    });
+    if(latlngs.length) _map.fitBounds(L.latLngBounds(latlngs), { padding:[40,40], maxZoom:12 });
+    if(latlngs.length===1) setTimeout(()=>m.openPopup && m.openPopup(), 250);
   } else {
     const ll = m.getLatLng ? m.getLatLng() : null;
     if(ll){ _map.setView([ll.lat, ll.lng], 13); m.openPopup && m.openPopup(); }
@@ -2215,6 +2227,7 @@ function _mapMarker(pt, groupSize){
     groupNote + gmLink
   );
   m._q = _mapNorm(pt.common+' '+pt.sci+' '+(pt.loc||'')+' '+(pt.who||''));
+  m._sciName = pt.sci; m._common = pt.common;   // pour l'autocomplétion (nom espèce dans le dropdown)
   return m;
 }
 function renderMap(){
@@ -2315,7 +2328,6 @@ function _renderModeMine(el){
   const ordered = [...pts].sort((a,b)=> a.w - b.w);
   const markers = ordered.map(p=>_mapMarker(p, groups.get(p.lat.toFixed(5)+','+p.lon.toFixed(5)).length));
   _mapLayer = L.layerGroup(markers).addTo(_map);
-  const cnt=$('#mapCount'); if(cnt) cnt.textContent = `${pts.length} obs · ${groups.size} lieu${groups.size>1?'x':''}`;
   const stats=$('#mapStats');
   if(stats){
     const uniqPersons=new Set(pts.map(p=>p.uid)).size, uniqCountries=new Set(pts.map(p=>p.cc).filter(Boolean)).size;
