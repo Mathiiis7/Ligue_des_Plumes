@@ -2288,18 +2288,32 @@ function _updateMapSuggest(){
       }
       return 0;
     });
+    // En mode "À cocher" (missing) : on complète avec TOUTES les autres espèces de FR_NAMES
+    // (pas seulement celles manquantes visibles sur la carte) → permet à l'utilisateur de
+    // rechercher n'importe quel oiseau et voir toutes ses obs récentes en France.
+    if(mapMode==='missing' && q && q.length>=2){
+      for(const sci in FR_NAMES){
+        if(seen.has(sci)) continue;
+        const fr = FR_NAMES[sci];
+        if(!_mapNorm(fr).includes(q) && !sci.includes(q)) continue;
+        const code = _sciToCode(sci); if(!code) continue;
+        seen.add(sci);
+        items.push({ sci, name:fr, code, kind:'sp-any' });
+      }
+    }
   }
   const CAP = q ? 12 : 30;
   const top = items.slice(0, CAP);
   if(!top.length){ box.classList.remove('open'); box.innerHTML=''; _mapSuggestItems=[]; return; }
   _mapSuggestItems = top;
   box.innerHTML = top.map((it, i) => {
-    if(it && it.kind==='sp-hotspot'){
+    if(it && (it.kind==='sp-hotspot' || it.kind==='sp-any')){
+      const hint = it.kind==='sp-any' ? '→ toutes les obs récentes' : '→ filtrer les hotspots';
       return `<div class="map-search-suggest-item" data-idx="${i}">`+
         `<span class="ss-dot" style="background:${sciColor(it.sci)}"></span>`+
         `<span>${esc(it.name)}</span>`+
         `<span class="ss-sci">${esc(it.sci)}</span>`+
-        `<span class="ss-hint">→ filtrer les hotspots</span></div>`;
+        `<span class="ss-hint">${hint}</span></div>`;
     }
     const m = it;
     if(m._sciName){
@@ -2330,6 +2344,13 @@ $('#mapSearchSuggest')?.addEventListener('mousedown', e=>{
   // et le filtre existant (basé sur m._q) garde les hotspots concernés.
   if(m && m.kind==='sp-hotspot'){
     const s = $('#mapSearch'); s.value = m.name; mapSearch = m.name; _mapApplyFilter();
+    return;
+  }
+  // Cas suggestion "n'importe quelle espèce" en mode À cocher : fetch toutes les obs récentes
+  // de l'espèce dans la région courante (même si déjà cochée dans la life list de l'utilisateur).
+  if(m && m.kind==='sp-any'){
+    const s = $('#mapSearch'); s.value=''; mapSearch=''; _mapApplyFilter();
+    _showSpeciesDetail(m.sci, m.code);
     return;
   }
   const s = $('#mapSearch'); s.value=''; mapSearch=''; _mapApplyFilter();
@@ -2538,6 +2559,9 @@ function _renderModeMine(el){
 // ---- Modes eBird (missing / hotspots) ----
 async function _renderModeMissing(){
   const region=ebFilter.region, days=ebFilter.days, rar=ebFilter.rarity;
+  // Charge la taxonomie en fond (permet à l'autocomplétion "n'importe quelle espèce"
+  // de fonctionner via _sciToCode dès la 1re recherche).
+  _loadTaxonomy().catch(()=>{});
   const heavy = (region!=='FR') && (rar==='exo' || (+rar>0));
   const cnt=$('#mapEbCount'); if(cnt) cnt.textContent='… chargement';
   await _loadMissingLayer(region, days, rar, (done, total)=>{
