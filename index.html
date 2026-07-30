@@ -2637,13 +2637,22 @@ async function _loadHotspotsLayer(region){
       const topRaw = list.filter(h=>h.numSpeciesAllTime).sort((a,b)=>b.numSpeciesAllTime-a.numSpeciesAllTime).slice(0, CAP);
       top = topRaw.map(h=>({ ...h, allSp:h.numSpeciesAllTime, mySp:null, toDo:null }));
     } else {
-      // On enrichit un pool plus large (2×CAP) puis on garde les CAP meilleurs après filtrage des zéros,
-      // pour éviter d'afficher moins de 50 lieux quand des hotspots n'ont pas de données sur 30 j.
-      const poolRaw = list.filter(h=>h.numSpeciesAllTime).sort((a,b)=>b.numSpeciesAllTime-a.numSpeciesAllTime).slice(0, CAP*2);
+      // Pool à enrichir. Suivant le mode, on optimise le pré-tri :
+      //  - "recent" (activité 30j) : les hotspots les plus récemment actifs (latestObsDt DESC)
+      //  - "todo" (à cocher) : les plus riches all-time (biais espèces max), mais élargi
+      // Sinon les sites urbains actifs (ex. Plan de la Garde) sont écrasés par les grands sites all-time
+      // (Camargue…). Pool = 200, filtrage des zéros, top 50 après tri par le critère du mode.
+      let pool = list.filter(h=>h.numSpeciesAllTime);
+      if(hotspotSort==='recent'){
+        pool.sort((a,b)=>{ const av=a.latestObsDt||'', bv=b.latestObsDt||''; return bv.localeCompare(av); });
+      } else {
+        pool.sort((a,b)=>b.numSpeciesAllTime-a.numSpeciesAllTime);
+      }
+      const poolRaw = pool.slice(0, 200);
       const enriched = await _enrichHotspots(poolRaw, region, hotspotSort==='recent'?'recent':'all');
       const usable = enriched.filter(h => (h.allSp||0) > 0);
       if(hotspotSort==='todo') usable.sort((a,b)=> b.toDo - a.toDo);
-      else usable.sort((a,b)=> b.allSp - a.allSp);   // "activité" = nb esp. vues ces 30j
+      else usable.sort((a,b)=> b.allSp - a.allSp);
       top = usable.slice(0, CAP);
     }
     // Spread des hotspots qui partagent les mêmes coords (cas rare : ~6 paires sur 17k)
