@@ -2999,7 +2999,12 @@ $('#manualAddBtn')?.addEventListener('click', async ()=>{
   const btn=$('#manualAddBtn'); btn.disabled=true;
   try{
     await saveMyList(me.name, me.species);
-    msg.className='manual-msg ok'; msg.textContent = `✓ Ajouté : ${entry.common}`;
+    msg.className='manual-msg ok'; msg.textContent = `✓ Ajouté : ${entry.common}` + (entry.lat!=null?' (📍 sur la carte)':'');
+    // Rafraîchit immédiatement classement, matrice, fiche stats et carte
+    // (au lieu d'attendre le round-trip Firestore snapshot)
+    renderResults();
+    renderStats(me);
+    if(document.querySelector('.tab.on')?.dataset.view==='map') renderMap();
     // reset formulaire
     manualPickedSci=null; $('#manualSearch').value=''; $('#manualPicked').style.display='none';
     $('#manualDate').value=''; $('#manualCountry').value='FR'; $('#manualCountryPickWrap').style.display='none';
