@@ -117,13 +117,22 @@ const nat = parseBarchart(BARCHART);
 const ebFreq = nat.freqMax;
 const ebFreqMonthly = nat.monthly;
 
-// Régional : 13 fichiers FR-xx pour la saisonnalité régionale (filtre "Mois" par hotspot).
-const FR_REGIONS = ['FR-ARA','FR-BFC','FR-BRE','FR-CVL','FR-COR','FR-IDF','FR-NAQ','FR-NOR','FR-OCC','FR-HDF','FR-PDL','FR-PAC','FR-GES'];
-const regionalMonthly = {};   // code région -> {clé normalisée -> [12 pics]}
-for (const rc of FR_REGIONS) {
-  const path = join(__dir, `ebird-barchart-${rc}-2015-2026.txt`);
-  if (!existsSync(path)) { console.warn(`⚠ manquant: ${path}`); continue; }
-  regionalMonthly[rc] = parseBarchart(path).monthly;
+// Régional + départemental : cherche tous les bar charts eBird présents dans tools/,
+// accepte les deux conventions de nommage :
+//  - notre format renommé :  ebird-barchart-FR-PAC-2015-2026.txt
+//  - nom eBird original :    ebird_FR-PAC__2015_2026_1_12_barchart.txt
+//  - idem pour départements : FR-PAC-83, FR-OCC-34, etc.
+// Clé de sortie = code region/département tel qu'extrait du nom de fichier.
+import { readdirSync } from 'node:fs';
+const regionalMonthly = {};   // code (FR-xx ou FR-xx-yy) -> {clé normalisée -> [12 pics]}
+for (const fn of readdirSync(__dir)) {
+  // extrait le code entre "barchart-" ou "ebird_"
+  const m = fn.match(/^ebird[-_]?barchart-(FR-[A-Z]+(?:-[0-9A-Z]+)?)-\d{4}-\d{4}\.txt$/i)
+         || fn.match(/^ebird_(FR-[A-Z]+(?:-[0-9A-Z]+)?)__\d{4}_\d{4}_\d+_\d+_barchart\.txt$/i);
+  if (!m) continue;
+  const code = m[1].toUpperCase();
+  if (code === 'FR') continue;   // le national est déjà chargé pour REAL_RARITY
+  regionalMonthly[code] = parseBarchart(join(__dir, fn)).monthly;
 }
 
 // --- Poids GBIF (repli) ---
