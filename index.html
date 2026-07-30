@@ -1251,6 +1251,8 @@ function realColor(w){
   const hue=Math.round((130 - p*140 + 360) % 360);
   return `hsl(${hue} 60% 47%)`;
 }
+// Couleur pastille sur la carte : gris pour les exotiques (comme dans le classement), sinon barème rareté.
+function sciColor(sci){ return isExotic(sci) ? '#7e8a99' : realColor(rarityReal(sci)); }
 function realTier(sci, abroad){
   if(isExotic(sci)) return { id:'exo', ord:0, label:'Exotique', color:'#7e8a99' };
   const key=(sci||'').trim().toLowerCase();
@@ -2134,10 +2136,9 @@ function _updateMapSuggest(){
   box.innerHTML = top.map((m, i) => {
     if(m._sciName){
       const nm = FR_NAMES[(m._sciName||'').toLowerCase()] || m._sciName;
-      const w = rarityReal(m._sciName);
       const hint = m._speciesCode ? '→ toutes les obs' : '→ voir sur la carte';
       return `<div class="map-search-suggest-item" data-idx="${i}">`+
-        `<span class="ss-dot" style="background:${realColor(w)}"></span>`+
+        `<span class="ss-dot" style="background:${sciColor(m._sciName)}"></span>`+
         `<span>${esc(nm)}</span>`+
         `<span class="ss-sci">${esc(m._sciName)}</span>`+
         `<span class="ss-hint">${hint}</span></div>`;
@@ -2238,7 +2239,7 @@ function _spreadGroup(group){
   }
 }
 function _mapMarker(pt, groupSize){
-  const color = realColor(pt.w);
+  const color = sciColor(pt.sci);
   const m = L.circleMarker([pt.dispLat, pt.dispLon], { radius:6, weight:1.5, color:'#fff', fillColor:color, fillOpacity:.85, opacity:1 });
   const date = pt.date ? ` <span class="p-meta">· ${esc(pt.date)}</span>` : '';
   const cc = pt.cc ? ` · ${esc(countryLabel(pt.cc))}` : '';
@@ -2569,7 +2570,7 @@ async function _loadMissingLayer(region, days=14, rarity=0, onProgress){
     for(const o of allObs){
       const w = rarityReal(o.sciName);
       const nm = FR_NAMES[(o.sciName||'').toLowerCase()] || o.comName || o.sciName;
-      const m = L.circleMarker([o.dispLat, o.dispLon], { radius:R, weight:W, color:realColor(w), fillColor:'#fff', fillOpacity:.85, opacity:1 });
+      const m = L.circleMarker([o.dispLat, o.dispLon], { radius:R, weight:W, color:sciColor(o.sciName), fillColor:'#fff', fillOpacity:.85, opacity:1 });
       const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lon}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
       m.bindPopup(`<b>${esc(nm)}</b> <span class="p-sci">${esc(o.sciName||'')}</span><br>`+
         `<span class="p-meta">🐦 <b>Vous ne l'avez pas encore</b></span><br>`+
@@ -2671,9 +2672,14 @@ async function _loadHotspotsLayer(region){
       // En "todo"/"recent" : on utilise SEULEMENT h.allSp (issu de l'enrichissement).
       // -> évite le fallback trompeur "132 espèces · 0 vues · 0 à cocher" quand l'enrichissement retourne 0.
       const n = (hotspotSort==='total') ? (h.numSpeciesAllTime||0) : (h.allSp||0);
-      // Skip les hotspots sans données en mode enrichi (peu importe la raison)
-      if(hotspotSort!=='total' && n===0) continue;
-      const r = n>=300?11 : n>=200?9 : n>=100?7 : n>=30?7 : 5;
+      // Skip les hotspots sans données en mode enrichi ET ceux où on n'a rien à cocher (inutiles).
+      if(hotspotSort!=='total' && (n===0 || (h.toDo||0)===0)) continue;
+      // Taille = nb d'espèces qui me manquent en mode enrichi (échelle resserrée sur 0-20,
+      // rare de manquer beaucoup plus), sinon nb total d'espèces (mode "total").
+      const rN = (hotspotSort==='total') ? n : (h.toDo||0);
+      const r = (hotspotSort==='total')
+        ? (rN>=300?11 : rN>=200?9 : rN>=100?7 : rN>=30?7 : 5)
+        : (rN>=20?12 : rN>=10?10 : rN>=5?8 : rN>=2?6 : 4);
       const m = L.circleMarker([h.dispLat, h.dispLon], { radius:r, weight:1.5, color:'#fff', fillColor:'#1e6091', fillOpacity:.75, opacity:1 });
       const gm = `<a href="https://www.google.com/maps?q=${h.lat},${h.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
       const eb = `<a href="https://ebird.org/hotspot/${esc(h.locId)}" target="_blank" rel="noopener" class="p-link">eBird</a>`;
@@ -2690,7 +2696,7 @@ async function _loadHotspotsLayer(region){
           .map(sci => ({ sci, name:FR_NAMES[sci]||sci, w:rarityReal(sci) }))
           .sort((a,b)=> b.w - a.w || a.name.localeCompare(b.name,'fr'));
         const rows = items.map(it =>
-          `<li><span class="p-dot" style="background:${realColor(it.w)}"></span><span>${esc(it.name)}</span> <span class="p-sci">${esc(it.sci)}</span></li>`
+          `<li><span class="p-dot" style="background:${sciColor(it.sci)}"></span><span>${esc(it.name)}</span> <span class="p-sci">${esc(it.sci)}</span></li>`
         ).join('');
         missingBlock = `<details class="hs-miss"><summary>👀 Espèces qui vous manquent ici (${items.length})</summary><ul class="p-list">${rows}</ul></details>`;
       }
