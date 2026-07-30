@@ -2447,8 +2447,12 @@ async function _loadHotspotsLayer(region){
       if(hotspotSort==='todo') top.sort((a,b)=> b.toDo - a.toDo);
       else if(hotspotSort==='recent') top.sort((a,b)=> b.allSp - a.allSp);   // "activité" = nb esp. vues ces 30j
     }
-    for(const h of top){
-      if(typeof h.lat!=='number'||typeof h.lng!=='number') continue;
+    // Spread des hotspots qui partagent les mêmes coords (cas rare : ~6 paires sur 17k)
+    const withCoords = top.filter(h=>typeof h.lat==='number' && typeof h.lng==='number').map(h=>({ ...h, lat:h.lat, lon:h.lng }));
+    const groups = new Map();
+    for(const h of withCoords){ const k=h.lat.toFixed(5)+','+h.lng.toFixed(5); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(h); }
+    for(const g of groups.values()) _spreadGroup(g);
+    for(const h of withCoords){
       // En "total" : on utilise numSpeciesAllTime (pas d'enrichissement).
       // En "todo"/"recent" : on utilise SEULEMENT h.allSp (issu de l'enrichissement).
       // -> évite le fallback trompeur "132 espèces · 0 vues · 0 à cocher" quand l'enrichissement retourne 0.
@@ -2456,7 +2460,7 @@ async function _loadHotspotsLayer(region){
       // Skip les hotspots sans données en mode enrichi (peu importe la raison)
       if(hotspotSort!=='total' && n===0) continue;
       const r = n>=300?11 : n>=200?9 : n>=100?7 : n>=30?7 : 5;
-      const m = L.circleMarker([h.lat,h.lng], { radius:r, weight:1.5, color:'#fff', fillColor:'#1e6091', fillOpacity:.75, opacity:1 });
+      const m = L.circleMarker([h.dispLat, h.dispLon], { radius:r, weight:1.5, color:'#fff', fillColor:'#1e6091', fillOpacity:.75, opacity:1 });
       const gm = `<a href="https://www.google.com/maps?q=${h.lat},${h.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
       const eb = `<a href="https://ebird.org/hotspot/${esc(h.locId)}" target="_blank" rel="noopener" class="p-link">eBird</a>`;
       const scope = hotspotSort==='recent' ? 'ces 30 jours' : 'au total (all-time)';
