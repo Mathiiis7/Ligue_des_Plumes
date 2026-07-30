@@ -470,8 +470,6 @@
   .map-el .leaflet-popup-content .hs-fav { border:none; background:transparent; cursor:pointer; font-size:18px; padding:0 2px; color:#c9b039; vertical-align:middle; line-height:1; }
   .map-el .leaflet-popup-content .hs-fav.on { color:#f4b400; }
   .map-el .leaflet-popup-content .hs-fav:hover { transform:scale(1.15); }
-  .map-el .leaflet-popup-content .hs-slot { margin-top:4px; font-size:11.5px; color:#555; padding:3px 6px; background:#fff8e1; border-left:3px solid #f0c977; border-radius:0 4px 4px 0; }
-  .map-el .leaflet-popup-content .hs-slot:empty { display:none; }
   .map-el .leaflet-popup-content .hs-hint { font-size:10.5px; color:var(--ink-3); margin:0 0 4px; font-style:italic; }
   .map-el .leaflet-popup-content .hs-pct { font-size:11.5px; font-weight:700; color:var(--accent-ink); white-space:nowrap; margin-left:auto; }
   .map-el .map-legend { background:rgba(255,255,255,.95); border-radius:8px; padding:8px 10px; box-shadow:0 1px 4px rgba(0,0,0,.15); font-size:11.5px; line-height:1.35; color:#15201e; max-height:calc(100% - 40px); overflow-y:auto; }
@@ -2624,7 +2622,7 @@ document.addEventListener('click', async e=>{
     _lyrHotspots.eachLayer(m => {
       if(m._hotspotId !== locId) return;
       const isFav = !wasFav;
-      m.setStyle({ weight:isFav?2.5:1.5, color:isFav?'#8a5a00':'#fff', fillColor:isFav?'#f4b400':'#1e6091', fillOpacity:.85 });
+      m.setStyle({ weight:isFav?2.5:1.5, color:isFav?'#8a5a00':'#0f3a5c', fillColor:isFav?'#f4b400':'#2b7bb0', fillOpacity:.85 });
     });
   }
   try{ await setDoc(doc(db,'leagues',leagueId,'members',myUid,'favorites','hotspots'),
@@ -2887,48 +2885,6 @@ async function _loadHotspotCounts(marker){
   await Promise.all(Array.from({length:Math.min(CONC, items.length)}, worker));
   marker._countsLoaded = true; marker._countsInflight = false;
 }
-// Lazy-load : à l'ouverture d'un popup, on récupère les checklists récentes du hotspot
-// et on calcule le créneau horaire de départ le plus fréquent (par tranche de 3h).
-// Un seul appel API par hotspot, cache 3 niveaux.
-async function _loadHotspotTimeSlot(marker){
-  if(marker._slotLoaded || marker._slotInflight) return;
-  marker._slotInflight = true;
-  const popup = marker.getPopup(); if(!popup) return;
-  const el = popup._contentNode; if(!el) return;
-  const slot = el.querySelector('[data-slot]'); if(!slot) return;
-  try{
-    const url = `https://api.ebird.org/v2/product/lists/${marker._hotspotId}?maxResults=50`;
-    const data = await _ebFetch(url);
-    if(!Array.isArray(data) || !data.length){ marker._slotLoaded=true; marker._slotInflight=false; return; }
-    // Bucket par tranche de 3h : 0=00-03, 1=03-06, 2=06-09, 3=09-12, 4=12-15, 5=15-18, 6=18-21, 7=21-24.
-    // On stocke TOTAL espèces vues (pas juste nb de checklists) → moyenne pondérée par richesse.
-    const spSum = new Array(8).fill(0);   // somme des numSpecies de chaque checklist du bucket
-    const nList = new Array(8).fill(0);   // nb de checklists du bucket (pour moyenne)
-    let total = 0;
-    for(const c of data){
-      // eBird : le champ heure d'une checklist est "obsTime" ("HH:MM"), pas "startTime".
-      const t = (c.obsTime||'').match(/^(\d{1,2}):/);
-      if(!t) continue;
-      const h = +t[1]; if(h<0||h>23) continue;
-      const b = Math.floor(h/3);
-      spSum[b] += (c.numSpecies||0);
-      nList[b]++; total++;
-    }
-    if(total < 3){ marker._slotLoaded=true; marker._slotInflight=false; return; }   // pas assez de données
-    // On prend le bucket avec la MOYENNE d'espèces la plus haute (= "quand on voit le plus d'oiseaux")
-    let bestIdx = -1, bestAvg = -1;
-    for(let i=0; i<8; i++){
-      if(nList[i]===0) continue;
-      const avg = spSum[i] / nList[i];
-      if(avg > bestAvg){ bestAvg = avg; bestIdx = i; }
-    }
-    if(bestIdx<0){ marker._slotLoaded=true; marker._slotInflight=false; return; }
-    const startH = bestIdx*3, endH = startH+3;
-    const emoji = bestIdx<=1 ? '🌙' : bestIdx<=2 ? '🌅' : bestIdx<=4 ? '🌞' : bestIdx<=5 ? '⛅' : '🌆';
-    slot.innerHTML = `${emoji} <b>${startH}h-${endH}h</b> · meilleur créneau (moy. <b>${Math.round(bestAvg)}</b> espèces/sortie, ${nList[bestIdx]} sorties)`;
-  }catch(_){ slot.remove(); }
-  marker._slotLoaded = true; marker._slotInflight = false;
-}
 async function _loadHotspotsLayer(region){
   if(!_lyrHotspots) return;
   const key = region+':'+hotspotSort;
@@ -3012,7 +2968,7 @@ async function _loadHotspotsLayer(region){
       const r = (hotspotSort==='total')
         ? Math.max(4, Math.min(18, 3 + Math.sqrt(rN) * 0.7))    // rN 20→6, 100→10, 300→15, 500+→18
         : Math.max(4, Math.min(18, 3 + Math.sqrt(rN) * 1.5));   // rN 1→4.5, 10→7.7, 50→13.6, 100→18
-      const m = L.circleMarker([h.dispLat, h.dispLon], { radius:r, weight:isFavHs?2.5:1.5, color:isFavHs?'#8a5a00':'#fff', fillColor:isFavHs?'#f4b400':'#1e6091', fillOpacity:.85, opacity:1 });
+      const m = L.circleMarker([h.dispLat, h.dispLon], { radius:r, weight:isFavHs?2.5:1.5, color:isFavHs?'#8a5a00':'#0f3a5c', fillColor:isFavHs?'#f4b400':'#2b7bb0', fillOpacity:.85, opacity:1 });
       const gm = `<a href="https://www.google.com/maps?q=${h.lat},${h.lng}" target="_blank" rel="noopener" class="p-btn pl-gmaps">🗺️ Google Maps</a>`;
       // Ouvre Google Maps en mode transport en commun depuis la position actuelle (pas d'origin → device location).
       const tr = `<a href="https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}&travelmode=transit" target="_blank" rel="noopener" class="p-btn pl-transit">🚌 Transit</a>`;
@@ -3078,14 +3034,13 @@ async function _loadHotspotsLayer(region){
       const favBtn = myUid ? `<button class="hs-fav${isFav?' on':''}" data-loc="${esc(h.locId)}" title="${isFav?'Retirer des favoris':'Ajouter aux favoris'}">${isFav?'★':'☆'}</button>` : '';
       m.bindPopup(`<b>🏞️ ${esc(h.locName||h.name||'?')}</b> ${favBtn}<br>`+
         `<span class="p-meta">${h.subnational2Name?esc(h.subnational2Name)+' · ':''}${esc(h.subnational1Name||'')}${distTag}</span><br>`+
-        `<span class="p-meta">${cntLine}</span>`+
-        `<div class="hs-slot" data-slot></div>${missingBlock}<br>${gm} ${tr} ${eb}`,
+        `<span class="p-meta">${cntLine}</span>${missingBlock}<br>${gm} ${tr} ${eb}`,
         { maxHeight:340, autoPan:true });
       m._q = _mapNorm((h.locName||h.name||'')+' '+(h.subnational1Name||'')+' '+(h.subnational2Name||''));
       // Lazy-load : à l'ouverture du popup, on récupère la date de dernière obs par espèce (cache 3 niveaux)
       // ET le créneau horaire fréquent des sorties à ce hotspot.
       m._hotspotId = h.locId;
-      m.on('popupopen', () => { _loadHotspotCounts(m); _loadHotspotTimeSlot(m); });
+      m.on('popupopen', () => _loadHotspotCounts(m));
       _lyrHotspots.addLayer(m);
     }
     _loaded.hotspots = key;
