@@ -9,6 +9,7 @@ createur-badge.html
 tools/rarity-cache.json
 tools/real-rarity.generated.js
 tools/real-freq-monthly.generated.js
+tools/real-freq-monthly-by-region.generated.js
 
 # Divers
 *.log

@@ -89,25 +89,41 @@ const EBIRD_ALIAS = {
 const html = readFileSync(join(ROOT, 'index.html'), 'utf8');
 const FR = JSON.parse(html.match(/const FR_NAMES = (\{.*?\});/s)[1]);
 
-// --- Pic de fréquence eBird par nom normalisé + pic PAR MOIS (12 valeurs, agrégat MAX des 4 quinzaines) ---
-const ebFreq = {};
-const ebFreqMonthly = {};   // nom normalisé -> tableau de 12 pics mensuels
-for (const ln of readFileSync(BARCHART, 'utf8').split(/\r?\n/)) {
-  if (!ln.includes('\t')) continue;
-  const p = ln.split('\t');
-  const nm = p[0].trim();
-  const nums = p.slice(1).map(Number).filter(x => !isNaN(x));
-  if (!nm || nums.length < 12 || /sample size/i.test(nm)) continue;
-  const clean = nm.replace(/\s*\(.*?\)\s*/g, ' ').trim(); // retire "(hybride...)" etc.
-  const key = norm(clean);
-  ebFreq[key] = Math.max(...nums);
-  // Bar chart eBird = 48 quinzaines (4 par mois × 12 mois). Pic mensuel = max des 4 quinzaines.
-  const monthly = new Array(12).fill(0);
-  for (let m = 0; m < 12; m++) {
-    const start = m * 4;
-    monthly[m] = Math.max(nums[start]||0, nums[start+1]||0, nums[start+2]||0, nums[start+3]||0);
+// --- Parseur d'un fichier bar chart eBird -> { freqMax: {clé: pic annuel}, monthly: {clé: [12 pics]} } ---
+function parseBarchart(path) {
+  const freqMax = {}, monthly = {};
+  for (const ln of readFileSync(path, 'utf8').split(/\r?\n/)) {
+    if (!ln.includes('\t')) continue;
+    const p = ln.split('\t');
+    const nm = p[0].trim();
+    const nums = p.slice(1).map(Number).filter(x => !isNaN(x));
+    if (!nm || nums.length < 12 || /sample size/i.test(nm)) continue;
+    const clean = nm.replace(/\s*\(.*?\)\s*/g, ' ').trim(); // retire "(hybride...)" etc.
+    const key = norm(clean);
+    freqMax[key] = Math.max(...nums);
+    // Bar chart eBird = 48 quinzaines (4 par mois × 12 mois). Pic mensuel = max des 4 quinzaines.
+    const m12 = new Array(12).fill(0);
+    for (let m = 0; m < 12; m++) {
+      const start = m * 4;
+      m12[m] = Math.max(nums[start]||0, nums[start+1]||0, nums[start+2]||0, nums[start+3]||0);
+    }
+    monthly[key] = m12;
   }
-  ebFreqMonthly[key] = monthly;
+  return { freqMax, monthly };
+}
+
+// National : pour le calcul du poids de rareté (source de vérité).
+const nat = parseBarchart(BARCHART);
+const ebFreq = nat.freqMax;
+const ebFreqMonthly = nat.monthly;
+
+// Régional : 13 fichiers FR-xx pour la saisonnalité régionale (filtre "Mois" par hotspot).
+const FR_REGIONS = ['FR-ARA','FR-BFC','FR-BRE','FR-CVL','FR-COR','FR-IDF','FR-NAQ','FR-NOR','FR-OCC','FR-HDF','FR-PDL','FR-PAC','FR-GES'];
+const regionalMonthly = {};   // code région -> {clé normalisée -> [12 pics]}
+for (const rc of FR_REGIONS) {
+  const path = join(__dir, `ebird-barchart-${rc}-2015-2026.txt`);
+  if (!existsSync(path)) { console.warn(`⚠ manquant: ${path}`); continue; }
+  regionalMonthly[rc] = parseBarchart(path).monthly;
 }
 
 // --- Poids GBIF (repli) ---
@@ -146,11 +162,33 @@ const obj = {};
 for (const r of recs) if (r.weight >= 2) obj[r.sci] = r.weight;
 writeFileSync(join(__dir, 'real-rarity.generated.js'), 'const REAL_RARITY = ' + JSON.stringify(obj) + ';\n');
 
-// Littéral REAL_FREQ_MONTHLY = { sci -> [12 pics mensuels 0..1] }.
+// Littéral REAL_FREQ_MONTHLY = { sci -> [12 pics mensuels 0..1] } - saisonnalité NATIONALE (fallback).
 // On arrondit à 5 décimales pour réduire la taille (précision largement suffisante pour un filtre).
 const mObj = {};
 for (const sci in monthly) mObj[sci] = monthly[sci].map(v => +v.toFixed(5));
 writeFileSync(join(__dir, 'real-freq-monthly.generated.js'), 'const REAL_FREQ_MONTHLY = ' + JSON.stringify(mObj) + ';\n');
+
+// Littéral REAL_FREQ_MONTHLY_BY_REGION = { code_region -> { sci -> [12 pics mensuels 0..1] } }.
+// Une espèce n'apparaît dans une région que si elle y a été observée au moins une fois.
+// À l'exécution : on tente region → fallback national → fallback "actif" si aucune donnée.
+const regObj = {};
+for (const rc in regionalMonthly) {
+  regObj[rc] = {};
+  const nmap = regionalMonthly[rc];
+  for (const sci in FR) {
+    const name = FR[sci];
+    const aliased = EBIRD_ALIAS[name];
+    const key = norm(aliased || name);
+    const m12 = nmap[key];
+    if (m12) regObj[rc][sci] = m12.map(v => +v.toFixed(5));
+  }
+}
+writeFileSync(join(__dir, 'real-freq-monthly-by-region.generated.js'),
+  'const REAL_FREQ_MONTHLY_BY_REGION = ' + JSON.stringify(regObj) + ';\n');
+
+// Récap régional
+const regionSpeciesCount = Object.fromEntries(Object.entries(regObj).map(([k,v])=>[k, Object.keys(v).length]));
+console.log('Régions parsées :', Object.keys(regObj).length, JSON.stringify(regionSpeciesCount));
 
 // Récap
 const dist = {}; for (let w = 1; w <= 9; w++) dist[w] = 0;
