@@ -2907,7 +2907,9 @@ async function _loadHotspotsLayer(region){
           });
         const rows = items.map(it => {
           const sc = _sciToCode(it.sci) || '';
-          return `<li data-sc="${esc(sc)}"><span class="p-dot" style="background:${sciColor(it.sci)}"></span><span>${esc(it.name)}</span> <span class="hs-pct">${esc(fmtPct(it.freq))}</span><span class="hs-cnt loading" data-cnt>…</span></li>`;
+          // Ordre : dot > nom > count (grandit dynamiquement, inline) > % (ancré à droite via margin-left:auto).
+          // -> le % reste à sa position fixe, le count grandit à sa gauche sans le pousser.
+          return `<li data-sc="${esc(sc)}"><span class="p-dot" style="background:${sciColor(it.sci)}"></span><span>${esc(it.name)}</span><span class="hs-cnt loading" data-cnt>…</span><span class="hs-pct">${esc(fmtPct(it.freq))}</span></li>`;
         }).join('');
         // Source réellement utilisée (département si dispo, sinon région, sinon national) — affichée dans le hint.
         const scope = (dept && REAL_FREQ_MONTHLY_BY_REGION[dept]) ? dept
