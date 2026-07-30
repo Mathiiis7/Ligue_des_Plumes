@@ -502,7 +502,7 @@
   .map-search input { width:100%; box-sizing:border-box; padding:8px 12px; border:1px solid var(--line-2); border-radius:10px; font:inherit; background:var(--surface); color:var(--ink); }
   .map-search input:focus { outline:2px solid var(--accent); outline-offset:1px; }
   .map-search-count { font-size:12px; color:var(--ink-3); font-weight:600; min-width:80px; }
-  .map-search-suggest { position:absolute; top:100%; left:0; right:0; margin-top:4px; background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:0 4px 14px rgba(0,0,0,.14); display:none; max-height:280px; overflow-y:auto; z-index:2000; }
+  .map-search-suggest { position:absolute; top:100%; left:0; right:0; margin-top:4px; background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:0 4px 14px rgba(0,0,0,.14); display:none; max-height:min(60vh, 480px); overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; z-index:2000; }
   .map-search-suggest.open { display:block; }
   .map-search-suggest-item { padding:8px 12px; cursor:pointer; font-size:13.5px; color:var(--ink); display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--line); }
   .map-search-suggest-item:last-child { border-bottom:none; }
@@ -2322,8 +2322,8 @@ function _updateMapSuggest(){
   box.classList.add('open');
 }
 $('#mapSearchSuggest')?.addEventListener('mousedown', e=>{
-  e.preventDefault();   // évite le blur de l'input avant qu'on ait lu le clic
   const it = e.target.closest('.map-search-suggest-item'); if(!it) return;
+  e.preventDefault();   // évite le blur de l'input avant qu'on ait lu le clic (mais ne bloque pas le scroll ailleurs dans la box)
   const m = _mapSuggestItems[+it.dataset.idx]; if(!m) return;
   const box = $('#mapSearchSuggest'); box.classList.remove('open'); box.innerHTML='';
   // Cas suggestion espèce en mode hotspots : on injecte le nom fr dans la barre,
