@@ -480,7 +480,7 @@
   .map-search input { width:100%; box-sizing:border-box; padding:8px 12px; border:1px solid var(--line-2); border-radius:10px; font:inherit; background:var(--surface); color:var(--ink); }
   .map-search input:focus { outline:2px solid var(--accent); outline-offset:1px; }
   .map-search-count { font-size:12px; color:var(--ink-3); font-weight:600; min-width:80px; }
-  .map-search-suggest { position:absolute; top:100%; left:0; right:0; margin-top:4px; background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:0 4px 14px rgba(0,0,0,.14); display:none; max-height:280px; overflow-y:auto; z-index:30; }
+  .map-search-suggest { position:absolute; top:100%; left:0; right:0; margin-top:4px; background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:0 4px 14px rgba(0,0,0,.14); display:none; max-height:280px; overflow-y:auto; z-index:2000; }
   .map-search-suggest.open { display:block; }
   .map-search-suggest-item { padding:8px 12px; cursor:pointer; font-size:13.5px; color:var(--ink); display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--line); }
   .map-search-suggest-item:last-child { border-bottom:none; }
@@ -2510,6 +2510,7 @@ async function _loadMissingLayer(region, days=14, rarity=0, onProgress){
       if(!k || mine.has(k) || seenSp.has(k)) continue;
       if(!o.speciesCode) continue;
       if(isNonSpecies(o.comName||'', o.sciName||'')) continue;
+      if(isExotic(k)) continue;   // exotiques (cygne noir, faisan de Colchide, ibis sacré…) : introduits, pas des cibles à cocher
       seenSp.add(k);
       missingSp.push({ sciName:o.sciName, comName:o.comName, speciesCode:o.speciesCode, first:o });
     }
