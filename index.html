@@ -2114,11 +2114,12 @@ function _updateLegend(){
   if(!_legendDiv) return;
   if(mapMode==='hotspots'){
     const isTotal = hotspotSort==='total';
-    const rows = isTotal
-      ? [[300,'≥ 300 espèces (all-time)',11],[200,'≥ 200',9],[100,'≥ 100',7],[30,'≥ 30',7],[0,'< 30',5]]
-      : [[20,'≥ 20 espèces à cocher',12],[10,'≥ 10',10],[5,'≥ 5',8],[2,'≥ 2',6],[1,'1',4]];
+    // Mêmes formules que le rendu (fonction sqrt continue) pour que la légende reflète les vraies tailles.
+    const size = v => Math.max(4, Math.min(14, 3 + Math.sqrt(v) * (isTotal ? 0.65 : 2.5)));
+    const samples = isTotal ? [[300,'≥ 300 espèces (all-time)'],[100,'≥ 100'],[50,'≥ 50'],[20,'≥ 20']]
+                            : [[20,'≥ 20 espèces à cocher'],[10,'≥ 10'],[5,'≥ 5'],[2,'≥ 2'],[1,'1']];
     _legendDiv.innerHTML = `<div class="ml-title">Taille = ${isTotal?'total d\'espèces':'espèces à cocher'}</div>`+
-      rows.map(([_,lbl,r])=>`<div class="ml-row"><span class="ml-dot ml-hs" style="width:${r*2}px;height:${r*2}px"></span><span class="ml-txt">${esc(lbl)}</span></div>`).join('');
+      samples.map(([v,lbl])=>{ const r = size(v); return `<div class="ml-row"><span class="ml-dot ml-hs" style="width:${(r*2).toFixed(0)}px;height:${(r*2).toFixed(0)}px"></span><span class="ml-txt">${esc(lbl)}</span></div>`; }).join('');
   } else {
     const tiers=[1,2,3,4,5,6,7,8,9];
     _legendDiv.innerHTML = '<div class="ml-title">Rareté</div>' + tiers.map(w=>
@@ -2741,10 +2742,11 @@ async function _loadHotspotsLayer(region){
       // Skip les hotspots sans données en mode enrichi OU sans espèce à cocher (compte tenu du filtre mois).
       if(hotspotSort!=='total' && (n===0 || toDoShown===0)) continue;
       // Taille = nb d'espèces qui me manquent (post-filtre mois) en mode enrichi.
+      // Échelle continue (sqrt) pour bien étaler les tailles même quand les valeurs sont petites.
       const rN = (hotspotSort==='total') ? n : toDoShown;
       const r = (hotspotSort==='total')
-        ? (rN>=300?11 : rN>=200?9 : rN>=100?7 : rN>=30?7 : 5)
-        : (rN>=20?12 : rN>=10?10 : rN>=5?8 : rN>=2?6 : 4);
+        ? Math.max(4, Math.min(14, 3 + Math.sqrt(rN) * 0.65))    // rN 20→6, 100→10, 300→14
+        : Math.max(4, Math.min(14, 3 + Math.sqrt(rN) * 2.5));    // rN 1→5.5, 5→8.6, 10→11, 20→14
       const m = L.circleMarker([h.dispLat, h.dispLon], { radius:r, weight:1.5, color:'#fff', fillColor:'#1e6091', fillOpacity:.75, opacity:1 });
       const gm = `<a href="https://www.google.com/maps?q=${h.lat},${h.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
       const eb = `<a href="https://ebird.org/hotspot/${esc(h.locId)}" target="_blank" rel="noopener" class="p-link">eBird</a>`;
