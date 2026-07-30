@@ -2253,30 +2253,55 @@ function _updateMapSuggest(){
   const box = $('#mapSearchSuggest'); if(!box) return;
   const q = _mapNorm(mapSearch).trim();
   const lyr = _mapCurrentLayer(); if(!lyr){ box.classList.remove('open'); return; }
-  const seen = new Set();
   const items = [];
-  lyr.eachLayer(m => {
-    if(q && (!m._q || !m._q.includes(q))) return;
-    const key = m._sciName ? m._sciName.toLowerCase() : (m._q||'');
-    if(!key || seen.has(key)) return; seen.add(key);
-    items.push(m);
-  });
-  // Tri : espèces d'abord (par nom fr), lieux ensuite
-  items.sort((a,b)=>{
-    const aSp = !!a._sciName, bSp = !!b._sciName;
-    if(aSp!==bSp) return aSp ? -1 : 1;
-    if(aSp){
-      const an = (FR_NAMES[(a._sciName||'').toLowerCase()] || a._sciName || '').toLowerCase();
-      const bn = (FR_NAMES[(b._sciName||'').toLowerCase()] || b._sciName || '').toLowerCase();
-      return an.localeCompare(bn,'fr');
-    }
-    return 0;
-  });
+  if(mapMode==='hotspots'){
+    // Mode hotspots : les markers représentent des lieux. Les suggestions sont donc les
+    // ESPÈCES manquantes agrégées sur l'ensemble des hotspots visibles (jamais les lieux).
+    const seen = new Set();
+    lyr.eachLayer(m => {
+      const list = m._missSci; if(!Array.isArray(list)) return;
+      for(const sci of list){
+        if(seen.has(sci)) continue;
+        const fr = FR_NAMES[sci] || sci;
+        if(q && !_mapNorm(fr).includes(q) && !sci.includes(q)) continue;
+        seen.add(sci);
+        items.push({ sci, name:fr, kind:'sp-hotspot' });
+      }
+    });
+    items.sort((a,b)=> a.name.localeCompare(b.name,'fr'));
+  } else {
+    // Modes mine / missing : suggestions basées sur les espèces des markers eux-mêmes.
+    const seen = new Set();
+    lyr.eachLayer(m => {
+      if(q && (!m._q || !m._q.includes(q))) return;
+      const key = m._sciName ? m._sciName.toLowerCase() : (m._q||'');
+      if(!key || seen.has(key)) return; seen.add(key);
+      items.push(m);
+    });
+    items.sort((a,b)=>{
+      const aSp = !!a._sciName, bSp = !!b._sciName;
+      if(aSp!==bSp) return aSp ? -1 : 1;
+      if(aSp){
+        const an = (FR_NAMES[(a._sciName||'').toLowerCase()] || a._sciName || '').toLowerCase();
+        const bn = (FR_NAMES[(b._sciName||'').toLowerCase()] || b._sciName || '').toLowerCase();
+        return an.localeCompare(bn,'fr');
+      }
+      return 0;
+    });
+  }
   const CAP = q ? 12 : 30;
   const top = items.slice(0, CAP);
   if(!top.length){ box.classList.remove('open'); box.innerHTML=''; _mapSuggestItems=[]; return; }
   _mapSuggestItems = top;
-  box.innerHTML = top.map((m, i) => {
+  box.innerHTML = top.map((it, i) => {
+    if(it && it.kind==='sp-hotspot'){
+      return `<div class="map-search-suggest-item" data-idx="${i}">`+
+        `<span class="ss-dot" style="background:${sciColor(it.sci)}"></span>`+
+        `<span>${esc(it.name)}</span>`+
+        `<span class="ss-sci">${esc(it.sci)}</span>`+
+        `<span class="ss-hint">→ filtrer les hotspots</span></div>`;
+    }
+    const m = it;
     if(m._sciName){
       const nm = FR_NAMES[(m._sciName||'').toLowerCase()] || m._sciName;
       const hint = m._speciesCode ? '→ toutes les obs' : '→ voir sur la carte';
@@ -2301,6 +2326,12 @@ $('#mapSearchSuggest')?.addEventListener('mousedown', e=>{
   const it = e.target.closest('.map-search-suggest-item'); if(!it) return;
   const m = _mapSuggestItems[+it.dataset.idx]; if(!m) return;
   const box = $('#mapSearchSuggest'); box.classList.remove('open'); box.innerHTML='';
+  // Cas suggestion espèce en mode hotspots : on injecte le nom fr dans la barre,
+  // et le filtre existant (basé sur m._q) garde les hotspots concernés.
+  if(m && m.kind==='sp-hotspot'){
+    const s = $('#mapSearch'); s.value = m.name; mapSearch = m.name; _mapApplyFilter();
+    return;
+  }
   const s = $('#mapSearch'); s.value=''; mapSearch=''; _mapApplyFilter();
   if(m._sciName && m._speciesCode){
     // Mode missing : on récupère toutes les obs récentes de l'espèce
@@ -3014,6 +3045,7 @@ async function _loadHotspotsLayer(region){
       // (permet à la barre "Filtrer par nom d'espèce" de matcher un hotspot où l'espèce est présente).
       const missNames = filteredMiss.map(sci => FR_NAMES[sci]||sci).join(' ');
       m._q = _mapNorm((h.locName||h.name||'')+' '+(h.subnational1Name||'')+' '+(h.subnational2Name||'')+' '+missNames);
+      m._missSci = filteredMiss;   // pour l'autocomplétion "espèces uniquement" en mode hotspots
       // Lazy-load : à l'ouverture du popup, on récupère la date de dernière obs par espèce (cache 3 niveaux)
       // ET le créneau horaire fréquent des sorties à ce hotspot.
       m._hotspotId = h.locId;
