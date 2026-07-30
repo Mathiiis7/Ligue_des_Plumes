@@ -459,8 +459,6 @@
   .map-el .leaflet-popup-content details.hs-miss summary { cursor:pointer; font-weight:600; color:var(--accent-ink); padding:4px 0; user-select:none; }
   .map-el .leaflet-popup-content details.hs-miss summary:hover { text-decoration:underline; }
   .map-el .leaflet-popup-content details.hs-miss[open] summary { margin-bottom:4px; }
-  .map-el .leaflet-popup-content .hs-hint { font-size:10.5px; color:var(--ink-3); margin:0 0 4px; font-style:italic; }
-  .map-el .leaflet-popup-content .hs-pct { font-size:11.5px; font-weight:700; color:var(--accent-ink); white-space:nowrap; margin-left:auto; }
   .map-el .map-legend { background:rgba(255,255,255,.95); border-radius:8px; padding:8px 10px; box-shadow:0 1px 4px rgba(0,0,0,.15); font-size:11.5px; line-height:1.35; color:#15201e; max-height:calc(100% - 40px); overflow-y:auto; }
   .map-el .map-legend .ml-title { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; color:#47534f; }
   .map-el .map-legend .ml-row { display:flex; align-items:center; gap:6px; padding:1px 0; }
@@ -2509,9 +2507,10 @@ document.addEventListener('click', e=>{
   const showRar = mapMode==='missing';
   if(rarLbl) rarLbl.style.display = showRar ? '' : 'none';
   if(rarSel) rarSel.style.display = showRar ? '' : 'none';
-  // "Mois" ne s'applique qu'aux modes enrichis (todo/recent) qui ont la liste des espèces par hotspot.
-  // En "Total" (all-time), on n'a que le nombre d'espèces, pas leur liste → filtre mois inapplicable.
-  const showMon = mapMode==='hotspots' && hotspotSort!=='total';
+  // "Mois" ne s'applique qu'au mode "todo" (spplist all-time filtrée par saisonnalité).
+  // En "recent" (30j) c'est presque un no-op — le 30j actuel est déjà d'un mois précis.
+  // En "total" (compteur eBird) on n'a pas la liste des espèces → inapplicable.
+  const showMon = mapMode==='hotspots' && hotspotSort==='todo';
   if(monLbl) monLbl.style.display = showMon ? '' : 'none';
   if(monSel) monSel.style.display = showMon ? '' : 'none';
   _updateLegend();
@@ -2520,7 +2519,7 @@ document.addEventListener('click', e=>{
 document.addEventListener('change', e=>{
   if(e.target.id==='mapEbSort'){
     hotspotSort=e.target.value; _loaded.hotspots=''; _updateLegend();
-    const showMon = hotspotSort!=='total';
+    const showMon = hotspotSort==='todo';
     const monLbl=$('#mapEbMonthLbl'), monSel=$('#mapEbMonth');
     if(monLbl) monLbl.style.display = showMon ? '' : 'none';
     if(monSel) monSel.style.display = showMon ? '' : 'none';
@@ -2764,31 +2763,15 @@ async function _loadHotspotsLayer(region){
       // Liste dépliable, triée par rareté DESC. En mode "total" pas de liste (pas d'enrichissement).
       let missingBlock = '';
       if(hotspotSort!=='total' && filteredMiss.length){
-        // % de rencontre : si un mois est filtré, freq du mois ; sinon pic annuel.
-        // Formaté : "12 %" au-dessus de 1, "0.4 %" en dessous, "—" si pas de données bar chart.
-        const pctFor = sci => {
-          const arr = REAL_FREQ_MONTHLY[(sci||'').toLowerCase()];
-          if(!arr) return null;
-          const v = monthFilter ? (arr[monthFilter-1]||0) : Math.max(...arr);
-          const pct = v * 100;
-          return pct >= 1 ? Math.round(pct)+' %' : pct >= 0.05 ? pct.toFixed(1)+' %' : '<0.1 %';
-        };
         const items = filteredMiss
-          .map(sci => ({ sci, name:FR_NAMES[sci]||sci, w:rarityReal(sci), pct:pctFor(sci) }))
-          // Tri : plus de chances de rencontre en 1er (info utile pour choisir sa cible),
-          // puis par nom fr pour départager.
-          .sort((a,b)=>{
-            const av = a.pct===null ? -1 : parseFloat(a.pct);
-            const bv = b.pct===null ? -1 : parseFloat(b.pct);
-            return bv - av || a.name.localeCompare(b.name,'fr');
-          });
+          .map(sci => ({ sci, name:FR_NAMES[sci]||sci, w:rarityReal(sci) }))
+          .sort((a,b)=> b.w - a.w || a.name.localeCompare(b.name,'fr'));
         const rows = items.map(it =>
-          `<li><span class="p-dot" style="background:${sciColor(it.sci)}"></span><span>${esc(it.name)}</span> <span class="hs-pct">${esc(it.pct||'—')}</span></li>`
+          `<li><span class="p-dot" style="background:${sciColor(it.sci)}"></span><span>${esc(it.name)}</span></li>`
         ).join('');
-        const scopeLbl = monthFilter ? `chances en ${MONTH_NAMES[monthFilter]}` : 'pic annuel';
         const label = monthFilter ? `👀 Espèces manquantes actives en ${MONTH_NAMES[monthFilter]} (${items.length})`
                                   : `👀 Espèces qui vous manquent ici (${items.length})`;
-        missingBlock = `<details class="hs-miss"><summary>${label}</summary><div class="hs-hint">% = ${scopeLbl} (part des listes eBird où l'espèce est notée)</div><ul class="p-list">${rows}</ul></details>`;
+        missingBlock = `<details class="hs-miss"><summary>${label}</summary><ul class="p-list">${rows}</ul></details>`;
       }
       m.bindPopup(`<b>🏞️ ${esc(h.locName||h.name||'?')}</b><br>`+
         `<span class="p-meta">${h.subnational2Name?esc(h.subnational2Name)+' · ':''}${esc(h.subnational1Name||'')}</span><br>`+
