@@ -2421,7 +2421,7 @@ async function _loadHotspotsLayer(region){
   try{
     const list = await _ebFetch(`https://api.ebird.org/v2/ref/hotspot/${region}?fmt=json`);
     // Sélection top par numSpeciesAllTime, avant enrichissement (limite l'API à 30 lieux max)
-    const topRaw = list.filter(h=>h.numSpeciesAllTime).sort((a,b)=>b.numSpeciesAllTime-a.numSpeciesAllTime).slice(0, hotspotSort==='total'?50:30);
+    const topRaw = list.filter(h=>h.numSpeciesAllTime).sort((a,b)=>b.numSpeciesAllTime-a.numSpeciesAllTime).slice(0, 50);
     let top;
     if(hotspotSort==='total'){
       top = topRaw.map(h=>({ ...h, allSp:h.numSpeciesAllTime, mySp:null, toDo:null }));
