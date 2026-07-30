@@ -2400,7 +2400,7 @@ async function _enrichHotspots(hotspots, region, kind){
     try{
       let sciSet;
       if(kind==='recent'){
-        const url = `https://api.ebird.org/v2/data/obs/${region}/hotspot/${h.locId}?back=30`;
+        const url = `https://api.ebird.org/v2/data/obs/${h.locId}/recent?back=30`;
         const data = await _ebFetch(url);
         sciSet = new Set(data.map(o => (o.sciName||'').toLowerCase()).filter(Boolean));
       } else {
