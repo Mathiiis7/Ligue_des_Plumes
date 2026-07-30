@@ -459,6 +459,8 @@
   .map-el .leaflet-popup-content details.hs-miss summary { cursor:pointer; font-weight:600; color:var(--accent-ink); padding:4px 0; user-select:none; }
   .map-el .leaflet-popup-content details.hs-miss summary:hover { text-decoration:underline; }
   .map-el .leaflet-popup-content details.hs-miss[open] summary { margin-bottom:4px; }
+  .map-el .leaflet-popup-content .hs-hint { font-size:10.5px; color:var(--ink-3); margin:0 0 4px; font-style:italic; }
+  .map-el .leaflet-popup-content .hs-pct { font-size:11.5px; font-weight:700; color:var(--accent-ink); white-space:nowrap; }
   .map-el .map-legend { background:rgba(255,255,255,.95); border-radius:8px; padding:8px 10px; box-shadow:0 1px 4px rgba(0,0,0,.15); font-size:11.5px; line-height:1.35; color:#15201e; max-height:calc(100% - 40px); overflow-y:auto; }
   .map-el .map-legend .ml-title { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; color:#47534f; }
   .map-el .map-legend .ml-row { display:flex; align-items:center; gap:6px; padding:1px 0; }
@@ -2115,9 +2117,9 @@ function _updateLegend(){
   if(mapMode==='hotspots'){
     const isTotal = hotspotSort==='total';
     // Mêmes formules que le rendu (fonction sqrt continue) pour que la légende reflète les vraies tailles.
-    const size = v => Math.max(4, Math.min(14, 3 + Math.sqrt(v) * (isTotal ? 0.65 : 2.5)));
-    const samples = isTotal ? [[300,'≥ 300 espèces (all-time)'],[100,'≥ 100'],[50,'≥ 50'],[20,'≥ 20']]
-                            : [[20,'≥ 20 espèces à cocher'],[10,'≥ 10'],[5,'≥ 5'],[2,'≥ 2'],[1,'1']];
+    const size = v => Math.max(4, Math.min(18, 3 + Math.sqrt(v) * (isTotal ? 0.7 : 1.5)));
+    const samples = isTotal ? [[500,'≥ 500 espèces (all-time)'],[300,'≥ 300'],[200,'≥ 200'],[100,'≥ 100'],[50,'≥ 50'],[20,'≥ 20']]
+                            : [[100,'≥ 100 espèces à cocher'],[50,'≥ 50'],[20,'≥ 20'],[10,'≥ 10'],[5,'≥ 5'],[1,'1']];
     _legendDiv.innerHTML = `<div class="ml-title">Taille = ${isTotal?'total d\'espèces':'espèces à cocher'}</div>`+
       samples.map(([v,lbl])=>{ const r = size(v); return `<div class="ml-row"><span class="ml-dot ml-hs" style="width:${(r*2).toFixed(0)}px;height:${(r*2).toFixed(0)}px"></span><span class="ml-txt">${esc(lbl)}</span></div>`; }).join('');
   } else {
@@ -2746,11 +2748,11 @@ async function _loadHotspotsLayer(region){
       // Skip les hotspots sans données en mode enrichi OU sans espèce à cocher (compte tenu du filtre mois).
       if(hotspotSort!=='total' && (n===0 || toDoShown===0)) continue;
       // Taille = nb d'espèces qui me manquent (post-filtre mois) en mode enrichi.
-      // Échelle continue (sqrt) pour bien étaler les tailles même quand les valeurs sont petites.
+      // Échelle continue (sqrt) plus étalée : max 18 px, saturation à 100 espèces à cocher.
       const rN = (hotspotSort==='total') ? n : toDoShown;
       const r = (hotspotSort==='total')
-        ? Math.max(4, Math.min(14, 3 + Math.sqrt(rN) * 0.65))    // rN 20→6, 100→10, 300→14
-        : Math.max(4, Math.min(14, 3 + Math.sqrt(rN) * 2.5));    // rN 1→5.5, 5→8.6, 10→11, 20→14
+        ? Math.max(4, Math.min(18, 3 + Math.sqrt(rN) * 0.7))    // rN 20→6, 100→10, 300→15, 500+→18
+        : Math.max(4, Math.min(18, 3 + Math.sqrt(rN) * 1.5));   // rN 1→4.5, 10→7.7, 50→13.6, 100→18
       const m = L.circleMarker([h.dispLat, h.dispLon], { radius:r, weight:1.5, color:'#fff', fillColor:'#1e6091', fillOpacity:.75, opacity:1 });
       const gm = `<a href="https://www.google.com/maps?q=${h.lat},${h.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
       const eb = `<a href="https://ebird.org/hotspot/${esc(h.locId)}" target="_blank" rel="noopener" class="p-link">eBird</a>`;
@@ -2762,15 +2764,31 @@ async function _loadHotspotsLayer(region){
       // Liste dépliable, triée par rareté DESC. En mode "total" pas de liste (pas d'enrichissement).
       let missingBlock = '';
       if(hotspotSort!=='total' && filteredMiss.length){
+        // % de rencontre : si un mois est filtré, freq du mois ; sinon pic annuel.
+        // Formaté : "12 %" au-dessus de 1, "0.4 %" en dessous, "—" si pas de données bar chart.
+        const pctFor = sci => {
+          const arr = REAL_FREQ_MONTHLY[(sci||'').toLowerCase()];
+          if(!arr) return null;
+          const v = monthFilter ? (arr[monthFilter-1]||0) : Math.max(...arr);
+          const pct = v * 100;
+          return pct >= 1 ? Math.round(pct)+' %' : pct >= 0.05 ? pct.toFixed(1)+' %' : '<0.1 %';
+        };
         const items = filteredMiss
-          .map(sci => ({ sci, name:FR_NAMES[sci]||sci, w:rarityReal(sci) }))
-          .sort((a,b)=> b.w - a.w || a.name.localeCompare(b.name,'fr'));
+          .map(sci => ({ sci, name:FR_NAMES[sci]||sci, w:rarityReal(sci), pct:pctFor(sci) }))
+          // Tri : plus de chances de rencontre en 1er (info utile pour choisir sa cible),
+          // puis par nom fr pour départager.
+          .sort((a,b)=>{
+            const av = a.pct===null ? -1 : parseFloat(a.pct);
+            const bv = b.pct===null ? -1 : parseFloat(b.pct);
+            return bv - av || a.name.localeCompare(b.name,'fr');
+          });
         const rows = items.map(it =>
-          `<li><span class="p-dot" style="background:${sciColor(it.sci)}"></span><span>${esc(it.name)}</span> <span class="p-sci">${esc(it.sci)}</span></li>`
+          `<li><span class="p-dot" style="background:${sciColor(it.sci)}"></span><span>${esc(it.name)}</span> <span class="hs-pct">${esc(it.pct||'—')}</span> <span class="p-sci">${esc(it.sci)}</span></li>`
         ).join('');
+        const scopeLbl = monthFilter ? `chances en ${MONTH_NAMES[monthFilter]}` : 'pic annuel';
         const label = monthFilter ? `👀 Espèces manquantes actives en ${MONTH_NAMES[monthFilter]} (${items.length})`
                                   : `👀 Espèces qui vous manquent ici (${items.length})`;
-        missingBlock = `<details class="hs-miss"><summary>${label}</summary><ul class="p-list">${rows}</ul></details>`;
+        missingBlock = `<details class="hs-miss"><summary>${label}</summary><div class="hs-hint">% = ${scopeLbl} (part des listes eBird où l'espèce est notée)</div><ul class="p-list">${rows}</ul></details>`;
       }
       m.bindPopup(`<b>🏞️ ${esc(h.locName||h.name||'?')}</b><br>`+
         `<span class="p-meta">${h.subnational2Name?esc(h.subnational2Name)+' · ':''}${esc(h.subnational1Name||'')}</span><br>`+
