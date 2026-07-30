@@ -943,9 +943,9 @@
           <option value="9">9 · Exceptionnel</option>
           <option value="exo">Exotique (échappés / introduits)</option>
         </select>
-        <label class="explorer-lbl" id="mapEbMinTodoLbl" style="display:none;">≥</label>
-        <input type="range" id="mapEbMinTodo" min="0" max="100" value="0" step="1" style="display:none; width:100px;" title="Cache les hotspots avec moins de N espèces à cocher">
-        <span id="mapEbMinTodoVal" class="explorer-lbl" style="display:none; min-width:24px;">0</span>
+        <label class="explorer-lbl" id="mapEbMinTodoLbl" style="display:none;">≥ à cocher</label>
+        <input type="number" id="mapEbMinTodo" min="0" max="500" value="0" step="1" style="display:none; width:64px; font-size:12px; padding:3px 6px; border:1px solid var(--line-2); border-radius:6px;" title="Cache les hotspots avec moins de N espèces à cocher">
+        <span id="mapEbMinTodoVal" class="explorer-lbl" style="display:none; visibility:hidden; width:0;">0</span>
         <label class="explorer-lbl" id="mapEbFilterSpLbl" style="display:none;" title="Ne garde que les hotspots où cette espèce a été notée">Contient</label>
         <input type="text" id="mapEbFilterSp" list="mapEbSpDatalist" placeholder="espèce…" style="display:none; width:120px; font-size:12px; padding:3px 6px; border:1px solid var(--line-2); border-radius:6px;">
         <datalist id="mapEbSpDatalist"></datalist>
