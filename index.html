@@ -894,6 +894,10 @@
           <option value="FR-PAC">Provence-Alpes-Côte d'Azur</option>
           <option value="FR-GES">Grand Est</option>
         </select>
+        <label class="explorer-lbl" id="mapEbDeptLbl" style="display:none;">Département</label>
+        <select class="filt-sel" id="mapEbDept" style="display:none;">
+          <option value="" selected>Tous les départements</option>
+        </select>
         <label class="explorer-lbl" id="mapEbDaysLbl">Derniers</label>
         <select class="filt-sel" id="mapEbDays">
           <option value="7">7 jours</option>
@@ -2120,7 +2124,41 @@ let _loaded = { missing:'', hotspots:'' };   // clé de cache (région+jours)
 // Filtres propres au mode "mine"
 let mapFilter = { player:'all', tier:'any', country:'any' };
 // Filtres propres aux modes eBird
-let ebFilter = { region:'FR', days:14, rarity:0, month:0 };
+let ebFilter = { region:'FR', days:14, rarity:0, month:0, dept:'' };
+// Noms français des 95 départements couverts par les bar charts (Paris FR-IDF-75 exclu, vide sur eBird).
+const DEPT_NAMES = {
+  'FR-ARA-01':'Ain','FR-ARA-03':'Allier','FR-ARA-07':'Ardèche','FR-ARA-15':'Cantal','FR-ARA-26':'Drôme','FR-ARA-38':'Isère','FR-ARA-42':'Loire','FR-ARA-43':'Haute-Loire','FR-ARA-63':'Puy-de-Dôme','FR-ARA-69':'Rhône','FR-ARA-73':'Savoie','FR-ARA-74':'Haute-Savoie',
+  'FR-BFC-21':"Côte-d'Or",'FR-BFC-25':'Doubs','FR-BFC-39':'Jura','FR-BFC-58':'Nièvre','FR-BFC-70':'Haute-Saône','FR-BFC-71':'Saône-et-Loire','FR-BFC-89':'Yonne','FR-BFC-90':'Territoire de Belfort',
+  'FR-BRE-22':"Côtes-d'Armor",'FR-BRE-29':'Finistère','FR-BRE-35':'Ille-et-Vilaine','FR-BRE-56':'Morbihan',
+  'FR-CVL-18':'Cher','FR-CVL-28':'Eure-et-Loir','FR-CVL-36':'Indre','FR-CVL-37':'Indre-et-Loire','FR-CVL-41':'Loir-et-Cher','FR-CVL-45':'Loiret',
+  'FR-COR-2A':'Corse-du-Sud','FR-COR-2B':'Haute-Corse',
+  'FR-GES-08':'Ardennes','FR-GES-10':'Aube','FR-GES-51':'Marne','FR-GES-52':'Haute-Marne','FR-GES-54':'Meurthe-et-Moselle','FR-GES-55':'Meuse','FR-GES-57':'Moselle','FR-GES-67':'Bas-Rhin','FR-GES-68':'Haut-Rhin','FR-GES-88':'Vosges',
+  'FR-HDF-02':'Aisne','FR-HDF-59':'Nord','FR-HDF-60':'Oise','FR-HDF-62':'Pas-de-Calais','FR-HDF-80':'Somme',
+  'FR-IDF-77':'Seine-et-Marne','FR-IDF-78':'Yvelines','FR-IDF-91':'Essonne','FR-IDF-92':'Hauts-de-Seine','FR-IDF-93':'Seine-Saint-Denis','FR-IDF-94':'Val-de-Marne','FR-IDF-95':"Val-d'Oise",
+  'FR-NOR-14':'Calvados','FR-NOR-27':'Eure','FR-NOR-50':'Manche','FR-NOR-61':'Orne','FR-NOR-76':'Seine-Maritime',
+  'FR-NAQ-16':'Charente','FR-NAQ-17':'Charente-Maritime','FR-NAQ-19':'Corrèze','FR-NAQ-23':'Creuse','FR-NAQ-24':'Dordogne','FR-NAQ-33':'Gironde','FR-NAQ-40':'Landes','FR-NAQ-47':'Lot-et-Garonne','FR-NAQ-64':'Pyrénées-Atlantiques','FR-NAQ-79':'Deux-Sèvres','FR-NAQ-86':'Vienne','FR-NAQ-87':'Haute-Vienne',
+  'FR-OCC-09':'Ariège','FR-OCC-11':'Aude','FR-OCC-12':'Aveyron','FR-OCC-30':'Gard','FR-OCC-31':'Haute-Garonne','FR-OCC-32':'Gers','FR-OCC-34':'Hérault','FR-OCC-46':'Lot','FR-OCC-48':'Lozère','FR-OCC-65':'Hautes-Pyrénées','FR-OCC-66':'Pyrénées-Orientales','FR-OCC-81':'Tarn','FR-OCC-82':'Tarn-et-Garonne',
+  'FR-PDL-44':'Loire-Atlantique','FR-PDL-49':'Maine-et-Loire','FR-PDL-53':'Mayenne','FR-PDL-72':'Sarthe','FR-PDL-85':'Vendée',
+  'FR-PAC-04':'Alpes-de-Haute-Provence','FR-PAC-05':'Hautes-Alpes','FR-PAC-06':'Alpes-Maritimes','FR-PAC-13':'Bouches-du-Rhône','FR-PAC-83':'Var','FR-PAC-84':'Vaucluse',
+};
+// Groupe les départements par région pour peupler dynamiquement le sélecteur.
+const REGION_TO_DEPTS = {};
+for(const code in DEPT_NAMES){ const reg = code.slice(0, code.lastIndexOf('-')); (REGION_TO_DEPTS[reg]||(REGION_TO_DEPTS[reg]=[])).push(code); }
+for(const reg in REGION_TO_DEPTS) REGION_TO_DEPTS[reg].sort((a,b)=>DEPT_NAMES[a].localeCompare(DEPT_NAMES[b],'fr'));
+// (Re)peuple le sélecteur département en fonction de la région choisie.
+function _refreshDeptSel(){
+  const sel = $('#mapEbDept'), lbl = $('#mapEbDeptLbl'); if(!sel) return;
+  const list = REGION_TO_DEPTS[ebFilter.region];
+  if(mapMode!=='hotspots' || !list){
+    sel.style.display='none'; if(lbl) lbl.style.display='none';
+    return;
+  }
+  sel.innerHTML = '<option value="">Tous les départements</option>' +
+    list.map(c=>`<option value="${esc(c)}">${esc(DEPT_NAMES[c])} (${esc(c.slice(-2))})</option>`).join('');
+  sel.value = (ebFilter.dept && list.includes(ebFilter.dept)) ? ebFilter.dept : '';
+  if(!list.includes(ebFilter.dept)) ebFilter.dept = '';
+  sel.style.display=''; if(lbl) lbl.style.display='';
+}
 let hotspotSort = 'total';   // 'total' | 'todo' | 'recent'
 let _taxMap = null;           // { speciesCode -> sciName lowercase } — cache localStorage
 let mapSearch = '';          // recherche par nom (espèce/lieu) — filtre client-side
@@ -2449,12 +2487,14 @@ async function _renderModeMissing(){
   setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
 }
 async function _renderModeHotspots(){
-  const region=ebFilter.region;
+  // Si un département est sélectionné, on l'utilise comme zone à interroger (plus fin).
+  const zone = ebFilter.dept || ebFilter.region;
   const cnt=$('#mapEbCount'); if(cnt) cnt.textContent='… chargement';
-  await _loadHotspotsLayer(region);
+  await _loadHotspotsLayer(zone);
   _lyrHotspots.addTo(_map);
   const n = _lyrHotspots.getLayers().length;
-  if(cnt) cnt.textContent = n ? `top ${n} hotspots` : 'Aucun hotspot trouvé';
+  const zoneLbl = ebFilter.dept ? ' — '+esc(DEPT_NAMES[ebFilter.dept]||ebFilter.dept) : '';
+  if(cnt) cnt.textContent = n ? `top ${n} hotspots${zoneLbl}` : 'Aucun hotspot trouvé'+zoneLbl;
   _fitLayer(_lyrHotspots);
   _mapApplyFilter();
   setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
@@ -2498,7 +2538,8 @@ document.addEventListener('change', e=>{
   if(e.target.id==='mapPlayerSel'){ mapFilter.player=e.target.value; renderMap(); }
   else if(e.target.id==='mapTierSel'){ mapFilter.tier=e.target.value; renderMap(); }
   else if(e.target.id==='mapCountrySel'){ mapFilter.country=e.target.value; renderMap(); }
-  else if(e.target.id==='mapEbRegion'){ ebFilter.region=e.target.value; _loaded.missing=''; _loaded.hotspots=''; renderMap(); }
+  else if(e.target.id==='mapEbRegion'){ ebFilter.region=e.target.value; ebFilter.dept=''; _loaded.missing=''; _loaded.hotspots=''; _refreshDeptSel(); renderMap(); }
+  else if(e.target.id==='mapEbDept'){ ebFilter.dept=e.target.value||''; _loaded.hotspots=''; renderMap(); }
   else if(e.target.id==='mapEbDays'){ ebFilter.days=+e.target.value; _loaded.missing=''; renderMap(); }
   else if(e.target.id==='mapEbRarity'){ const v=e.target.value; ebFilter.rarity=(v==='exo')?'exo':(+v||0); _loaded.missing=''; renderMap(); }
   else if(e.target.id==='mapEbMonth'){ ebFilter.month=+e.target.value||0; _loaded.hotspots=''; renderMap(); }
@@ -2530,6 +2571,7 @@ document.addEventListener('click', e=>{
   const showMon = mapMode==='hotspots' && hotspotSort==='todo';
   if(monLbl) monLbl.style.display = showMon ? '' : 'none';
   if(monSel) monSel.style.display = showMon ? '' : 'none';
+  _refreshDeptSel();
   _updateLegend();
   renderMap();
 });
@@ -2796,7 +2838,9 @@ async function _loadHotspotsLayer(region){
           }
           if(!arr) arr = REAL_FREQ_MONTHLY[k];
           if(!arr) return null;
-          return monthFilter ? (arr[monthFilter-1]||0) : Math.max(...arr);
+          // Priorité : mois filtré > mois en cours si tri "Activité 30j" > pic annuel.
+          const monthUsed = monthFilter || (hotspotSort==='recent' ? (new Date().getMonth()+1) : 0);
+          return monthUsed ? (arr[monthUsed-1]||0) : Math.max(...arr);
         };
         const fmtPct = v => v===null ? '—' : v>=0.01 ? Math.round(v*100)+' %' : v>=0.0005 ? (v*100).toFixed(1)+' %' : '<0.1 %';
         const items = filteredMiss
@@ -2813,8 +2857,9 @@ async function _loadHotspotsLayer(region){
         const scope = (dept && REAL_FREQ_MONTHLY_BY_REGION[dept]) ? dept
                      : (region && region!=='FR' && REAL_FREQ_MONTHLY_BY_REGION[region]) ? region
                      : 'national';
-        const hint = monthFilter
-          ? `% = part des listes eBird ${scope} qui notent l'espèce en ${MONTH_NAMES[monthFilter]}`
+        const monthShown = monthFilter || (hotspotSort==='recent' ? (new Date().getMonth()+1) : 0);
+        const hint = monthShown
+          ? `% = part des listes eBird ${scope} qui notent l'espèce en ${MONTH_NAMES[monthShown]}`
           : `% = pic annuel de la freq eBird ${scope}`;
         const label = monthFilter ? `👀 Espèces manquantes actives en ${MONTH_NAMES[monthFilter]} (${items.length})`
                                   : `👀 Espèces qui vous manquent ici (${items.length})`;
