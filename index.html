@@ -460,7 +460,7 @@
   .map-el .leaflet-popup-content details.hs-miss summary:hover { text-decoration:underline; }
   .map-el .leaflet-popup-content details.hs-miss[open] summary { margin-bottom:4px; }
   .map-el .leaflet-popup-content .hs-hint { font-size:10.5px; color:var(--ink-3); margin:0 0 4px; font-style:italic; }
-  .map-el .leaflet-popup-content .hs-pct { font-size:11.5px; font-weight:700; color:var(--accent-ink); white-space:nowrap; }
+  .map-el .leaflet-popup-content .hs-pct { font-size:11.5px; font-weight:700; color:var(--accent-ink); white-space:nowrap; margin-left:auto; }
   .map-el .map-legend { background:rgba(255,255,255,.95); border-radius:8px; padding:8px 10px; box-shadow:0 1px 4px rgba(0,0,0,.15); font-size:11.5px; line-height:1.35; color:#15201e; max-height:calc(100% - 40px); overflow-y:auto; }
   .map-el .map-legend .ml-title { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; color:#47534f; }
   .map-el .map-legend .ml-row { display:flex; align-items:center; gap:6px; padding:1px 0; }
@@ -2783,7 +2783,7 @@ async function _loadHotspotsLayer(region){
             return bv - av || a.name.localeCompare(b.name,'fr');
           });
         const rows = items.map(it =>
-          `<li><span class="p-dot" style="background:${sciColor(it.sci)}"></span><span>${esc(it.name)}</span> <span class="hs-pct">${esc(it.pct||'—')}</span> <span class="p-sci">${esc(it.sci)}</span></li>`
+          `<li><span class="p-dot" style="background:${sciColor(it.sci)}"></span><span>${esc(it.name)}</span> <span class="hs-pct">${esc(it.pct||'—')}</span></li>`
         ).join('');
         const scopeLbl = monthFilter ? `chances en ${MONTH_NAMES[monthFilter]}` : 'pic annuel';
         const label = monthFilter ? `👀 Espèces manquantes actives en ${MONTH_NAMES[monthFilter]} (${items.length})`
