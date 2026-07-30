@@ -897,14 +897,18 @@
           <option value="todo">Espèces à cocher pour moi</option>
           <option value="recent">Activité 30 jours</option>
         </select>
-        <label class="explorer-lbl" id="mapEbRarityLbl" style="display:none;" title="Charge toutes les obs de chaque espèce ≥ ce niveau (dispo uniquement sur une région précise)">Rareté min.</label>
+        <label class="explorer-lbl" id="mapEbRarityLbl" style="display:none;" title="Charge toutes les obs de chaque espèce manquante ≥ ce niveau (dispo uniquement sur une région précise)">Rareté min.</label>
         <select class="filt-sel" id="mapEbRarity" style="display:none;">
           <option value="0" selected>— (léger, 1 obs/espèce)</option>
-          <option value="4">≥ 4 · Peu commune</option>
-          <option value="5">≥ 5 · Localisée</option>
-          <option value="6">≥ 6 · Rare</option>
-          <option value="7">≥ 7 · Très rare</option>
-          <option value="8">≥ 8 · Exceptionnelle</option>
+          <option value="1">≥ 1 · Très commun</option>
+          <option value="2">≥ 2 · Commun</option>
+          <option value="3">≥ 3 · Assez commun</option>
+          <option value="4">≥ 4 · Peu commun</option>
+          <option value="5">≥ 5 · Localisé</option>
+          <option value="6">≥ 6 · Assez rare</option>
+          <option value="7">≥ 7 · Rare</option>
+          <option value="8">≥ 8 · Très rare</option>
+          <option value="9">= 9 · Exceptionnel</option>
         </select>
         <button class="btn tiny" id="mapEbRefresh" title="Rafraîchir">🔄</button>
         <span class="map-count" id="mapEbCount"></span>
