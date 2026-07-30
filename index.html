@@ -1906,7 +1906,13 @@ function subscribe(){
   if(unsubFavs){ unsubFavs(); unsubFavs=null; }
   if(myUid){
     unsubFavs = onSnapshot(doc(db,'leagues',leagueId,'members',myUid,'favorites','hotspots'),
-      snap => { const d=snap.data()||{}; myFavHotspots = new Set(d.locIds||[]); if(mapMode==='hotspots'){ _loaded.hotspots=''; renderMap(); } },
+      snap => {
+        const d=snap.data()||{}; const newSet = new Set(d.locIds||[]);
+        // Ne re-render que si le set a réellement changé (évite les rebonds sur nos propres writes qui ferment le popup).
+        const same = newSet.size===myFavHotspots.size && [...newSet].every(x=>myFavHotspots.has(x));
+        myFavHotspots = newSet;
+        if(!same && mapMode==='hotspots'){ _loaded.hotspots=''; renderMap(); }
+      },
       ()=>{});
   }
   if(unsubLeague){ unsubLeague(); unsubLeague=null; }
@@ -2603,12 +2609,24 @@ document.addEventListener('input', e=>{
     _loaded.hotspots=''; renderMap();
   }
 });
-// Toggle favori dans les popups hotspots
+// Toggle favori dans les popups hotspots. Optimistic update local + Firestore en fond.
+// On met à jour la couleur du marqueur DIRECTEMENT plutôt que de re-render toute la couche
+// (ce qui fermerait le popup et donnerait un feeling "bug").
 document.addEventListener('click', async e=>{
   const b = e.target.closest('.hs-fav'); if(!b) return;
+  e.preventDefault(); e.stopPropagation();
   const locId = b.dataset.loc; if(!locId || !myUid) return;
-  if(myFavHotspots.has(locId)){ myFavHotspots.delete(locId); b.textContent='☆'; b.classList.remove('on'); }
+  const wasFav = myFavHotspots.has(locId);
+  if(wasFav){ myFavHotspots.delete(locId); b.textContent='☆'; b.classList.remove('on'); }
   else { myFavHotspots.add(locId); b.textContent='★'; b.classList.add('on'); }
+  // MAJ live du marker sans re-render : style yellow/blue selon nouvel état.
+  if(_lyrHotspots){
+    _lyrHotspots.eachLayer(m => {
+      if(m._hotspotId !== locId) return;
+      const isFav = !wasFav;
+      m.setStyle({ weight:isFav?2.5:1.5, color:isFav?'#8a5a00':'#fff', fillColor:isFav?'#f4b400':'#1e6091', fillOpacity:.85 });
+    });
+  }
   try{ await setDoc(doc(db,'leagues',leagueId,'members',myUid,'favorites','hotspots'),
     { locIds:[...myFavHotspots], updatedAt:serverTimestamp() }); }catch(err){ showError(err); }
 });
@@ -2883,22 +2901,31 @@ async function _loadHotspotTimeSlot(marker){
     const data = await _ebFetch(url);
     if(!Array.isArray(data) || !data.length){ marker._slotLoaded=true; marker._slotInflight=false; return; }
     // Bucket par tranche de 3h : 0=00-03, 1=03-06, 2=06-09, 3=09-12, 4=12-15, 5=15-18, 6=18-21, 7=21-24.
-    const buckets = new Array(8).fill(0);
+    // On stocke TOTAL espèces vues (pas juste nb de checklists) → moyenne pondérée par richesse.
+    const spSum = new Array(8).fill(0);   // somme des numSpecies de chaque checklist du bucket
+    const nList = new Array(8).fill(0);   // nb de checklists du bucket (pour moyenne)
     let total = 0;
     for(const c of data){
       // eBird : le champ heure d'une checklist est "obsTime" ("HH:MM"), pas "startTime".
       const t = (c.obsTime||'').match(/^(\d{1,2}):/);
       if(!t) continue;
       const h = +t[1]; if(h<0||h>23) continue;
-      buckets[Math.floor(h/3)]++; total++;
+      const b = Math.floor(h/3);
+      spSum[b] += (c.numSpecies||0);
+      nList[b]++; total++;
     }
     if(total < 3){ marker._slotLoaded=true; marker._slotInflight=false; return; }   // pas assez de données
-    let bestIdx = 0, bestN = buckets[0];
-    for(let i=1; i<8; i++){ if(buckets[i]>bestN){ bestN=buckets[i]; bestIdx=i; } }
-    const share = Math.round(100 * bestN / total);
+    // On prend le bucket avec la MOYENNE d'espèces la plus haute (= "quand on voit le plus d'oiseaux")
+    let bestIdx = -1, bestAvg = -1;
+    for(let i=0; i<8; i++){
+      if(nList[i]===0) continue;
+      const avg = spSum[i] / nList[i];
+      if(avg > bestAvg){ bestAvg = avg; bestIdx = i; }
+    }
+    if(bestIdx<0){ marker._slotLoaded=true; marker._slotInflight=false; return; }
     const startH = bestIdx*3, endH = startH+3;
     const emoji = bestIdx<=1 ? '🌙' : bestIdx<=2 ? '🌅' : bestIdx<=4 ? '🌞' : bestIdx<=5 ? '⛅' : '🌆';
-    slot.innerHTML = `${emoji} <b>${startH}h-${endH}h</b> · créneau fréquent (${share}% des ${total} dernières sorties)`;
+    slot.innerHTML = `${emoji} <b>${startH}h-${endH}h</b> · meilleur créneau (moy. <b>${Math.round(bestAvg)}</b> espèces/sortie, ${nList[bestIdx]} sorties)`;
   }catch(_){ slot.remove(); }
   marker._slotLoaded = true; marker._slotInflight = false;
 }
