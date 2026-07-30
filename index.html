@@ -2354,13 +2354,14 @@ async function _loadNotableLayer(region='FR', days=14){
       const k=(o.sciName||'')+'@'+(o.locId||''); if(seen.has(k))continue; seen.add(k);
       if(typeof o.lat!=='number'||typeof o.lng!=='number') continue;
       const nm = FR_NAMES[(o.sciName||'').toLowerCase()] || o.comName || o.sciName;
-      const icon = L.divIcon({ className:'notable-mark', html:'🚨', iconSize:[22,22], iconAnchor:[11,11] });
-      const m = L.marker([o.lat,o.lng], { icon });
+      const w = rarityReal(o.sciName);
+      const m = L.circleMarker([o.lat,o.lng], { radius:8, weight:2.5, color:'#fff', fillColor:realColor(w), fillOpacity:.9, opacity:1 });
       const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
       const eb = o.locId ? `<a href="https://ebird.org/hotspot/${esc(o.locId)}" target="_blank" rel="noopener" class="p-link">eBird</a>` : '';
       m.bindPopup(`<b>🚨 ${esc(nm)}</b> <span class="p-sci">${esc(o.sciName||'')}</span><br>`+
         `<span class="p-meta">Rareté notable signalée le ${esc((o.obsDt||'').slice(0,10))}</span><br>`+
-        `<span class="p-meta">à ${esc(o.locName||'?')}${o.howMany?' · '+o.howMany:''}</span><br>${gm} ${eb}`);
+        `<span class="p-meta">à ${esc(o.locName||'?')}${o.howMany?' · '+o.howMany:''}</span><br>`+
+        `<span class="p-meta">Rareté : <b>${w}</b> · ${REAL_LABELS[w]||'niveau '+w}</span><br>${gm} ${eb}`);
       _lyrNotable.addLayer(m);
     }
     _loaded.notable = key;
