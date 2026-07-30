@@ -454,6 +454,13 @@
   .map-el .map-count-lbl { display:flex; align-items:center; justify-content:center; font:700 11px/1 system-ui, sans-serif; color:#fff; text-shadow:0 0 3px rgba(0,0,0,.5); pointer-events:none; background:transparent; border:none; }
   .map-el .leaflet-popup-content .p-link { display:inline-block; margin-top:6px; font-size:12px; color:var(--accent-ink); text-decoration:none; font-weight:600; }
   .map-el .leaflet-popup-content .p-link:hover { text-decoration:underline; }
+  .map-el .leaflet-popup-content .p-btn { display:inline-flex; align-items:center; gap:4px; margin:6px 6px 0 0; padding:3px 8px; font-size:11.5px; font-weight:600; text-decoration:none; border-radius:6px; border:1px solid transparent; white-space:nowrap; }
+  .map-el .leaflet-popup-content .p-btn:hover { filter:brightness(1.05); text-decoration:none; }
+  .map-el .leaflet-popup-content .p-btn.pl-gmaps { background:#e9f2e2; border-color:#b6d3a3; color:#2e5b1a; }
+  .map-el .leaflet-popup-content .p-btn.pl-ebird { background:#dfe9ee; border-color:#a3bdc9; color:#0b3d55; }
+  .map-el .leaflet-popup-content .hs-cnt { font-size:11px; font-weight:600; color:#5a6b6a; margin-left:4px; white-space:nowrap; }
+  .map-el .leaflet-popup-content .hs-cnt.loading { color:#8fa19f; font-style:italic; }
+  .map-el .leaflet-popup-content .hs-cnt.hot { color:#0b7c77; }
   .map-el .leaflet-popup-content .p-sci { font-size:11px; color:var(--ink-3); font-style:italic; margin-left:auto; }
   .map-el .leaflet-popup-content details.hs-miss { margin-top:6px; font-size:12px; }
   .map-el .leaflet-popup-content details.hs-miss summary { cursor:pointer; font-weight:600; color:var(--accent-ink); padding:4px 0; user-select:none; }
@@ -2161,6 +2168,7 @@ function _refreshDeptSel(){
 }
 let hotspotSort = 'total';   // 'total' | 'todo' | 'recent'
 let _taxMap = null;           // { speciesCode -> sciName lowercase } — cache localStorage
+let _taxInv = null;           // { sciName lowercase -> speciesCode } — inverse construit à la volée
 let mapSearch = '';          // recherche par nom (espèce/lieu) — filtre client-side
 let _lyrDetail = null;        // couche "détails d'une espèce" (obs sur toute la période)
 let _legendDiv = null;        // <div> de la légende Leaflet (bottomright) — contenu adapté au mode
@@ -2720,6 +2728,12 @@ async function _loadTaxonomy(){
     return m;
   }catch(_){ _taxMap={}; return _taxMap; }
 }
+// Reverse : sciName lowercase -> speciesCode. Utile pour appeler /data/obs/{locId}/recent/{speciesCode}.
+function _sciToCode(sci){
+  if(!_taxMap) return null;
+  if(!_taxInv){ _taxInv = {}; for(const c in _taxMap) _taxInv[_taxMap[c]] = c; }
+  return _taxInv[(sci||'').toLowerCase()] || null;
+}
 // Batch d'appels avec concurrence limitée.
 async function _batch(items, n, fn){
   const out=[]; for(let i=0;i<items.length;i+=n){
@@ -2750,6 +2764,37 @@ async function _enrichHotspots(hotspots, region, kind){
       return { ...h, allSp:sciSet.size, mySp:seen, toDo:missing.length, missingSci:missing };
     }catch(_){ return { ...h, allSp:0, mySp:0, toDo:0, err:true }; }
   });
+}
+// Lazy-load : à l'ouverture d'un popup hotspot, on récupère pour chaque espèce manquante
+// le nb d'obs à ce hotspot sur les 30 derniers jours via /data/obs/{locId}/recent/{sc}.
+// Batch 8-parallèle, cache 3 niveaux mutualisé. Résultat écrit en place dans le DOM du popup.
+async function _loadHotspotCounts(marker){
+  if(marker._countsLoaded || marker._countsInflight) return;
+  marker._countsInflight = true;
+  const popup = marker.getPopup(); if(!popup) return;
+  const el = popup._contentNode; if(!el) return;
+  const rows = el.querySelectorAll('.hs-miss li[data-sc]');
+  if(!rows.length){ marker._countsInflight=false; marker._countsLoaded=true; return; }
+  const locId = marker._hotspotId;
+  const items = [];
+  rows.forEach(r => { const sc = r.dataset.sc; if(sc) items.push({ el:r, sc }); else { const cnt=r.querySelector('[data-cnt]'); if(cnt) cnt.remove(); } });
+  const CONC = 8; let idx = 0;
+  async function worker(){
+    while(idx < items.length){
+      const it = items[idx++];
+      const cntEl = it.el.querySelector('[data-cnt]'); if(!cntEl) continue;
+      try{
+        const url = `https://api.ebird.org/v2/data/obs/${locId}/recent/${it.sc}?back=30&maxResults=100`;
+        const data = await _ebFetch(url);
+        const n = Array.isArray(data) ? data.length : 0;
+        cntEl.classList.remove('loading');
+        if(n>0){ cntEl.textContent = '· '+n+' obs 30j'; if(n>=5) cntEl.classList.add('hot'); }
+        else { cntEl.textContent = '· jamais 30j'; }
+      }catch(_){ cntEl.classList.remove('loading'); cntEl.textContent = '· ?'; }
+    }
+  }
+  await Promise.all(Array.from({length:Math.min(CONC, items.length)}, worker));
+  marker._countsLoaded = true; marker._countsInflight = false;
 }
 async function _loadHotspotsLayer(region){
   if(!_lyrHotspots) return;
@@ -2812,8 +2857,8 @@ async function _loadHotspotsLayer(region){
         ? Math.max(4, Math.min(18, 3 + Math.sqrt(rN) * 0.7))    // rN 20→6, 100→10, 300→15, 500+→18
         : Math.max(4, Math.min(18, 3 + Math.sqrt(rN) * 1.5));   // rN 1→4.5, 10→7.7, 50→13.6, 100→18
       const m = L.circleMarker([h.dispLat, h.dispLon], { radius:r, weight:1.5, color:'#fff', fillColor:'#1e6091', fillOpacity:.75, opacity:1 });
-      const gm = `<a href="https://www.google.com/maps?q=${h.lat},${h.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
-      const eb = `<a href="https://ebird.org/hotspot/${esc(h.locId)}" target="_blank" rel="noopener" class="p-link">eBird</a>`;
+      const gm = `<a href="https://www.google.com/maps?q=${h.lat},${h.lng}" target="_blank" rel="noopener" class="p-btn pl-gmaps">🗺️ Google Maps</a>`;
+      const eb = `<a href="https://ebird.org/hotspot/${esc(h.locId)}" target="_blank" rel="noopener" class="p-btn pl-ebird">🐦 eBird</a>`;
       const scope = hotspotSort==='recent' ? 'ces 30 jours' : 'au total (all-time)';
       const monthTag = monthFilter ? ` · <b>${toDoShown}</b> actifs en ${MONTH_NAMES[monthFilter]}` : '';
       const cntLine = (hotspotSort==='total')
@@ -2850,9 +2895,10 @@ async function _loadHotspotsLayer(region){
             const af = a.freq==null ? -1 : a.freq, bf = b.freq==null ? -1 : b.freq;
             return bf - af || b.w - a.w || a.name.localeCompare(b.name,'fr');
           });
-        const rows = items.map(it =>
-          `<li><span class="p-dot" style="background:${sciColor(it.sci)}"></span><span>${esc(it.name)}</span> <span class="hs-pct">${esc(fmtPct(it.freq))}</span></li>`
-        ).join('');
+        const rows = items.map(it => {
+          const sc = _sciToCode(it.sci) || '';
+          return `<li data-sc="${esc(sc)}"><span class="p-dot" style="background:${sciColor(it.sci)}"></span><span>${esc(it.name)}</span> <span class="hs-pct">${esc(fmtPct(it.freq))}</span><span class="hs-cnt loading" data-cnt>…</span></li>`;
+        }).join('');
         // Source réellement utilisée (département si dispo, sinon région, sinon national) — affichée dans le hint.
         const scope = (dept && REAL_FREQ_MONTHLY_BY_REGION[dept]) ? dept
                      : (region && region!=='FR' && REAL_FREQ_MONTHLY_BY_REGION[region]) ? region
@@ -2870,6 +2916,10 @@ async function _loadHotspotsLayer(region){
         `<span class="p-meta">${cntLine}</span>${missingBlock}<br>${gm} ${eb}`,
         { maxHeight:340, autoPan:true });
       m._q = _mapNorm((h.locName||h.name||'')+' '+(h.subnational1Name||'')+' '+(h.subnational2Name||''));
+      // Lazy-load : à l'ouverture du popup, on récupère le nb d'obs 30j par espèce (cache 3 niveaux).
+      // Coût : ~10-30 appels par popup, batch 8-parallèle, cache pour les réouvertures.
+      m._hotspotId = h.locId;
+      m.on('popupopen', () => _loadHotspotCounts(m));
       _lyrHotspots.addLayer(m);
     }
     _loaded.hotspots = key;
