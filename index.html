@@ -457,6 +457,7 @@
   .map-el .leaflet-popup-content .p-btn { display:inline-flex; align-items:center; gap:4px; margin:6px 6px 0 0; padding:3px 8px; font-size:11.5px; font-weight:600; text-decoration:none; border-radius:6px; border:1px solid transparent; white-space:nowrap; }
   .map-el .leaflet-popup-content .p-btn:hover { filter:brightness(1.05); text-decoration:none; }
   .map-el .leaflet-popup-content .p-btn.pl-gmaps { background:#e9f2e2; border-color:#b6d3a3; color:#2e5b1a; }
+  .map-el .leaflet-popup-content .p-btn.pl-transit { background:#fdecc8; border-color:#f0c977; color:#7a4d0f; }
   .map-el .leaflet-popup-content .p-btn.pl-ebird { background:#dfe9ee; border-color:#a3bdc9; color:#0b3d55; }
   .map-el .leaflet-popup-content .hs-cnt { font-size:11px; font-weight:600; color:#5a6b6a; margin-left:4px; white-space:nowrap; }
   .map-el .leaflet-popup-content .hs-cnt.loading { color:#8fa19f; font-style:italic; }
@@ -466,6 +467,11 @@
   .map-el .leaflet-popup-content details.hs-miss summary { cursor:pointer; font-weight:600; color:var(--accent-ink); padding:4px 0; user-select:none; }
   .map-el .leaflet-popup-content details.hs-miss summary:hover { text-decoration:underline; }
   .map-el .leaflet-popup-content details.hs-miss[open] summary { margin-bottom:4px; }
+  .map-el .leaflet-popup-content .hs-fav { border:none; background:transparent; cursor:pointer; font-size:18px; padding:0 2px; color:#c9b039; vertical-align:middle; line-height:1; }
+  .map-el .leaflet-popup-content .hs-fav.on { color:#f4b400; }
+  .map-el .leaflet-popup-content .hs-fav:hover { transform:scale(1.15); }
+  .map-el .leaflet-popup-content .hs-slot { margin-top:4px; font-size:11.5px; color:#555; padding:3px 6px; background:#fff8e1; border-left:3px solid #f0c977; border-radius:0 4px 4px 0; }
+  .map-el .leaflet-popup-content .hs-slot:empty { display:none; }
   .map-el .leaflet-popup-content .hs-hint { font-size:10.5px; color:var(--ink-3); margin:0 0 4px; font-style:italic; }
   .map-el .leaflet-popup-content .hs-pct { font-size:11.5px; font-weight:700; color:var(--accent-ink); white-space:nowrap; margin-left:auto; }
   .map-el .map-legend { background:rgba(255,255,255,.95); border-radius:8px; padding:8px 10px; box-shadow:0 1px 4px rgba(0,0,0,.15); font-size:11.5px; line-height:1.35; color:#15201e; max-height:calc(100% - 40px); overflow-y:auto; }
@@ -941,6 +947,14 @@
           <option value="9">9 · Exceptionnel</option>
           <option value="exo">Exotique (échappés / introduits)</option>
         </select>
+        <label class="explorer-lbl" id="mapEbMinTodoLbl" style="display:none;">≥</label>
+        <input type="range" id="mapEbMinTodo" min="0" max="30" value="0" step="1" style="display:none; width:80px;" title="Cache les hotspots avec moins de N espèces à cocher">
+        <span id="mapEbMinTodoVal" class="explorer-lbl" style="display:none; min-width:16px;">0</span>
+        <label class="explorer-lbl" id="mapEbFilterSpLbl" style="display:none;" title="Ne garde que les hotspots où cette espèce a été notée">Contient</label>
+        <input type="text" id="mapEbFilterSp" list="mapEbSpDatalist" placeholder="espèce…" style="display:none; width:120px; font-size:12px; padding:3px 6px; border:1px solid var(--line-2); border-radius:6px;">
+        <datalist id="mapEbSpDatalist"></datalist>
+        <label class="explorer-lbl" id="mapEbFavLbl" style="display:none;" title="N'afficher que mes hotspots favoris"><input type="checkbox" id="mapEbFav" style="vertical-align:middle;"> ⭐ Favoris</label>
+        <button class="btn tiny" id="mapEbGeo" style="display:none;" title="Utiliser ma position pour calculer les distances (à vol d'oiseau)">📍</button>
         <button class="btn tiny" id="mapEbRefresh" title="Rafraîchir">🔄</button>
         <span class="map-count" id="mapEbCount"></span>
       </div>
@@ -1089,7 +1103,7 @@ let lastFamKey = '', lastTierKey = '', lastPlayerKey = '', lastCountryKey = '';
 let myUid = null, leagueId = null, unsub = null, unsubLeague = null, iAmInLeague = false;
 let unsubChat = null, lastChatMsgs = [];
 let unsubPresence = null, onlineMap = new Map(), presenceTimer = null, presenceWired = false;
-let unsubVotes = null, votesMap = new Map();
+let unsubVotes = null, votesMap = new Map(), unsubFavs = null;
 let unsubReactions = null, reactionsMap = new Map(), unsubPhotos = null, photos = [];
 let unsubRequests = null, requests = [], unsubReqVotes = null, reqVotesMap = new Map();
 // Admin(s) : uid autorisé à changer le statut d'une requête (À faire / En cours / Fait).
@@ -1893,6 +1907,13 @@ function subscribe(){
   if(unsub){ unsub(); unsub=null; }
   unsub = onSnapshot(collection(db,'leagues',leagueId,'members'), applySnapshot,
     err=>{ console.error(err); showError(err); });
+  // Favoris hotspots personnels — listener léger, mis à jour à chaque toggle.
+  if(unsubFavs){ unsubFavs(); unsubFavs=null; }
+  if(myUid){
+    unsubFavs = onSnapshot(doc(db,'leagues',leagueId,'members',myUid,'favorites','hotspots'),
+      snap => { const d=snap.data()||{}; myFavHotspots = new Set(d.locIds||[]); if(mapMode==='hotspots' && ebFilter.favOnly) renderMap(); },
+      ()=>{});
+  }
   if(unsubLeague){ unsubLeague(); unsubLeague=null; }
   unsubLeague = onSnapshot(doc(db,'leagues',leagueId), snap=>{
     const d=snap.data()||{};
@@ -2131,7 +2152,33 @@ let _loaded = { missing:'', hotspots:'' };   // clé de cache (région+jours)
 // Filtres propres au mode "mine"
 let mapFilter = { player:'all', tier:'any', country:'any' };
 // Filtres propres aux modes eBird
-let ebFilter = { region:'FR', days:14, rarity:0, month:0, dept:'' };
+let ebFilter = { region:'FR', days:14, rarity:0, month:0, dept:'', minTodo:0, species:'', favOnly:false };
+let userPos = null;   // { lat, lon } — position utilisateur pour Haversine
+let myFavHotspots = new Set();   // Set des locId favoris de l'utilisateur (synchronisé Firestore)
+// Reverse : nom fr (lowercase, normalisé) -> sciName lowercase. Construit à la demande.
+let _frNamesInv = null;
+function _frToSci(name){
+  if(!_frNamesInv){ _frNamesInv = {}; for(const sci in FR_NAMES){ _frNamesInv[FR_NAMES[sci].toLowerCase()] = sci; } }
+  return _frNamesInv[(name||'').trim().toLowerCase()] || null;
+}
+// Distance à vol d'oiseau entre 2 points (km).
+function _haversine(lat1, lon1, lat2, lon2){
+  const R=6371, toRad=Math.PI/180;
+  const dLat=(lat2-lat1)*toRad, dLon=(lon2-lon1)*toRad;
+  const a=Math.sin(dLat/2)**2 + Math.cos(lat1*toRad)*Math.cos(lat2*toRad)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+// Restaure position utilisateur depuis localStorage si dispo (persistance légère).
+try{ const p = JSON.parse(localStorage.getItem('userPos-v1')||'null'); if(p && typeof p.lat==='number') userPos = p; }catch(_){ }
+// Peuple <datalist id="mapEbSpDatalist"> avec les noms fr (une fois seulement).
+let _dlPopulated = false;
+function _populateSpeciesDatalist(){
+  if(_dlPopulated) return;
+  const dl = $('#mapEbSpDatalist'); if(!dl) return;
+  const names = Object.values(FR_NAMES).sort((a,b)=>a.localeCompare(b,'fr'));
+  dl.innerHTML = names.map(n=>`<option value="${esc(n)}">`).join('');
+  _dlPopulated = true;
+}
 // Noms français des 95 départements couverts par les bar charts (Paris FR-IDF-75 exclu, vide sur eBird).
 const DEPT_NAMES = {
   'FR-ARA-01':'Ain','FR-ARA-03':'Allier','FR-ARA-07':'Ardèche','FR-ARA-15':'Cantal','FR-ARA-26':'Drôme','FR-ARA-38':'Isère','FR-ARA-42':'Loire','FR-ARA-43':'Haute-Loire','FR-ARA-63':'Puy-de-Dôme','FR-ARA-69':'Rhône','FR-ARA-73':'Savoie','FR-ARA-74':'Haute-Savoie',
@@ -2551,6 +2598,46 @@ document.addEventListener('change', e=>{
   else if(e.target.id==='mapEbDays'){ ebFilter.days=+e.target.value; _loaded.missing=''; renderMap(); }
   else if(e.target.id==='mapEbRarity'){ const v=e.target.value; ebFilter.rarity=(v==='exo')?'exo':(+v||0); _loaded.missing=''; renderMap(); }
   else if(e.target.id==='mapEbMonth'){ ebFilter.month=+e.target.value||0; _loaded.hotspots=''; renderMap(); }
+  else if(e.target.id==='mapEbFav'){ ebFilter.favOnly=e.target.checked; renderMap(); }
+});
+// Slider "min à cocher" (event input pour réponse live)
+document.addEventListener('input', e=>{
+  if(e.target.id==='mapEbMinTodo'){
+    ebFilter.minTodo = +e.target.value || 0;
+    const v = $('#mapEbMinTodoVal'); if(v) v.textContent = ebFilter.minTodo;
+    renderMap();
+  } else if(e.target.id==='mapEbFilterSp'){
+    ebFilter.species = e.target.value.trim();
+    renderMap();
+  }
+});
+// Bouton géolocalisation
+document.addEventListener('click', e=>{
+  if(e.target.id!=='mapEbGeo') return;
+  if(!navigator.geolocation){ alert('Géolocalisation non supportée par votre navigateur.'); return; }
+  const btn = e.target; btn.disabled=true; btn.textContent='⌛';
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      userPos = { lat:pos.coords.latitude, lon:pos.coords.longitude };
+      try{ localStorage.setItem('userPos-v1', JSON.stringify(userPos)); }catch(_){ }
+      btn.disabled=false; btn.textContent='📍'; btn.title='Position mise à jour ('+userPos.lat.toFixed(3)+','+userPos.lon.toFixed(3)+')';
+      renderMap();
+    },
+    err => {
+      btn.disabled=false; btn.textContent='📍';
+      alert('Impossible de récupérer votre position : '+err.message);
+    },
+    { timeout:10000, maximumAge:60000 }
+  );
+});
+// Toggle favori dans les popups hotspots
+document.addEventListener('click', async e=>{
+  const b = e.target.closest('.hs-fav'); if(!b) return;
+  const locId = b.dataset.loc; if(!locId || !myUid) return;
+  if(myFavHotspots.has(locId)){ myFavHotspots.delete(locId); b.textContent='☆'; b.classList.remove('on'); }
+  else { myFavHotspots.add(locId); b.textContent='★'; b.classList.add('on'); }
+  try{ await setDoc(doc(db,'leagues',leagueId,'members',myUid,'favorites','hotspots'),
+    { locIds:[...myFavHotspots], updatedAt:serverTimestamp() }); }catch(err){ showError(err); }
 });
 // Mode selector
 document.addEventListener('click', e=>{
@@ -2579,8 +2666,15 @@ document.addEventListener('click', e=>{
   const showMon = mapMode==='hotspots' && hotspotSort==='todo';
   if(monLbl) monLbl.style.display = showMon ? '' : 'none';
   if(monSel) monSel.style.display = showMon ? '' : 'none';
+  // Filtres hotspot-only (min à cocher, contient espèce, favoris, géoloc) : visibles uniquement en mode hotspots.
+  ['mapEbMinTodoLbl','mapEbMinTodo','mapEbMinTodoVal','mapEbFilterSpLbl','mapEbFilterSp'].forEach(id=>{
+    const el = document.getElementById(id); if(el) el.style.display = (mapMode==='hotspots' && hotspotSort!=='total') ? '' : 'none';
+  });
+  const favLbl = $('#mapEbFavLbl'); if(favLbl) favLbl.style.display = mapMode==='hotspots' ? '' : 'none';
+  const geoBtn = $('#mapEbGeo'); if(geoBtn) geoBtn.style.display = mapMode==='hotspots' ? '' : 'none';
   _refreshDeptSel();
   _updateLegend();
+  _populateSpeciesDatalist();
   renderMap();
 });
 document.addEventListener('change', e=>{
@@ -2590,6 +2684,10 @@ document.addEventListener('change', e=>{
     const monLbl=$('#mapEbMonthLbl'), monSel=$('#mapEbMonth');
     if(monLbl) monLbl.style.display = showMon ? '' : 'none';
     if(monSel) monSel.style.display = showMon ? '' : 'none';
+    // Min-to-do et filtre espèce n'ont de sens qu'en mode enrichi (todo/recent) — on les cache en "total".
+    ['mapEbMinTodoLbl','mapEbMinTodo','mapEbMinTodoVal','mapEbFilterSpLbl','mapEbFilterSp'].forEach(id=>{
+      const el = document.getElementById(id); if(el) el.style.display = (hotspotSort!=='total') ? '' : 'none';
+    });
     renderMap();
   }
 });
@@ -2806,6 +2904,37 @@ async function _loadHotspotCounts(marker){
   await Promise.all(Array.from({length:Math.min(CONC, items.length)}, worker));
   marker._countsLoaded = true; marker._countsInflight = false;
 }
+// Lazy-load : à l'ouverture d'un popup, on récupère les checklists récentes du hotspot
+// et on calcule le créneau horaire de départ le plus fréquent (par tranche de 3h).
+// Un seul appel API par hotspot, cache 3 niveaux.
+async function _loadHotspotTimeSlot(marker){
+  if(marker._slotLoaded || marker._slotInflight) return;
+  marker._slotInflight = true;
+  const popup = marker.getPopup(); if(!popup) return;
+  const el = popup._contentNode; if(!el) return;
+  const slot = el.querySelector('[data-slot]'); if(!slot) return;
+  try{
+    const url = `https://api.ebird.org/v2/product/lists/${marker._hotspotId}?maxResults=50`;
+    const data = await _ebFetch(url);
+    if(!Array.isArray(data) || !data.length){ marker._slotLoaded=true; marker._slotInflight=false; return; }
+    // Bucket par tranche de 3h : 0=00-03, 1=03-06, 2=06-09, 3=09-12, 4=12-15, 5=15-18, 6=18-21, 7=21-24.
+    const buckets = new Array(8).fill(0);
+    let total = 0;
+    for(const c of data){
+      const t = (c.startTime||'').match(/^(\d{2}):/);
+      if(!t) continue;
+      const h = +t[1]; buckets[Math.floor(h/3)]++; total++;
+    }
+    if(total < 3){ marker._slotLoaded=true; marker._slotInflight=false; return; }   // pas assez de données
+    let bestIdx = 0, bestN = buckets[0];
+    for(let i=1; i<8; i++){ if(buckets[i]>bestN){ bestN=buckets[i]; bestIdx=i; } }
+    const share = Math.round(100 * bestN / total);
+    const startH = bestIdx*3, endH = startH+3;
+    const emoji = bestIdx<=1 ? '🌙' : bestIdx<=2 ? '🌅' : bestIdx<=4 ? '🌞' : bestIdx<=5 ? '⛅' : '🌆';
+    slot.innerHTML = `${emoji} <b>${startH}h-${endH}h</b> · créneau fréquent (${share}% des ${total} dernières sorties)`;
+  }catch(_){ slot.remove(); }
+  marker._slotLoaded = true; marker._slotInflight = false;
+}
 async function _loadHotspotsLayer(region){
   if(!_lyrHotspots) return;
   const key = region+':'+hotspotSort;
@@ -2860,6 +2989,17 @@ async function _loadHotspotsLayer(region){
       const toDoShown = (hotspotSort==='total') ? null : filteredMiss.length;
       // Skip les hotspots sans données en mode enrichi OU sans espèce à cocher (compte tenu du filtre mois).
       if(hotspotSort!=='total' && (n===0 || toDoShown===0)) continue;
+      // Filtres client-side supplémentaires (uniquement en mode enrichi) :
+      //  - min à cocher (slider)
+      //  - contient l'espèce X (texte)
+      //  - favoris uniquement (checkbox, applicable même en total)
+      if(hotspotSort!=='total' && ebFilter.minTodo>0 && toDoShown < ebFilter.minTodo) continue;
+      if(hotspotSort!=='total' && ebFilter.species){
+        const targetSci = _frToSci(ebFilter.species) || ebFilter.species.toLowerCase();
+        // On filtre sur missingSci (les espèces manquantes du hotspot) — plus utile que sciSet.
+        if(!rawMiss.includes(targetSci)) continue;
+      }
+      if(ebFilter.favOnly && !myFavHotspots.has(h.locId)) continue;
       // Taille = nb d'espèces qui me manquent (post-filtre mois) en mode enrichi.
       // Échelle continue (sqrt) plus étalée : max 18 px, saturation à 100 espèces à cocher.
       const rN = (hotspotSort==='total') ? n : toDoShown;
@@ -2868,6 +3008,8 @@ async function _loadHotspotsLayer(region){
         : Math.max(4, Math.min(18, 3 + Math.sqrt(rN) * 1.5));   // rN 1→4.5, 10→7.7, 50→13.6, 100→18
       const m = L.circleMarker([h.dispLat, h.dispLon], { radius:r, weight:1.5, color:'#fff', fillColor:'#1e6091', fillOpacity:.75, opacity:1 });
       const gm = `<a href="https://www.google.com/maps?q=${h.lat},${h.lng}" target="_blank" rel="noopener" class="p-btn pl-gmaps">🗺️ Google Maps</a>`;
+      // Ouvre Google Maps en mode transport en commun depuis la position actuelle (pas d'origin → device location).
+      const tr = `<a href="https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}&travelmode=transit" target="_blank" rel="noopener" class="p-btn pl-transit">🚌 Transit</a>`;
       const eb = `<a href="https://ebird.org/hotspot/${esc(h.locId)}" target="_blank" rel="noopener" class="p-btn pl-ebird">🐦 eBird</a>`;
       const scope = hotspotSort==='recent' ? 'ces 30 jours' : 'au total (all-time)';
       const monthTag = monthFilter ? ` · <b>${toDoShown}</b> actifs en ${MONTH_NAMES[monthFilter]}` : '';
@@ -2923,15 +3065,21 @@ async function _loadHotspotsLayer(region){
                                   : `👀 Espèces qui vous manquent ici (${items.length})`;
         missingBlock = `<details class="hs-miss"><summary>${label}</summary><div class="hs-hint">${esc(hint)}</div><ul class="p-list">${rows}</ul></details>`;
       }
-      m.bindPopup(`<b>🏞️ ${esc(h.locName||h.name||'?')}</b><br>`+
-        `<span class="p-meta">${h.subnational2Name?esc(h.subnational2Name)+' · ':''}${esc(h.subnational1Name||'')}</span><br>`+
-        `<span class="p-meta">${cntLine}</span>${missingBlock}<br>${gm} ${eb}`,
+      // Distance à vol d'oiseau depuis userPos (si géolocalisation faite).
+      const distTag = userPos ? ` · <b>${_haversine(userPos.lat, userPos.lon, h.lat, h.lng).toFixed(1)}</b> km à vol d'oiseau` : '';
+      // Étoile favori (toggle, persistée en Firestore via handler global).
+      const isFav = myFavHotspots.has(h.locId);
+      const favBtn = myUid ? `<button class="hs-fav${isFav?' on':''}" data-loc="${esc(h.locId)}" title="${isFav?'Retirer des favoris':'Ajouter aux favoris'}">${isFav?'★':'☆'}</button>` : '';
+      m.bindPopup(`<b>🏞️ ${esc(h.locName||h.name||'?')}</b> ${favBtn}<br>`+
+        `<span class="p-meta">${h.subnational2Name?esc(h.subnational2Name)+' · ':''}${esc(h.subnational1Name||'')}${distTag}</span><br>`+
+        `<span class="p-meta">${cntLine}</span>`+
+        `<div class="hs-slot" data-slot></div>${missingBlock}<br>${gm} ${tr} ${eb}`,
         { maxHeight:340, autoPan:true });
       m._q = _mapNorm((h.locName||h.name||'')+' '+(h.subnational1Name||'')+' '+(h.subnational2Name||''));
-      // Lazy-load : à l'ouverture du popup, on récupère le nb d'obs 30j par espèce (cache 3 niveaux).
-      // Coût : ~10-30 appels par popup, batch 8-parallèle, cache pour les réouvertures.
+      // Lazy-load : à l'ouverture du popup, on récupère la date de dernière obs par espèce (cache 3 niveaux)
+      // ET le créneau horaire fréquent des sorties à ce hotspot.
       m._hotspotId = h.locId;
-      m.on('popupopen', () => _loadHotspotCounts(m));
+      m.on('popupopen', () => { _loadHotspotCounts(m); _loadHotspotTimeSlot(m); });
       _lyrHotspots.addLayer(m);
     }
     _loaded.hotspots = key;
