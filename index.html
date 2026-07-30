@@ -870,7 +870,7 @@
       </div>
       <div class="map-search">
         <div class="map-search-input-wrap">
-          <input type="search" id="mapSearch" placeholder="🔎 Filtrer par nom d'espèce ou de lieu…" autocomplete="off">
+          <input type="search" id="mapSearch" placeholder="🔎 Filtrer par nom d'espèce" autocomplete="off">
           <div class="map-search-suggest" id="mapSearchSuggest"></div>
         </div>
         <span class="map-search-count" id="mapSearchCount"></span>
@@ -946,9 +946,6 @@
         <label class="explorer-lbl" id="mapEbMinTodoLbl" style="display:none;">≥ à cocher</label>
         <input type="number" id="mapEbMinTodo" min="0" max="500" value="0" step="1" style="display:none; width:64px; font-size:12px; padding:3px 6px; border:1px solid var(--line-2); border-radius:6px;" title="Cache les hotspots avec moins de N espèces à cocher">
         <span id="mapEbMinTodoVal" class="explorer-lbl" style="display:none; visibility:hidden; width:0;">0</span>
-        <label class="explorer-lbl" id="mapEbFilterSpLbl" style="display:none;" title="Ne garde que les hotspots où cette espèce a été notée">Contient</label>
-        <input type="search" id="mapEbFilterSp" list="mapEbSpDatalist" placeholder="espèce…" autocomplete="off" style="display:none; width:150px; font-size:12px; padding:3px 6px; border:1px solid var(--line-2); border-radius:6px;">
-        <datalist id="mapEbSpDatalist"></datalist>
         <span class="map-count" id="mapEbCount"></span>
       </div>
       <div id="mapNote" class="help" style="margin:6px 0 8px; display:none;"></div>
@@ -2151,15 +2148,9 @@ let _loaded = { missing:'', hotspots:'' };   // clé de cache (région+jours)
 // Filtres propres au mode "mine"
 let mapFilter = { player:'all', tier:'any', country:'any' };
 // Filtres propres aux modes eBird
-let ebFilter = { region:'FR', days:14, rarity:0, month:0, dept:'', minTodo:0, species:'' };
+let ebFilter = { region:'FR', days:14, rarity:0, month:0, dept:'', minTodo:0 };
 let userPos = null;   // { lat, lon } — position utilisateur pour Haversine
 let myFavHotspots = new Set();   // Set des locId favoris de l'utilisateur (synchronisé Firestore)
-// Reverse : nom fr (lowercase, normalisé) -> sciName lowercase. Construit à la demande.
-let _frNamesInv = null;
-function _frToSci(name){
-  if(!_frNamesInv){ _frNamesInv = {}; for(const sci in FR_NAMES){ _frNamesInv[FR_NAMES[sci].toLowerCase()] = sci; } }
-  return _frNamesInv[(name||'').trim().toLowerCase()] || null;
-}
 // Distance à vol d'oiseau entre 2 points (km).
 function _haversine(lat1, lon1, lat2, lon2){
   const R=6371, toRad=Math.PI/180;
@@ -2169,15 +2160,6 @@ function _haversine(lat1, lon1, lat2, lon2){
 }
 // Restaure position utilisateur depuis localStorage si dispo (persistance légère).
 try{ const p = JSON.parse(localStorage.getItem('userPos-v1')||'null'); if(p && typeof p.lat==='number') userPos = p; }catch(_){ }
-// Peuple <datalist id="mapEbSpDatalist"> avec les noms fr (une fois seulement).
-let _dlPopulated = false;
-function _populateSpeciesDatalist(){
-  if(_dlPopulated) return;
-  const dl = $('#mapEbSpDatalist'); if(!dl) return;
-  const names = Object.values(FR_NAMES).sort((a,b)=>a.localeCompare(b,'fr'));
-  dl.innerHTML = names.map(n=>`<option value="${esc(n)}">`).join('');
-  _dlPopulated = true;
-}
 // Noms français des 95 départements couverts par les bar charts (Paris FR-IDF-75 exclu, vide sur eBird).
 const DEPT_NAMES = {
   'FR-ARA-01':'Ain','FR-ARA-03':'Allier','FR-ARA-07':'Ardèche','FR-ARA-15':'Cantal','FR-ARA-26':'Drôme','FR-ARA-38':'Isère','FR-ARA-42':'Loire','FR-ARA-43':'Haute-Loire','FR-ARA-63':'Puy-de-Dôme','FR-ARA-69':'Rhône','FR-ARA-73':'Savoie','FR-ARA-74':'Haute-Savoie',
@@ -2602,9 +2584,6 @@ document.addEventListener('input', e=>{
     ebFilter.minTodo = +e.target.value || 0;
     const v = $('#mapEbMinTodoVal'); if(v) v.textContent = ebFilter.minTodo;
     _loaded.hotspots=''; renderMap();
-  } else if(e.target.id==='mapEbFilterSp'){
-    ebFilter.species = e.target.value.trim();
-    _loaded.hotspots=''; renderMap();
   }
 });
 // Toggle favori dans les popups hotspots. Optimistic update local + Firestore en fond.
@@ -2656,12 +2635,11 @@ document.addEventListener('click', e=>{
   if(monLbl) monLbl.style.display = showMon ? '' : 'none';
   if(monSel) monSel.style.display = showMon ? '' : 'none';
   // Filtres hotspot-only (min à cocher, contient espèce, favoris, géoloc) : visibles uniquement en mode hotspots.
-  ['mapEbMinTodoLbl','mapEbMinTodo','mapEbMinTodoVal','mapEbFilterSpLbl','mapEbFilterSp'].forEach(id=>{
+  ['mapEbMinTodoLbl','mapEbMinTodo','mapEbMinTodoVal'].forEach(id=>{
     const el = document.getElementById(id); if(el) el.style.display = (mapMode==='hotspots' && hotspotSort!=='total') ? '' : 'none';
   });
   _refreshDeptSel();
   _updateLegend();
-  _populateSpeciesDatalist();
   renderMap();
 });
 document.addEventListener('change', e=>{
@@ -2672,7 +2650,7 @@ document.addEventListener('change', e=>{
     if(monLbl) monLbl.style.display = showMon ? '' : 'none';
     if(monSel) monSel.style.display = showMon ? '' : 'none';
     // Min-to-do et filtre espèce n'ont de sens qu'en mode enrichi (todo/recent) — on les cache en "total".
-    ['mapEbMinTodoLbl','mapEbMinTodo','mapEbMinTodoVal','mapEbFilterSpLbl','mapEbFilterSp'].forEach(id=>{
+    ['mapEbMinTodoLbl','mapEbMinTodo','mapEbMinTodoVal'].forEach(id=>{
       const el = document.getElementById(id); if(el) el.style.display = (hotspotSort!=='total') ? '' : 'none';
     });
     renderMap();
@@ -2939,27 +2917,8 @@ async function _loadHotspotsLayer(region){
       const toDoShown = (hotspotSort==='total') ? null : filteredMiss.length;
       // Skip les hotspots sans données en mode enrichi OU sans espèce à cocher (compte tenu du filtre mois).
       if(hotspotSort!=='total' && (n===0 || toDoShown===0)) continue;
-      // Filtres client-side supplémentaires (uniquement en mode enrichi) :
-      //  - min à cocher (slider)
-      //  - contient l'espèce X (texte)
-      //  - favoris uniquement (checkbox, applicable même en total)
+      // Filtre "min à cocher" (mode enrichi uniquement).
       if(hotspotSort!=='total' && ebFilter.minTodo>0 && toDoShown < ebFilter.minTodo) continue;
-      if(hotspotSort!=='total' && ebFilter.species){
-        // Recherche tolérante : match exact via _frToSci (nom fr complet du datalist),
-        // sinon match par sous-chaîne sur le nom fr OU le sciName (normalisés) de chaque espèce du hotspot.
-        const exact = _frToSci(ebFilter.species);
-        let hasMatch = false;
-        if(exact){
-          hasMatch = rawMiss.includes(exact);
-        } else {
-          const q = _mapNorm(ebFilter.species);
-          for(const sci of rawMiss){
-            const fr = FR_NAMES[sci] || '';
-            if(_mapNorm(fr).includes(q) || sci.includes(q)){ hasMatch = true; break; }
-          }
-        }
-        if(!hasMatch) continue;
-      }
       // Favori : rendu en jaune (marker doré + bord blanc épais pour le distinguer visuellement).
       const isFavHs = myFavHotspots.has(h.locId);
       // Taille = nb d'espèces qui me manquent (post-filtre mois) en mode enrichi.
@@ -3036,7 +2995,10 @@ async function _loadHotspotsLayer(region){
         `<span class="p-meta">${h.subnational2Name?esc(h.subnational2Name)+' · ':''}${esc(h.subnational1Name||'')}${distTag}</span><br>`+
         `<span class="p-meta">${cntLine}</span>${missingBlock}<br>${gm} ${tr} ${eb}`,
         { maxHeight:340, autoPan:true });
-      m._q = _mapNorm((h.locName||h.name||'')+' '+(h.subnational1Name||'')+' '+(h.subnational2Name||''));
+      // Recherche : nom du hotspot + région/dept + noms fr des espèces manquantes ici
+      // (permet à la barre "Filtrer par nom d'espèce" de matcher un hotspot où l'espèce est présente).
+      const missNames = filteredMiss.map(sci => FR_NAMES[sci]||sci).join(' ');
+      m._q = _mapNorm((h.locName||h.name||'')+' '+(h.subnational1Name||'')+' '+(h.subnational2Name||'')+' '+missNames);
       // Lazy-load : à l'ouverture du popup, on récupère la date de dernière obs par espèce (cache 3 niveaux)
       // ET le créneau horaire fréquent des sorties à ce hotspot.
       m._hotspotId = h.locId;
