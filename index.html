@@ -2798,9 +2798,9 @@ async function _loadHotspotCounts(marker){
                             : '· vu il y a '+days+'j';
           if(days<=7) cntEl.classList.add('hot');
         } else {
-          cntEl.textContent = '· jamais 30j';
+          cntEl.remove();   // aucune obs récente = info sans valeur, on efface plutôt que d'écrire "jamais 30j"
         }
-      }catch(_){ cntEl.classList.remove('loading'); cntEl.textContent = '· ?'; }
+      }catch(_){ cntEl.remove(); }   // API en erreur ou timeout → on efface plutôt qu'afficher un '?' ambigu
     }
   }
   await Promise.all(Array.from({length:Math.min(CONC, items.length)}, worker));
