@@ -2190,7 +2190,9 @@ for(const reg in REGION_TO_DEPTS) REGION_TO_DEPTS[reg].sort((a,b)=>DEPT_NAMES[a]
 function _refreshDeptSel(){
   const sel = $('#mapEbDept'), lbl = $('#mapEbDeptLbl'); if(!sel) return;
   const list = REGION_TO_DEPTS[ebFilter.region];
-  if(mapMode!=='hotspots' || !list){
+  // Département dispo en mode "hotspots" ET "À cocher" (missing). Cache en "mine" ou sans région.
+  const showDept = (mapMode==='hotspots' || mapMode==='missing') && list;
+  if(!showDept){
     sel.style.display='none'; if(lbl) lbl.style.display='none';
     return;
   }
@@ -2288,32 +2290,18 @@ function _updateMapSuggest(){
       }
       return 0;
     });
-    // En mode "À cocher" (missing) : on complète avec TOUTES les autres espèces de FR_NAMES
-    // (pas seulement celles manquantes visibles sur la carte) → permet à l'utilisateur de
-    // rechercher n'importe quel oiseau et voir toutes ses obs récentes en France.
-    if(mapMode==='missing' && q && q.length>=2){
-      for(const sci in FR_NAMES){
-        if(seen.has(sci)) continue;
-        const fr = FR_NAMES[sci];
-        if(!_mapNorm(fr).includes(q) && !sci.includes(q)) continue;
-        const code = _sciToCode(sci); if(!code) continue;
-        seen.add(sci);
-        items.push({ sci, name:fr, code, kind:'sp-any' });
-      }
-    }
   }
   const CAP = q ? 12 : 30;
   const top = items.slice(0, CAP);
   if(!top.length){ box.classList.remove('open'); box.innerHTML=''; _mapSuggestItems=[]; return; }
   _mapSuggestItems = top;
   box.innerHTML = top.map((it, i) => {
-    if(it && (it.kind==='sp-hotspot' || it.kind==='sp-any')){
-      const hint = it.kind==='sp-any' ? '→ toutes les obs récentes' : '→ filtrer les hotspots';
+    if(it && it.kind==='sp-hotspot'){
       return `<div class="map-search-suggest-item" data-idx="${i}">`+
         `<span class="ss-dot" style="background:${sciColor(it.sci)}"></span>`+
         `<span>${esc(it.name)}</span>`+
         `<span class="ss-sci">${esc(it.sci)}</span>`+
-        `<span class="ss-hint">${hint}</span></div>`;
+        `<span class="ss-hint">→ filtrer les hotspots</span></div>`;
     }
     const m = it;
     if(m._sciName){
@@ -2344,13 +2332,6 @@ $('#mapSearchSuggest')?.addEventListener('mousedown', e=>{
   // et le filtre existant (basé sur m._q) garde les hotspots concernés.
   if(m && m.kind==='sp-hotspot'){
     const s = $('#mapSearch'); s.value = m.name; mapSearch = m.name; _mapApplyFilter();
-    return;
-  }
-  // Cas suggestion "n'importe quelle espèce" en mode À cocher : fetch toutes les obs récentes
-  // de l'espèce dans la région courante (même si déjà cochée dans la life list de l'utilisateur).
-  if(m && m.kind==='sp-any'){
-    const s = $('#mapSearch'); s.value=''; mapSearch=''; _mapApplyFilter();
-    _showSpeciesDetail(m.sci, m.code);
     return;
   }
   const s = $('#mapSearch'); s.value=''; mapSearch=''; _mapApplyFilter();
@@ -2559,23 +2540,27 @@ function _renderModeMine(el){
 // ---- Modes eBird (missing / hotspots) ----
 async function _renderModeMissing(){
   const region=ebFilter.region, days=ebFilter.days, rar=ebFilter.rarity;
-  // Charge la taxonomie en fond (permet à l'autocomplétion "n'importe quelle espèce"
-  // de fonctionner via _sciToCode dès la 1re recherche).
-  _loadTaxonomy().catch(()=>{});
-  const heavy = (region!=='FR') && (rar==='exo' || (+rar>0));
+  // Zone effectivement interrogée : département > région > national.
+  const zone = ebFilter.dept || region;
+  const isDept = /^FR-[A-Z]+-[0-9A-Z]+$/.test(zone);
+  const hasRar = rar==='exo' || (+rar>0);
+  // Fan-out (toutes les obs) déclenché par : département sélectionné OU (région + rareté).
+  const heavy = isDept || ((zone!=='FR') && hasRar);
+  // Nettoyage détail espèce lors d'une re-render (filtre changé) — sinon les vieux points restent.
+  if(_lyrDetail){ _lyrDetail.clearLayers(); }
   const cnt=$('#mapEbCount'); if(cnt) cnt.textContent='… chargement';
-  await _loadMissingLayer(region, days, rar, (done, total)=>{
+  await _loadMissingLayer(zone, days, rar, (done, total)=>{
     if(cnt) cnt.textContent = `… ${done}/${total} espèces`;
   });
   _lyrMissing.addTo(_map);
   const nObs = _lyrMissing.getLayers().length;
   const nSp = new Set(); _lyrMissing.eachLayer(m=>{ if(m._sciName) nSp.add(m._sciName.toLowerCase()); });
-  const hasFilter = rar==='exo' || (+rar>0);
   const rarLbl = rar==='exo' ? 'exotiques' : ('rareté '+rar);
+  const zoneLbl = ebFilter.dept ? ' — '+esc(DEPT_NAMES[ebFilter.dept]||ebFilter.dept) : '';
   if(cnt) cnt.textContent = nObs
-    ? (heavy ? `${nObs} obs · ${nSp.size} espèce${nSp.size>1?'s':''} ${rarLbl}`
-             : `${nSp.size} espèce${nSp.size>1?'s':''} à cocher${hasFilter?' ('+rarLbl+')':''}`)
-    : (hasFilter ? `Aucune espèce ${rarLbl} à cocher` : 'Rien à cocher — vous les avez toutes ! 🎯');
+    ? (heavy ? `${nObs} obs · ${nSp.size} espèce${nSp.size>1?'s':''}${hasRar?' '+rarLbl:''}${zoneLbl}`
+             : `${nSp.size} espèce${nSp.size>1?'s':''} à cocher${hasRar?' ('+rarLbl+')':''}${zoneLbl}`)
+    : (hasRar ? `Aucune espèce ${rarLbl} à cocher${zoneLbl}` : 'Rien à cocher — vous les avez toutes ! 🎯');
   _fitLayer(_lyrMissing);
   _mapApplyFilter();
   setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
@@ -2594,25 +2579,34 @@ async function _renderModeHotspots(){
   setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
 }
 // Charge et affiche toutes les obs récentes d'une espèce (endpoint /recent/{speciesCode}).
+// Utilise la zone effective (dept > région > national). Cache la couche "missing" pour ne montrer
+// QUE l'espèce sélectionnée (retour au layer normal via n'importe quel changement de filtre).
 async function _showSpeciesDetail(sciName, speciesCode){
   if(!_map || !speciesCode) return;
-  const region = ebFilter.region || 'FR';
+  const zone = ebFilter.dept || ebFilter.region || 'FR';
   const days = ebFilter.days || 14;
   if(!_lyrDetail){ _lyrDetail = L.layerGroup(); }
   _lyrDetail.clearLayers(); _lyrDetail.addTo(_map);
+  // Retire les marqueurs "missing" pour que seuls les points de l'espèce demandée soient visibles.
+  if(_lyrMissing && _map.hasLayer(_lyrMissing)) _map.removeLayer(_lyrMissing);
   try{
-    const url = `https://api.ebird.org/v2/data/obs/${region}/recent/${speciesCode}?back=${days}&maxResults=100&locale=fr`;
+    const url = `https://api.ebird.org/v2/data/obs/${zone}/recent/${speciesCode}?back=${days}&maxResults=100&locale=fr`;
     const data = await _ebFetch(url);
     const nm = FR_NAMES[(sciName||'').toLowerCase()] || sciName;
+    const w = rarityReal(sciName);
+    const color = sciColor(sciName);
     let count = 0;
     for(const o of data){
       if(typeof o.lat!=='number'||typeof o.lng!=='number') continue;
-      const dot = L.circleMarker([o.lat,o.lng], { radius:5, weight:1.5, color:'#000', fillColor:'#ff9500', fillOpacity:.9, opacity:1 });
+      // Couleur = rareté de l'espèce (gris pour exotique), taille légèrement plus grosse que la couche missing.
+      const dot = L.circleMarker([o.lat,o.lng], { radius:7, weight:2.5, color:color, fillColor:'#fff', fillOpacity:.85, opacity:1 });
       const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
       dot.bindPopup(`<b>${esc(nm)}</b> <span class="p-sci">${esc(sciName||'')}</span><br>`+
         `<span class="p-meta">📍 ${esc(o.locName||'?')}</span><br>`+
-        `<span class="p-meta">${esc((o.obsDt||'').slice(0,10))}${o.howMany?' · '+o.howMany+' individus':''}</span><br>${gm}`);
+        `<span class="p-meta">${esc((o.obsDt||'').slice(0,10))}${o.howMany?' · '+o.howMany+' individus':''}</span><br>`+
+        `<span class="p-meta">Rareté : <b>${w}</b> · ${REAL_LABELS[w]||''}</span><br>${gm}`);
       dot._q = _mapNorm(nm+' '+(sciName||'')+' '+(o.locName||''));
+      dot._sciName = sciName; dot._speciesCode = speciesCode;
       _lyrDetail.addLayer(dot); count++;
     }
     // Fit sur les points chargés
@@ -2633,7 +2627,7 @@ document.addEventListener('change', e=>{
   else if(e.target.id==='mapTierSel'){ mapFilter.tier=e.target.value; renderMap(); }
   else if(e.target.id==='mapCountrySel'){ mapFilter.country=e.target.value; renderMap(); }
   else if(e.target.id==='mapEbRegion'){ ebFilter.region=e.target.value; ebFilter.dept=''; _loaded.missing=''; _loaded.hotspots=''; _refreshDeptSel(); renderMap(); }
-  else if(e.target.id==='mapEbDept'){ ebFilter.dept=e.target.value||''; _loaded.hotspots=''; renderMap(); }
+  else if(e.target.id==='mapEbDept'){ ebFilter.dept=e.target.value||''; _loaded.hotspots=''; _loaded.missing=''; renderMap(); }
   else if(e.target.id==='mapEbDays'){ ebFilter.days=+e.target.value; _loaded.missing=''; renderMap(); }
   else if(e.target.id==='mapEbRarity'){ const v=e.target.value; ebFilter.rarity=(v==='exo')?'exo':(+v||0); _loaded.missing=''; renderMap(); }
   else if(e.target.id==='mapEbMonth'){ ebFilter.month=+e.target.value||0; _loaded.hotspots=''; renderMap(); }
@@ -2756,17 +2750,21 @@ document.addEventListener('click', e=>{
 });
 
 // ---- Couches eBird "live" sur la carte ----
-async function _loadMissingLayer(region, days=14, rarity=0, onProgress){
+async function _loadMissingLayer(zone, days=14, rarity=0, onProgress){
   if(!_lyrMissing) return;
-  // Fan-out complet UNIQUEMENT si région spécifique (≠ FR national) ET filtre rareté actif.
-  // Sinon : mode léger = 1 marqueur par espèce (l'obs la plus récente, dédupliquée par eBird).
-  const heavy = (region !== 'FR') && (rarity==='exo' || (+rarity>0));
-  const key = region+':'+days+':'+(heavy?rarity:'light');
+  // Fan-out (toutes les obs de chaque espèce) déclenché par :
+  //  - département sélectionné (FR-xx-yy) : toujours, même sans filtre rareté (peu d'espèces à récupérer)
+  //  - région (FR-xx) + rareté active : filtre les cibles rares
+  //  - FR national : jamais (trop d'espèces, trop d'appels API)
+  const isDept = /^FR-[A-Z]+-[0-9A-Z]+$/.test(zone);
+  const hasRar = rarity==='exo' || (+rarity>0);
+  const heavy = isDept || ((zone !== 'FR') && hasRar);
+  const key = zone+':'+days+':'+(heavy?(rarity||'all'):'light');
   if(_loaded.missing===key && _lyrMissing.getLayers().length) return;
   _lyrMissing.clearLayers();
   try{
     // 1) Liste des espèces manquantes (endpoint dédupliqué par eBird — 1 obs/espèce).
-    const url = `https://api.ebird.org/v2/data/obs/${region}/recent?back=${days}&maxResults=10000&locale=fr`;
+    const url = `https://api.ebird.org/v2/data/obs/${zone}/recent?back=${days}&maxResults=10000&locale=fr`;
     const data = await _ebFetch(url);
     const me = realPeople.find(p=>p.id===myUid);
     const mine = new Set(me ? [...me.species.keys()] : []);
@@ -2792,10 +2790,13 @@ async function _loadMissingLayer(region, days=14, rarity=0, onProgress){
         .filter(o => typeof o.lat==='number' && typeof o.lng==='number')
         .map(o => ({ ...o, lon:o.lng }));
     } else {
-      // Mode fan-out : filtre sur le niveau de rareté exact (ou "exo" = exotiques), puis récupère TOUTES les obs récentes de chaque espèce.
-      const filtered = rarity==='exo'
-        ? missingSp.filter(sp => isExotic(sp.sciName))
-        : missingSp.filter(sp => rarityReal(sp.sciName) === +rarity);
+      // Mode fan-out : si rareté sélectionnée on filtre au niveau exact (ou "exo").
+      // Si département sans filtre rareté : on fan-out sur TOUTES les espèces manquantes du dept
+      // (petite région → peu d'espèces, quota API OK).
+      const filtered = hasRar
+        ? (rarity==='exo' ? missingSp.filter(sp => isExotic(sp.sciName))
+                          : missingSp.filter(sp => rarityReal(sp.sciName) === +rarity))
+        : missingSp;
       allObs = []; let done = 0;
       if(onProgress) onProgress(0, filtered.length);
       const CONCURRENCY = 8; let cursor = 0;
@@ -2803,7 +2804,7 @@ async function _loadMissingLayer(region, days=14, rarity=0, onProgress){
         while(cursor < filtered.length){
           const idx = cursor++; const sp = filtered[idx];
           try{
-            const u = `https://api.ebird.org/v2/data/obs/${region}/recent/${sp.speciesCode}?back=${days}&maxResults=50&locale=fr`;
+            const u = `https://api.ebird.org/v2/data/obs/${zone}/recent/${sp.speciesCode}?back=${days}&maxResults=50&locale=fr`;
             const obs = await _ebFetch(u);
             for(const o of obs){
               if(typeof o.lat!=='number' || typeof o.lng!=='number') continue;
