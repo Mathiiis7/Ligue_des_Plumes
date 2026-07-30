@@ -2438,15 +2438,12 @@ function _ensureMapInit(el){
   _map = L.map(el, { zoomControl:true, minZoom:2, worldCopyJump:true }).setView([46.6, 2.5], 5);
   const planLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution:'© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom:19 });
-  const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution:'© OpenStreetMap · © <a href="https://carto.com/attributions">CARTO</a>', maxZoom:20, subdomains:'abcd' });
   const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
     attribution:'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics', maxZoom:19 });
-  const preferDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  (preferDark?darkLayer:planLayer).addTo(_map);
+  planLayer.addTo(_map);
   _lyrMissing = L.layerGroup();
   _lyrHotspots = L.layerGroup();
-  L.control.layers({ 'Plan':planLayer, 'Sombre':darkLayer, 'Satellite':satLayer }, {}, { position:'topright', collapsed:false }).addTo(_map);
+  L.control.layers({ 'Plan':planLayer, 'Satellite':satLayer }, {}, { position:'topright', collapsed:false }).addTo(_map);
   const legend = L.control({ position:'bottomright' });
   legend.onAdd = () => {
     const div = L.DomUtil.create('div', 'map-legend');
@@ -2598,17 +2595,18 @@ document.addEventListener('change', e=>{
   else if(e.target.id==='mapEbDays'){ ebFilter.days=+e.target.value; _loaded.missing=''; renderMap(); }
   else if(e.target.id==='mapEbRarity'){ const v=e.target.value; ebFilter.rarity=(v==='exo')?'exo':(+v||0); _loaded.missing=''; renderMap(); }
   else if(e.target.id==='mapEbMonth'){ ebFilter.month=+e.target.value||0; _loaded.hotspots=''; renderMap(); }
-  else if(e.target.id==='mapEbFav'){ ebFilter.favOnly=e.target.checked; renderMap(); }
+  else if(e.target.id==='mapEbFav'){ ebFilter.favOnly=e.target.checked; _loaded.hotspots=''; renderMap(); }
 });
-// Slider "min à cocher" (event input pour réponse live)
+// Slider "min à cocher" + champ "contient espèce" (event input pour réponse live).
+// Ces filtres sont client-side mais nécessitent un re-render de la couche → on invalide le cache.
 document.addEventListener('input', e=>{
   if(e.target.id==='mapEbMinTodo'){
     ebFilter.minTodo = +e.target.value || 0;
     const v = $('#mapEbMinTodoVal'); if(v) v.textContent = ebFilter.minTodo;
-    renderMap();
+    _loaded.hotspots=''; renderMap();
   } else if(e.target.id==='mapEbFilterSp'){
     ebFilter.species = e.target.value.trim();
-    renderMap();
+    _loaded.hotspots=''; renderMap();
   }
 });
 // Bouton géolocalisation
@@ -2921,9 +2919,11 @@ async function _loadHotspotTimeSlot(marker){
     const buckets = new Array(8).fill(0);
     let total = 0;
     for(const c of data){
-      const t = (c.startTime||'').match(/^(\d{2}):/);
+      // eBird : le champ heure d'une checklist est "obsTime" ("HH:MM"), pas "startTime".
+      const t = (c.obsTime||'').match(/^(\d{1,2}):/);
       if(!t) continue;
-      const h = +t[1]; buckets[Math.floor(h/3)]++; total++;
+      const h = +t[1]; if(h<0||h>23) continue;
+      buckets[Math.floor(h/3)]++; total++;
     }
     if(total < 3){ marker._slotLoaded=true; marker._slotInflight=false; return; }   // pas assez de données
     let bestIdx = 0, bestN = buckets[0];
