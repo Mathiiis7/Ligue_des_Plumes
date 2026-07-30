@@ -2699,9 +2699,13 @@ async function _loadHotspotsLayer(region){
   try{
     const list = await _ebFetch(`https://api.ebird.org/v2/ref/hotspot/${region}?fmt=json`);
     const CAP = 50;
+    // Exclusion des hotspots dormants : dernière obs > 2 ans → probablement obsolète (accès fermé,
+    // birder parti…). L'API n'expose pas de "N espèces sur 2 ans", c'est le seul filtre gratuit.
+    const cutoff = new Date(Date.now() - 2*365*24*3600*1000).toISOString().slice(0,10);
+    const isFresh = h => (h.latestObsDt||'').slice(0,10) >= cutoff;
     let top;
     if(hotspotSort==='total'){
-      const topRaw = list.filter(h=>h.numSpeciesAllTime).sort((a,b)=>b.numSpeciesAllTime-a.numSpeciesAllTime).slice(0, CAP);
+      const topRaw = list.filter(h=>h.numSpeciesAllTime && isFresh(h)).sort((a,b)=>b.numSpeciesAllTime-a.numSpeciesAllTime).slice(0, CAP);
       top = topRaw.map(h=>({ ...h, allSp:h.numSpeciesAllTime, mySp:null, toDo:null }));
     } else {
       // Pool à enrichir. Suivant le mode, on optimise le pré-tri :
@@ -2709,7 +2713,7 @@ async function _loadHotspotsLayer(region){
       //  - "todo" (à cocher) : les plus riches all-time (biais espèces max), mais élargi
       // Sinon les sites urbains actifs (ex. Plan de la Garde) sont écrasés par les grands sites all-time
       // (Camargue…). Pool = 200, filtrage des zéros, top 50 après tri par le critère du mode.
-      let pool = list.filter(h=>h.numSpeciesAllTime);
+      let pool = list.filter(h=>h.numSpeciesAllTime && isFresh(h));
       if(hotspotSort==='recent'){
         pool.sort((a,b)=>{ const av=a.latestObsDt||'', bv=b.latestObsDt||''; return bv.localeCompare(av); });
       } else {
