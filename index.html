@@ -947,7 +947,7 @@
         <input type="number" id="mapEbMinTodo" min="0" max="500" value="0" step="1" style="display:none; width:64px; font-size:12px; padding:3px 6px; border:1px solid var(--line-2); border-radius:6px;" title="Cache les hotspots avec moins de N espèces à cocher">
         <span id="mapEbMinTodoVal" class="explorer-lbl" style="display:none; visibility:hidden; width:0;">0</span>
         <label class="explorer-lbl" id="mapEbFilterSpLbl" style="display:none;" title="Ne garde que les hotspots où cette espèce a été notée">Contient</label>
-        <input type="text" id="mapEbFilterSp" list="mapEbSpDatalist" placeholder="espèce…" style="display:none; width:120px; font-size:12px; padding:3px 6px; border:1px solid var(--line-2); border-radius:6px;">
+        <input type="search" id="mapEbFilterSp" list="mapEbSpDatalist" placeholder="espèce…" autocomplete="off" style="display:none; width:150px; font-size:12px; padding:3px 6px; border:1px solid var(--line-2); border-radius:6px;">
         <datalist id="mapEbSpDatalist"></datalist>
         <span class="map-count" id="mapEbCount"></span>
       </div>
@@ -2622,7 +2622,7 @@ document.addEventListener('click', async e=>{
     _lyrHotspots.eachLayer(m => {
       if(m._hotspotId !== locId) return;
       const isFav = !wasFav;
-      m.setStyle({ weight:isFav?2.5:1.5, color:isFav?'#8a5a00':'#0f3a5c', fillColor:isFav?'#f4b400':'#2b7bb0', fillOpacity:.85 });
+      m.setStyle({ weight:isFav?2.5:1.5, color:'#fff', fillColor:isFav?'#f4b400':'#1e6091', fillOpacity:.85 });
     });
   }
   try{ await setDoc(doc(db,'leagues',leagueId,'members',myUid,'favorites','hotspots'),
@@ -2968,7 +2968,7 @@ async function _loadHotspotsLayer(region){
       const r = (hotspotSort==='total')
         ? Math.max(4, Math.min(18, 3 + Math.sqrt(rN) * 0.7))    // rN 20→6, 100→10, 300→15, 500+→18
         : Math.max(4, Math.min(18, 3 + Math.sqrt(rN) * 1.5));   // rN 1→4.5, 10→7.7, 50→13.6, 100→18
-      const m = L.circleMarker([h.dispLat, h.dispLon], { radius:r, weight:isFavHs?2.5:1.5, color:isFavHs?'#8a5a00':'#0f3a5c', fillColor:isFavHs?'#f4b400':'#2b7bb0', fillOpacity:.85, opacity:1 });
+      const m = L.circleMarker([h.dispLat, h.dispLon], { radius:r, weight:isFavHs?2.5:1.5, color:'#fff', fillColor:isFavHs?'#f4b400':'#1e6091', fillOpacity:.85, opacity:1 });
       const gm = `<a href="https://www.google.com/maps?q=${h.lat},${h.lng}" target="_blank" rel="noopener" class="p-btn pl-gmaps">🗺️ Google Maps</a>`;
       // Ouvre Google Maps en mode transport en commun depuis la position actuelle (pas d'origin → device location).
       const tr = `<a href="https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}&travelmode=transit" target="_blank" rel="noopener" class="p-btn pl-transit">🚌 Transit</a>`;
