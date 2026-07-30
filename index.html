@@ -452,12 +452,8 @@
   .map-el .leaflet-popup-content .p-list li:last-child { border-bottom:none; }
   .map-el .leaflet-popup-content .p-dot { display:inline-block; width:8px; height:8px; border-radius:50%; flex:none; align-self:center; box-shadow:0 0 0 1.5px #fff, 0 0 0 2px rgba(0,0,0,.15); }
   .map-el .map-count-lbl { display:flex; align-items:center; justify-content:center; font:700 11px/1 system-ui, sans-serif; color:#fff; text-shadow:0 0 3px rgba(0,0,0,.5); pointer-events:none; background:transparent; border:none; }
-  .map-el .notable-mark { display:flex; align-items:center; justify-content:center; font-size:20px; text-align:center; line-height:1; background:transparent; border:none; filter:drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
   .map-el .leaflet-popup-content .p-link { display:inline-block; margin-top:6px; font-size:12px; color:var(--accent-ink); text-decoration:none; font-weight:600; }
   .map-el .leaflet-popup-content .p-link:hover { text-decoration:underline; }
-  .map-el .leaflet-popup-content .ex-detail-btn { display:inline-block; margin-top:6px; font:inherit; font-size:12px; font-weight:600; padding:4px 10px; background:var(--surface-2); border:1px solid var(--line); border-radius:8px; cursor:pointer; color:var(--accent-ink); }
-  .map-el .leaflet-popup-content .ex-detail-btn:hover:not(:disabled) { background:color-mix(in srgb, var(--accent) 15%, var(--surface)); border-color:var(--accent); }
-  .map-el .leaflet-popup-content .ex-detail-btn:disabled { opacity:.7; cursor:default; }
   .map-el .map-legend { background:rgba(255,255,255,.95); border-radius:8px; padding:8px 10px; box-shadow:0 1px 4px rgba(0,0,0,.15); font-size:11.5px; line-height:1.35; color:#15201e; max-height:calc(100% - 40px); overflow-y:auto; }
   .map-el .map-legend .ml-title { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; color:#47534f; }
   .map-el .map-legend .ml-row { display:flex; align-items:center; gap:6px; padding:1px 0; }
@@ -851,7 +847,6 @@
       <div class="seg map-mode" id="mapModes">
         <button data-mode="mine" class="on">📍 Mes observations</button>
         <button data-mode="missing">🐦 À aller cocher</button>
-        <button data-mode="notable">🚨 Raretés</button>
         <button data-mode="hotspots">🏞️ Top hotspots</button>
       </div>
       <div class="map-search">
@@ -901,6 +896,15 @@
           <option value="total" selected>Total espèces</option>
           <option value="todo">Espèces à cocher pour moi</option>
           <option value="recent">Activité 30 jours</option>
+        </select>
+        <label class="explorer-lbl" id="mapEbRarityLbl" style="display:none;" title="Charge toutes les obs de chaque espèce ≥ ce niveau (dispo uniquement sur une région précise)">Rareté min.</label>
+        <select class="filt-sel" id="mapEbRarity" style="display:none;">
+          <option value="0" selected>— (léger, 1 obs/espèce)</option>
+          <option value="4">≥ 4 · Peu commune</option>
+          <option value="5">≥ 5 · Localisée</option>
+          <option value="6">≥ 6 · Rare</option>
+          <option value="7">≥ 7 · Très rare</option>
+          <option value="8">≥ 8 · Exceptionnelle</option>
         </select>
         <button class="btn tiny" id="mapEbRefresh" title="Rafraîchir">🔄</button>
         <span class="map-count" id="mapEbCount"></span>
@@ -2049,15 +2053,15 @@ function renderRequests(){
 }
 // ---- Carte des observations ----
 let _map=null, _mapLayer=null, _allBounds=null;
-// Mode carte : 'mine' (mes obs) | 'missing' (à cocher) | 'notable' (raretés) | 'hotspots'
+// Mode carte : 'mine' (mes obs) | 'missing' (à cocher) | 'hotspots'
 let mapMode = 'mine';
 // Couches eBird "live" (une par mode)
-let _lyrMissing=null, _lyrNotable=null, _lyrHotspots=null;
-let _loaded = { missing:'', notable:'', hotspots:'' };   // clé de cache (région+jours)
+let _lyrMissing=null, _lyrHotspots=null;
+let _loaded = { missing:'', hotspots:'' };   // clé de cache (région+jours)
 // Filtres propres au mode "mine"
 let mapFilter = { player:'all', tier:'any', country:'any' };
 // Filtres propres aux modes eBird
-let ebFilter = { region:'FR', days:14 };
+let ebFilter = { region:'FR', days:14, rarityMin:0 };
 let hotspotSort = 'total';   // 'total' | 'todo' | 'recent'
 let _taxMap = null;           // { speciesCode -> sciName lowercase } — cache localStorage
 let mapSearch = '';          // recherche par nom (espèce/lieu) — filtre client-side
@@ -2065,7 +2069,7 @@ let _lyrDetail = null;        // couche "détails d'une espèce" (obs sur toute 
 function _mapNorm(s){ return (s||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
 function _mapApplyFilter(){
   const q = _mapNorm(mapSearch).trim();
-  const layers = [_mapLayer, _lyrMissing, _lyrNotable, _lyrHotspots, _lyrDetail].filter(Boolean);
+  const layers = [_mapLayer, _lyrMissing, _lyrHotspots, _lyrDetail].filter(Boolean);
   let visible=0, total=0;
   for(const lyr of layers){
     lyr.eachLayer(m => {
@@ -2084,7 +2088,6 @@ $('#mapSearch')?.addEventListener('focus', ()=>{ if(mapSearch) _updateMapSuggest
 function _mapCurrentLayer(){
   if(mapMode==='mine') return _mapLayer;
   if(mapMode==='missing') return _lyrMissing;
-  if(mapMode==='notable') return _lyrNotable;
   if(mapMode==='hotspots') return _lyrHotspots;
   return null;
 }
@@ -2133,7 +2136,7 @@ $('#mapSearchSuggest')?.addEventListener('mousedown', e=>{
   const box = $('#mapSearchSuggest'); box.classList.remove('open'); box.innerHTML='';
   const s = $('#mapSearch'); s.value=''; mapSearch=''; _mapApplyFilter();
   if(m._sciName && m._speciesCode){
-    // Mode missing/notable : on récupère toutes les obs récentes de l'espèce
+    // Mode missing : on récupère toutes les obs récentes de l'espèce
     _showSpeciesDetail(m._sciName, m._speciesCode);
   } else if(m._sciName && mapMode==='mine' && _mapLayer){
     // Mode mine : on filtre sur cette espèce et on fitBounds sur toutes ses obs
@@ -2243,13 +2246,11 @@ function renderMap(){
   // Cache toutes les couches ; le mode courant remet la sienne
   if(_mapLayer){ _mapLayer.remove(); }
   if(_lyrMissing){ _lyrMissing.remove(); }
-  if(_lyrNotable){ _lyrNotable.remove(); }
   if(_lyrHotspots){ _lyrHotspots.remove(); }
   if(_lyrDetail){ _lyrDetail.remove(); _lyrDetail.clearLayers(); }
   // Dispatch
   if(mine) return _renderModeMine(el);
   if(mapMode==='missing') return _renderModeMissing();
-  if(mapMode==='notable') return _renderModeNotable();
   if(mapMode==='hotspots') return _renderModeHotspots();
 }
 function _ensureMapInit(el){
@@ -2264,7 +2265,6 @@ function _ensureMapInit(el){
   const preferDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   (preferDark?darkLayer:planLayer).addTo(_map);
   _lyrMissing = L.layerGroup();
-  _lyrNotable = L.layerGroup();
   _lyrHotspots = L.layerGroup();
   L.control.layers({ 'Plan':planLayer, 'Sombre':darkLayer, 'Satellite':satLayer }, {}, { position:'topright', collapsed:false }).addTo(_map);
   const legend = L.control({ position:'bottomright' });
@@ -2341,25 +2341,22 @@ function _renderModeMine(el){
   _mapApplyFilter();
   setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
 }
-// ---- Modes eBird (missing / notable / hotspots) ----
+// ---- Modes eBird (missing / hotspots) ----
 async function _renderModeMissing(){
-  const region=ebFilter.region, days=ebFilter.days;
+  const region=ebFilter.region, days=ebFilter.days, rar=ebFilter.rarityMin|0;
+  const heavy = (region!=='FR') && (rar>0);
   const cnt=$('#mapEbCount'); if(cnt) cnt.textContent='… chargement';
-  await _loadMissingLayer(region, days);
+  await _loadMissingLayer(region, days, rar, (done, total)=>{
+    if(cnt) cnt.textContent = `… ${done}/${total} espèces`;
+  });
   _lyrMissing.addTo(_map);
-  const n = _lyrMissing.getLayers().length;
-  if(cnt) cnt.textContent = n ? `${n} espèce${n>1?'s':''} à cocher` : 'Rien à cocher — vous les avez toutes ! 🎯';
+  const nObs = _lyrMissing.getLayers().length;
+  const nSp = new Set(); _lyrMissing.eachLayer(m=>{ if(m._sciName) nSp.add(m._sciName.toLowerCase()); });
+  if(cnt) cnt.textContent = nObs
+    ? (heavy ? `${nObs} obs · ${nSp.size} espèce${nSp.size>1?'s':''} rareté ≥ ${rar}`
+             : `${nSp.size} espèce${nSp.size>1?'s':''} à cocher`)
+    : 'Rien à cocher — vous les avez toutes ! 🎯';
   _fitLayer(_lyrMissing);
-  _mapApplyFilter();
-  setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
-}
-async function _renderModeNotable(){
-  const cnt=$('#mapEbCount'); if(cnt) cnt.textContent='… chargement';
-  await _loadNotableLayer(ebFilter.region, ebFilter.days);
-  _lyrNotable.addTo(_map);
-  const n = _lyrNotable.getLayers().length;
-  if(cnt) cnt.textContent = n ? `${n} rareté${n>1?'s':''} signalée${n>1?'s':''}` : 'Aucune rareté récente';
-  _fitLayer(_lyrNotable);
   _mapApplyFilter();
   setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
 }
@@ -2403,18 +2400,6 @@ async function _showSpeciesDetail(sciName, speciesCode){
     return count;
   }catch(_){ return 0; }
 }
-// Handler global : bouton "toutes les obs" dans le popup
-document.addEventListener('click', e=>{
-  const btn = e.target.closest('.ex-detail-btn');
-  if(!btn) return;
-  e.preventDefault();
-  const sc = btn.dataset.sc, sci = btn.dataset.sci;
-  if(!sc){ return; }
-  btn.textContent = '⏳ Chargement…'; btn.disabled = true;
-  _showSpeciesDetail(sci, sc).then(n=>{
-    btn.textContent = n ? `✓ ${n} obs affichées` : 'Aucune autre obs récente';
-  });
-});
 function _fitLayer(lyr){
   const latlngs = []; lyr.eachLayer(l=>{ const ll=l.getLatLng?l.getLatLng():null; if(ll) latlngs.push([ll.lat, ll.lng]); });
   if(!latlngs.length) return;
@@ -2425,8 +2410,9 @@ document.addEventListener('change', e=>{
   if(e.target.id==='mapPlayerSel'){ mapFilter.player=e.target.value; renderMap(); }
   else if(e.target.id==='mapTierSel'){ mapFilter.tier=e.target.value; renderMap(); }
   else if(e.target.id==='mapCountrySel'){ mapFilter.country=e.target.value; renderMap(); }
-  else if(e.target.id==='mapEbRegion'){ ebFilter.region=e.target.value; _loaded.missing=''; _loaded.notable=''; _loaded.hotspots=''; renderMap(); }
-  else if(e.target.id==='mapEbDays'){ ebFilter.days=+e.target.value; _loaded.missing=''; _loaded.notable=''; renderMap(); }
+  else if(e.target.id==='mapEbRegion'){ ebFilter.region=e.target.value; _loaded.missing=''; _loaded.hotspots=''; renderMap(); }
+  else if(e.target.id==='mapEbDays'){ ebFilter.days=+e.target.value; _loaded.missing=''; renderMap(); }
+  else if(e.target.id==='mapEbRarity'){ ebFilter.rarityMin=+e.target.value; _loaded.missing=''; renderMap(); }
 });
 // Mode selector
 document.addEventListener('click', e=>{
@@ -2436,13 +2422,18 @@ document.addEventListener('click', e=>{
   document.querySelectorAll('#mapModes button').forEach(x=>x.classList.toggle('on', x===b));
   // Cache le sélecteur "Derniers" en mode hotspots (endpoint sans param days)
   // Affiche le sélecteur "Trier par" uniquement en mode hotspots
+  // Affiche le sélecteur "Rareté min." uniquement en mode missing
   const daysLbl=$('#mapEbDaysLbl'), daysSel=$('#mapEbDays'), srtLbl=$('#mapEbSortLbl'), srtSel=$('#mapEbSort');
+  const rarLbl=$('#mapEbRarityLbl'), rarSel=$('#mapEbRarity');
   const showDays = mapMode!=='hotspots';
   if(daysLbl) daysLbl.style.display = showDays ? '' : 'none';
   if(daysSel) daysSel.style.display = showDays ? '' : 'none';
   const showSort = mapMode==='hotspots';
   if(srtLbl) srtLbl.style.display = showSort ? '' : 'none';
   if(srtSel) srtSel.style.display = showSort ? '' : 'none';
+  const showRar = mapMode==='missing';
+  if(rarLbl) rarLbl.style.display = showRar ? '' : 'none';
+  if(rarSel) rarSel.style.display = showRar ? '' : 'none';
   renderMap();
 });
 document.addEventListener('change', e=>{
@@ -2451,7 +2442,7 @@ document.addEventListener('change', e=>{
 document.addEventListener('click', e=>{
   if(e.target.id==='mapEbRefresh'){ _ebCache.clear();
     try{ Object.keys(localStorage).forEach(k=>{ if(k.startsWith('ebc:')) localStorage.removeItem(k); }); }catch(_){}
-    _loaded={missing:'',notable:'',hotspots:''}; renderMap();
+    _loaded={missing:'',hotspots:''}; renderMap();
   }
 });
 // Timeline : sliders (Du/Au), vitesse, play/pause, reset
@@ -2484,85 +2475,79 @@ document.addEventListener('click', e=>{
 });
 
 // ---- Couches eBird "live" sur la carte ----
-async function _loadMissingLayer(region, days=14){
+async function _loadMissingLayer(region, days=14, rarityMin=0, onProgress){
   if(!_lyrMissing) return;
-  const key = region+':'+days;
-  if(_loaded.missing===key && _lyrMissing.getLayers().length) return;   // déjà chargé pour cette combi
+  // Fan-out complet UNIQUEMENT si région spécifique (≠ FR national) ET filtre rareté actif.
+  // Sinon : mode léger = 1 marqueur par espèce (l'obs la plus récente, dédupliquée par eBird).
+  const heavy = (region !== 'FR') && (rarityMin > 0);
+  const key = region+':'+days+':'+(heavy?rarityMin:'light');
+  if(_loaded.missing===key && _lyrMissing.getLayers().length) return;
   _lyrMissing.clearLayers();
   try{
+    // 1) Liste des espèces manquantes (endpoint dédupliqué par eBird — 1 obs/espèce).
     const url = `https://api.ebird.org/v2/data/obs/${region}/recent?back=${days}&maxResults=10000&locale=fr`;
     const data = await _ebFetch(url);
     const me = realPeople.find(p=>p.id===myUid);
     const mine = new Set(me ? [...me.species.keys()] : []);
-    const byKey = new Map();
+    const missingSp = []; const seenSp = new Set();
     for(const o of data){
-      const k=(o.sciName||'').toLowerCase(); if(!k||mine.has(k))continue;
+      const k=(o.sciName||'').toLowerCase();
+      if(!k || mine.has(k) || seenSp.has(k)) continue;
+      if(!o.speciesCode) continue;
       if(isNonSpecies(o.comName||'', o.sciName||'')) continue;
-      const ex=byKey.get(k);
-      if(!ex||(o.obsDt||'')>(ex.obsDt||'')) byKey.set(k,o);
+      seenSp.add(k);
+      missingSp.push({ sciName:o.sciName, comName:o.comName, speciesCode:o.speciesCode, first:o });
     }
-    // Éparpille les espèces qui partagent la même position (spirale sunflower, comme mes obs).
-    const arr = [...byKey.values()].filter(o=>typeof o.lat==='number' && typeof o.lng==='number')
-      .map(o=>({ ...o, lat:o.lat, lon:o.lng }));
+    let allObs;
+    if(!heavy){
+      // Mode léger : 1 marqueur par espèce (l'obs déjà retournée par l'endpoint /recent).
+      allObs = missingSp
+        .map(sp => ({ ...sp.first, sciName:sp.sciName, comName:sp.comName, speciesCode:sp.speciesCode }))
+        .filter(o => typeof o.lat==='number' && typeof o.lng==='number')
+        .map(o => ({ ...o, lon:o.lng }));
+    } else {
+      // Mode fan-out : filtre par rareté minimum, puis récupère TOUTES les obs récentes de chaque espèce.
+      const filtered = missingSp.filter(sp => rarityReal(sp.sciName) >= rarityMin);
+      allObs = []; let done = 0;
+      if(onProgress) onProgress(0, filtered.length);
+      const CONCURRENCY = 8; let cursor = 0;
+      async function worker(){
+        while(cursor < filtered.length){
+          const idx = cursor++; const sp = filtered[idx];
+          try{
+            const u = `https://api.ebird.org/v2/data/obs/${region}/recent/${sp.speciesCode}?back=${days}&maxResults=50&locale=fr`;
+            const obs = await _ebFetch(u);
+            for(const o of obs){
+              if(typeof o.lat!=='number' || typeof o.lng!=='number') continue;
+              allObs.push({ ...o, sciName:sp.sciName, comName:sp.comName, speciesCode:sp.speciesCode, lat:o.lat, lon:o.lng });
+            }
+          }catch(_){ }
+          done++; if(onProgress) onProgress(done, filtered.length);
+        }
+      }
+      await Promise.all(Array.from({length:Math.min(CONCURRENCY, filtered.length)}, worker));
+    }
+    // Éparpille les obs qui partagent la même position (sunflower).
     const groups = new Map();
-    for(const o of arr){ const k=o.lat.toFixed(5)+','+o.lng.toFixed(5); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(o); }
+    for(const o of allObs){ const k=o.lat.toFixed(5)+','+o.lon.toFixed(5); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(o); }
     for(const g of groups.values()) _spreadGroup(g);
-    // Tri : plus rares au-dessus
-    arr.sort((a,b)=> rarityReal(a.sciName) - rarityReal(b.sciName));
-    for(const o of arr){
+    // Tri : plus rares au-dessus (ajoutées en dernier => rendues dessus).
+    allObs.sort((a,b)=> rarityReal(a.sciName) - rarityReal(b.sciName));
+    const R = heavy ? 6 : 7, W = heavy ? 2 : 2.5;
+    for(const o of allObs){
       const w = rarityReal(o.sciName);
       const nm = FR_NAMES[(o.sciName||'').toLowerCase()] || o.comName || o.sciName;
-      const m = L.circleMarker([o.dispLat, o.dispLon], { radius:7, weight:2.5, color:realColor(w), fillColor:'#fff', fillOpacity:.85, opacity:1 });
-      const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
+      const m = L.circleMarker([o.dispLat, o.dispLon], { radius:R, weight:W, color:realColor(w), fillColor:'#fff', fillOpacity:.85, opacity:1 });
+      const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lon}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
       m.bindPopup(`<b>${esc(nm)}</b> <span class="p-sci">${esc(o.sciName||'')}</span><br>`+
         `<span class="p-meta">🐦 <b>Vous ne l'avez pas encore</b></span><br>`+
-        `<span class="p-meta">Vu le ${esc((o.obsDt||'').slice(0,10))} à ${esc(o.locName||'?')}</span><br>`+
-        `<span class="p-meta">Rareté : <b>${w}</b> · ${REAL_LABELS[w]||''}</span><br>`+
-        `<button class="p-link ex-detail-btn" data-sc="${esc(o.speciesCode||'')}" data-sci="${esc(o.sciName||'')}">🔍 Toutes les obs récentes ici</button><br>${gm}`);
+        `<span class="p-meta">Vu le ${esc((o.obsDt||'').slice(0,10))} à ${esc(o.locName||'?')}${o.howMany?' · '+o.howMany:''}</span><br>`+
+        `<span class="p-meta">Rareté : <b>${w}</b> · ${REAL_LABELS[w]||''}</span><br>${gm}`);
       m._q = _mapNorm(nm+' '+(o.sciName||'')+' '+(o.locName||''));
       m._speciesCode = o.speciesCode; m._sciName = o.sciName;
       _lyrMissing.addLayer(m);
     }
     _loaded.missing = key;
-  } catch(_){ }
-}
-async function _loadNotableLayer(region='FR', days=14){
-  if(!_lyrNotable) return;
-  const key = region+':'+days;
-  if(_loaded.notable===key && _lyrNotable.getLayers().length) return;
-  _lyrNotable.clearLayers();
-  try{
-    const url = `https://api.ebird.org/v2/data/obs/${region}/recent/notable?back=${days}&maxResults=200&locale=fr`;
-    const data = await _ebFetch(url);
-    const seen = new Set();
-    const arr = [];
-    for(const o of data){
-      if(isNonSpecies(o.comName||'', o.sciName||'')) continue;
-      const k=(o.sciName||'')+'@'+(o.locId||''); if(seen.has(k))continue; seen.add(k);
-      if(typeof o.lat!=='number'||typeof o.lng!=='number') continue;
-      arr.push({ ...o, lat:o.lat, lon:o.lng });
-    }
-    // Éparpille les raretés qui partagent la même position
-    const groups = new Map();
-    for(const o of arr){ const k=o.lat.toFixed(5)+','+o.lng.toFixed(5); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(o); }
-    for(const g of groups.values()) _spreadGroup(g);
-    arr.sort((a,b)=> rarityReal(a.sciName) - rarityReal(b.sciName));
-    for(const o of arr){
-      const nm = FR_NAMES[(o.sciName||'').toLowerCase()] || o.comName || o.sciName;
-      const w = rarityReal(o.sciName);
-      const m = L.circleMarker([o.dispLat, o.dispLon], { radius:8, weight:2.5, color:'#fff', fillColor:realColor(w), fillOpacity:.9, opacity:1 });
-      const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
-      const eb = o.locId ? `<a href="https://ebird.org/hotspot/${esc(o.locId)}" target="_blank" rel="noopener" class="p-link">eBird</a>` : '';
-      m.bindPopup(`<b>🚨 ${esc(nm)}</b> <span class="p-sci">${esc(o.sciName||'')}</span><br>`+
-        `<span class="p-meta">Rareté notable signalée le ${esc((o.obsDt||'').slice(0,10))}</span><br>`+
-        `<span class="p-meta">à ${esc(o.locName||'?')}${o.howMany?' · '+o.howMany:''}</span><br>`+
-        `<span class="p-meta">Rareté : <b>${w}</b> · ${REAL_LABELS[w]||'niveau '+w}</span><br>`+
-        `<button class="p-link ex-detail-btn" data-sc="${esc(o.speciesCode||'')}" data-sci="${esc(o.sciName||'')}">🔍 Toutes les obs récentes ici</button><br>${gm} ${eb}`);
-      m._q = _mapNorm(nm+' '+(o.sciName||'')+' '+(o.locName||''));
-      m._speciesCode = o.speciesCode; m._sciName = o.sciName;
-      _lyrNotable.addLayer(m);
-    }
-    _loaded.notable = key;
   } catch(_){ }
 }
 // Charge la taxonomie eBird (code->sciName). Une fois par navigateur, cache localStorage permanent.
