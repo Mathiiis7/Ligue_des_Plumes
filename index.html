@@ -1154,9 +1154,14 @@ function ingest(filename, text){
     if(/^[A-Z]{2}$/.test(co)) return co.toUpperCase();
     return null;
   };
+  const spOf = row => {                       // code région/état complet (FR-IDF, US-NY...)
+    const st=(cState>=0?(row[cState]||''):'').trim();
+    return /^[A-Z]{2}-[A-Z0-9]{1,3}$/i.test(st) ? st.toUpperCase() : null;
+  };
   const isFR = row => countryOf(row)==='FR';
   if(cCommon<0 && cSci<0) return null; // not an eBird file
   const species = new Map();
+  const regionsSet = new Set();   // accumulateur : toutes les régions FR-XX visitées (toutes obs confondues)
   for(let r=1; r<rows.length; r++){
     const row=rows[r];
     const common=(cCommon>=0?row[cCommon]:'')?.trim()||'';
@@ -1166,7 +1171,9 @@ function ingest(filename, text){
     const date = cDate>=0 ? (row[cDate]||'').trim() : '';
     const loc = cLoc>=0 ? (row[cLoc]||'').trim() : '';
     const cc = hasGeo ? countryOf(row) : null;
+    const sp = hasGeo ? spOf(row) : null;
     const inFR = cc==='FR';
+    if(sp && /^FR-/i.test(sp)) regionsSet.add(sp);
     // Lat/lon (MyEBirdData) : parseFloat tolère "-.434299" (négatif sans zéro) et vide.
     const lat = cLat>=0 ? parseFloat((row[cLat]||'').trim()) : NaN;
     const lon = cLon>=0 ? parseFloat((row[cLon]||'').trim()) : NaN;
@@ -1193,7 +1200,7 @@ function ingest(filename, text){
   if(!species.size) return null;
   let base = filename.replace(/\.csv$/i,'');
   if(/myebirddata/i.test(base) || !base) base = '';
-  return { filename, defaultName:base, species };
+  return { filename, defaultName:base, species, regions:[...regionsSet].sort() };
 }
 
 function cleanName(base, n){
@@ -1564,7 +1571,7 @@ function renderMatrix({universe,N}){
 function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 /* ---------------- trophées ---------------- */
-const ICONS={"medal":"<img src=\"t-shirt.png\" alt=\"Expert Merlin Bird\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","cup":"<img src=\"etoile.png\" alt=\"Mike Horn\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","graal":"<img src=\"diamant.png\" alt=\"Le Saint-Graal\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","woodpecker":"<img src=\"pic-noir.png\" alt=\"Pic noir\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","aigle":"<img src=\"aigle.png\" alt=\"Aigles\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","huitre":"<img src=\"huitre.png\" alt=\"Huître\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bain":"<img src=\"bain.png\" alt=\"Pistoche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","pingouin":"<img src=\"pingouin.png\" alt=\"Happy feet\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","kangourou":"<img src=\"kangourou.png\" alt=\"Wallaby\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","singe":"<img src=\"singe.png\" alt=\"Le coup de Ruff\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","crown":"<img src=\"roi.png\" alt=\"Roi\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","podium":"<img src=\"argent.png\" alt=\"En chef\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bronze":"<img src=\"bronze.png\" alt=\"Chevronné\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","gem":"<img src=\"telescope.png\" alt=\"Apprenti écologue\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","binoculars":"<img src=\"loupe.png\" alt=\"Écologue du dimanche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","saisons":"<img src=\"son.png\" alt=\"Les 4 Saisons\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bebe":"<img src=\"bebe.png\" alt=\"Gros Bébé\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">"};
+const ICONS={"medal":"<img src=\"t-shirt.png\" alt=\"Expert Merlin Bird\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","cup":"<img src=\"etoile.png\" alt=\"Mike Horn\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","graal":"<img src=\"diamant.png\" alt=\"Le Saint-Graal\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","woodpecker":"<img src=\"pic-noir.png\" alt=\"Pic noir\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","aigle":"<img src=\"aigle.png\" alt=\"Aigles\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","huitre":"<img src=\"huitre.png\" alt=\"Huître\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bain":"<img src=\"bain.png\" alt=\"Pistoche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","pingouin":"<img src=\"pingouin.png\" alt=\"Happy feet\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","kangourou":"<img src=\"kangourou.png\" alt=\"Wallaby\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","singe":"<img src=\"singe.png\" alt=\"Le coup de Ruff\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","crown":"<img src=\"roi.png\" alt=\"Roi\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","podium":"<img src=\"argent.png\" alt=\"En chef\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bronze":"<img src=\"bronze.png\" alt=\"Chevronné\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","gem":"<img src=\"telescope.png\" alt=\"Apprenti écologue\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","binoculars":"<img src=\"loupe.png\" alt=\"Écologue du dimanche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","saisons":"<img src=\"son.png\" alt=\"Les 4 Saisons\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bebe":"<img src=\"bebe.png\" alt=\"Gros Bébé\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","regions":"<img src=\"regions.png\" alt=\"Ma France, mes régions\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover;background:linear-gradient(135deg,#0055A4,#EF4135)\" onerror=\"this.outerHTML='<span style=&quot;width:60px;height:60px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0055A4,#fff 50%,#EF4135);color:#000;font-size:34px;box-shadow:inset 0 -1px 0 rgba(0,0,0,.15)&quot;>🗺️</span>'\">"};
 const TROPHIES = [
   { icon:ICONS.medal, name:'Expert Merlin Bird', desc:'100 espèces (droit de porter le t-shirt Merlin)', test:s=>s.total>=100, prog:s=>[s.total,100] },
   { icon:ICONS.cup, name:'Mike Horn', desc:'Avoir l’oiseau le plus rare de la ligue', test:s=>s.mikeHorn, info:s=>s.mikeHorn&&s.mikeBird?'🏅 '+s.mikeBird:'', tip:s=>s.mikeHorn&&s.mikeBird?'Oiseau le plus rare : '+s.mikeBird:'' },
@@ -1581,6 +1588,7 @@ const TROPHIES = [
     note:s=>{ const o=s.alcidOwnedSet.size+(s.manchotOwnedSet?s.manchotOwnedSet.size:0); const tot=ALCID_CATALOG.length+MANCHOT_CATALOG.length; return o+' déjà observé'+(o>1?'s':'')+' sur '+tot; } },
   { icon:ICONS.kangourou, name:'Wallaby', desc:'Observer le Martin-chasseur à dos de feu', test:s=>s.hasFireKingfisher },
   { icon:ICONS.saisons, name:'Les 4 Saisons', desc:'Chope un oiseau spécifique à chaque saison tah Vivaldi', test:s=>s.seasonCount>=4, prog:s=>[s.seasonCount,4], alwaysList:true, list:s=>SEASON_CATALOG.map(m=>({ name:m.name, section:m.section, owned:s.seasonOwnedSet.has(m.sci) })), note:s=>`${s.seasonCount} saison${s.seasonCount>1?'s':''} validée${s.seasonCount>1?'s':''} sur 4` },
+  { icon:ICONS.regions, name:'Ma France, mes régions !', desc:'Faire un tour de France des birds — observer un oiseau dans 8 régions', test:s=>s.regionsCount>=8, prog:s=>[s.regionsCount,8], alwaysList:true, list:s=>FR_REGIONS.map(r=>({ name:r.name, owned:s.regionsOwnedSet.has(r.code) })), note:s=>`${s.regionsCount} région${s.regionsCount>1?'s':''} visitée${s.regionsCount>1?'s':''} sur ${FR_REGIONS.length}` },
   { icon:ICONS.bebe, name:'Gros Bébé', desc:'Observer des oiseaux avec Samuel Fillon (preuve demandée)', special:'vote', test:s=>(s.grosBebeVotes||0)>=3 },
   { icon:ICONS.crown, name:'Écologue originel', desc:'Être 1ᵉʳ du classement', test:s=>s.groupN>1 && s.rank===1 },
   { icon:ICONS.podium, name:'Écologue en chef', desc:'Dans le top 2', test:s=>s.groupN>1 && s.rank<=2 },
@@ -1625,6 +1633,22 @@ const ALCID_CATALOG = [
 const ALCID_SET = new Set(ALCID_CATALOG.map(m=>m.sci));
 const RAPTOR_CATALOG = groupCatalog(RAPTOR_G);
 const WATER_CATALOG = groupCatalog(WATER_G);
+// 13 régions métropolitaines FR — codes ISO 3166-2:FR utilisés par eBird
+const FR_REGIONS = [
+  { code:'FR-ARA', name:'Auvergne-Rhône-Alpes' },
+  { code:'FR-BFC', name:'Bourgogne-Franche-Comté' },
+  { code:'FR-BRE', name:'Bretagne' },
+  { code:'FR-CVL', name:'Centre-Val de Loire' },
+  { code:'FR-COR', name:'Corse' },
+  { code:'FR-GES', name:'Grand Est' },
+  { code:'FR-HDF', name:'Hauts-de-France' },
+  { code:'FR-IDF', name:'Île-de-France' },
+  { code:'FR-NAQ', name:'Nouvelle-Aquitaine' },
+  { code:'FR-NOR', name:'Normandie' },
+  { code:'FR-OCC', name:'Occitanie' },
+  { code:'FR-PDL', name:'Pays de la Loire' },
+  { code:'FR-PAC', name:"Provence-Alpes-Côte d'Azur" },
+];
 // Vrais manchots (hémisphère sud) — clin d'œil "Happy feet". Absents de la liste FR, on les code à part.
 const MANCHOT_CATALOG = [
   ['aptenodytes forsteri','Manchot empereur'],['aptenodytes patagonicus','Manchot royal'],
@@ -1662,7 +1686,9 @@ function statsFor(me, N){
   let lackEnzoBird=false;
   if(enzo && enzo._active) for(const k of enzo._active.keys()){ if(!me._active.has(k)){ lackEnzoBird=true; break; } }
   const seasonCount=SEASON_ORDER.filter(s=>seasonHit[s]).length;
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, grosBebeVotes:(votesMap.get(me.id)?.size)||0 };
+  const regionsOwnedSet = me.regionsFR || new Set();
+  const regionsCount = [...regionsOwnedSet].filter(c=>FR_REGIONS.some(r=>r.code===c)).length;
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, regionsOwnedSet, regionsCount, grosBebeVotes:(votesMap.get(me.id)?.size)||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
@@ -1724,12 +1750,15 @@ function memberToPerson(id, data, si){
     lat: (typeof e.la==='number')?e.la:null,   // coords éventuelles (MyEBirdData)
     lon: (typeof e.lo==='number')?e.lo:null,
     locId: e.li||null,                         // LocID eBird pour lien hotspot
+    manual: e.m===1,                           // ajout manuel (préservé lors des ré-imports)
     // recalculé à la lecture (pas figé au moment de l'upload) : ainsi toute
     // amélioration du filtre s'applique aux listes déjà enregistrées.
     nonSpecies: isNonSpecies(e.c||'', e.s||'')
   }]));
+  const regions = Array.isArray(data.regions) ? data.regions.filter(x=>/^FR-/i.test(x)) : [];
   return { id, name:data.name||'Joueur', filename:'', si, species, isMe:id===myUid,
     goal:data.goal||'', fav:data.fav||'', dream:data.dream||'', rare:data.rare||'',
+    regionsFR: new Set(regions),                  // régions FR-XX visitées (issues du CSV)
     joinedAt: data.joinedAt?.seconds || 0,
     updatedAt: data.updatedAt?.toMillis ? data.updatedAt.toMillis() : 0 };
 }
@@ -2712,16 +2741,18 @@ function fillProfile(me){
   }
 }
 
-async function saveMyList(name, speciesMap){
+async function saveMyList(name, speciesMap, regions){
   const arr=[...speciesMap.entries()].map(([k,v])=>{
     const e={ k, c:v.common, s:v.sci, d:v.date, l:v.loc, o:v.obs, n:!!v.nonSpecies };
     if(v.fr!==undefined) e.f = v.fr?1:0;   // 1=vu en France, 0=uniquement étranger, absent=inconnu
     if(v.country) e.co = v.country;        // code pays de la 1re obs (FR, ES, US...)
     if(v.lat!=null && v.lon!=null){ e.la = v.lat; e.lo = v.lon; }   // coords pour la carte (MyEBirdData)
     if(v.locId) e.li = v.locId;                                     // LocID eBird -> lien vers hotspot
+    if(v.manual) e.m = 1;                                           // ajout manuel -> à préserver au ré-import
     return e; });
   const ref=doc(db,'leagues',leagueId,'members',myUid);
   const payload={ name, species:arr, updatedAt: serverTimestamp() };
+  if(Array.isArray(regions)) payload.regions = regions;   // codes FR-XX visités (issus du CSV) — omis si absent (merge conserve l'ancien)
   if(!iAmInLeague) payload.joinedAt = serverTimestamp();
   await setDoc(ref, payload, {merge:true});
 }
@@ -2801,7 +2832,7 @@ async function handleFiles(fileList){
     if(manualKept) console.log('Ré-import : '+manualKept+' ajouts manuels préservés.');
   }
   $('#myStatus').textContent = '… enregistrement';
-  try{ await saveMyList(name, parsed.species); }
+  try{ await saveMyList(name, parsed.species, parsed.regions); }
   catch(e){ showError(e); $('#myStatus').textContent=''; }
 }
 drop.addEventListener('click',()=>fileInput.click());
