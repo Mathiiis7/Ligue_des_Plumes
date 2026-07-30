@@ -743,9 +743,9 @@
           <p id="boardExplain"></p></div>
       </div>
       <div class="seg" id="boardModes" style="margin-bottom:4px;">
-        <button data-mode="league" class="on">Rareté (ligue)</button>
+        <button data-mode="count" class="on">Nombre d'espèces</button>
+        <button data-mode="league">Rareté (ligue)</button>
         <button data-mode="real">Rareté réelle</button>
-        <button data-mode="count">Nombre d'espèces</button>
       </div>
       <details class="board-help">
         <summary>Comment marche le classement ? 🏆</summary>
@@ -1009,7 +1009,7 @@ const db = getFirestore(fbApp);
 
 /* ---------------- state ---------------- */
 const SERIES_N = 8;
-const state = { people: [], onlySpecies: true, sort:'rarity', tier:'any', family:'any', player:'any', country:'any', q:'', boardMode:'league', showMissing:false };
+const state = { people: [], onlySpecies: true, sort:'rarity', tier:'any', family:'any', player:'any', country:'any', q:'', boardMode:'count', showMissing:false };
 let lastFamKey = '', lastTierKey = '', lastPlayerKey = '', lastCountryKey = '';
 let myUid = null, leagueId = null, unsub = null, unsubLeague = null, iAmInLeague = false;
 let unsubChat = null, lastChatMsgs = [];
@@ -1598,7 +1598,7 @@ const MANCHOT_CATALOG = [
 ].map(([sci,name])=>({sci,name})).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
 const MANCHOT_SET = new Set(MANCHOT_CATALOG.map(m=>m.sci));
 function statsFor(me, N){
-  const ranked=[...state.people].sort((a,b)=>b.score-a.score);
+  const ranked=[...state.people].sort((a,b)=>b.total-a.total);   // rang basé sur le nb d'espèces (classement principal)
   const rank=ranked.findIndex(p=>p.id===me.id)+1;
   let owls=0,raptors=0,water=0,sea=0,blackWoodpecker=false,locTeste=false,hasKingfisher=false,hasPenguin=false,hasFireKingfisher=false;
   const megaList=[]; const megaOwnedSet=new Set();
@@ -2619,7 +2619,7 @@ function renderStats(me){
   }
   const fams=Object.entries(famCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const maxFam=fams.length?fams[0][1]:1;
-  const ranked=[...state.people].sort((a,b)=>b.score-a.score);
+  const ranked=[...state.people].sort((a,b)=>b.total-a.total);   // rang basé sur le nb d'espèces (classement principal)
   const rank=ranked.findIndex(p=>p.id===me.id)+1;
   const goal=parseInt(me.goal,10);
   const goalHtml = (goal>0) ? (()=>{ const pct=Math.min(100,Math.round(total/goal*100)); const done=total>=goal;
