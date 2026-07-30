@@ -1267,9 +1267,20 @@ function realColor(w){
 // Couleur pastille sur la carte : gris pour les exotiques (comme dans le classement), sinon barème rareté.
 function sciColor(sci){ return isExotic(sci) ? '#7e8a99' : realColor(rarityReal(sci)); }
 // Fréquence eBird au mois M (1-12) pour une espèce. Retourne 0 si l'espèce n'est pas dans le bar chart.
-// Seuil 0.001 = présente au moins 1 sortie sur 1000 ce mois-là (assez pour être une cible réaliste).
+// Seuil 0.01 = présente sur ≥ 1 % des sorties ce mois-là (≈ 10 obs / 1000 listes) — assez pour être
+// une cible saisonnière crédible, filtre les vagrants et queues de migration.
+// Cas rare : espèces globalement très rares (pic annuel < 0.01) — on utilise 30 % de leur pic pour
+// qu'elles restent visibles dans leurs meilleurs mois, sinon elles seraient toujours écartées.
 function freqAtMonth(sci, m){ const arr = REAL_FREQ_MONTHLY[(sci||'').trim().toLowerCase()]; return arr ? (arr[m-1]||0) : 0; }
-function activeInMonth(sci, m){ if(!m) return true; if(isExotic(sci)) return true; return freqAtMonth(sci, m) >= 0.001; }
+function activeInMonth(sci, m){
+  if(!m) return true;
+  if(isExotic(sci)) return true;
+  const arr = REAL_FREQ_MONTHLY[(sci||'').trim().toLowerCase()];
+  if(!arr) return false;   // pas de données mensuelles = pas comptée en mode mois
+  const v = arr[m-1]||0;
+  const peak = Math.max(...arr);
+  return v >= Math.min(0.01, 0.3 * peak);
+}
 function realTier(sci, abroad){
   if(isExotic(sci)) return { id:'exo', ord:0, label:'Exotique', color:'#7e8a99' };
   const key=(sci||'').trim().toLowerCase();
@@ -2495,14 +2506,23 @@ document.addEventListener('click', e=>{
   const showRar = mapMode==='missing';
   if(rarLbl) rarLbl.style.display = showRar ? '' : 'none';
   if(rarSel) rarSel.style.display = showRar ? '' : 'none';
-  const showMon = mapMode==='hotspots';
+  // "Mois" ne s'applique qu'aux modes enrichis (todo/recent) qui ont la liste des espèces par hotspot.
+  // En "Total" (all-time), on n'a que le nombre d'espèces, pas leur liste → filtre mois inapplicable.
+  const showMon = mapMode==='hotspots' && hotspotSort!=='total';
   if(monLbl) monLbl.style.display = showMon ? '' : 'none';
   if(monSel) monSel.style.display = showMon ? '' : 'none';
   _updateLegend();
   renderMap();
 });
 document.addEventListener('change', e=>{
-  if(e.target.id==='mapEbSort'){ hotspotSort=e.target.value; _loaded.hotspots=''; _updateLegend(); renderMap(); }
+  if(e.target.id==='mapEbSort'){
+    hotspotSort=e.target.value; _loaded.hotspots=''; _updateLegend();
+    const showMon = hotspotSort!=='total';
+    const monLbl=$('#mapEbMonthLbl'), monSel=$('#mapEbMonth');
+    if(monLbl) monLbl.style.display = showMon ? '' : 'none';
+    if(monSel) monSel.style.display = showMon ? '' : 'none';
+    renderMap();
+  }
 });
 document.addEventListener('click', e=>{
   if(e.target.id==='mapEbRefresh'){ _ebCache.clear();
