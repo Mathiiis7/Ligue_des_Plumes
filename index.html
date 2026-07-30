@@ -918,8 +918,7 @@
         </select>
         <label class="explorer-lbl" id="mapEbSortLbl" style="display:none;">Trier par</label>
         <select class="filt-sel" id="mapEbSort" style="display:none;">
-          <option value="total" selected>Total espèces</option>
-          <option value="todo">Espèces à cocher pour moi</option>
+          <option value="todo" selected>Espèces à cocher pour moi</option>
           <option value="recent">Activité 30 jours</option>
         </select>
         <label class="explorer-lbl" id="mapEbMonthLbl" style="display:none;" title="Filtre les espèces à celles actives ce mois-là en France (bar chart eBird nationaux). Ne re-charge PAS l'API — filtre client-side.">Mois</label>
@@ -952,7 +951,6 @@
         <label class="explorer-lbl" id="mapEbFilterSpLbl" style="display:none;" title="Ne garde que les hotspots où cette espèce a été notée">Contient</label>
         <input type="text" id="mapEbFilterSp" list="mapEbSpDatalist" placeholder="espèce…" style="display:none; width:120px; font-size:12px; padding:3px 6px; border:1px solid var(--line-2); border-radius:6px;">
         <datalist id="mapEbSpDatalist"></datalist>
-        <label class="explorer-lbl" id="mapEbFavLbl" style="display:none;" title="N'afficher que mes hotspots favoris"><input type="checkbox" id="mapEbFav" style="vertical-align:middle;"> ⭐ Favoris</label>
         <button class="btn tiny" id="mapEbGeo" style="display:none;" title="Utiliser ma position pour calculer les distances (à vol d'oiseau)">📍</button>
         <button class="btn tiny" id="mapEbRefresh" title="Rafraîchir">🔄</button>
         <span class="map-count" id="mapEbCount"></span>
@@ -1910,7 +1908,7 @@ function subscribe(){
   if(unsubFavs){ unsubFavs(); unsubFavs=null; }
   if(myUid){
     unsubFavs = onSnapshot(doc(db,'leagues',leagueId,'members',myUid,'favorites','hotspots'),
-      snap => { const d=snap.data()||{}; myFavHotspots = new Set(d.locIds||[]); if(mapMode==='hotspots' && ebFilter.favOnly) renderMap(); },
+      snap => { const d=snap.data()||{}; myFavHotspots = new Set(d.locIds||[]); if(mapMode==='hotspots'){ _loaded.hotspots=''; renderMap(); } },
       ()=>{});
   }
   if(unsubLeague){ unsubLeague(); unsubLeague=null; }
@@ -2151,7 +2149,7 @@ let _loaded = { missing:'', hotspots:'' };   // clé de cache (région+jours)
 // Filtres propres au mode "mine"
 let mapFilter = { player:'all', tier:'any', country:'any' };
 // Filtres propres aux modes eBird
-let ebFilter = { region:'FR', days:14, rarity:0, month:0, dept:'', minTodo:0, species:'', favOnly:false };
+let ebFilter = { region:'FR', days:14, rarity:0, month:0, dept:'', minTodo:0, species:'' };
 let userPos = null;   // { lat, lon } — position utilisateur pour Haversine
 let myFavHotspots = new Set();   // Set des locId favoris de l'utilisateur (synchronisé Firestore)
 // Reverse : nom fr (lowercase, normalisé) -> sciName lowercase. Construit à la demande.
@@ -2212,7 +2210,7 @@ function _refreshDeptSel(){
   if(!list.includes(ebFilter.dept)) ebFilter.dept = '';
   sel.style.display=''; if(lbl) lbl.style.display='';
 }
-let hotspotSort = 'total';   // 'total' | 'todo' | 'recent'
+let hotspotSort = 'todo';   // 'todo' (à cocher) | 'recent' (activité 30j)
 let _taxMap = null;           // { speciesCode -> sciName lowercase } — cache localStorage
 let _taxInv = null;           // { sciName lowercase -> speciesCode } — inverse construit à la volée
 let mapSearch = '';          // recherche par nom (espèce/lieu) — filtre client-side
@@ -2594,7 +2592,6 @@ document.addEventListener('change', e=>{
   else if(e.target.id==='mapEbDays'){ ebFilter.days=+e.target.value; _loaded.missing=''; renderMap(); }
   else if(e.target.id==='mapEbRarity'){ const v=e.target.value; ebFilter.rarity=(v==='exo')?'exo':(+v||0); _loaded.missing=''; renderMap(); }
   else if(e.target.id==='mapEbMonth'){ ebFilter.month=+e.target.value||0; _loaded.hotspots=''; renderMap(); }
-  else if(e.target.id==='mapEbFav'){ ebFilter.favOnly=e.target.checked; _loaded.hotspots=''; renderMap(); }
 });
 // Slider "min à cocher" + champ "contient espèce" (event input pour réponse live).
 // Ces filtres sont client-side mais nécessitent un re-render de la couche → on invalide le cache.
@@ -2667,7 +2664,6 @@ document.addEventListener('click', e=>{
   ['mapEbMinTodoLbl','mapEbMinTodo','mapEbMinTodoVal','mapEbFilterSpLbl','mapEbFilterSp'].forEach(id=>{
     const el = document.getElementById(id); if(el) el.style.display = (mapMode==='hotspots' && hotspotSort!=='total') ? '' : 'none';
   });
-  const favLbl = $('#mapEbFavLbl'); if(favLbl) favLbl.style.display = mapMode==='hotspots' ? '' : 'none';
   const geoBtn = $('#mapEbGeo'); if(geoBtn) geoBtn.style.display = mapMode==='hotspots' ? '' : 'none';
   _refreshDeptSel();
   _updateLegend();
@@ -2998,14 +2994,15 @@ async function _loadHotspotsLayer(region){
         // On filtre sur missingSci (les espèces manquantes du hotspot) — plus utile que sciSet.
         if(!rawMiss.includes(targetSci)) continue;
       }
-      if(ebFilter.favOnly && !myFavHotspots.has(h.locId)) continue;
+      // Favori : rendu en jaune (marker doré + bord blanc épais pour le distinguer visuellement).
+      const isFavHs = myFavHotspots.has(h.locId);
       // Taille = nb d'espèces qui me manquent (post-filtre mois) en mode enrichi.
       // Échelle continue (sqrt) plus étalée : max 18 px, saturation à 100 espèces à cocher.
       const rN = (hotspotSort==='total') ? n : toDoShown;
       const r = (hotspotSort==='total')
         ? Math.max(4, Math.min(18, 3 + Math.sqrt(rN) * 0.7))    // rN 20→6, 100→10, 300→15, 500+→18
         : Math.max(4, Math.min(18, 3 + Math.sqrt(rN) * 1.5));   // rN 1→4.5, 10→7.7, 50→13.6, 100→18
-      const m = L.circleMarker([h.dispLat, h.dispLon], { radius:r, weight:1.5, color:'#fff', fillColor:'#1e6091', fillOpacity:.75, opacity:1 });
+      const m = L.circleMarker([h.dispLat, h.dispLon], { radius:r, weight:isFavHs?2.5:1.5, color:isFavHs?'#8a5a00':'#fff', fillColor:isFavHs?'#f4b400':'#1e6091', fillOpacity:.85, opacity:1 });
       const gm = `<a href="https://www.google.com/maps?q=${h.lat},${h.lng}" target="_blank" rel="noopener" class="p-btn pl-gmaps">🗺️ Google Maps</a>`;
       // Ouvre Google Maps en mode transport en commun depuis la position actuelle (pas d'origin → device location).
       const tr = `<a href="https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}&travelmode=transit" target="_blank" rel="noopener" class="p-btn pl-transit">🚌 Transit</a>`;
