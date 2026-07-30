@@ -170,6 +170,19 @@
   .manual-msg { margin-top:8px; font-size:12.5px; min-height:1em; }
   .manual-msg.err { color:#c33; }
   .manual-msg.ok { color:#2a8f3a; }
+  .pick-map-modal { position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; z-index:2000; padding:12px; }
+  .pick-map-inner { background:var(--surface); border-radius:14px; width:100%; max-width:720px; max-height:calc(100vh - 24px); display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,.35); }
+  .pick-map-head { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--line); }
+  .pick-map-head h3 { margin:0; font-size:15px; color:var(--ink); }
+  .pick-map-close { background:transparent; border:none; font-size:20px; cursor:pointer; color:var(--ink-3); padding:2px 6px; }
+  .pick-map-close:hover { color:var(--ink); }
+  .pick-map-search { display:flex; gap:6px; padding:10px 16px; border-bottom:1px solid var(--line); }
+  .pick-map-search input { flex:1; padding:8px 12px; border:1px solid var(--line-2); border-radius:10px; font:inherit; background:var(--surface); color:var(--ink); }
+  .pick-map-search input:focus { outline:2px solid var(--accent); outline-offset:1px; }
+  .pick-map-el { flex:1; min-height:360px; }
+  .pick-map-actions { display:flex; align-items:center; gap:10px; padding:12px 16px; border-top:1px solid var(--line); flex-wrap:wrap; }
+  .pick-map-coords { flex:1; font-size:12.5px; color:var(--ink-2); font-family:var(--mono); }
+  @media (max-width:600px){ .pick-map-el { min-height:280px; } }
 
   /* people chips */
   .people { display:flex; flex-wrap:wrap; gap:9px; margin-top:18px; }
@@ -709,13 +722,32 @@
           </select>
         </div>
         <div class="manual-row" style="margin-top:8px;">
-          <input type="text" id="manualPlace" placeholder="Lieu pour la carte (ex. Camargue, Bois de Vincennes)" autocomplete="off">
-          <button class="btn tiny" id="manualPlaceFind" title="Trouver les coordonnées">📍 Trouver</button>
+          <button class="btn" id="manualPlaceBtn" type="button">🗺️ Choisir un lieu sur la carte</button>
+          <span id="manualPlaceStatus" class="manual-msg" style="min-height:0;"></span>
         </div>
-        <div id="manualPlaceStatus" class="manual-msg" style="min-height:0;"></div>
         <div id="manualMsg" class="manual-msg"></div>
       </div>
     </details>
+
+    <!-- Modal pour choisir un lieu sur la carte -->
+    <div id="pickMapModal" class="pick-map-modal" style="display:none;">
+      <div class="pick-map-inner">
+        <div class="pick-map-head">
+          <h3>Cliquez sur la carte pour choisir un lieu</h3>
+          <button type="button" class="pick-map-close" id="pickMapClose" aria-label="Fermer">✕</button>
+        </div>
+        <div class="pick-map-search">
+          <input type="search" id="pickMapSearch" placeholder="🔎 Rechercher un lieu (ex. Camargue, Bois de Vincennes)" autocomplete="off">
+          <button type="button" class="btn tiny" id="pickMapSearchBtn">Rechercher</button>
+        </div>
+        <div id="pickMapEl" class="pick-map-el"></div>
+        <div class="pick-map-actions">
+          <span id="pickMapCoords" class="pick-map-coords">Cliquez sur la carte pour placer un point.</span>
+          <button type="button" class="btn ghost" id="pickMapCancel">Annuler</button>
+          <button type="button" class="btn" id="pickMapConfirm" disabled>Valider</button>
+        </div>
+      </div>
+    </div>
 
     <div class="people" id="people"></div>
 
@@ -2806,8 +2838,8 @@ $('#removeMineBtn').addEventListener('click',async()=>{
 });
 
 // ---- Ajout manuel d'une espèce ----
-let _manualPickedLat=null, _manualPickedLon=null;
-// Géocodage via Nominatim (OpenStreetMap, gratuit) — 1 req/sec grand max, User-Agent requis
+let _manualPickedLat=null, _manualPickedLon=null, _manualPickedName='';
+// Géocodage via Nominatim (OpenStreetMap, gratuit).
 async function _geocode(place){
   const q = encodeURIComponent(place);
   const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&addressdetails=0`, {
@@ -2819,22 +2851,69 @@ async function _geocode(place){
   const d = data[0];
   return { lat: parseFloat(d.lat), lon: parseFloat(d.lon), display: d.display_name };
 }
-async function _manualFindPlace(){
-  const inp=$('#manualPlace'), st=$('#manualPlaceStatus');
-  const q=(inp?.value||'').trim();
-  _manualPickedLat=_manualPickedLon=null;
-  if(!q){ if(st){ st.className='manual-msg'; st.textContent=''; } return; }
-  if(st){ st.className='manual-msg'; st.textContent='… recherche'; }
-  try{
-    const r = await _geocode(q);
-    if(!r){ if(st){ st.className='manual-msg err'; st.textContent='Lieu introuvable'; } return; }
-    _manualPickedLat = r.lat; _manualPickedLon = r.lon;
-    if(st){ st.className='manual-msg ok'; st.textContent = `📍 ${r.display.slice(0,80)} (${r.lat.toFixed(4)}, ${r.lon.toFixed(4)})`; }
-  }catch(e){ if(st){ st.className='manual-msg err'; st.textContent='Erreur : '+(e.message||e); } }
+// ---- Modal "Choisir un lieu sur la carte" ----
+let _pickMap=null, _pickMarker=null, _pickLat=null, _pickLon=null, _pickName='';
+function _openPickMap(){
+  const modal = $('#pickMapModal'); if(!modal) return;
+  modal.style.display='flex';
+  // reset : partir du lieu déjà choisi si dispo
+  _pickLat = _manualPickedLat; _pickLon = _manualPickedLon; _pickName = _manualPickedName;
+  const start = (_pickLat!=null && _pickLon!=null) ? [_pickLat,_pickLon] : [46.6, 2.5];
+  const zoom = (_pickLat!=null) ? 13 : 5;
+  setTimeout(()=>{
+    if(!_pickMap){
+      _pickMap = L.map('pickMapEl', { zoomControl:true, minZoom:2 }).setView(start, zoom);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution:'© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom:19 }).addTo(_pickMap);
+      _pickMap.on('click', e=>_setPickPoint(e.latlng.lat, e.latlng.lng));
+    } else {
+      _pickMap.setView(start, zoom);
+    }
+    // marqueur si déjà un point choisi
+    if(_pickLat!=null && _pickLon!=null){ _setPickPoint(_pickLat, _pickLon, _pickName, false); }
+    else { if(_pickMarker){ _pickMarker.remove(); _pickMarker=null; } $('#pickMapConfirm').disabled=true; $('#pickMapCoords').textContent='Cliquez sur la carte pour placer un point.'; }
+    setTimeout(()=>{ try{ _pickMap.invalidateSize(); }catch(_){} }, 60);
+  }, 60);
 }
-$('#manualPlaceFind')?.addEventListener('click', e=>{ e.preventDefault(); _manualFindPlace(); });
-$('#manualPlace')?.addEventListener('input', ()=>{ _manualPickedLat=_manualPickedLon=null; const st=$('#manualPlaceStatus'); if(st){ st.className='manual-msg'; st.textContent=''; } });
-$('#manualPlace')?.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); _manualFindPlace(); } });
+function _closePickMap(){ const m=$('#pickMapModal'); if(m) m.style.display='none'; }
+function _setPickPoint(lat, lon, name, moveView=true){
+  _pickLat=lat; _pickLon=lon; _pickName=name||'';
+  if(!_pickMap) return;
+  if(_pickMarker){ _pickMarker.setLatLng([lat,lon]); }
+  else { _pickMarker = L.marker([lat,lon], { draggable:true }).addTo(_pickMap);
+    _pickMarker.on('dragend', ev=>{ const ll=ev.target.getLatLng(); _pickLat=ll.lat; _pickLon=ll.lng; _updatePickLbl(); });
+  }
+  if(moveView) _pickMap.panTo([lat,lon]);
+  _updatePickLbl();
+  $('#pickMapConfirm').disabled = false;
+}
+function _updatePickLbl(){
+  const el=$('#pickMapCoords'); if(!el) return;
+  el.textContent = (_pickName?_pickName+' — ':'') + `${_pickLat.toFixed(5)}, ${_pickLon.toFixed(5)}`;
+}
+$('#manualPlaceBtn')?.addEventListener('click', e=>{ e.preventDefault(); _openPickMap(); });
+$('#pickMapClose')?.addEventListener('click', _closePickMap);
+$('#pickMapCancel')?.addEventListener('click', _closePickMap);
+$('#pickMapModal')?.addEventListener('click', e=>{ if(e.target && e.target.id==='pickMapModal') _closePickMap(); });
+$('#pickMapConfirm')?.addEventListener('click', ()=>{
+  if(_pickLat==null||_pickLon==null) return;
+  _manualPickedLat=_pickLat; _manualPickedLon=_pickLon; _manualPickedName=_pickName||'';
+  const st=$('#manualPlaceStatus'); if(st){ st.className='manual-msg ok'; st.textContent = `📍 ${_manualPickedName?_manualPickedName+' — ':''}${_pickLat.toFixed(4)}, ${_pickLon.toFixed(4)}`; }
+  _closePickMap();
+});
+// Recherche dans la modal (Nominatim)
+async function _pickMapSearchAction(){
+  const inp=$('#pickMapSearch'); const q=(inp?.value||'').trim(); if(!q) return;
+  const btn=$('#pickMapSearchBtn'); const prev=btn.textContent; btn.textContent='…'; btn.disabled=true;
+  try{ const r=await _geocode(q);
+    if(!r){ $('#pickMapCoords').textContent='Lieu introuvable'; return; }
+    _pickMap.setView([r.lat,r.lon], 13);
+    _setPickPoint(r.lat, r.lon, r.display.split(',')[0]||'', false);
+  }catch(e){ $('#pickMapCoords').textContent='Erreur : '+(e.message||e); }
+  btn.textContent=prev; btn.disabled=false;
+}
+$('#pickMapSearchBtn')?.addEventListener('click', e=>{ e.preventDefault(); _pickMapSearchAction(); });
+$('#pickMapSearch')?.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); _pickMapSearchAction(); } });
 
 // Index de recherche : { key: sci lowercase, fr: nom français, norm: forme normalisée pour matcher }
 const _mnorm = s => s.toLowerCase().replace(/œ/g,'oe').replace(/æ/g,'ae').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,' ').trim();
@@ -2910,9 +2989,8 @@ $('#manualAddBtn')?.addEventListener('click', async ()=>{
   if(co==='OTHER'){ const pick=$('#manualCountryPick').value; if(!pick){ msg.className='manual-msg err'; msg.textContent='Choisissez un pays.'; return; } country=pick; }
   const date = $('#manualDate').value || '';   // YYYY-MM-DD
   const sciProper = MANUAL_INDEX.find(x=>x.sci===key).sci.split(' ').map((w,i)=>i===0?w[0].toUpperCase()+w.slice(1):w).join(' ');
-  // Lieu + coords : si l'utilisateur a résolu un lieu via Nominatim, on stocke tout
-  const placeName = ($('#manualPlace')?.value || '').trim();
-  const loc = placeName || 'Ajout manuel';
+  // Lieu + coords : viennent du picker cartographique (modal Leaflet)
+  const loc = _manualPickedName || 'Ajout manuel';
   const entry = { common: FR_NAMES[key], sci: sciProper, date, loc, obs: 1,
     fr: country==='FR', country, nonSpecies: false, manual: true };
   if(_manualPickedLat!=null && _manualPickedLon!=null){ entry.lat=_manualPickedLat; entry.lon=_manualPickedLon; }
@@ -2925,7 +3003,7 @@ $('#manualAddBtn')?.addEventListener('click', async ()=>{
     // reset formulaire
     manualPickedSci=null; $('#manualSearch').value=''; $('#manualPicked').style.display='none';
     $('#manualDate').value=''; $('#manualCountry').value='FR'; $('#manualCountryPickWrap').style.display='none';
-    $('#manualPlace').value=''; $('#manualPlaceStatus').textContent=''; _manualPickedLat=_manualPickedLon=null;
+    $('#manualPlaceStatus').textContent=''; _manualPickedLat=_manualPickedLon=null; _manualPickedName='';
     setTimeout(()=>{ if(msg.className.includes('ok')) msg.textContent=''; }, 3500);
   }catch(err){
     // rollback local si l'écriture Firebase échoue
