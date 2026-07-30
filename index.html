@@ -454,6 +454,11 @@
   .map-el .map-count-lbl { display:flex; align-items:center; justify-content:center; font:700 11px/1 system-ui, sans-serif; color:#fff; text-shadow:0 0 3px rgba(0,0,0,.5); pointer-events:none; background:transparent; border:none; }
   .map-el .leaflet-popup-content .p-link { display:inline-block; margin-top:6px; font-size:12px; color:var(--accent-ink); text-decoration:none; font-weight:600; }
   .map-el .leaflet-popup-content .p-link:hover { text-decoration:underline; }
+  .map-el .leaflet-popup-content .p-sci { font-size:11px; color:var(--ink-3); font-style:italic; margin-left:auto; }
+  .map-el .leaflet-popup-content details.hs-miss { margin-top:6px; font-size:12px; }
+  .map-el .leaflet-popup-content details.hs-miss summary { cursor:pointer; font-weight:600; color:var(--accent-ink); padding:4px 0; user-select:none; }
+  .map-el .leaflet-popup-content details.hs-miss summary:hover { text-decoration:underline; }
+  .map-el .leaflet-popup-content details.hs-miss[open] summary { margin-bottom:4px; }
   .map-el .map-legend { background:rgba(255,255,255,.95); border-radius:8px; padding:8px 10px; box-shadow:0 1px 4px rgba(0,0,0,.15); font-size:11.5px; line-height:1.35; color:#15201e; max-height:calc(100% - 40px); overflow-y:auto; }
   .map-el .map-legend .ml-title { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; color:#47534f; }
   .map-el .map-legend .ml-row { display:flex; align-items:center; gap:6px; padding:1px 0; }
@@ -2619,8 +2624,9 @@ async function _enrichHotspots(hotspots, region, kind){
         const codes = await _ebFetch(url);
         sciSet = new Set(codes.map(c => tax[c]).filter(Boolean));
       }
-      const seen = [...sciSet].filter(s => mine.has(s)).length;
-      return { ...h, allSp:sciSet.size, mySp:seen, toDo:sciSet.size-seen };
+      const missing = [...sciSet].filter(s => !mine.has(s));
+      const seen = sciSet.size - missing.length;
+      return { ...h, allSp:sciSet.size, mySp:seen, toDo:missing.length, missingSci:missing };
     }catch(_){ return { ...h, allSp:0, mySp:0, toDo:0, err:true }; }
   });
 }
@@ -2675,9 +2681,23 @@ async function _loadHotspotsLayer(region){
       const cntLine = (hotspotSort==='total')
         ? `<b>${n}</b> espèces observées ici (all-time)`
         : `<b>${n}</b> espèces ${scope} · <b>${h.mySp}</b> vues par vous · <b>${h.toDo}</b> à cocher`;
+      // Liste des espèces qui vous manquent ici — triée par rareté DESC (plus rares en 1er),
+      // affichée en mode enrichi uniquement (pas dispo en mode "total").
+      let missingBlock = '';
+      const missArr = Array.isArray(h.missingSci) ? h.missingSci : [];
+      if(hotspotSort!=='total' && missArr.length){
+        const items = missArr
+          .map(sci => ({ sci, name:FR_NAMES[sci]||sci, w:rarityReal(sci) }))
+          .sort((a,b)=> b.w - a.w || a.name.localeCompare(b.name,'fr'));
+        const rows = items.map(it =>
+          `<li><span class="p-dot" style="background:${realColor(it.w)}"></span><span>${esc(it.name)}</span> <span class="p-sci">${esc(it.sci)}</span></li>`
+        ).join('');
+        missingBlock = `<details class="hs-miss"><summary>👀 Espèces qui vous manquent ici (${items.length})</summary><ul class="p-list">${rows}</ul></details>`;
+      }
       m.bindPopup(`<b>🏞️ ${esc(h.locName||h.name||'?')}</b><br>`+
         `<span class="p-meta">${h.subnational2Name?esc(h.subnational2Name)+' · ':''}${esc(h.subnational1Name||'')}</span><br>`+
-        `<span class="p-meta">${cntLine}</span><br>${gm} ${eb}`);
+        `<span class="p-meta">${cntLine}</span>${missingBlock}<br>${gm} ${eb}`,
+        { maxHeight:340, autoPan:true });
       m._q = _mapNorm((h.locName||h.name||'')+' '+(h.subnational1Name||'')+' '+(h.subnational2Name||''));
       _lyrHotspots.addLayer(m);
     }
