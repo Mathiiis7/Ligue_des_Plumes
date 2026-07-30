@@ -897,7 +897,7 @@
           <option value="todo">Espèces à cocher pour moi</option>
           <option value="recent">Activité 30 jours</option>
         </select>
-        <label class="explorer-lbl" id="mapEbRarityLbl" style="display:none;" title="Charge toutes les obs de chaque espèce manquante de ce niveau exact (dispo uniquement sur une région précise)">Rareté</label>
+        <label class="explorer-lbl" id="mapEbRarityLbl" style="display:none;" title="Charge toutes les obs de chaque espèce manquante de ce niveau (dispo uniquement sur une région précise)">Rareté</label>
         <select class="filt-sel" id="mapEbRarity" style="display:none;">
           <option value="0" selected>— (léger, 1 obs/espèce)</option>
           <option value="1">1 · Très commun</option>
@@ -909,6 +909,7 @@
           <option value="7">7 · Rare</option>
           <option value="8">8 · Très rare</option>
           <option value="9">9 · Exceptionnel</option>
+          <option value="exo">Exotique (échappés / introduits)</option>
         </select>
         <button class="btn tiny" id="mapEbRefresh" title="Rafraîchir">🔄</button>
         <span class="map-count" id="mapEbCount"></span>
@@ -2358,8 +2359,8 @@ function _renderModeMine(el){
 }
 // ---- Modes eBird (missing / hotspots) ----
 async function _renderModeMissing(){
-  const region=ebFilter.region, days=ebFilter.days, rar=ebFilter.rarity|0;
-  const heavy = (region!=='FR') && (rar>0);
+  const region=ebFilter.region, days=ebFilter.days, rar=ebFilter.rarity;
+  const heavy = (region!=='FR') && (rar==='exo' || (+rar>0));
   const cnt=$('#mapEbCount'); if(cnt) cnt.textContent='… chargement';
   await _loadMissingLayer(region, days, rar, (done, total)=>{
     if(cnt) cnt.textContent = `… ${done}/${total} espèces`;
@@ -2367,8 +2368,9 @@ async function _renderModeMissing(){
   _lyrMissing.addTo(_map);
   const nObs = _lyrMissing.getLayers().length;
   const nSp = new Set(); _lyrMissing.eachLayer(m=>{ if(m._sciName) nSp.add(m._sciName.toLowerCase()); });
+  const rarLbl = rar==='exo' ? 'exotiques' : ('rareté '+rar);
   if(cnt) cnt.textContent = nObs
-    ? (heavy ? `${nObs} obs · ${nSp.size} espèce${nSp.size>1?'s':''} rareté ${rar}`
+    ? (heavy ? `${nObs} obs · ${nSp.size} espèce${nSp.size>1?'s':''} ${rarLbl}`
              : `${nSp.size} espèce${nSp.size>1?'s':''} à cocher`)
     : 'Rien à cocher — vous les avez toutes ! 🎯';
   _fitLayer(_lyrMissing);
@@ -2427,7 +2429,7 @@ document.addEventListener('change', e=>{
   else if(e.target.id==='mapCountrySel'){ mapFilter.country=e.target.value; renderMap(); }
   else if(e.target.id==='mapEbRegion'){ ebFilter.region=e.target.value; _loaded.missing=''; _loaded.hotspots=''; renderMap(); }
   else if(e.target.id==='mapEbDays'){ ebFilter.days=+e.target.value; _loaded.missing=''; renderMap(); }
-  else if(e.target.id==='mapEbRarity'){ ebFilter.rarity=+e.target.value; _loaded.missing=''; renderMap(); }
+  else if(e.target.id==='mapEbRarity'){ const v=e.target.value; ebFilter.rarity=(v==='exo')?'exo':(+v||0); _loaded.missing=''; renderMap(); }
 });
 // Mode selector
 document.addEventListener('click', e=>{
@@ -2494,7 +2496,7 @@ async function _loadMissingLayer(region, days=14, rarity=0, onProgress){
   if(!_lyrMissing) return;
   // Fan-out complet UNIQUEMENT si région spécifique (≠ FR national) ET filtre rareté actif.
   // Sinon : mode léger = 1 marqueur par espèce (l'obs la plus récente, dédupliquée par eBird).
-  const heavy = (region !== 'FR') && (rarity > 0);
+  const heavy = (region !== 'FR') && (rarity==='exo' || (+rarity>0));
   const key = region+':'+days+':'+(heavy?rarity:'light');
   if(_loaded.missing===key && _lyrMissing.getLayers().length) return;
   _lyrMissing.clearLayers();
@@ -2510,7 +2512,6 @@ async function _loadMissingLayer(region, days=14, rarity=0, onProgress){
       if(!k || mine.has(k) || seenSp.has(k)) continue;
       if(!o.speciesCode) continue;
       if(isNonSpecies(o.comName||'', o.sciName||'')) continue;
-      if(isExotic(k)) continue;   // exotiques (cygne noir, faisan de Colchide, ibis sacré…) : introduits, pas des cibles à cocher
       seenSp.add(k);
       missingSp.push({ sciName:o.sciName, comName:o.comName, speciesCode:o.speciesCode, first:o });
     }
@@ -2522,8 +2523,10 @@ async function _loadMissingLayer(region, days=14, rarity=0, onProgress){
         .filter(o => typeof o.lat==='number' && typeof o.lng==='number')
         .map(o => ({ ...o, lon:o.lng }));
     } else {
-      // Mode fan-out : filtre sur le niveau de rareté exact, puis récupère TOUTES les obs récentes de chaque espèce.
-      const filtered = missingSp.filter(sp => rarityReal(sp.sciName) === rarity);
+      // Mode fan-out : filtre sur le niveau de rareté exact (ou "exo" = exotiques), puis récupère TOUTES les obs récentes de chaque espèce.
+      const filtered = rarity==='exo'
+        ? missingSp.filter(sp => isExotic(sp.sciName))
+        : missingSp.filter(sp => rarityReal(sp.sciName) === +rarity);
       allObs = []; let done = 0;
       if(onProgress) onProgress(0, filtered.length);
       const CONCURRENCY = 8; let cursor = 0;
