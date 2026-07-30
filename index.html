@@ -442,6 +442,9 @@
   .map-el .notable-mark { display:flex; align-items:center; justify-content:center; font-size:20px; text-align:center; line-height:1; background:transparent; border:none; filter:drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
   .map-el .leaflet-popup-content .p-link { display:inline-block; margin-top:6px; font-size:12px; color:var(--accent-ink); text-decoration:none; font-weight:600; }
   .map-el .leaflet-popup-content .p-link:hover { text-decoration:underline; }
+  .map-el .leaflet-popup-content .ex-detail-btn { display:inline-block; margin-top:6px; font:inherit; font-size:12px; font-weight:600; padding:4px 10px; background:var(--surface-2); border:1px solid var(--line); border-radius:8px; cursor:pointer; color:var(--accent-ink); }
+  .map-el .leaflet-popup-content .ex-detail-btn:hover:not(:disabled) { background:color-mix(in srgb, var(--accent) 15%, var(--surface)); border-color:var(--accent); }
+  .map-el .leaflet-popup-content .ex-detail-btn:disabled { opacity:.7; cursor:default; }
   .map-el .map-legend { background:rgba(255,255,255,.95); border-radius:8px; padding:8px 10px; box-shadow:0 1px 4px rgba(0,0,0,.15); font-size:11.5px; line-height:1.35; color:#15201e; max-height:calc(100% - 40px); overflow-y:auto; }
   .map-el .map-legend .ml-title { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; color:#47534f; }
   .map-el .map-legend .ml-row { display:flex; align-items:center; gap:6px; padding:1px 0; }
@@ -463,6 +466,10 @@
   #mapTlPlay.playing { background:var(--accent); color:#fff; }
   .map-mode { margin:2px 0 10px; flex-wrap:wrap; }
   .map-mode button { flex:1 1 auto; min-width:120px; }
+  .map-search { display:flex; align-items:center; gap:8px; margin:0 0 10px; }
+  .map-search input { flex:1; padding:8px 12px; border:1px solid var(--line-2); border-radius:10px; font:inherit; background:var(--surface); color:var(--ink); }
+  .map-search input:focus { outline:2px solid var(--accent); outline-offset:1px; }
+  .map-search-count { font-size:12px; color:var(--ink-3); font-weight:600; min-width:80px; }
   .explorer-controls { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:6px 0 14px; }
   .explorer-lbl { font-size:12px; font-weight:600; color:var(--ink-3); }
   .ex-section { margin-top:20px; }
@@ -821,6 +828,10 @@
         <button data-mode="missing">🐦 À aller cocher</button>
         <button data-mode="notable">🚨 Raretés</button>
         <button data-mode="hotspots">🏞️ Top hotspots</button>
+      </div>
+      <div class="map-search">
+        <input type="search" id="mapSearch" placeholder="🔎 Filtrer par nom d'espèce ou de lieu…" autocomplete="off">
+        <span class="map-search-count" id="mapSearchCount"></span>
       </div>
       <div class="map-controls" id="mapCtrlsMine">
         <select class="filt-sel" id="mapPlayerSel" aria-label="Filtrer par personne">
@@ -2024,6 +2035,25 @@ let mapFilter = { player:'all', tier:'any', country:'any' };
 let ebFilter = { region:'FR', days:14 };
 let hotspotSort = 'total';   // 'total' | 'todo' | 'recent'
 let _taxMap = null;           // { speciesCode -> sciName lowercase } — cache localStorage
+let mapSearch = '';          // recherche par nom (espèce/lieu) — filtre client-side
+let _lyrDetail = null;        // couche "détails d'une espèce" (obs sur toute la période)
+function _mapNorm(s){ return (s||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+function _mapApplyFilter(){
+  const q = _mapNorm(mapSearch).trim();
+  const layers = [_mapLayer, _lyrMissing, _lyrNotable, _lyrHotspots, _lyrDetail].filter(Boolean);
+  let visible=0, total=0;
+  for(const lyr of layers){
+    lyr.eachLayer(m => {
+      const el = m._path || m._icon; if(!el) return;
+      total++;
+      const match = !q || (m._q && m._q.includes(q));
+      el.style.display = match ? '' : 'none';
+      if(match) visible++;
+    });
+  }
+  const cnt=$('#mapSearchCount'); if(cnt) cnt.textContent = q ? `${visible} / ${total} visible${visible>1?'s':''}` : '';
+}
+$('#mapSearch')?.addEventListener('input', e=>{ mapSearch = e.target.value; _mapApplyFilter(); });
 let _tlDates=[], _tlStartIdx=-1, _tlEndIdx=-1, _tlPlayPos=0, _tlPlayId=null, _tlSpeed=1, _tlSkipFit=false;   // -1 = pas encore initialisé (première ouverture -> toute la période)
 // ord (YYYYMMDD int) -> texte lisible en français
 function _fmtOrd(ord){ const y=Math.floor(ord/10000), m=Math.floor((ord%10000)/100), d=ord%100;
@@ -2095,6 +2125,7 @@ function _mapMarker(pt, groupSize){
     `<span class="p-meta">Rareté : <b>${pt.w}</b> · ${REAL_LABELS[pt.w]||'niveau '+pt.w}</span>`+
     groupNote + gmLink
   );
+  m._q = _mapNorm(pt.common+' '+pt.sci+' '+(pt.loc||'')+' '+(pt.who||''));
   return m;
 }
 function renderMap(){
@@ -2112,6 +2143,7 @@ function renderMap(){
   if(_lyrMissing){ _lyrMissing.remove(); }
   if(_lyrNotable){ _lyrNotable.remove(); }
   if(_lyrHotspots){ _lyrHotspots.remove(); }
+  if(_lyrDetail){ _lyrDetail.remove(); _lyrDetail.clearLayers(); }
   // Dispatch
   if(mine) return _renderModeMine(el);
   if(mapMode==='missing') return _renderModeMissing();
@@ -2205,6 +2237,7 @@ function _renderModeMine(el){
     if(!_tlSkipFit){ _map.fitBounds(L.latLngBounds(pts.map(p=>[p.lat,p.lon])), { padding:[30,30], maxZoom:14 }); }
   }
   _tlSkipFit=false;
+  _mapApplyFilter();
   setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
 }
 // ---- Modes eBird (missing / notable / hotspots) ----
@@ -2216,6 +2249,7 @@ async function _renderModeMissing(){
   const n = _lyrMissing.getLayers().length;
   if(cnt) cnt.textContent = n ? `${n} espèce${n>1?'s':''} à cocher` : 'Rien à cocher — vous les avez toutes ! 🎯';
   _fitLayer(_lyrMissing);
+  _mapApplyFilter();
   setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
 }
 async function _renderModeNotable(){
@@ -2225,6 +2259,7 @@ async function _renderModeNotable(){
   const n = _lyrNotable.getLayers().length;
   if(cnt) cnt.textContent = n ? `${n} rareté${n>1?'s':''} signalée${n>1?'s':''}` : 'Aucune rareté récente';
   _fitLayer(_lyrNotable);
+  _mapApplyFilter();
   setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
 }
 async function _renderModeHotspots(){
@@ -2235,8 +2270,50 @@ async function _renderModeHotspots(){
   const n = _lyrHotspots.getLayers().length;
   if(cnt) cnt.textContent = n ? `top ${n} hotspots` : 'Aucun hotspot trouvé';
   _fitLayer(_lyrHotspots);
+  _mapApplyFilter();
   setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
 }
+// Charge et affiche toutes les obs récentes d'une espèce (endpoint /recent/{speciesCode}).
+async function _showSpeciesDetail(sciName, speciesCode){
+  if(!_map || !speciesCode) return;
+  const region = ebFilter.region || 'FR';
+  const days = ebFilter.days || 14;
+  if(!_lyrDetail){ _lyrDetail = L.layerGroup(); }
+  _lyrDetail.clearLayers(); _lyrDetail.addTo(_map);
+  try{
+    const url = `https://api.ebird.org/v2/data/obs/${region}/recent/${speciesCode}?back=${days}&maxResults=100&locale=fr`;
+    const data = await _ebFetch(url);
+    const nm = FR_NAMES[(sciName||'').toLowerCase()] || sciName;
+    let count = 0;
+    for(const o of data){
+      if(typeof o.lat!=='number'||typeof o.lng!=='number') continue;
+      const dot = L.circleMarker([o.lat,o.lng], { radius:5, weight:1.5, color:'#000', fillColor:'#ff9500', fillOpacity:.9, opacity:1 });
+      const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
+      dot.bindPopup(`<b>${esc(nm)}</b> <span class="p-sci">${esc(sciName||'')}</span><br>`+
+        `<span class="p-meta">📍 ${esc(o.locName||'?')}</span><br>`+
+        `<span class="p-meta">${esc((o.obsDt||'').slice(0,10))}${o.howMany?' · '+o.howMany+' individus':''}</span><br>${gm}`);
+      dot._q = _mapNorm(nm+' '+(sciName||'')+' '+(o.locName||''));
+      _lyrDetail.addLayer(dot); count++;
+    }
+    // Fit sur les points chargés
+    const latlngs=[]; _lyrDetail.eachLayer(l=>{ const ll=l.getLatLng?l.getLatLng():null; if(ll) latlngs.push([ll.lat,ll.lng]); });
+    if(latlngs.length){ _map.fitBounds(L.latLngBounds(latlngs), { padding:[40,40], maxZoom:11 }); }
+    _mapApplyFilter();
+    return count;
+  }catch(_){ return 0; }
+}
+// Handler global : bouton "toutes les obs" dans le popup
+document.addEventListener('click', e=>{
+  const btn = e.target.closest('.ex-detail-btn');
+  if(!btn) return;
+  e.preventDefault();
+  const sc = btn.dataset.sc, sci = btn.dataset.sci;
+  if(!sc){ return; }
+  btn.textContent = '⏳ Chargement…'; btn.disabled = true;
+  _showSpeciesDetail(sci, sc).then(n=>{
+    btn.textContent = n ? `✓ ${n} obs affichées` : 'Aucune autre obs récente';
+  });
+});
 function _fitLayer(lyr){
   const latlngs = []; lyr.eachLayer(l=>{ const ll=l.getLatLng?l.getLatLng():null; if(ll) latlngs.push([ll.lat, ll.lng]); });
   if(!latlngs.length) return;
@@ -2341,7 +2418,10 @@ async function _loadMissingLayer(region, days=14){
       m.bindPopup(`<b>${esc(nm)}</b> <span class="p-sci">${esc(o.sciName||'')}</span><br>`+
         `<span class="p-meta">🐦 <b>Vous ne l'avez pas encore</b></span><br>`+
         `<span class="p-meta">Vu le ${esc((o.obsDt||'').slice(0,10))} à ${esc(o.locName||'?')}</span><br>`+
-        `<span class="p-meta">Rareté : <b>${w}</b> · ${REAL_LABELS[w]||''}</span><br>${gm}`);
+        `<span class="p-meta">Rareté : <b>${w}</b> · ${REAL_LABELS[w]||''}</span><br>`+
+        `<button class="p-link ex-detail-btn" data-sc="${esc(o.speciesCode||'')}" data-sci="${esc(o.sciName||'')}">🔍 Toutes les obs récentes ici</button><br>${gm}`);
+      m._q = _mapNorm(nm+' '+(o.sciName||'')+' '+(o.locName||''));
+      m._speciesCode = o.speciesCode; m._sciName = o.sciName;
       _lyrMissing.addLayer(m);
     }
     _loaded.missing = key;
@@ -2377,7 +2457,10 @@ async function _loadNotableLayer(region='FR', days=14){
       m.bindPopup(`<b>🚨 ${esc(nm)}</b> <span class="p-sci">${esc(o.sciName||'')}</span><br>`+
         `<span class="p-meta">Rareté notable signalée le ${esc((o.obsDt||'').slice(0,10))}</span><br>`+
         `<span class="p-meta">à ${esc(o.locName||'?')}${o.howMany?' · '+o.howMany:''}</span><br>`+
-        `<span class="p-meta">Rareté : <b>${w}</b> · ${REAL_LABELS[w]||'niveau '+w}</span><br>${gm} ${eb}`);
+        `<span class="p-meta">Rareté : <b>${w}</b> · ${REAL_LABELS[w]||'niveau '+w}</span><br>`+
+        `<button class="p-link ex-detail-btn" data-sc="${esc(o.speciesCode||'')}" data-sci="${esc(o.sciName||'')}">🔍 Toutes les obs récentes ici</button><br>${gm} ${eb}`);
+      m._q = _mapNorm(nm+' '+(o.sciName||'')+' '+(o.locName||''));
+      m._speciesCode = o.speciesCode; m._sciName = o.sciName;
       _lyrNotable.addLayer(m);
     }
     _loaded.notable = key;
@@ -2470,6 +2553,7 @@ async function _loadHotspotsLayer(region){
       m.bindPopup(`<b>🏞️ ${esc(h.locName||h.name||'?')}</b><br>`+
         `<span class="p-meta">${h.subnational2Name?esc(h.subnational2Name)+' · ':''}${esc(h.subnational1Name||'')}</span><br>`+
         `<span class="p-meta">${cntLine}</span><br>${gm} ${eb}`);
+      m._q = _mapNorm((h.locName||h.name||'')+' '+(h.subnational1Name||'')+' '+(h.subnational2Name||''));
       _lyrHotspots.addLayer(m);
     }
     _loaded.hotspots = key;
