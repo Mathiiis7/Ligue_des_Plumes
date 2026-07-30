@@ -1571,12 +1571,28 @@ function renderMatrix({universe,N}){
 function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 /* ---------------- trophées ---------------- */
-// Fonds préconfigurés pour les icônes emoji (réutilisable pour d'autres trophées thématiques).
-const BG_TRICOLOR_FR = 'linear-gradient(90deg,#0055A4 33.33%,#fff 33.33%,#fff 66.66%,#EF4135 66.66%)';
-// Fabrique une icône emoji (cercle de 60px) avec un fond personnalisable. Utile quand on n'a pas de PNG dédié.
-// Usage : iconEmoji('🥖', BG_TRICOLOR_FR)
-const iconEmoji = (emoji, bg='var(--surface-2)', alt='') =>
-  `<span role="img" aria-label="${alt||emoji}" style="width:60px;height:60px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:${bg};font-size:34px;box-shadow:inset 0 -1px 0 rgba(0,0,0,.15);overflow:hidden">${emoji}</span>`;
+// Fabrique un fond tricolore (bandes verticales égales) depuis 2 ou 3 couleurs.
+// bgStripes(['#0055A4','#fff','#EF4135'])  -> tricolore FR
+// bgStripes(['#009246','#fff','#CE2B37'])  -> italien, etc.
+const bgStripes = colors => {
+  const n = colors.length;
+  if(n===2) return `linear-gradient(90deg,${colors[0]} 50%,${colors[1]} 50%)`;
+  if(n===3) return `linear-gradient(90deg,${colors[0]} 33.33%,${colors[1]} 33.33%,${colors[1]} 66.66%,${colors[2]} 66.66%)`;
+  // 4+ bandes : découpe uniforme
+  const stops = []; colors.forEach((c,i)=>{ const a=(i/n*100).toFixed(2), b=((i+1)/n*100).toFixed(2); stops.push(`${c} ${a}%`,`${c} ${b}%`); });
+  return `linear-gradient(90deg,${stops.join(',')})`;
+};
+const BG_TRICOLOR_FR = bgStripes(['#0055A4','#fff','#EF4135']);
+// Fabrique une icône emoji (cercle 60px) avec un fond personnalisable.
+// bg peut être : chaîne CSS ("#..." ou "linear-gradient(...)") OU tableau de couleurs (bandes verticales).
+// Usage :
+//   iconEmoji('🥖', ['#0055A4','#fff','#EF4135'])   // tricolore direct
+//   iconEmoji('🌊', 'linear-gradient(135deg,#00a2ff,#00c9a7)')  // fond libre
+//   iconEmoji('🏆', '#f5c518')                       // couleur simple
+const iconEmoji = (emoji, bg='var(--surface-2)', alt='') => {
+  const css = Array.isArray(bg) ? bgStripes(bg) : bg;
+  return `<span role="img" aria-label="${alt||emoji}" style="width:60px;height:60px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:${css};font-size:34px;box-shadow:inset 0 -1px 0 rgba(0,0,0,.15);overflow:hidden">${emoji}</span>`;
+};
 const ICONS={"medal":"<img src=\"t-shirt.png\" alt=\"Expert Merlin Bird\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","cup":"<img src=\"etoile.png\" alt=\"Mike Horn\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","graal":"<img src=\"diamant.png\" alt=\"Le Saint-Graal\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","woodpecker":"<img src=\"pic-noir.png\" alt=\"Pic noir\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","aigle":"<img src=\"aigle.png\" alt=\"Aigles\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","huitre":"<img src=\"huitre.png\" alt=\"Huître\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bain":"<img src=\"bain.png\" alt=\"Pistoche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","pingouin":"<img src=\"pingouin.png\" alt=\"Happy feet\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","kangourou":"<img src=\"kangourou.png\" alt=\"Wallaby\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","singe":"<img src=\"singe.png\" alt=\"Le coup de Ruff\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","crown":"<img src=\"roi.png\" alt=\"Roi\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","podium":"<img src=\"argent.png\" alt=\"En chef\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bronze":"<img src=\"bronze.png\" alt=\"Chevronné\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","gem":"<img src=\"telescope.png\" alt=\"Apprenti écologue\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","binoculars":"<img src=\"loupe.png\" alt=\"Écologue du dimanche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","saisons":"<img src=\"son.png\" alt=\"Les 4 Saisons\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bebe":"<img src=\"bebe.png\" alt=\"Gros Bébé\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","regions":iconEmoji('🥖', BG_TRICOLOR_FR, 'Ma France, mes régions')};
 const TROPHIES = [
   { icon:ICONS.medal, name:'Expert Merlin Bird', desc:'100 espèces (droit de porter le t-shirt Merlin)', test:s=>s.total>=100, prog:s=>[s.total,100] },
@@ -1594,7 +1610,7 @@ const TROPHIES = [
     note:s=>{ const o=s.alcidOwnedSet.size+(s.manchotOwnedSet?s.manchotOwnedSet.size:0); const tot=ALCID_CATALOG.length+MANCHOT_CATALOG.length; return o+' déjà observé'+(o>1?'s':'')+' sur '+tot; } },
   { icon:ICONS.kangourou, name:'Wallaby', desc:'Observer le Martin-chasseur à dos de feu', test:s=>s.hasFireKingfisher },
   { icon:ICONS.saisons, name:'Les 4 Saisons', desc:'Chope un oiseau spécifique à chaque saison tah Vivaldi', test:s=>s.seasonCount>=4, prog:s=>[s.seasonCount,4], alwaysList:true, list:s=>SEASON_CATALOG.map(m=>({ name:m.name, section:m.section, owned:s.seasonOwnedSet.has(m.sci) })), note:s=>`${s.seasonCount} saison${s.seasonCount>1?'s':''} validée${s.seasonCount>1?'s':''} sur 4` },
-  { icon:ICONS.regions, name:'Ma France, mes régions !', desc:'Faire un tour de France des birds — observer un oiseau dans 8 régions', test:s=>s.regionsCount>=8, prog:s=>[s.regionsCount,8], alwaysList:true, list:s=>FR_REGIONS.map(r=>({ name:r.name, owned:s.regionsOwnedSet.has(r.code) })), note:s=>`${s.regionsCount} région${s.regionsCount>1?'s':''} visitée${s.regionsCount>1?'s':''} sur ${FR_REGIONS.length}` },
+  { icon:ICONS.regions, name:'Ma France, mes régions !', desc:'Faire un tour de France des birds — observer un oiseau dans 10 régions', test:s=>s.regionsCount>=10, prog:s=>[s.regionsCount,10], alwaysList:true, list:s=>FR_REGIONS.map(r=>({ name:r.name, owned:s.regionsOwnedSet.has(r.code) })), note:s=>`${s.regionsCount} région${s.regionsCount>1?'s':''} visitée${s.regionsCount>1?'s':''} sur ${FR_REGIONS.length}` },
   { icon:ICONS.bebe, name:'Gros Bébé', desc:'Observer des oiseaux avec Samuel Fillon (preuve demandée)', special:'vote', test:s=>(s.grosBebeVotes||0)>=3 },
   { icon:ICONS.crown, name:'Écologue originel', desc:'Être 1ᵉʳ du classement', test:s=>s.groupN>1 && s.rank===1 },
   { icon:ICONS.podium, name:'Écologue en chef', desc:'Dans le top 2', test:s=>s.groupN>1 && s.rank<=2 },
