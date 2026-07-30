@@ -2368,11 +2368,12 @@ async function _renderModeMissing(){
   _lyrMissing.addTo(_map);
   const nObs = _lyrMissing.getLayers().length;
   const nSp = new Set(); _lyrMissing.eachLayer(m=>{ if(m._sciName) nSp.add(m._sciName.toLowerCase()); });
+  const hasFilter = rar==='exo' || (+rar>0);
   const rarLbl = rar==='exo' ? 'exotiques' : ('rareté '+rar);
   if(cnt) cnt.textContent = nObs
     ? (heavy ? `${nObs} obs · ${nSp.size} espèce${nSp.size>1?'s':''} ${rarLbl}`
-             : `${nSp.size} espèce${nSp.size>1?'s':''} à cocher`)
-    : 'Rien à cocher — vous les avez toutes ! 🎯';
+             : `${nSp.size} espèce${nSp.size>1?'s':''} à cocher${hasFilter?' ('+rarLbl+')':''}`)
+    : (hasFilter ? `Aucune espèce ${rarLbl} à cocher` : 'Rien à cocher — vous les avez toutes ! 🎯');
   _fitLayer(_lyrMissing);
   _mapApplyFilter();
   setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
@@ -2518,7 +2519,12 @@ async function _loadMissingLayer(region, days=14, rarity=0, onProgress){
     let allObs;
     if(!heavy){
       // Mode léger : 1 marqueur par espèce (l'obs déjà retournée par l'endpoint /recent).
+      // Si un filtre rareté est actif (sur FR national), on filtre côté client — pas de fan-out.
+      const spFilter = rarity==='exo'
+        ? (sp=>isExotic(sp.sciName))
+        : (+rarity>0 ? (sp=>rarityReal(sp.sciName)===+rarity) : (()=>true));
       allObs = missingSp
+        .filter(spFilter)
         .map(sp => ({ ...sp.first, sciName:sp.sciName, comName:sp.comName, speciesCode:sp.speciesCode }))
         .filter(o => typeof o.lat==='number' && typeof o.lng==='number')
         .map(o => ({ ...o, lon:o.lng }));
