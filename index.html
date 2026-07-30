@@ -946,13 +946,11 @@
           <option value="exo">Exotique (échappés / introduits)</option>
         </select>
         <label class="explorer-lbl" id="mapEbMinTodoLbl" style="display:none;">≥</label>
-        <input type="range" id="mapEbMinTodo" min="0" max="30" value="0" step="1" style="display:none; width:80px;" title="Cache les hotspots avec moins de N espèces à cocher">
-        <span id="mapEbMinTodoVal" class="explorer-lbl" style="display:none; min-width:16px;">0</span>
+        <input type="range" id="mapEbMinTodo" min="0" max="100" value="0" step="1" style="display:none; width:100px;" title="Cache les hotspots avec moins de N espèces à cocher">
+        <span id="mapEbMinTodoVal" class="explorer-lbl" style="display:none; min-width:24px;">0</span>
         <label class="explorer-lbl" id="mapEbFilterSpLbl" style="display:none;" title="Ne garde que les hotspots où cette espèce a été notée">Contient</label>
         <input type="text" id="mapEbFilterSp" list="mapEbSpDatalist" placeholder="espèce…" style="display:none; width:120px; font-size:12px; padding:3px 6px; border:1px solid var(--line-2); border-radius:6px;">
         <datalist id="mapEbSpDatalist"></datalist>
-        <button class="btn tiny" id="mapEbGeo" style="display:none;" title="Utiliser ma position pour calculer les distances (à vol d'oiseau)">📍</button>
-        <button class="btn tiny" id="mapEbRefresh" title="Rafraîchir">🔄</button>
         <span class="map-count" id="mapEbCount"></span>
       </div>
       <div id="mapNote" class="help" style="margin:6px 0 8px; display:none;"></div>
@@ -2605,25 +2603,6 @@ document.addEventListener('input', e=>{
     _loaded.hotspots=''; renderMap();
   }
 });
-// Bouton géolocalisation
-document.addEventListener('click', e=>{
-  if(e.target.id!=='mapEbGeo') return;
-  if(!navigator.geolocation){ alert('Géolocalisation non supportée par votre navigateur.'); return; }
-  const btn = e.target; btn.disabled=true; btn.textContent='⌛';
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      userPos = { lat:pos.coords.latitude, lon:pos.coords.longitude };
-      try{ localStorage.setItem('userPos-v1', JSON.stringify(userPos)); }catch(_){ }
-      btn.disabled=false; btn.textContent='📍'; btn.title='Position mise à jour ('+userPos.lat.toFixed(3)+','+userPos.lon.toFixed(3)+')';
-      renderMap();
-    },
-    err => {
-      btn.disabled=false; btn.textContent='📍';
-      alert('Impossible de récupérer votre position : '+err.message);
-    },
-    { timeout:10000, maximumAge:60000 }
-  );
-});
 // Toggle favori dans les popups hotspots
 document.addEventListener('click', async e=>{
   const b = e.target.closest('.hs-fav'); if(!b) return;
@@ -2664,7 +2643,6 @@ document.addEventListener('click', e=>{
   ['mapEbMinTodoLbl','mapEbMinTodo','mapEbMinTodoVal','mapEbFilterSpLbl','mapEbFilterSp'].forEach(id=>{
     const el = document.getElementById(id); if(el) el.style.display = (mapMode==='hotspots' && hotspotSort!=='total') ? '' : 'none';
   });
-  const geoBtn = $('#mapEbGeo'); if(geoBtn) geoBtn.style.display = mapMode==='hotspots' ? '' : 'none';
   _refreshDeptSel();
   _updateLegend();
   _populateSpeciesDatalist();
@@ -2682,12 +2660,6 @@ document.addEventListener('change', e=>{
       const el = document.getElementById(id); if(el) el.style.display = (hotspotSort!=='total') ? '' : 'none';
     });
     renderMap();
-  }
-});
-document.addEventListener('click', e=>{
-  if(e.target.id==='mapEbRefresh'){ _ebCache.clear();
-    try{ Object.keys(localStorage).forEach(k=>{ if(k.startsWith('ebc:')) localStorage.removeItem(k); }); }catch(_){}
-    _loaded={missing:'',hotspots:''}; renderMap();
   }
 });
 // Timeline : sliders (Du/Au), vitesse, play/pause, reset
@@ -2990,9 +2962,20 @@ async function _loadHotspotsLayer(region){
       //  - favoris uniquement (checkbox, applicable même en total)
       if(hotspotSort!=='total' && ebFilter.minTodo>0 && toDoShown < ebFilter.minTodo) continue;
       if(hotspotSort!=='total' && ebFilter.species){
-        const targetSci = _frToSci(ebFilter.species) || ebFilter.species.toLowerCase();
-        // On filtre sur missingSci (les espèces manquantes du hotspot) — plus utile que sciSet.
-        if(!rawMiss.includes(targetSci)) continue;
+        // Recherche tolérante : match exact via _frToSci (nom fr complet du datalist),
+        // sinon match par sous-chaîne sur le nom fr OU le sciName (normalisés) de chaque espèce du hotspot.
+        const exact = _frToSci(ebFilter.species);
+        let hasMatch = false;
+        if(exact){
+          hasMatch = rawMiss.includes(exact);
+        } else {
+          const q = _mapNorm(ebFilter.species);
+          for(const sci of rawMiss){
+            const fr = FR_NAMES[sci] || '';
+            if(_mapNorm(fr).includes(q) || sci.includes(q)){ hasMatch = true; break; }
+          }
+        }
+        if(!hasMatch) continue;
       }
       // Favori : rendu en jaune (marker doré + bord blanc épais pour le distinguer visuellement).
       const isFavHs = myFavHotspots.has(h.locId);
