@@ -4235,6 +4235,13 @@
     "weight": 4
   },
   {
+    "sci": "thinornis dubius",
+    "name": "Petit Gravelot",
+    "freq": 0.0437506,
+    "source": "ebird",
+    "weight": 5
+  },
+  {
     "sci": "threskiornis aethiopicus",
     "name": "Ibis sacré",
     "freq": 0.006113,

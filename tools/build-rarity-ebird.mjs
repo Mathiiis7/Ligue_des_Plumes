@@ -89,8 +89,9 @@ const EBIRD_ALIAS = {
 const html = readFileSync(join(ROOT, 'index.html'), 'utf8');
 const FR = JSON.parse(html.match(/const FR_NAMES = (\{.*?\});/s)[1]);
 
-// --- Pic de fréquence eBird par nom normalisé ---
+// --- Pic de fréquence eBird par nom normalisé + pic PAR MOIS (12 valeurs, agrégat MAX des 4 quinzaines) ---
 const ebFreq = {};
+const ebFreqMonthly = {};   // nom normalisé -> tableau de 12 pics mensuels
 for (const ln of readFileSync(BARCHART, 'utf8').split(/\r?\n/)) {
   if (!ln.includes('\t')) continue;
   const p = ln.split('\t');
@@ -98,7 +99,15 @@ for (const ln of readFileSync(BARCHART, 'utf8').split(/\r?\n/)) {
   const nums = p.slice(1).map(Number).filter(x => !isNaN(x));
   if (!nm || nums.length < 12 || /sample size/i.test(nm)) continue;
   const clean = nm.replace(/\s*\(.*?\)\s*/g, ' ').trim(); // retire "(hybride...)" etc.
-  ebFreq[norm(clean)] = Math.max(...nums);
+  const key = norm(clean);
+  ebFreq[key] = Math.max(...nums);
+  // Bar chart eBird = 48 quinzaines (4 par mois × 12 mois). Pic mensuel = max des 4 quinzaines.
+  const monthly = new Array(12).fill(0);
+  for (let m = 0; m < 12; m++) {
+    const start = m * 4;
+    monthly[m] = Math.max(nums[start]||0, nums[start+1]||0, nums[start+2]||0, nums[start+3]||0);
+  }
+  ebFreqMonthly[key] = monthly;
 }
 
 // --- Poids GBIF (repli) ---
@@ -110,14 +119,17 @@ if (existsSync(join(__dir, 'rarity-data.json'))) {
 
 // --- Calcul ---
 const recs = [];
+const monthly = {};   // sci -> [12 valeurs de fréquence mensuelle]
 for (const sci in FR) {
   const name = FR[sci];
   const aliased = EBIRD_ALIAS[name];
-  let freq = ebFreq[norm(aliased || name)];
+  const key = norm(aliased || name);
+  let freq = ebFreq[key];
   let source, weight;
   if (freq !== undefined) {
     source = aliased ? 'ebird-alias' : 'ebird';
     weight = weightFor(freq);
+    if (ebFreqMonthly[key]) monthly[sci] = ebFreqMonthly[key];
   } else {
     source = 'gbif-fallback';
     weight = gbif[sci] != null ? gbif[sci] : 9; // absent partout -> exceptionnel
@@ -133,6 +145,12 @@ writeFileSync(join(__dir, 'rarity-data-ebird.json'), JSON.stringify(recs, null, 
 const obj = {};
 for (const r of recs) if (r.weight >= 2) obj[r.sci] = r.weight;
 writeFileSync(join(__dir, 'real-rarity.generated.js'), 'const REAL_RARITY = ' + JSON.stringify(obj) + ';\n');
+
+// Littéral REAL_FREQ_MONTHLY = { sci -> [12 pics mensuels 0..1] }.
+// On arrondit à 5 décimales pour réduire la taille (précision largement suffisante pour un filtre).
+const mObj = {};
+for (const sci in monthly) mObj[sci] = monthly[sci].map(v => +v.toFixed(5));
+writeFileSync(join(__dir, 'real-freq-monthly.generated.js'), 'const REAL_FREQ_MONTHLY = ' + JSON.stringify(mObj) + ';\n');
 
 // Récap
 const dist = {}; for (let w = 1; w <= 9; w++) dist[w] = 0;

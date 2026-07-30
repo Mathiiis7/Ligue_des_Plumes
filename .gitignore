@@ -8,6 +8,7 @@ createur-badge.html
 # mais pas le cache GBIF ni le fichier intermédiaire (régénérables)
 tools/rarity-cache.json
 tools/real-rarity.generated.js
+tools/real-freq-monthly.generated.js
 
 # Divers
 *.log
