@@ -1778,7 +1778,7 @@ const TROPHIES = [
   { icon:ICONS.bebe, name:'Gros Bébé', desc:'Observer des oiseaux avec Samuel Fillion (preuve demandée)', special:'vote', test:s=>(s.grosBebeVotes||0)>=2 },
   // Badge "Naturaliste polyvalent" — cocher au moins 5 espèces dans N milieux différents.
   // Milieux : forestier, zone humide, eau douce, océan, littoral, montagne, steppe, bocage, urbain, rocher.
-  { icon:ICONS.bearGrylls, name:'Bear Grylls', desc:'Cocher 5 % des espèces dans 8 milieux différents (sur 10) — survit partout', test:s=>s.habCovered>=8, prog:s=>[s.habCovered,8], alwaysList:true, list:s=>{
+  { icon:ICONS.bearGrylls, name:'Bear Grylls', desc:'Cocher 5 % des espèces dans 8 milieux différents (sur 10)', test:s=>s.habCovered>=8, prog:s=>[s.habCovered,8], alwaysList:true, list:s=>{
       // Une section par milieu, chaque section liste TOUTES les espèces possibles
       // avec l'état owned. Le compteur "(n/m)" apparaît automatiquement dans le header.
       const habMin = c => Math.max(1, Math.ceil((HABITAT_TO_SCIS[c]||[]).length * 0.05));
