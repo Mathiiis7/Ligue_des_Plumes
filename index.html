@@ -2341,11 +2341,30 @@ function _mapApplyFilter(){
   }
   if(cnt) cnt.textContent = q ? `${visible} / ${total} visible${visible>1?'s':''}` : '';
 }
-// Efface la couche "détail d'une espèce" + reset barre de recherche. Utilisé quand un
-// changement de zone (région/dept) rend la sélection espèce précédente obsolète.
-function _clearMapSpeciesDetail(){
-  if(_lyrDetail){ _lyrDetail.remove(); _lyrDetail.clearLayers(); }
-  const s = $('#mapSearch'); if(s && mapSearch){ s.value=''; mapSearch=''; _mapApplyFilter(); }
+// Si une espèce est sélectionnée dans la barre de recherche, la RE-FETCHE pour la nouvelle
+// zone (dept > région > FR) au lieu de garder les obs France-wide obsolètes. Sinon efface.
+function _reloadSpeciesForZone(){
+  if(!_lyrDetail || !_lyrDetail.getLayers || !_lyrDetail.getLayers().length){ return; }
+  const q = (mapSearch||'').trim();
+  if(!q){ _lyrDetail.remove(); _lyrDetail.clearLayers(); return; }
+  // Résout le nom saisi vers un sciName + code
+  const me = realPeople.find(p=>p.id===myUid);
+  const mine = new Set(me ? [...me.species.keys()] : []);
+  let sci = null;
+  for(const s in FR_NAMES){
+    if(mine.has(s)) continue;
+    if((FR_NAMES[s]||'').toLowerCase() === q.toLowerCase()){ sci = s; break; }
+  }
+  if(!sci){
+    const norm = _mapNorm(q);
+    for(const s in FR_NAMES){
+      if(mine.has(s)) continue;
+      if(_mapNorm(FR_NAMES[s]||s).includes(norm)){ sci = s; break; }
+    }
+  }
+  const code = sci ? _sciToCode(sci) : null;
+  if(sci && code){ _showSpeciesDetail(sci, code); }
+  else { _lyrDetail.remove(); _lyrDetail.clearLayers(); }
 }
 $('#mapSearch')?.addEventListener('input', e=>{
   const prev = mapSearch;
@@ -3037,14 +3056,15 @@ document.addEventListener('change', e=>{
   else if(e.target.id==='mapEbRegion'){
     ebFilter.region=e.target.value; ebFilter.dept='';
     _loaded.missing=''; _loaded.hotspots=''; _refreshDeptSel();
-    _clearMapSpeciesDetail();   // changer de zone efface l'obs France-wide précédente
     renderMap();
+    // Si une espèce était sélectionnée, on la re-fetch pour la nouvelle zone (au lieu de virer).
+    _reloadSpeciesForZone();
   }
   else if(e.target.id==='mapEbDept'){
     ebFilter.dept=e.target.value||'';
     _loaded.hotspots=''; _loaded.missing='';
-    _clearMapSpeciesDetail();
     renderMap();
+    _reloadSpeciesForZone();
   }
   else if(e.target.id==='mapEbDays'){ ebFilter.days=+e.target.value; _loaded.missing=''; renderMap(); }
   else if(e.target.id==='mapEbMonth'){ ebFilter.month=+e.target.value||0; _loaded.hotspots=''; renderMap(); }
