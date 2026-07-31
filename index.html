@@ -2490,6 +2490,14 @@ $('#mapSearchSuggest')?.addEventListener('mousedown', e=>{
   // peu importe les filtres rareté/région/dept actifs. On garde le nom dans la barre pour info.
   if(m && m.kind==='sp-missing'){
     const s = $('#mapSearch'); s.value = m.name; mapSearch = m.name;
+    // Auto-check la rareté de cette espèce si elle est décochée, sinon elle ne s'affichera pas
+    // quand l'utilisateur reviendra à la vue régionale.
+    const rarKey = isExotic(m.sci) ? 'exo' : rarityReal(m.sci);
+    if(!ebFilter.rarities.has(rarKey)){
+      ebFilter.rarities.add(rarKey);
+      _refreshRarChips();
+      _loaded.missing = '';
+    }
     if(m.code){ _showSpeciesDetail(m.sci, m.code); }
     else { showError(new Error('Pas de code eBird trouvé pour cette espèce — impossible de charger ses obs.')); }
     return;
