@@ -2339,7 +2339,7 @@ function _mapApplyFilter(){
       if(match) visible++;
     });
   }
-  if(cnt) cnt.textContent = q ? `${visible} / ${total} visible${visible>1?'s':''}` : '';
+  if(cnt) cnt.textContent = '';   // compteur retiré (perturbant, additionnait plusieurs couches)
 }
 // Si une espèce est sélectionnée dans la barre de recherche, la RE-FETCHE pour la nouvelle
 // zone (dept > région > FR) au lieu de garder les obs France-wide obsolètes. Sinon efface.
@@ -3014,14 +3014,19 @@ async function _showSpeciesDetail(sciName, speciesCode){
   const days = ebFilter.days || 14;
   if(!_lyrDetail){ _lyrDetail = L.layerGroup(); }
   _lyrDetail.clearLayers(); _lyrDetail.addTo(_map);
-  // Retire les marqueurs "missing" pour que seuls les points de l'espèce demandée soient visibles.
-  if(_lyrMissing && _map.hasLayer(_lyrMissing)) _map.removeLayer(_lyrMissing);
   try{
     const url = `https://api.ebird.org/v2/data/obs/${zone}/recent/${speciesCode}?back=${days}&maxResults=100&locale=fr`;
     const data = await _ebFetch(url);
     const nm = FR_NAMES[(sciName||'').toLowerCase()] || sciName;
     const w = rarityReal(sciName);
     const color = sciColor(sciName);
+    // Si 0 obs dans la zone : laisse la couche missing visible + affiche un hint. Sinon retire missing.
+    if(!Array.isArray(data) || data.length===0){
+      const cnt = $('#mapEbCount');
+      if(cnt) cnt.textContent = `Aucune obs récente de ${esc(nm)} dans ${zone==='FR'?'toute la France':(DEPT_NAMES[zone]||zone)} (${days} j)`;
+      return 0;
+    }
+    if(_lyrMissing && _map.hasLayer(_lyrMissing)) _map.removeLayer(_lyrMissing);
     let count = 0;
     for(const o of data){
       if(typeof o.lat!=='number'||typeof o.lng!=='number') continue;
