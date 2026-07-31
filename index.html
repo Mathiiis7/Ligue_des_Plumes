@@ -981,6 +981,9 @@
           <option value="9">septembre</option><option value="10">octobre</option>
           <option value="11">novembre</option><option value="12">décembre</option>
         </select>
+        <label class="explorer-lbl" style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="Ajoute des points verts sur les hotspots eBird où l'espèce a été vue dans les 30 derniers jours">
+          <input type="checkbox" id="mapAbShowHs" style="vertical-align:middle;"> Points obs 30j
+        </label>
         <span class="map-count" id="mapAbCount"></span>
       </div>
       <div id="mapAbHint" class="help" style="display:none; margin:2px 0 8px; font-size:11.5px; line-height:1.4;"></div>
@@ -2276,9 +2279,8 @@ let _lyrDetail = null;        // couche "détails d'une espèce" (obs sur toute 
 let _lyrAbundance = null;     // couche choroplèthe (mode "Où trouver")
 let _lyrAbHotspots = null;    // couche des hotspots récents (30j) affichée au zoom
 let _abHotspotsData = null;   // { sci, obs:[...] } cache de la dernière fetch
-const AB_HOTSPOTS_ZOOM = 8;   // seuil de zoom au-delà duquel on affiche les hotspots
 let _deptGeoJSON = null;      // GeoJSON des 96 départements (lazy fetch)
-let abFilter = { sci:'', month:0, metric:'max', view:'abs' };   // metric: max|mean · view: abs|rank
+let abFilter = { sci:'', month:0, metric:'max', view:'abs', showHotspots:false };   // metric: max|mean · view: abs|rank
 let _legendDiv = null;        // <div> de la légende Leaflet (bottomright) — contenu adapté au mode
 // Légende adaptative : rareté (couleur) pour mine/missing, taille (nb d'espèces) pour hotspots.
 function _updateLegend(){
@@ -2319,6 +2321,10 @@ function _updateLegend(){
 }
 function _mapNorm(s){ return (s||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
 function _mapApplyFilter(){
+  const cnt = $('#mapSearchCount');
+  // En mode "Où trouver" : la barre pilote la sélection d'espèce (choroplèthe), pas un filtre
+  // marker. Le compteur "X / Y visibles" n'a aucun sens ici → on l'efface.
+  if(mapMode === 'abundance'){ if(cnt) cnt.textContent = ''; return; }
   const q = _mapNorm(mapSearch).trim();
   const layers = [_mapLayer, _lyrMissing, _lyrHotspots, _lyrDetail].filter(Boolean);
   let visible=0, total=0;
@@ -2331,7 +2337,7 @@ function _mapApplyFilter(){
       if(match) visible++;
     });
   }
-  const cnt=$('#mapSearchCount'); if(cnt) cnt.textContent = q ? `${visible} / ${total} visible${visible>1?'s':''}` : '';
+  if(cnt) cnt.textContent = q ? `${visible} / ${total} visible${visible>1?'s':''}` : '';
 }
 $('#mapSearch')?.addEventListener('input', e=>{
   mapSearch = e.target.value; _mapApplyFilter(); _updateMapSuggest();
@@ -2744,26 +2750,21 @@ async function _loadAbHotspots(sci, code){
   }catch(_){ _abHotspotsData = { sci, obs: [] }; }
   return _abHotspotsData;
 }
-// Rend la couche des hotspots récents en filtrant sur le viewport + niveau de zoom.
+// Rend la couche des hotspots récents en filtrant sur le viewport.
+// Affiché uniquement si l'utilisateur active le toggle "Points obs 30j" (peu importe le zoom).
 function _renderAbHotspots(){
   if(!_map || !_lyrAbHotspots) return;
   _lyrAbHotspots.clearLayers();
   if(mapMode !== 'abundance' || !_abHotspotsData) return;
-  const zoom = _map.getZoom();
-  if(zoom < AB_HOTSPOTS_ZOOM){ return; }   // Trop dézoomé, on n'ajoute rien (visuel chargé)
+  if(!abFilter.showHotspots){ if(_map.hasLayer(_lyrAbHotspots)) _lyrAbHotspots.remove(); return; }
   const bounds = _map.getBounds();
   const nm = FR_NAMES[_abHotspotsData.sci] || _abHotspotsData.sci;
-  const now = Date.now();
   let n = 0;
   for(const o of _abHotspotsData.obs){
     if(typeof o.lat!=='number' || typeof o.lng!=='number') continue;
     if(!bounds.contains([o.lat, o.lng])) continue;
-    // Couleur : plus l'obs est récente, plus le point est intense (vert vif ↔ vert pâle)
-    const dt = new Date((o.obsDt||'').slice(0,10)+'T00:00:00');
-    const days = Math.max(0, Math.round((now - dt.getTime())/86400000));
-    const freshness = Math.max(0, 1 - days/30);   // 0 (30j) → 1 (aujourd'hui)
-    const fillColor = `hsl(140, 75%, ${Math.round(28 + (1-freshness)*35)}%)`;
-    const m = L.circleMarker([o.lat, o.lng], { radius:5, weight:1.5, color:'#0e3b1a', fillColor, fillOpacity:0.9, opacity:1 });
+    // Couleur unique — plus lisible qu'un gradient : les points sont ce qu'ils sont, un point = 1 obs récente.
+    const m = L.circleMarker([o.lat, o.lng], { radius:5, weight:1.5, color:'#0e3b1a', fillColor:'#2e8540', fillOpacity:0.9, opacity:1 });
     const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
     const eb = o.locId ? `<a href="https://ebird.org/hotspot/${esc(o.locId)}" target="_blank" rel="noopener" class="p-link">🐦 eBird</a>` : '';
     m.bindPopup(`<b>🏞️ ${esc(o.locName||'?')}</b><br>`+
@@ -2973,6 +2974,7 @@ document.addEventListener('change', e=>{
   else if(e.target.id==='mapEbDays'){ ebFilter.days=+e.target.value; _loaded.missing=''; renderMap(); }
   else if(e.target.id==='mapEbMonth'){ ebFilter.month=+e.target.value||0; _loaded.hotspots=''; renderMap(); }
   else if(e.target.id==='mapAbMonth'){ abFilter.month=+e.target.value||0; if(mapMode==='abundance') renderMap(); }
+  else if(e.target.id==='mapAbShowHs'){ abFilter.showHotspots = !!e.target.checked; if(mapMode==='abundance') _renderAbHotspots(); }
 });
 // Hint visible sous les toggles du mode "Où trouver" — explique ce que fait l'option active
 function _updateAbHint(){
@@ -2985,7 +2987,7 @@ function _updateAbHint(){
     ? '<b>📊 Moyenne</b> : moyenne des pixels du dept (densité globale, dilue les côtes).'
     : '<b>🔥 Peak</b> : meilleur pixel du dept (capte les hotspots côtiers / marais).';
   el.innerHTML = viewTxt + '<br>' + metricTxt +
-    '<br><span style="opacity:.8;">💡 Zoome ≥ 8× (dans un dept) pour voir les <b>hotspots où l\'espèce a été vue ces 30 derniers jours</b> (points verts).</span>';
+    '<br><span style="opacity:.8;">💡 Coche <b>Points obs 30j</b> pour ajouter les hotspots où l\'espèce a été vue dans les 30 derniers jours (points verts).</span>';
   el.style.display = '';
 }
 // Toggle Peak / Moyenne pour le mode "Où trouver"
