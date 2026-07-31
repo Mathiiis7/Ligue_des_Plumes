@@ -186,6 +186,9 @@
 
   /* people chips */
   .people { display:flex; flex-wrap:wrap; gap:9px; margin-top:18px; }
+  .pchip-admin { background:transparent; border:none; padding:0 4px; cursor:pointer; font-size:12px; color:var(--ink-3); opacity:.6; }
+  .pchip-admin:hover { opacity:1; color:var(--accent-ink); }
+  .pchip-admin-del:hover { color:#c0392b; }
   .pchip { display:flex; align-items:center; gap:8px; background:var(--surface-2);
     border:1px solid var(--line); border-radius:10px; padding:6px 10px; }
   .pchip .dot { width:11px; height:11px; border-radius:50%; background:var(--series); flex:none; }
@@ -1446,13 +1449,44 @@ function renderMembers(){
     el.innerHTML = '<span class="help" style="margin-top:0;">Personne n\'a encore chargé sa liste. Soyez le premier !</span>';
     return;
   }
-  el.innerHTML = state.people.map(p=>`
-    <div class="pchip" style="--series:var(--s${p.si})">
+  const admin = isAdmin();
+  el.innerHTML = state.people.map(p=>{
+    const adminTools = admin ? `<button class="pchip-admin" data-adm-rename="${esc(p.id)}" data-adm-name="${esc(p.name)}" title="Renommer (admin)">✎</button><button class="pchip-admin pchip-admin-del" data-adm-remove="${esc(p.id)}" data-adm-name="${esc(p.name)}" title="Retirer (admin)">✕</button>` : '';
+    return `<div class="pchip" style="--series:var(--s${p.si})">
       <span class="dot"></span>
       <span class="pname">${isOnline(p.id)?'<span class="pname-dot" title="en ligne"></span>':''}${esc(p.name)}${p.isMe?'<span class="youtag">vous</span>':''}</span>
-      <span class="n">${p.species.size} obs</span>
-    </div>`).join('');
+      <span class="n">${p.species.size} obs</span>${adminTools}
+    </div>`;
+  }).join('');
 }
+// E : outils admin sur les chips membres (rename / retirer).
+document.addEventListener('click', async e=>{
+  const ren = e.target.closest('[data-adm-rename]');
+  if(ren){
+    e.preventDefault(); e.stopPropagation();
+    if(!isAdmin()) return;
+    const uid = ren.dataset.admRename;
+    const old = ren.dataset.admName;
+    const nm = (prompt(`Nouveau nom pour "${old}" :`, old)||'').trim();
+    if(!nm || nm===old) return;
+    try{
+      await updateDoc(doc(db,'leagues',leagueId,'members',uid), { name:nm });
+      await addDoc(collection(db,'leagues',leagueId,'nameChanges'), {
+        uid, oldName:old, newName:nm, byUid:myUid, byName:myMemberName()||'admin', ts:serverTimestamp()
+      });
+    }catch(err){ showError(err); }
+    return;
+  }
+  const del = e.target.closest('[data-adm-remove]');
+  if(del){
+    e.preventDefault(); e.stopPropagation();
+    if(!isAdmin()) return;
+    const uid = del.dataset.admRemove;
+    const old = del.dataset.admName;
+    if(!confirm(`Retirer "${old}" de la ligue ? Ses obs et son profil seront supprimés (irréversible).`)) return;
+    try{ await deleteDoc(doc(db,'leagues',leagueId,'members',uid)); }catch(err){ showError(err); }
+  }
+});
 
 function renderResults(){
   const res=$('#results');
@@ -1915,6 +1949,8 @@ function applySnapshot(snap){
   const ma=$('#manualAdd'); if(ma) ma.style.display = me ? '' : 'none';
   $('#dropBig').textContent = me ? 'Remplacer votre liste' : 'Déposez votre fichier eBird .csv ici';
   fillProfile(me);
+  if(typeof _lockMyNameIfSet==='function') _lockMyNameIfSet();
+  if(typeof _refreshChatWriteAccess==='function') _refreshChatWriteAccess();
   rebuild();
 }
 
@@ -3488,8 +3524,46 @@ window.addEventListener('drop',e=>e.preventDefault());
 $('#myName').addEventListener('change',async e=>{
   const nm=(e.target.value.trim())||'Joueur';
   e.target.value=nm;
-  if(iAmInLeague){ try{ await updateDoc(doc(db,'leagues',leagueId,'members',myUid),{name:nm}); }catch(err){ showError(err); } }
+  if(!iAmInLeague) return;
+  const me = realPeople.find(p=>p.id===myUid);
+  const oldName = me?.name || '';
+  // Verrou : nom non modifiable après 1re définition (sauf admin).
+  if(oldName && oldName!==nm && !isAdmin()){
+    e.target.value = oldName;
+    alert('Votre nom est verrouillé après la 1ʳᵉ inscription. Contactez l\'admin pour un changement.');
+    return;
+  }
+  if(oldName===nm) return;
+  try{
+    await updateDoc(doc(db,'leagues',leagueId,'members',myUid),{name:nm});
+    // D : log du changement pour audit
+    if(oldName) await addDoc(collection(db,'leagues',leagueId,'nameChanges'), {
+      uid:myUid, oldName, newName:nm, byUid:myUid, byName:nm, ts:serverTimestamp()
+    });
+  }catch(err){ showError(err); }
 });
+// Verrou visuel du champ nom après la 1re inscription (sauf admin)
+function _lockMyNameIfSet(){
+  const inp = $('#myName'); if(!inp) return;
+  const me = realPeople.find(p=>p.id===myUid);
+  const hasName = !!(me && me.name);
+  if(hasName && !isAdmin()){
+    inp.readOnly = true; inp.classList.add('locked'); inp.title = 'Verrouillé après la 1re inscription. Admin uniquement.';
+  } else {
+    inp.readOnly = false; inp.classList.remove('locked'); inp.title = '';
+  }
+}
+// H : désactive visuellement écriture chat + upload photo pour les non-membres.
+function _refreshChatWriteAccess(){
+  const canWrite = iAmInLeague;
+  const chatText=$('#chatText'), chatName=$('#chatName'), photoInput=$('#photoInput'), photoPub=$('#photoPublish'), photoLbl=$('#photoAddLabel');
+  const hint = 'Chargez votre life list eBird pour écrire';
+  if(chatText){ chatText.disabled = !canWrite; chatText.placeholder = canWrite ? 'Votre message…' : hint; }
+  if(chatName){ chatName.disabled = !canWrite; }
+  if(photoInput){ photoInput.disabled = !canWrite; }
+  if(photoPub){ photoPub.disabled = !canWrite; }
+  if(photoLbl){ photoLbl.style.opacity = canWrite ? '' : '0.5'; photoLbl.style.pointerEvents = canWrite ? '' : 'none'; photoLbl.title = canWrite ? '' : hint; }
+}
 
 async function saveProfile(patch){
   if(!iAmInLeague){ $('#myStatus').textContent='Chargez d\'abord votre liste pour remplir votre fiche.'; return; }
@@ -3745,9 +3819,13 @@ $('#chatForm')?.addEventListener('submit',async e=>{
   const mn=myMemberName();
   const name = mn || $('#chatName').value.trim() || localStorage.getItem('mb-chatname') || '';
   if(!myUid){ showError(new Error('Connexion en cours, réessayez dans un instant.')); return; }
+  // H : chat réservé aux membres. Les invités doivent charger leur life list pour écrire.
+  if(!iAmInLeague){
+    showError(new Error('Chat réservé aux membres. Chargez votre life list eBird pour rejoindre la ligue et pouvoir écrire.'));
+    return;
+  }
   if(!name){ $('#chatName').focus(); return; }
   if(!text && !pendingImage) return;
-  if(!mn){ $('#chatName').value=name; localStorage.setItem('mb-chatname', name); }  // pseudo invité mémorisé
   const img=pendingImage;
   $('#chatText').value=''; pendingImage=null; $('#chatPreview').style.display='none'; $('#chatPreviewImg').src='';
   const payload={ uid:myUid, name, createdAt:serverTimestamp() };
@@ -3882,8 +3960,13 @@ $('#photoCancel')?.addEventListener('click', ()=>{ photoDrafts=[]; $('#photoCapt
 $('#photoPublish')?.addEventListener('click', async ()=>{
   if(!photoDrafts.length) return;
   if(!myUid){ showError(new Error('Connexion en cours, réessayez.')); return; }
+  // H : photos réservées aux membres
+  if(!iAmInLeague){
+    showError(new Error('Publication de photos réservée aux membres. Chargez votre life list eBird pour rejoindre la ligue.'));
+    return;
+  }
   const caption=$('#photoCaption').value.trim();
-  const name=myMemberName() || localStorage.getItem('mb-chatname') || 'Invité';
+  const name=myMemberName() || 'Membre';
   const btn=$('#photoPublish'); btn.disabled=true;
   try{
     for(const image of photoDrafts){
