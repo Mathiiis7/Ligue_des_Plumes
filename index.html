@@ -2728,15 +2728,19 @@ async function _renderModeAbundance(){
       const arr = speciesData[app];
       if(!arr){ layer.bindPopup(`<b>${esc(f.properties.nom)}</b> (${esc(insee)})<br><span class="p-meta">Aucune donnée pour ${esc(nm)}</span>`); return; }
       const v = valueForDept(app);
-      // Meilleur mois
+      // Meilleur mois local (utile seulement quand un mois précis est demandé, sinon = valeur affichée)
       let bestMonth = 1, bestV = 0;
       for(let i=0;i<12;i++){ if(arr[i]>bestV){ bestV=arr[i]; bestMonth=i+1; } }
       const MONTHS = ['','janv.','févr.','mars','avr.','mai','juin','juill.','août','sept.','oct.','nov.','déc.'];
       const scope = m ? MONTHS[m] : 'pic annuel';
-      layer.bindPopup(`<b>${esc(nm)}</b> <span class="p-sci">${esc(sci)}</span><br>`+
+      let popup = `<b>${esc(nm)}</b> <span class="p-sci">${esc(sci)}</span><br>`+
         `<span class="p-meta"><b>${esc(f.properties.nom)}</b> (${esc(insee)})</span><br>`+
-        `<span class="p-meta">Abondance ${scope} : <b>${v.toFixed(3)}</b></span><br>`+
-        `<span class="p-meta">Meilleur mois : <b>${MONTHS[bestMonth]}</b> (${bestV.toFixed(3)})</span>`);
+        `<span class="p-meta">Abondance ${scope} : <b>${v.toFixed(3)}</b></span>`;
+      // N'ajoute "Meilleur mois" que si un mois est filtré ET que ce n'est pas déjà lui
+      if(m && bestMonth !== m){
+        popup += `<br><span class="p-meta">Meilleur mois ici : <b>${MONTHS[bestMonth]}</b> (${bestV.toFixed(3)})</span>`;
+      }
+      layer.bindPopup(popup);
     }
   }).addTo(_map);
   const nDept = Object.keys(speciesData).length;
