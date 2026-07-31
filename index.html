@@ -2797,12 +2797,15 @@ async function _renderModeMissing(){
   _lyrMissing.addTo(_map);
   const nObs = _lyrMissing.getLayers().length;
   const nSp = new Set(); _lyrMissing.eachLayer(m=>{ if(m._sciName) nSp.add(m._sciName.toLowerCase()); });
-  const rarLbl = hasRar ? ('rareté '+[...rars].sort((a,b)=>a==='exo'?1:b==='exo'?-1:(+a-+b)).join(',')) : '';
+  // Label rareté : n'affiche la liste que si SOUS-ensemble strict (utile) — sinon rien.
+  const ALL_RARS = 10; // 1..9 + exo
+  const partial = hasRar && rars.size < ALL_RARS;
+  const rarLbl = partial ? ('rareté '+[...rars].sort((a,b)=>a==='exo'?1:b==='exo'?-1:(+a-+b)).join(',')) : '';
   const zoneLbl = ebFilter.dept ? ' — '+esc(DEPT_NAMES[ebFilter.dept]||ebFilter.dept) : '';
   if(cnt) cnt.textContent = nObs
-    ? (heavy ? `${nObs} obs · ${nSp.size} espèce${nSp.size>1?'s':''}${hasRar?' '+rarLbl:''}${zoneLbl}`
-             : `${nSp.size} espèce${nSp.size>1?'s':''} à cocher${hasRar?' ('+rarLbl+')':''}${zoneLbl}`)
-    : (hasRar ? `Aucune espèce ${rarLbl} à cocher${zoneLbl}` : 'Rien à cocher — vous les avez toutes ! 🎯');
+    ? (heavy ? `${nObs} obs · ${nSp.size} espèce${nSp.size>1?'s':''}${rarLbl?' '+rarLbl:''}${zoneLbl}`
+             : `${nSp.size} espèce${nSp.size>1?'s':''} à cocher${rarLbl?' ('+rarLbl+')':''}${zoneLbl}`)
+    : (rarLbl ? `Aucune espèce ${rarLbl} à cocher${zoneLbl}` : `Rien à cocher${zoneLbl} — vous les avez toutes ! 🎯`);
   _fitLayer(_lyrMissing);
   _mapApplyFilter();
   setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
