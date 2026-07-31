@@ -2284,15 +2284,16 @@ function _updateLegend(){
     _legendDiv.innerHTML = `<div class="ml-title">Taille = ${isTotal?'total d\'espèces':'espèces à cocher'}</div>`+
       samples.map(([v,lbl])=>{ const r = size(v); return `<div class="ml-row"><span class="ml-dot ml-hs" style="width:${(r*2).toFixed(0)}px;height:${(r*2).toFixed(0)}px"></span><span class="ml-txt">${esc(lbl)}</span></div>`; }).join('');
   } else if(mapMode==='abundance'){
-    // Gradient jaune → rouge normalisé par espèce (max = 100 %).
-    const steps = [[100,'peak (max espèce)'],[75,'75 %'],[50,'50 %'],[25,'25 %'],[10,'10 %'],[0,'absent']];
-    _legendDiv.innerHTML = '<div class="ml-title">Abondance eBird S&T</div>' +
-      steps.map(([pct,lbl])=>{
-        const r = pct/100;
-        const hue = Math.round(60 - 60*r);
-        const bg = pct===0 ? 'transparent' : `hsl(${hue},85%,${Math.round(52 - r*20)}%)`;
+    // Couleur = position (rang) du dept parmi tous les depts avec data pour cette espèce.
+    // Plus robuste que la valeur brute face aux outliers (un hotspot extrême n'écrase pas le reste).
+    const steps = [[1,'1ᵉʳ'],[0.75,'top 25 %'],[0.5,'médian'],[0.25,'bas 25 %'],[0,'moins bon']];
+    _legendDiv.innerHTML = '<div class="ml-title">Classement dept</div>' +
+      steps.map(([sc,lbl])=>{
+        const hue = Math.round(60 - 60*sc);
+        const bg = `hsl(${hue},85%,${Math.round(52 - sc*20)}%)`;
         return `<div class="ml-row"><span class="ml-dot" style="background:${bg};border:1px solid #999"></span><span class="ml-txt">${esc(lbl)}</span></div>`;
-      }).join('');
+      }).join('') +
+      '<div class="ml-row" style="margin-top:4px;font-size:10px;color:#666;">gris = pas de data</div>';
   } else {
     const tiers=[1,2,3,4,5,6,7,8,9];
     _legendDiv.innerHTML = '<div class="ml-title">Rareté</div>' + tiers.map(w=>
@@ -2746,33 +2747,35 @@ async function _renderModeAbundance(){
   }
   const geojson = await _loadDeptGeoJSON();
   const speciesData = SRC[sci] || {};
-  // Calcule le max de l'espèce (pour normalisation couleur ET affichage %)
   const m = abFilter.month;
   const valueForDept = appCode => {
     const arr = speciesData[appCode]; if(!arr) return 0;
-    return m ? (arr[m-1]||0) : Math.max(...arr);   // month=0 = peak annuel de ce dept
+    return m ? (arr[m-1]||0) : Math.max(...arr);
   };
-  // globalMax = max sur TOUS les dept × TOUS les mois → référence pour l'affichage %
-  let globalMax = 0;
-  for(const app of Object.keys(speciesData)){
-    const arr = speciesData[app];
-    for(let i=0;i<12;i++) if(arr[i]>globalMax) globalMax = arr[i];
-  }
-  // maxV = max de la vue courante (pour couleur normalisée du rendu)
-  let maxV = 0;
-  for(const app of Object.keys(speciesData)){
-    const v = valueForDept(app); if(v>maxV) maxV = v;
-  }
-  // Formate une valeur brute en % du max espèce en France
-  const asPct = raw => globalMax>0 ? `${(raw/globalMax*100).toFixed(raw/globalMax*100>=10?0:1)} %` : '—';
+  // Classement des départements pour cette espèce (rang 1 = meilleur, robuste aux outliers).
+  // On note aussi le percentile pour la couleur : meilleur rang → couleur intense.
+  const scored = Object.keys(speciesData)
+    .map(app => ({ app, v:valueForDept(app) }))
+    .filter(x => x.v > 0)
+    .sort((a,b) => b.v - a.v);
+  const rankByApp = {};
+  scored.forEach((x, i) => { rankByApp[x.app] = i+1; });   // 1 = meilleur
+  const totalRanked = scored.length;
+  // Score de couleur : basé sur le percentile (0 = pire, 1 = meilleur)
+  // → couleur robuste aux outliers (chaque rang a une couleur distincte)
+  const colorScoreFor = app => {
+    const rank = rankByApp[app]; if(!rank) return 0;
+    return 1 - (rank - 1) / Math.max(1, totalRanked - 1);
+  };
   // Efface l'ancienne couche
   if(_lyrAbundance){ _lyrAbundance.remove(); _lyrAbundance = null; }
   _lyrAbundance = L.geoJSON(geojson, {
     style: (f) => {
       const insee = f.properties.code;
       const app = _INSEE_TO_APP[insee];
-      const v = app ? valueForDept(app) : 0;
-      return _abColor(v, maxV);
+      // Couleur basée sur le RANG (plus robuste que la valeur brute face aux outliers)
+      const score = app ? colorScoreFor(app) : 0;
+      return _abColor(score, 1);   // score déjà 0-1
     },
     onEachFeature: (f, layer) => {
       const insee = f.properties.code;
@@ -2782,20 +2785,19 @@ async function _renderModeAbundance(){
       const arr = speciesData[app];
       if(!arr){ layer.bindPopup(`<b>${esc(f.properties.nom)}</b> (${esc(insee)})<br><span class="p-meta">Aucune donnée pour ${esc(nm)}</span>`); return; }
       const v = valueForDept(app);
-      // Meilleur mois local (utile seulement quand un mois précis est demandé, sinon = valeur affichée)
+      const rank = rankByApp[app];
       let bestMonth = 1, bestV = 0;
       for(let i=0;i<12;i++){ if(arr[i]>bestV){ bestV=arr[i]; bestMonth=i+1; } }
       const MONTHS = ['','janv.','févr.','mars','avr.','mai','juin','juill.','août','sept.','oct.','nov.','déc.'];
-      // Label explicite : quelle agrégation SPATIALE (peak vs moyenne dept) + quelle PÉRIODE.
       const metricLbl = abFilter.metric === 'mean' ? 'moyenne dept' : 'peak dept';
       const scope = m ? `en ${MONTHS[m]}` : 'toute l\'année';
+      const rankLbl = rank ? `<b>${rank}<sup>e</sup></b> sur ${totalRanked} depts français` : 'non classé (0 obs)';
       let popup = `<b>${esc(nm)}</b> <span class="p-sci">${esc(sci)}</span><br>`+
-        `<span class="p-meta"><b>${esc(f.properties.nom)}</b> (${esc(insee)})</span><br>`+
-        `<span class="p-meta">Abondance ${metricLbl} · ${scope} : <b>${asPct(v)}</b></span>`;
+        `<span class="p-meta"><b>${esc(f.properties.nom)}</b> (${esc(insee)}) — ${rankLbl}</span><br>`+
+        `<span class="p-meta">Abondance ${metricLbl} · ${scope} : <b>${v.toFixed(3)}</b></span>`;
       if(m && bestMonth !== m){
-        popup += `<br><span class="p-meta">Meilleur mois ici : <b>${MONTHS[bestMonth]}</b> (${asPct(bestV)})</span>`;
+        popup += `<br><span class="p-meta">Meilleur mois ici : <b>${MONTHS[bestMonth]}</b> (${bestV.toFixed(3)})</span>`;
       }
-      popup += `<br><span class="p-meta" style="font-size:10px;font-style:italic;">100 % = max de l'espèce en France (${globalMax.toFixed(2)})</span>`;
       layer.bindPopup(popup);
     }
   }).addTo(_map);
