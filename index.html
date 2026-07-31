@@ -2767,6 +2767,14 @@ async function _renderModeMissing(){
   // entre re-renders : ainsi cocher/décocher une chip rareté ne fait pas disparaître l'obs
   // que l'utilisateur vient d'inspecter.
   const cnt=$('#mapEbCount');
+  // Si un oiseau est actuellement en spotlight, on ignore complètement les chips de rareté :
+  // la couche "missing" n'est pas rechargée, seul le spotlight reste visible. L'utilisateur
+  // vide la barre de recherche (ou re-clique une région/dept) pour revenir au mode normal.
+  if(_lyrDetail && _lyrDetail.getLayers && _lyrDetail.getLayers().length){
+    if(_lyrMissing && _map.hasLayer(_lyrMissing)) _map.removeLayer(_lyrMissing);
+    setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
+    return;
+  }
   // Vue "FR entière" : toujours vide + hint. Trop lourd d'afficher les obs France entière
   // (des milliers de points). L'utilisateur doit choisir une région/dept OU une espèce.
   if(zone === 'FR'){
