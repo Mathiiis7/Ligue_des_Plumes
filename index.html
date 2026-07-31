@@ -2487,9 +2487,9 @@ $('#mapSearchSuggest')?.addEventListener('mousedown', e=>{
     return;
   }
   // Cas suggestion "espèce manquante" en mode À cocher : on charge toutes ses obs récentes en France,
-  // peu importe les filtres rareté/région/dept actifs.
+  // peu importe les filtres rareté/région/dept actifs. On garde le nom dans la barre pour info.
   if(m && m.kind==='sp-missing'){
-    const s = $('#mapSearch'); s.value=''; mapSearch=''; _mapApplyFilter();
+    const s = $('#mapSearch'); s.value = m.name; mapSearch = m.name;
     if(m.code){ _showSpeciesDetail(m.sci, m.code); }
     else { showError(new Error('Pas de code eBird trouvé pour cette espèce — impossible de charger ses obs.')); }
     return;
@@ -2729,6 +2729,13 @@ async function _renderModeMissing(){
   if(zone === 'FR'){
     if(_lyrMissing){ _lyrMissing.clearLayers(); }
     if(cnt) cnt.textContent = 'Choisis une région/département ou tape une espèce dans la barre pour voir les points';
+    setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
+    return;
+  }
+  // Toutes les raretés décochées → l'utilisateur ne veut rien voir. Carte vide + hint.
+  if(rars.size === 0){
+    if(_lyrMissing){ _lyrMissing.clearLayers(); }
+    if(cnt) cnt.textContent = 'Aucune rareté cochée — coche au moins un niveau pour voir les obs';
     setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
     return;
   }
