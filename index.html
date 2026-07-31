@@ -983,6 +983,7 @@
         </select>
         <span class="map-count" id="mapAbCount"></span>
       </div>
+      <div id="mapAbHint" class="help" style="display:none; margin:2px 0 8px; font-size:11.5px; line-height:1.4;"></div>
       <div id="mapNote" class="help" style="margin:6px 0 8px; display:none;"></div>
       <div id="mapEl" class="map-el"></div>
       <div class="map-timeline" id="mapTimeline" style="display:none;">
@@ -2301,7 +2302,7 @@ function _updateLegend(){
     } else {
       // Échelle universelle : même couleur = même abondance réelle (log-scale eBird).
       // Espèce rare partout → tous les depts restent pâles (honnête).
-      const steps = [[100,'≥ 100 très abondant'],[10,'≥ 10 abondant'],[1,'≥ 1 fréquent'],[0.1,'≥ 0.1 modéré'],[0.01,'≥ 0.01 faible'],[0.001,'≥ 0.001 très rare']];
+      const steps = [[100,'🔴 Très abondant'],[10,'🟠 Abondant'],[1,'🟡 Fréquent'],[0.1,'🟢 Modéré'],[0.01,'🔵 Faible'],[0.001,'⚫ Très rare']];
       _legendDiv.innerHTML = '<div class="ml-title">Abondance eBird</div>' +
         steps.map(([v,lbl])=>{
           const st = _abColorAbs(v);
@@ -2719,6 +2720,16 @@ function _abColorAbs(v){
   const hue = Math.round(60 - 60*score);   // 60 = jaune, 0 = rouge
   return { fillColor:`hsl(${hue},85%,${Math.round(52 - score*20)}%)`, fillOpacity:0.3 + 0.55*score, weight:1, color:'#666' };
 }
+// Convertit une abondance ebirdst (birds/effort) en niveau qualitatif interprétable par l'utilisateur.
+function _abLevel(v){
+  if(!v || v<=0)   return { name:'Absent',         emoji:'⚪' };
+  if(v >= 50)      return { name:'Très abondant',  emoji:'🔴' };
+  if(v >= 5)       return { name:'Abondant',       emoji:'🟠' };
+  if(v >= 0.5)     return { name:'Fréquent',       emoji:'🟡' };
+  if(v >= 0.05)    return { name:'Modéré',         emoji:'🟢' };
+  if(v >= 0.005)   return { name:'Faible',         emoji:'🔵' };
+  return              { name:'Très rare',       emoji:'⚫' };
+}
 // Peuple le datalist des espèces avec data d'abondance (uniquement celles qu'on a).
 // Charge (une seule fois) le GeoJSON des 96 départements. Servi depuis tools/ (repo public).
 async function _loadDeptGeoJSON(){
@@ -2817,11 +2828,13 @@ async function _renderModeAbundance(){
       const metricLbl = abFilter.metric === 'mean' ? 'moyenne dept' : 'peak dept';
       const scope = m ? `en ${MONTHS[m]}` : 'toute l\'année';
       const rankLbl = rank ? `<b>${rank}<sup>e</sup></b> sur ${totalRanked} depts français` : 'non classé (0 obs)';
+      const lvl = _abLevel(v);
       let popup = `<b>${esc(nm)}</b> <span class="p-sci">${esc(sci)}</span><br>`+
         `<span class="p-meta"><b>${esc(f.properties.nom)}</b> (${esc(insee)}) — ${rankLbl}</span><br>`+
-        `<span class="p-meta">Abondance ${metricLbl} · ${scope} : <b>${v.toFixed(3)}</b></span>`;
+        `<span class="p-meta">Abondance ${metricLbl} · ${scope} : ${lvl.emoji} <b>${lvl.name}</b> <span style="opacity:.6;font-size:10.5px;">(${v.toFixed(3)})</span></span>`;
       if(m && bestMonth !== m){
-        popup += `<br><span class="p-meta">Meilleur mois ici : <b>${MONTHS[bestMonth]}</b> (${bestV.toFixed(3)})</span>`;
+        const lvlB = _abLevel(bestV);
+        popup += `<br><span class="p-meta">Meilleur mois ici : <b>${MONTHS[bestMonth]}</b> — ${lvlB.emoji} ${lvlB.name}</span>`;
       }
       layer.bindPopup(popup);
     }
@@ -2887,12 +2900,26 @@ document.addEventListener('change', e=>{
   else if(e.target.id==='mapEbMonth'){ ebFilter.month=+e.target.value||0; _loaded.hotspots=''; renderMap(); }
   else if(e.target.id==='mapAbMonth'){ abFilter.month=+e.target.value||0; if(mapMode==='abundance') renderMap(); }
 });
+// Hint visible sous les toggles du mode "Où trouver" — explique ce que fait l'option active
+function _updateAbHint(){
+  const el = $('#mapAbHint'); if(!el) return;
+  if(mapMode!=='abundance'){ el.style.display='none'; return; }
+  const viewTxt = abFilter.view==='rank'
+    ? '<b>🎯 Top des dept</b> : le meilleur dept ressort rouge même si l\'espèce est rare partout — utile pour savoir OÙ tenter.'
+    : '<b>📍 Absolu</b> : même couleur = même abondance réelle (échelle universelle). Un oiseau rare reste pâle même dans son meilleur coin — honnête.';
+  const metricTxt = abFilter.metric==='mean'
+    ? '<b>📊 Moyenne</b> : moyenne des pixels du dept (densité globale, dilue les côtes).'
+    : '<b>🔥 Peak</b> : meilleur pixel du dept (capte les hotspots côtiers / marais).';
+  el.innerHTML = viewTxt + '<br>' + metricTxt;
+  el.style.display = '';
+}
 // Toggle Peak / Moyenne pour le mode "Où trouver"
 document.addEventListener('click', e=>{
   const b = e.target.closest('#mapAbMetric button[data-metric]');
   if(!b) return;
   abFilter.metric = b.dataset.metric==='mean' ? 'mean' : 'max';
   document.querySelectorAll('#mapAbMetric button').forEach(x=>x.classList.toggle('on', x===b));
+  _updateAbHint();
   if(mapMode==='abundance') renderMap();
 });
 // Toggle vue Absolu / Rang pour le mode "Où trouver"
@@ -2902,6 +2929,7 @@ document.addEventListener('click', e=>{
   abFilter.view = b.dataset.view==='rank' ? 'rank' : 'abs';
   document.querySelectorAll('#mapAbView button').forEach(x=>x.classList.toggle('on', x===b));
   _updateLegend();
+  _updateAbHint();
   if(mapMode==='abundance') renderMap();
 });
 // Slider "min à cocher" + champ "contient espèce" (event input pour réponse live).
@@ -2989,6 +3017,7 @@ document.addEventListener('click', e=>{
   });
   _refreshDeptSel();
   _updateLegend();
+  if(typeof _updateAbHint==='function') _updateAbHint();
   renderMap();
 });
 document.addEventListener('change', e=>{
