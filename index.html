@@ -2341,6 +2341,12 @@ function _mapApplyFilter(){
   }
   if(cnt) cnt.textContent = q ? `${visible} / ${total} visible${visible>1?'s':''}` : '';
 }
+// Efface la couche "détail d'une espèce" + reset barre de recherche. Utilisé quand un
+// changement de zone (région/dept) rend la sélection espèce précédente obsolète.
+function _clearMapSpeciesDetail(){
+  if(_lyrDetail){ _lyrDetail.remove(); _lyrDetail.clearLayers(); }
+  const s = $('#mapSearch'); if(s && mapSearch){ s.value=''; mapSearch=''; _mapApplyFilter(); }
+}
 $('#mapSearch')?.addEventListener('input', e=>{
   const prev = mapSearch;
   mapSearch = e.target.value; _mapApplyFilter(); _updateMapSuggest();
@@ -3028,8 +3034,18 @@ document.addEventListener('change', e=>{
   if(e.target.id==='mapPlayerSel'){ mapFilter.player=e.target.value; renderMap(); }
   else if(e.target.id==='mapTierSel'){ mapFilter.tier=e.target.value; renderMap(); }
   else if(e.target.id==='mapCountrySel'){ mapFilter.country=e.target.value; renderMap(); }
-  else if(e.target.id==='mapEbRegion'){ ebFilter.region=e.target.value; ebFilter.dept=''; _loaded.missing=''; _loaded.hotspots=''; _refreshDeptSel(); renderMap(); }
-  else if(e.target.id==='mapEbDept'){ ebFilter.dept=e.target.value||''; _loaded.hotspots=''; _loaded.missing=''; renderMap(); }
+  else if(e.target.id==='mapEbRegion'){
+    ebFilter.region=e.target.value; ebFilter.dept='';
+    _loaded.missing=''; _loaded.hotspots=''; _refreshDeptSel();
+    _clearMapSpeciesDetail();   // changer de zone efface l'obs France-wide précédente
+    renderMap();
+  }
+  else if(e.target.id==='mapEbDept'){
+    ebFilter.dept=e.target.value||'';
+    _loaded.hotspots=''; _loaded.missing='';
+    _clearMapSpeciesDetail();
+    renderMap();
+  }
   else if(e.target.id==='mapEbDays'){ ebFilter.days=+e.target.value; _loaded.missing=''; renderMap(); }
   else if(e.target.id==='mapEbMonth'){ ebFilter.month=+e.target.value||0; _loaded.hotspots=''; renderMap(); }
   else if(e.target.id==='mapAbMonth'){ abFilter.month=+e.target.value||0; if(mapMode==='abundance') renderMap(); }
