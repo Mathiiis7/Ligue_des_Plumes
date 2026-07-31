@@ -10,6 +10,9 @@ tools/rarity-cache.json
 tools/real-rarity.generated.js
 tools/real-freq-monthly.generated.js
 tools/real-freq-monthly-by-region.generated.js
+tools/real-abundance-dept.generated.js
+tools/scratch-new-species.json
+tools/ebirdst-target-codes.txt
 
 # Divers
 *.log
