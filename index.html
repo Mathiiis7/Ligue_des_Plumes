@@ -2599,7 +2599,7 @@ async function _showSpeciesDetail(sciName, speciesCode){
     for(const o of data){
       if(typeof o.lat!=='number'||typeof o.lng!=='number') continue;
       // Couleur = rareté de l'espèce (gris pour exotique), taille légèrement plus grosse que la couche missing.
-      const dot = L.circleMarker([o.lat,o.lng], { radius:7, weight:2.5, color:color, fillColor:'#fff', fillOpacity:.85, opacity:1 });
+      const dot = L.circleMarker([o.lat,o.lng], { radius:7, weight:2, color:'#fff', fillColor:color, fillOpacity:.9, opacity:1 });
       const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
       dot.bindPopup(`<b>${esc(nm)}</b> <span class="p-sci">${esc(sciName||'')}</span><br>`+
         `<span class="p-meta">📍 ${esc(o.locName||'?')}</span><br>`+
@@ -2828,7 +2828,7 @@ async function _loadMissingLayer(zone, days=14, rarity=0, onProgress){
     for(const o of allObs){
       const w = rarityReal(o.sciName);
       const nm = FR_NAMES[(o.sciName||'').toLowerCase()] || o.comName || o.sciName;
-      const m = L.circleMarker([o.dispLat, o.dispLon], { radius:R, weight:W, color:sciColor(o.sciName), fillColor:'#fff', fillOpacity:.85, opacity:1 });
+      const m = L.circleMarker([o.dispLat, o.dispLon], { radius:R, weight:1.5, color:'#fff', fillColor:sciColor(o.sciName), fillOpacity:.9, opacity:1 });
       const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lon}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
       m.bindPopup(`<b>${esc(nm)}</b> <span class="p-sci">${esc(o.sciName||'')}</span><br>`+
         `<span class="p-meta">🐦 <b>Vous ne l'avez pas encore</b></span><br>`+
