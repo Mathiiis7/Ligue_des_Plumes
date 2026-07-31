@@ -2681,7 +2681,16 @@ async function _renderModeMissing(){
   const heavy = (zone!=='FR') || hasRar;
   // Nettoyage détail espèce lors d'une re-render (filtre changé) — sinon les vieux points restent.
   if(_lyrDetail){ _lyrDetail.clearLayers(); }
-  const cnt=$('#mapEbCount'); if(cnt) cnt.textContent='… chargement';
+  const cnt=$('#mapEbCount');
+  // Vue par défaut (FR national sans filtre) : carte volontairement vide + hint.
+  // Le rendu de ~300 markers dispersés sur toute la France était peu utile et lent.
+  if(zone === 'FR' && !hasRar){
+    if(_lyrMissing){ _lyrMissing.clearLayers(); }
+    if(cnt) cnt.textContent = 'Choisis une région/département ou tape une espèce dans la barre pour voir les points';
+    setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
+    return;
+  }
+  if(cnt) cnt.textContent='… chargement';
   await _loadMissingLayer(zone, days, rars, (done, total)=>{
     if(cnt) cnt.textContent = `… ${done}/${total} espèces`;
   });
