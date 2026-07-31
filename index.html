@@ -2800,7 +2800,7 @@ async function _renderModeMissing(){
   // Label rareté : n'affiche la liste que si SOUS-ensemble strict (utile) — sinon rien.
   const ALL_RARS = 10; // 1..9 + exo
   const partial = hasRar && rars.size < ALL_RARS;
-  const rarLbl = partial ? ('rareté '+[...rars].sort((a,b)=>a==='exo'?1:b==='exo'?-1:(+a-+b)).join(',')) : '';
+  const rarLbl = partial ? [...rars].sort((a,b)=>a==='exo'?1:b==='exo'?-1:(+a-+b)).join(',') : '';
   const zoneLbl = ebFilter.dept ? ' — '+esc(DEPT_NAMES[ebFilter.dept]||ebFilter.dept) : '';
   if(cnt) cnt.textContent = nObs
     ? (heavy ? `${nObs} obs · ${nSp.size} espèce${nSp.size>1?'s':''}${rarLbl?' '+rarLbl:''}${zoneLbl}`
