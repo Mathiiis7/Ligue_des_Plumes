@@ -871,7 +871,7 @@
       </div>
       <details class="import-guide" style="margin:0 0 12px;">
         <summary>📍 Comment afficher vos observations sur la carte ?</summary>
-        <p style="margin:8px 0 0; font-size:13px;">Pour avoir vos observations sur la carte (position exacte de chaque oiseau vu) : téléchargez <a href="https://ebird.org/downloadMyData" target="_blank" rel="noopener">ebird.org/downloadMyData</a> → <b>« Submit »</b> (fichier <code>MyEBirdData.csv</code> reçu par email en quelques minutes). Ce fichier contient les <b>coordonnées GPS</b> de chaque obs — la life list simple ne les a pas. Déposez-le ensuite dans l'onglet <b>Ma liste</b>.</p>
+        <p style="margin:8px 0 0; font-size:13px;">Pour avoir vos observations sur la carte (position exacte de chaque oiseau vu) : téléchargez <a href="https://ebird.org/downloadMyData" target="_blank" rel="noopener">ebird.org/downloadMyData</a> → <b>« Submit »</b> (fichier <code>MyEBirdData.csv</code> reçu par email en quelques minutes). Ce fichier contient les <b>coordonnées GPS</b> de chaque obs. La life list simple ne les a pas. Déposez-le ensuite dans l'onglet <b>Ma liste</b>.</p>
       </details>
       <div class="seg map-mode" id="mapModes">
         <button data-mode="mine" class="on">📍 Mes observations</button>
@@ -2257,6 +2257,18 @@ const DEPT_NAMES = {
 const REGION_TO_DEPTS = {};
 for(const code in DEPT_NAMES){ const reg = code.slice(0, code.lastIndexOf('-')); (REGION_TO_DEPTS[reg]||(REGION_TO_DEPTS[reg]=[])).push(code); }
 for(const reg in REGION_TO_DEPTS) REGION_TO_DEPTS[reg].sort((a,b)=>DEPT_NAMES[a].localeCompare(DEPT_NAMES[b],'fr'));
+// Nom lisible d'une région à partir de son code ISO (utilisé dans les compteurs de la carte).
+const REGION_NAMES = Object.fromEntries(FR_REGIONS.map(r=>[r.code, r.name]));
+// Label zone pour compteurs : "— Région" ou "— Région · Département" selon sélection.
+function _zoneLabel(){
+  const r = ebFilter.region, d = ebFilter.dept;
+  const rn = r && r!=='FR' ? (REGION_NAMES[r]||r) : '';
+  const dn = d ? (DEPT_NAMES[d]||d) : '';
+  if(dn && rn) return ' — '+rn+' · '+dn;
+  if(dn) return ' — '+dn;
+  if(rn) return ' — '+rn;
+  return '';
+}
 // (Re)peuple le sélecteur département en fonction de la région choisie.
 function _refreshDeptSel(){
   const sel = $('#mapEbDept'), lbl = $('#mapEbDeptLbl'); if(!sel) return;
@@ -2799,7 +2811,7 @@ async function _renderModeMissing(){
   const nSp = new Set(); _lyrMissing.eachLayer(m=>{ if(m._sciName) nSp.add(m._sciName.toLowerCase()); });
   // Label rareté : jamais affiché — les chips colorées en haut le disent déjà.
   const rarLbl = '';
-  const zoneLbl = ebFilter.dept ? ' — '+esc(DEPT_NAMES[ebFilter.dept]||ebFilter.dept) : '';
+  const zoneLbl = esc(_zoneLabel());
   if(cnt) cnt.textContent = nObs
     ? (heavy ? `${nObs} obs · ${nSp.size} espèce${nSp.size>1?'s':''}${rarLbl?' '+rarLbl:''}${zoneLbl}`
              : `${nSp.size} espèce${nSp.size>1?'s':''} à cocher${rarLbl?' ('+rarLbl+')':''}${zoneLbl}`)
@@ -2815,7 +2827,7 @@ async function _renderModeHotspots(){
   await _loadHotspotsLayer(zone);
   _lyrHotspots.addTo(_map);
   const n = _lyrHotspots.getLayers().length;
-  const zoneLbl = ebFilter.dept ? ' — '+esc(DEPT_NAMES[ebFilter.dept]||ebFilter.dept) : '';
+  const zoneLbl = esc(_zoneLabel());
   if(cnt) cnt.textContent = n ? `top ${n} hotspots${zoneLbl}` : 'Aucun hotspot trouvé'+zoneLbl;
   _fitLayer(_lyrHotspots);
   _mapApplyFilter();
