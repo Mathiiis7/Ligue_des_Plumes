@@ -2781,9 +2781,11 @@ async function _loadMissingLayer(zone, days=14, rarity=0, onProgress){
     if(!heavy){
       // Mode léger : 1 marqueur par espèce (l'obs déjà retournée par l'endpoint /recent).
       // Si un filtre rareté est actif (sur FR national), on filtre côté client — pas de fan-out.
+      // NB : les exotiques sont EXCLUES des filtres 1-9 (elles ont leur propre filtre "exo") sinon
+      // "1 très commun" afficherait juste les échappés (rarityReal exotic → 1 par défaut).
       const spFilter = rarity==='exo'
         ? (sp=>isExotic(sp.sciName))
-        : (+rarity>0 ? (sp=>rarityReal(sp.sciName)===+rarity) : (()=>true));
+        : (+rarity>0 ? (sp=>!isExotic(sp.sciName) && rarityReal(sp.sciName)===+rarity) : (()=>true));
       allObs = missingSp
         .filter(spFilter)
         .map(sp => ({ ...sp.first, sciName:sp.sciName, comName:sp.comName, speciesCode:sp.speciesCode }))
@@ -2795,7 +2797,7 @@ async function _loadMissingLayer(zone, days=14, rarity=0, onProgress){
       // (petite région → peu d'espèces, quota API OK).
       const filtered = hasRar
         ? (rarity==='exo' ? missingSp.filter(sp => isExotic(sp.sciName))
-                          : missingSp.filter(sp => rarityReal(sp.sciName) === +rarity))
+                          : missingSp.filter(sp => !isExotic(sp.sciName) && rarityReal(sp.sciName) === +rarity))
         : missingSp;
       allObs = []; let done = 0;
       if(onProgress) onProgress(0, filtered.length);
