@@ -942,16 +942,18 @@
         </select>
         <label class="explorer-lbl" id="mapEbRarityLbl" style="display:none;" title="Clique un ou plusieurs niveaux — sinon toutes les raretés">Rareté</label>
         <div id="mapEbRarityChips" class="rar-chips" style="display:none;">
-          <button type="button" class="rar-chip" data-rar="1" title="Très commun">1</button>
-          <button type="button" class="rar-chip" data-rar="2" title="Commun">2</button>
-          <button type="button" class="rar-chip" data-rar="3" title="Assez commun">3</button>
-          <button type="button" class="rar-chip" data-rar="4" title="Peu commun">4</button>
-          <button type="button" class="rar-chip" data-rar="5" title="Localisé">5</button>
-          <button type="button" class="rar-chip" data-rar="6" title="Assez rare">6</button>
-          <button type="button" class="rar-chip" data-rar="7" title="Rare">7</button>
-          <button type="button" class="rar-chip" data-rar="8" title="Très rare">8</button>
-          <button type="button" class="rar-chip" data-rar="9" title="Exceptionnel">9</button>
-          <button type="button" class="rar-chip rar-exo" data-rar="exo" title="Exotique / échappé">🚨</button>
+          <button type="button" class="rar-chip on" data-rar="1" title="Très commun">1</button>
+          <button type="button" class="rar-chip on" data-rar="2" title="Commun">2</button>
+          <button type="button" class="rar-chip on" data-rar="3" title="Assez commun">3</button>
+          <button type="button" class="rar-chip on" data-rar="4" title="Peu commun">4</button>
+          <button type="button" class="rar-chip on" data-rar="5" title="Localisé">5</button>
+          <button type="button" class="rar-chip on" data-rar="6" title="Assez rare">6</button>
+          <button type="button" class="rar-chip on" data-rar="7" title="Rare">7</button>
+          <button type="button" class="rar-chip on" data-rar="8" title="Très rare">8</button>
+          <button type="button" class="rar-chip on" data-rar="9" title="Exceptionnel">9</button>
+          <button type="button" class="rar-chip rar-exo on" data-rar="exo" title="Exotique / échappé">🚨</button>
+          <button type="button" class="rar-chip" data-rar-all title="Cocher toutes les raretés">Tout</button>
+          <button type="button" class="rar-chip" data-rar-none title="Décocher toutes les raretés">—</button>
         </div>
         <label class="explorer-lbl" id="mapEbMinTodoLbl" style="display:none;" title="N'affiche que les hotspots où il te manque au moins N espèces">Cacher hotspots avec moins de</label>
         <div id="mapEbMinTodoBox" style="display:none; align-items:center; gap:0;">
@@ -2223,7 +2225,7 @@ let _loaded = { missing:'', hotspots:'' };   // clé de cache (région+jours)
 let mapFilter = { player:'all', tier:'any', country:'any' };
 // Filtres propres aux modes eBird
 // `rarities` = Set des niveaux sélectionnés (nombres 1-9 ou chaîne 'exo'). Vide = pas de filtre.
-let ebFilter = { region:'FR', days:14, rarities:new Set(), month:0, dept:'', minTodo:0 };
+let ebFilter = { region:'FR', days:14, rarities:new Set([1,2,3,4,5,6,7,8,9,'exo']), month:0, dept:'', minTodo:0 };
 let userPos = null;   // { lat, lon } — position utilisateur pour Haversine
 let myFavHotspots = new Set();   // Set des locId favoris de l'utilisateur (synchronisé Firestore)
 // Distance à vol d'oiseau entre 2 points (km).
@@ -2382,8 +2384,9 @@ function _updateMapSuggest(){
     box.classList.add('open');
     return;
   }
-  const lyr = _mapCurrentLayer(); if(!lyr){ box.classList.remove('open'); return; }
+  const lyr = _mapCurrentLayer();
   if(mapMode==='hotspots'){
+    if(!lyr){ box.classList.remove('open'); return; }
     // Mode hotspots : les markers représentent des lieux. Les suggestions sont donc les
     // ESPÈCES manquantes agrégées sur l'ensemble des hotspots visibles (jamais les lieux).
     const seen = new Set();
@@ -2398,8 +2401,25 @@ function _updateMapSuggest(){
       }
     });
     items.sort((a,b)=> a.name.localeCompare(b.name,'fr'));
+  } else if(mapMode==='missing'){
+    // Mode "À aller cocher" : suggestions = TOUTES les espèces manquantes de ma life list
+    // (dérivées de FR_NAMES minus ma liste), pas seulement les markers visibles. Permet de
+    // choisir n'importe quel oiseau à cocher même sur la vue FR vide par défaut.
+    const me = realPeople.find(p=>p.id===myUid);
+    const mine = new Set(me ? [...me.species.keys()] : []);
+    const seen = new Set();
+    for(const sci in FR_NAMES){
+      if(mine.has(sci)) continue;   // déjà cochée par l'utilisateur
+      const fr = FR_NAMES[sci];
+      if(q && !_mapNorm(fr).includes(q) && !sci.includes(q)) continue;
+      if(seen.has(sci)) continue; seen.add(sci);
+      const code = _sciToCode(sci);   // null si pas de taxonomie loaded ou sci absent
+      items.push({ sci, name:fr, code, kind:'sp-missing' });
+    }
+    items.sort((a,b)=> a.name.localeCompare(b.name,'fr'));
   } else {
-    // Modes mine / missing : suggestions basées sur les espèces des markers eux-mêmes.
+    // Mode mine : suggestions basées sur les espèces des markers eux-mêmes.
+    if(!lyr){ box.classList.remove('open'); return; }
     const seen = new Set();
     lyr.eachLayer(m => {
       if(q && (!m._q || !m._q.includes(q))) return;
@@ -2430,6 +2450,13 @@ function _updateMapSuggest(){
         `<span class="ss-sci">${esc(it.sci)}</span>`+
         `<span class="ss-hint">→ filtrer les hotspots</span></div>`;
     }
+    if(it && it.kind==='sp-missing'){
+      return `<div class="map-search-suggest-item" data-idx="${i}">`+
+        `<span class="ss-dot" style="background:${sciColor(it.sci)}"></span>`+
+        `<span>${esc(it.name)}</span>`+
+        `<span class="ss-sci">${esc(it.sci)}</span>`+
+        `<span class="ss-hint">→ toutes les obs récentes</span></div>`;
+    }
     const m = it;
     if(m._sciName){
       const nm = FR_NAMES[(m._sciName||'').toLowerCase()] || m._sciName;
@@ -2459,6 +2486,14 @@ $('#mapSearchSuggest')?.addEventListener('mousedown', e=>{
   // et le filtre existant (basé sur m._q) garde les hotspots concernés.
   if(m && m.kind==='sp-hotspot'){
     const s = $('#mapSearch'); s.value = m.name; mapSearch = m.name; _mapApplyFilter();
+    return;
+  }
+  // Cas suggestion "espèce manquante" en mode À cocher : on charge toutes ses obs récentes en France,
+  // peu importe les filtres rareté/région/dept actifs.
+  if(m && m.kind==='sp-missing'){
+    const s = $('#mapSearch'); s.value=''; mapSearch=''; _mapApplyFilter();
+    if(m.code){ _showSpeciesDetail(m.sci, m.code); }
+    else { showError(new Error('Pas de code eBird trouvé pour cette espèce — impossible de charger ses obs.')); }
     return;
   }
   // Cas suggestion espèce en mode "Où trouver" : on injecte le nom fr dans la barre,
@@ -2679,6 +2714,9 @@ function _renderModeMine(el){
 // ---- Modes eBird (missing / hotspots) ----
 async function _renderModeMissing(){
   const region=ebFilter.region, days=ebFilter.days, rars=ebFilter.rarities;
+  // Charge la taxonomie en fond (nécessaire pour l'autocomplétion "toutes les espèces manquantes"
+  // qui a besoin de _sciToCode pour ensuite pouvoir cliquer et voir les obs).
+  _loadTaxonomy().catch(()=>{});
   // Zone effectivement interrogée : département > région > national.
   const zone = ebFilter.dept || region;
   const isDept = /^FR-[A-Z]+-[0-9A-Z]+$/.test(zone);
@@ -2688,9 +2726,9 @@ async function _renderModeMissing(){
   // Nettoyage détail espèce lors d'une re-render (filtre changé) — sinon les vieux points restent.
   if(_lyrDetail){ _lyrDetail.clearLayers(); }
   const cnt=$('#mapEbCount');
-  // Vue par défaut (FR national sans filtre) : carte volontairement vide + hint.
-  // Le rendu de ~300 markers dispersés sur toute la France était peu utile et lent.
-  if(zone === 'FR' && !hasRar){
+  // Vue "FR entière" : toujours vide + hint. Trop lourd d'afficher les obs France entière
+  // (des milliers de points). L'utilisateur doit choisir une région/dept OU une espèce.
+  if(zone === 'FR'){
     if(_lyrMissing){ _lyrMissing.clearLayers(); }
     if(cnt) cnt.textContent = 'Choisis une région/département ou tape une espèce dans la barre pour voir les points';
     setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
@@ -3017,17 +3055,40 @@ document.addEventListener('input', e=>{
     _loaded.hotspots=''; renderMap();
   }
 });
+// Applique le fond couleur d'un chip selon son état actif (rareté 1-9 → hue map, exo → gris via CSS).
+function _paintRarChip(el, val, on){
+  if(!on){ el.style.background=''; el.classList.remove('on'); return; }
+  el.classList.add('on');
+  if(val==='exo') el.style.background='';   // .rar-exo.on géré par CSS
+  else el.style.background = realColor(val);
+}
+// Synchronise l'affichage de tous les chips avec ebFilter.rarities (utile pour init + Tout/Aucun).
+function _refreshRarChips(){
+  document.querySelectorAll('#mapEbRarityChips .rar-chip[data-rar]').forEach(el=>{
+    const raw = el.dataset.rar; const val = raw==='exo' ? 'exo' : +raw;
+    _paintRarChip(el, val, ebFilter.rarities.has(val));
+  });
+}
+// Init au chargement pour que les chips reflètent l'état par défaut (tous cochés)
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', _refreshRarChips);
+else _refreshRarChips();
 // Chips rareté (mode À cocher) : toggle Set, background = couleur rareté quand actif.
 document.addEventListener('click', e=>{
-  const c = e.target.closest('.rar-chip'); if(!c) return;
+  // Boutons Tout / — (aucun)
+  if(e.target.matches('[data-rar-all]')){
+    ebFilter.rarities = new Set([1,2,3,4,5,6,7,8,9,'exo']);
+    _refreshRarChips(); _loaded.missing=''; renderMap(); return;
+  }
+  if(e.target.matches('[data-rar-none]')){
+    ebFilter.rarities = new Set();
+    _refreshRarChips(); _loaded.missing=''; renderMap(); return;
+  }
+  const c = e.target.closest('.rar-chip[data-rar]'); if(!c) return;
   const raw = c.dataset.rar; const val = raw==='exo' ? 'exo' : +raw;
   const set = ebFilter.rarities;
-  if(set.has(val)){ set.delete(val); c.classList.remove('on'); c.style.background=''; }
-  else {
-    set.add(val); c.classList.add('on');
-    if(val==='exo') c.style.background='';   // .rar-exo.on géré par CSS
-    else c.style.background = realColor(val);
-  }
+  if(set.has(val)){ set.delete(val); }
+  else { set.add(val); }
+  _paintRarChip(c, val, set.has(val));
   _loaded.missing=''; renderMap();
 });
 // Boutons +/- pour le champ "min à cocher" (arrondi natif trop petit).
