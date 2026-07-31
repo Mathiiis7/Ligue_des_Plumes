@@ -2342,7 +2342,12 @@ function _mapApplyFilter(){
   if(cnt) cnt.textContent = q ? `${visible} / ${total} visible${visible>1?'s':''}` : '';
 }
 $('#mapSearch')?.addEventListener('input', e=>{
+  const prev = mapSearch;
   mapSearch = e.target.value; _mapApplyFilter(); _updateMapSuggest();
+  // Barre vidée en mode À cocher : efface aussi l'obs d'espèce chargée (sinon elle reste).
+  if(mapMode==='missing' && prev && !mapSearch && _lyrDetail){
+    _lyrDetail.remove(); _lyrDetail.clearLayers();
+  }
   // Mode "Où trouver" : la barre pilote la choroplèthe → re-render.
   if(mapMode==='abundance') renderMap();
 });
@@ -2620,11 +2625,15 @@ function renderMap(){
   $('#mapTimeline').style.display = mine ? '' : 'none';
   $('#mapStats').style.display = mine ? '' : 'none';
   $('#mapNote').style.display = 'none';
-  // Cache toutes les couches ; le mode courant remet la sienne
+  // Cache toutes les couches ; le mode courant remet la sienne.
+  // _lyrDetail (obs d'une espèce spécifique via clic dropdown) NE se vide QUE sur changement
+  // de mode — sinon un simple toggle chip rareté effacerait l'obs qu'on vient de consulter.
+  const modeChanged = renderMap._prev !== mapMode;
+  renderMap._prev = mapMode;
   if(_mapLayer){ _mapLayer.remove(); }
   if(_lyrMissing){ _lyrMissing.remove(); }
   if(_lyrHotspots){ _lyrHotspots.remove(); }
-  if(_lyrDetail){ _lyrDetail.remove(); _lyrDetail.clearLayers(); }
+  if(_lyrDetail && modeChanged){ _lyrDetail.remove(); _lyrDetail.clearLayers(); }
   if(_lyrAbundance){ _lyrAbundance.remove(); }
   if(_lyrAbHotspots){ _lyrAbHotspots.remove(); _lyrAbHotspots.clearLayers(); }
   // Dispatch
@@ -2729,8 +2738,9 @@ async function _renderModeMissing(){
   const hasRar = rars.size>0;
   // Fan-out (toutes les obs) déclenché par : département sélectionné OU (région + rareté).
   const heavy = (zone!=='FR') || hasRar;
-  // Nettoyage détail espèce lors d'une re-render (filtre changé) — sinon les vieux points restent.
-  if(_lyrDetail){ _lyrDetail.clearLayers(); }
+  // _lyrDetail (obs d'une espèce sélectionnée via clic dropdown) est délibérément conservé
+  // entre re-renders : ainsi cocher/décocher une chip rareté ne fait pas disparaître l'obs
+  // que l'utilisateur vient d'inspecter.
   const cnt=$('#mapEbCount');
   // Vue "FR entière" : toujours vide + hint. Trop lourd d'afficher les obs France entière
   // (des milliers de points). L'utilisateur doit choisir une région/dept OU une espèce.
