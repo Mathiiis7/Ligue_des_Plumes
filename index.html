@@ -2274,6 +2274,9 @@ let _taxInv = null;           // { sciName lowercase -> speciesCode } — invers
 let mapSearch = '';          // recherche par nom (espèce/lieu) — filtre client-side
 let _lyrDetail = null;        // couche "détails d'une espèce" (obs sur toute la période)
 let _lyrAbundance = null;     // couche choroplèthe (mode "Où trouver")
+let _lyrAbHotspots = null;    // couche des hotspots récents (30j) affichée au zoom
+let _abHotspotsData = null;   // { sci, obs:[...] } cache de la dernière fetch
+const AB_HOTSPOTS_ZOOM = 8;   // seuil de zoom au-delà duquel on affiche les hotspots
 let _deptGeoJSON = null;      // GeoJSON des 96 départements (lazy fetch)
 let abFilter = { sci:'', month:0, metric:'max', view:'abs' };   // metric: max|mean · view: abs|rank
 let _legendDiv = null;        // <div> de la légende Leaflet (bottomright) — contenu adapté au mode
@@ -2578,6 +2581,7 @@ function renderMap(){
   if(_lyrHotspots){ _lyrHotspots.remove(); }
   if(_lyrDetail){ _lyrDetail.remove(); _lyrDetail.clearLayers(); }
   if(_lyrAbundance){ _lyrAbundance.remove(); }
+  if(_lyrAbHotspots){ _lyrAbHotspots.remove(); _lyrAbHotspots.clearLayers(); }
   // Dispatch
   if(mine) return _renderModeMine(el);
   if(mapMode==='missing') return _renderModeMissing();
@@ -2720,6 +2724,49 @@ function _abColorAbs(v){
   const hue = Math.round(60 - 60*score);   // 60 = jaune, 0 = rouge
   return { fillColor:`hsl(${hue},85%,${Math.round(52 - score*20)}%)`, fillOpacity:0.3 + 0.55*score, weight:1, color:'#666' };
 }
+// Fetch les obs récentes (30j) d'une espèce en France pour l'overlay hotspots au zoom.
+// 1 seul appel API par (espèce), cache 3 niveaux via _ebFetch.
+async function _loadAbHotspots(sci, code){
+  if(!sci || !code) return;
+  // Cache local : évite le re-fetch si même espèce
+  if(_abHotspotsData && _abHotspotsData.sci === sci) return _abHotspotsData;
+  try{
+    const url = `https://api.ebird.org/v2/data/obs/FR/recent/${code}?back=30&maxResults=500&locale=fr`;
+    const data = await _ebFetch(url);
+    _abHotspotsData = { sci, obs: Array.isArray(data) ? data : [] };
+  }catch(_){ _abHotspotsData = { sci, obs: [] }; }
+  return _abHotspotsData;
+}
+// Rend la couche des hotspots récents en filtrant sur le viewport + niveau de zoom.
+function _renderAbHotspots(){
+  if(!_map || !_lyrAbHotspots) return;
+  _lyrAbHotspots.clearLayers();
+  if(mapMode !== 'abundance' || !_abHotspotsData) return;
+  const zoom = _map.getZoom();
+  if(zoom < AB_HOTSPOTS_ZOOM){ return; }   // Trop dézoomé, on n'ajoute rien (visuel chargé)
+  const bounds = _map.getBounds();
+  const nm = FR_NAMES[_abHotspotsData.sci] || _abHotspotsData.sci;
+  const now = Date.now();
+  let n = 0;
+  for(const o of _abHotspotsData.obs){
+    if(typeof o.lat!=='number' || typeof o.lng!=='number') continue;
+    if(!bounds.contains([o.lat, o.lng])) continue;
+    // Couleur : plus l'obs est récente, plus le point est intense (vert vif ↔ vert pâle)
+    const dt = new Date((o.obsDt||'').slice(0,10)+'T00:00:00');
+    const days = Math.max(0, Math.round((now - dt.getTime())/86400000));
+    const freshness = Math.max(0, 1 - days/30);   // 0 (30j) → 1 (aujourd'hui)
+    const fillColor = `hsl(140, 75%, ${Math.round(28 + (1-freshness)*35)}%)`;
+    const m = L.circleMarker([o.lat, o.lng], { radius:5, weight:1.5, color:'#0e3b1a', fillColor, fillOpacity:0.9, opacity:1 });
+    const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
+    const eb = o.locId ? `<a href="https://ebird.org/hotspot/${esc(o.locId)}" target="_blank" rel="noopener" class="p-link">🐦 eBird</a>` : '';
+    m.bindPopup(`<b>🏞️ ${esc(o.locName||'?')}</b><br>`+
+      `<span class="p-meta"><b>${esc(nm)}</b></span><br>`+
+      `<span class="p-meta">Vu le <b>${esc((o.obsDt||'').slice(0,10))}</b>${o.howMany?' · '+o.howMany+' individu'+(o.howMany>1?'s':''):''}</span><br>${gm} ${eb}`);
+    _lyrAbHotspots.addLayer(m);
+    n++;
+  }
+  if(n>0) _lyrAbHotspots.addTo(_map);
+}
 // Convertit une abondance ebirdst (birds/effort) en niveau qualitatif interprétable par l'utilisateur.
 function _abLevel(v){
   if(!v || v<=0)   return { name:'Absent',         emoji:'⚪' };
@@ -2749,6 +2796,15 @@ const _INSEE_TO_APP = (function(){
 })();
 async function _renderModeAbundance(){
   const cnt = $('#mapAbCount');
+  // Charge la taxonomie en fond (nécessaire pour _sciToCode → fetch hotspots au zoom)
+  _loadTaxonomy().catch(()=>{});
+  // Init la couche hotspots (une fois)
+  if(!_lyrAbHotspots){ _lyrAbHotspots = L.layerGroup(); }
+  // Attache le listener zoom/move (une seule fois) qui rafraîchit les hotspots
+  if(_map && !_map._abHsHook){
+    _map._abHsHook = true;
+    _map.on('zoomend moveend', () => { if(mapMode==='abundance') _renderAbHotspots(); });
+  }
   // Le champ espèce = la barre de recherche principale (#mapSearch) — pas de doublon.
   const inputVal = (mapSearch || '').trim();
   // Source data selon toggle Peak/Moyenne
@@ -2843,8 +2899,21 @@ async function _renderModeAbundance(){
   const monthLbl = m ? ` en ${['','janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'][m]}` : ' (pic annuel)';
   const metricLbl = abFilter.metric === 'mean' ? 'moyenne' : 'peak';
   if(cnt) cnt.textContent = `${FR_NAMES[sci]||sci} — ${nDept} dept${monthLbl} (${metricLbl})`;
-  // Fit sur la France entière
-  try{ _map.fitBounds(_lyrAbundance.getBounds(), { padding:[20,20] }); }catch(_){}
+  // Fit sur la France entière si on vient d'entrer dans le mode (pas si l'utilisateur navigue déjà)
+  if(!_lyrAbHotspots.getLayers().length){
+    try{ _map.fitBounds(_lyrAbundance.getBounds(), { padding:[20,20] }); }catch(_){}
+  }
+  // Overlay hotspots récents : fetch (cached) + render selon zoom actuel.
+  const code = _sciToCode(sci);
+  if(code){
+    // Change d'espèce → efface l'ancien cache pour re-fetch le bon
+    if(_abHotspotsData && _abHotspotsData.sci !== sci) _abHotspotsData = null;
+    await _loadAbHotspots(sci, code);
+    _renderAbHotspots();
+  } else {
+    _abHotspotsData = null;
+    if(_lyrAbHotspots){ _lyrAbHotspots.clearLayers(); _lyrAbHotspots.remove(); }
+  }
 }
 // Charge et affiche toutes les obs récentes d'une espèce (endpoint /recent/{speciesCode}).
 // Utilise la zone effective (dept > région > national). Cache la couche "missing" pour ne montrer
@@ -2910,7 +2979,8 @@ function _updateAbHint(){
   const metricTxt = abFilter.metric==='mean'
     ? '<b>📊 Moyenne</b> : moyenne des pixels du dept (densité globale, dilue les côtes).'
     : '<b>🔥 Peak</b> : meilleur pixel du dept (capte les hotspots côtiers / marais).';
-  el.innerHTML = viewTxt + '<br>' + metricTxt;
+  el.innerHTML = viewTxt + '<br>' + metricTxt +
+    '<br><span style="opacity:.8;">💡 Zoome ≥ 8× (dans un dept) pour voir les <b>hotspots où l\'espèce a été vue ces 30 derniers jours</b> (points verts).</span>';
   el.style.display = '';
 }
 // Toggle Peak / Moyenne pour le mode "Où trouver"
