@@ -2300,18 +2300,16 @@ function _updateLegend(){
           const hue = Math.round(60 - 60*sc);
           const bg = `hsl(${hue},85%,${Math.round(52 - sc*20)}%)`;
           return `<div class="ml-row"><span class="ml-dot" style="background:${bg};border:1px solid #999"></span><span class="ml-txt">${esc(lbl)}</span></div>`;
-        }).join('') +
-        '<div class="ml-row" style="margin-top:4px;font-size:10px;color:#666;">🎯 où tenter de trouver l\'espèce</div>';
+        }).join('');
     } else {
       // Échelle universelle : même couleur = même abondance réelle (log-scale eBird).
       // Espèce rare partout → tous les depts restent pâles (honnête).
-      const steps = [[100,'🔴 Très abondant'],[10,'🟠 Abondant'],[1,'🟡 Fréquent'],[0.1,'🟢 Modéré'],[0.01,'🔵 Faible'],[0.001,'⚫ Très rare']];
+      const steps = [[100,'≥ 100'],[10,'≥ 10'],[1,'≥ 1'],[0.1,'≥ 0.1'],[0.01,'≥ 0.01'],[0.001,'≥ 0.001']];
       _legendDiv.innerHTML = '<div class="ml-title">Abondance eBird</div>' +
         steps.map(([v,lbl])=>{
           const st = _abColorAbs(v);
           return `<div class="ml-row"><span class="ml-dot" style="background:${st.fillColor};opacity:${st.fillOpacity};border:1px solid #999"></span><span class="ml-txt">${esc(lbl)}</span></div>`;
-        }).join('') +
-        '<div class="ml-row" style="margin-top:4px;font-size:10px;color:#666;">📍 abondance réelle · transparent = 0</div>';
+        }).join('');
     }
   } else {
     const tiers=[1,2,3,4,5,6,7,8,9];
@@ -2680,7 +2678,7 @@ async function _renderModeMissing(){
   const isDept = /^FR-[A-Z]+-[0-9A-Z]+$/.test(zone);
   const hasRar = rars.size>0;
   // Fan-out (toutes les obs) déclenché par : département sélectionné OU (région + rareté).
-  const heavy = isDept || ((zone!=='FR') && hasRar);
+  const heavy = (zone!=='FR') || hasRar;
   // Nettoyage détail espèce lors d'une re-render (filtre changé) — sinon les vieux points restent.
   if(_lyrDetail){ _lyrDetail.clearLayers(); }
   const cnt=$('#mapEbCount'); if(cnt) cnt.textContent='… chargement';
@@ -2884,13 +2882,11 @@ async function _renderModeAbundance(){
       const metricLbl = abFilter.metric === 'mean' ? 'moyenne dept' : 'peak dept';
       const scope = m ? `en ${MONTHS[m]}` : 'toute l\'année';
       const rankLbl = rank ? `<b>${rank}<sup>e</sup></b> sur ${totalRanked} depts français` : 'non classé (0 obs)';
-      const lvl = _abLevel(v);
       let popup = `<b>${esc(nm)}</b> <span class="p-sci">${esc(sci)}</span><br>`+
         `<span class="p-meta"><b>${esc(f.properties.nom)}</b> (${esc(insee)}) — ${rankLbl}</span><br>`+
-        `<span class="p-meta">Abondance ${metricLbl} · ${scope} : ${lvl.emoji} <b>${lvl.name}</b> <span style="opacity:.6;font-size:10.5px;">(${v.toFixed(3)})</span></span>`;
+        `<span class="p-meta">Abondance ${metricLbl} · ${scope} : <b>${v.toFixed(3)}</b></span>`;
       if(m && bestMonth !== m){
-        const lvlB = _abLevel(bestV);
-        popup += `<br><span class="p-meta">Meilleur mois ici : <b>${MONTHS[bestMonth]}</b> — ${lvlB.emoji} ${lvlB.name}</span>`;
+        popup += `<br><span class="p-meta">Meilleur mois ici : <b>${MONTHS[bestMonth]}</b> (${bestV.toFixed(3)})</span>`;
       }
       layer.bindPopup(popup);
     }
@@ -3143,7 +3139,7 @@ async function _loadMissingLayer(zone, days=14, rarities=new Set(), onProgress){
   //  - FR national : jamais (trop d'espèces, trop d'appels API)
   const isDept = /^FR-[A-Z]+-[0-9A-Z]+$/.test(zone);
   const hasRar = rarities.size > 0;
-  const heavy = isDept || ((zone !== 'FR') && hasRar);
+  const heavy = (zone !== 'FR') || hasRar;
   const rarKey = hasRar ? [...rarities].sort().join(',') : 'all';
   const key = zone+':'+days+':'+(heavy?rarKey:'light');
   // Helper : espèce passe le filtre rareté ?
