@@ -2320,7 +2320,10 @@ function _updateLegend(){
     } else {
       // Échelle universelle : même couleur = même abondance réelle (log-scale eBird).
       // Espèce rare partout → tous les depts restent pâles (honnête).
-      const steps = [[100,'≥ 100'],[10,'≥ 10'],[1,'≥ 1'],[0.1,'≥ 0.1'],[0.01,'≥ 0.01'],[0.001,'≥ 0.001']];
+      const steps = [
+        [100,'≥ 100 (très abondant)'],[10,'≥ 10 (abondant)'],[1,'≥ 1 (commun)'],
+        [0.1,'≥ 0.1 (peu commun)'],[0.01,'≥ 0.01 (rare)'],[0.001,'≥ 0.001 (très rare)']
+      ];
       _legendDiv.innerHTML = '<div class="ml-title">Abondance eBird</div>' +
         steps.map(([v,lbl])=>{
           const st = _abColorAbs(v);
@@ -2844,6 +2847,17 @@ function _abColorAbs(v){
   const hue = Math.round(60 - 60*score);   // 60 = jaune, 0 = rouge
   return { fillColor:`hsl(${hue},85%,${Math.round(52 - score*20)}%)`, fillOpacity:0.3 + 0.55*score, weight:1, color:'#666' };
 }
+// Traduit une valeur d'abondance eBird (log-scale) en mot lisible (juste du texte, pas d'emoji/couleur).
+// Utilisé dans les popups et la légende du mode "Où trouver".
+function _abLabel(v){
+  if(!v || v<=0) return 'absent';
+  if(v>=100) return 'très abondant';
+  if(v>=10)  return 'abondant';
+  if(v>=1)   return 'commun';
+  if(v>=0.1) return 'peu commun';
+  if(v>=0.01) return 'rare';
+  return 'très rare';
+}
 // Fetch les obs récentes (30j) d'une espèce en France pour l'overlay hotspots au zoom.
 // 1 seul appel API par (espèce), cache 3 niveaux via _ebFetch.
 async function _loadAbHotspots(sci, code){
@@ -3002,7 +3016,7 @@ async function _renderModeAbundance(){
       const rankLbl = rank ? `<b>${rank}<sup>e</sup></b> sur ${totalRanked} depts français` : 'non classé (0 obs)';
       let popup = `<b>${esc(nm)}</b> <span class="p-sci">${esc(sci)}</span><br>`+
         `<span class="p-meta"><b>${esc(f.properties.nom)}</b> (${esc(insee)}) — ${rankLbl}</span><br>`+
-        `<span class="p-meta">Abondance ${metricLbl} · ${scope} : <b>${v.toFixed(3)}</b></span>`;
+        `<span class="p-meta">Abondance ${metricLbl} · ${scope} : <b>${v.toFixed(3)}</b> (${_abLabel(v)})</span>`;
       if(m && bestMonth !== m){
         popup += `<br><span class="p-meta">Meilleur mois ici : <b>${MONTHS[bestMonth]}</b> (${bestV.toFixed(3)})</span>`;
       }
