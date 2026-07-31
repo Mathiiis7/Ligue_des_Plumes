@@ -2797,10 +2797,8 @@ async function _renderModeMissing(){
   _lyrMissing.addTo(_map);
   const nObs = _lyrMissing.getLayers().length;
   const nSp = new Set(); _lyrMissing.eachLayer(m=>{ if(m._sciName) nSp.add(m._sciName.toLowerCase()); });
-  // Label rareté : n'affiche la liste que si SOUS-ensemble strict (utile) — sinon rien.
-  const ALL_RARS = 10; // 1..9 + exo
-  const partial = hasRar && rars.size < ALL_RARS;
-  const rarLbl = partial ? [...rars].sort((a,b)=>a==='exo'?1:b==='exo'?-1:(+a-+b)).join(',') : '';
+  // Label rareté : jamais affiché — les chips colorées en haut le disent déjà.
+  const rarLbl = '';
   const zoneLbl = ebFilter.dept ? ' — '+esc(DEPT_NAMES[ebFilter.dept]||ebFilter.dept) : '';
   if(cnt) cnt.textContent = nObs
     ? (heavy ? `${nObs} obs · ${nSp.size} espèce${nSp.size>1?'s':''}${rarLbl?' '+rarLbl:''}${zoneLbl}`
