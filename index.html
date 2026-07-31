@@ -2259,16 +2259,9 @@ for(const code in DEPT_NAMES){ const reg = code.slice(0, code.lastIndexOf('-'));
 for(const reg in REGION_TO_DEPTS) REGION_TO_DEPTS[reg].sort((a,b)=>DEPT_NAMES[a].localeCompare(DEPT_NAMES[b],'fr'));
 // Nom lisible d'une région à partir de son code ISO (utilisé dans les compteurs de la carte).
 const REGION_NAMES = Object.fromEntries(FR_REGIONS.map(r=>[r.code, r.name]));
-// Label zone pour compteurs : "— Région" ou "— Région · Département" selon sélection.
-function _zoneLabel(){
-  const r = ebFilter.region, d = ebFilter.dept;
-  const rn = r && r!=='FR' ? (REGION_NAMES[r]||r) : '';
-  const dn = d ? (DEPT_NAMES[d]||d) : '';
-  if(dn && rn) return ' — '+rn+' · '+dn;
-  if(dn) return ' — '+dn;
-  if(rn) return ' — '+rn;
-  return '';
-}
+// Label zone pour compteurs : jamais affiché — la région/dept sélectionnée est déjà
+// visible dans les sélecteurs juste au-dessus, pas besoin de la répéter.
+function _zoneLabel(){ return ''; }
 // (Re)peuple le sélecteur département en fonction de la région choisie.
 function _refreshDeptSel(){
   const sel = $('#mapEbDept'), lbl = $('#mapEbDeptLbl'); if(!sel) return;
