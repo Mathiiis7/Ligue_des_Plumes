@@ -963,6 +963,10 @@
         <span class="map-count" id="mapEbCount"></span>
       </div>
       <div class="map-controls" id="mapCtrlsAbundance" style="display:none;">
+        <div class="seg" id="mapAbView" style="margin-right:8px;">
+          <button type="button" data-view="abs" class="on" title="Couleur = abondance réelle (même échelle pour toutes espèces). Un oiseau rare reste pâle même dans son meilleur dept — signal honnête.">📍 Absolu</button>
+          <button type="button" data-view="rank" title="Couleur = position (rang) du dept parmi les autres pour CETTE espèce. Le meilleur dept est toujours rouge, même si l'espèce est rare partout — utile pour repérer où tenter.">🎯 Top des dept</button>
+        </div>
         <div class="seg" id="mapAbMetric" style="margin-right:8px;">
           <button type="button" data-metric="max" class="on" title="Meilleur pixel du dept — capte les hotspots (côtes, marais, etc.)">🔥 Peak</button>
           <button type="button" data-metric="mean" title="Moyenne des pixels du dept — densité globale (dilue le signal côtier)">📊 Moyenne</button>
@@ -2270,7 +2274,7 @@ let mapSearch = '';          // recherche par nom (espèce/lieu) — filtre clie
 let _lyrDetail = null;        // couche "détails d'une espèce" (obs sur toute la période)
 let _lyrAbundance = null;     // couche choroplèthe (mode "Où trouver")
 let _deptGeoJSON = null;      // GeoJSON des 96 départements (lazy fetch)
-let abFilter = { sci:'', month:0, metric:'max' };   // état du mode abondance ; metric: 'max' | 'mean'
+let abFilter = { sci:'', month:0, metric:'max', view:'abs' };   // metric: max|mean · view: abs|rank
 let _legendDiv = null;        // <div> de la légende Leaflet (bottomright) — contenu adapté au mode
 // Légende adaptative : rareté (couleur) pour mine/missing, taille (nb d'espèces) pour hotspots.
 function _updateLegend(){
@@ -2284,16 +2288,27 @@ function _updateLegend(){
     _legendDiv.innerHTML = `<div class="ml-title">Taille = ${isTotal?'total d\'espèces':'espèces à cocher'}</div>`+
       samples.map(([v,lbl])=>{ const r = size(v); return `<div class="ml-row"><span class="ml-dot ml-hs" style="width:${(r*2).toFixed(0)}px;height:${(r*2).toFixed(0)}px"></span><span class="ml-txt">${esc(lbl)}</span></div>`; }).join('');
   } else if(mapMode==='abundance'){
-    // Couleur = position (rang) du dept parmi tous les depts avec data pour cette espèce.
-    // Plus robuste que la valeur brute face aux outliers (un hotspot extrême n'écrase pas le reste).
-    const steps = [[1,'1ᵉʳ'],[0.75,'top 25 %'],[0.5,'médian'],[0.25,'bas 25 %'],[0,'moins bon']];
-    _legendDiv.innerHTML = '<div class="ml-title">Classement dept</div>' +
-      steps.map(([sc,lbl])=>{
-        const hue = Math.round(60 - 60*sc);
-        const bg = `hsl(${hue},85%,${Math.round(52 - sc*20)}%)`;
-        return `<div class="ml-row"><span class="ml-dot" style="background:${bg};border:1px solid #999"></span><span class="ml-txt">${esc(lbl)}</span></div>`;
-      }).join('') +
-      '<div class="ml-row" style="margin-top:4px;font-size:10px;color:#666;">gris = pas de data</div>';
+    if(abFilter.view === 'rank'){
+      // Rang du dept parmi les autres pour cette espèce (chaque espèce a son propre "1er" en rouge).
+      const steps = [[1,'1ᵉʳ (meilleur)'],[0.75,'top 25 %'],[0.5,'médian'],[0.25,'bas 25 %'],[0,'moins bon']];
+      _legendDiv.innerHTML = '<div class="ml-title">Classement dept</div>' +
+        steps.map(([sc,lbl])=>{
+          const hue = Math.round(60 - 60*sc);
+          const bg = `hsl(${hue},85%,${Math.round(52 - sc*20)}%)`;
+          return `<div class="ml-row"><span class="ml-dot" style="background:${bg};border:1px solid #999"></span><span class="ml-txt">${esc(lbl)}</span></div>`;
+        }).join('') +
+        '<div class="ml-row" style="margin-top:4px;font-size:10px;color:#666;">🎯 où tenter de trouver l\'espèce</div>';
+    } else {
+      // Échelle universelle : même couleur = même abondance réelle (log-scale eBird).
+      // Espèce rare partout → tous les depts restent pâles (honnête).
+      const steps = [[100,'≥ 100 très abondant'],[10,'≥ 10 abondant'],[1,'≥ 1 fréquent'],[0.1,'≥ 0.1 modéré'],[0.01,'≥ 0.01 faible'],[0.001,'≥ 0.001 très rare']];
+      _legendDiv.innerHTML = '<div class="ml-title">Abondance eBird</div>' +
+        steps.map(([v,lbl])=>{
+          const st = _abColorAbs(v);
+          return `<div class="ml-row"><span class="ml-dot" style="background:${st.fillColor};opacity:${st.fillOpacity};border:1px solid #999"></span><span class="ml-txt">${esc(lbl)}</span></div>`;
+        }).join('') +
+        '<div class="ml-row" style="margin-top:4px;font-size:10px;color:#666;">📍 abondance réelle · transparent = 0</div>';
+    }
   } else {
     const tiers=[1,2,3,4,5,6,7,8,9];
     _legendDiv.innerHTML = '<div class="ml-title">Rareté</div>' + tiers.map(w=>
@@ -2695,12 +2710,14 @@ async function _renderModeHotspots(){
 }
 
 // ---- Mode "Où trouver" : choroplèthe abondance par département ----
-// Palette abondance : transparent (0) → jaune (bas) → rouge (max), normalisée par espèce.
-function _abColor(v, max){
-  if(!v || v<=0 || !max) return { fillColor:'#000', fillOpacity:0, weight:0 };
-  const r = Math.min(1, v / max);
-  const hue = Math.round(60 - 60*r);   // 60 = jaune, 0 = rouge
-  return { fillColor:`hsl(${hue},85%,${Math.round(52 - r*20)}%)`, fillOpacity:0.35 + 0.5*r, weight:1, color:'#666' };
+// Palette UNIVERSELLE (log-scale). Même couleur = même abondance réelle, indépendamment
+// de l'espèce. Un oiseau rare partout reste pâle même dans son "meilleur" département.
+// Barème (log10 sur birds/effort eBird) : 0.01 = très faible, 1 = moyen, 10 = élevé, 100 = max.
+function _abColorAbs(v){
+  if(!v || v<=0) return { fillColor:'#000', fillOpacity:0, weight:0 };
+  const score = Math.max(0, Math.min(1, Math.log10(1 + v * 10) / 3));
+  const hue = Math.round(60 - 60*score);   // 60 = jaune, 0 = rouge
+  return { fillColor:`hsl(${hue},85%,${Math.round(52 - score*20)}%)`, fillOpacity:0.3 + 0.55*score, weight:1, color:'#666' };
 }
 // Peuple le datalist des espèces avec data d'abondance (uniquement celles qu'on a).
 // Charge (une seule fois) le GeoJSON des 96 départements. Servi depuis tools/ (repo public).
@@ -2773,9 +2790,17 @@ async function _renderModeAbundance(){
     style: (f) => {
       const insee = f.properties.code;
       const app = _INSEE_TO_APP[insee];
-      // Couleur basée sur le RANG (plus robuste que la valeur brute face aux outliers)
-      const score = app ? colorScoreFor(app) : 0;
-      return _abColor(score, 1);   // score déjà 0-1
+      if(!app) return { fillOpacity:0, weight:0 };
+      // 2 modes de couleur :
+      //   abs   → échelle universelle log (même rouge = même abondance réelle, honnête)
+      //   rank  → position dept relative à l'espèce (le meilleur = rouge, même si espèce rare partout)
+      if(abFilter.view === 'rank'){
+        const score = colorScoreFor(app);
+        if(!rankByApp[app]) return { fillOpacity:0, weight:0 };
+        const hue = Math.round(60 - 60*score);
+        return { fillColor:`hsl(${hue},85%,${Math.round(52 - score*20)}%)`, fillOpacity:0.35 + 0.5*score, weight:1, color:'#666' };
+      }
+      return _abColorAbs(valueForDept(app));
     },
     onEachFeature: (f, layer) => {
       const insee = f.properties.code;
@@ -2868,6 +2893,15 @@ document.addEventListener('click', e=>{
   if(!b) return;
   abFilter.metric = b.dataset.metric==='mean' ? 'mean' : 'max';
   document.querySelectorAll('#mapAbMetric button').forEach(x=>x.classList.toggle('on', x===b));
+  if(mapMode==='abundance') renderMap();
+});
+// Toggle vue Absolu / Rang pour le mode "Où trouver"
+document.addEventListener('click', e=>{
+  const b = e.target.closest('#mapAbView button[data-view]');
+  if(!b) return;
+  abFilter.view = b.dataset.view==='rank' ? 'rank' : 'abs';
+  document.querySelectorAll('#mapAbView button').forEach(x=>x.classList.toggle('on', x===b));
+  _updateLegend();
   if(mapMode==='abundance') renderMap();
 });
 // Slider "min à cocher" + champ "contient espèce" (event input pour réponse live).
