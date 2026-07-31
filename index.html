@@ -2945,10 +2945,7 @@ async function _renderModeAbundance(){
       layer.bindPopup(popup);
     }
   }).addTo(_map);
-  const nDept = Object.keys(speciesData).length;
-  const monthLbl = m ? ` en ${['','janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'][m]}` : ' (pic annuel)';
-  const metricLbl = abFilter.metric === 'mean' ? 'moyenne' : 'peak';
-  if(cnt) cnt.textContent = `${FR_NAMES[sci]||sci} — ${nDept} dept${monthLbl} (${metricLbl})`;
+  if(cnt) cnt.textContent = '';
   // Fit sur la France entière si on vient d'entrer dans le mode (pas si l'utilisateur navigue déjà)
   if(!_lyrAbHotspots.getLayers().length){
     try{ _map.fitBounds(_lyrAbundance.getBounds(), { padding:[20,20] }); }catch(_){}
