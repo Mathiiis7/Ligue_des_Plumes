@@ -3100,7 +3100,7 @@ async function _showSpeciesDetail(sciName, speciesCode){
       } else if(requested && used.level === 'fr'){
         cnt.textContent = `${count} obs de ${nm} — rien dans ${requested}, élargi à toute la France`;
       } else {
-        cnt.textContent = `${count} obs de ${nm} (${days} j)`;
+        cnt.textContent = `${count} obs de ${nm} (${days} j)${_zoneLabel()}`;
       }
     }
     return count;
