@@ -19,3 +19,5 @@ tools/ebirdst-target-codes.txt
 Thumbs.db
 .DS_Store
 tools/real-abundance-dept-mean.generated.js
+tools/habitats.generated.js
+tools/habitats-audit.json
