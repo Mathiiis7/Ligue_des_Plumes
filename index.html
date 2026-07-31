@@ -3102,7 +3102,11 @@ document.addEventListener('change', e=>{
     renderMap();
     _reloadSpeciesForZone();
   }
-  else if(e.target.id==='mapEbDays'){ ebFilter.days=+e.target.value; _loaded.missing=''; renderMap(); }
+  else if(e.target.id==='mapEbDays'){
+    ebFilter.days=+e.target.value; _loaded.missing='';
+    renderMap();
+    _reloadSpeciesForZone();
+  }
   else if(e.target.id==='mapEbMonth'){ ebFilter.month=+e.target.value||0; _loaded.hotspots=''; renderMap(); }
   else if(e.target.id==='mapAbMonth'){ abFilter.month=+e.target.value||0; if(mapMode==='abundance') renderMap(); }
   else if(e.target.id==='mapAbShowHs'){ abFilter.showHotspots = !!e.target.checked; if(mapMode==='abundance') _renderAbHotspots(); }
