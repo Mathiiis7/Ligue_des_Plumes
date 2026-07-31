@@ -1179,6 +1179,16 @@ const HABITATS = {"acanthis flammea":["forestier","bocage","urbain"],"accipiter 
 const HABITAT_CATS = ["forestier","hzhumide","eaudouce","pelagique","littoral","montagne","steppe","bocage","urbain","rocher"];
 function habitatsOf(sci){ return HABITATS[(sci||"").trim().toLowerCase()] || null; }
 const HABITAT_LABELS = { forestier:'🌲 Forestier', hzhumide:'🪺 Zones humides (marais, roselières)', eaudouce:'💧 Eau douce (rivières, lacs)', pelagique:'🌊 Océan pélagique', littoral:'🏖️ Littoral / côte', montagne:'🏔️ Montagne / alpin', steppe:'🌾 Steppe / plaines arides', bocage:'🌳 Bocage / prairies / cultures', urbain:'🏙️ Urbain / jardins', rocher:'🪨 Milieux rocheux (falaises, éboulis)' };
+// Reverse index : catégorie → tableau [sci] trié par nom FR. Construit une seule fois.
+const HABITAT_TO_SCIS = (() => {
+  const idx = Object.fromEntries(HABITAT_CATS.map(c=>[c, []]));
+  for(const sci in HABITATS){
+    const cats = HABITATS[sci];
+    for(const c of cats) if(idx[c]) idx[c].push(sci);
+  }
+  for(const c of HABITAT_CATS) idx[c].sort((a,b)=>frName(a,a).localeCompare(frName(b,b),'fr'));
+  return idx;
+})();
 function isExotic(sci){ return EXOTIC[(sci||'').trim().toLowerCase()]===1; }
 function rarityReal(sci){ if(isExotic(sci)) return 1; return REAL_RARITY[(sci||'').trim().toLowerCase()] || 1; }
 // Fréquence eBird fine (part des listes) — pour départager les oiseaux d'un même poids.
@@ -1767,7 +1777,17 @@ const TROPHIES = [
   { icon:ICONS.bebe, name:'Gros Bébé', desc:'Observer des oiseaux avec Samuel Fillion (preuve demandée)', special:'vote', test:s=>(s.grosBebeVotes||0)>=3 },
   // Badge "Naturaliste polyvalent" — cocher au moins 5 espèces dans N milieux différents.
   // Milieux : forestier, zone humide, eau douce, océan, littoral, montagne, steppe, bocage, urbain, rocher.
-  { icon:'<div style="font-size:44px;line-height:60px">🌍</div>', name:'Naturaliste polyvalent', desc:'Cocher au moins 5 espèces dans 7 milieux différents (sur 10)', test:s=>s.habCovered>=7, prog:s=>[s.habCovered,7], alwaysList:true, list:s=>HABITAT_CATS.map(c=>({ name:`${HABITAT_LABELS[c]} — ${s.habOwned[c].size} espèce${s.habOwned[c].size>1?'s':''}`, section:s.habOwned[c].size>=5?'✅ Validé (≥5 espèces)':'⏳ À valider (5 min.)', owned:s.habOwned[c].size>=5 })), note:s=>`${s.habCovered} milieu${s.habCovered>1?'x':''} validé${s.habCovered>1?'s':''} sur ${HABITAT_CATS.length} (seuil : 5 espèces par milieu)` },
+  { icon:'<div style="font-size:44px;line-height:60px">🌍</div>', name:'Naturaliste polyvalent', desc:'Cocher au moins 5 espèces dans 7 milieux différents (sur 10)', test:s=>s.habCovered>=7, prog:s=>[s.habCovered,7], alwaysList:true, list:s=>{
+      // Une section par milieu, chaque section liste TOUTES les espèces possibles
+      // avec l'état owned. Le compteur "(n/m)" apparaît automatiquement dans le header.
+      const out = [];
+      for(const c of HABITAT_CATS){
+        const scis = HABITAT_TO_SCIS[c] || [];
+        const sec = `${HABITAT_LABELS[c]} — ${s.habOwned[c].size} vue${s.habOwned[c].size>1?'s':''} · ${s.habOwned[c].size>=5?'✅ validé':'⏳ à valider (5 min.)'}`;
+        for(const sci of scis) out.push({ name: frName(sci, sci), section: sec, owned: s.habOwned[c].has(sci) });
+      }
+      return out;
+    }, note:s=>`${s.habCovered} milieu${s.habCovered>1?'x':''} validé${s.habCovered>1?'s':''} sur ${HABITAT_CATS.length} (seuil : 5 espèces par milieu)` },
   { icon:ICONS.crown, name:'Écologue originel', desc:'Être 1ᵉʳ du classement', test:s=>s.groupN>1 && s.rank===1 },
   { icon:ICONS.podium, name:'Écologue en chef', desc:'Dans le top 2', test:s=>s.groupN>1 && s.rank<=2 },
   { icon:ICONS.bronze, name:'Écologue chevronné', desc:'Dans le top 3', test:s=>s.groupN>1 && s.rank<=3 },
