@@ -2370,8 +2370,7 @@ function _updateMapSuggest(){
       }
       items.sort((a,b)=> a.name.localeCompare(b.name,'fr'));
     }
-    const CAP = q ? 15 : 40;
-    const top = items.slice(0, CAP);
+    const top = items;   // pas de cap : la scroll box overflow-y gère (max 60vh)
     if(!top.length){ box.classList.remove('open'); box.innerHTML=''; _mapSuggestItems=[]; return; }
     _mapSuggestItems = top;
     box.innerHTML = top.map((it, i) =>
@@ -2438,8 +2437,7 @@ function _updateMapSuggest(){
       return 0;
     });
   }
-  const CAP = q ? 12 : 30;
-  const top = items.slice(0, CAP);
+  const top = items;   // pas de cap : la scroll box overflow-y gère (max 60vh)
   if(!top.length){ box.classList.remove('open'); box.innerHTML=''; _mapSuggestItems=[]; return; }
   _mapSuggestItems = top;
   box.innerHTML = top.map((it, i) => {
@@ -2801,8 +2799,9 @@ function _renderAbHotspots(){
   for(const o of _abHotspotsData.obs){
     if(typeof o.lat!=='number' || typeof o.lng!=='number') continue;
     if(!bounds.contains([o.lat, o.lng])) continue;
-    // Couleur unique — plus lisible qu'un gradient : les points sont ce qu'ils sont, un point = 1 obs récente.
-    const m = L.circleMarker([o.lat, o.lng], { radius:5, weight:1.5, color:'#0e3b1a', fillColor:'#2e8540', fillOpacity:0.9, opacity:1 });
+    // Couleur = rareté de l'espèce (comme sur les autres cartes), pour cohérence visuelle.
+    const c = sciColor(_abHotspotsData.sci);
+    const m = L.circleMarker([o.lat, o.lng], { radius:5, weight:1.5, color:'#fff', fillColor:c, fillOpacity:0.9, opacity:1 });
     const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
     const eb = o.locId ? `<a href="https://ebird.org/hotspot/${esc(o.locId)}" target="_blank" rel="noopener" class="p-link">🐦 eBird</a>` : '';
     m.bindPopup(`<b>🏞️ ${esc(o.locName||'?')}</b><br>`+
@@ -3020,7 +3019,7 @@ function _updateAbHint(){
   if(mapMode!=='abundance'){ el.style.display='none'; return; }
   const viewTxt = abFilter.view==='rank'
     ? '<b>🎯 Top des dept</b> : le meilleur dept ressort rouge même si l\'espèce est rare partout — utile pour savoir OÙ tenter.'
-    : '<b>📍 Absolu</b> : même couleur = même abondance réelle (échelle universelle). Un oiseau rare reste pâle même dans son meilleur coin — honnête.';
+    : '<b>📍 Absolu</b> : même couleur = même abondance réelle (échelle universelle). Un oiseau rare reste pâle même dans son meilleur coin.';
   const metricTxt = abFilter.metric==='mean'
     ? '<b>📊 Moyenne</b> : moyenne des pixels du dept (densité globale, dilue les côtes).'
     : '<b>🔥 Peak</b> : meilleur pixel du dept (capte les hotspots côtiers / marais).';
