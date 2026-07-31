@@ -2746,16 +2746,25 @@ async function _renderModeAbundance(){
   }
   const geojson = await _loadDeptGeoJSON();
   const speciesData = SRC[sci] || {};
-  // Calcule le max de l'espèce (pour normalisation couleur)
+  // Calcule le max de l'espèce (pour normalisation couleur ET affichage %)
   const m = abFilter.month;
   const valueForDept = appCode => {
     const arr = speciesData[appCode]; if(!arr) return 0;
-    return m ? (arr[m-1]||0) : Math.max(...arr);   // 0 = pic annuel
+    return m ? (arr[m-1]||0) : Math.max(...arr);   // month=0 = peak annuel de ce dept
   };
+  // globalMax = max sur TOUS les dept × TOUS les mois → référence pour l'affichage %
+  let globalMax = 0;
+  for(const app of Object.keys(speciesData)){
+    const arr = speciesData[app];
+    for(let i=0;i<12;i++) if(arr[i]>globalMax) globalMax = arr[i];
+  }
+  // maxV = max de la vue courante (pour couleur normalisée du rendu)
   let maxV = 0;
   for(const app of Object.keys(speciesData)){
     const v = valueForDept(app); if(v>maxV) maxV = v;
   }
+  // Formate une valeur brute en % du max espèce en France
+  const asPct = raw => globalMax>0 ? `${(raw/globalMax*100).toFixed(raw/globalMax*100>=10?0:1)} %` : '—';
   // Efface l'ancienne couche
   if(_lyrAbundance){ _lyrAbundance.remove(); _lyrAbundance = null; }
   _lyrAbundance = L.geoJSON(geojson, {
@@ -2777,14 +2786,16 @@ async function _renderModeAbundance(){
       let bestMonth = 1, bestV = 0;
       for(let i=0;i<12;i++){ if(arr[i]>bestV){ bestV=arr[i]; bestMonth=i+1; } }
       const MONTHS = ['','janv.','févr.','mars','avr.','mai','juin','juill.','août','sept.','oct.','nov.','déc.'];
-      const scope = m ? MONTHS[m] : 'pic annuel';
+      // Label explicite : quelle agrégation SPATIALE (peak vs moyenne dept) + quelle PÉRIODE.
+      const metricLbl = abFilter.metric === 'mean' ? 'moyenne dept' : 'peak dept';
+      const scope = m ? `en ${MONTHS[m]}` : 'toute l\'année';
       let popup = `<b>${esc(nm)}</b> <span class="p-sci">${esc(sci)}</span><br>`+
         `<span class="p-meta"><b>${esc(f.properties.nom)}</b> (${esc(insee)})</span><br>`+
-        `<span class="p-meta">Abondance ${scope} : <b>${v.toFixed(3)}</b></span>`;
-      // N'ajoute "Meilleur mois" que si un mois est filtré ET que ce n'est pas déjà lui
+        `<span class="p-meta">Abondance ${metricLbl} · ${scope} : <b>${asPct(v)}</b></span>`;
       if(m && bestMonth !== m){
-        popup += `<br><span class="p-meta">Meilleur mois ici : <b>${MONTHS[bestMonth]}</b> (${bestV.toFixed(3)})</span>`;
+        popup += `<br><span class="p-meta">Meilleur mois ici : <b>${MONTHS[bestMonth]}</b> (${asPct(bestV)})</span>`;
       }
+      popup += `<br><span class="p-meta" style="font-size:10px;font-style:italic;">100 % = max de l'espèce en France (${globalMax.toFixed(2)})</span>`;
       layer.bindPopup(popup);
     }
   }).addTo(_map);
