@@ -855,9 +855,10 @@
           <button data-sort="rarity" class="on">Par rareté</button>
           <button data-sort="name">A → Z</button>
         </div>
-        <select class="filt-sel" id="tierSel" aria-label="Filtrer par rareté">
-          <option value="any">Toutes les raretés</option>
-        </select>
+        <div class="person-filter-group">
+          <span class="pf-label" title="Multi-sélection : décoche pour masquer une rareté">Rareté</span>
+          <div class="person-chips rar-chips-matrix" id="tierChips" aria-label="Filtrer par rareté (multi)"></div>
+        </div>
         <select class="filt-sel" id="familySel" aria-label="Filtrer par famille">
           <option value="any">Toutes les familles</option>
         </select>
@@ -1173,7 +1174,8 @@ const db = getFirestore(fbApp);
 
 /* ---------------- state ---------------- */
 const SERIES_N = 8;
-const state = { people: [], onlySpecies: true, sort:'rarity', tier:'any', family:'any',
+const state = { people: [], onlySpecies: true, sort:'rarity', family:'any',
+  tierExcl:new Set(),                          // Set des raretés MASQUÉES (vide = toutes visibles)
   playerMain:'', playerCompareSet:new Set(),   // liste principale (0 ou 1) + liste(s) à comparer (0..N)
   country:'any', q:'', boardMode:'count', showMissing:false, showSci:false };
 let lastFamKey = '', lastTierKey = '', lastPlayerKey = '', lastCountryKey = '';
@@ -1684,11 +1686,18 @@ function renderMatrix({universe,N}){
 
   const tierKey=rMode+':'+tiersPresent.map(t=>t.id).join(',');
   if(tierKey!==lastTierKey){
+    // Sur changement du mode de rareté (ligue↔réelle) ou de la liste des tiers présents :
+    // on remet tout coché (tierExcl vide) — évite d'exclure par erreur un ancien id d'un autre mode.
+    state.tierExcl = new Set();
     lastTierKey=tierKey;
-    const sel=$('#tierSel');
-    sel.innerHTML='<option value="any">Toutes les raretés</option>'+tiersPresent.map(t=>`<option value="${esc(t.id)}">${esc(t.label)}${rMode==='league'?` — ${t.ord}/${N}`:''}</option>`).join('');
-    if(!tiersPresent.some(t=>t.id===state.tier)) state.tier='any';
-    sel.value=state.tier;
+  }
+  const box=$('#tierChips');
+  if(box){
+    box.innerHTML = tiersPresent.map(t=>{
+      const on = !state.tierExcl.has(t.id);
+      const cnt = (rMode==='league' && typeof t.ord==='number' && t.ord>0) ? ` — ${t.ord}/${N}` : '';
+      return `<button type="button" class="person-chip rar-chip-m${on?' on':''}" data-tier="${esc(t.id)}" style="--series:${t.color};"><span class="dot" style="background:${t.color}"></span>${esc(t.label)}${esc(cnt)}</button>`;
+    }).join('');
   }
 
   // Ré-écriture différée (après le calcul de displayPeople plus bas), stockée pour évaluation.
@@ -1744,7 +1753,7 @@ function renderMatrix({universe,N}){
   }
 
   let list=[...uni];
-  if(state.tier!=='any') list=list.filter(u=>rarOf(u).id===state.tier);
+  if(state.tierExcl.size) list=list.filter(u=>!state.tierExcl.has(rarOf(u).id));
   if(state.family!=='any') list=list.filter(u=>familyOf(u.sci)===state.family);
   // Filtre lignes :
   //  - liste principale choisie  → seules les espèces qu'ELLE a vues (peu importe si
@@ -4629,10 +4638,15 @@ function _updateMatrixSuggest(){
   items.sort((a,b)=> a.name.localeCompare(b.name,'fr'));
   _matrixSuggestItems = items;
   if(!items.length){ box.classList.remove('open'); box.innerHTML=''; return; }
-  box.innerHTML = items.map((it,i)=>`<div class="map-search-suggest-item" data-idx="${i}">`
-    +`<span>${esc(it.name)}</span>`
-    +(state.showSci?`<span class="ss-sci">${esc(it.sci)}</span>`:'')
-    +`</div>`).join('');
+  // En mode rareté réelle, on préfixe une pastille colorée du niveau de rareté de l'espèce.
+  const showRealDot = state.boardMode === 'real';
+  box.innerHTML = items.map((it,i)=>{
+    const dot = showRealDot ? `<span class="ss-dot" style="background:${realColor(rarityReal(it.sci))}"></span>` : '';
+    return `<div class="map-search-suggest-item" data-idx="${i}">${dot}`
+      +`<span>${esc(it.name)}</span>`
+      +(state.showSci?`<span class="ss-sci">${esc(it.sci)}</span>`:'')
+      +`</div>`;
+  }).join('');
   box.classList.add('open');
 }
 $('#q').addEventListener('input',e=>{ state.q=e.target.value; renderResults(); _updateMatrixSuggest(); });
@@ -4661,7 +4675,13 @@ $('#feedModeSeg')?.addEventListener('click', e=>{
 });
 $('#feedPersonSel')?.addEventListener('change', e=>{ feedPerson = e.target.value; renderFeed(); });
 $('#feedTierSel')?.addEventListener('change', e=>{ feedTier = e.target.value; renderFeed(); });
-$('#tierSel').addEventListener('change',e=>{ state.tier=e.target.value; renderResults(); });
+// Chips rareté (multi) : toggle du Set state.tierExcl (masquées), re-render.
+$('#tierChips')?.addEventListener('click', e=>{
+  const b = e.target.closest('button[data-tier]'); if(!b) return;
+  const id = b.dataset.tier;
+  if(state.tierExcl.has(id)) state.tierExcl.delete(id); else state.tierExcl.add(id);
+  renderResults();
+});
 $('#familySel').addEventListener('change',e=>{ state.family=e.target.value; renderResults(); });
 // Chip "liste principale" : sélection unique (re-clic = déselect). Force re-génération
 // des chips via lastPlayerKey pour appliquer/retirer la classe .main visuelle.
