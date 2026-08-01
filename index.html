@@ -419,6 +419,8 @@
   .feed-date { font-size:11.5px; color:var(--ink-3); margin-top:1px; }
   .feed-rar { font-weight:600; }
   .feed-item .react-bar { margin:6px 0 0; }
+  .feed-new { display:inline-block; margin-left:6px; font-size:10.5px; font-weight:700; color:#fff; background:#c7386f; padding:1px 7px; border-radius:9px; vertical-align:middle; }
+  .feed-tag { display:inline-block; margin-left:6px; font-size:10.5px; color:var(--ink-3); background:var(--surface-2); padding:1px 7px; border-radius:9px; vertical-align:middle; }
   .req-form { display:flex; gap:10px; margin:6px 0 16px; }
   .req-form textarea { flex:1; padding:10px 12px; border:1px solid var(--line-2); border-radius:10px; font:inherit; background:var(--surface); color:var(--ink); resize:vertical; min-height:44px; line-height:1.4; }
   .req-form textarea:focus { outline:2px solid var(--accent); outline-offset:1px; }
@@ -1080,7 +1082,11 @@
     <section class="panel" style="padding:20px; margin-top:22px;">
       <div class="section-head">
         <div><div class="eyebrow">Quoi de neuf</div><h2>🆕 Le fil des observations</h2>
-          <p class="help" style="margin-top:2px;">Les dernières observations de la ligue, les plus récentes en haut.</p></div>
+          <p class="help" style="margin-top:2px;">Les dernières observations de la ligue. <b>Nouveautés</b> = par date d'ajout (idéal pour ne rien louper) · <b>Chronologique</b> = par date d'observation.</p></div>
+      </div>
+      <div class="seg" id="feedModeSeg" style="margin:6px 0 14px;">
+        <button data-feed-mode="new" class="on">🆕 Nouveautés</button>
+        <button data-feed-mode="chrono">📅 Chronologique</button>
       </div>
       <div class="feed-list" id="feedList"></div>
     </section>
@@ -1960,6 +1966,7 @@ function memberToPerson(id, data, si){
     lon: (typeof e.lo==='number')?e.lo:null,
     locId: e.li||null,                         // LocID eBird pour lien hotspot
     manual: e.m===1,                           // ajout manuel (préservé lors des ré-imports)
+    addedAt: typeof e.a==='number' ? e.a : 0,  // ms unix : date à laquelle l'espèce est apparue chez ce joueur
     // recalculé à la lecture (pas figé au moment de l'upload) : ainsi toute
     // amélioration du filtre s'applique aux listes déjà enregistrées.
     nonSpecies: isNonSpecies(e.c||'', e.s||'')
@@ -1979,7 +1986,15 @@ function rebuild(){
   updateChatIdentity();
   if(lastChatMsgs.length) renderChat(lastChatMsgs);
   renderFeed();
-  feedLatest = realPeople.reduce((m,p)=>Math.max(m, p.updatedAt||0), 0); updateTabDots();
+  // feedLatest = date d'ajout la plus récente parmi TOUTES les espèces (précis) ;
+  // fallback sur updatedAt du profil pour les anciens comptes sans addedAt.
+  let maxAdded = 0;
+  for(const p of realPeople){
+    const src = p._active || p.species;
+    if(src) for(const v of src.values()) if(v.addedAt && v.addedAt>maxAdded) maxAdded = v.addedAt;
+    if(p.updatedAt && p.updatedAt>maxAdded) maxAdded = p.updatedAt;
+  }
+  feedLatest = maxAdded; updateTabDots();
   renderStats(realPeople.find(p=>p.id===myUid));
   // Rafraîchit la carte si elle est visible (sinon vide au 1er chargement quand données arrivent après)
   if(document.querySelector('.tab.on')?.dataset.view==='map') renderMap();
@@ -2197,6 +2212,7 @@ function renderPhotos(){
   }).join('');
 }
 // ---- Fil des observations ----
+let feedMode = 'new';   // 'new' = tri par addedAt (par défaut), 'chrono' = tri par date d'obs
 function renderFeed(){
   const el=$('#feedList'); if(!el) return;
   const items=[];
@@ -2204,15 +2220,35 @@ function renderFeed(){
     const active=p._active||p.species; if(!active) continue;
     for(const v of active.values()){
       const pd=parseDate(v.date);
-      if(pd) items.push({ name:p.name, uid:p.id, bird:frName(v.sci,v.common), sci:(v.sci||''), abroad:foreignTick(v), ord:pd.ord, disp:pd.disp });
+      const addedAt = v.addedAt || 0;
+      // Mode "nouveautés" : on inclut même sans date d'obs (l'ajout manuel sans date compte).
+      // Mode "chrono" : il faut une date d'obs valide.
+      if(feedMode==='new'){
+        if(!pd && !addedAt) continue;
+      } else {
+        if(!pd) continue;
+      }
+      items.push({
+        name:p.name, uid:p.id, bird:frName(v.sci,v.common), sci:(v.sci||''),
+        abroad:foreignTick(v),
+        ord: pd?pd.ord:0, disp: pd?pd.disp:'date inconnue',
+        addedAt, manual: !!v.manual
+      });
     }
   }
-  items.sort((a,b)=>b.ord-a.ord);
+  if(feedMode==='new') items.sort((a,b)=>(b.addedAt-a.addedAt) || (b.ord-a.ord));
+  else                 items.sort((a,b)=>(b.ord-a.ord) || (b.addedAt-a.addedAt));
   const top=items.slice(0,60);
-  if(!top.length){ el.innerHTML='<p class="help" style="margin:0;">Aucune observation datée pour le moment. Chargez vos listes ! 🐦</p>'; return; }
-  el.innerHTML=top.map(it=>{ const tt=realTier(it.sci, it.abroad); const target='obs:'+it.uid+':'+it.sci.toLowerCase();
+  if(!top.length){ el.innerHTML='<p class="help" style="margin:0;">Aucune observation pour le moment. Chargez vos listes ! 🐦</p>'; return; }
+  let lastSeen=0; try{ lastSeen = +localStorage.getItem('mb-seen-feed')||0; }catch(_){ }
+  el.innerHTML=top.map(it=>{
+    const tt=realTier(it.sci, it.abroad);
+    const target='obs:'+it.uid+':'+it.sci.toLowerCase();
+    const isNew = it.addedAt && it.addedAt > lastSeen;
+    const badge = isNew ? ' <span class="feed-new">🆕 nouveau</span>' : '';
+    const tag = it.manual ? ' <span class="feed-tag">ajout manuel</span>' : '';
     return `<div class="feed-item"><span class="feed-dot" style="background:${tt.color}"></span>
-      <div class="feed-body"><div><b>${esc(it.name)}</b> a observé <b>${esc(it.bird)}</b></div>
+      <div class="feed-body"><div><b>${esc(it.name)}</b> a observé <b>${esc(it.bird)}</b>${badge}${tag}</div>
       <div class="feed-date">${esc(it.disp)} · <span class="feed-rar" style="color:${tt.color}">${esc(tt.label)}</span></div>
       ${reactionBar(target)}</div></div>`;
   }).join('');
@@ -3811,6 +3847,7 @@ async function saveMyList(name, speciesMap, regions){
     if(v.lat!=null && v.lon!=null){ e.la = v.lat; e.lo = v.lon; }   // coords pour la carte (MyEBirdData)
     if(v.locId) e.li = v.locId;                                     // LocID eBird -> lien vers hotspot
     if(v.manual) e.m = 1;                                           // ajout manuel -> à préserver au ré-import
+    if(v.addedAt) e.a = v.addedAt;                                  // horodatage d'apparition (pour tri "nouveautés" du fil)
     return e; });
   const ref=doc(db,'leagues',leagueId,'members',myUid);
   const payload={ name, species:arr, updatedAt: serverTimestamp() };
@@ -3874,15 +3911,23 @@ async function handleFiles(fileList){
   // et que le nouveau CSV ne fournit pas de coords (ex. life list simple),
   // on garde les anciennes. La liste des espèces reste dictée par le CSV.
   const prev = realPeople.find(p=>p.id===myUid)?.species;
+  const importAt = Date.now();   // horodatage de cet import (utilisé pour les NOUVELLES espèces)
   if(prev){
     let kept=0, manualKept=0;
     // Pour chaque espèce du CSV : si le CSV n'a pas de coords mais l'ancien oui, on garde.
     // (En revanche si le CSV apporte des coords, il gagne : c'est la meilleure source.)
+    // On préserve aussi addedAt : si l'espèce est déjà connue chez ce joueur (manuel OU
+    // import précédent), elle n'est PAS considérée comme une nouveauté du fil.
     for(const [k,v] of parsed.species){
       if(!prev.has(k)) continue;
       const old=prev.get(k);
       if((v.lat==null||v.lon==null) && typeof old.lat==='number' && typeof old.lon==='number'){ v.lat=old.lat; v.lon=old.lon; kept++; }
       if(!v.locId && old.locId){ v.locId=old.locId; }
+      v.addedAt = old.addedAt || importAt;   // conserve la date d'apparition originelle
+    }
+    // Nouvelles espèces (dans le CSV mais pas dans prev) : elles apparaissent MAINTENANT.
+    for(const [k,v] of parsed.species){
+      if(!prev.has(k) && !v.addedAt) v.addedAt = importAt;
     }
     // Préserve les ajouts MANUELS qui ne sont PAS dans le nouveau CSV
     // (l'utilisateur les a saisis à la main, ils ne doivent pas disparaître à chaque ré-import).
@@ -3892,6 +3937,9 @@ async function handleFiles(fileList){
     }
     if(kept) console.log('Ré-import : '+kept+' coords GPS préservées.');
     if(manualKept) console.log('Ré-import : '+manualKept+' ajouts manuels préservés.');
+  } else {
+    // Tout premier import : toutes les espèces sont "nouvelles" à cet instant.
+    for(const [k,v] of parsed.species) if(!v.addedAt) v.addedAt = importAt;
   }
   $('#myStatus').textContent = '… enregistrement';
   try{ await saveMyList(name, parsed.species, parsed.regions); }
@@ -4123,7 +4171,7 @@ $('#manualAddBtn')?.addEventListener('click', async ()=>{
   // Lieu + coords : viennent du picker cartographique (modal Leaflet)
   const loc = _manualPickedName || 'Ajout manuel';
   const entry = { common: FR_NAMES[key], sci: sciProper, date, loc, obs: 1,
-    fr: country==='FR', country, nonSpecies: false, manual: true };
+    fr: country==='FR', country, nonSpecies: false, manual: true, addedAt: Date.now() };
   if(_manualPickedLat!=null && _manualPickedLon!=null){ entry.lat=_manualPickedLat; entry.lon=_manualPickedLon; }
   // mise à jour locale immédiate + sauvegarde
   me.species.set(key, entry);
@@ -4421,6 +4469,12 @@ $('#q').addEventListener('input',e=>{ state.q=e.target.value; renderResults(); }
 $('#sortSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return;
   $('#sortSeg').querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
   state.sort=b.dataset.sort; renderResults(); });
+$('#feedModeSeg')?.addEventListener('click', e=>{
+  const b = e.target.closest('button[data-feed-mode]'); if(!b) return;
+  $('#feedModeSeg').querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  feedMode = b.dataset.feedMode; renderFeed();
+});
 $('#tierSel').addEventListener('change',e=>{ state.tier=e.target.value; renderResults(); });
 $('#familySel').addEventListener('change',e=>{ state.family=e.target.value; renderResults(); });
 $('#playerSel').addEventListener('change',e=>{ state.player=e.target.value; renderResults(); });
