@@ -1084,9 +1084,27 @@
         <div><div class="eyebrow">Quoi de neuf</div><h2>🆕 Le fil des observations</h2>
           <p class="help" style="margin-top:2px;">Les dernières observations de la ligue. <b>Nouveautés</b> = par date d'ajout (idéal pour ne rien louper) · <b>Chronologique</b> = par date d'observation.</p></div>
       </div>
-      <div class="seg" id="feedModeSeg" style="margin:6px 0 14px;">
+      <div class="seg" id="feedModeSeg" style="margin:6px 0 8px;">
         <button data-feed-mode="new" class="on">🆕 Nouveautés</button>
         <button data-feed-mode="chrono">📅 Chronologique</button>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin:0 0 14px;">
+        <select class="filt-sel" id="feedPersonSel" aria-label="Filtrer par personne">
+          <option value="any">Tout le monde</option>
+        </select>
+        <select class="filt-sel" id="feedTierSel" aria-label="Filtrer par rareté">
+          <option value="any">Toutes les raretés</option>
+          <option value="1">1 · Très commun</option>
+          <option value="2">2 · Commun</option>
+          <option value="3">3 · Assez commun</option>
+          <option value="4">4 · Peu commun</option>
+          <option value="5">5 · Localisé</option>
+          <option value="6">6 · Assez rare</option>
+          <option value="7">7 · Rare</option>
+          <option value="8">8 · Très rare</option>
+          <option value="9">9 · Exceptionnel</option>
+          <option value="exo">🚨 Exotique / échappé</option>
+        </select>
       </div>
       <div class="feed-list" id="feedList"></div>
     </section>
@@ -2212,11 +2230,25 @@ function renderPhotos(){
   }).join('');
 }
 // ---- Fil des observations ----
-let feedMode = 'new';   // 'new' = tri par addedAt (par défaut), 'chrono' = tri par date d'obs
+let feedMode = 'new';       // 'new' = tri par addedAt (par défaut), 'chrono' = tri par date d'obs
+let feedPerson = 'any';     // uid ou 'any'
+let feedTier = 'any';       // 1..9, 'exo', ou 'any'
+let _feedPeopleKey = '';
 function renderFeed(){
   const el=$('#feedList'); if(!el) return;
+  // Rafraîchit le select personne quand la ligue change.
+  const psel = $('#feedPersonSel');
+  const pKey = realPeople.map(p=>p.id+':'+p.name).join('|');
+  if(psel && pKey !== _feedPeopleKey){
+    _feedPeopleKey = pKey;
+    psel.innerHTML = '<option value="any">Tout le monde</option>' +
+      realPeople.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}${p.isMe?' (vous)':''}</option>`).join('');
+    if(!realPeople.some(p=>p.id===feedPerson)) feedPerson = 'any';
+    psel.value = feedPerson;
+  }
   const items=[];
   for(const p of realPeople){
+    if(feedPerson !== 'any' && p.id !== feedPerson) continue;
     const active=p._active||p.species; if(!active) continue;
     for(const v of active.values()){
       const pd=parseDate(v.date);
@@ -2227,6 +2259,12 @@ function renderFeed(){
         if(!pd && !addedAt) continue;
       } else {
         if(!pd) continue;
+      }
+      // Filtre rareté : 1..9 (rareté réelle) ou 'exo' (exotiques/échappés).
+      const sci = (v.sci||'').toLowerCase();
+      if(feedTier !== 'any'){
+        if(feedTier === 'exo'){ if(!isExotic(sci)) continue; }
+        else { if(isExotic(sci) || rarityReal(sci) !== +feedTier) continue; }
       }
       items.push({
         name:p.name, uid:p.id, bird:frName(v.sci,v.common), sci:(v.sci||''),
@@ -2239,7 +2277,13 @@ function renderFeed(){
   if(feedMode==='new') items.sort((a,b)=>(b.addedAt-a.addedAt) || (b.ord-a.ord));
   else                 items.sort((a,b)=>(b.ord-a.ord) || (b.addedAt-a.addedAt));
   const top=items.slice(0,60);
-  if(!top.length){ el.innerHTML='<p class="help" style="margin:0;">Aucune observation pour le moment. Chargez vos listes ! 🐦</p>'; return; }
+  if(!top.length){
+    const filtered = feedPerson!=='any' || feedTier!=='any';
+    el.innerHTML = filtered
+      ? '<p class="help" style="margin:0;">Aucune observation correspondant aux filtres.</p>'
+      : '<p class="help" style="margin:0;">Aucune observation pour le moment. Chargez vos listes ! 🐦</p>';
+    return;
+  }
   let lastSeen=0; try{ lastSeen = +localStorage.getItem('mb-seen-feed')||0; }catch(_){ }
   el.innerHTML=top.map(it=>{
     const tt=realTier(it.sci, it.abroad);
@@ -4475,6 +4519,8 @@ $('#feedModeSeg')?.addEventListener('click', e=>{
   b.classList.add('on');
   feedMode = b.dataset.feedMode; renderFeed();
 });
+$('#feedPersonSel')?.addEventListener('change', e=>{ feedPerson = e.target.value; renderFeed(); });
+$('#feedTierSel')?.addEventListener('change', e=>{ feedTier = e.target.value; renderFeed(); });
 $('#tierSel').addEventListener('change',e=>{ state.tier=e.target.value; renderResults(); });
 $('#familySel').addEventListener('change',e=>{ state.family=e.target.value; renderResults(); });
 $('#playerSel').addEventListener('change',e=>{ state.player=e.target.value; renderResults(); });
