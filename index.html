@@ -238,8 +238,6 @@
   .person-filter-group .pf-label { font-size:11px; font-weight:600; color:var(--ink-3); text-transform:uppercase; letter-spacing:.4px; padding:0 4px; }
   .board-sheet .pcol.is-main { background:color-mix(in srgb,var(--gold) 10%,var(--surface)); }
   th.pcol.is-main { background:color-mix(in srgb,var(--gold) 15%,var(--surface)) !important; }
-  td.pcol.is-miss { background:color-mix(in srgb,#c33 8%,var(--surface)); color:#c33; }
-  td.pcol.is-miss::before { content:'✗'; font-weight:700; }
   .board-sheet .muted { color:var(--ink-3); }
   .board-sheet th.on-metric, .board-sheet td.on-metric { background:color-mix(in srgb,var(--accent) 12%,var(--surface)) !important; }
   .board-sheet td.on-metric { color:var(--accent-ink); }
@@ -1794,10 +1792,6 @@ function renderMatrix({universe,N}){
       const isMain = p.id===state.playerMain;
       const v=u.seenBy.get(p.id);
       if(!v){
-        // Cellule "manquant" affichée en rouge UNIQUEMENT quand on compare (main sélectionnée)
-        // et que la personne en colonne n'est PAS la principale — pour repérer d'un coup d'œil
-        // les oiseaux que la principale a mais pas la personne à comparer.
-        if(state.playerMain && !isMain) return '<td class="pcol is-miss" title="Non observé"></td>';
         return `<td class="pcol${isMain?' is-main':''}"></td>`;
       }
       const foreign=foreignTick(v); const cc=v.country; const abroad=cc&&cc!=='FR';
