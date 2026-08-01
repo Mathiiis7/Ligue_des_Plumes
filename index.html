@@ -4002,16 +4002,24 @@ drop.addEventListener('drop',e=>{ if(e.dataTransfer?.files) handleFiles(e.dataTr
 window.addEventListener('dragover',e=>e.preventDefault());
 window.addEventListener('drop',e=>e.preventDefault());
 
+// Fenêtre de grâce après inscription pendant laquelle le renommage est autorisé
+// (permet de corriger un nom mal saisi au 1er upload avant que le verrou anti-usurpation ne tombe).
+const NAME_GRACE_MS = 24 * 60 * 60 * 1000;
+function _nameIsUnlocked(me){
+  if(isAdmin()) return true;
+  if(!me || !me.joinedAt) return true;                 // pas encore inscrit → toujours modifiable
+  return (Date.now() - me.joinedAt*1000) < NAME_GRACE_MS;
+}
 $('#myName').addEventListener('change',async e=>{
   const nm=(e.target.value.trim())||'Joueur';
   e.target.value=nm;
   if(!iAmInLeague) return;
   const me = realPeople.find(p=>p.id===myUid);
   const oldName = me?.name || '';
-  // Verrou : nom non modifiable après 1re définition (sauf admin).
-  if(oldName && oldName!==nm && !isAdmin()){
+  // Verrou : après la fenêtre de grâce (24h post-inscription), nom non modifiable (sauf admin).
+  if(oldName && oldName!==nm && !_nameIsUnlocked(me)){
     e.target.value = oldName;
-    alert('Votre nom est verrouillé après la 1ʳᵉ inscription. Contactez l\'admin pour un changement.');
+    alert('Votre nom est verrouillé (24 h après votre inscription). Contactez l\'admin pour un changement.');
     return;
   }
   if(oldName===nm) return;
@@ -4023,15 +4031,17 @@ $('#myName').addEventListener('change',async e=>{
     });
   }catch(err){ showError(err); }
 });
-// Verrou visuel du champ nom après la 1re inscription (sauf admin)
+// Verrou visuel du champ nom : ouvert pendant la fenêtre de grâce (24h post-inscription),
+// puis verrouillé (sauf admin). Même règle que le handler 'change' via _nameIsUnlocked.
 function _lockMyNameIfSet(){
   const inp = $('#myName'); if(!inp) return;
   const me = realPeople.find(p=>p.id===myUid);
   const hasName = !!(me && me.name);
-  if(hasName && !isAdmin()){
-    inp.readOnly = true; inp.classList.add('locked'); inp.title = 'Verrouillé après la 1re inscription. Admin uniquement.';
+  if(hasName && !_nameIsUnlocked(me)){
+    inp.readOnly = true; inp.classList.add('locked'); inp.title = 'Verrouillé (fenêtre de grâce de 24 h dépassée). Admin uniquement.';
   } else {
-    inp.readOnly = false; inp.classList.remove('locked'); inp.title = '';
+    inp.readOnly = false; inp.classList.remove('locked');
+    inp.title = hasName ? 'Modifiable pendant 24 h après inscription — corrigez si besoin.' : '';
   }
 }
 // H : désactive visuellement écriture chat + upload photo pour les non-membres.
