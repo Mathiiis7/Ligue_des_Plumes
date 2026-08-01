@@ -247,6 +247,10 @@
   /* Quand cochée (.on), .person-chip.on impose border-color:var(--accent) qui écrase
      border-left-color. On réaffirme la couleur de rareté sur la bordure gauche. */
   .rar-chip-m.on { border-left-color:var(--series); }
+  /* Chips pays : drapeau seul, sans texte. */
+  .flag-chip { padding:3px 5px; min-width:26px; justify-content:center; }
+  .flag-chip img.flag { display:block; height:14px; width:auto; border-radius:2px; box-shadow:0 0 0 1px rgba(0,0,0,.15); }
+  .flag-chip .flag-fallback { font:600 11px/1 system-ui; color:var(--ink-3); }
   .person-chip:hover { filter:brightness(0.97); }
   .person-chip.on { color:var(--ink); border-color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,var(--surface)); }
   .person-chip.main { border-color:var(--gold); background:color-mix(in srgb,var(--gold) 18%,var(--surface)); color:var(--ink); font-weight:700; }
@@ -914,9 +918,7 @@
             </div>
             <div class="fp-inline">
               <span class="fp-title-inline">Pays</span>
-              <select class="filt-sel" id="countrySel" aria-label="Filtrer par pays d'observation">
-                <option value="any">Tous</option>
-              </select>
+              <div class="person-chips flag-chips" id="countryChips" aria-label="Filtrer par pays (multi)"></div>
             </div>
           </div>
           <div class="fp-section fp-row">
@@ -1226,8 +1228,9 @@ const db = getFirestore(fbApp);
 const SERIES_N = 8;
 const state = { people: [], onlySpecies: true, sort:'rarity', family:'any',
   tierExcl:new Set(),                          // Set des raretés MASQUÉES (vide = toutes visibles)
+  countryExcl:new Set(),                       // Set des pays MASQUÉS (vide = tous visibles)
   playerMain:'', playerCompareSet:new Set(),   // liste principale (0 ou 1) + liste(s) à comparer (0..N)
-  country:'any', q:'', boardMode:'count', showMissing:false, showSci:false };
+  q:'', boardMode:'count', showMissing:false, showSci:false };
 let lastFamKey = '', lastTierKey = '', lastPlayerKey = '', lastCountryKey = '';
 let myUid = null, leagueId = null, unsub = null, unsubLeague = null, iAmInLeague = false;
 let unsubChat = null, lastChatMsgs = [];
@@ -1788,21 +1791,24 @@ function renderMatrix({universe,N}){
   for(const u of uni){ for(const v of u.seenBy.values()){ if(v.country) countriesSet.add(v.country); } }
   const countries=[...countriesSet].sort((a,b)=> a==='FR'?-1 : b==='FR'?1 : countryLabel(a).localeCompare(countryLabel(b),'fr'));
   const coKey=countries.join('|');
-  const coSel=$('#countrySel');
-  if(coKey!==lastCountryKey){
-    lastCountryKey=coKey;
-    coSel.innerHTML='<option value="any">Tous les pays</option>'+countries.map(c=>`<option value="${esc(c)}">${esc(countryLabel(c))}</option>`).join('');
-    if(!countries.includes(state.country)) state.country='any';
-    coSel.value=state.country;
+  const coBox=$('#countryChips');
+  if(coBox){
+    if(coKey!==lastCountryKey){
+      // Nettoyage : sur changement du set des pays présents (nouvel import, nouveau joueur…),
+      // on retire les codes disparus du filtre pour ne pas laisser un état incohérent.
+      lastCountryKey=coKey;
+      for(const cc of [...state.countryExcl]) if(!countries.includes(cc)) state.countryExcl.delete(cc);
+    }
+    coBox.innerHTML = countries.map(cc=>{
+      const on = !state.countryExcl.has(cc);
+      // Chip = drapeau seul (pas de nom, comme demandé). Tooltip donne le nom.
+      return `<button type="button" class="person-chip flag-chip${on?' on':''}" data-country="${esc(cc)}" title="${esc(countryLabel(cc))}">${flagImg(cc)||('<span class="flag-fallback">'+esc(cc)+'</span>')}</button>`;
+    }).join('');
+    // Masqué tant qu'il n'y a pas au moins un pays étranger : filtrer par "FR seul" n'a aucun intérêt.
+    const wrap = coBox.closest('.fp-inline');
+    if(wrap) wrap.style.display = countries.some(c=>c!=='FR') ? '' : 'none';
   }
-  // masqué tant qu'il n'y a pas au moins un pays étranger en plus de la France
-  coSel.style.display = countries.some(c=>c!=='FR') ? '' : 'none';
-  // badge : drapeau du pays sélectionné, affiché une seule fois en haut
-  const coBadge=$('#countryBadge');
-  if(coBadge){
-    if(state.country!=='any'){ coBadge.innerHTML=(flagImg(state.country)||'')+'<span>'+esc(countryLabel(state.country))+'</span>'; coBadge.style.display=''; }
-    else coBadge.style.display='none';
-  }
+  const coBadge=$('#countryBadge'); if(coBadge) coBadge.style.display='none';
 
   let list=[...uni];
   if(state.tierExcl.size) list=list.filter(u=>!state.tierExcl.has(rarOf(u).id));
@@ -1824,13 +1830,18 @@ function renderMatrix({universe,N}){
         ...state.people.filter(p => p.id!==state.playerMain && state.playerCompareSet.has(p.id)) ]
     : state.people.slice();
   const nCols = displayPeople.length;
-  if(state.country!=='any') list=list.filter(u=>{
-    for(const [pid,v] of u.seenBy){
-      if(nCols && !displayPeople.some(p=>p.id===pid)) continue;
-      if(v.country===state.country) return true;
-    }
-    return false;
-  });
+  // Filtre pays (multi-exclusion) : garder une espèce s'il existe au moins une obs
+  // (chez une personne affichée) dans un pays NON masqué.
+  if(state.countryExcl && state.countryExcl.size){
+    list=list.filter(u=>{
+      for(const [pid,v] of u.seenBy){
+        if(nCols && !displayPeople.some(p=>p.id===pid)) continue;
+        const cc = v.country || 'FR';
+        if(!state.countryExcl.has(cc)) return true;
+      }
+      return false;
+    });
+  }
   if(state.q){ const q=state.q.toLowerCase();
     list=list.filter(u=>u.common.toLowerCase().includes(q)||(u.sci||'').toLowerCase().includes(q)); }
   if(state.sort==='rarity'){
@@ -4747,14 +4758,14 @@ $('#filtersReset')?.addEventListener('click', ()=>{
   state.family = 'any';
   state.playerMain = '';
   state.playerCompareSet = new Set();
-  state.country = 'any';
+  state.countryExcl = new Set();
   state.showMissing = false;
   state.showSci = false;
   const fs = $('#familySel'); if(fs) fs.value = 'any';
-  const cs = $('#countrySel'); if(cs) cs.value = 'any';
   const sm = $('#showMissing'); if(sm) sm.checked = false;
   const ss = $('#showSci'); if(ss) ss.checked = false;
-  lastPlayerKey = '';   // force le re-render des chips personne
+  lastPlayerKey = '';    // force le re-render des chips personne
+  lastCountryKey = '';   // force le re-render des chips pays (rechecke tous)
   renderResults();
 });
 // Compte les filtres actifs et met à jour le badge du bouton "Filtres".
@@ -4765,7 +4776,7 @@ function _updateFiltersBadge(){
   if(state.family && state.family !== 'any') n++;
   if(state.playerMain) n++;
   if(state.playerCompareSet && state.playerCompareSet.size) n++;
-  if(state.country && state.country !== 'any') n++;
+  if(state.countryExcl && state.countryExcl.size) n++;
   if(state.showMissing) n++;
   if(state.showSci) n++;
   const badge = $('#filtersCount'); if(!badge) return;
@@ -4791,7 +4802,13 @@ $('#playerCompareChips')?.addEventListener('click', e=>{
   renderResults();
 });
 $('#showSci')?.addEventListener('change', e=>{ state.showSci = e.target.checked; renderResults(); });
-$('#countrySel').addEventListener('change',e=>{ state.country=e.target.value; renderResults(); });
+// Chips pays (multi) : toggle du Set state.countryExcl (masqués), re-render.
+$('#countryChips')?.addEventListener('click', e=>{
+  const b = e.target.closest('button[data-country]'); if(!b) return;
+  const cc = b.dataset.country;
+  if(state.countryExcl.has(cc)) state.countryExcl.delete(cc); else state.countryExcl.add(cc);
+  renderResults();
+});
 $('#showMissing').addEventListener('change',e=>{ state.showMissing=e.target.checked; renderResults(); });
 
 // logo personnalisé (choisi depuis le site, enregistré sur cet appareil uniquement)
