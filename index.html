@@ -248,6 +248,10 @@
   .flag-chip { padding:3px 5px; min-width:26px; justify-content:center; }
   .flag-chip img.flag { display:block; height:14px; width:auto; border-radius:2px; box-shadow:0 0 0 1px rgba(0,0,0,.15); }
   .flag-chip .flag-fallback { font:600 11px/1 system-ui; color:var(--ink-3); }
+  /* Chips famille : plus petites, compactes (il y en a beaucoup). */
+  .fam-chip { padding:4px 9px; font-size:11.5px; }
+  .fam-toggle { margin-left:8px; padding:2px 8px; font:600 11px/1 system-ui; color:var(--ink-3); background:transparent; border:1px solid var(--line-2); border-radius:9px; cursor:pointer; text-transform:none; letter-spacing:0; }
+  .fam-toggle:hover { color:var(--ink); background:var(--surface); }
   .person-chip:hover { filter:brightness(0.97); }
   .person-chip.on { color:var(--ink); border-color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,var(--surface)); }
   .person-chip.main { border-color:var(--gold); background:color-mix(in srgb,var(--gold) 18%,var(--surface)); color:var(--ink); font-weight:700; }
@@ -910,13 +914,14 @@
             <div class="fp-title">À comparer <span class="fp-hint">(personnes affichées à côté pour voir si elles ont les mêmes oiseaux)</span></div>
             <div class="person-chips" id="playerCompareChips" aria-label="Choisir les personnes à comparer (multi)"></div>
           </div>
-          <div class="fp-section fp-row">
-            <div class="fp-inline">
-              <span class="fp-title-inline">Famille</span>
-              <select class="filt-sel" id="familySel" aria-label="Filtrer par famille">
-                <option value="any">Toutes</option>
-              </select>
+          <div class="fp-section">
+            <div class="fp-title">
+              Famille
+              <button type="button" class="fam-toggle" id="familyToggle" aria-expanded="false" title="Afficher toutes les familles">▾ voir plus</button>
             </div>
+            <div class="person-chips fam-chips" id="familyChips" aria-label="Filtrer par famille (multi)"></div>
+          </div>
+          <div class="fp-section fp-row">
             <div class="fp-inline">
               <span class="fp-title-inline">Pays</span>
               <div class="person-chips flag-chips" id="countryChips" aria-label="Filtrer par pays (multi)"></div>
@@ -1227,8 +1232,10 @@ const db = getFirestore(fbApp);
 
 /* ---------------- state ---------------- */
 const SERIES_N = 8;
-const state = { people: [], onlySpecies: true, sort:'rarity', family:'any',
+const state = { people: [], onlySpecies: true, sort:'rarity',
   tierExcl:new Set(),                          // Set des raretés MASQUÉES (vide = toutes visibles)
+  familyExcl:new Set(),                        // Set des familles MASQUÉES (vide = toutes visibles)
+  familyExpanded:false,                        // affiche toutes les familles ou seulement les 8 premières
   countryExcl:new Set(),                       // Set des pays MASQUÉS (vide = tous visibles)
   playerMain:'', playerCompareSet:new Set(),   // liste principale (0 ou 1) + liste(s) à comparer (0..N)
   q:'', boardMode:'count', showMissing:false, showSci:false };
@@ -1762,15 +1769,39 @@ function renderMatrix({universe,N}){
     ${peopleForHead.map(p=>`<th class="pcol${p.id===state.playerMain?' is-main':''}" style="--series:var(--s${p.si})"><span class="cap"><span class="dot"></span>${esc(p.name)}${p.id===state.playerMain?' <span class="youtag" title="Liste principale">★</span>':''}</span></th>`).join('')}
     <th class="pcol">Vues</th></tr>`;
 
-  // remplit le menu des familles présentes (stable, seulement si la liste change)
+  // Familles présentes triées alpha. Multi-sélection via chips ; les 8 premières sont
+  // toujours visibles, le reste est révélé au clic sur "voir plus".
   const fams=[...new Set(uni.map(u=>familyOf(u.sci)))].sort((a,b)=>a.localeCompare(b,'fr'));
   const famKey=fams.join('|');
   if(famKey!==lastFamKey){
     lastFamKey=famKey;
-    const sel=$('#familySel');
-    sel.innerHTML='<option value="any">Toutes les familles</option>'+fams.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('');
-    if(!fams.includes(state.family)) state.family='any';
-    sel.value=state.family;
+    // Purge du filtre les familles disparues (nouvel import, etc.).
+    for(const f of [...state.familyExcl]) if(!fams.includes(f)) state.familyExcl.delete(f);
+  }
+  const famBox=$('#familyChips'); const famBtn=$('#familyToggle');
+  if(famBox){
+    const COLLAPSED = 8;
+    const visible = state.familyExpanded ? fams : fams.slice(0, COLLAPSED);
+    // Familles cochées qui ne seraient pas visibles (state.familyExcl non vide) : on les remonte
+    // parmi les visibles pour que l'utilisateur voie tout de suite quels filtres sont actifs.
+    const excludedShown = fams.filter(f => state.familyExcl.has(f) && !visible.includes(f));
+    const list = [...new Set([...visible, ...excludedShown])];
+    famBox.innerHTML = list.map(f=>{
+      const on = !state.familyExcl.has(f);
+      return `<button type="button" class="person-chip fam-chip${on?' on':''}" data-family="${esc(f)}" title="${esc(f)}">${esc(f)}</button>`;
+    }).join('');
+    if(famBtn){
+      const rest = Math.max(0, fams.length - list.length);
+      if(fams.length <= COLLAPSED){
+        famBtn.hidden = true;
+      } else {
+        famBtn.hidden = false;
+        famBtn.setAttribute('aria-expanded', state.familyExpanded ? 'true' : 'false');
+        famBtn.textContent = state.familyExpanded
+          ? '▴ voir moins'
+          : `▾ voir plus (${rest})`;
+      }
+    }
   }
 
   // Nettoyage des uid disparus (joueurs partis) avant de peupler les chips.
@@ -1813,7 +1844,7 @@ function renderMatrix({universe,N}){
 
   let list=[...uni];
   if(state.tierExcl.size) list=list.filter(u=>!state.tierExcl.has(rarOf(u).id));
-  if(state.family!=='any') list=list.filter(u=>familyOf(u.sci)===state.family);
+  if(state.familyExcl.size) list=list.filter(u=>!state.familyExcl.has(familyOf(u.sci)));
   // Filtre lignes :
   //  - liste principale choisie  → seules les espèces qu'ELLE a vues (peu importe si
   //    les autres à comparer les ont vues ou pas — la référence, c'est la principale).
@@ -4756,17 +4787,18 @@ $('#filtersToggle')?.addEventListener('click', ()=>{
 // Reset : remet TOUS les filtres à l'état initial (tout visible), sans toucher au tri ni à la recherche.
 $('#filtersReset')?.addEventListener('click', ()=>{
   state.tierExcl = new Set();
-  state.family = 'any';
+  state.familyExcl = new Set();
+  state.familyExpanded = false;
   state.playerMain = '';
   state.playerCompareSet = new Set();
   state.countryExcl = new Set();
   state.showMissing = false;
   state.showSci = false;
-  const fs = $('#familySel'); if(fs) fs.value = 'any';
   const sm = $('#showMissing'); if(sm) sm.checked = false;
   const ss = $('#showSci'); if(ss) ss.checked = false;
   lastPlayerKey = '';    // force le re-render des chips personne
   lastCountryKey = '';   // force le re-render des chips pays (rechecke tous)
+  lastFamKey = '';       // force le re-render des chips famille
   renderResults();
 });
 // Compte les filtres actifs et met à jour le badge du bouton "Filtres".
@@ -4774,7 +4806,7 @@ $('#filtersReset')?.addEventListener('click', ()=>{
 function _updateFiltersBadge(){
   let n = 0;
   if(state.tierExcl && state.tierExcl.size) n++;
-  if(state.family && state.family !== 'any') n++;
+  if(state.familyExcl && state.familyExcl.size) n++;
   if(state.playerMain) n++;
   if(state.playerCompareSet && state.playerCompareSet.size) n++;
   if(state.countryExcl && state.countryExcl.size) n++;
@@ -4784,7 +4816,19 @@ function _updateFiltersBadge(){
   if(n>0){ badge.textContent = String(n); badge.hidden = false; }
   else { badge.hidden = true; }
 }
-$('#familySel').addEventListener('change',e=>{ state.family=e.target.value; renderResults(); });
+// Chips famille (multi) : toggle du Set state.familyExcl (masquées), re-render.
+$('#familyChips')?.addEventListener('click', e=>{
+  const b = e.target.closest('button[data-family]'); if(!b) return;
+  const f = b.dataset.family;
+  if(state.familyExcl.has(f)) state.familyExcl.delete(f); else state.familyExcl.add(f);
+  renderResults();
+});
+// Bouton voir plus / voir moins des chips famille.
+$('#familyToggle')?.addEventListener('click', ()=>{
+  state.familyExpanded = !state.familyExpanded;
+  lastFamKey = '';   // force le re-render pour prendre en compte l'expand
+  renderResults();
+});
 // Chip "liste principale" : sélection unique (re-clic = déselect). Force re-génération
 // des chips via lastPlayerKey pour appliquer/retirer la classe .main visuelle.
 $('#playerMainChips')?.addEventListener('click', e=>{
