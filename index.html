@@ -233,6 +233,13 @@
   .person-chip .dot { width:8px; height:8px; border-radius:50%; background:var(--series,var(--ink-3)); }
   .person-chip:hover { filter:brightness(0.97); }
   .person-chip.on { color:var(--ink); border-color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,var(--surface)); }
+  .person-chip.main { border-color:var(--gold); background:color-mix(in srgb,var(--gold) 18%,var(--surface)); color:var(--ink); font-weight:700; }
+  .person-filter-group { display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; padding:4px 8px 4px 4px; border:1px dashed var(--line-2); border-radius:12px; }
+  .person-filter-group .pf-label { font-size:11px; font-weight:600; color:var(--ink-3); text-transform:uppercase; letter-spacing:.4px; padding:0 4px; }
+  .board-sheet .pcol.is-main { background:color-mix(in srgb,var(--gold) 10%,var(--surface)); }
+  th.pcol.is-main { background:color-mix(in srgb,var(--gold) 15%,var(--surface)) !important; }
+  td.pcol.is-miss { background:color-mix(in srgb,#c33 8%,var(--surface)); color:#c33; }
+  td.pcol.is-miss::before { content:'✗'; font-weight:700; }
   .board-sheet .muted { color:var(--ink-3); }
   .board-sheet th.on-metric, .board-sheet td.on-metric { background:color-mix(in srgb,var(--accent) 12%,var(--surface)) !important; }
   .board-sheet td.on-metric { color:var(--accent-ink); }
@@ -857,7 +864,14 @@
         <select class="filt-sel" id="familySel" aria-label="Filtrer par famille">
           <option value="any">Toutes les familles</option>
         </select>
-        <div class="person-chips" id="playerChips" aria-label="Filtrer par personne (multi)"></div>
+        <div class="person-filter-group">
+          <span class="pf-label" title="Une seule personne — sa liste devient la référence">Liste principale</span>
+          <div class="person-chips" id="playerMainChips" aria-label="Choisir la personne principale (0 ou 1)"></div>
+        </div>
+        <div class="person-filter-group">
+          <span class="pf-label" title="Personnes affichées à côté pour comparer si elles ont vu les mêmes oiseaux">À comparer</span>
+          <div class="person-chips" id="playerCompareChips" aria-label="Choisir les personnes à comparer (multi)"></div>
+        </div>
         <select class="filt-sel" id="countrySel" aria-label="Filtrer par pays d'observation">
           <option value="any">Tous les pays</option>
         </select>
@@ -1162,7 +1176,9 @@ const db = getFirestore(fbApp);
 
 /* ---------------- state ---------------- */
 const SERIES_N = 8;
-const state = { people: [], onlySpecies: true, sort:'rarity', tier:'any', family:'any', player:'any', playerSet:new Set(), country:'any', q:'', boardMode:'count', showMissing:false, showSci:false };
+const state = { people: [], onlySpecies: true, sort:'rarity', tier:'any', family:'any',
+  playerMain:'', playerCompareSet:new Set(),   // liste principale (0 ou 1) + liste(s) à comparer (0..N)
+  country:'any', q:'', boardMode:'count', showMissing:false, showSci:false };
 let lastFamKey = '', lastTierKey = '', lastPlayerKey = '', lastCountryKey = '';
 let myUid = null, leagueId = null, unsub = null, unsubLeague = null, iAmInLeague = false;
 let unsubChat = null, lastChatMsgs = [];
@@ -1676,9 +1692,10 @@ function renderMatrix({universe,N}){
     sel.value=state.tier;
   }
 
-  $('#thead').innerHTML = `<tr>
+  // Ré-écriture différée (après le calcul de displayPeople plus bas), stockée pour évaluation.
+  const buildHead = (peopleForHead) => `<tr>
     <th>Espèce</th><th>${rarHead}</th>
-    ${state.people.map(p=>`<th class="pcol" style="--series:var(--s${p.si})"><span class="cap"><span class="dot"></span>${esc(p.name)}</span></th>`).join('')}
+    ${peopleForHead.map(p=>`<th class="pcol${p.id===state.playerMain?' is-main':''}" style="--series:var(--s${p.si})"><span class="cap"><span class="dot"></span>${esc(p.name)}${p.id===state.playerMain?' <span class="youtag" title="Liste principale">★</span>':''}</span></th>`).join('')}
     <th class="pcol">Vues</th></tr>`;
 
   // remplit le menu des familles présentes (stable, seulement si la liste change)
@@ -1692,20 +1709,18 @@ function renderMatrix({universe,N}){
     sel.value=state.family;
   }
 
-  // remplit les chips personne (filtre multi : coche 1+ personne(s) pour ne voir que leurs listes).
+  // Nettoyage des uid disparus (joueurs partis) avant de peupler les chips.
+  const alive=new Set(state.people.map(p=>p.id));
+  if(state.playerMain && !alive.has(state.playerMain)) state.playerMain='';
+  for(const uid of [...state.playerCompareSet]) if(!alive.has(uid)) state.playerCompareSet.delete(uid);
+  // Re-génère les chips à chaque changement de composition de la ligue.
   const plKey=state.people.map(p=>p.id+':'+p.name).join('|');
   if(plKey!==lastPlayerKey){
     lastPlayerKey=plKey;
-    const box=$('#playerChips');
-    // Retire du Set les uid disparus (joueurs partis)
-    const alive=new Set(state.people.map(p=>p.id));
-    for(const uid of [...state.playerSet]) if(!alive.has(uid)) state.playerSet.delete(uid);
-    if(box){
-      box.innerHTML = state.people.map(p=>{
-        const on = state.playerSet.has(p.id);
-        return `<button type="button" class="person-chip${on?' on':''}" data-player="${esc(p.id)}" style="--series:var(--s${p.si})"><span class="dot"></span>${esc(p.name)}${p.isMe?' (vous)':''}</button>`;
-      }).join('');
-    }
+    const boxMain=$('#playerMainChips'), boxCmp=$('#playerCompareChips');
+    const chipHtml = (p, on, extraCls) => `<button type="button" class="person-chip${on?' on':''}${extraCls||''}" data-player="${esc(p.id)}" style="--series:var(--s${p.si})"><span class="dot"></span>${esc(p.name)}${p.isMe?' (vous)':''}</button>`;
+    if(boxMain) boxMain.innerHTML = state.people.map(p=>chipHtml(p, state.playerMain===p.id, state.playerMain===p.id?' main':'')).join('');
+    if(boxCmp)  boxCmp.innerHTML  = state.people.map(p=>chipHtml(p, state.playerCompareSet.has(p.id))).join('');
   }
 
   // remplit le menu des pays où des obs ont été faites (France + étranger)
@@ -1732,14 +1747,26 @@ function renderMatrix({universe,N}){
   let list=[...uni];
   if(state.tier!=='any') list=list.filter(u=>rarOf(u).id===state.tier);
   if(state.family!=='any') list=list.filter(u=>familyOf(u.sci)===state.family);
-  // Multi-select personnes : au moins 1 des personnes cochées doit avoir vu l'espèce.
-  // Set vide = pas de filtre (comportement "tout le monde").
-  if(state.playerSet.size){
-    list = list.filter(u => { for(const uid of state.playerSet) if(u.seenBy.has(uid)) return true; return false; });
+  // Filtre lignes :
+  //  - liste principale choisie  → seules les espèces qu'ELLE a vues (peu importe si
+  //    les autres à comparer les ont vues ou pas — la référence, c'est la principale).
+  //  - sinon si à-comparer coché → au moins 1 des personnes cochées doit l'avoir vue.
+  //  - sinon                    → toutes les espèces du groupe.
+  if(state.playerMain){
+    list = list.filter(u => u.seenBy.has(state.playerMain));
+  } else if(state.playerCompareSet.size){
+    list = list.filter(u => { for(const uid of state.playerCompareSet) if(u.seenBy.has(uid)) return true; return false; });
   }
+  // Colonnes à afficher : principale en 1ère position (mise en avant), puis les
+  // personnes à comparer dans l'ordre initial de state.people. Sans sélection = tout le monde.
+  const displayPeople = (state.playerMain || state.playerCompareSet.size)
+    ? [ ...(state.playerMain ? [state.people.find(p=>p.id===state.playerMain)].filter(Boolean) : []),
+        ...state.people.filter(p => p.id!==state.playerMain && state.playerCompareSet.has(p.id)) ]
+    : state.people.slice();
+  const nCols = displayPeople.length;
   if(state.country!=='any') list=list.filter(u=>{
     for(const [pid,v] of u.seenBy){
-      if(state.playerSet.size && !state.playerSet.has(pid)) continue;
+      if(nCols && !displayPeople.some(p=>p.id===pid)) continue;
       if(v.country===state.country) return true;
     }
     return false;
@@ -1752,19 +1779,29 @@ function renderMatrix({universe,N}){
   }
   else list.sort((a,b)=> a.common.localeCompare(b.common));
 
+  // On applique enfin l'entête maintenant que displayPeople est connu.
+  $('#thead').innerHTML = buildHead(displayPeople);
   const tb=$('#tbody'), cards=$('#matrixCards');
   if(!list.length){
-    tb.innerHTML=`<tr><td colspan="${state.people.length+3}" style="text-align:center;color:var(--ink-3);padding:26px;">Aucune espèce ne correspond.</td></tr>`;
+    tb.innerHTML=`<tr><td colspan="${displayPeople.length+3}" style="text-align:center;color:var(--ink-3);padding:26px;">Aucune espèce ne correspond.</td></tr>`;
     cards.innerHTML=`<div class="empty-note" style="margin-top:0;">Aucune espèce ne correspond.</div>`;
     return;
   }
   tb.innerHTML = list.map(u=>{
     const k=holdersFR(u), t=rarOf(u);
-    const cells = state.people.map(p=>{
-      const v=u.seenBy.get(p.id); if(!v) return '<td class="pcol"></td>';
+    const cells = displayPeople.map(p=>{
+      const isMain = p.id===state.playerMain;
+      const v=u.seenBy.get(p.id);
+      if(!v){
+        // Cellule "manquant" affichée en rouge UNIQUEMENT quand on compare (main sélectionnée)
+        // et que la personne en colonne n'est PAS la principale — pour repérer d'un coup d'œil
+        // les oiseaux que la principale a mais pas la personne à comparer.
+        if(state.playerMain && !isMain) return '<td class="pcol is-miss" title="Non observé"></td>';
+        return `<td class="pcol${isMain?' is-main':''}"></td>`;
+      }
       const foreign=foreignTick(v); const cc=v.country; const abroad=cc&&cc!=='FR';
       const ttl = abroad ? `Vu en ${countryLabel(cc)}${foreign?' — hors compétition':''}` : (foreign?"Vu à l'étranger — hors compétition":'');
-      return `<td class="pcol is-seen${foreign?' is-foreign':''}"${ttl?` title="${esc(ttl)}"`:''}><i class="chk">✓</i>${abroad?'<span class="abroad-mark">'+(flagImg(cc)||'🌍')+'</span>':''}</td>`;
+      return `<td class="pcol is-seen${foreign?' is-foreign':''}${isMain?' is-main':''}"${ttl?` title="${esc(ttl)}"`:''}><i class="chk">✓</i>${abroad?'<span class="abroad-mark">'+(flagImg(cc)||'🌍')+'</span>':''}</td>`;
     }).join('');
     return `<tr class="${u.missing?'missing':''}">
       <td class="sp">${esc(u.common)}${state.showSci && u.sci?`<span class="sci">${esc(u.sci)}</span>`:''}</td>
@@ -1775,7 +1812,8 @@ function renderMatrix({universe,N}){
 
   cards.innerHTML = list.map(u=>{
     const k=holdersFR(u), t=rarOf(u);
-    const seers = state.people.filter(p=>u.seenBy.has(p.id))
+    // Cartes : n'affiche que les cochons de displayPeople (cohérent avec la table).
+    const seers = displayPeople.filter(p=>u.seenBy.has(p.id))
       .map(p=>{ const v=u.seenBy.get(p.id); const foreign=foreignTick(v); const cc=v.country; const abroad=cc&&cc!=='FR';
         const ttl = abroad?`Vu en ${countryLabel(cc)}${foreign?' — hors compétition':''}`:'';
         return `<span class="mc-person${foreign?' is-foreign':''}" style="--series:var(--s${p.si})"${ttl?` title="${esc(ttl)}"`:''}><span class="dot"></span>${esc(p.name)}${abroad?'<span class="abroad-mark-inline">'+(flagImg(cc)||'🌍')+'</span>':''}</span>`; }).join('');
@@ -4570,12 +4608,21 @@ $('#feedPersonSel')?.addEventListener('change', e=>{ feedPerson = e.target.value
 $('#feedTierSel')?.addEventListener('change', e=>{ feedTier = e.target.value; renderFeed(); });
 $('#tierSel').addEventListener('change',e=>{ state.tier=e.target.value; renderResults(); });
 $('#familySel').addEventListener('change',e=>{ state.family=e.target.value; renderResults(); });
-// Chips personne (multi) : toggle du Set state.playerSet, puis re-render.
-$('#playerChips')?.addEventListener('click', e=>{
+// Chip "liste principale" : sélection unique (re-clic = déselect). Force re-génération
+// des chips via lastPlayerKey pour appliquer/retirer la classe .main visuelle.
+$('#playerMainChips')?.addEventListener('click', e=>{
   const b = e.target.closest('button[data-player]'); if(!b) return;
   const uid = b.dataset.player;
-  if(state.playerSet.has(uid)) state.playerSet.delete(uid); else state.playerSet.add(uid);
-  b.classList.toggle('on', state.playerSet.has(uid));
+  state.playerMain = (state.playerMain === uid) ? '' : uid;
+  lastPlayerKey = '';   // force la ré-écriture des deux groupes de chips
+  renderResults();
+});
+// Chips "à comparer" : toggle du Set state.playerCompareSet.
+$('#playerCompareChips')?.addEventListener('click', e=>{
+  const b = e.target.closest('button[data-player]'); if(!b) return;
+  const uid = b.dataset.player;
+  if(state.playerCompareSet.has(uid)) state.playerCompareSet.delete(uid); else state.playerCompareSet.add(uid);
+  b.classList.toggle('on', state.playerCompareSet.has(uid));
   renderResults();
 });
 $('#showSci')?.addEventListener('change', e=>{ state.showSci = e.target.checked; renderResults(); });
