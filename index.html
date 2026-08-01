@@ -614,6 +614,16 @@
   .photo-del { font:inherit; font-size:11px; color:var(--ink-3); background:none; border:none; padding:0; cursor:pointer; text-decoration:underline; }
   .photo-del:hover { color:#c0392b; }
   .photo-card .react-bar { padding:0 11px 10px; margin:0; }
+  /* Bouton cœur type Instagram : à gauche des chips emoji, dans la même ligne .photo-actions. */
+  .photo-actions { display:flex; align-items:center; gap:8px; padding:2px 11px 8px; }
+  .photo-actions .react-bar { padding:0; margin:0; flex:1; }
+  .heart-btn { display:inline-flex; align-items:center; gap:5px; padding:4px 9px; background:var(--surface); border:1px solid var(--line-2); border-radius:14px; cursor:pointer; font:600 13px/1 system-ui; color:var(--ink-2); transition:transform .1s; }
+  .heart-btn:hover:not(:disabled) { border-color:#e74a70; color:#e74a70; }
+  .heart-btn:active:not(:disabled) { transform:scale(.92); }
+  .heart-btn.liked { border-color:#e74a70; background:color-mix(in srgb,#e74a70 12%,var(--surface)); color:#c73058; }
+  .heart-btn[disabled] { opacity:.6; cursor:not-allowed; }
+  .heart-btn .heart-icon { font-size:15px; line-height:1; }
+  .heart-btn .heart-count { min-width:12px; text-align:center; font-variant-numeric:tabular-nums; }
 
   /* trophées */
   .who-select { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
@@ -1239,9 +1249,8 @@ const db = getFirestore(fbApp);
 const SERIES_N = 8;
 const state = { people: [], onlySpecies: true, sort:'rarity',
   tierExcl:new Set(),                          // Set des raretés MASQUÉES (vide = toutes visibles)
-  familyExcl:new Set(),                        // Set des familles MASQUÉES (rempli avec TOUTES au 1er render — défaut = rien de coché)
-  familyInited:false,                          // flag : true une fois qu'on a posé les défauts (tout masqué)
-  familyExpanded:false,                        // affiche toutes les familles ou seulement les 8 premières
+  familyExcl:new Set(),                        // Set des familles MASQUÉES (vide par défaut = toutes visibles)
+  familyExpanded:false,                        // false = liste des chips masquée pour gagner de la place, true = toutes visibles
   countryExcl:new Set(),                       // Set des pays MASQUÉS (vide = tous visibles)
   playerMain:'', playerCompareSet:new Set(),   // liste principale (0 ou 1) + liste(s) à comparer (0..N)
   q:'', boardMode:'count', showMissing:false, showSci:false };
@@ -1783,38 +1792,29 @@ function renderMatrix({universe,N}){
     lastFamKey=famKey;
     // Purge du filtre les familles disparues (nouvel import, etc.).
     for(const f of [...state.familyExcl]) if(!fams.includes(f)) state.familyExcl.delete(f);
-    // 1er render (défaut) OU après un reset : on masque toutes les familles. L'utilisateur
-    // coche ensuite juste celles qui l'intéressent (opt-in). Évite le mur de chips actifs.
-    // Guard : n'init QUE si on a vraiment des familles (évite un familyInited=true prématuré
-    // quand renderMatrix tourne une 1re fois avec un universe vide, avant que les listes chargent).
-    if(!state.familyInited && fams.length > 0){
-      state.familyExcl = new Set(fams);
-      state.familyInited = true;
-    }
   }
   const famBox=$('#familyChips'); const famBtn=$('#familyToggle');
   if(famBox){
-    const COLLAPSED = 8;
-    const visible = state.familyExpanded ? fams : fams.slice(0, COLLAPSED);
-    // Familles cochées qui ne seraient pas visibles (state.familyExcl non vide) : on les remonte
-    // parmi les visibles pour que l'utilisateur voie tout de suite quels filtres sont actifs.
-    const excludedShown = fams.filter(f => state.familyExcl.has(f) && !visible.includes(f));
-    const list = [...new Set([...visible, ...excludedShown])];
+    // Liste masquée par défaut pour gagner de la place — n'affiche RIEN tant que
+    // familyExpanded=false, sauf les familles activement décochées (à faire ressortir
+    // pour que l'utilisateur voie les filtres actifs sans devoir déplier).
+    let list = [];
+    if(state.familyExpanded){
+      list = fams;
+    } else {
+      // Uniquement les familles décochées (filtre actif) → l'utilisateur les voit et peut les recocher.
+      list = fams.filter(f => state.familyExcl.has(f));
+    }
     famBox.innerHTML = list.map(f=>{
       const on = !state.familyExcl.has(f);
       return `<button type="button" class="person-chip fam-chip${on?' on':''}" data-family="${esc(f)}" title="${esc(f)}">${esc(f)}</button>`;
     }).join('');
     if(famBtn){
-      const rest = Math.max(0, fams.length - list.length);
-      if(fams.length <= COLLAPSED){
-        famBtn.hidden = true;
-      } else {
-        famBtn.hidden = false;
-        famBtn.setAttribute('aria-expanded', state.familyExpanded ? 'true' : 'false');
-        famBtn.textContent = state.familyExpanded
-          ? '▴ voir moins'
-          : `▾ voir plus (${rest})`;
-      }
+      famBtn.hidden = fams.length === 0;
+      famBtn.setAttribute('aria-expanded', state.familyExpanded ? 'true' : 'false');
+      famBtn.textContent = state.familyExpanded
+        ? '▴ masquer la liste'
+        : `▾ voir les ${fams.length} familles`;
     }
   }
 
@@ -1972,7 +1972,7 @@ const ICONS={"medal":"<img src=\"t-shirt.png\" alt=\"Expert Merlin Bird\" style=
 const TROPHIES = [
   { icon:ICONS.medal, name:'Expert Merlin Bird', desc:'100 espèces (droit de porter le t-shirt Merlin)', test:s=>s.total>=100, prog:s=>[s.total,100] },
   { icon:ICONS.kimono, name:"T'ia mis le kimono", desc:"Faire une observation avec le T-shirt Merlin (preuve à l'appui)", special:'vote', voteId:'kimono', voteThreshold:3, test:s=>(s.kimonoVotes||0)>=3 },
-  { icon:ICONS.photo, name:'Peter Parker', desc:'Poster 3 photos qui recueillent chacune au moins 3 réactions emoji — le Daily Bugle t\'appelle 📞', test:s=>(s.hotPhotos||0)>=3, prog:s=>[s.hotPhotos||0,3], info:s=>s.hotPhotos>=3?`${s.hotPhotos} photo${s.hotPhotos>1?'s':''} qui claque${s.hotPhotos>1?'nt':''}`:'' },
+  { icon:ICONS.photo, name:'Peter Parker', desc:'Poster 3 photos qui recueillent chacune au moins 3 ❤️ — le Daily Bugle t\'appelle 📞', test:s=>(s.hotPhotos||0)>=3, prog:s=>[s.hotPhotos||0,3], info:s=>s.hotPhotos>=3?`${s.hotPhotos} photo${s.hotPhotos>1?'s':''} qui claque${s.hotPhotos>1?'nt':''}`:'' },
   { icon:ICONS.cup, name:'Mike Horn', desc:'Avoir l’oiseau le plus rare de la ligue', test:s=>s.mikeHorn, info:s=>s.mikeHorn&&s.mikeBird?'🏅 '+s.mikeBird:'', tip:s=>s.mikeHorn&&s.mikeBird?'Oiseau le plus rare : '+s.mikeBird:'' },
   { icon:ICONS.graal, name:'Le Saint-Graal', desc:'Observer un oiseau Exceptionnel ou Très rare', test:s=>s.megaList.length>0, alwaysList:true, list:s=>MEGA_CATALOG.map(m=>({ name:m.name, section:m.w===9?'Exceptionnel':'Très rare', owned:s.megaOwnedSet.has(m.sci) })) },
   { icon:ICONS.woodpecker, name:'Pic noir', desc:'Observer le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker },
@@ -2109,16 +2109,13 @@ function statsFor(me, N){
   // Seuil dynamique par milieu = 5 % du catalogue de ce milieu (arrondi supérieur, min 1).
   const habMin = c => Math.max(1, Math.ceil((HABITAT_TO_SCIS[c]||[]).length * 0.05));
   const habCovered = HABITAT_CATS.filter(c => habOwned[c].size >= habMin(c)).length;
-  // Compte les photos de cette personne ayant ≥3 réactions emoji (somme sur tous les emojis
-  // et tous les utilisateurs — chaque (emoji × user) compte pour 1).
+  // Compte les photos de cette personne ayant ≥3 COEURS (bouton dédié type Instagram).
+  // On ignore les autres emojis libres — seul le ❤️ (HEART_EMOJI) compte pour ce trophée.
   let hotPhotos = 0;
   for(const ph of (photos||[])){
     if(ph.uid !== me.id) continue;
-    const rm = reactionsMap.get('photo:'+ph.id);
-    if(!rm) continue;
-    let n = 0;
-    for(const uids of rm.values()) n += uids.size;
-    if(n >= 3) hotPhotos++;
+    const hearts = reactionsMap.get('photo:'+ph.id)?.get(HEART_EMOJI)?.size || 0;
+    if(hearts >= 3) hotPhotos++;
   }
   return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0 };
 }
@@ -2397,12 +2394,17 @@ function _renderMentions(escText, byId){
   });
 }
 // ---- Réactions emoji (partagé tchat + photos) ----
-function reactionBar(target){
+// Emoji utilisé pour le bouton "cœur" façon Instagram (bouton dédié dans les cartes photo).
+// Stocké dans la même collection reactions, on le filtre juste de la reactionBar pour éviter
+// un doublon visuel avec le bouton cœur.
+const HEART_EMOJI = '❤️';
+function reactionBar(target, opts){
+  const excludeEmojis = new Set((opts && opts.excludeEmojis) || []);
   const rm=reactionsMap.get(target);
   let chips='';
   if(rm){
     const byUid=new Map(realPeople.map(p=>[p.id,p.name]));
-    for(const [emoji,voters] of rm){ if(voters.size>0){ const mine=voters.has(myUid);
+    for(const [emoji,voters] of rm){ if(voters.size>0 && !excludeEmojis.has(emoji)){ const mine=voters.has(myUid);
       const names=[...voters].map(uid=>uid===myUid?'vous':(byUid.get(uid)||'Invité'))
         .sort((a,b)=>a==='vous'?-1:b==='vous'?1:a.localeCompare(b,'fr'));
       const tip = names.join(', ');
@@ -2410,6 +2412,20 @@ function reactionBar(target){
   }
   const add = myUid ? `<button class="react-add" data-target="${esc(target)}" title="Réagir">＋</button>` : '';
   return `<div class="react-bar">${chips}${add}</div>`;
+}
+// Bouton cœur type Instagram : rempli si l'utilisateur a liké, contour sinon. Compteur à côté.
+function heartButton(target){
+  const voters = reactionsMap.get(target)?.get(HEART_EMOJI);
+  const count = voters?.size || 0;
+  const mine = !!(myUid && voters?.has(myUid));
+  const byUid = new Map(realPeople.map(p=>[p.id,p.name]));
+  const tip = voters && voters.size
+    ? [...voters].map(uid=>uid===myUid?'vous':(byUid.get(uid)||'Invité')).sort((a,b)=>a==='vous'?-1:b==='vous'?1:a.localeCompare(b,'fr')).join(', ')
+    : (myUid ? 'Aimer cette photo' : 'Connecte-toi pour aimer');
+  const disabled = myUid ? '' : ' disabled';
+  return `<button class="heart-btn${mine?' liked':''}" data-heart-target="${esc(target)}" title="${esc(tip)}"${disabled}>`
+    + `<span class="heart-icon">${mine?'❤️':'🤍'}</span>`
+    + `<span class="heart-count">${count}</span></button>`;
 }
 async function toggleReaction(target, emoji){
   if(!myUid) return;
@@ -2440,11 +2456,12 @@ function renderPhotos(){
     const time=t?t.toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'…';
     const safeImg=(typeof ph.image==='string'&&/^data:image\//.test(ph.image))?ph.image.replace(/"/g,'%22'):'';
     const del=ph.uid===myUid?`<button class="photo-del" data-id="${esc(ph.id)}">supprimer</button>`:'';
+    const target = 'photo:'+ph.id;
     return `<div class="photo-card">
       <img class="photo-img" src="${safeImg}" alt="photo d'observation">
       ${ph.caption?`<div class="photo-cap">${esc(ph.caption)}</div>`:''}
       <div class="photo-meta"><span>${esc(nm)}${guest} · ${esc(time)}</span>${del}</div>
-      ${reactionBar('photo:'+ph.id)}
+      <div class="photo-actions">${heartButton(target)}${reactionBar(target, {excludeEmojis:[HEART_EMOJI]})}</div>
     </div>`;
   }).join('');
 }
@@ -4685,6 +4702,7 @@ $('#photoPublish')?.addEventListener('click', async ()=>{
   btn.disabled=false;
 });
 $('#photoGrid')?.addEventListener('click', async e=>{
+  const heart=e.target.closest('.heart-btn'); if(heart){ if(heart.disabled) return; toggleReaction(heart.dataset.heartTarget, HEART_EMOJI); return; }
   const chip=e.target.closest('.react-chip'); if(chip){ toggleReaction(chip.dataset.target, chip.dataset.emoji); return; }
   const addb=e.target.closest('.react-add'); if(addb){ openEmojiPop({type:'react', target:addb.dataset.target}); return; }
   const del=e.target.closest('.photo-del'); if(del){ if(!confirm('Supprimer cette photo ?')) return;
@@ -4818,9 +4836,8 @@ $('#filtersToggle')?.addEventListener('click', ()=>{
 // Reset : remet TOUS les filtres à l'état initial (tout visible), sans toucher au tri ni à la recherche.
 $('#filtersReset')?.addEventListener('click', ()=>{
   state.tierExcl = new Set();
-  state.familyExcl = new Set();
-  state.familyInited = false;   // recharge le défaut (tout masqué) au prochain render
-  state.familyExpanded = false;
+  state.familyExcl = new Set();   // toutes les familles cochées par défaut
+  state.familyExpanded = false;   // liste des chips masquée par défaut (gagne de la place)
   state.playerMain = '';
   state.playerCompareSet = new Set();
   state.countryExcl = new Set();
