@@ -1972,7 +1972,7 @@ const ICONS={"medal":"<img src=\"t-shirt.png\" alt=\"Expert Merlin Bird\" style=
 const TROPHIES = [
   { icon:ICONS.medal, name:'Expert Merlin Bird', desc:'100 espèces (droit de porter le t-shirt Merlin)', test:s=>s.total>=100, prog:s=>[s.total,100] },
   { icon:ICONS.kimono, name:"T'ia mis le kimono", desc:"Faire une observation avec le T-shirt Merlin (preuve à l'appui)", special:'vote', voteId:'kimono', voteThreshold:3, test:s=>(s.kimonoVotes||0)>=3 },
-  { icon:ICONS.photo, name:'National Geographic', desc:'Poster 3 photos qui recueillent chacune au moins 3 ❤️. Nat Geo te contacte 📞', test:s=>(s.hotPhotos||0)>=3, prog:s=>[s.hotPhotos||0,3], info:s=>s.hotPhotos>=3?`${s.hotPhotos} photo${s.hotPhotos>1?'s':''} qui claque${s.hotPhotos>1?'nt':''}`:'' },
+  { icon:ICONS.photo, name:'National Geographic', desc:'Poster 3 photos qui recueillent chacune au moins 3 ❤️', test:s=>(s.hotPhotos||0)>=3, prog:s=>[s.hotPhotos||0,3], info:s=>s.hotPhotos>=3?`${s.hotPhotos} photo${s.hotPhotos>1?'s':''} qui claque${s.hotPhotos>1?'nt':''}`:'' },
   { icon:ICONS.cup, name:'Mike Horn', desc:'Avoir l’oiseau le plus rare de la ligue', test:s=>s.mikeHorn, info:s=>s.mikeHorn&&s.mikeBird?'🏅 '+s.mikeBird:'', tip:s=>s.mikeHorn&&s.mikeBird?'Oiseau le plus rare : '+s.mikeBird:'' },
   { icon:ICONS.graal, name:'Le Saint-Graal', desc:'Observer un oiseau Exceptionnel ou Très rare', test:s=>s.megaList.length>0, alwaysList:true, list:s=>MEGA_CATALOG.map(m=>({ name:m.name, section:m.w===9?'Exceptionnel':'Très rare', owned:s.megaOwnedSet.has(m.sci) })) },
   { icon:ICONS.woodpecker, name:'Pic noir', desc:'Observer le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker },
