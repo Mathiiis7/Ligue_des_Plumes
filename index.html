@@ -852,7 +852,7 @@
         <div class="country-badge" id="countryBadge" style="display:none;"></div>
       </div>
       <div class="controls">
-        <div class="search">🔎<input type="text" id="q" placeholder="Filtrer une espèce…"></div>
+        <div class="search matrix-search" style="position:relative;">🔎<input type="text" id="q" placeholder="Filtrer une espèce…" autocomplete="off"><div class="map-search-suggest" id="matrixSearchSuggest"></div></div>
         <div class="seg" id="sortSeg">
           <button data-sort="rarity" class="on">Par rareté</button>
           <button data-sort="name">A → Z</button>
@@ -1657,6 +1657,7 @@ function renderBoard(){
   });
 }
 
+let _matrixUniverse = [];   // exposé pour la dropdown de suggestions de #q
 function renderMatrix({universe,N}){
   // la dimension de rareté de la matrice suit le classement choisi : réelle si mode "real", sinon ligue
   // la dimension de rareté suit le classement choisi (ligue ou réelle) ; les oiseaux
@@ -1677,6 +1678,7 @@ function renderMatrix({universe,N}){
       .map(sci=>({ key:'miss:'+sci, common:frName(sci,sci), sci, seenBy:new Map(), missing:true }));
     uni = universe.concat(missing);
   }
+  _matrixUniverse = uni;   // rendu accessible à _updateMatrixSuggest() ci-dessous
 
   // raretés présentes, triées du plus commun au plus rare
   const tiersPresent=[...new Map(uni.map(u=>{const t=rarOf(u); return [t.id,t];})).values()].sort((a,b)=>a.ord-b.ord);
@@ -4612,7 +4614,48 @@ $('#trophyGrid').addEventListener('click',async e=>{
 $('#tmodalX').addEventListener('click',()=>$('#trophyModal').classList.remove('open'));
 $('#trophyModal').addEventListener('click',e=>{ if(e.target.id==='trophyModal') $('#trophyModal').classList.remove('open'); });
 
-$('#q').addEventListener('input',e=>{ state.q=e.target.value; renderResults(); });
+// ---- Dropdown de suggestions pour la recherche #q dans "Qui a vu quoi" ----
+// Alimenté par _matrixUniverse (posé dans renderMatrix). Le contenu suit l'option
+// "Afficher les espèces non observées" : décochée = espèces vues par au moins un joueur.
+let _matrixSuggestItems = [];
+function _updateMatrixSuggest(){
+  const box = $('#matrixSearchSuggest'); if(!box) return;
+  const q = (state.q||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+  const seen = new Set();
+  const items = [];
+  for(const u of (_matrixUniverse||[])){
+    const sci = (u.sci||'').toLowerCase();
+    if(!sci || seen.has(sci)) continue;
+    const fr = u.common || sci;
+    const frNorm = fr.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+    if(q && !frNorm.includes(q) && !sci.includes(q)) continue;
+    seen.add(sci);
+    items.push({ sci, name: fr });
+  }
+  items.sort((a,b)=> a.name.localeCompare(b.name,'fr'));
+  _matrixSuggestItems = items;
+  if(!items.length){ box.classList.remove('open'); box.innerHTML=''; return; }
+  box.innerHTML = items.map((it,i)=>`<div class="map-search-suggest-item" data-idx="${i}">`
+    +`<span>${esc(it.name)}</span>`
+    +(state.showSci?`<span class="ss-sci">${esc(it.sci)}</span>`:'')
+    +`</div>`).join('');
+  box.classList.add('open');
+}
+$('#q').addEventListener('input',e=>{ state.q=e.target.value; renderResults(); _updateMatrixSuggest(); });
+$('#q').addEventListener('focus', ()=> _updateMatrixSuggest());
+// Clic sur une suggestion : remplit la barre + filtre le tableau à cette espèce, ferme la dropdown.
+$('#matrixSearchSuggest')?.addEventListener('mousedown', e=>{
+  const it = e.target.closest('.map-search-suggest-item'); if(!it) return;
+  e.preventDefault();   // évite le blur avant clic
+  const m = _matrixSuggestItems[+it.dataset.idx]; if(!m) return;
+  const inp = $('#q'); inp.value = m.name; state.q = m.name;
+  const box = $('#matrixSearchSuggest'); box.classList.remove('open'); box.innerHTML='';
+  renderResults();
+});
+// Ferme la dropdown quand on clique ailleurs.
+document.addEventListener('click', e=>{
+  if(!e.target.closest('.matrix-search')){ const box=$('#matrixSearchSuggest'); if(box) box.classList.remove('open'); }
+});
 $('#sortSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return;
   $('#sortSeg').querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
   state.sort=b.dataset.sort; renderResults(); });
