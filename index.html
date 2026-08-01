@@ -222,7 +222,17 @@
   .board-sheet .who-cell { display:flex; align-items:center; gap:9px; font-weight:600; }
   .board-sheet .who-cell .dot { width:11px; height:11px; border-radius:50%; background:var(--series); flex:none; }
   .c-num { text-align:right !important; font-variant-numeric:tabular-nums; }
-  .board-sheet .c-txt { min-width:120px; max-width:190px; white-space:normal; font-size:13px; }
+  .board-sheet .c-txt { min-width:120px; max-width:190px; white-space:normal; font-size:13px; vertical-align:top; }
+  /* Hauteur uniforme des lignes du board : posée en JS après render (--rowh) sur chaque tr. */
+  .board-sheet tbody tr { height:var(--rowh); }
+  /* Matrice : largeur uniforme des colonnes personne (indépendant de la longueur du nom). */
+  table th.pcol, table td.pcol { width:88px; min-width:88px; max-width:88px; box-sizing:border-box; }
+  /* Chips personne (filtre multi-sélection dans la matrice). */
+  .person-chips { display:inline-flex; gap:4px; flex-wrap:wrap; align-items:center; }
+  .person-chip { padding:5px 10px; border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink-3); border-radius:14px; font:600 12px/1 system-ui; cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
+  .person-chip .dot { width:8px; height:8px; border-radius:50%; background:var(--series,var(--ink-3)); }
+  .person-chip:hover { filter:brightness(0.97); }
+  .person-chip.on { color:var(--ink); border-color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,var(--surface)); }
   .board-sheet .muted { color:var(--ink-3); }
   .board-sheet th.on-metric, .board-sheet td.on-metric { background:color-mix(in srgb,var(--accent) 12%,var(--surface)) !important; }
   .board-sheet td.on-metric { color:var(--accent-ink); }
@@ -847,13 +857,12 @@
         <select class="filt-sel" id="familySel" aria-label="Filtrer par famille">
           <option value="any">Toutes les familles</option>
         </select>
-        <select class="filt-sel" id="playerSel" aria-label="Filtrer par personne">
-          <option value="any">Toutes les personnes</option>
-        </select>
+        <div class="person-chips" id="playerChips" aria-label="Filtrer par personne (multi)"></div>
         <select class="filt-sel" id="countrySel" aria-label="Filtrer par pays d'observation">
           <option value="any">Tous les pays</option>
         </select>
         <label class="miss-toggle"><input type="checkbox" id="showMissing"> Oiseaux de France non observés</label>
+        <label class="miss-toggle"><input type="checkbox" id="showSci"> Afficher les noms scientifiques</label>
       </div>
       <div class="tbl-scroll">
         <table>
@@ -1153,7 +1162,7 @@ const db = getFirestore(fbApp);
 
 /* ---------------- state ---------------- */
 const SERIES_N = 8;
-const state = { people: [], onlySpecies: true, sort:'rarity', tier:'any', family:'any', player:'any', country:'any', q:'', boardMode:'count', showMissing:false };
+const state = { people: [], onlySpecies: true, sort:'rarity', tier:'any', family:'any', player:'any', playerSet:new Set(), country:'any', q:'', boardMode:'count', showMissing:false, showSci:false };
 let lastFamKey = '', lastTierKey = '', lastPlayerKey = '', lastCountryKey = '';
 let myUid = null, leagueId = null, unsub = null, unsubLeague = null, iAmInLeague = false;
 let unsubChat = null, lastChatMsgs = [];
@@ -1620,6 +1629,17 @@ function renderBoard(){
       <td class="c-txt">${p.lastAcqName?esc(p.lastAcqName)+(p.lastAcqDisp?` <span class="muted">${p.lastAcqDisp}</span>`:''):dash}</td>
       <td class="c-txt">${cell(p.dream)}</td>
     </tr>`).join('')}</tbody></table></div>`;
+  // Uniformise la hauteur des lignes du board sur celle du plus grand (contenus texte
+  // très inégaux — objectif, dream, dernière obs — sinon effet peigne).
+  requestAnimationFrame(()=>{
+    const rows = document.querySelectorAll('#boardList .board-sheet tbody tr');
+    if(!rows.length) return;
+    // reset avant mesure pour ne pas mesurer une valeur figée d'un précédent render
+    rows.forEach(r=>r.style.removeProperty('--rowh'));
+    let maxH = 0;
+    rows.forEach(r=>{ if(r.offsetHeight > maxH) maxH = r.offsetHeight; });
+    if(maxH > 0) rows.forEach(r=>r.style.setProperty('--rowh', maxH+'px'));
+  });
 }
 
 function renderMatrix({universe,N}){
@@ -1672,14 +1692,20 @@ function renderMatrix({universe,N}){
     sel.value=state.family;
   }
 
-  // remplit le menu des personnes (pour voir la liste de quelqu'un)
+  // remplit les chips personne (filtre multi : coche 1+ personne(s) pour ne voir que leurs listes).
   const plKey=state.people.map(p=>p.id+':'+p.name).join('|');
   if(plKey!==lastPlayerKey){
     lastPlayerKey=plKey;
-    const sel=$('#playerSel');
-    sel.innerHTML='<option value="any">Toutes les personnes</option>'+state.people.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}${p.isMe?' (vous)':''}</option>`).join('');
-    if(!state.people.some(p=>p.id===state.player)) state.player='any';
-    sel.value=state.player;
+    const box=$('#playerChips');
+    // Retire du Set les uid disparus (joueurs partis)
+    const alive=new Set(state.people.map(p=>p.id));
+    for(const uid of [...state.playerSet]) if(!alive.has(uid)) state.playerSet.delete(uid);
+    if(box){
+      box.innerHTML = state.people.map(p=>{
+        const on = state.playerSet.has(p.id);
+        return `<button type="button" class="person-chip${on?' on':''}" data-player="${esc(p.id)}" style="--series:var(--s${p.si})"><span class="dot"></span>${esc(p.name)}${p.isMe?' (vous)':''}</button>`;
+      }).join('');
+    }
   }
 
   // remplit le menu des pays où des obs ont été faites (France + étranger)
@@ -1706,9 +1732,16 @@ function renderMatrix({universe,N}){
   let list=[...uni];
   if(state.tier!=='any') list=list.filter(u=>rarOf(u).id===state.tier);
   if(state.family!=='any') list=list.filter(u=>familyOf(u.sci)===state.family);
-  if(state.player!=='any') list=list.filter(u=>u.seenBy.has(state.player));
+  // Multi-select personnes : au moins 1 des personnes cochées doit avoir vu l'espèce.
+  // Set vide = pas de filtre (comportement "tout le monde").
+  if(state.playerSet.size){
+    list = list.filter(u => { for(const uid of state.playerSet) if(u.seenBy.has(uid)) return true; return false; });
+  }
   if(state.country!=='any') list=list.filter(u=>{
-    for(const [pid,v] of u.seenBy){ if(state.player!=='any'&&pid!==state.player) continue; if(v.country===state.country) return true; }
+    for(const [pid,v] of u.seenBy){
+      if(state.playerSet.size && !state.playerSet.has(pid)) continue;
+      if(v.country===state.country) return true;
+    }
     return false;
   });
   if(state.q){ const q=state.q.toLowerCase();
@@ -1734,7 +1767,7 @@ function renderMatrix({universe,N}){
       return `<td class="pcol is-seen${foreign?' is-foreign':''}"${ttl?` title="${esc(ttl)}"`:''}><i class="chk">✓</i>${abroad?'<span class="abroad-mark">'+(flagImg(cc)||'🌍')+'</span>':''}</td>`;
     }).join('');
     return `<tr class="${u.missing?'missing':''}">
-      <td class="sp">${esc(u.common)}${u.sci?`<span class="sci">${esc(u.sci)}</span>`:''}</td>
+      <td class="sp">${esc(u.common)}${state.showSci && u.sci?`<span class="sci">${esc(u.sci)}</span>`:''}</td>
       <td><span class="chip" style="--tc:${t.color}">${t.label}</span></td>
       ${cells}
       <td class="cnt">${k}/${N}</td></tr>`;
@@ -1748,7 +1781,7 @@ function renderMatrix({universe,N}){
         return `<span class="mc-person${foreign?' is-foreign':''}" style="--series:var(--s${p.si})"${ttl?` title="${esc(ttl)}"`:''}><span class="dot"></span>${esc(p.name)}${abroad?'<span class="abroad-mark-inline">'+(flagImg(cc)||'🌍')+'</span>':''}</span>`; }).join('');
     return `<div class="mcard ${u.missing?'missing':''}" style="border-left-color:${t.color}">
       <div class="mc-head">
-        <div class="mc-sp">${esc(u.common)}${u.sci?`<span class="mc-sci">${esc(u.sci)}</span>`:''}</div>
+        <div class="mc-sp">${esc(u.common)}${state.showSci && u.sci?`<span class="mc-sci">${esc(u.sci)}</span>`:''}</div>
         <span class="mc-count">${k}/${N}</span>
       </div>
       <div class="mc-row">
@@ -4537,7 +4570,15 @@ $('#feedPersonSel')?.addEventListener('change', e=>{ feedPerson = e.target.value
 $('#feedTierSel')?.addEventListener('change', e=>{ feedTier = e.target.value; renderFeed(); });
 $('#tierSel').addEventListener('change',e=>{ state.tier=e.target.value; renderResults(); });
 $('#familySel').addEventListener('change',e=>{ state.family=e.target.value; renderResults(); });
-$('#playerSel').addEventListener('change',e=>{ state.player=e.target.value; renderResults(); });
+// Chips personne (multi) : toggle du Set state.playerSet, puis re-render.
+$('#playerChips')?.addEventListener('click', e=>{
+  const b = e.target.closest('button[data-player]'); if(!b) return;
+  const uid = b.dataset.player;
+  if(state.playerSet.has(uid)) state.playerSet.delete(uid); else state.playerSet.add(uid);
+  b.classList.toggle('on', state.playerSet.has(uid));
+  renderResults();
+});
+$('#showSci')?.addEventListener('change', e=>{ state.showSci = e.target.checked; renderResults(); });
 $('#countrySel').addEventListener('change',e=>{ state.country=e.target.value; renderResults(); });
 $('#showMissing').addEventListener('change',e=>{ state.showMissing=e.target.checked; renderResults(); });
 
