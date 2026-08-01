@@ -1324,13 +1324,17 @@ function ingest(filename, text){
   }
   if(!species.size) return null;
   let base = filename.replace(/\.csv$/i,'');
-  if(/myebirddata/i.test(base) || !base) base = '';
+  // Noms de fichiers génériques d'eBird : on les traite comme "sans nom" pour que
+  // l'utilisateur soit forcé de se donner un vrai prénom (sinon "eBird World Life List"
+  // apparaîtrait comme un joueur au lieu du vrai nom).
+  if(/^(myebirddata|ebird[_\- ]?world[_\- ]?life[_\- ]?list|ebird[_\- ]?life[_\- ]?list|life[_\- ]?list|list)/i.test(base) || !base) base = '';
   return { filename, defaultName:base, species, regions:[...regionsSet].sort() };
 }
 
 function cleanName(base, n){
   let s = (base||'').replace(/[_\-]+/g,' ').replace(/\s+/g,' ').trim();
-  if(!s) return 'Joueur ' + n;
+  // Fallback très visible pour repérer un compte sans nom (l'utilisateur oubliera moins de se renommer).
+  if(!s) return '⚠️ Sans nom — modifiez « Ma liste » → nom';
   return s.charAt(0).toUpperCase()+s.slice(1);
 }
 
