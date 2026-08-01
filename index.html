@@ -1855,9 +1855,10 @@ const iconEmoji = (emoji, bg='var(--surface-2)', alt='') => {
   const css = Array.isArray(bg) ? bgStripes(bg) : bg;
   return `<span role="img" aria-label="${alt||emoji}" style="width:60px;height:60px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:${css};font-size:34px;box-shadow:inset 0 -1px 0 rgba(0,0,0,.15);overflow:hidden">${emoji}</span>`;
 };
-const ICONS={"medal":"<img src=\"t-shirt.png\" alt=\"Expert Merlin Bird\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","cup":"<img src=\"etoile.png\" alt=\"Mike Horn\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","graal":"<img src=\"diamant.png\" alt=\"Le Saint-Graal\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","woodpecker":"<img src=\"pic-noir.png\" alt=\"Pic noir\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","aigle":"<img src=\"aigle.png\" alt=\"Aigles\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","huitre":"<img src=\"huitre.png\" alt=\"Huître\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bain":"<img src=\"bain.png\" alt=\"Pistoche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","pingouin":"<img src=\"pingouin.png\" alt=\"Happy feet\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","kangourou":"<img src=\"kangourou.png\" alt=\"Wallaby\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","singe":"<img src=\"singe.png\" alt=\"Le coup de Ruff\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","crown":"<img src=\"roi.png\" alt=\"Roi\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","podium":"<img src=\"argent.png\" alt=\"En chef\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bronze":"<img src=\"bronze.png\" alt=\"Chevronné\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","gem":"<img src=\"telescope.png\" alt=\"Apprenti écologue\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","binoculars":"<img src=\"loupe.png\" alt=\"Écologue du dimanche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","saisons":"<img src=\"son.png\" alt=\"Les 4 Saisons\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bebe":"<img src=\"bebe.png\" alt=\"Gros Bébé\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","regions":"<img src=\"france.png\" alt=\"Ma France, mes régions\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bearGrylls":"<img src=\"bear%20grills.png\" alt=\"Bear Grylls\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">"};
+const ICONS={"medal":"<img src=\"t-shirt.png\" alt=\"Expert Merlin Bird\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","cup":"<img src=\"etoile.png\" alt=\"Mike Horn\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","graal":"<img src=\"diamant.png\" alt=\"Le Saint-Graal\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","woodpecker":"<img src=\"pic-noir.png\" alt=\"Pic noir\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","aigle":"<img src=\"aigle.png\" alt=\"Aigles\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","huitre":"<img src=\"huitre.png\" alt=\"Huître\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bain":"<img src=\"bain.png\" alt=\"Pistoche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","pingouin":"<img src=\"pingouin.png\" alt=\"Happy feet\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","kangourou":"<img src=\"kangourou.png\" alt=\"Wallaby\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","singe":"<img src=\"singe.png\" alt=\"Le coup de Ruff\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","crown":"<img src=\"roi.png\" alt=\"Roi\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","podium":"<img src=\"argent.png\" alt=\"En chef\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bronze":"<img src=\"bronze.png\" alt=\"Chevronné\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","gem":"<img src=\"telescope.png\" alt=\"Apprenti écologue\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","binoculars":"<img src=\"loupe.png\" alt=\"Écologue du dimanche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","saisons":"<img src=\"son.png\" alt=\"Les 4 Saisons\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bebe":"<img src=\"bebe.png\" alt=\"Gros Bébé\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","regions":"<img src=\"france.png\" alt=\"Ma France, mes régions\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bearGrylls":"<img src=\"bear%20grills.png\" alt=\"Bear Grylls\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","kimono":"<img src=\"kimono.png\" alt=\"T'ia mis le kimono\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">"};
 const TROPHIES = [
   { icon:ICONS.medal, name:'Expert Merlin Bird', desc:'100 espèces (droit de porter le t-shirt Merlin)', test:s=>s.total>=100, prog:s=>[s.total,100] },
+  { icon:ICONS.kimono, name:"T'ia mis le kimono", desc:"Faire une observation avec le T-shirt Merlin (preuve à l'appui)", special:'vote', voteId:'kimono', voteThreshold:3, test:s=>(s.kimonoVotes||0)>=3 },
   { icon:ICONS.cup, name:'Mike Horn', desc:'Avoir l’oiseau le plus rare de la ligue', test:s=>s.mikeHorn, info:s=>s.mikeHorn&&s.mikeBird?'🏅 '+s.mikeBird:'', tip:s=>s.mikeHorn&&s.mikeBird?'Oiseau le plus rare : '+s.mikeBird:'' },
   { icon:ICONS.graal, name:'Le Saint-Graal', desc:'Observer un oiseau Exceptionnel ou Très rare', test:s=>s.megaList.length>0, alwaysList:true, list:s=>MEGA_CATALOG.map(m=>({ name:m.name, section:m.w===9?'Exceptionnel':'Très rare', owned:s.megaOwnedSet.has(m.sci) })) },
   { icon:ICONS.woodpecker, name:'Pic noir', desc:'Observer le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker },
@@ -1874,7 +1875,7 @@ const TROPHIES = [
   { icon:ICONS.kangourou, name:'Wallaby', desc:'Observer le Martin-chasseur à dos de feu', test:s=>s.hasFireKingfisher },
   { icon:ICONS.saisons, name:'Les 4 Saisons', desc:'Chope un oiseau spécifique à chaque saison tah Vivaldi', test:s=>s.seasonCount>=4, prog:s=>[s.seasonCount,4], alwaysList:true, list:s=>SEASON_CATALOG.map(m=>({ name:m.name, section:m.section, owned:s.seasonOwnedSet.has(m.sci) })), note:s=>`${s.seasonCount} saison${s.seasonCount>1?'s':''} validée${s.seasonCount>1?'s':''} sur 4` },
   { icon:ICONS.regions, name:'Ma France, mes régions !', desc:'Faire un tour de France des birds — observer un oiseau dans 10 régions', test:s=>s.regionsCount>=10, prog:s=>[s.regionsCount,10], alwaysList:true, list:s=>FR_REGIONS.map(r=>({ name:r.name, owned:s.regionsOwnedSet.has(r.code) })), note:s=>`${s.regionsCount} région${s.regionsCount>1?'s':''} visitée${s.regionsCount>1?'s':''} sur ${FR_REGIONS.length}` },
-  { icon:ICONS.bebe, name:'Gros Bébé', desc:'Observer des oiseaux avec Samuel Fillion (preuve demandée)', special:'vote', test:s=>(s.grosBebeVotes||0)>=2 },
+  { icon:ICONS.bebe, name:'Gros Bébé', desc:'Observer des oiseaux avec Samuel Fillion (preuve demandée)', special:'vote', voteId:'grosBebe', voteThreshold:2, voteSelfCheck:()=>/sam/i.test(myMemberName()||''), test:s=>(s.grosBebeVotes||0)>=2 },
   // Badge "Naturaliste polyvalent" — cocher au moins 5 espèces dans N milieux différents.
   // Milieux : forestier, zone humide, eau douce, océan, littoral, montagne, steppe, bocage, urbain, rocher.
   { icon:ICONS.bearGrylls, name:'Bear Grylls', desc:'Cocher 5 % des espèces dans 8 milieux différents (sur 10)', test:s=>s.habCovered>=8, prog:s=>[s.habCovered,8], alwaysList:true, list:s=>{
@@ -1994,7 +1995,7 @@ function statsFor(me, N){
   // Seuil dynamique par milieu = 5 % du catalogue de ce milieu (arrondi supérieur, min 1).
   const habMin = c => Math.max(1, Math.ceil((HABITAT_TO_SCIS[c]||[]).length * 0.05));
   const habCovered = HABITAT_CATS.filter(c => habOwned[c].size >= habMin(c)).length;
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, grosBebeVotes:(votesMap.get(me.id)?.size)||0 };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
@@ -2026,14 +2027,17 @@ function renderTrophies(data){
     const info = (ok && t.info) ? t.info(s) : '';
     let extra='';
     if(t.special==='vote'){
-      const votes = s.grosBebeVotes||0;
-      stateTxt = ok ? `Validé ✓ · ${votes} votes` : `${votes} / 2 votes`;
-      // Sam (le sujet du trophée) peut auto-voter : lui seul sait avec qui il a birder, y compris lui-même.
-      const isSam = /sam/i.test(myMemberName()||'');
-      if(sel.id===myUid && !isSam){ extra = `<div class="vote-note">👶 Les autres votent pour vous (partagez la preuve dans le tchat)</div>`; }
+      const voteId = t.voteId || 'grosBebe';
+      const threshold = t.voteThreshold || 2;
+      const votes = (votesMap.get(voteId)?.get(sel.id)?.size) || 0;
+      stateTxt = ok ? `Validé ✓ · ${votes} votes` : `${votes} / ${threshold} votes`;
+      // voteSelfCheck : fonction optionnelle du trophée qui autorise l'auto-vote
+      // (ex. Gros Bébé → seul Sam peut se voter lui-même).
+      const canSelfVote = t.voteSelfCheck ? t.voteSelfCheck() : false;
+      if(sel.id===myUid && !canSelfVote){ extra = `<div class="vote-note">🗳️ Les autres votent pour vous (partagez la preuve dans le tchat)</div>`; }
       else if(myMemberName()){
-        const iVoted = votesMap.get(sel.id)?.has(myUid);
-        extra = `<button class="vote-btn${iVoted?' voted':''}" data-vote-target="${esc(sel.id)}">${iVoted?'✓ Voté — retirer':'Valider ✅'}</button>`;
+        const iVoted = votesMap.get(voteId)?.get(sel.id)?.has(myUid);
+        extra = `<button class="vote-btn${iVoted?' voted':''}" data-vote-target="${esc(sel.id)}" data-vote-trophy="${esc(voteId)}">${iVoted?'✓ Voté — retirer':'Valider ✅'}</button>`;
       } else { extra = `<div class="vote-note">Connecte-toi pour pouvoir voter</div>`; }
     }
     return `<div class="trophy ${ok?'on':'off'}${clic?' clic':''}"${clic?` data-detail="${i}"`:''}${tip?` title="${esc(tip)}"`:''}>
@@ -2145,9 +2149,19 @@ function subscribe(){
   startPresence();
   if(unsubVotes){ unsubVotes(); unsubVotes=null; }
   unsubVotes = onSnapshot(collection(db,'leagues',leagueId,'votes'), snap=>{
-    const m=new Map();
-    snap.forEach(d=>{ const v=d.data()||{}; if(v.trophy==='grosBebe' && v.target && v.voter){ if(!m.has(v.target)) m.set(v.target,new Set()); m.get(v.target).add(v.voter); } });
-    votesMap=m; renderTrophies(trophyData);
+    // Nouvelle structure : votesMap = Map<trophyId, Map<targetUid, Set<voterUid>>>
+    // (avant : Map<targetUid, Set<voterUid>> hardcodé Gros Bébé — maintenant supporte
+    // plusieurs trophées à vote, ex. Kimono).
+    const outer=new Map();
+    snap.forEach(d=>{
+      const v=d.data()||{};
+      if(!v.trophy || !v.target || !v.voter) return;
+      if(!outer.has(v.trophy)) outer.set(v.trophy, new Map());
+      const inner = outer.get(v.trophy);
+      if(!inner.has(v.target)) inner.set(v.target, new Set());
+      inner.get(v.target).add(v.voter);
+    });
+    votesMap = outer; renderTrophies(trophyData);
   }, ()=>{});
   if(unsubReactions){ unsubReactions(); unsubReactions=null; }
   unsubReactions = onSnapshot(collection(db,'leagues',leagueId,'reactions'), snap=>{
@@ -4560,13 +4574,18 @@ $('#trophyWho').addEventListener('click',e=>{
 $('#trophyGrid').addEventListener('click',async e=>{
   const vb=e.target.closest('.vote-btn');
   if(vb){
-    const target=vb.dataset.voteTarget; if(!target || !myUid) return;
-    // Sam a le droit d'auto-voter pour son propre trophée Gros Bébé ; les autres non.
-    if(target===myUid && !/sam/i.test(myMemberName()||'')) return;
-    const ref=doc(db,'leagues',leagueId,'votes','grosBebe__'+target+'__'+myUid);
-    const iVoted = votesMap.get(target)?.has(myUid);
+    const target=vb.dataset.voteTarget;
+    const trophyId=vb.dataset.voteTrophy || 'grosBebe';
+    if(!target || !myUid) return;
+    // Auto-vote autorisé uniquement si le trophée l'a explicitement défini
+    // (Gros Bébé → Sam / rien pour Kimono → pas d'auto-vote).
+    const tDef = TROPHIES.find(x=>x.voteId===trophyId);
+    const canSelfVote = tDef && tDef.voteSelfCheck ? tDef.voteSelfCheck() : false;
+    if(target===myUid && !canSelfVote) return;
+    const ref=doc(db,'leagues',leagueId,'votes', trophyId+'__'+target+'__'+myUid);
+    const iVoted = votesMap.get(trophyId)?.get(target)?.has(myUid);
     vb.disabled=true;
-    try{ if(iVoted) await deleteDoc(ref); else await setDoc(ref,{ trophy:'grosBebe', target, voter:myUid, createdAt:serverTimestamp() }); }
+    try{ if(iVoted) await deleteDoc(ref); else await setDoc(ref,{ trophy:trophyId, target, voter:myUid, createdAt:serverTimestamp() }); }
     catch(err){ showError(err); }
     return;
   }
