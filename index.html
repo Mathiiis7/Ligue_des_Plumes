@@ -244,9 +244,6 @@
   /* Chips rareté (filtre) : bordure gauche colorée + pastille bien visible pour servir de légende. */
   .rar-chip-m { border-left:4px solid var(--series, var(--line-2)); padding-left:8px; }
   .rar-chip-m .dot { width:12px; height:12px; border:2px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.25); margin-right:2px; }
-  /* Quand cochée (.on), .person-chip.on impose border-color:var(--accent) qui écrase
-     border-left-color. On réaffirme la couleur de rareté sur la bordure gauche. */
-  .rar-chip-m.on { border-left-color:var(--series); }
   /* Chips pays : drapeau seul, sans texte. */
   .flag-chip { padding:3px 5px; min-width:26px; justify-content:center; }
   .flag-chip img.flag { display:block; height:14px; width:auto; border-radius:2px; box-shadow:0 0 0 1px rgba(0,0,0,.15); }
@@ -254,6 +251,10 @@
   .person-chip:hover { filter:brightness(0.97); }
   .person-chip.on { color:var(--ink); border-color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,var(--surface)); }
   .person-chip.main { border-color:var(--gold); background:color-mix(in srgb,var(--gold) 18%,var(--surface)); color:var(--ink); font-weight:700; }
+  /* Chips rareté quand cochée : réaffirme la couleur de rareté sur la bordure gauche.
+     DOIT venir APRÈS .person-chip.on (même spécificité, la déclaration la plus tardive gagne) —
+     sinon le border-color:var(--accent) de .person-chip.on écrase la bordure gauche colorée. */
+  .rar-chip-m.on { border-left-color:var(--series) !important; }
   .person-filter-group { display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; padding:4px 8px 4px 4px; border:1px dashed var(--line-2); border-radius:12px; }
   .person-filter-group .pf-label { font-size:11px; font-weight:600; color:var(--ink-3); text-transform:uppercase; letter-spacing:.4px; padding:0 4px; }
   .board-sheet .pcol.is-main { background:color-mix(in srgb,var(--gold) 10%,var(--surface)); }
