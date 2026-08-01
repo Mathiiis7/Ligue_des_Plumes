@@ -241,8 +241,9 @@
   .person-chips { display:inline-flex; gap:4px; flex-wrap:wrap; align-items:center; }
   .person-chip { padding:5px 10px; border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink-3); border-radius:14px; font:600 12px/1 system-ui; cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
   .person-chip .dot { width:8px; height:8px; border-radius:50%; background:var(--series,var(--ink-3)); }
-  /* Chips rareté (filtre) : pastille plus visible avec léger contour pour ne pas se noyer dans le fond tinté du .on */
-  .rar-chip-m .dot { width:11px; height:11px; box-shadow:0 0 0 1px rgba(0,0,0,.18), 0 0 0 2px #fff; margin-right:2px; }
+  /* Chips rareté (filtre) : bordure gauche colorée + pastille bien visible pour servir de légende. */
+  .rar-chip-m { border-left:4px solid var(--series, var(--line-2)); padding-left:8px; }
+  .rar-chip-m .dot { width:12px; height:12px; border:2px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.25); margin-right:2px; }
   .person-chip:hover { filter:brightness(0.97); }
   .person-chip.on { color:var(--ink); border-color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,var(--surface)); }
   .person-chip.main { border-color:var(--gold); background:color-mix(in srgb,var(--gold) 18%,var(--surface)); color:var(--ink); font-weight:700; }
