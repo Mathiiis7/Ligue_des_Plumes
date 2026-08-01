@@ -255,6 +255,9 @@
   .person-chip:hover { filter:brightness(0.97); }
   .person-chip.on { color:var(--ink); border-color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,var(--surface)); }
   .person-chip.main { border-color:var(--gold); background:color-mix(in srgb,var(--gold) 18%,var(--surface)); color:var(--ink); font-weight:700; }
+  /* Chips filtre thèmes des trophées : compteur "débloqués / total" à droite. */
+  .trophy-theme-chip .theme-count { margin-left:6px; padding:1px 6px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:8px; font:600 10.5px/1 system-ui; color:var(--ink-3); }
+  .trophy-theme-chip.on .theme-count { background:var(--surface); color:var(--ink-2); }
   /* Chips rareté quand cochée : réaffirme la couleur de rareté sur la bordure gauche.
      DOIT venir APRÈS .person-chip.on (même spécificité, la déclaration la plus tardive gagne) —
      sinon le border-color:var(--accent) de .person-chip.on écrase la bordure gauche colorée. */
@@ -1116,6 +1119,7 @@
           <p id="trophySummary"></p></div>
       </div>
       <div class="who-select" id="trophyWho"></div>
+      <div class="person-chips" id="trophyThemeChips" aria-label="Filtrer les trophées par thème" style="margin:6px 0 10px;"></div>
       <div class="trophy-grid" id="trophyGrid"></div>
     </section>
     <div id="trophyModal" class="tmodal">
@@ -1970,31 +1974,40 @@ const iconEmoji = (emoji, bg='var(--surface-2)', alt='') => {
   return `<span role="img" aria-label="${alt||emoji}" style="width:60px;height:60px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:${css};font-size:34px;box-shadow:inset 0 -1px 0 rgba(0,0,0,.15);overflow:hidden">${emoji}</span>`;
 };
 const ICONS={"medal":"<img src=\"t-shirt.png\" alt=\"Expert Merlin Bird\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","cup":"<img src=\"etoile.png\" alt=\"Mike Horn\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","graal":"<img src=\"diamant.png\" alt=\"Le Saint-Graal\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","woodpecker":"<img src=\"pic-noir.png\" alt=\"Pic noir\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","aigle":"<img src=\"aigle.png\" alt=\"Aigles\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","huitre":"<img src=\"huitre.png\" alt=\"Huître\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bain":"<img src=\"bain.png\" alt=\"Pistoche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","pingouin":"<img src=\"pingouin.png\" alt=\"Happy feet\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","kangourou":"<img src=\"kangourou.png\" alt=\"Wallaby\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","singe":"<img src=\"singe.png\" alt=\"Le coup de Ruff\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","crown":"<img src=\"roi.png\" alt=\"Roi\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","podium":"<img src=\"argent.png\" alt=\"En chef\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bronze":"<img src=\"bronze.png\" alt=\"Chevronné\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","gem":"<img src=\"telescope.png\" alt=\"Apprenti écologue\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","binoculars":"<img src=\"loupe.png\" alt=\"Écologue du dimanche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","saisons":"<img src=\"son.png\" alt=\"Les 4 Saisons\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bebe":"<img src=\"bebe.png\" alt=\"Gros Bébé\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","regions":"<img src=\"france.png\" alt=\"Ma France, mes régions\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bearGrylls":"<img src=\"bear%20grills.png\" alt=\"Bear Grylls\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","kimono":"<img src=\"kimono.png\" alt=\"T'ia mis le kimono\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","photo":"<img src=\"photo.png\" alt=\"National Geographic\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","mort":"<img src=\"mort.png\" alt=\"Le Necrophile\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">"};
+// Thèmes de trophées (affichés en chips filtrables au-dessus de la grille).
+// L'ordre ci-dessous détermine l'ordre des chips.
+const TROPHY_THEMES = {
+  progression: { label:'🎯 Progression', desc:'Jalons individuels' },
+  groupe:      { label:'🐦 Groupes',      desc:"Familles ou collections d'espèces" },
+  communaute:  { label:'🤝 Communauté',   desc:'Vote, photos, social' },
+  classement:  { label:'🏆 Classement',   desc:'Position dans la ligue' },
+  blague:      { label:'😂 Blagues',      desc:'Références aux joueurs' },
+};
 const TROPHIES = [
-  { icon:ICONS.medal, name:'Expert Merlin Bird', desc:'100 espèces (droit de porter le t-shirt Merlin)', test:s=>s.total>=100, prog:s=>[s.total,100] },
-  { icon:ICONS.kimono, name:"T'ia mis le kimono", desc:"Faire une observation avec le T-shirt Merlin (preuve à l'appui)", special:'vote', voteId:'kimono', voteThreshold:3, test:s=>(s.kimonoVotes||0)>=3 },
-  { icon:ICONS.photo, name:'National Geographic', desc:'Poster 3 photos qui recueillent chacune au moins 3 ❤️', test:s=>(s.hotPhotos||0)>=3, prog:s=>[s.hotPhotos||0,3], info:s=>s.hotPhotos>=3?`${s.hotPhotos} photo${s.hotPhotos>1?'s':''} qui claque${s.hotPhotos>1?'nt':''}`:'' },
-  { icon:ICONS.mort, name:'Le Nécrophile', desc:'Observer un oiseau décédé #ripstayproud (preuve demandée)', special:'vote', voteId:'necrophile', voteThreshold:3, test:s=>(s.necrophileVotes||0)>=3 },
-  { icon:ICONS.cup, name:'Mike Horn', desc:'Avoir l’oiseau le plus rare de la ligue', test:s=>s.mikeHorn, info:s=>s.mikeHorn&&s.mikeBird?'🏅 '+s.mikeBird:'', tip:s=>s.mikeHorn&&s.mikeBird?'Oiseau le plus rare : '+s.mikeBird:'' },
-  { icon:ICONS.graal, name:'Le Saint-Graal', desc:'Observer un oiseau Exceptionnel ou Très rare', test:s=>s.megaList.length>0, alwaysList:true, list:s=>MEGA_CATALOG.map(m=>({ name:m.name, section:m.w===9?'Exceptionnel':'Très rare', owned:s.megaOwnedSet.has(m.sci) })) },
-  { icon:ICONS.woodpecker, name:'Pic noir', desc:'Observer le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker },
-  { icon:ICONS.singe, name:'Le coup de Ruff', desc:'Ne pas avoir un oiseau qu’Enzo a vu #honteux', test:s=>s.lackEnzoBird },
-  { icon:ICONS.aigle, name:'Armée d’aigles royaux', desc:'Voir au moins 5 rapaces diurnes', test:s=>s.raptors>=5, prog:s=>[s.raptors,5], alwaysList:true, list:s=>RAPTOR_CATALOG.map(m=>({ name:m.name, owned:s.raptorOwnedSet.has(m.sci) })) },
-  { icon:ICONS.huitre, name:'Bourriche d’huître', desc:'Observer un oiseau à La Teste-de-Buch', test:s=>s.locTeste },
-  { icon:ICONS.bain, name:'Pistoche', desc:'15 oiseaux d’eau + le Martin-pêcheur', test:s=>s.water>=15 && s.hasKingfisher, prog:s=>[s.water,15], alwaysList:true,
+  { theme:'progression', icon:ICONS.medal, name:'Expert Merlin Bird', desc:'100 espèces (droit de porter le t-shirt Merlin)', test:s=>s.total>=100, prog:s=>[s.total,100] },
+  { theme:'communaute',  icon:ICONS.kimono, name:"T'ia mis le kimono", desc:"Faire une observation avec le T-shirt Merlin (preuve à l'appui)", special:'vote', voteId:'kimono', voteThreshold:3, test:s=>(s.kimonoVotes||0)>=3 },
+  { theme:'communaute',  icon:ICONS.photo, name:'National Geographic', desc:'Poster 3 photos qui recueillent chacune au moins 3 ❤️', test:s=>(s.hotPhotos||0)>=3, prog:s=>[s.hotPhotos||0,3], info:s=>s.hotPhotos>=3?`${s.hotPhotos} photo${s.hotPhotos>1?'s':''} qui claque${s.hotPhotos>1?'nt':''}`:'' },
+  { theme:'communaute',  icon:ICONS.mort, name:'Le Nécrophile', desc:'Observer un oiseau décédé #ripstayproud (preuve demandée)', special:'vote', voteId:'necrophile', voteThreshold:3, test:s=>(s.necrophileVotes||0)>=3 },
+  { theme:'classement',  icon:ICONS.cup, name:'Mike Horn', desc:'Avoir l’oiseau le plus rare de la ligue', test:s=>s.mikeHorn, info:s=>s.mikeHorn&&s.mikeBird?'🏅 '+s.mikeBird:'', tip:s=>s.mikeHorn&&s.mikeBird?'Oiseau le plus rare : '+s.mikeBird:'' },
+  { theme:'progression', icon:ICONS.graal, name:'Le Saint-Graal', desc:'Observer un oiseau Exceptionnel ou Très rare', test:s=>s.megaList.length>0, alwaysList:true, list:s=>MEGA_CATALOG.map(m=>({ name:m.name, section:m.w===9?'Exceptionnel':'Très rare', owned:s.megaOwnedSet.has(m.sci) })) },
+  { theme:'blague',      icon:ICONS.woodpecker, name:'Pic noir', desc:'Observer le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker },
+  { theme:'blague',      icon:ICONS.singe, name:'Le coup de Ruff', desc:'Ne pas avoir un oiseau qu’Enzo a vu #honteux', test:s=>s.lackEnzoBird },
+  { theme:'groupe',      icon:ICONS.aigle, name:'Armée d’aigles royaux', desc:'Voir au moins 5 rapaces diurnes', test:s=>s.raptors>=5, prog:s=>[s.raptors,5], alwaysList:true, list:s=>RAPTOR_CATALOG.map(m=>({ name:m.name, owned:s.raptorOwnedSet.has(m.sci) })) },
+  { theme:'blague',      icon:ICONS.huitre, name:'Bourriche d’huître', desc:'Observer un oiseau à La Teste-de-Buch', test:s=>s.locTeste },
+  { theme:'groupe',      icon:ICONS.bain, name:'Pistoche', desc:'15 oiseaux d’eau + le Martin-pêcheur', test:s=>s.water>=15 && s.hasKingfisher, prog:s=>[s.water,15], alwaysList:true,
     list:s=>WATER_CATALOG.map(m=>({ name:m.name, owned:s.waterOwnedSet.has(m.sci) })),
     note:s=>`${s.water} oiseau${s.water>1?'x':''} d’eau observé${s.water>1?'s':''} sur ${WATER_CATALOG.length} possibles${s.hasKingfisher?' · Martin-pêcheur ✓':' · Martin-pêcheur manquant'}` },
-  { icon:ICONS.pingouin, name:'Happy feet', desc:'Observer un pingouin, un manchot ou un cousin (macareux, guillemot…)', test:s=>s.hasPenguin, alwaysList:true,
-    list:s=> ALCID_CATALOG.map(m=>({ name:m.name, section:'Alcidés — nos « pingouins » (hémisphère nord)', owned:s.alcidOwnedSet.has(m.sci) }))
-      .concat(MANCHOT_CATALOG.map(m=>({ name:m.name, section:'Manchots — les vrais (hémisphère sud)', owned:(s.manchotOwnedSet&&s.manchotOwnedSet.has(m.sci)) }))),
+  { theme:'groupe',      icon:ICONS.pingouin, name:'Happy feet', desc:'Observer un pingouin, un manchot ou un cousin (macareux, guillemot…)', test:s=>s.hasPenguin, alwaysList:true,
+    list:s=> ALCID_CATALOG.map(m=>({ name:m.name, section:'Alcidés (les « pingouins » de l’hémisphère nord)', owned:s.alcidOwnedSet.has(m.sci) }))
+      .concat(MANCHOT_CATALOG.map(m=>({ name:m.name, section:'Manchots (les vrais, hémisphère sud)', owned:(s.manchotOwnedSet&&s.manchotOwnedSet.has(m.sci)) }))),
     note:s=>{ const o=s.alcidOwnedSet.size+(s.manchotOwnedSet?s.manchotOwnedSet.size:0); const tot=ALCID_CATALOG.length+MANCHOT_CATALOG.length; return o+' déjà observé'+(o>1?'s':'')+' sur '+tot; } },
-  { icon:ICONS.kangourou, name:'Wallaby', desc:'Observer le Martin-chasseur à dos de feu', test:s=>s.hasFireKingfisher },
-  { icon:ICONS.saisons, name:'Les 4 Saisons', desc:'Chope un oiseau spécifique à chaque saison tah Vivaldi', test:s=>s.seasonCount>=4, prog:s=>[s.seasonCount,4], alwaysList:true, list:s=>SEASON_CATALOG.map(m=>({ name:m.name, section:m.section, owned:s.seasonOwnedSet.has(m.sci) })), note:s=>`${s.seasonCount} saison${s.seasonCount>1?'s':''} validée${s.seasonCount>1?'s':''} sur 4` },
-  { icon:ICONS.regions, name:'Ma France, mes régions !', desc:'Faire un tour de France des birds — observer un oiseau dans 10 régions', test:s=>s.regionsCount>=10, prog:s=>[s.regionsCount,10], alwaysList:true, list:s=>FR_REGIONS.map(r=>({ name:r.name, owned:s.regionsOwnedSet.has(r.code) })), note:s=>`${s.regionsCount} région${s.regionsCount>1?'s':''} visitée${s.regionsCount>1?'s':''} sur ${FR_REGIONS.length}` },
-  { icon:ICONS.bebe, name:'Gros Bébé', desc:'Observer des oiseaux avec Samuel Fillion (preuve demandée)', special:'vote', voteId:'grosBebe', voteThreshold:2, voteSelfCheck:()=>/sam/i.test(myMemberName()||''), test:s=>(s.grosBebeVotes||0)>=2 },
+  { theme:'progression', icon:ICONS.kangourou, name:'Wallaby', desc:'Observer le Martin-chasseur à dos de feu', test:s=>s.hasFireKingfisher },
+  { theme:'progression', icon:ICONS.saisons, name:'Les 4 Saisons', desc:'Chope un oiseau spécifique à chaque saison tah Vivaldi', test:s=>s.seasonCount>=4, prog:s=>[s.seasonCount,4], alwaysList:true, list:s=>SEASON_CATALOG.map(m=>({ name:m.name, section:m.section, owned:s.seasonOwnedSet.has(m.sci) })), note:s=>`${s.seasonCount} saison${s.seasonCount>1?'s':''} validée${s.seasonCount>1?'s':''} sur 4` },
+  { theme:'progression', icon:ICONS.regions, name:'Ma France, mes régions !', desc:'Faire un tour de France des birds (observer un oiseau dans 10 régions)', test:s=>s.regionsCount>=10, prog:s=>[s.regionsCount,10], alwaysList:true, list:s=>FR_REGIONS.map(r=>({ name:r.name, owned:s.regionsOwnedSet.has(r.code) })), note:s=>`${s.regionsCount} région${s.regionsCount>1?'s':''} visitée${s.regionsCount>1?'s':''} sur ${FR_REGIONS.length}` },
+  { theme:'communaute',  icon:ICONS.bebe, name:'Gros Bébé', desc:'Observer des oiseaux avec Samuel Fillion (preuve demandée)', special:'vote', voteId:'grosBebe', voteThreshold:2, voteSelfCheck:()=>/sam/i.test(myMemberName()||''), test:s=>(s.grosBebeVotes||0)>=2 },
   // Badge "Naturaliste polyvalent" — cocher au moins 5 espèces dans N milieux différents.
   // Milieux : forestier, zone humide, eau douce, océan, littoral, montagne, steppe, bocage, urbain, rocher.
-  { icon:ICONS.bearGrylls, name:'Bear Grylls', desc:'Cocher 5 % des espèces dans 8 milieux différents (sur 10)', test:s=>s.habCovered>=8, prog:s=>[s.habCovered,8], alwaysList:true, list:s=>{
+  { theme:'progression', icon:ICONS.bearGrylls, name:'Bear Grylls', desc:'Cocher 5 % des espèces dans 8 milieux différents (sur 10)', test:s=>s.habCovered>=8, prog:s=>[s.habCovered,8], alwaysList:true, list:s=>{
       // Une section par milieu, chaque section liste TOUTES les espèces possibles
       // avec l'état owned. Le compteur "(n/m)" apparaît automatiquement dans le header.
       const habMin = c => Math.max(1, Math.ceil((HABITAT_TO_SCIS[c]||[]).length * 0.05));
@@ -2008,11 +2021,11 @@ const TROPHIES = [
       }
       return out;
     }, note:s=>`${s.habCovered} milieu${s.habCovered>1?'x':''} validé${s.habCovered>1?'s':''} sur ${HABITAT_CATS.length} (seuil : 5 % des espèces par milieu)` },
-  { icon:ICONS.crown, name:'Écologue originel', desc:'Être 1ᵉʳ du classement', test:s=>s.groupN>1 && s.rank===1 },
-  { icon:ICONS.podium, name:'Écologue en chef', desc:'Dans le top 2', test:s=>s.groupN>1 && s.rank<=2 },
-  { icon:ICONS.bronze, name:'Écologue chevronné', desc:'Dans le top 3', test:s=>s.groupN>1 && s.rank<=3 },
-  { icon:ICONS.gem, name:'Apprenti écologue', desc:'Dans le top 5', test:s=>s.groupN>1 && s.rank<=5 },
-  { icon:ICONS.binoculars, name:'Écologue du dimanche', desc:'Faire partie de la ligue', test:s=>s.groupN>1 },
+  { theme:'classement', icon:ICONS.crown, name:'Écologue originel', desc:'Être 1ᵉʳ du classement', test:s=>s.groupN>1 && s.rank===1 },
+  { theme:'classement', icon:ICONS.podium, name:'Écologue en chef', desc:'Dans le top 2', test:s=>s.groupN>1 && s.rank<=2 },
+  { theme:'classement', icon:ICONS.bronze, name:'Écologue chevronné', desc:'Dans le top 3', test:s=>s.groupN>1 && s.rank<=3 },
+  { theme:'classement', icon:ICONS.gem, name:'Apprenti écologue', desc:'Dans le top 5', test:s=>s.groupN>1 && s.rank<=5 },
+  { theme:'classement', icon:ICONS.binoculars, name:'Écologue du dimanche', desc:'Faire partie de la ligue', test:s=>s.groupN>1 },
 ];
 const OWL_G=/^(strix|otus|athene|asio|bubo|tyto|aegolius|glaucidium|surnia|ketupa)$/;
 const RAPTOR_G=/^(accipiter|astur|buteo|aquila|circus|milvus|falco|pernis|circaetus|pandion|haliaeetus|gyps|aegypius|gypaetus|neophron|clanga|hieraaetus|elanus|torgos)$/;
@@ -2126,6 +2139,7 @@ function statsFor(me, N){
   return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
+let trophyThemeExcl = new Set();   // Set des thèmes MASQUÉS (vide = tous visibles)
 function renderTrophies(data){
   trophyData = data;
   const grid=$('#trophyGrid'), summary=$('#trophySummary'), who=$('#trophyWho'); if(!grid) return;
@@ -2138,10 +2152,25 @@ function renderTrophies(data){
   let sel = people.find(p=>p.id===trophyPlayerId) || people.find(p=>p.isMe) || people[0];
   trophyPlayerId = sel.id;
   if(who) who.innerHTML = people.map(p=>`<button class="whochip ${p.id===sel.id?'on':''}" data-id="${esc(p.id)}" style="--series:var(--s${p.si})"><span class="dot"></span>${esc(p.name)}${p.isMe?' (vous)':''}</button>`).join('');
+  // Chips filtre par thème : dénombre les trophées de chaque thème pour ce joueur (débloqués/total).
+  const themeBox = $('#trophyThemeChips');
+  if(themeBox){
+    const stats = statsFor(sel, data.N);   // évalué en amont pour le compteur "débloqués"
+    const perTheme = {};
+    for(const th in TROPHY_THEMES) perTheme[th] = { n:0, ok:0 };
+    for(const t of TROPHIES){ const th = t.theme || 'progression'; if(!perTheme[th]) perTheme[th] = {n:0,ok:0}; perTheme[th].n++; if(t.test(stats)) perTheme[th].ok++; }
+    themeBox.innerHTML = Object.entries(TROPHY_THEMES).map(([id, meta])=>{
+      const on = !trophyThemeExcl.has(id);
+      const c = perTheme[id];
+      return `<button type="button" class="person-chip trophy-theme-chip${on?' on':''}" data-theme="${esc(id)}" title="${esc(meta.desc)}">${esc(meta.label)} <span class="theme-count">${c.ok}/${c.n}</span></button>`;
+    }).join('');
+  }
   const s=statsFor(sel, data.N);
   let unlocked=0;
   trophyDetails={};
-  grid.innerHTML = TROPHIES.map((t,i)=>{
+  // Filtre : n'affiche que les trophées dont le thème n'est PAS dans trophyThemeExcl.
+  const shown = TROPHIES.filter(t => !trophyThemeExcl.has(t.theme || 'progression'));
+  grid.innerHTML = shown.map((t,i)=>{
     const ok=t.test(s); if(ok) unlocked++;
     const p=t.prog?t.prog(s):null;
     const detail = t.list ? t.list(s) : null;
@@ -2177,8 +2206,12 @@ function renderTrophies(data){
       ${extra}
     </div>`;
   }).join('');
+  // Compteur global sur TOUS les trophées (pas filtrés) pour rester cohérent quel que soit le filtre.
+  let unlockedTotal = 0;
+  for(const t of TROPHIES) if(t.test(s)) unlockedTotal++;
   const label = sel.isMe ? 'Vous avez' : esc(sel.name)+' a';
-  summary.textContent = `${label} débloqué ${unlocked} trophée${unlocked>1?'s':''} sur ${TROPHIES.length}`;
+  const filterHint = trophyThemeExcl.size ? ` · affichés : ${shown.length}` : '';
+  summary.textContent = `${label} débloqué ${unlockedTotal} trophée${unlockedTotal>1?'s':''} sur ${TROPHIES.length}${filterHint}`;
 }
 
 /* ---------------- Firestore <-> state ---------------- */
@@ -4724,6 +4757,13 @@ $('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove(
 $('#trophyWho').addEventListener('click',e=>{
   const b=e.target.closest('.whochip'); if(!b) return;
   trophyPlayerId=b.dataset.id; renderTrophies(trophyData);
+});
+// Chips thèmes (multi) : toggle du Set trophyThemeExcl (thèmes masqués), re-render.
+$('#trophyThemeChips')?.addEventListener('click', e=>{
+  const b = e.target.closest('button[data-theme]'); if(!b) return;
+  const th = b.dataset.theme;
+  if(trophyThemeExcl.has(th)) trophyThemeExcl.delete(th); else trophyThemeExcl.add(th);
+  renderTrophies(trophyData);
 });
 $('#trophyGrid').addEventListener('click',async e=>{
   const vb=e.target.closest('.vote-btn');
