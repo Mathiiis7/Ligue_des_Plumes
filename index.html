@@ -225,8 +225,18 @@
   .board-sheet .c-txt { min-width:120px; max-width:190px; white-space:normal; font-size:13px; vertical-align:top; }
   /* Hauteur uniforme des lignes du board : posée en JS après render (--rowh) sur chaque tr. */
   .board-sheet tbody tr { height:var(--rowh); }
-  /* Matrice : largeur uniforme des colonnes personne (indépendant de la longueur du nom). */
-  table th.pcol, table td.pcol { width:88px; min-width:88px; max-width:88px; box-sizing:border-box; }
+  /* Matrice "Qui a vu quoi" : largeurs des colonnes non-personne bloquées,
+     les colonnes personnes grandissent pour remplir l'espace restant.
+     Évite que Espèce/Rareté s'étirent quand il n'y a qu'une seule personne cochée. */
+  .tbl-scroll table { width:100%; }
+  .tbl-scroll thead th:first-child, .tbl-scroll tbody td.sp {
+    width:260px; min-width:260px; max-width:260px; }
+  .tbl-scroll thead th:nth-child(2), .tbl-scroll tbody tr td:nth-child(2) {
+    width:140px; min-width:140px; max-width:140px; }
+  .tbl-scroll thead th:last-child, .tbl-scroll tbody td.cnt {
+    width:78px; min-width:78px; max-width:78px; }
+  /* Colonnes personnes : min 88 px, pas de max → elles absorbent l'espace excédentaire. */
+  table th.pcol:not(:last-child), table td.pcol { min-width:88px; box-sizing:border-box; }
   /* Chips personne (filtre multi-sélection dans la matrice). */
   .person-chips { display:inline-flex; gap:4px; flex-wrap:wrap; align-items:center; }
   .person-chip { padding:5px 10px; border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink-3); border-radius:14px; font:600 12px/1 system-ui; cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
