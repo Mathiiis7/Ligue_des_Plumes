@@ -252,7 +252,21 @@
 
   /* matrix */
   #matrix { padding:20px; }
-  .controls { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:14px 0 6px; }
+  .controls { display:flex; flex-direction:column; gap:10px; margin:14px 0 6px; }
+  .ctrl-main { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .filters-toggle { display:inline-flex; align-items:center; gap:6px; padding:8px 14px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:9px; font:600 13px/1 system-ui; color:var(--ink-2); cursor:pointer; white-space:nowrap; }
+  .filters-toggle:hover { background:color-mix(in srgb,var(--accent) 8%,var(--surface-2)); color:var(--ink); }
+  .filters-toggle[aria-expanded="true"] { background:color-mix(in srgb,var(--accent) 14%,var(--surface)); border-color:var(--accent); color:var(--accent-ink); }
+  .filters-count { display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 6px; border-radius:10px; background:var(--accent); color:#fff; font:700 11px/1 system-ui; }
+  .filters-panel { border:1px solid var(--line); background:var(--surface-2); border-radius:12px; padding:12px 14px; display:flex; flex-direction:column; gap:12px; }
+  .fp-section { display:flex; flex-direction:column; gap:6px; }
+  .fp-section.fp-row { flex-direction:row; flex-wrap:wrap; align-items:center; gap:14px; }
+  .fp-title { font-size:11.5px; font-weight:700; color:var(--ink-3); text-transform:uppercase; letter-spacing:.4px; }
+  .fp-hint { text-transform:none; letter-spacing:0; font-weight:400; color:var(--ink-3); font-size:11px; margin-left:4px; }
+  .fp-title-inline { font-size:11.5px; font-weight:700; color:var(--ink-3); text-transform:uppercase; letter-spacing:.4px; margin-right:6px; }
+  .fp-inline { display:inline-flex; align-items:center; gap:4px; }
+  .fp-reset { margin-left:auto; padding:5px 12px; background:transparent; border:1px solid var(--line-2); border-radius:8px; font:600 12px/1 system-ui; color:var(--ink-3); cursor:pointer; }
+  .fp-reset:hover { background:var(--surface); color:var(--ink); }
   .search { flex:1; min-width:180px; display:flex; align-items:center; gap:8px; background:var(--surface-2);
     border:1px solid var(--line-2); border-radius:9px; padding:7px 11px; }
   .search input { border:none; background:transparent; color:var(--ink); font:inherit; font-size:14px;
@@ -850,31 +864,52 @@
         <div class="country-badge" id="countryBadge" style="display:none;"></div>
       </div>
       <div class="controls">
-        <div class="search matrix-search" style="position:relative;">🔎<input type="text" id="q" placeholder="Filtrer une espèce…" autocomplete="off"><div class="map-search-suggest" id="matrixSearchSuggest"></div></div>
-        <div class="seg" id="sortSeg">
-          <button data-sort="rarity" class="on">Par rareté</button>
-          <button data-sort="name">A → Z</button>
+        <!-- Barre principale : ce qu'on utilise le plus (recherche + tri) toujours visible. -->
+        <div class="ctrl-main">
+          <div class="search matrix-search" style="position:relative;">🔎<input type="text" id="q" placeholder="Filtrer une espèce…" autocomplete="off"><div class="map-search-suggest" id="matrixSearchSuggest"></div></div>
+          <div class="seg" id="sortSeg">
+            <button data-sort="rarity" class="on">Par rareté</button>
+            <button data-sort="name">A → Z</button>
+          </div>
+          <button type="button" class="filters-toggle" id="filtersToggle" aria-expanded="false" title="Afficher les filtres">
+            <span>🎛️ Filtres</span>
+            <span class="filters-count" id="filtersCount" hidden>0</span>
+          </button>
         </div>
-        <div class="person-filter-group">
-          <span class="pf-label" title="Multi-sélection : décoche pour masquer une rareté">Rareté</span>
-          <div class="person-chips rar-chips-matrix" id="tierChips" aria-label="Filtrer par rareté (multi)"></div>
+        <!-- Panneau de filtres repliable (masqué par défaut). Ouvert = classe .open sur le div. -->
+        <div class="filters-panel" id="filtersPanel" hidden>
+          <div class="fp-section">
+            <div class="fp-title">Rareté</div>
+            <div class="person-chips rar-chips-matrix" id="tierChips" aria-label="Filtrer par rareté (multi)"></div>
+          </div>
+          <div class="fp-section">
+            <div class="fp-title">Liste principale <span class="fp-hint">(1 personne — sa liste devient la référence)</span></div>
+            <div class="person-chips" id="playerMainChips" aria-label="Choisir la personne principale (0 ou 1)"></div>
+          </div>
+          <div class="fp-section">
+            <div class="fp-title">À comparer <span class="fp-hint">(personnes affichées à côté pour voir si elles ont les mêmes oiseaux)</span></div>
+            <div class="person-chips" id="playerCompareChips" aria-label="Choisir les personnes à comparer (multi)"></div>
+          </div>
+          <div class="fp-section fp-row">
+            <div class="fp-inline">
+              <span class="fp-title-inline">Famille</span>
+              <select class="filt-sel" id="familySel" aria-label="Filtrer par famille">
+                <option value="any">Toutes</option>
+              </select>
+            </div>
+            <div class="fp-inline">
+              <span class="fp-title-inline">Pays</span>
+              <select class="filt-sel" id="countrySel" aria-label="Filtrer par pays d'observation">
+                <option value="any">Tous</option>
+              </select>
+            </div>
+          </div>
+          <div class="fp-section fp-row">
+            <label class="miss-toggle"><input type="checkbox" id="showMissing"> Oiseaux de France non observés</label>
+            <label class="miss-toggle"><input type="checkbox" id="showSci"> Afficher les noms scientifiques</label>
+            <button type="button" class="fp-reset" id="filtersReset" title="Remettre tous les filtres à zéro">↺ Réinitialiser</button>
+          </div>
         </div>
-        <select class="filt-sel" id="familySel" aria-label="Filtrer par famille">
-          <option value="any">Toutes les familles</option>
-        </select>
-        <div class="person-filter-group">
-          <span class="pf-label" title="Une seule personne — sa liste devient la référence">Liste principale</span>
-          <div class="person-chips" id="playerMainChips" aria-label="Choisir la personne principale (0 ou 1)"></div>
-        </div>
-        <div class="person-filter-group">
-          <span class="pf-label" title="Personnes affichées à côté pour comparer si elles ont vu les mêmes oiseaux">À comparer</span>
-          <div class="person-chips" id="playerCompareChips" aria-label="Choisir les personnes à comparer (multi)"></div>
-        </div>
-        <select class="filt-sel" id="countrySel" aria-label="Filtrer par pays d'observation">
-          <option value="any">Tous les pays</option>
-        </select>
-        <label class="miss-toggle"><input type="checkbox" id="showMissing"> Oiseaux de France non observés</label>
-        <label class="miss-toggle"><input type="checkbox" id="showSci"> Afficher les noms scientifiques</label>
       </div>
       <div class="tbl-scroll">
         <table>
@@ -1679,6 +1714,7 @@ function renderMatrix({universe,N}){
     uni = universe.concat(missing);
   }
   _matrixUniverse = uni;   // rendu accessible à _updateMatrixSuggest() ci-dessous
+  if(typeof _updateFiltersBadge === 'function') _updateFiltersBadge();
 
   // raretés présentes, triées du plus commun au plus rare
   const tiersPresent=[...new Map(uni.map(u=>{const t=rarOf(u); return [t.id,t];})).values()].sort((a,b)=>a.ord-b.ord);
@@ -4682,6 +4718,44 @@ $('#tierChips')?.addEventListener('click', e=>{
   if(state.tierExcl.has(id)) state.tierExcl.delete(id); else state.tierExcl.add(id);
   renderResults();
 });
+// Ouvre/ferme le panneau de filtres. Bouton = toujours visible, panneau = replié par défaut.
+$('#filtersToggle')?.addEventListener('click', ()=>{
+  const btn = $('#filtersToggle'), panel = $('#filtersPanel');
+  const open = btn.getAttribute('aria-expanded') === 'true';
+  btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+  panel.hidden = open;
+});
+// Reset : remet TOUS les filtres à l'état initial (tout visible), sans toucher au tri ni à la recherche.
+$('#filtersReset')?.addEventListener('click', ()=>{
+  state.tierExcl = new Set();
+  state.family = 'any';
+  state.playerMain = '';
+  state.playerCompareSet = new Set();
+  state.country = 'any';
+  state.showMissing = false;
+  state.showSci = false;
+  const fs = $('#familySel'); if(fs) fs.value = 'any';
+  const cs = $('#countrySel'); if(cs) cs.value = 'any';
+  const sm = $('#showMissing'); if(sm) sm.checked = false;
+  const ss = $('#showSci'); if(ss) ss.checked = false;
+  lastPlayerKey = '';   // force le re-render des chips personne
+  renderResults();
+});
+// Compte les filtres actifs et met à jour le badge du bouton "Filtres".
+// Un filtre "actif" = qui restreint l'affichage par rapport à l'état par défaut.
+function _updateFiltersBadge(){
+  let n = 0;
+  if(state.tierExcl && state.tierExcl.size) n++;
+  if(state.family && state.family !== 'any') n++;
+  if(state.playerMain) n++;
+  if(state.playerCompareSet && state.playerCompareSet.size) n++;
+  if(state.country && state.country !== 'any') n++;
+  if(state.showMissing) n++;
+  if(state.showSci) n++;
+  const badge = $('#filtersCount'); if(!badge) return;
+  if(n>0){ badge.textContent = String(n); badge.hidden = false; }
+  else { badge.hidden = true; }
+}
 $('#familySel').addEventListener('change',e=>{ state.family=e.target.value; renderResults(); });
 // Chip "liste principale" : sélection unique (re-clic = déselect). Force re-génération
 // des chips via lastPlayerKey pour appliquer/retirer la classe .main visuelle.
