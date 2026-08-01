@@ -284,6 +284,9 @@
   .filters-toggle[aria-expanded="true"] { background:color-mix(in srgb,var(--accent) 14%,var(--surface)); border-color:var(--accent); color:var(--accent-ink); }
   .filters-count { display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 6px; border-radius:10px; background:var(--accent); color:#fff; font:700 11px/1 system-ui; }
   .filters-panel { border:1px solid var(--line); background:var(--surface-2); border-radius:12px; padding:12px 14px; display:flex; flex-direction:column; gap:12px; }
+  /* Bug classique : display:flex empêche l'attribut [hidden] de fonctionner → il faut le forcer. */
+  .filters-panel[hidden] { display:none; }
+  .filters-count[hidden] { display:none; }
   .fp-section { display:flex; flex-direction:column; gap:6px; }
   .fp-section.fp-row { flex-direction:row; flex-wrap:wrap; align-items:center; gap:14px; }
   .fp-title { font-size:11.5px; font-weight:700; color:var(--ink-3); text-transform:uppercase; letter-spacing:.4px; }
@@ -1782,7 +1785,9 @@ function renderMatrix({universe,N}){
     for(const f of [...state.familyExcl]) if(!fams.includes(f)) state.familyExcl.delete(f);
     // 1er render (défaut) OU après un reset : on masque toutes les familles. L'utilisateur
     // coche ensuite juste celles qui l'intéressent (opt-in). Évite le mur de chips actifs.
-    if(!state.familyInited){
+    // Guard : n'init QUE si on a vraiment des familles (évite un familyInited=true prématuré
+    // quand renderMatrix tourne une 1re fois avec un universe vide, avant que les listes chargent).
+    if(!state.familyInited && fams.length > 0){
       state.familyExcl = new Set(fams);
       state.familyInited = true;
     }
