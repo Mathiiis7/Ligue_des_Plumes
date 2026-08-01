@@ -1149,7 +1149,6 @@
         <button type="submit" class="btn chat-send">Envoyer</button>
       </form>
     </section>
-    <div id="imgModal" class="img-modal"><img id="imgModalImg" alt=""></div>
   </div>
 
   <div id="viewPhotos" style="display:none;">
@@ -1219,6 +1218,8 @@
   </div>
 
   <div id="emojiPop" class="emoji-pop"><div class="emoji-pop-inner"></div></div>
+  <!-- Modal image plein écran (photos, chat...). Doit être au niveau racine pour ne pas hériter du display:none des vues masquées. -->
+  <div id="imgModal" class="img-modal"><img id="imgModalImg" alt=""></div>
 
   <footer>
     Ligue Merlin Bird · rareté calculée au sein de votre groupe · données <b>Merlin / eBird</b>, propriété du Cornell Lab of Ornithology.<br>
@@ -2110,11 +2111,15 @@ function statsFor(me, N){
   const habMin = c => Math.max(1, Math.ceil((HABITAT_TO_SCIS[c]||[]).length * 0.05));
   const habCovered = HABITAT_CATS.filter(c => habOwned[c].size >= habMin(c)).length;
   // Compte les photos de cette personne ayant ≥3 COEURS (bouton dédié type Instagram).
-  // On ignore les autres emojis libres — seul le ❤️ (HEART_EMOJI) compte pour ce trophée.
+  // On ignore les autres emojis libres (seul le ❤️ compte) et le cœur que l'auteur
+  // se donne à lui-même (auto-like non compté).
   let hotPhotos = 0;
   for(const ph of (photos||[])){
     if(ph.uid !== me.id) continue;
-    const hearts = reactionsMap.get('photo:'+ph.id)?.get(HEART_EMOJI)?.size || 0;
+    const voters = reactionsMap.get('photo:'+ph.id)?.get(HEART_EMOJI);
+    if(!voters) continue;
+    let hearts = 0;
+    for(const uid of voters) if(uid !== me.id) hearts++;
     if(hearts >= 3) hotPhotos++;
   }
   return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0 };
