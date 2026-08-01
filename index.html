@@ -917,6 +917,8 @@
           <div class="fp-section">
             <div class="fp-title">
               Famille
+              <button type="button" class="fam-toggle" id="familyAll" title="Cocher toutes les familles">☑ tout</button>
+              <button type="button" class="fam-toggle" id="familyNone" title="Décocher toutes les familles">☐ aucune</button>
               <button type="button" class="fam-toggle" id="familyToggle" aria-expanded="false" title="Afficher toutes les familles">▾ voir plus</button>
             </div>
             <div class="person-chips fam-chips" id="familyChips" aria-label="Filtrer par famille (multi)"></div>
@@ -1234,7 +1236,8 @@ const db = getFirestore(fbApp);
 const SERIES_N = 8;
 const state = { people: [], onlySpecies: true, sort:'rarity',
   tierExcl:new Set(),                          // Set des raretés MASQUÉES (vide = toutes visibles)
-  familyExcl:new Set(),                        // Set des familles MASQUÉES (vide = toutes visibles)
+  familyExcl:new Set(),                        // Set des familles MASQUÉES (rempli avec TOUTES au 1er render — défaut = rien de coché)
+  familyInited:false,                          // flag : true une fois qu'on a posé les défauts (tout masqué)
   familyExpanded:false,                        // affiche toutes les familles ou seulement les 8 premières
   countryExcl:new Set(),                       // Set des pays MASQUÉS (vide = tous visibles)
   playerMain:'', playerCompareSet:new Set(),   // liste principale (0 ou 1) + liste(s) à comparer (0..N)
@@ -1777,6 +1780,12 @@ function renderMatrix({universe,N}){
     lastFamKey=famKey;
     // Purge du filtre les familles disparues (nouvel import, etc.).
     for(const f of [...state.familyExcl]) if(!fams.includes(f)) state.familyExcl.delete(f);
+    // 1er render (défaut) OU après un reset : on masque toutes les familles. L'utilisateur
+    // coche ensuite juste celles qui l'intéressent (opt-in). Évite le mur de chips actifs.
+    if(!state.familyInited){
+      state.familyExcl = new Set(fams);
+      state.familyInited = true;
+    }
   }
   const famBox=$('#familyChips'); const famBtn=$('#familyToggle');
   if(famBox){
@@ -4788,6 +4797,7 @@ $('#filtersToggle')?.addEventListener('click', ()=>{
 $('#filtersReset')?.addEventListener('click', ()=>{
   state.tierExcl = new Set();
   state.familyExcl = new Set();
+  state.familyInited = false;   // recharge le défaut (tout masqué) au prochain render
   state.familyExpanded = false;
   state.playerMain = '';
   state.playerCompareSet = new Set();
@@ -4827,6 +4837,18 @@ $('#familyChips')?.addEventListener('click', e=>{
 $('#familyToggle')?.addEventListener('click', ()=>{
   state.familyExpanded = !state.familyExpanded;
   lastFamKey = '';   // force le re-render pour prendre en compte l'expand
+  renderResults();
+});
+// "Tout" cocher : vide state.familyExcl → toutes visibles.
+$('#familyAll')?.addEventListener('click', ()=>{
+  state.familyExcl = new Set();
+  renderResults();
+});
+// "Aucune" cocher : remplit state.familyExcl avec les familles présentes → aucune visible.
+$('#familyNone')?.addEventListener('click', ()=>{
+  // On récupère la liste courante depuis _matrixUniverse (posé par renderMatrix).
+  const fams = [...new Set((_matrixUniverse||[]).map(u=>familyOf(u.sci)))];
+  state.familyExcl = new Set(fams);
   renderResults();
 });
 // Chip "liste principale" : sélection unique (re-clic = déselect). Force re-génération
