@@ -859,8 +859,7 @@
 
     <div class="panel" id="matrix">
       <div class="section-head">
-        <div><div class="eyebrow">Le détail</div><h2>Qui a vu quoi</h2>
-          <div class="legend-tiers" id="tierLegend"></div></div>
+        <div><div class="eyebrow">Le détail</div><h2>Qui a vu quoi</h2></div>
         <div class="country-badge" id="countryBadge" style="display:none;"></div>
       </div>
       <div class="controls">
@@ -1718,7 +1717,8 @@ function renderMatrix({universe,N}){
 
   // raretés présentes, triées du plus commun au plus rare
   const tiersPresent=[...new Map(uni.map(u=>{const t=rarOf(u); return [t.id,t];})).values()].sort((a,b)=>a.ord-b.ord);
-  $('#tierLegend').innerHTML = tiersPresent.map(t=>`<span style="--tc:${t.color}"><i></i>${esc(t.label)}</span>`).join('');
+  // Ancienne légende séparée retirée : les chips rareté (dans le panneau filtres)
+  // font maintenant office de légende + filtre en même temps.
 
   const tierKey=rMode+':'+tiersPresent.map(t=>t.id).join(',');
   if(tierKey!==lastTierKey){
@@ -1731,8 +1731,8 @@ function renderMatrix({universe,N}){
   if(box){
     box.innerHTML = tiersPresent.map(t=>{
       const on = !state.tierExcl.has(t.id);
-      const cnt = (rMode==='league' && typeof t.ord==='number' && t.ord>0) ? ` — ${t.ord}/${N}` : '';
-      return `<button type="button" class="person-chip rar-chip-m${on?' on':''}" data-tier="${esc(t.id)}" style="--series:${t.color};"><span class="dot" style="background:${t.color}"></span>${esc(t.label)}${esc(cnt)}</button>`;
+      // Chip = pastille + label court (fait aussi office de légende).
+      return `<button type="button" class="person-chip rar-chip-m${on?' on':''}" data-tier="${esc(t.id)}" style="--series:${t.color};"><span class="dot" style="background:${t.color}"></span>${esc(t.label)}</button>`;
     }).join('');
   }
 
