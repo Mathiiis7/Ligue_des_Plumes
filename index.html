@@ -634,7 +634,9 @@
   .whochip:hover { border-color:var(--accent); }
   .whochip.on { background:var(--accent); color:#fff; border-color:var(--accent); }
   .whochip.on .dot { box-shadow:0 0 0 2px rgba(255,255,255,.6); }
-  .trophy-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); gap:12px; margin-top:10px; }
+  .trophy-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); gap:12px; margin-top:10px;
+    /* Force toutes les rangees a la meme hauteur (celle du plus grand contenu de la section). */
+    grid-auto-rows:1fr; }
   /* Onglet trophées organisé par thèmes : chaque section a un en-tête distinctif + une grille interne. */
   .trophy-sections { display:flex; flex-direction:column; gap:22px; margin-top:16px; }
   .trophy-theme-section { border:1px solid var(--line); background:var(--surface-2); border-radius:14px; padding:12px 14px 14px; }
@@ -643,7 +645,11 @@
   .tts-count { font:700 12px/1 system-ui; padding:4px 10px; border-radius:12px; background:var(--surface); color:var(--ink-2); border:1px solid var(--line-2); font-variant-numeric:tabular-nums; }
   .trophy-theme-section .trophy-grid { margin-top:12px; }
   .trophy { text-align:center; border:1px solid var(--line); border-radius:14px; padding:18px 12px;
-    background:var(--surface-2); transition:transform .1s; }
+    background:var(--surface-2); transition:transform .1s;
+    /* Cases toutes de meme taille : flex column + hauteur uniforme via la grille (grid-auto-rows:1fr sur .trophy-grid) */
+    display:flex; flex-direction:column; align-items:center; min-height:220px; }
+  .trophy .tname { flex:0 0 auto; }
+  .trophy .tstate { margin-top:auto; }
   .trophy.on { border-color:color-mix(in srgb,var(--gold) 55%,var(--line));
     background:color-mix(in srgb,var(--gold) 9%,var(--surface-2)); }
   .trophy.off { opacity:.6; }
