@@ -255,9 +255,6 @@
   .person-chip:hover { filter:brightness(0.97); }
   .person-chip.on { color:var(--ink); border-color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,var(--surface)); }
   .person-chip.main { border-color:var(--gold); background:color-mix(in srgb,var(--gold) 18%,var(--surface)); color:var(--ink); font-weight:700; }
-  /* Chips filtre thèmes des trophées : compteur "débloqués / total" à droite. */
-  .trophy-theme-chip .theme-count { margin-left:6px; padding:1px 6px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:8px; font:600 10.5px/1 system-ui; color:var(--ink-3); }
-  .trophy-theme-chip.on .theme-count { background:var(--surface); color:var(--ink-2); }
   /* Chips rareté quand cochée : réaffirme la couleur de rareté sur la bordure gauche.
      DOIT venir APRÈS .person-chip.on (même spécificité, la déclaration la plus tardive gagne) —
      sinon le border-color:var(--accent) de .person-chip.on écrase la bordure gauche colorée. */
@@ -1119,7 +1116,6 @@
           <p id="trophySummary"></p></div>
       </div>
       <div class="who-select" id="trophyWho"></div>
-      <div class="person-chips" id="trophyThemeChips" aria-label="Filtrer les trophées par thème" style="margin:6px 0 10px;"></div>
       <div class="trophy-grid" id="trophyGrid"></div>
     </section>
     <div id="trophyModal" class="tmodal">
@@ -2139,7 +2135,6 @@ function statsFor(me, N){
   return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
-let trophyThemeExcl = new Set();   // Set des thèmes MASQUÉS (vide = tous visibles)
 function renderTrophies(data){
   trophyData = data;
   const grid=$('#trophyGrid'), summary=$('#trophySummary'), who=$('#trophyWho'); if(!grid) return;
@@ -2152,24 +2147,13 @@ function renderTrophies(data){
   let sel = people.find(p=>p.id===trophyPlayerId) || people.find(p=>p.isMe) || people[0];
   trophyPlayerId = sel.id;
   if(who) who.innerHTML = people.map(p=>`<button class="whochip ${p.id===sel.id?'on':''}" data-id="${esc(p.id)}" style="--series:var(--s${p.si})"><span class="dot"></span>${esc(p.name)}${p.isMe?' (vous)':''}</button>`).join('');
-  // Chips filtre par thème : dénombre les trophées de chaque thème pour ce joueur (débloqués/total).
-  const themeBox = $('#trophyThemeChips');
-  if(themeBox){
-    const stats = statsFor(sel, data.N);   // évalué en amont pour le compteur "débloqués"
-    const perTheme = {};
-    for(const th in TROPHY_THEMES) perTheme[th] = { n:0, ok:0 };
-    for(const t of TROPHIES){ const th = t.theme || 'progression'; if(!perTheme[th]) perTheme[th] = {n:0,ok:0}; perTheme[th].n++; if(t.test(stats)) perTheme[th].ok++; }
-    themeBox.innerHTML = Object.entries(TROPHY_THEMES).map(([id, meta])=>{
-      const on = !trophyThemeExcl.has(id);
-      const c = perTheme[id];
-      return `<button type="button" class="person-chip trophy-theme-chip${on?' on':''}" data-theme="${esc(id)}" title="${esc(meta.desc)}">${esc(meta.label)} <span class="theme-count">${c.ok}/${c.n}</span></button>`;
-    }).join('');
-  }
   const s=statsFor(sel, data.N);
   let unlocked=0;
   trophyDetails={};
-  // Filtre : n'affiche que les trophées dont le thème n'est PAS dans trophyThemeExcl.
-  const shown = TROPHIES.filter(t => !trophyThemeExcl.has(t.theme || 'progression'));
+  // Trophées classés par thème (ordre défini dans TROPHY_THEMES), sans filtre visible.
+  const themeOrder = Object.keys(TROPHY_THEMES);
+  const orderOf = t => { const idx = themeOrder.indexOf(t.theme || 'progression'); return idx<0 ? 999 : idx; };
+  const shown = [...TROPHIES].map((t,i)=>({t,i})).sort((a,b) => orderOf(a.t) - orderOf(b.t) || a.i - b.i).map(x=>x.t);
   grid.innerHTML = shown.map((t,i)=>{
     const ok=t.test(s); if(ok) unlocked++;
     const p=t.prog?t.prog(s):null;
@@ -2207,11 +2191,8 @@ function renderTrophies(data){
     </div>`;
   }).join('');
   // Compteur global sur TOUS les trophées (pas filtrés) pour rester cohérent quel que soit le filtre.
-  let unlockedTotal = 0;
-  for(const t of TROPHIES) if(t.test(s)) unlockedTotal++;
   const label = sel.isMe ? 'Vous avez' : esc(sel.name)+' a';
-  const filterHint = trophyThemeExcl.size ? ` · affichés : ${shown.length}` : '';
-  summary.textContent = `${label} débloqué ${unlockedTotal} trophée${unlockedTotal>1?'s':''} sur ${TROPHIES.length}${filterHint}`;
+  summary.textContent = `${label} débloqué ${unlocked} trophée${unlocked>1?'s':''} sur ${TROPHIES.length}`;
 }
 
 /* ---------------- Firestore <-> state ---------------- */
@@ -4757,13 +4738,6 @@ $('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove(
 $('#trophyWho').addEventListener('click',e=>{
   const b=e.target.closest('.whochip'); if(!b) return;
   trophyPlayerId=b.dataset.id; renderTrophies(trophyData);
-});
-// Chips thèmes (multi) : toggle du Set trophyThemeExcl (thèmes masqués), re-render.
-$('#trophyThemeChips')?.addEventListener('click', e=>{
-  const b = e.target.closest('button[data-theme]'); if(!b) return;
-  const th = b.dataset.theme;
-  if(trophyThemeExcl.has(th)) trophyThemeExcl.delete(th); else trophyThemeExcl.add(th);
-  renderTrophies(trophyData);
 });
 $('#trophyGrid').addEventListener('click',async e=>{
   const vb=e.target.closest('.vote-btn');
