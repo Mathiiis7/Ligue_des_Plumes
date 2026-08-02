@@ -2261,7 +2261,7 @@ function rebuild(){
 // Regex evaluees sur le nom du membre courant : si un match, l'app est remplacee
 // par un ecran d'acces suspendu et aucun rendu n'a lieu. Blocage cote client
 // uniquement (bypassable par un dev, mais suffisant pour un blocage amical).
-const BLOCKED_NAMES = [/^paul(\s|$)/i];
+const BLOCKED_NAMES = [];
 function _isBlocked(name){ return BLOCKED_NAMES.some(re => re.test((name||'').trim())); }
 function _showBlockedScreen(){
   document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#fafafa;font-family:system-ui;text-align:center;color:#222;"><div style="max-width:420px;"><div style="font-size:48px;margin-bottom:16px;">🚧</div><h1 style="font-size:22px;margin:0 0 12px;">Accès temporairement suspendu</h1><p style="color:#666;line-height:1.5;">Ton accès à la Ligue des Plumes est momentanément bloqué. Contacte Mathis pour en savoir plus.</p></div></div>';
