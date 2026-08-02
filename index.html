@@ -927,16 +927,13 @@
             <div class="fp-title">À comparer <span class="fp-hint">(personnes affichées à côté pour voir si elles ont les mêmes oiseaux)</span></div>
             <div class="person-chips" id="playerCompareChips" aria-label="Choisir les personnes à comparer (multi)"></div>
           </div>
-          <div class="fp-section">
-            <div class="fp-title">
-              Famille
-              <button type="button" class="fam-toggle" id="familyAll" title="Cocher toutes les familles">☑ tout</button>
-              <button type="button" class="fam-toggle" id="familyNone" title="Décocher toutes les familles">☐ aucune</button>
-              <button type="button" class="fam-toggle" id="familyToggle" aria-expanded="false" title="Afficher toutes les familles">▾ voir plus</button>
-            </div>
-            <div class="person-chips fam-chips" id="familyChips" aria-label="Filtrer par famille (multi)"></div>
-          </div>
           <div class="fp-section fp-row">
+            <div class="fp-inline">
+              <span class="fp-title-inline">Famille</span>
+              <select class="filt-sel" id="familySel" aria-label="Filtrer par famille">
+                <option value="any">Toutes</option>
+              </select>
+            </div>
             <div class="fp-inline">
               <span class="fp-title-inline">Pays</span>
               <div class="person-chips flag-chips" id="countryChips" aria-label="Filtrer par pays (multi)"></div>
@@ -1250,8 +1247,7 @@ const db = getFirestore(fbApp);
 const SERIES_N = 8;
 const state = { people: [], onlySpecies: true, sort:'rarity',
   tierExcl:new Set(),                          // Set des raretés MASQUÉES (vide = toutes visibles)
-  familyExcl:new Set(),                        // Set des familles MASQUÉES (vide par défaut = toutes visibles)
-  familyExpanded:false,                        // false = liste des chips masquée pour gagner de la place, true = toutes visibles
+  family:'any',                                // filtre famille : 'any' ou nom de famille
   countryExcl:new Set(),                       // Set des pays MASQUÉS (vide = tous visibles)
   playerMain:'', playerCompareSet:new Set(),   // liste principale (0 ou 1) + liste(s) à comparer (0..N)
   q:'', boardMode:'count', showMissing:false, showSci:false };
@@ -1786,36 +1782,16 @@ function renderMatrix({universe,N}){
     <th class="pcol">Vues</th></tr>`;
 
   // Familles présentes triées alpha. Multi-sélection via chips ; les 8 premières sont
-  // toujours visibles, le reste est révélé au clic sur "voir plus".
+  // Famille : simple dropdown alphabétique.
   const fams=[...new Set(uni.map(u=>familyOf(u.sci)))].sort((a,b)=>a.localeCompare(b,'fr'));
   const famKey=fams.join('|');
   if(famKey!==lastFamKey){
     lastFamKey=famKey;
-    // Purge du filtre les familles disparues (nouvel import, etc.).
-    for(const f of [...state.familyExcl]) if(!fams.includes(f)) state.familyExcl.delete(f);
-  }
-  const famBox=$('#familyChips'); const famBtn=$('#familyToggle');
-  if(famBox){
-    // Liste masquée par défaut pour gagner de la place — n'affiche RIEN tant que
-    // familyExpanded=false, sauf les familles activement décochées (à faire ressortir
-    // pour que l'utilisateur voie les filtres actifs sans devoir déplier).
-    let list = [];
-    if(state.familyExpanded){
-      list = fams;
-    } else {
-      // Uniquement les familles décochées (filtre actif) → l'utilisateur les voit et peut les recocher.
-      list = fams.filter(f => state.familyExcl.has(f));
-    }
-    famBox.innerHTML = list.map(f=>{
-      const on = !state.familyExcl.has(f);
-      return `<button type="button" class="person-chip fam-chip${on?' on':''}" data-family="${esc(f)}" title="${esc(f)}">${esc(f)}</button>`;
-    }).join('');
-    if(famBtn){
-      famBtn.hidden = fams.length === 0;
-      famBtn.setAttribute('aria-expanded', state.familyExpanded ? 'true' : 'false');
-      famBtn.textContent = state.familyExpanded
-        ? '▴ masquer la liste'
-        : `▾ voir les ${fams.length} familles`;
+    const sel=$('#familySel');
+    if(sel){
+      sel.innerHTML='<option value="any">Toutes</option>'+fams.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('');
+      if(!fams.includes(state.family)) state.family='any';
+      sel.value=state.family;
     }
   }
 
@@ -1859,7 +1835,7 @@ function renderMatrix({universe,N}){
 
   let list=[...uni];
   if(state.tierExcl.size) list=list.filter(u=>!state.tierExcl.has(rarOf(u).id));
-  if(state.familyExcl.size) list=list.filter(u=>!state.familyExcl.has(familyOf(u.sci)));
+  if(state.family && state.family !== 'any') list=list.filter(u=>familyOf(u.sci) === state.family);
   // Filtre lignes :
   //  - liste principale choisie  → seules les espèces qu'ELLE a vues (peu importe si
   //    les autres à comparer les ont vues ou pas — la référence, c'est la principale).
@@ -4856,26 +4832,24 @@ $('#filtersToggle')?.addEventListener('click', ()=>{
 // Reset : remet TOUS les filtres à l'état initial (tout visible), sans toucher au tri ni à la recherche.
 $('#filtersReset')?.addEventListener('click', ()=>{
   state.tierExcl = new Set();
-  state.familyExcl = new Set();   // toutes les familles cochées par défaut
-  state.familyExpanded = false;   // liste des chips masquée par défaut (gagne de la place)
+  state.family = 'any';
   state.playerMain = '';
   state.playerCompareSet = new Set();
   state.countryExcl = new Set();
   state.showMissing = false;
   state.showSci = false;
+  const fs = $('#familySel'); if(fs) fs.value = 'any';
   const sm = $('#showMissing'); if(sm) sm.checked = false;
   const ss = $('#showSci'); if(ss) ss.checked = false;
   lastPlayerKey = '';    // force le re-render des chips personne
-  lastCountryKey = '';   // force le re-render des chips pays (rechecke tous)
-  lastFamKey = '';       // force le re-render des chips famille
+  lastCountryKey = '';   // force le re-render des chips pays
   renderResults();
 });
 // Compte les filtres actifs et met à jour le badge du bouton "Filtres".
-// Un filtre "actif" = qui restreint l'affichage par rapport à l'état par défaut.
 function _updateFiltersBadge(){
   let n = 0;
   if(state.tierExcl && state.tierExcl.size) n++;
-  if(state.familyExcl && state.familyExcl.size) n++;
+  if(state.family && state.family !== 'any') n++;
   if(state.playerMain) n++;
   if(state.playerCompareSet && state.playerCompareSet.size) n++;
   if(state.countryExcl && state.countryExcl.size) n++;
@@ -4885,31 +4859,8 @@ function _updateFiltersBadge(){
   if(n>0){ badge.textContent = String(n); badge.hidden = false; }
   else { badge.hidden = true; }
 }
-// Chips famille (multi) : toggle du Set state.familyExcl (masquées), re-render.
-$('#familyChips')?.addEventListener('click', e=>{
-  const b = e.target.closest('button[data-family]'); if(!b) return;
-  const f = b.dataset.family;
-  if(state.familyExcl.has(f)) state.familyExcl.delete(f); else state.familyExcl.add(f);
-  renderResults();
-});
-// Bouton voir plus / voir moins des chips famille.
-$('#familyToggle')?.addEventListener('click', ()=>{
-  state.familyExpanded = !state.familyExpanded;
-  lastFamKey = '';   // force le re-render pour prendre en compte l'expand
-  renderResults();
-});
-// "Tout" cocher : vide state.familyExcl → toutes visibles.
-$('#familyAll')?.addEventListener('click', ()=>{
-  state.familyExcl = new Set();
-  renderResults();
-});
-// "Aucune" cocher : remplit state.familyExcl avec les familles présentes → aucune visible.
-$('#familyNone')?.addEventListener('click', ()=>{
-  // On récupère la liste courante depuis _matrixUniverse (posé par renderMatrix).
-  const fams = [...new Set((_matrixUniverse||[]).map(u=>familyOf(u.sci)))];
-  state.familyExcl = new Set(fams);
-  renderResults();
-});
+// Dropdown famille : simple onchange, filtre appliqué au re-render.
+$('#familySel')?.addEventListener('change', e=>{ state.family = e.target.value; renderResults(); });
 // Chip "liste principale" : sélection unique (re-clic = déselect). Force re-génération
 // des chips via lastPlayerKey pour appliquer/retirer la classe .main visuelle.
 $('#playerMainChips')?.addEventListener('click', e=>{
