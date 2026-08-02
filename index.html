@@ -1978,11 +1978,11 @@ const ICONS={"medal":"<img src=\"t-shirt.png\" alt=\"Expert Merlin Bird\" style=
 // Thèmes de trophées (affichés en chips filtrables au-dessus de la grille).
 // L'ordre ci-dessous détermine l'ordre des chips.
 const TROPHY_THEMES = {
-  progression: { label:'Progression', desc:'Jalons individuels' },
-  groupe:      { label:'Groupes',     desc:"Familles ou collections d'espèces" },
-  communaute:  { label:'Communauté',  desc:'Vote, photos, social' },
-  classement:  { label:'Classement',  desc:'Position dans la ligue' },
-  blague:      { label:'Blagues',     desc:'Références aux joueurs' },
+  progression:  { label:'Progression',  desc:'Jalons individuels' },
+  groupe:       { label:'Groupes',      desc:"Familles ou collections d'espèces" },
+  communaute:   { label:'Communauté',   desc:'Vote, photos, social' },
+  classement:   { label:'Classement',   desc:'Position dans la ligue' },
+  localisation: { label:'Localisation', desc:'Trophées liés à un lieu ou plusieurs lieux' },
 };
 const TROPHIES = [
   { theme:'progression', icon:ICONS.medal, name:'Expert Merlin Bird', desc:'100 espèces (droit de porter le t-shirt Merlin)', test:s=>s.total>=100, prog:s=>[s.total,100] },
@@ -1990,12 +1990,12 @@ const TROPHIES = [
   { theme:'communaute',  icon:ICONS.photo, name:'National Geographic', desc:'Poster 3 photos qui recueillent chacune au moins 3 ❤️', test:s=>(s.hotPhotos||0)>=3, prog:s=>[s.hotPhotos||0,3], info:s=>s.hotPhotos>=3?`${s.hotPhotos} photo${s.hotPhotos>1?'s':''} qui claque${s.hotPhotos>1?'nt':''}`:'' },
   { theme:'communaute',  icon:ICONS.mort, name:'Le Nécrophile', desc:'Observer un oiseau décédé #ripstayproud (preuve demandée)', special:'vote', voteId:'necrophile', voteThreshold:3, test:s=>(s.necrophileVotes||0)>=3 },
   { theme:'classement',  icon:ICONS.cup, name:'Mike Horn', desc:'Avoir l’oiseau le plus rare de la ligue', test:s=>s.mikeHorn, info:s=>s.mikeHorn&&s.mikeBird?'🏅 '+s.mikeBird:'', tip:s=>s.mikeHorn&&s.mikeBird?'Oiseau le plus rare : '+s.mikeBird:'' },
-  { theme:'classement',  icon:ICONS.avion, name:'Marco Polo', desc:'Avoir observé des oiseaux dans le plus de pays différents de la ligue (2 pays minimum)', test:s=>s.globeTrotter, info:s=>s.globeTrotter?`✈️ ${s.countryCount} pays visités`:'', tip:s=>s.globeTrotter?`Champion des pays : ${s.countryCount}`:`${s.countryCount} pays observés` },
+  { theme:'localisation',icon:ICONS.avion, name:'Marco Polo', desc:'Avoir observé des oiseaux dans le plus de pays différents de la ligue (2 pays minimum)', test:s=>s.globeTrotter, info:s=>s.globeTrotter?`✈️ ${s.countryCount} pays visités`:'', tip:s=>s.globeTrotter?`Champion des pays : ${s.countryCount}`:`${s.countryCount} pays observés` },
   { theme:'progression', icon:ICONS.graal, name:'Le Saint-Graal', desc:'Observer un oiseau Exceptionnel ou Très rare', test:s=>s.megaList.length>0, alwaysList:true, list:s=>MEGA_CATALOG.map(m=>({ name:m.name, section:m.w===9?'Exceptionnel':'Très rare', owned:s.megaOwnedSet.has(m.sci) })) },
-  { theme:'blague',      icon:ICONS.woodpecker, name:'Pic noir', desc:'Observer le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker },
-  { theme:'blague',      icon:ICONS.singe, name:'Le coup de Ruff', desc:'Ne pas avoir un oiseau qu’Enzo a vu #honteux', test:s=>s.lackEnzoBird },
+  { theme:'classement',  icon:ICONS.woodpecker, name:'Pic noir', desc:'Observer le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker },
+  { theme:'classement',  icon:ICONS.singe, name:'Le coup de Ruff', desc:'Ne pas avoir un oiseau qu’Enzo a vu #honteux', test:s=>s.lackEnzoBird },
   { theme:'groupe',      icon:ICONS.aigle, name:'Armée d’aigles royaux', desc:'Voir au moins 5 rapaces diurnes', test:s=>s.raptors>=5, prog:s=>[s.raptors,5], alwaysList:true, list:s=>RAPTOR_CATALOG.map(m=>({ name:m.name, owned:s.raptorOwnedSet.has(m.sci) })) },
-  { theme:'blague',      icon:ICONS.huitre, name:'Bourriche d’huître', desc:'Observer un oiseau à La Teste-de-Buch', test:s=>s.locTeste },
+  { theme:'localisation',icon:ICONS.huitre, name:'Bourriche d’huître', desc:'Observer un oiseau à La Teste-de-Buch', test:s=>s.locTeste },
   { theme:'groupe',      icon:ICONS.bain, name:'Pistoche', desc:'15 oiseaux d’eau + le Martin-pêcheur', test:s=>s.water>=15 && s.hasKingfisher, prog:s=>[s.water,15], alwaysList:true,
     list:s=>WATER_CATALOG.map(m=>({ name:m.name, owned:s.waterOwnedSet.has(m.sci) })),
     note:s=>`${s.water} oiseau${s.water>1?'x':''} d’eau observé${s.water>1?'s':''} sur ${WATER_CATALOG.length} possibles${s.hasKingfisher?' · Martin-pêcheur ✓':' · Martin-pêcheur manquant'}` },
@@ -2005,7 +2005,7 @@ const TROPHIES = [
     note:s=>{ const o=s.alcidOwnedSet.size+(s.manchotOwnedSet?s.manchotOwnedSet.size:0); const tot=ALCID_CATALOG.length+MANCHOT_CATALOG.length; return o+' déjà observé'+(o>1?'s':'')+' sur '+tot; } },
   { theme:'progression', icon:ICONS.kangourou, name:'Wallaby', desc:'Observer le Martin-chasseur à dos de feu', test:s=>s.hasFireKingfisher },
   { theme:'progression', icon:ICONS.saisons, name:'Les 4 Saisons', desc:'Chope un oiseau spécifique à chaque saison tah Vivaldi', test:s=>s.seasonCount>=4, prog:s=>[s.seasonCount,4], alwaysList:true, list:s=>SEASON_CATALOG.map(m=>({ name:m.name, section:m.section, owned:s.seasonOwnedSet.has(m.sci) })), note:s=>`${s.seasonCount} saison${s.seasonCount>1?'s':''} validée${s.seasonCount>1?'s':''} sur 4` },
-  { theme:'progression', icon:ICONS.regions, name:'Ma France, mes régions !', desc:'Faire un tour de France des birds (observer un oiseau dans 10 régions)', test:s=>s.regionsCount>=10, prog:s=>[s.regionsCount,10], alwaysList:true, list:s=>FR_REGIONS.map(r=>({ name:r.name, owned:s.regionsOwnedSet.has(r.code) })), note:s=>`${s.regionsCount} région${s.regionsCount>1?'s':''} visitée${s.regionsCount>1?'s':''} sur ${FR_REGIONS.length}` },
+  { theme:'localisation',icon:ICONS.regions, name:'Ma France, mes régions !', desc:'Faire un tour de France des birds (observer un oiseau dans 10 régions)', test:s=>s.regionsCount>=10, prog:s=>[s.regionsCount,10], alwaysList:true, list:s=>FR_REGIONS.map(r=>({ name:r.name, owned:s.regionsOwnedSet.has(r.code) })), note:s=>`${s.regionsCount} région${s.regionsCount>1?'s':''} visitée${s.regionsCount>1?'s':''} sur ${FR_REGIONS.length}` },
   { theme:'communaute',  icon:ICONS.bebe, name:'Gros Bébé', desc:'Observer des oiseaux avec Samuel Fillion (preuve demandée)', special:'vote', voteId:'grosBebe', voteThreshold:2, voteSelfCheck:()=>/sam/i.test(myMemberName()||''), test:s=>(s.grosBebeVotes||0)>=2 },
   // Badge "Naturaliste polyvalent" — cocher au moins 5 espèces dans N milieux différents.
   // Milieux : forestier, zone humide, eau douce, océan, littoral, montagne, steppe, bocage, urbain, rocher.
