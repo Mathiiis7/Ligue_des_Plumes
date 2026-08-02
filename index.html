@@ -1972,11 +1972,11 @@ const ICONS={"medal":"<img src=\"t-shirt.png\" alt=\"Expert Merlin Bird\" style=
 // Thèmes de trophées (affichés en chips filtrables au-dessus de la grille).
 // L'ordre ci-dessous détermine l'ordre des chips.
 const TROPHY_THEMES = {
-  progression: { label:'🎯 Progression', desc:'Jalons individuels' },
-  groupe:      { label:'🐦 Groupes',      desc:"Familles ou collections d'espèces" },
-  communaute:  { label:'🤝 Communauté',   desc:'Vote, photos, social' },
-  classement:  { label:'🏆 Classement',   desc:'Position dans la ligue' },
-  blague:      { label:'😂 Blagues',      desc:'Références aux joueurs' },
+  progression: { label:'Progression', desc:'Jalons individuels' },
+  groupe:      { label:'Groupes',     desc:"Familles ou collections d'espèces" },
+  communaute:  { label:'Communauté',  desc:'Vote, photos, social' },
+  classement:  { label:'Classement',  desc:'Position dans la ligue' },
+  blague:      { label:'Blagues',     desc:'Références aux joueurs' },
 };
 const TROPHIES = [
   { theme:'progression', icon:ICONS.medal, name:'Expert Merlin Bird', desc:'100 espèces (droit de porter le t-shirt Merlin)', test:s=>s.total>=100, prog:s=>[s.total,100] },
@@ -2193,7 +2193,7 @@ function renderTrophies(data){
   TROPHIES.forEach(t => { const id = t.theme || 'progression'; if(!buckets.has(id)) buckets.set(id, []); buckets.get(id).push(t); });
   const sections = [];
   for(const id of themeOrder){
-    const arr = (buckets.get(id) || []).slice().sort((a,b)=> (b.test(s)?1:0) - (a.test(s)?1:0));
+    const arr = (buckets.get(id) || []).slice();   // ordre initial préservé
     if(!arr.length) continue;
     const okCount = arr.filter(t => t.test(s)).length;
     const meta = TROPHY_THEMES[id];
