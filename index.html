@@ -634,7 +634,14 @@
   .whochip:hover { border-color:var(--accent); }
   .whochip.on { background:var(--accent); color:#fff; border-color:var(--accent); }
   .whochip.on .dot { box-shadow:0 0 0 2px rgba(255,255,255,.6); }
-  .trophy-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); gap:12px; margin-top:16px; }
+  .trophy-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); gap:12px; margin-top:10px; }
+  /* Onglet trophées organisé par thèmes : chaque section a un en-tête distinctif + une grille interne. */
+  .trophy-sections { display:flex; flex-direction:column; gap:22px; margin-top:16px; }
+  .trophy-theme-section { border:1px solid var(--line); background:var(--surface-2); border-radius:14px; padding:12px 14px 14px; }
+  .tts-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding-bottom:8px; border-bottom:1px solid var(--line); }
+  .tts-title { font:700 15px/1.2 system-ui; color:var(--ink); }
+  .tts-count { font:700 12px/1 system-ui; padding:4px 10px; border-radius:12px; background:var(--surface); color:var(--ink-2); border:1px solid var(--line-2); font-variant-numeric:tabular-nums; }
+  .trophy-theme-section .trophy-grid { margin-top:12px; }
   .trophy { text-align:center; border:1px solid var(--line); border-radius:14px; padding:18px 12px;
     background:var(--surface-2); transition:transform .1s; }
   .trophy.on { border-color:color-mix(in srgb,var(--gold) 55%,var(--line));
@@ -1113,7 +1120,7 @@
           <p id="trophySummary"></p></div>
       </div>
       <div class="who-select" id="trophyWho"></div>
-      <div class="trophy-grid" id="trophyGrid"></div>
+      <div class="trophy-sections" id="trophyGrid"></div>
     </section>
     <div id="trophyModal" class="tmodal">
       <div class="tmodal-box">
@@ -2143,16 +2150,13 @@ function renderTrophies(data){
   const s=statsFor(sel, data.N);
   let unlocked=0;
   trophyDetails={};
-  // Trophées classés par thème (ordre défini dans TROPHY_THEMES), sans filtre visible.
-  const themeOrder = Object.keys(TROPHY_THEMES);
-  const orderOf = t => { const idx = themeOrder.indexOf(t.theme || 'progression'); return idx<0 ? 999 : idx; };
-  const shown = [...TROPHIES].map((t,i)=>({t,i})).sort((a,b) => orderOf(a.t) - orderOf(b.t) || a.i - b.i).map(x=>x.t);
-  grid.innerHTML = shown.map((t,i)=>{
+  // Rendu HTML d'un trophée. `detailIdx` = index unique dans trophyDetails pour le clic modal.
+  const renderTrophy = (t, detailIdx) => {
     const ok=t.test(s); if(ok) unlocked++;
     const p=t.prog?t.prog(s):null;
     const detail = t.list ? t.list(s) : null;
     const clic = detail && detail.length && (ok || t.alwaysList);
-    if(clic) trophyDetails[i]={ name:t.name, list:detail, note: t.note?t.note(s):'' };
+    if(clic) trophyDetails[detailIdx]={ name:t.name, list:detail, note: t.note?t.note(s):'' };
     const prog = p ? `${Math.min(Math.round(p[0]),p[1])} / ${p[1]}` : 'À débloquer';
     let stateTxt;
     if(ok) stateTxt = clic ? 'Débloqué ✓ · voir la liste' : 'Débloqué ✓';
@@ -2165,8 +2169,6 @@ function renderTrophies(data){
       const threshold = t.voteThreshold || 2;
       const votes = (votesMap.get(voteId)?.get(sel.id)?.size) || 0;
       stateTxt = ok ? `Validé ✓ · ${votes} votes` : `${votes} / ${threshold} votes`;
-      // voteSelfCheck : fonction optionnelle du trophée qui autorise l'auto-vote
-      // (ex. Gros Bébé → seul Sam peut se voter lui-même).
       const canSelfVote = t.voteSelfCheck ? t.voteSelfCheck() : false;
       if(sel.id===myUid && !canSelfVote){ extra = `<div class="vote-note">🗳️ Les autres votent pour vous (partagez la preuve dans le tchat)</div>`; }
       else if(myMemberName()){
@@ -2174,7 +2176,7 @@ function renderTrophies(data){
         extra = `<button class="vote-btn${iVoted?' voted':''}" data-vote-target="${esc(sel.id)}" data-vote-trophy="${esc(voteId)}">${iVoted?'✓ Voté — retirer':'Valider ✅'}</button>`;
       } else { extra = `<div class="vote-note">Connecte-toi pour pouvoir voter</div>`; }
     }
-    return `<div class="trophy ${ok?'on':'off'}${clic?' clic':''}"${clic?` data-detail="${i}"`:''}${tip?` title="${esc(tip)}"`:''}>
+    return `<div class="trophy ${ok?'on':'off'}${clic?' clic':''}"${clic?` data-detail="${detailIdx}"`:''}${tip?` title="${esc(tip)}"`:''}>
       <div class="tico">${t.icon}</div>
       <div class="tname">${esc(t.name)}</div>
       <div class="tdesc">${esc(t.desc)}</div>
@@ -2182,8 +2184,25 @@ function renderTrophies(data){
       ${info?`<div class="tinfo">${esc(info)}</div>`:''}
       ${extra}
     </div>`;
-  }).join('');
-  // Compteur global sur TOUS les trophées (pas filtrés) pour rester cohérent quel que soit le filtre.
+  };
+  // Regroupe les trophées par thème, dans l'ordre défini par TROPHY_THEMES. Chaque section a
+  // un en-tête (label + compteur "X/Y"), les trophées débloqués remontent en tête au sein d'une section.
+  const themeOrder = Object.keys(TROPHY_THEMES);
+  const buckets = new Map(themeOrder.map(id => [id, []]));
+  let detailIdx = 0;
+  TROPHIES.forEach(t => { const id = t.theme || 'progression'; if(!buckets.has(id)) buckets.set(id, []); buckets.get(id).push(t); });
+  const sections = [];
+  for(const id of themeOrder){
+    const arr = (buckets.get(id) || []).slice().sort((a,b)=> (b.test(s)?1:0) - (a.test(s)?1:0));
+    if(!arr.length) continue;
+    const okCount = arr.filter(t => t.test(s)).length;
+    const meta = TROPHY_THEMES[id];
+    sections.push(`<div class="trophy-theme-section">
+      <div class="tts-head"><span class="tts-title">${esc(meta.label)}</span><span class="tts-count">${okCount}/${arr.length}</span></div>
+      <div class="trophy-grid">${arr.map(t => renderTrophy(t, detailIdx++)).join('')}</div>
+    </div>`);
+  }
+  grid.innerHTML = sections.join('');
   const label = sel.isMe ? 'Vous avez' : esc(sel.name)+' a';
   summary.textContent = `${label} débloqué ${unlocked} trophée${unlocked>1?'s':''} sur ${TROPHIES.length}`;
 }
