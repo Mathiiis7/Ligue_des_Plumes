@@ -2519,40 +2519,92 @@ let feedMode = 'new';       // 'new' = tri par addedAt (par défaut), 'chrono' =
 let feedPerson = 'any';     // uid ou 'any'
 let feedTier = 'any';       // 1..9, 'exo', ou 'any'
 let _feedPeopleKey = '';
-// Detection cote client des trophees debloques : Map<uid|trophyName, timestamp>.
-// A la 1re detection d'un unlock, on le timestampe MAINTENANT (pas de flood historique).
-function _loadTrophyDetect(){
-  try{
-    const raw = localStorage.getItem('mb-trophy-detect');
-    if(!raw){ return { firstRun:true, map:{} }; }
-    return { firstRun:false, map:JSON.parse(raw)||{} };
-  }catch(_){ return { firstRun:true, map:{} }; }
-}
-function _saveTrophyDetect(map){
-  try{ localStorage.setItem('mb-trophy-detect', JSON.stringify(map)); }catch(_){}
-}
-// Retourne les evenements trophees : [{uid, name, trophyName, addedAt}] pour affichage/comptage.
+// Trophees "competitifs" : rangement classement (5 Ecologues) et prix unique (Mike Horn, Marco Polo).
+// Les 5 Ecologues sont ordonnes du meilleur au moins bon. Le TOP rang d'une personne = le
+// premier Ecologue qu'il detient dans cet ordre.
+const RANK_TROPHIES = ['Écologue originel','Écologue en chef','Écologue chevronné','Apprenti écologue','Écologue du dimanche'];
+const SINGLE_HOLDER_TROPHIES = new Set(['Mike Horn','Marco Polo']);
+// Etat competitif precedent (holders + top rang par joueur + trophees debloques) sauve entre renders.
+function _loadCompState(){ try{ return JSON.parse(localStorage.getItem('mb-comp-state')||'{}'); }catch(_){ return {}; } }
+function _saveCompState(s){ try{ localStorage.setItem('mb-comp-state', JSON.stringify(s)); }catch(_){} }
+// Liste persistante des evenements du fil ({kind, at, uid, name, ...}).
+function _loadFeedEvents(){ try{ return JSON.parse(localStorage.getItem('mb-feed-events')||'[]'); }catch(_){ return []; } }
+function _saveFeedEvents(evts){ try{ localStorage.setItem('mb-feed-events', JSON.stringify(evts.slice(-200))); }catch(_){} }
+// Calcule les evenements courants (unlock + transfer + demote) et les persiste. Retourne toute la liste
+// (utilisee par renderFeed pour l'affichage et _countUnread pour la pastille de l'onglet).
 function _computeTrophyEvents(){
-  if(!realPeople.length) return [];
-  const { firstRun, map } = _loadTrophyDetect();
+  if(!realPeople.length) return _loadFeedEvents();
+  const prev = _loadCompState();
+  const firstRun = !prev.unlocked;
+  const N = state.people.length || realPeople.length;
   const now = Date.now();
-  const evts = [];
+  const nameByUid = Object.fromEntries(realPeople.map(p=>[p.id, p.name]));
+  // 1) Etat courant
+  const currUnlocked = {};   // uid -> Array<trophyName>
+  const currHolders = {};    // trophyName -> Array<uid>
+  const currTopRank = {};    // uid -> trophyName (meilleur Ecologue detenu)
   for(const p of realPeople){
-    const stats = statsFor(p, state.people.length || realPeople.length);
+    const s = statsFor(p, N);
+    const owned = [];
     for(const t of TROPHIES){
-      let ok = false; try{ ok = !!t.test(stats); }catch(_){}
+      let ok = false; try{ ok = !!t.test(s); }catch(_){}
       if(!ok) continue;
-      const key = p.id + '|' + t.name;
-      let at = map[key];
-      if(!at){
-        // 1re detection : "now" pour un compte deja actif, 0 (ignore) pour un tout 1er run
-        at = firstRun ? 0 : now;
-        map[key] = at;
+      owned.push(t.name);
+      if(!currHolders[t.name]) currHolders[t.name] = [];
+      currHolders[t.name].push(p.id);
+    }
+    currUnlocked[p.id] = owned;
+    for(const rt of RANK_TROPHIES) if(owned.includes(rt)){ currTopRank[p.id] = rt; break; }
+  }
+  const evts = _loadFeedEvents();
+  if(!firstRun){
+    const prevHolders = prev.holders || {};
+    const prevTopRank = prev.topRank || {};
+    const prevUnlocked = prev.unlocked || {};
+    // 2) NEW UNLOCKS pour les trophees NON competitifs (les autres passent par transfer/demote)
+    for(const p of realPeople){
+      const was = new Set(prevUnlocked[p.id] || []);
+      for(const tName of currUnlocked[p.id]){
+        if(was.has(tName)) continue;
+        if(RANK_TROPHIES.includes(tName) || SINGLE_HOLDER_TROPHIES.has(tName)) continue;
+        evts.push({ kind:'unlock', at:now, uid:p.id, name:p.name, trophyName:tName });
       }
-      if(at > 0) evts.push({ uid:p.id, name:p.name, trophyName:t.name, addedAt:at });
+    }
+    // 3) TRANSFERTS pour trophees uniques (Mike Horn, Marco Polo)
+    for(const tName of SINGLE_HOLDER_TROPHIES){
+      const prevOwner = (prevHolders[tName] || [])[0] || null;
+      const currOwner = (currHolders[tName] || [])[0] || null;
+      if(prevOwner === currOwner) continue;
+      if(currOwner){
+        evts.push({ kind:'transfer', at:now, uid:currOwner, name:nameByUid[currOwner]||'quelqu\'un', fromUid:prevOwner, fromName:prevOwner?(nameByUid[prevOwner]||'quelqu\'un'):null, trophyName:tName });
+      }
+    }
+    // 4) TRANSFERTS / DEMOTES pour trophees de classement (Ecologues)
+    for(const p of realPeople){
+      const c = currTopRank[p.id] || null;
+      const q = prevTopRank[p.id] || null;
+      if(c === q) continue;
+      if(c && q){
+        const ci = RANK_TROPHIES.indexOf(c), qi = RANK_TROPHIES.indexOf(q);
+        if(ci > qi){
+          // Rang baisse : demote
+          evts.push({ kind:'demote', at:now, uid:p.id, name:p.name, fromTrophy:q, toTrophy:c });
+        } else {
+          // Rang monte : transfert (trouver de qui il a pris le trophee `c`)
+          const prevOwnersOfC = prevHolders[c] || [];
+          const src = prevOwnersOfC.find(u => u !== p.id) || null;
+          evts.push({ kind:'transfer', at:now, uid:p.id, name:p.name, fromUid:src, fromName:src?(nameByUid[src]||'quelqu\'un'):null, trophyName:c });
+        }
+      } else if(c && !q){
+        // 1re fois qu'il rentre dans le classement
+        evts.push({ kind:'unlock', at:now, uid:p.id, name:p.name, trophyName:c });
+      }
     }
   }
-  _saveTrophyDetect(map);
+  // Persiste l'etat courant + les evenements (tronques a 200 derniers).
+  _saveCompState({ unlocked:currUnlocked, holders:currHolders, topRank:currTopRank });
+  if(evts.length > 200) evts.splice(0, evts.length - 200);
+  _saveFeedEvents(evts);
   return evts;
 }
 function renderFeed(){
@@ -2597,15 +2649,13 @@ function renderFeed(){
       });
     }
   }
-  // Trophees debloques (uniquement en mode "nouveautes", et filtre rareté ignore).
+  // Evenements trophees (uniquement en mode "nouveautes", filtre rareté ignore).
+  // On garde les 3 types : unlock (debloque), transfer (prend a X), demote (passe de A a B).
   if(feedMode==='new' && feedTier==='any'){
     for(const ev of _computeTrophyEvents()){
-      if(feedPerson !== 'any' && ev.uid !== feedPerson) continue;
-      items.push({
-        kind:'trophy',
-        name:ev.name, uid:ev.uid, trophyName:ev.trophyName,
-        ord:0, disp:'', addedAt:ev.addedAt
-      });
+      // Le filtre "personne" affiche les evts ou cette personne est impliquee (uid OU fromUid).
+      if(feedPerson !== 'any' && ev.uid !== feedPerson && ev.fromUid !== feedPerson) continue;
+      items.push({ ...ev, ord:0, disp:'', addedAt:ev.at||ev.addedAt||0 });
     }
   }
   if(feedMode==='new') items.sort((a,b)=>(b.addedAt-a.addedAt) || (b.ord-a.ord));
@@ -2622,11 +2672,25 @@ function renderFeed(){
   el.innerHTML=top.map(it=>{
     const isNew = it.addedAt && it.addedAt > lastSeen;
     const badge = isNew ? ' <span class="feed-new">🆕 nouveau</span>' : '';
-    if(it.kind === 'trophy'){
+    if(it.kind === 'unlock'){
       return `<div class="feed-item"><span class="feed-dot" style="background:var(--gold)">🏆</span>
         <div class="feed-body"><div><b>${esc(it.name)}</b> a débloqué le trophée <b>${esc(it.trophyName)}</b>${badge}</div>
         <div class="feed-date">Trophée</div></div></div>`;
     }
+    if(it.kind === 'transfer'){
+      const takes = it.fromName
+        ? `prend le trophée <b>${esc(it.trophyName)}</b> à <b>${esc(it.fromName)}</b>`
+        : `s'empare du trophée <b>${esc(it.trophyName)}</b>`;
+      return `<div class="feed-item"><span class="feed-dot" style="background:var(--gold)">🏆</span>
+        <div class="feed-body"><div><b>${esc(it.name)}</b> ${takes} <span class="feed-tag">#birdyseum</span>${badge}</div>
+        <div class="feed-date">Transfert</div></div></div>`;
+    }
+    if(it.kind === 'demote'){
+      return `<div class="feed-item"><span class="feed-dot" style="background:#b0838a">📉</span>
+        <div class="feed-body"><div><b>${esc(it.name)}</b> passe de <b>${esc(it.fromTrophy)}</b> à <b>${esc(it.toTrophy)}</b> <span class="feed-tag">#birdyseum</span>${badge}</div>
+        <div class="feed-date">Rétrogradé</div></div></div>`;
+    }
+    // Observation classique
     const tt=realTier(it.sci, it.abroad);
     const target='obs:'+it.uid+':'+it.sci.toLowerCase();
     const tag = it.manual ? ' <span class="feed-tag">ajout manuel</span>' : '';
@@ -4209,7 +4273,10 @@ function _countUnread(view, seen){
     }
     try{
       const evts = _computeTrophyEvents ? _computeTrophyEvents() : [];
-      for(const ev of evts) if(ev.uid !== my && ev.addedAt > seen) n++;
+      for(const ev of evts){
+        const at = ev.at || ev.addedAt || 0;
+        if(ev.uid !== my && at > seen) n++;
+      }
     }catch(_){}
     return n;
   }
