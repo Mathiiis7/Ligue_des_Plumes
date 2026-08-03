@@ -449,12 +449,21 @@
   .species-modal { position:fixed; inset:0; z-index:75; display:flex; align-items:center; justify-content:center; padding:16px; }
   .species-modal[hidden] { display:none; }
   .species-modal .sm-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.55); cursor:zoom-out; }
-  .species-modal .sm-box { position:relative; background:var(--surface); border-radius:16px; padding:18px 20px 20px; max-width:520px; width:100%; max-height:92vh; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,.35); }
+  .species-modal .sm-box { position:relative; background:var(--surface); border-radius:16px; padding:20px 22px 22px; max-width:640px; width:100%; max-height:94vh; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,.35); }
   .species-modal .sm-close { position:absolute; top:10px; right:12px; background:transparent; border:none; font-size:20px; color:var(--ink-3); cursor:pointer; padding:4px 8px; border-radius:6px; }
   .species-modal .sm-close:hover { background:var(--surface-2); color:var(--ink); }
   .species-modal .sm-header { margin-bottom:12px; padding-right:30px; }
   .species-modal .sm-title { margin:0; font-size:20px; color:var(--ink); }
   .species-modal .sm-sci { font-size:13px; color:var(--ink-3); font-style:italic; margin-top:2px; }
+  .species-modal .sm-info-chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .species-modal .sm-info-chips .chip { font-size:11.5px; font-weight:700; padding:2px 8px; border-radius:9px; background:var(--surface-2); color:var(--ink-2); border:1px solid var(--line); display:inline-flex; align-items:center; gap:5px; }
+  .species-modal .sm-info-chips .chip .dot { width:9px; height:9px; border-radius:50%; }
+  .species-modal .sm-desc { font-size:13px; color:var(--ink-2); line-height:1.5; margin-top:12px; padding:10px 12px; background:var(--surface-2); border-left:3px solid var(--line-2); border-radius:0 8px 8px 0; }
+  .species-modal .sm-desc:empty { display:none; }
+  .species-modal .sm-freq { margin-top:14px; }
+  .species-modal .sm-freq-title { font-size:13px; color:var(--ink-2); text-transform:uppercase; letter-spacing:.4px; margin:0 0 6px; font-weight:700; }
+  .species-modal .sm-freq-src { text-transform:none; letter-spacing:0; font-weight:400; color:var(--ink-3); font-size:11.5px; }
+  .species-modal .sm-freq-chart { width:100%; height:90px; display:block; }
   .species-modal .sm-media { display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
   .species-modal .sm-photo-wrap { min-height:0; }
   .species-modal .sm-photo { display:block; width:100%; max-height:280px; object-fit:cover; border-radius:10px; background:var(--surface-2); }
@@ -1327,6 +1336,12 @@
       <div class="sm-header">
         <h2 class="sm-title" id="smTitle"></h2>
         <div class="sm-sci" id="smSci"></div>
+        <div class="sm-info-chips" id="smInfoChips"></div>
+      </div>
+      <div class="sm-desc" id="smDesc"></div>
+      <div class="sm-freq" id="smFreqWrap" hidden>
+        <div class="sm-freq-title">Quand la trouver <span class="sm-freq-src" id="smFreqSrc"></span></div>
+        <svg id="smFreqChart" class="sm-freq-chart" viewBox="0 0 300 90" preserveAspectRatio="none"></svg>
       </div>
       <div class="sm-media">
         <div class="sm-photo-wrap"><img class="sm-photo" id="smPhoto" alt="" hidden></div>
@@ -5377,6 +5392,74 @@ async function _fetchXenoSound(sci){
   _spSoundCache.set(key, out);
   return out;
 }
+// Chips info (rareté + famille + habitats) sous le titre de la fiche.
+function _renderSpeciesInfoChips(key){
+  const box = $('#smInfoChips'); if(!box) return;
+  const chips = [];
+  const t = realTier(key, false);
+  if(t && t.label) chips.push(`<span class="chip" title="Rareté réelle en France"><span class="dot" style="background:${t.color}"></span>${esc(t.label)}</span>`);
+  const fam = familyOf(key); if(fam) chips.push(`<span class="chip" title="Famille taxonomique">${esc(fam)}</span>`);
+  const habs = (typeof habitatsOf === 'function') ? habitatsOf(key) : null;
+  if(Array.isArray(habs)){
+    for(const h of habs){ const lbl = (typeof HABITAT_LABELS === 'object' && HABITAT_LABELS[h]) ? HABITAT_LABELS[h] : h; chips.push(`<span class="chip">${esc(lbl)}</span>`); }
+  }
+  box.innerHTML = chips.join('');
+}
+// Description Wikipedia (extrait 1er paragraphe) via API REST summary. FR puis EN en fallback.
+const _spDescCache = new Map();
+async function _fetchWikiDesc(sci){
+  const key = sci.toLowerCase();
+  if(_spDescCache.has(key)) return _spDescCache.get(key);
+  const trySummary = async (lang) => {
+    try{
+      const r = await fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(sci.replace(/ /g,'_'))}`);
+      if(!r.ok) return null;
+      const j = await r.json();
+      if(j?.extract && j.extract.length > 30) return j.extract;
+    }catch(_){}
+    return null;
+  };
+  let d = await trySummary('fr'); if(!d) d = await trySummary('en');
+  _spDescCache.set(key, d);
+  return d;
+}
+function _renderSpeciesDesc(sci){
+  const el = $('#smDesc'); if(!el) return;
+  el.textContent = ''; el.classList.remove('sm-desc');
+  _fetchWikiDesc(sci).then(txt => {
+    if(!txt) return;
+    // Limite à ~450 chars pour ne pas noyer la fiche.
+    const short = txt.length > 450 ? txt.slice(0,447).replace(/\s+\S*$/,'') + '…' : txt;
+    el.textContent = short;
+    el.classList.add('sm-desc');
+  });
+}
+// Mini bar chart 12 mois : freq eBird nationale (fallback REAL_FREQ_MONTHLY).
+const _MONTH_INITIALS = ['J','F','M','A','M','J','J','A','S','O','N','D'];
+function _renderSpeciesFreqChart(key){
+  const wrap = $('#smFreqWrap'), svg = $('#smFreqChart'), srcEl = $('#smFreqSrc');
+  if(!wrap || !svg) return;
+  const arr = (typeof REAL_FREQ_MONTHLY === 'object' && REAL_FREQ_MONTHLY[key]) ? REAL_FREQ_MONTHLY[key] : null;
+  if(!arr || arr.length !== 12){ wrap.hidden = true; return; }
+  const maxV = Math.max(0.001, ...arr);
+  const bestIdx = arr.indexOf(maxV);
+  wrap.hidden = false;
+  srcEl.textContent = `(pic ${_MONTH_FR[bestIdx]}, ${Math.round(maxV*100)} %)`;
+  const W = 300, H = 90, PT = 4, PB = 18, PL = 4, PR = 4;
+  const iw = W - PL - PR, ih = H - PT - PB;
+  const bw = iw / 12;
+  const curM = new Date().getMonth();
+  let out = '';
+  for(let i=0;i<12;i++){
+    const h = ih * (arr[i] / maxV);
+    const x = PL + i * bw;
+    const y = PT + ih - h;
+    const fill = i === bestIdx ? 'var(--gold)' : (i === curM ? 'var(--accent)' : 'var(--ink-3)');
+    out += `<rect x="${(x+1).toFixed(1)}" y="${y.toFixed(1)}" width="${(bw-2).toFixed(1)}" height="${Math.max(1,h).toFixed(1)}" fill="${fill}" opacity="${i===bestIdx||i===curM?1:.55}" rx="1"/>`;
+    out += `<text x="${(x + bw/2).toFixed(1)}" y="${(H-4).toFixed(1)}" font-size="9" fill="var(--ink-3)" text-anchor="middle">${_MONTH_INITIALS[i]}</text>`;
+  }
+  svg.innerHTML = out;
+}
 function openSpeciesModal(sci){
   if(!sci) return;
   const key = sci.toLowerCase();
@@ -5384,6 +5467,12 @@ function openSpeciesModal(sci){
   const nm = FR_NAMES[key] || sci;
   $('#smTitle').textContent = nm;
   $('#smSci').textContent = sci;
+  // Chips info : rareté (couleur), famille, habitats
+  _renderSpeciesInfoChips(key);
+  // Description Wikipedia (async)
+  _renderSpeciesDesc(sci);
+  // Barre chart de fréquence mensuelle (national ou régional)
+  _renderSpeciesFreqChart(key);
   // Photo
   const img = $('#smPhoto'), cred = $('#smPhotoCredit');
   img.hidden = true; img.src=''; cred.textContent = '';
