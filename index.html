@@ -5310,7 +5310,10 @@ async function _fetchXenoSound(sci){
     const j = await r.json();
     const recs = Array.isArray(j?.recordings) ? j.recordings : [];
     const isSong = t => /\bsong\b/i.test(t||'');
-    const isCall = t => /\bcall\b/i.test(t||'') && !isSong(t);   // call, alarm call, flight call, mais pas "song"
+    // "Cri" = tout enregistrement non-chant avec un type renseigne (call, alarm call, flight call,
+    // drumming, juvenile, begging, etc.). Filtrage large : de nombreuses especes n'ont pas de recording
+    // taggue "call" mais ont "alarm", "flight", etc.
+    const isCall = t => !!t && !isSong(t);
     const pickBy = fn => recs.find(x => (x.q||'').toUpperCase()==='A' && x.file && fn(x.type))
                       || recs.find(x => x.file && fn(x.type));
     const s = pickBy(isSong), c = pickBy(isCall);
@@ -5360,8 +5363,6 @@ function openSpeciesModal(sci){
     if(song){ songEl.src = song; songRow.hidden = false; }
     if(call){ callEl.src = call; callRow.hidden = false; }
     if(!song && !call){ hint.textContent = 'Pas d\'enregistrement disponible sur xeno-canto.'; }
-    else if(!song){ hint.textContent = 'Chant non trouvé (cri disponible).'; }
-    else if(!call){ hint.textContent = 'Cri non trouvé (chant disponible).'; }
     else { hint.hidden = true; }
   });
   // Observations dans la ligue
