@@ -3678,19 +3678,28 @@ async function _renderModeAbundance(){
   const SRC = abFilter.metric === 'mean'
     ? (typeof REAL_ABUNDANCE_DEPT_MEAN === 'object' ? REAL_ABUNDANCE_DEPT_MEAN : REAL_ABUNDANCE_DEPT)
     : REAL_ABUNDANCE_DEPT;
-  // Resout le nom saisi -> sci name parmi TOUTES les especes FR (pas seulement S&T).
+  // Resout le nom saisi -> sci name. On exige un match EXACT (nom FR complet ou nom scientifique
+  // complet) pour eviter d'afficher un oiseau au hasard sur les 1res lettres tapees. L'utilisateur
+  // choisit toujours via la dropdown (qui remplit le champ avec le nom complet).
   let sci = null;
   if(inputVal){
+    const low = inputVal.toLowerCase().trim();
     const norm = _mapNorm(inputVal);
-    sci = Object.keys(FR_NAMES).find(s => (FR_NAMES[s]||'').toLowerCase() === inputVal.toLowerCase())
-       || Object.keys(FR_NAMES).find(s => _mapNorm(FR_NAMES[s]||s).includes(norm));
+    sci = Object.keys(FR_NAMES).find(s => (FR_NAMES[s]||'').toLowerCase() === low)
+       || Object.keys(FR_NAMES).find(s => _mapNorm(FR_NAMES[s]||s) === norm)
+       || (FR_NAMES[low] ? low : null);
   }
   abFilter.sci = sci || '';
   abFilter.month = +($('#mapAbMonth')?.value||0);
   if(!sci){
     if(!cnt) return;
-    if(!inputVal) cnt.textContent = 'Tape une espèce dans la barre de recherche ci-dessus';
-    else cnt.textContent = 'Espèce introuvable. Essaie un autre nom.';
+    cnt.textContent = inputVal
+      ? 'Choisis une espèce dans la liste déroulante ci-dessus.'
+      : 'Tape une espèce dans la barre de recherche ci-dessus.';
+    // Efface toute couche abondance / hotspot residuelle (evite l'affichage precedent qui reste).
+    if(_lyrAbundance){ _lyrAbundance.remove(); _lyrAbundance = null; }
+    if(_lyrAbHotspots){ _lyrAbHotspots.clearLayers(); _lyrAbHotspots.remove(); }
+    _abHotspotsData = null;
     return;
   }
   // Espece sans data Status & Trends : on n'a pas de choroplethe departementale, mais on affiche
