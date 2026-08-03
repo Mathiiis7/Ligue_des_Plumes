@@ -463,8 +463,11 @@
   .species-modal .sm-desc:empty { display:none; }
   .species-modal .sm-freq { margin-top:14px; }
   .species-modal .sm-freq-title { font-size:13px; color:var(--ink-2); text-transform:uppercase; letter-spacing:.4px; margin:0 0 6px; font-weight:700; }
-  .species-modal .sm-freq-src { text-transform:none; letter-spacing:0; font-weight:400; color:var(--ink-3); font-size:11.5px; }
-  .species-modal .sm-freq-chart { width:100%; height:90px; display:block; }
+  .species-modal .sm-freq-src { text-transform:none; letter-spacing:0; font-weight:400; color:var(--ink-3); font-size:11.5px; margin-left:6px; }
+  .species-modal .sm-freq-chart-wrap { background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:8px 10px; }
+  .species-modal .sm-freq-chart { width:100%; aspect-ratio:360/130; height:auto; display:block; overflow:visible; }
+  .species-modal .sm-freq-chart .bar { transition:opacity .15s; }
+  .species-modal .sm-freq-chart .bar:hover { opacity:1 !important; }
   .species-modal .sm-media { display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
   .species-modal .sm-photo-wrap { min-height:0; }
   .species-modal .sm-photo { display:block; width:100%; max-height:280px; object-fit:cover; border-radius:10px; background:var(--surface-2); }
@@ -1339,11 +1342,6 @@
         <div class="sm-sci" id="smSci"></div>
         <div class="sm-info-chips" id="smInfoChips"></div>
       </div>
-      <div class="sm-desc" id="smDesc"></div>
-      <div class="sm-freq" id="smFreqWrap" hidden>
-        <div class="sm-freq-title">Quand la trouver <span class="sm-freq-src" id="smFreqSrc"></span></div>
-        <svg id="smFreqChart" class="sm-freq-chart" viewBox="0 0 300 90" preserveAspectRatio="none"></svg>
-      </div>
       <div class="sm-media">
         <div class="sm-photo-wrap"><img class="sm-photo" id="smPhoto" alt="" hidden></div>
         <div class="sm-audio-wrap">
@@ -1351,6 +1349,11 @@
           <div class="sm-audio-row" id="smCallRow" hidden><div class="sm-audio-lbl">Cri</div><audio class="sm-audio" id="smCall" controls preload="none"></audio></div>
           <div class="sm-audio-hint" id="smAudioHint">🎧 Recherche du chant et du cri…</div>
         </div>
+      </div>
+      <div class="sm-desc" id="smDesc"></div>
+      <div class="sm-freq" id="smFreqWrap" hidden>
+        <div class="sm-freq-title">Quand la trouver <span class="sm-freq-src" id="smFreqSrc"></span></div>
+        <div class="sm-freq-chart-wrap"><svg id="smFreqChart" class="sm-freq-chart" viewBox="0 0 360 130" preserveAspectRatio="xMidYMid meet"></svg></div>
       </div>
       <div class="sm-obs" id="smObs"></div>
       <div class="sm-map-wrap" id="smMapWrap" hidden>
@@ -5436,29 +5439,57 @@ function _renderSpeciesDesc(sci){
   });
 }
 // Mini bar chart 12 mois : freq eBird nationale (fallback REAL_FREQ_MONTHLY).
-const _MONTH_INITIALS = ['J','F','M','A','M','J','J','A','S','O','N','D'];
+const _MONTH_ABBR3 = ['janv','févr','mars','avr','mai','juin','juil','août','sept','oct','nov','déc'];
 function _renderSpeciesFreqChart(key){
   const wrap = $('#smFreqWrap'), svg = $('#smFreqChart'), srcEl = $('#smFreqSrc');
   if(!wrap || !svg) return;
   const arr = (typeof REAL_FREQ_MONTHLY === 'object' && REAL_FREQ_MONTHLY[key]) ? REAL_FREQ_MONTHLY[key] : null;
   if(!arr || arr.length !== 12){ wrap.hidden = true; return; }
-  const maxV = Math.max(0.001, ...arr);
+  const maxV = Math.max(0.0001, ...arr);
   const bestIdx = arr.indexOf(maxV);
+  const curM = new Date().getMonth();
   wrap.hidden = false;
-  srcEl.textContent = `(pic ${_MONTH_FR[bestIdx]}, ${Math.round(maxV*100)} %)`;
-  const W = 300, H = 90, PT = 4, PB = 18, PL = 4, PR = 4;
+  srcEl.textContent = `pic en ${_MONTH_FR[bestIdx]} (${Math.round(maxV*100)} %)`;
+  // Chart layout : 360×130 viewBox. Barre = 20 px large + 4 gouttiere, textes en dessous.
+  const W = 360, H = 130, PT = 12, PB = 26, PL = 32, PR = 8;
   const iw = W - PL - PR, ih = H - PT - PB;
   const bw = iw / 12;
-  const curM = new Date().getMonth();
+  // Lignes de reference : 0, mid, max
+  const maxPct = Math.max(1, Math.ceil(maxV*100));
+  const midPct = Math.round(maxPct/2);
+  const yFor = pct => PT + ih - ih * (pct/maxPct);
   let out = '';
-  for(let i=0;i<12;i++){
-    const h = ih * (arr[i] / maxV);
-    const x = PL + i * bw;
-    const y = PT + ih - h;
-    const fill = i === bestIdx ? 'var(--gold)' : (i === curM ? 'var(--accent)' : 'var(--ink-3)');
-    out += `<rect x="${(x+1).toFixed(1)}" y="${y.toFixed(1)}" width="${(bw-2).toFixed(1)}" height="${Math.max(1,h).toFixed(1)}" fill="${fill}" opacity="${i===bestIdx||i===curM?1:.55}" rx="1"/>`;
-    out += `<text x="${(x + bw/2).toFixed(1)}" y="${(H-4).toFixed(1)}" font-size="9" fill="var(--ink-3)" text-anchor="middle">${_MONTH_INITIALS[i]}</text>`;
+  // Grille horizontale + labels %
+  for(const pct of [0, midPct, maxPct]){
+    const y = yFor(pct);
+    out += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${(W-PR).toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"/>`;
+    out += `<text x="${(PL-4).toFixed(1)}" y="${(y+3).toFixed(1)}" font-size="9" fill="var(--ink-3)" text-anchor="end">${pct}%</text>`;
   }
+  // Barres
+  for(let i=0;i<12;i++){
+    const pct = arr[i]*100;
+    const h = ih * (arr[i] / maxV);
+    const x = PL + i * bw + 2;
+    const w = bw - 4;
+    const y = PT + ih - h;
+    let fill, op;
+    if(i === bestIdx){ fill = 'var(--gold)'; op = 1; }
+    else if(i === curM){ fill = 'var(--accent)'; op = 1; }
+    else { fill = 'var(--ink-3)'; op = 0.4; }
+    const title = `${_MONTH_FR[i]} : ${pct<0.1?'<0.1':pct<1?pct.toFixed(1):Math.round(pct)} %`;
+    out += `<rect class="bar" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(1.5,h).toFixed(1)}" fill="${fill}" opacity="${op}" rx="2"><title>${title}</title></rect>`;
+    // Valeur au dessus de la barre du pic (uniquement, pour ne pas surcharger)
+    if(i === bestIdx && h > 20){
+      out += `<text x="${(x+w/2).toFixed(1)}" y="${(y-4).toFixed(1)}" font-size="10" font-weight="700" fill="var(--gold)" text-anchor="middle">${Math.round(pct)}%</text>`;
+    }
+    // Label mois
+    const monthLbl = _MONTH_ABBR3[i];
+    const isHi = (i === bestIdx || i === curM);
+    out += `<text x="${(x+w/2).toFixed(1)}" y="${(H-8).toFixed(1)}" font-size="10" fill="${isHi?'var(--ink)':'var(--ink-3)'}" text-anchor="middle" font-weight="${isHi?700:400}">${monthLbl}</text>`;
+  }
+  // Legende compacte (mois courant / pic)
+  out += `<circle cx="${(W-PR-70).toFixed(1)}" cy="${(H-6).toFixed(1)}" r="3" fill="var(--accent)"/><text x="${(W-PR-63).toFixed(1)}" y="${(H-3).toFixed(1)}" font-size="9" fill="var(--ink-3)">actuel</text>`;
+  out += `<circle cx="${(W-PR-30).toFixed(1)}" cy="${(H-6).toFixed(1)}" r="3" fill="var(--gold)"/><text x="${(W-PR-23).toFixed(1)}" y="${(H-3).toFixed(1)}" font-size="9" fill="var(--ink-3)">pic</text>`;
   svg.innerHTML = out;
 }
 function openSpeciesModal(sci){
