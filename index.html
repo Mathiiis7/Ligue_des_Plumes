@@ -468,6 +468,9 @@
   .species-modal .sm-freq-chart { width:100%; aspect-ratio:360/130; height:auto; display:block; overflow:visible; }
   .species-modal .sm-freq-chart .bar { transition:opacity .15s; }
   .species-modal .sm-freq-chart .bar:hover { opacity:1 !important; }
+  .species-modal .sm-freq-legend { display:flex; gap:14px; justify-content:flex-end; margin-top:4px; font-size:11px; color:var(--ink-3); }
+  .species-modal .sm-freq-lg { display:inline-flex; align-items:center; gap:5px; }
+  .species-modal .sm-freq-sw { width:10px; height:10px; border-radius:50%; display:inline-block; }
   .species-modal .sm-media { display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
   .species-modal .sm-photo-wrap { min-height:0; }
   .species-modal .sm-photo { display:block; width:100%; max-height:280px; object-fit:cover; border-radius:10px; background:var(--surface-2); }
@@ -1353,7 +1356,10 @@
       <div class="sm-desc" id="smDesc"></div>
       <div class="sm-freq" id="smFreqWrap" hidden>
         <div class="sm-freq-title">Quand la trouver <span class="sm-freq-src" id="smFreqSrc"></span></div>
-        <div class="sm-freq-chart-wrap"><svg id="smFreqChart" class="sm-freq-chart" viewBox="0 0 360 130" preserveAspectRatio="xMidYMid meet"></svg></div>
+        <div class="sm-freq-chart-wrap">
+          <svg id="smFreqChart" class="sm-freq-chart" viewBox="0 0 360 130" preserveAspectRatio="xMidYMid meet"></svg>
+          <div class="sm-freq-legend"><span class="sm-freq-lg"><span class="sm-freq-sw" style="background:var(--accent)"></span>Mois actuel</span><span class="sm-freq-lg"><span class="sm-freq-sw" style="background:var(--gold)"></span>Pic annuel</span></div>
+        </div>
       </div>
       <div class="sm-obs" id="smObs"></div>
       <div class="sm-map-wrap" id="smMapWrap" hidden>
@@ -5487,9 +5493,7 @@ function _renderSpeciesFreqChart(key){
     const isHi = (i === bestIdx || i === curM);
     out += `<text x="${(x+w/2).toFixed(1)}" y="${(H-8).toFixed(1)}" font-size="10" fill="${isHi?'var(--ink)':'var(--ink-3)'}" text-anchor="middle" font-weight="${isHi?700:400}">${monthLbl}</text>`;
   }
-  // Legende compacte (mois courant / pic)
-  out += `<circle cx="${(W-PR-70).toFixed(1)}" cy="${(H-6).toFixed(1)}" r="3" fill="var(--accent)"/><text x="${(W-PR-63).toFixed(1)}" y="${(H-3).toFixed(1)}" font-size="9" fill="var(--ink-3)">actuel</text>`;
-  out += `<circle cx="${(W-PR-30).toFixed(1)}" cy="${(H-6).toFixed(1)}" r="3" fill="var(--gold)"/><text x="${(W-PR-23).toFixed(1)}" y="${(H-3).toFixed(1)}" font-size="9" fill="var(--ink-3)">pic</text>`;
+  // Legende deplacee en HTML sous le SVG (voir .sm-freq-legend) pour ne pas chevaucher les labels mois.
   svg.innerHTML = out;
 }
 function openSpeciesModal(sci){
