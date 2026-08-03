@@ -5256,16 +5256,39 @@ async function _fetchXenoSound(sci){
   if(_spSoundCache.has(key)) return _spSoundCache.get(key);
   const [gen, sp] = sci.split(' ');
   if(!gen || !sp){ _spSoundCache.set(key, null); return null; }
-  // API v2 xeno-canto : nr:1 → 1er enregistrement (souvent parmi les meilleurs).
-  const u = `https://xeno-canto.org/api/2/recordings?query=${encodeURIComponent('gen:"'+gen+'" sp:"'+sp+'"')}&per_page=1`;
-  try{
-    const r = await fetch(u);
-    const j = await r.json();
-    const rec = j?.recordings?.[0];
-    const url = rec?.file || null;
-    _spSoundCache.set(key, url);
-    return url;
-  }catch(_){ _spSoundCache.set(key, null); return null; }
+  // Normalise l'URL retournee par xeno-canto : parfois protocol-relative ("//xeno-canto.org/…"),
+  // parfois HTTP → on force https pour eviter les blocages mixed-content sur GitHub Pages.
+  const norm = u => { if(!u) return null; if(u.startsWith('//')) return 'https:' + u; if(u.startsWith('http://')) return 'https://' + u.slice(7); return u; };
+  const tryQuery = async (extra) => {
+    const q = 'gen:' + gen + ' sp:' + sp + (extra ? ' ' + extra : '');
+    try{
+      const r = await fetch('https://xeno-canto.org/api/2/recordings?query=' + encodeURIComponent(q));
+      const j = await r.json();
+      const recs = Array.isArray(j?.recordings) ? j.recordings : [];
+      // Priorite : qualite A d'abord (si on est en query permissive), puis premier dispo.
+      const best = recs.find(x => (x.q||'').toUpperCase()==='A' && x.file) || recs.find(x => x.file);
+      return best ? norm(best.file) : null;
+    }catch(_){ return null; }
+  };
+  // 1) enregistrements de qualite A (meilleure ecoute). 2) fallback : n'importe quelle qualite.
+  let url = await tryQuery('q:A');
+  if(!url) url = await tryQuery('');
+  // 3) Fallback iNaturalist : cherche une observation audio recente pour ce taxon.
+  if(!url){
+    try{
+      const t = await fetch('https://api.inaturalist.org/v1/taxa/autocomplete?q=' + encodeURIComponent(sci) + '&rank=species&per_page=1');
+      const tj = await t.json();
+      const tid = tj?.results?.[0]?.id;
+      if(tid){
+        const r = await fetch('https://api.inaturalist.org/v1/observations?taxon_id=' + tid + '&sounds=true&per_page=1&order=desc&order_by=votes');
+        const j = await r.json();
+        const soundUrl = j?.results?.[0]?.sounds?.[0]?.file_url;
+        if(soundUrl) url = norm(soundUrl);
+      }
+    }catch(_){ }
+  }
+  _spSoundCache.set(key, url);
+  return url;
 }
 function openSpeciesModal(sci){
   if(!sci) return;
