@@ -5418,33 +5418,49 @@ let _smMapInstance = null, _smMapLayer = null;
 let _smCurrentKey = '', _smMapMode = 'friends', _smMarkers = [];
 const _SM_SERIES_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#34495e','#16a085','#c0392b'];
 function _smSetHint(txt){ const el=$('#smMapHint'); if(el) el.textContent = txt||''; }
-// Ré-etale les marqueurs par grappes de meme position, en PIXELS (donc adaptatif au zoom).
-// Appele apres chaque zoomend + apres l'initialisation.
+// Ré-etale les marqueurs qui se CHEVAUCHENT visuellement au zoom courant, en PIXELS.
+// Deux points sont "trop proches" si leurs cercles se touchent (distance < OVERLAP_PX).
+// Clustering transitif (BFS) pour que 3 points a la file se retrouvent tous dans le meme cluster.
 function _smSpreadMarkers(){
   if(!_smMapInstance || !_smMarkers.length) return;
-  // Groupe par cle "lat×lon" arrondis a ~10 m
-  const groups = new Map();
-  for(const mk of _smMarkers){
-    const k = (mk._baseLat.toFixed(4))+'|'+(mk._baseLon.toFixed(4));
-    if(!groups.has(k)) groups.set(k, []);
-    groups.get(k).push(mk);
-  }
-  const GOLDEN = Math.PI * (3 - Math.sqrt(5));
-  const R_PER = 14;   // pixels de rayon par element du groupe
-  for(const arr of groups.values()){
-    if(arr.length === 1){
-      arr[0].setLatLng([arr[0]._baseLat, arr[0]._baseLon]);
-      continue;
+  const OVERLAP_PX = 20;   // rayon marqueur ~7 + halo blanc ~2 → 18 min pour ne pas se toucher
+  // Reset a la position d'origine + calcul des pixels courants
+  const pts = _smMarkers.map(mk => {
+    mk.setLatLng([mk._baseLat, mk._baseLon]);
+    const p = _smMapInstance.latLngToLayerPoint([mk._baseLat, mk._baseLon]);
+    return { mk, x:p.x, y:p.y };
+  });
+  const OV2 = OVERLAP_PX * OVERLAP_PX;
+  const assigned = new Array(pts.length).fill(-1);
+  const clusters = [];
+  for(let i=0;i<pts.length;i++){
+    if(assigned[i] !== -1) continue;
+    const idxs = [i]; assigned[i] = clusters.length;
+    let head = 0;
+    while(head < idxs.length){
+      const cur = idxs[head++];
+      for(let j=0;j<pts.length;j++){
+        if(assigned[j] !== -1) continue;
+        const dx = pts[j].x - pts[cur].x, dy = pts[j].y - pts[cur].y;
+        if(dx*dx + dy*dy < OV2){ assigned[j] = clusters.length; idxs.push(j); }
+      }
     }
-    // Spirale en pixels autour du centre (le premier).
-    const center = _smMapInstance.latLngToLayerPoint([arr[0]._baseLat, arr[0]._baseLon]);
-    const maxR = R_PER * Math.sqrt(arr.length);
-    for(let i=0;i<arr.length;i++){
-      const r = maxR * Math.sqrt((i+0.5)/arr.length);
+    clusters.push(idxs.map(k => pts[k]));
+  }
+  // Spirale en pixels pour chaque cluster > 1 (Fibonacci "sunflower" a partir du centroide)
+  const GOLDEN = Math.PI * (3 - Math.sqrt(5));
+  const R_PER = 14;
+  for(const cluster of clusters){
+    if(cluster.length <= 1) continue;
+    let cx=0, cy=0; for(const p of cluster){ cx += p.x; cy += p.y; }
+    cx /= cluster.length; cy /= cluster.length;
+    const maxR = R_PER * Math.sqrt(cluster.length);
+    for(let i=0;i<cluster.length;i++){
+      const r = maxR * Math.sqrt((i+0.5)/cluster.length);
       const th = i * GOLDEN;
-      const p = L.point(center.x + r*Math.cos(th), center.y + r*Math.sin(th));
+      const p = L.point(cx + r*Math.cos(th), cy + r*Math.sin(th));
       const ll = _smMapInstance.layerPointToLatLng(p);
-      arr[i].setLatLng([ll.lat, ll.lng]);
+      cluster[i].mk.setLatLng([ll.lat, ll.lng]);
     }
   }
 }
