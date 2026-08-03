@@ -445,6 +445,32 @@
   .img-modal { display:none; position:fixed; inset:0; z-index:70; background:rgba(0,0,0,.82); align-items:center; justify-content:center; padding:20px; cursor:zoom-out; }
   .img-modal.open { display:flex; }
   .img-modal img { max-width:96vw; max-height:92vh; border-radius:10px; }
+  /* Modal fiche espèce (ouvert au clic sur un nom d'oiseau) */
+  .species-modal { position:fixed; inset:0; z-index:75; display:flex; align-items:center; justify-content:center; padding:16px; }
+  .species-modal[hidden] { display:none; }
+  .species-modal .sm-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.55); cursor:zoom-out; }
+  .species-modal .sm-box { position:relative; background:var(--surface); border-radius:16px; padding:18px 20px 20px; max-width:520px; width:100%; max-height:92vh; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,.35); }
+  .species-modal .sm-close { position:absolute; top:10px; right:12px; background:transparent; border:none; font-size:20px; color:var(--ink-3); cursor:pointer; padding:4px 8px; border-radius:6px; }
+  .species-modal .sm-close:hover { background:var(--surface-2); color:var(--ink); }
+  .species-modal .sm-header { margin-bottom:12px; padding-right:30px; }
+  .species-modal .sm-title { margin:0; font-size:20px; color:var(--ink); }
+  .species-modal .sm-sci { font-size:13px; color:var(--ink-3); font-style:italic; margin-top:2px; }
+  .species-modal .sm-media { display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
+  .species-modal .sm-photo-wrap { min-height:0; }
+  .species-modal .sm-photo { display:block; width:100%; max-height:280px; object-fit:cover; border-radius:10px; background:var(--surface-2); }
+  .species-modal .sm-audio-wrap { display:flex; flex-direction:column; gap:4px; }
+  .species-modal .sm-audio { width:100%; }
+  .species-modal .sm-audio-hint { font-size:12px; color:var(--ink-3); }
+  .species-modal .sm-obs h3 { font-size:13px; color:var(--ink-2); text-transform:uppercase; letter-spacing:.4px; margin:14px 0 6px; }
+  .species-modal .sm-obs ul { margin:0; padding-left:18px; font-size:13.5px; color:var(--ink-2); line-height:1.55; }
+  .species-modal .sm-obs .help { margin:6px 0; font-size:13px; color:var(--ink-3); }
+  .species-modal .sm-links { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+  .species-modal .sm-links a { padding:6px 12px; background:var(--surface-2); border:1px solid var(--line); border-radius:9px; color:var(--ink); font-size:13px; text-decoration:none; }
+  .species-modal .sm-links a:hover { background:color-mix(in srgb,var(--accent) 12%,var(--surface-2)); border-color:var(--accent); }
+  .species-modal .sm-photo-credit { font-size:11px; color:var(--ink-3); margin-top:8px; text-align:right; }
+  /* Nom d'oiseau cliquable : soulignement discret au hover */
+  .sp-link { cursor:pointer; text-decoration:none; color:inherit; border-bottom:1px dashed transparent; }
+  .sp-link:hover { border-bottom-color:currentColor; }
   .tab { position:relative; }
   /* Compteur "N nouveaux" positionne en haut a droite de l'onglet. Pour >99, affiche "99+". */
   .tab-count { position:absolute; top:2px; right:2px; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:#e74c3c; color:#fff; font:700 11px/18px system-ui; text-align:center; box-sizing:border-box; font-variant-numeric:tabular-nums; }
@@ -1251,6 +1277,25 @@
   <div id="emojiPop" class="emoji-pop"><div class="emoji-pop-inner"></div></div>
   <!-- Modal image plein écran (photos, chat...). Doit être au niveau racine pour ne pas hériter du display:none des vues masquées. -->
   <div id="imgModal" class="img-modal"><img id="imgModalImg" alt=""></div>
+  <!-- Modal fiche espèce : ouvert au clic sur un nom d'oiseau (data-sci="..."). Photo Wikipédia,
+       son xeno-canto, liste des obs du groupe, liens externes. -->
+  <div id="speciesModal" class="species-modal" hidden>
+    <div class="sm-backdrop" data-sm-close></div>
+    <div class="sm-box">
+      <button class="sm-close" data-sm-close aria-label="Fermer">✕</button>
+      <div class="sm-header">
+        <h2 class="sm-title" id="smTitle"></h2>
+        <div class="sm-sci" id="smSci"></div>
+      </div>
+      <div class="sm-media">
+        <div class="sm-photo-wrap"><img class="sm-photo" id="smPhoto" alt="" hidden></div>
+        <div class="sm-audio-wrap"><audio class="sm-audio" id="smAudio" controls preload="none" hidden></audio><div class="sm-audio-hint" id="smAudioHint">🎧 Recherche du chant…</div></div>
+      </div>
+      <div class="sm-obs" id="smObs"></div>
+      <div class="sm-links" id="smLinks"></div>
+      <div class="sm-photo-credit" id="smPhotoCredit"></div>
+    </div>
+  </div>
 
   <footer>
     Ligue Merlin Bird · rareté calculée au sein de votre groupe · données <b>Merlin / eBird</b>, propriété du Cornell Lab of Ornithology.<br>
@@ -1321,6 +1366,13 @@ const FR_NAMES = {"acanthis flammea":"Sizerin flammé","acanthis hornemanni":"Si
 function frName(sci, fallback){
   const key=(sci||'').trim().toLowerCase();
   return FR_NAMES[key] || fallback;
+}
+// Reverse lookup nom FR -> sci. Construit une seule fois (paresseux).
+let _frToSciMap = null;
+function _nameToSci(name){
+  if(!name) return null;
+  if(!_frToSciMap){ _frToSciMap = {}; for(const s in FR_NAMES) _frToSciMap[FR_NAMES[s].toLowerCase()] = s; }
+  return _frToSciMap[name.toLowerCase().trim()] || null;
 }
 const GENUS_FAMILY = {"acanthis":"Pinsons, chardonnerets…","accipiter":"Rapaces (aigles, buses…)","acrocephalus":"Rousserolles","actitis":"Bécasseaux, chevaliers","aegithalos":"Mésanges à longue queue","aegolius":"Chouettes, hiboux","aegypius":"Rapaces (aigles, buses…)","agapornis":"Perruches","aix":"Canards, oies, cygnes","alauda":"Alouettes","alaudala":"Alouettes","alca":"Pingouins, guillemots","alcedo":"Martins-pêcheurs","alectoris":"Faisans, perdrix, cailles","alle":"Pingouins, guillemots","alopochen":"Canards, oies, cygnes","ammomanes":"Alouettes","anarhynchus":"Pluviers, vanneaux","anas":"Canards, oies, cygnes","anser":"Canards, oies, cygnes","anthus":"Bergeronnettes, pipits","antigone":"Grues","apus":"Martinets","aquila":"Rapaces (aigles, buses…)","ardea":"Hérons, aigrettes","ardenna":"Puffins, pétrels","ardeola":"Hérons, aigrettes","arenaria":"Bécasseaux, chevaliers","asio":"Chouettes, hiboux","astur":"Rapaces (aigles, buses…)","athene":"Chouettes, hiboux","aythya":"Canards, oies, cygnes","bartramia":"Bécasseaux, chevaliers","bombycilla":"Jaseurs","botaurus":"Hérons, aigrettes","branta":"Canards, oies, cygnes","bubo":"Chouettes, hiboux","bucanetes":"Pinsons, chardonnerets…","bucephala":"Canards, oies, cygnes","bulweria":"Puffins, pétrels","burhinus":"Œdicnèmes","buteo":"Rapaces (aigles, buses…)","butorides":"Hérons, aigrettes","cairina":"Canards, oies, cygnes","calandrella":"Alouettes","calcarius":"Bruants des neiges","calidris":"Bécasseaux, chevaliers","callipepla":"Colins","calonectris":"Puffins, pétrels","caprimulgus":"Engoulevents","carduelis":"Pinsons, chardonnerets…","carpodacus":"Pinsons, chardonnerets…","catharus":"Grives, merles","cecropis":"Hirondelles","cepphus":"Pingouins, guillemots","cercotrichas":"Gobemouches, rougegorges…","certhia":"Grimpereaux","ceryle":"Martins-pêcheurs","cettia":"Bouscarles","chaetura":"Martinets","charadrius":"Pluviers, vanneaux","thinornis":"Pluviers, vanneaux","chersophilus":"Alouettes","chlamydotis":"Outardes","chlidonias":"Goélands, mouettes, sternes","chloris":"Pinsons, chardonnerets…","chordeiles":"Engoulevents","chroicocephalus":"Goélands, mouettes, sternes","ciconia":"Cigognes","cinclus":"Cincles","circaetus":"Rapaces (aigles, buses…)","circus":"Rapaces (aigles, buses…)","cisticola":"Cisticoles","clamator":"Coucous","clanga":"Rapaces (aigles, buses…)","clangula":"Canards, oies, cygnes","coccothraustes":"Pinsons, chardonnerets…","coccyzus":"Coucous","colinus":"Colins","coloeus":"Corvidés (corneilles, pies…)","columba":"Pigeons, tourterelles","coracias":"Rolliers","corvus":"Corvidés (corneilles, pies…)","coturnix":"Faisans, perdrix, cailles","crex":"Râles, foulques","cuculus":"Coucous","curruca":"Fauvettes","cursorius":"Glaréoles","cyanistes":"Mésanges","cygnus":"Canards, oies, cygnes","daption":"Puffins, pétrels","delichon":"Hirondelles","dendrocopos":"Pics","dendrocoptes":"Pics","dendrocygna":"Canards, oies, cygnes","dolichonyx":"Icteridés","dryobates":"Pics","dryocopus":"Pics","egretta":"Hérons, aigrettes","elanus":"Rapaces (aigles, buses…)","emberiza":"Bruants","eremophila":"Alouettes","erithacus":"Gobemouches, rougegorges…","eudromias":"Pluviers, vanneaux","euodice":"Estrildidés","falco":"Faucons","ficedula":"Gobemouches, rougegorges…","francolinus":"Faisans, perdrix, cailles","fratercula":"Pingouins, guillemots","fregata":"Fregatidés","fringilla":"Pinsons, chardonnerets…","fulica":"Râles, foulques","fulmarus":"Puffins, pétrels","galerida":"Alouettes","gallinago":"Bécasseaux, chevaliers","gallinula":"Râles, foulques","garrulus":"Corvidés (corneilles, pies…)","gavia":"Plongeons","gelochelidon":"Goélands, mouettes, sternes","geokichla":"Grives, merles","geronticus":"Ibis, spatules","glareola":"Glaréoles","glaucidium":"Chouettes, hiboux","grus":"Grues","gulosus":"Cormorans","gypaetus":"Rapaces (aigles, buses…)","gyps":"Rapaces (aigles, buses…)","haematopus":"Huîtriers","haliaeetus":"Rapaces (aigles, buses…)","helopsaltes":"Locustelles","hieraaetus":"Rapaces (aigles, buses…)","himantopus":"Avocettes, échasses","hippolais":"Rousserolles","hirundo":"Hirondelles","histrionicus":"Canards, oies, cygnes","hydrobates":"Océanites","hydrocoloeus":"Goélands, mouettes, sternes","hydroprogne":"Goélands, mouettes, sternes","ichthyaetus":"Goélands, mouettes, sternes","icterus":"Icteridés","iduna":"Rousserolles","jynx":"Pics","ketupa":"Chouettes, hiboux","lagopus":"Faisans, perdrix, cailles","lanius":"Pies-grièches","larus":"Goélands, mouettes, sternes","leiothlypis":"Parulidés","leiothrix":"Leiothrichidés","leucophaeus":"Goélands, mouettes, sternes","limnodromus":"Bécasseaux, chevaliers","limosa":"Bécasseaux, chevaliers","linaria":"Pinsons, chardonnerets…","locustella":"Locustelles","lophophanes":"Mésanges","loxia":"Pinsons, chardonnerets…","lullula":"Alouettes","luscinia":"Gobemouches, rougegorges…","lymnocryptes":"Bécasseaux, chevaliers","lyrurus":"Faisans, perdrix, cailles","macronectes":"Puffins, pétrels","mareca":"Canards, oies, cygnes","marmaronetta":"Canards, oies, cygnes","megaceryle":"Martins-pêcheurs","melanitta":"Canards, oies, cygnes","melanocorypha":"Alouettes","mergellus":"Canards, oies, cygnes","mergus":"Canards, oies, cygnes","merops":"Guêpiers","microcarbo":"Cormorans","milvus":"Rapaces (aigles, buses…)","mniotilta":"Parulidés","molothrus":"Icteridés","monticola":"Gobemouches, rougegorges…","montifringilla":"Moineaux","morus":"Fous","motacilla":"Bergeronnettes, pipits","muscicapa":"Gobemouches, rougegorges…","myiopsitta":"Perroquets","nannopterum":"Cormorans","neophron":"Rapaces (aigles, buses…)","netta":"Canards, oies, cygnes","nucifraga":"Corvidés (corneilles, pies…)","numenius":"Bécasseaux, chevaliers","nycticorax":"Hérons, aigrettes","oceanites":"Océanites","oenanthe":"Gobemouches, rougegorges…","onychoprion":"Goélands, mouettes, sternes","oriolus":"Loriots","otis":"Outardes","otus":"Chouettes, hiboux","oxyura":"Canards, oies, cygnes","pagophila":"Goélands, mouettes, sternes","pandion":"Balbuzard","panurus":"Panure","paragallinula":"Râles, foulques","parkesia":"Parulidés","parus":"Mésanges","passer":"Moineaux","pastor":"Étourneaux","pavo":"Faisans, perdrix, cailles","pelecanus":"Pélicans","perdix":"Faisans, perdrix, cailles","periparus":"Mésanges","pernis":"Rapaces (aigles, buses…)","petrochelidon":"Hirondelles","petronia":"Moineaux","phalacrocorax":"Cormorans","phalaropus":"Bécasseaux, chevaliers","phasianus":"Faisans, perdrix, cailles","pheucticus":"Cardinalidés","phoeniconaias":"Flamants","phoenicopterus":"Flamants","phoenicurus":"Gobemouches, rougegorges…","phylloscopus":"Pouillots","pica":"Corvidés (corneilles, pies…)","picoides":"Pics","picus":"Pics","pinguinus":"Pingouins, guillemots","pinicola":"Pinsons, chardonnerets…","piranga":"Cardinalidés","platalea":"Ibis, spatules","plectrophenax":"Bruants des neiges","plegadis":"Ibis, spatules","pluvialis":"Pluviers, vanneaux","podiceps":"Grèbes","podilymbus":"Grèbes","poecile":"Mésanges","polysticta":"Canards, oies, cygnes","porphyrio":"Râles, foulques","porzana":"Râles, foulques","prunella":"Accenteurs","psittacula":"Perruches","pterocles":"Gangas","pterodroma":"Puffins, pétrels","ptyonoprogne":"Hirondelles","puffinus":"Puffins, pétrels","pyrrhocorax":"Corvidés (corneilles, pies…)","pyrrhula":"Pinsons, chardonnerets…","rallus":"Râles, foulques","recurvirostra":"Avocettes, échasses","regulus":"Roitelets","remiz":"Rémiz","rhodostethia":"Goélands, mouettes, sternes","riparia":"Hirondelles","rissa":"Goélands, mouettes, sternes","saxicola":"Gobemouches, rougegorges…","scolopax":"Bécasseaux, chevaliers","seiurus":"Parulidés","serinus":"Pinsons, chardonnerets…","setophaga":"Parulidés","sibirionetta":"Canards, oies, cygnes","sitta":"Sittelles","somateria":"Canards, oies, cygnes","spatula":"Canards, oies, cygnes","spinus":"Pinsons, chardonnerets…","stercorarius":"Labbes","sterna":"Goélands, mouettes, sternes","sternula":"Goélands, mouettes, sternes","streptopelia":"Pigeons, tourterelles","strix":"Chouettes, hiboux","sturnus":"Étourneaux","sula":"Fous","surnia":"Chouettes, hiboux","sylvia":"Fauvettes","syrmaticus":"Faisans, perdrix, cailles","syrrhaptes":"Gangas","tachybaptus":"Grèbes","tachymarptis":"Martinets","tadorna":"Canards, oies, cygnes","tarsiger":"Gobemouches, rougegorges…","tetrao":"Faisans, perdrix, cailles","tetrastes":"Faisans, perdrix, cailles","tetrax":"Outardes","thalassarche":"Diomedeidés","thalasseus":"Goélands, mouettes, sternes","threskiornis":"Ibis, spatules","tichodroma":"Tichodrome","torgos":"Rapaces (aigles, buses…)","tringa":"Bécasseaux, chevaliers","troglodytes":"Troglodytes","turdus":"Grives, merles","turnix":"Turnix","tyto":"Effraies","upupa":"Huppes","uria":"Pingouins, guillemots","vanellus":"Pluviers, vanneaux","vireo":"Vireonidés","xema":"Goélands, mouettes, sternes","xenus":"Bécasseaux, chevaliers","zapornia":"Râles, foulques","zonotrichia":"Passerellidés","zoothera":"Grives, merles"};
 function familyOf(sci){ const g=(sci||'').trim().split(' ')[0].toLowerCase(); return GENUS_FAMILY[g] || 'Autres'; }
@@ -1945,7 +1997,7 @@ function renderMatrix({universe,N}){
       return `<td class="pcol is-seen${foreign?' is-foreign':''}${isMain?' is-main':''}"${ttl?` title="${esc(ttl)}"`:''}><i class="chk">✓</i>${abroad?'<span class="abroad-mark">'+(flagImg(cc)||'🌍')+'</span>':''}</td>`;
     }).join('');
     return `<tr class="${u.missing?'missing':''}">
-      <td class="sp">${esc(u.common)}${state.showSci && u.sci?`<span class="sci">${esc(u.sci)}</span>`:''}</td>
+      <td class="sp"><span class="sp-link" data-sci="${esc(u.sci||u.common)}">${esc(u.common)}</span>${state.showSci && u.sci?`<span class="sci">${esc(u.sci)}</span>`:''}</td>
       <td><span class="chip" style="--tc:${t.color}">${t.label}</span></td>
       ${cells}
       <td class="cnt">${k}/${N}</td></tr>`;
@@ -1960,7 +2012,7 @@ function renderMatrix({universe,N}){
         return `<span class="mc-person${foreign?' is-foreign':''}" style="--series:var(--s${p.si})"${ttl?` title="${esc(ttl)}"`:''}><span class="dot"></span>${esc(p.name)}${abroad?'<span class="abroad-mark-inline">'+(flagImg(cc)||'🌍')+'</span>':''}</span>`; }).join('');
     return `<div class="mcard ${u.missing?'missing':''}" style="border-left-color:${t.color}">
       <div class="mc-head">
-        <div class="mc-sp">${esc(u.common)}${state.showSci && u.sci?`<span class="mc-sci">${esc(u.sci)}</span>`:''}</div>
+        <div class="mc-sp"><span class="sp-link" data-sci="${esc(u.sci||u.common)}">${esc(u.common)}</span>${state.showSci && u.sci?`<span class="mc-sci">${esc(u.sci)}</span>`:''}</div>
         <span class="mc-count">${k}/${N}</span>
       </div>
       <div class="mc-row">
@@ -2759,7 +2811,7 @@ function renderFeed(){
     const target='obs:'+it.uid+':'+it.sci.toLowerCase();
     const tag = it.manual ? ' <span class="feed-tag">ajout manuel</span>' : '';
     return `<div class="feed-item"><span class="feed-dot" style="background:${tt.color}"></span>
-      <div class="feed-body"><div><b>${esc(it.name)}</b> a observé <b>${esc(it.bird)}</b>${badge}${tag}</div>
+      <div class="feed-body"><div><b>${esc(it.name)}</b> a observé <b class="sp-link" data-sci="${esc(it.sci)}">${esc(it.bird)}</b>${badge}${tag}</div>
       <div class="feed-date">${esc(it.disp)} · <span class="feed-rar" style="color:${tt.color}">${esc(tt.label)}</span></div>
       ${reactionBar(target)}
       ${commentsBar(target)}</div></div>`;
@@ -5014,6 +5066,113 @@ document.addEventListener('submit', async e=>{
 });
 $('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove('open'); $('#imgModalImg').src=''; });
 
+// ---- Fiche espèce (modal ouvert au clic sur un nom d'oiseau) ----
+// Cache session pour éviter de refetcher Wikipédia / xeno-canto pour la même espèce.
+const _spPhotoCache = new Map();      // sci → {url, credit} | null (échec)
+const _spSoundCache = new Map();      // sci → url mp3 | null
+async function _fetchWikiPhoto(sci){
+  const key = sci.toLowerCase();
+  if(_spPhotoCache.has(key)) return _spPhotoCache.get(key);
+  // On tente FR puis EN si rien. Origin=* pour CORS.
+  const tryLang = async (lang)=>{
+    const u = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&pithumbsize=600&titles=${encodeURIComponent(sci)}&origin=*`;
+    try{
+      const r = await fetch(u);
+      const j = await r.json();
+      const pages = j?.query?.pages || {};
+      const p = Object.values(pages)[0];
+      if(p?.thumbnail?.source) return { url:p.thumbnail.source, credit:'Wikipédia' };
+    }catch(_){ }
+    return null;
+  };
+  let res = await tryLang('fr'); if(!res) res = await tryLang('en');
+  _spPhotoCache.set(key, res);
+  return res;
+}
+async function _fetchXenoSound(sci){
+  const key = sci.toLowerCase();
+  if(_spSoundCache.has(key)) return _spSoundCache.get(key);
+  const [gen, sp] = sci.split(' ');
+  if(!gen || !sp){ _spSoundCache.set(key, null); return null; }
+  // API v2 xeno-canto : nr:1 → 1er enregistrement (souvent parmi les meilleurs).
+  const u = `https://xeno-canto.org/api/2/recordings?query=${encodeURIComponent('gen:"'+gen+'" sp:"'+sp+'"')}&per_page=1`;
+  try{
+    const r = await fetch(u);
+    const j = await r.json();
+    const rec = j?.recordings?.[0];
+    const url = rec?.file || null;
+    _spSoundCache.set(key, url);
+    return url;
+  }catch(_){ _spSoundCache.set(key, null); return null; }
+}
+function openSpeciesModal(sci){
+  if(!sci) return;
+  const key = sci.toLowerCase();
+  const modal = $('#speciesModal'); if(!modal) return;
+  const nm = FR_NAMES[key] || sci;
+  $('#smTitle').textContent = nm;
+  $('#smSci').textContent = sci;
+  // Photo
+  const img = $('#smPhoto'), cred = $('#smPhotoCredit');
+  img.hidden = true; img.src=''; cred.textContent = '';
+  _fetchWikiPhoto(sci).then(p => {
+    if(!p || !p.url){ cred.textContent = 'Pas de photo trouvée sur Wikipédia'; return; }
+    img.src = p.url; img.hidden = false;
+    cred.textContent = 'Photo : '+p.credit;
+  });
+  // Son
+  const audio = $('#smAudio'), hint = $('#smAudioHint');
+  audio.hidden = true; audio.src = ''; hint.textContent = '🎧 Recherche du chant…'; hint.hidden = false;
+  _fetchXenoSound(sci).then(url => {
+    if(!url){ hint.textContent = 'Pas d\'enregistrement disponible sur xeno-canto.'; return; }
+    audio.src = url; audio.hidden = false; hint.hidden = true;
+  });
+  // Observations dans la ligue
+  const obsBox = $('#smObs');
+  const items = [];
+  for(const p of realPeople){
+    const v = p.species && p.species.get(key);
+    if(v) items.push({ name:p.name, date:v.date||'', loc:v.loc||'', country:v.country||'FR', isMe:p.isMe });
+  }
+  if(!items.length){
+    obsBox.innerHTML = '<h3>Observations</h3><p class="help">Personne ne l\'a encore observée dans la ligue.</p>';
+  } else {
+    items.sort((a,b)=> (a.date||'').localeCompare(b.date||''));
+    obsBox.innerHTML = '<h3>Observations dans la ligue</h3><ul>' + items.map(x => {
+      const d = x.date ? esc(x.date) : '<span class="help">date inconnue</span>';
+      const loc = x.loc ? ' — '+esc(x.loc) : '';
+      const flag = x.country && x.country!=='FR' ? ' '+(flagImg(x.country)||'') : '';
+      return `<li><b>${esc(x.name)}${x.isMe?' (vous)':''}</b>${flag} · ${d}${loc}</li>`;
+    }).join('') + '</ul>';
+  }
+  // Liens externes
+  const code = _sciToCode(sci);
+  const ebirdUrl = code ? `https://ebird.org/species/${encodeURIComponent(code)}` : `https://ebird.org/search?q=${encodeURIComponent(sci)}`;
+  const wikiUrl = `https://fr.wikipedia.org/wiki/${encodeURIComponent(sci.replace(/ /g,'_'))}`;
+  const xcUrl = `https://xeno-canto.org/species/${encodeURIComponent(sci.replace(/ /g,'-'))}`;
+  const merlinUrl = code ? `https://merlin.allaboutbirds.org/species/${encodeURIComponent(code)}` : '';
+  $('#smLinks').innerHTML = `
+    <a href="${ebirdUrl}" target="_blank" rel="noopener">🌍 eBird</a>
+    <a href="${wikiUrl}" target="_blank" rel="noopener">📖 Wikipédia</a>
+    <a href="${xcUrl}" target="_blank" rel="noopener">🎵 xeno-canto</a>
+    ${merlinUrl?`<a href="${merlinUrl}" target="_blank" rel="noopener">🐦 Merlin</a>`:''}
+  `;
+  modal.hidden = false;
+}
+function closeSpeciesModal(){
+  const modal = $('#speciesModal'); if(!modal) return;
+  modal.hidden = true;
+  const audio = $('#smAudio'); if(audio){ try{ audio.pause(); }catch(_){} audio.src=''; }
+}
+// Délégation : ouvre la fiche au clic sur tout élément [data-sci], ferme au clic sur backdrop / croix.
+document.addEventListener('click', e=>{
+  const cl = e.target.closest('[data-sm-close]');
+  if(cl){ closeSpeciesModal(); return; }
+  const sp = e.target.closest('.sp-link[data-sci]');
+  if(sp){ e.preventDefault(); openSpeciesModal(sp.dataset.sci); }
+});
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ const m=$('#speciesModal'); if(m && !m.hidden) closeSpeciesModal(); } });
+
 $('#trophyWho').addEventListener('click',e=>{
   const b=e.target.closest('.whochip'); if(!b) return;
   trophyPlayerId=b.dataset.id; renderTrophies(trophyData);
@@ -5049,10 +5208,17 @@ $('#trophyGrid').addEventListener('click',async e=>{
       const items=d.list.filter(x=>x.section===sec);
       const secOwned=items.filter(x=>x.owned).length;
       html+=(sec?'<h4 class="tmodal-h">'+esc(sec)+' <span>('+secOwned+'/'+items.length+')</span></h4>':'')+'<ul class="tmodal-list mega">'+
-        items.map(x=>'<li class="'+(x.owned?'own':'')+'">'+(x.owned?'✓ ':'')+esc(x.name)+'</li>').join('')+'</ul>';
+        items.map(x=>{
+          const sci = x.sci || _nameToSci(x.name);
+          const label = (x.owned?'✓ ':'')+(sci?`<span class="sp-link" data-sci="${esc(sci)}">${esc(x.name)}</span>`:esc(x.name));
+          return '<li class="'+(x.owned?'own':'')+'">'+label+'</li>';
+        }).join('')+'</ul>';
     }
   } else {
-    html='<ul class="tmodal-list">'+d.list.map(n=>`<li>${esc(n)}</li>`).join('')+'</ul>';
+    html='<ul class="tmodal-list">'+d.list.map(n=>{
+      const sci = _nameToSci(n);
+      return `<li>${sci?`<span class="sp-link" data-sci="${esc(sci)}">${esc(n)}</span>`:esc(n)}</li>`;
+    }).join('')+'</ul>';
   }
   $('#tmodalBody').innerHTML=html;
   $('#trophyModal').classList.add('open');
