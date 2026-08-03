@@ -5423,7 +5423,7 @@ function _smSetHint(txt){ const el=$('#smMapHint'); if(el) el.textContent = txt|
 // Clustering transitif (BFS) pour que 3 points a la file se retrouvent tous dans le meme cluster.
 function _smSpreadMarkers(){
   if(!_smMapInstance || !_smMarkers.length) return;
-  const OVERLAP_PX = 20;   // rayon marqueur ~7 + halo blanc ~2 → 18 min pour ne pas se toucher
+  const OVERLAP_PX = 16;   // rayon marqueur ~7 + halo blanc ~1 → 16 pour ne pas se toucher
   // Reset a la position d'origine + calcul des pixels courants
   const pts = _smMarkers.map(mk => {
     mk.setLatLng([mk._baseLat, mk._baseLon]);
@@ -5449,7 +5449,7 @@ function _smSpreadMarkers(){
   }
   // Spirale en pixels pour chaque cluster > 1 (Fibonacci "sunflower" a partir du centroide)
   const GOLDEN = Math.PI * (3 - Math.sqrt(5));
-  const R_PER = 14;
+  const R_PER = 9;
   for(const cluster of clusters){
     if(cluster.length <= 1) continue;
     let cx=0, cy=0; for(const p of cluster){ cx += p.x; cy += p.y; }
