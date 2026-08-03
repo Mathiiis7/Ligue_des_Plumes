@@ -495,6 +495,22 @@
   .goal-bar div { height:100%; background:var(--accent); border-radius:6px; transition:width .3s; }
   .goal-done { font-size:12.5px; color:#2ecc71; font-weight:700; margin-top:6px; }
   .goal-left { font-size:11.5px; color:var(--ink-3); margin-top:5px; }
+  /* Stats temporelles : titre + courbe SVG + grille des records */
+  .stat-time-title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-2); margin:16px 0 6px; }
+  .stat-chart { width:100%; height:140px; display:block; }
+  .stat-time-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-top:10px; }
+  .stat-time-cell { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
+  .stat-time-lbl { font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-3); font-weight:600; }
+  .stat-time-val { font-size:15px; font-weight:700; color:var(--ink); margin:3px 0; text-transform:capitalize; }
+  .stat-time-sub { font-size:11.5px; color:var(--ink-3); line-height:1.4; }
+  .stat-rank { font-size:11px; font-weight:700; color:var(--accent-ink); background:color-mix(in srgb,var(--accent) 15%,var(--surface)); padding:1px 7px; border-radius:8px; margin-left:5px; text-transform:none; }
+  /* Onboarding vide (viewLoad quand pas encore de liste) */
+  .onboarding { background:color-mix(in srgb,var(--accent) 8%,var(--surface-2)); border:1px solid color-mix(in srgb,var(--accent) 25%,var(--line)); border-radius:14px; padding:16px 18px; margin:14px 0 6px; }
+  .onboarding h3 { margin:0 0 8px; font-size:15px; color:var(--ink); }
+  .onboarding ol { margin:0; padding-left:22px; color:var(--ink-2); font-size:13.5px; line-height:1.6; }
+  .onboarding li { margin:5px 0; }
+  .onboarding a { color:var(--accent-ink); text-decoration:underline; }
+  .onboarding .obd-hint { font-size:12px; color:var(--ink-3); margin-top:10px; }
   .feed-list { display:flex; flex-direction:column; }
   .feed-item { display:flex; align-items:flex-start; gap:10px; padding:9px 4px; border-bottom:1px solid var(--line); }
   .feed-item:last-child { border-bottom:none; }
@@ -837,6 +853,15 @@
       <p style="margin:6px 0 0; color:var(--ink-3); font-size:12px;">Variante complète (par email, avec les coordonnées GPS de chaque obs — nécessaire pour la carte 📍) : <a href="https://ebird.org/downloadMyData" target="_blank" rel="noopener">ebird.org/downloadMyData</a> → « Submit » → <code>MyEBirdData.csv</code>.</p>
     </details>
 
+    <div class="onboarding" id="onboarding" style="display:none;">
+      <h3>👋 Bienvenue dans la Ligue des Plumes</h3>
+      <ol>
+        <li>Entrez votre <b>prénom</b> ci-dessous (visible dans le classement).</li>
+        <li>Récupérez votre <b>life list eBird</b> : <a href="https://ebird.org/lifelist?r=world&time=life" target="_blank" rel="noopener">ebird.org/lifelist</a> → bouton <b>☁ Download (csv)</b>.</li>
+        <li><b>Déposez le fichier</b> dans la zone ci-dessous. Vous rejoignez la ligue automatiquement 🎉</li>
+      </ol>
+      <div class="obd-hint">Toutes les infos sont partagées avec les membres de votre ligue uniquement. Pas d'inscription obligatoire, mais créer un compte permet de retrouver votre liste sur tous vos appareils.</div>
+    </div>
     <div class="me-panel">
       <div class="me-name">
         <label for="myName">Votre nom</label>
@@ -913,7 +938,14 @@
   <div id="viewProfil" style="display:none;">
     <section class="panel" style="padding:20px; margin-top:22px;">
       <div class="section-head"><div><div class="eyebrow">Vous</div><h2>👤 Mon profil</h2></div></div>
-      <div id="profilEmpty" class="help" style="margin:6px 0 0;">Chargez votre liste (onglet « Ma liste ») pour compléter votre profil et voir vos stats.</div>
+      <div id="profilEmpty" class="onboarding" style="margin:6px 0 0;">
+        <h3>👤 Votre profil se construit avec votre liste</h3>
+        <ol>
+          <li>Passez sur l'onglet <b>Ma liste</b>.</li>
+          <li>Déposez votre <b>life list eBird</b> (fichier .csv).</li>
+          <li>Revenez ici : objectif, meilleur mois, année record, courbe cumulative, familles préférées apparaissent 📈</li>
+        </ol>
+      </div>
       <div class="profile" id="profile" style="display:none;">
         <div class="eyebrow" style="margin-bottom:10px;">Votre fiche <span style="text-transform:none;font-weight:400;color:var(--ink-3);">— visible dans le classement par tout le groupe</span></div>
         <div class="prof-grid">
@@ -2354,6 +2386,7 @@ function applySnapshot(snap){
   $('#myStatus').textContent = me ? `✓ Votre liste : ${me.species.size} espèces` : '';
   $('#removeMineBtn').style.display = me ? 'inline' : 'none';
   const ma=$('#manualAdd'); if(ma) ma.style.display = me ? '' : 'none';
+  const obd=$('#onboarding'); if(obd) obd.style.display = me ? 'none' : '';
   $('#dropBig').textContent = me ? 'Remplacer votre liste' : 'Déposez votre fichier eBird .csv ici';
   fillProfile(me);
   if(typeof _lockMyNameIfSet==='function') _lockMyNameIfSet();
@@ -4333,6 +4366,67 @@ async function _ebFetch(url){
   }
   return data;
 }
+// Helpers pour statistiques temporelles : cumulative curve, best month, record year.
+const _MONTH_FR = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+function _timeStatsFor(active){
+  // Deduplique par sci, prend la 1re date d'observation (life species).
+  const firstByS = new Map();
+  for(const v of active.values()){
+    if(!countsFR(v)) continue;
+    const pd = parseDate(v.date); if(!pd) continue;
+    const sci = (v.sci||'').toLowerCase();
+    const prev = firstByS.get(sci);
+    if(!prev || pd.ord < prev.ord) firstByS.set(sci, { ord:pd.ord, sci });
+  }
+  const sorted = [...firstByS.values()].sort((a,b)=>a.ord-b.ord);
+  const perMonth = new Array(12).fill(0);
+  const perYear = {};
+  const timeline = [];
+  let cum = 0;
+  for(const s of sorted){
+    cum++;
+    timeline.push({ ord:s.ord, count:cum });
+    const m = Math.floor((s.ord % 10000) / 100) - 1;
+    if(m>=0 && m<12) perMonth[m]++;
+    const y = Math.floor(s.ord / 10000);
+    perYear[y] = (perYear[y]||0) + 1;
+  }
+  const bestMonthIdx = perMonth.reduce((best,cnt,i,arr)=> cnt>arr[best]?i:best, 0);
+  const yearsEntries = Object.entries(perYear).map(([y,n])=>[+y,n]).sort((a,b)=> b[1]-a[1] || b[0]-a[0]);
+  const bestYear = yearsEntries[0] || null;
+  return { timeline, perMonth, perYear, bestMonthIdx, bestMonthCount:perMonth[bestMonthIdx]||0, bestYear, totalDated:sorted.length };
+}
+function _renderCumulativeSVG(timeline){
+  if(!timeline.length) return '';
+  const minOrd = timeline[0].ord, maxOrd = timeline[timeline.length-1].ord;
+  const maxCount = timeline[timeline.length-1].count;
+  const W = 400, H = 140, PL = 32, PR = 8, PT = 12, PB = 22;
+  const iw = W - PL - PR, ih = H - PT - PB;
+  const span = Math.max(1, maxOrd - minOrd);
+  const x = ord => PL + iw * (ord - minOrd) / span;
+  const y = cnt => PT + ih - ih * cnt / Math.max(1, maxCount);
+  let line = `M ${x(minOrd).toFixed(1)} ${y(0).toFixed(1)}`;
+  for(const pt of timeline) line += ` L ${x(pt.ord).toFixed(1)} ${y(pt.count).toFixed(1)}`;
+  let area = line + ` L ${x(maxOrd).toFixed(1)} ${y(0).toFixed(1)} Z`;
+  const firstYear = Math.floor(minOrd/10000), lastYear = Math.floor(maxOrd/10000);
+  return `<svg class="stat-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent)" stop-opacity=".35"/><stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+    <path d="${area}" fill="url(#chartGrad)"/>
+    <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2"/>
+    <text x="${PL}" y="${H-4}" font-size="10" fill="var(--ink-3)">${firstYear}</text>
+    <text x="${W-PR}" y="${H-4}" font-size="10" fill="var(--ink-3)" text-anchor="end">${lastYear}</text>
+    <text x="${PL-4}" y="${y(maxCount)+4}" font-size="10" fill="var(--ink-3)" text-anchor="end">${maxCount}</text>
+    <text x="${PL-4}" y="${y(0)+4}" font-size="10" fill="var(--ink-3)" text-anchor="end">0</text>
+  </svg>`;
+}
+// Rank d'une valeur numerique dans la ligue (1 = meilleur). Retourne {rank, n} ou null.
+function _rankInLeague(me, valueFn){
+  const list = state.people.map(p => ({ id:p.id, val: valueFn(p) })).filter(x => x.val > 0);
+  if(!list.length || !list.some(x => x.id === me.id)) return null;
+  list.sort((a,b) => b.val - a.val);
+  const rank = list.findIndex(x => x.id === me.id) + 1;
+  return { rank, n:list.length };
+}
 function renderStats(me){
   const box=$('#statsBox'); if(!box) return;
   if(!me || !me._active){ box.style.display='none'; box.innerHTML=''; return; }
@@ -4340,27 +4434,49 @@ function renderStats(me){
   const active=me._active;
   let total=0, rareName='—', rareTier=null, maxW=0; const famCount={};
   for(const v of active.values()){
-    if(!countsFR(v)) continue;   // France seule (cohérent avec le classement)
+    if(!countsFR(v)) continue;
     total++;
     const w=rarityReal(v.sci); if(w>maxW){ maxW=w; rareName=frName(v.sci,v.common); rareTier=realTier(v.sci, false); }
     const f=familyOf(v.sci); famCount[f]=(famCount[f]||0)+1;
   }
   const fams=Object.entries(famCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const maxFam=fams.length?fams[0][1]:1;
-  const ranked=[...state.people].sort((a,b)=>b.total-a.total);   // rang basé sur le nb d'espèces (classement principal)
+  const ranked=[...state.people].sort((a,b)=>b.total-a.total);
   const rank=ranked.findIndex(p=>p.id===me.id)+1;
   const goal=parseInt(me.goal,10);
   const goalHtml = (goal>0) ? (()=>{ const pct=Math.min(100,Math.round(total/goal*100)); const done=total>=goal;
     return `<div class="goal-prog"><div class="goal-row"><span>🎯 Objectif</span><span><b>${total}</b> / ${goal}</span></div>
       <div class="goal-bar"><div style="width:${pct}%${done?';background:#2ecc71':''}"></div></div>
       ${done?'<div class="goal-done">Objectif atteint ! 🎉</div>':`<div class="goal-left">Encore ${goal-total} pour l'atteindre</div>`}</div>`; })() : '';
+
+  // Statistiques temporelles + comparaison avec les amis
+  const ts = _timeStatsFor(active);
+  const bestMonthLabel = ts.bestMonthCount>0 ? _MONTH_FR[ts.bestMonthIdx] : '—';
+  const bestYearLabel = ts.bestYear ? String(ts.bestYear[0]) : '—';
+  const bestYearCount = ts.bestYear ? ts.bestYear[1] : 0;
+  // Rangs vs la ligue
+  const rankBestMonth = state.people.length>1 ? _rankInLeague(me, p => { const s=p._active?_timeStatsFor(p._active):null; return s?s.bestMonthCount:0; }) : null;
+  const rankBestYear  = state.people.length>1 ? _rankInLeague(me, p => { const s=p._active?_timeStatsFor(p._active):null; return s?(s.bestYear?s.bestYear[1]:0):0; }) : null;
+  const rankTxt = r => r ? ` <span class="stat-rank">${r.rank}${r.rank===1?'ᵉʳ':'ᵉ'}/${r.n}</span>` : '';
+
   box.innerHTML=`<div class="eyebrow" style="margin-bottom:10px;">Vos statistiques</div>
     <div class="stat-tiles">
       <div class="stat-tile"><div class="stat-num">${total}</div><div class="stat-lbl">espèces</div></div>
       <div class="stat-tile"><div class="stat-num">${state.people.length>1?('#'+rank):'—'}</div><div class="stat-lbl">au classement</div></div>
-      <div class="stat-tile"><div class="stat-num small">${esc(rareName)}</div><div class="stat-lbl">votre plus rare${rareTier?' · '+esc(rareTier.label):''}</div></div>
+      <div class="stat-tile"><div class="stat-num small"><span class="sp-link" data-sci="${esc(_nameToSci(rareName)||'')}">${esc(rareName)}</span></div><div class="stat-lbl">votre plus rare${rareTier?' · '+esc(rareTier.label):''}</div></div>
     </div>`+
     goalHtml+
+    // Bloc temporel : courbe + meilleur mois + meilleure année
+    (ts.timeline.length>=2
+      ? `<div class="stat-time-title">📈 Progression au fil du temps <span class="help" style="font-weight:400;">(${ts.totalDated} espèces datées)</span></div>
+         ${_renderCumulativeSVG(ts.timeline)}`
+      : (ts.totalDated>0 ? `<div class="stat-time-title">📈 Progression</div><p class="help" style="margin:2px 0 8px;">Pas assez de dates pour tracer une courbe (${ts.totalDated} espèce datée).</p>` : ''))+
+    (ts.bestMonthCount>0 || ts.bestYear
+      ? `<div class="stat-time-grid">
+           <div class="stat-time-cell"><div class="stat-time-lbl">Meilleur mois</div><div class="stat-time-val">${esc(bestMonthLabel)}${rankTxt(rankBestMonth)}</div><div class="stat-time-sub">${ts.bestMonthCount} espèce${ts.bestMonthCount>1?'s':''} cochée${ts.bestMonthCount>1?'s':''} sur toutes les années confondues</div></div>
+           <div class="stat-time-cell"><div class="stat-time-lbl">Année record</div><div class="stat-time-val">${esc(bestYearLabel)}${rankTxt(rankBestYear)}</div><div class="stat-time-sub">${bestYearCount} nouvelle${bestYearCount>1?'s':''} espèce${bestYearCount>1?'s':''} cette année-là</div></div>
+         </div>`
+      : '')+
     (fams.length?`<div class="stat-fam-title">Vos familles</div><div class="stat-fams">`+fams.map(([f,n])=>`<div class="stat-fam"><div class="stat-fam-row"><span>${esc(f)}</span><span>${n}</span></div><div class="stat-fam-bar"><div style="width:${Math.round(n/maxFam*100)}%"></div></div></div>`).join('')+`</div>`:'');
 }
 // ---- Pastilles "non lu" (Tchat / Photos / Fil / Requêtes) ----
