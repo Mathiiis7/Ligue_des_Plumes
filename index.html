@@ -497,7 +497,7 @@
   .goal-left { font-size:11.5px; color:var(--ink-3); margin-top:5px; }
   /* Stats temporelles : titre + courbe SVG + grille des records */
   .stat-time-title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-2); margin:16px 0 6px; }
-  .stat-chart { width:100%; max-width:640px; aspect-ratio:400/140; height:auto; display:block; margin:6px 0 4px; overflow:visible; }
+  .stat-chart { width:100%; max-width:640px; aspect-ratio:400/160; height:auto; display:block; margin:6px 0 4px; overflow:visible; }
   .stat-time-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-top:10px; }
   .stat-time-cell { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
   .stat-time-lbl { font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-3); font-weight:600; }
@@ -4396,27 +4396,61 @@ function _timeStatsFor(active){
   const bestYear = yearsEntries[0] || null;
   return { timeline, perMonth, perYear, bestMonthIdx, bestMonthCount:perMonth[bestMonthIdx]||0, bestYear, totalDated:sorted.length };
 }
+// Ord "virtuel" pour un 1er janvier : YYYY0101. Utile pour placer les gridlines annuelles.
+function _yearOrd(y){ return y*10000 + 101; }
 function _renderCumulativeSVG(timeline){
   if(!timeline.length) return '';
   const minOrd = timeline[0].ord, maxOrd = timeline[timeline.length-1].ord;
   const maxCount = timeline[timeline.length-1].count;
-  const W = 400, H = 140, PL = 32, PR = 8, PT = 12, PB = 22;
+  // Padding + zone dessin. On elargit PB pour laisser de la place aux labels annees.
+  const W = 400, H = 160, PL = 36, PR = 12, PT = 14, PB = 30;
   const iw = W - PL - PR, ih = H - PT - PB;
   const span = Math.max(1, maxOrd - minOrd);
   const x = ord => PL + iw * (ord - minOrd) / span;
   const y = cnt => PT + ih - ih * cnt / Math.max(1, maxCount);
+
+  // Ligne + aire
   let line = `M ${x(minOrd).toFixed(1)} ${y(0).toFixed(1)}`;
   for(const pt of timeline) line += ` L ${x(pt.ord).toFixed(1)} ${y(pt.count).toFixed(1)}`;
-  let area = line + ` L ${x(maxOrd).toFixed(1)} ${y(0).toFixed(1)} Z`;
-  const firstYear = Math.floor(minOrd/10000), lastYear = Math.floor(maxOrd/10000);
+  const area = line + ` L ${x(maxOrd).toFixed(1)} ${y(0).toFixed(1)} Z`;
+
+  // Grille annuelle : trace un tick + label pour chaque 1er janvier compris entre min et max.
+  // Si la periode couvre beaucoup d'annees on n'affiche qu'un label sur 2, 5, etc.
+  const firstYear = Math.floor(minOrd/10000);
+  const lastYear = Math.floor(maxOrd/10000);
+  const totalYears = lastYear - firstYear + 1;
+  const stepYear = totalYears <= 6 ? 1 : (totalYears <= 12 ? 2 : (totalYears <= 25 ? 5 : 10));
+  const gridLines = []; const yearLabels = [];
+  for(let y0 = firstYear; y0 <= lastYear + 1; y0++){
+    const ord = _yearOrd(y0);
+    if(ord < minOrd || ord > maxOrd) continue;
+    const xp = x(ord);
+    gridLines.push(`<line x1="${xp.toFixed(1)}" y1="${PT}" x2="${xp.toFixed(1)}" y2="${(PT+ih).toFixed(1)}" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"/>`);
+    if((y0 - firstYear) % stepYear === 0){
+      yearLabels.push(`<text x="${xp.toFixed(1)}" y="${(H-8).toFixed(1)}" font-size="10" fill="var(--ink-3)" text-anchor="middle">${y0}</text>`);
+    }
+  }
+  // Tick de gauche (annee de la 1re obs) et de droite (annee de la derniere obs), toujours affiches.
+  if(!yearLabels.length){ yearLabels.push(`<text x="${PL}" y="${(H-8)}" font-size="10" fill="var(--ink-3)" text-anchor="start">${firstYear}</text>`); if(firstYear!==lastYear) yearLabels.push(`<text x="${W-PR}" y="${(H-8)}" font-size="10" fill="var(--ink-3)" text-anchor="end">${lastYear}</text>`); }
+
+  // Grille horizontale : quelques niveaux (0, mid, max) avec labels a gauche.
+  const yTicks = [0, Math.round(maxCount/2), maxCount].filter((v,i,a)=>a.indexOf(v)===i);
+  const yLines = yTicks.map(t => `<line x1="${PL}" y1="${y(t).toFixed(1)}" x2="${W-PR}" y2="${y(t).toFixed(1)}" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"/>`).join('');
+  const yLabels = yTicks.map(t => `<text x="${PL-6}" y="${(y(t)+3).toFixed(1)}" font-size="10" fill="var(--ink-3)" text-anchor="end">${t}</text>`).join('');
+
+  // Axe Y et X (traits pleins)
+  const axes = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${PT+ih}" stroke="var(--line-2)" stroke-width="1"/>
+                <line x1="${PL}" y1="${(PT+ih).toFixed(1)}" x2="${W-PR}" y2="${(PT+ih).toFixed(1)}" stroke="var(--line-2)" stroke-width="1"/>`;
+
   return `<svg class="stat-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
     <defs><linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent)" stop-opacity=".35"/><stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+    ${yLines}
+    ${gridLines.join('')}
+    ${axes}
     <path d="${area}" fill="url(#chartGrad)"/>
     <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
-    <text x="${PL}" y="${H-4}" font-size="10" fill="var(--ink-3)">${firstYear}</text>
-    <text x="${W-PR}" y="${H-4}" font-size="10" fill="var(--ink-3)" text-anchor="end">${lastYear}</text>
-    <text x="${PL-4}" y="${y(maxCount)+4}" font-size="10" fill="var(--ink-3)" text-anchor="end">${maxCount}</text>
-    <text x="${PL-4}" y="${y(0)+4}" font-size="10" fill="var(--ink-3)" text-anchor="end">0</text>
+    ${yLabels}
+    ${yearLabels.join('')}
   </svg>`;
 }
 // Rank d'une valeur numerique dans la ligue (1 = meilleur). Retourne {rank, n} ou null.
