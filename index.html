@@ -458,6 +458,7 @@
   .species-modal .sm-info-chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
   .species-modal .sm-info-chips .chip { font-size:11.5px; font-weight:700; padding:2px 8px; border-radius:9px; background:var(--surface-2); color:var(--ink-2); border:1px solid var(--line); display:inline-flex; align-items:center; gap:5px; }
   .species-modal .sm-info-chips .chip .dot { width:9px; height:9px; border-radius:50%; }
+  .species-modal .sm-info-chips .chip.rar-chip-fill { color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.35); font-weight:800; }
   .species-modal .sm-desc { font-size:13px; color:var(--ink-2); line-height:1.5; margin-top:12px; padding:10px 12px; background:var(--surface-2); border-left:3px solid var(--line-2); border-radius:0 8px 8px 0; }
   .species-modal .sm-desc:empty { display:none; }
   .species-modal .sm-freq { margin-top:14px; }
@@ -5397,7 +5398,7 @@ function _renderSpeciesInfoChips(key){
   const box = $('#smInfoChips'); if(!box) return;
   const chips = [];
   const t = realTier(key, false);
-  if(t && t.label) chips.push(`<span class="chip" title="Rareté réelle en France"><span class="dot" style="background:${t.color}"></span>${esc(t.label)}</span>`);
+  if(t && t.label) chips.push(`<span class="chip rar-chip-fill" title="Rareté réelle en France" style="background:${t.color};border-color:${t.color};">${esc(t.label)}</span>`);
   const fam = familyOf(key); if(fam) chips.push(`<span class="chip" title="Famille taxonomique">${esc(fam)}</span>`);
   const habs = (typeof habitatsOf === 'function') ? habitatsOf(key) : null;
   if(Array.isArray(habs)){
