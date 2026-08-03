@@ -850,11 +850,11 @@
         <li>Déposez ce fichier ci-dessous. 🎉</li>
       </ol>
       <p style="margin:8px 0 0; color:var(--ink-3); font-size:12px;">Ce fichier contient le <b>lieu de chaque espèce</b> (colonne <code>S/P</code>), donc la ligue reconnaît vos oiseaux <b>vus en France</b> et met à part ceux vus <b>à l'étranger</b> — le tout sans email.</p>
-      <p style="margin:6px 0 0; color:var(--ink-3); font-size:12px;">Variante complète (par email, avec les coordonnées GPS de chaque obs — nécessaire pour la carte 📍) : <a href="https://ebird.org/downloadMyData" target="_blank" rel="noopener">ebird.org/downloadMyData</a> → « Submit » → <code>MyEBirdData.csv</code>.</p>
+      <p style="margin:6px 0 0; color:var(--ink-3); font-size:12px;">Variante complète (par email, avec les coordonnées GPS de chaque obs, nécessaire pour la carte 📍) : <a href="https://ebird.org/downloadMyData" target="_blank" rel="noopener">ebird.org/downloadMyData</a> → « Submit » → <code>MyEBirdData.csv</code>.</p>
     </details>
 
     <div class="onboarding" id="onboarding" style="display:none;">
-      <h3>👋 Bienvenue dans la Ligue des Plumes</h3>
+      <h3>👋 Bienvenue dans la Ligue Merlin Bird</h3>
       <ol>
         <li>Entrez votre <b>prénom</b> ci-dessous (visible dans le classement).</li>
         <li>Récupérez votre <b>life list eBird</b> : <a href="https://ebird.org/lifelist?r=world&time=life" target="_blank" rel="noopener">ebird.org/lifelist</a> → bouton <b>☁ Download (csv)</b>.</li>
@@ -2370,7 +2370,7 @@ function rebuild(){
 const BLOCKED_NAMES = [];
 function _isBlocked(name){ return BLOCKED_NAMES.some(re => re.test((name||'').trim())); }
 function _showBlockedScreen(){
-  document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#fafafa;font-family:system-ui;text-align:center;color:#222;"><div style="max-width:420px;"><div style="font-size:48px;margin-bottom:16px;">🚧</div><h1 style="font-size:22px;margin:0 0 12px;">Accès temporairement suspendu</h1><p style="color:#666;line-height:1.5;">Ton accès à la Ligue des Plumes est momentanément bloqué. Contacte Mathis pour en savoir plus.</p></div></div>';
+  document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#fafafa;font-family:system-ui;text-align:center;color:#222;"><div style="max-width:420px;"><div style="font-size:48px;margin-bottom:16px;">🚧</div><h1 style="font-size:22px;margin:0 0 12px;">Accès temporairement suspendu</h1><p style="color:#666;line-height:1.5;">Ton accès à la Ligue Merlin Bird est momentanément bloqué. Contacte Mathis pour en savoir plus.</p></div></div>';
 }
 function applySnapshot(snap){
   hideError();
