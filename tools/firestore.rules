@@ -64,6 +64,20 @@ service cloud.firestore {
         allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
         allow update: if false;
       }
+
+      // Commentaires (sur photos + observations du fil) : lecture par tous ;
+      // chacun poste ses propres commentaires (texte 1..500 chars) ; chacun supprime les siens.
+      match /comments/{cid} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 500
+          && request.resource.data.target is string;
+        allow update: if false;
+        allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      }
     }
   }
 }

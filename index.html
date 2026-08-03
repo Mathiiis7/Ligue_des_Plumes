@@ -591,6 +591,26 @@
   .react-add { font:inherit; font-size:13px; width:22px; height:22px; border-radius:50%; border:1px dashed var(--line-2);
     background:none; color:var(--ink-3); cursor:pointer; padding:0; line-height:1; }
   .react-add:hover { color:var(--accent-ink); border-color:var(--accent); }
+  /* Commentaires (photos + fil). Repliable via details. */
+  .cmt-wrap { margin-top:6px; }
+  .cmt-summary { cursor:pointer; font-size:12px; color:var(--ink-3); padding:2px 0; list-style:none; user-select:none; }
+  .cmt-summary::-webkit-details-marker { display:none; }
+  .cmt-summary:hover { color:var(--ink-2); }
+  .cmt-wrap[open] .cmt-summary { color:var(--ink-2); }
+  .cmt-list { display:flex; flex-direction:column; gap:4px; margin:5px 0; }
+  .cmt-item { font-size:12.5px; color:var(--ink-2); line-height:1.4; padding:5px 8px; background:var(--surface-2); border-radius:8px; position:relative; }
+  .cmt-item .cmt-who { font-weight:700; color:var(--ink); }
+  .cmt-item .cmt-txt { color:var(--ink-2); }
+  .cmt-item .cmt-time { font-size:10.5px; color:var(--ink-3); margin-left:4px; }
+  .cmt-item .cmt-del { position:absolute; top:2px; right:4px; background:transparent; border:none; color:var(--ink-3); cursor:pointer; font-size:11px; padding:2px 4px; border-radius:4px; opacity:0; transition:opacity .1s; }
+  .cmt-item:hover .cmt-del { opacity:1; }
+  .cmt-item .cmt-del:hover { color:#c33; }
+  .cmt-form { display:flex; gap:5px; align-items:center; }
+  .cmt-input { flex:1; font:inherit; font-size:12.5px; padding:6px 10px; border:1px solid var(--line-2); border-radius:14px; background:var(--surface); color:var(--ink); }
+  .cmt-input:focus { outline:2px solid var(--accent); outline-offset:1px; }
+  .cmt-send { font-size:13px; padding:5px 11px; border-radius:14px; border:1px solid var(--accent); background:var(--accent); color:#fff; cursor:pointer; }
+  .cmt-send:hover { filter:brightness(.95); }
+  .cmt-send:disabled { opacity:.6; cursor:not-allowed; }
   .emoji-pop { display:none; position:fixed; inset:0; z-index:66; }
   .emoji-pop.open { display:block; }
   .emoji-pop-inner { position:absolute; left:50%; bottom:18px; transform:translateX(-50%); background:var(--surface);
@@ -1271,6 +1291,7 @@ let unsubChat = null, lastChatMsgs = [];
 let unsubPresence = null, onlineMap = new Map(), presenceTimer = null, presenceWired = false;
 let unsubVotes = null, votesMap = new Map(), unsubFavs = null;
 let unsubReactions = null, reactionsMap = new Map(), unsubPhotos = null, photos = [];
+let unsubComments = null, commentsMap = new Map();   // Map<target, Array<{id,uid,name,text,createdAt}>>
 let unsubRequests = null, requests = [], unsubReqVotes = null, reqVotesMap = new Map();
 // Admin(s) : uid autorisé à changer le statut d'une requête (À faire / En cours / Fait).
 // Mathis (compte email) — ajouter d'autres uid si besoin.
@@ -2342,6 +2363,20 @@ function subscribe(){
     // Le trophée Peter Parker dépend du nombre de réactions par photo → re-render.
     renderTrophies(trophyData);
   }, ()=>{});
+  // Commentaires (photos + fil). Stockes dans une collection dediee, groupes par target.
+  if(unsubComments){ unsubComments(); unsubComments=null; }
+  unsubComments = onSnapshot(collection(db,'leagues',leagueId,'comments'), snap=>{
+    const m=new Map();
+    snap.forEach(d=>{
+      const v=d.data()||{};
+      if(!v.target || !v.text || !v.uid) return;
+      if(!m.has(v.target)) m.set(v.target, []);
+      m.get(v.target).push({ id:d.id, uid:v.uid, name:v.name||'', text:v.text, createdAt:v.createdAt });
+    });
+    // Tri asc dans chaque target
+    for(const arr of m.values()) arr.sort((a,b)=> ((a.createdAt?.toMillis?.())||0) - ((b.createdAt?.toMillis?.())||0));
+    commentsMap = m; renderPhotos(); renderFeed();
+  }, ()=>{});
   if(unsubPhotos){ unsubPhotos(); unsubPhotos=null; }
   unsubPhotos = onSnapshot(query(collection(db,'leagues',leagueId,'photos'), orderBy('createdAt','desc'), limit(60)),
     snap=>{ const arr=[]; snap.forEach(d=>arr.push({id:d.id, ...d.data()})); photos=arr; renderPhotos();
@@ -2476,6 +2511,34 @@ function heartButton(target){
     + `<span class="heart-icon">${mine?'❤️':'🤍'}</span>`
     + `<span class="heart-count">${count}</span></button>`;
 }
+// Barre commentaires : affiche la liste + un input pour poster. Cliquable/collapsible via
+// details/summary pour ne pas polluer visuellement quand vide.
+function commentsBar(target){
+  const list = commentsMap.get(target) || [];
+  const n = list.length;
+  const byUid = new Map(realPeople.map(p=>[p.id,p.name]));
+  const itemsHtml = list.map(c=>{
+    const nm = byUid.get(c.uid) || c.name || 'Invité';
+    const t = c.createdAt?.toDate ? c.createdAt.toDate() : null;
+    const time = t ? t.toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+    const canDelete = c.uid === myUid || isAdmin();
+    const del = canDelete ? `<button class="cmt-del" data-cmt-del="${esc(c.id)}" title="Supprimer">✕</button>` : '';
+    return `<div class="cmt-item"><span class="cmt-who">${esc(nm)}</span> <span class="cmt-txt">${esc(c.text)}</span>${time?` <span class="cmt-time">${esc(time)}</span>`:''}${del}</div>`;
+  }).join('');
+  const form = myUid
+    ? `<form class="cmt-form" data-cmt-target="${esc(target)}"><input type="text" class="cmt-input" placeholder="Commenter…" maxlength="500" required><button type="submit" class="cmt-send" title="Envoyer">➤</button></form>`
+    : '';
+  const label = n>0 ? `${n} commentaire${n>1?'s':''}` : 'Commenter';
+  return `<details class="cmt-wrap"${n>0?' open':''}><summary class="cmt-summary">💬 ${label}</summary>
+    <div class="cmt-list">${itemsHtml}</div>${form}</details>`;
+}
+async function postComment(target, text){
+  if(!myUid || !target || !text.trim()) return;
+  const nm = myMemberName() || 'Invité';
+  try{
+    await addDoc(collection(db,'leagues',leagueId,'comments'), { target, uid:myUid, name:nm, text:text.trim(), createdAt:serverTimestamp() });
+  }catch(err){ showError(err); }
+}
 async function toggleReaction(target, emoji){
   if(!myUid) return;
   const ref=doc(db,'leagues',leagueId,'reactions',target+'__'+myUid+'__'+emoji);
@@ -2511,6 +2574,7 @@ function renderPhotos(){
       ${ph.caption?`<div class="photo-cap">${esc(ph.caption)}</div>`:''}
       <div class="photo-meta"><span>${esc(nm)}${guest} · ${esc(time)}</span>${del}</div>
       <div class="photo-actions">${heartButton(target)}${reactionBar(target, {excludeEmojis:[HEART_EMOJI]})}</div>
+      ${commentsBar(target)}
     </div>`;
   }).join('');
 }
@@ -2697,7 +2761,8 @@ function renderFeed(){
     return `<div class="feed-item"><span class="feed-dot" style="background:${tt.color}"></span>
       <div class="feed-body"><div><b>${esc(it.name)}</b> a observé <b>${esc(it.bird)}</b>${badge}${tag}</div>
       <div class="feed-date">${esc(it.disp)} · <span class="feed-rar" style="color:${tt.color}">${esc(tt.label)}</span></div>
-      ${reactionBar(target)}</div></div>`;
+      ${reactionBar(target)}
+      ${commentsBar(target)}</div></div>`;
   }).join('');
 }
 // ---- Fiche perso / stats ----
@@ -4923,13 +4988,29 @@ $('#photoGrid')?.addEventListener('click', async e=>{
   const heart=e.target.closest('.heart-btn'); if(heart){ if(heart.disabled) return; toggleReaction(heart.dataset.heartTarget, HEART_EMOJI); return; }
   const chip=e.target.closest('.react-chip'); if(chip){ toggleReaction(chip.dataset.target, chip.dataset.emoji); return; }
   const addb=e.target.closest('.react-add'); if(addb){ openEmojiPop({type:'react', target:addb.dataset.target}); return; }
+  const cdel=e.target.closest('.cmt-del'); if(cdel){ if(!confirm('Supprimer ce commentaire ?')) return;
+    try{ await deleteDoc(doc(db,'leagues',leagueId,'comments',cdel.dataset.cmtDel)); }catch(err){ showError(err); } return; }
   const del=e.target.closest('.photo-del'); if(del){ if(!confirm('Supprimer cette photo ?')) return;
     try{ await deleteDoc(doc(db,'leagues',leagueId,'photos',del.dataset.id)); }catch(err){ showError(err); } return; }
   const img=e.target.closest('.photo-img'); if(img){ $('#imgModalImg').src=img.src; $('#imgModal').classList.add('open'); }
 });
-$('#feedList')?.addEventListener('click', e=>{
+$('#feedList')?.addEventListener('click', async e=>{
   const chip=e.target.closest('.react-chip'); if(chip){ toggleReaction(chip.dataset.target, chip.dataset.emoji); return; }
-  const addb=e.target.closest('.react-add'); if(addb){ openEmojiPop({type:'react', target:addb.dataset.target}); }
+  const addb=e.target.closest('.react-add'); if(addb){ openEmojiPop({type:'react', target:addb.dataset.target}); return; }
+  const cdel=e.target.closest('.cmt-del'); if(cdel){ if(!confirm('Supprimer ce commentaire ?')) return;
+    try{ await deleteDoc(doc(db,'leagues',leagueId,'comments',cdel.dataset.cmtDel)); }catch(err){ showError(err); } return; }
+});
+// Envoi commentaire (photos + fil), meme handler via submit.
+document.addEventListener('submit', async e=>{
+  const form = e.target.closest('.cmt-form'); if(!form) return;
+  e.preventDefault();
+  const input = form.querySelector('.cmt-input');
+  const text = (input?.value||'').trim(); if(!text) return;
+  const target = form.dataset.cmtTarget; if(!target) return;
+  const btn = form.querySelector('.cmt-send'); if(btn) btn.disabled = true;
+  await postComment(target, text);
+  if(input){ input.value = ''; }
+  if(btn) btn.disabled = false;
 });
 $('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove('open'); $('#imgModalImg').src=''; });
 
