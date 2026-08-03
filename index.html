@@ -3714,7 +3714,7 @@ async function _renderModeAbundance(){
       const ebirdLink = code
         ? `<a href="https://ebird.org/species/${encodeURIComponent(code)}" target="_blank" rel="noopener">carte eBird ↗</a>`
         : `<a href="https://ebird.org/search?q=${encodeURIComponent(sci)}" target="_blank" rel="noopener">eBird ↗</a>`;
-      cnt.innerHTML = `<b>${esc(nm)}</b> · pas de données Cornell S&amp;T pour cette espèce. Affichage des obs eBird des 30 derniers jours ci-dessous. Voir aussi ${ebirdLink}.`;
+      cnt.innerHTML = `<b>${esc(nm)}</b> · pas de répartition par département disponible pour cette espèce. Voici les observations récentes (30 j) ci-dessous. Voir aussi ${ebirdLink}.`;
     }
     // Force l'affichage des hotspots 30j, fetch les obs recentes et rend la couche.
     abFilter.showHotspots = true;
