@@ -446,7 +446,8 @@
   .img-modal.open { display:flex; }
   .img-modal img { max-width:96vw; max-height:92vh; border-radius:10px; }
   .tab { position:relative; }
-  .tab.has-new::after { content:''; position:absolute; top:5px; right:6px; width:7px; height:7px; border-radius:50%; background:#e74c3c; }
+  /* Compteur "N nouveaux" positionne en haut a droite de l'onglet. Pour >99, affiche "99+". */
+  .tab-count { position:absolute; top:2px; right:2px; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:#e74c3c; color:#fff; font:700 11px/18px system-ui; text-align:center; box-sizing:border-box; font-variant-numeric:tabular-nums; }
   .import-guide { margin:12px 0 2px; font-size:13px; }
   .import-guide summary { cursor:pointer; font-weight:600; color:var(--accent-ink); }
   .import-guide ol { margin:9px 0 0; padding-left:20px; color:var(--ink-2); line-height:1.65; }
@@ -2518,6 +2519,42 @@ let feedMode = 'new';       // 'new' = tri par addedAt (par défaut), 'chrono' =
 let feedPerson = 'any';     // uid ou 'any'
 let feedTier = 'any';       // 1..9, 'exo', ou 'any'
 let _feedPeopleKey = '';
+// Detection cote client des trophees debloques : Map<uid|trophyName, timestamp>.
+// A la 1re detection d'un unlock, on le timestampe MAINTENANT (pas de flood historique).
+function _loadTrophyDetect(){
+  try{
+    const raw = localStorage.getItem('mb-trophy-detect');
+    if(!raw){ return { firstRun:true, map:{} }; }
+    return { firstRun:false, map:JSON.parse(raw)||{} };
+  }catch(_){ return { firstRun:true, map:{} }; }
+}
+function _saveTrophyDetect(map){
+  try{ localStorage.setItem('mb-trophy-detect', JSON.stringify(map)); }catch(_){}
+}
+// Retourne les evenements trophees : [{uid, name, trophyName, addedAt}] pour affichage/comptage.
+function _computeTrophyEvents(){
+  if(!realPeople.length) return [];
+  const { firstRun, map } = _loadTrophyDetect();
+  const now = Date.now();
+  const evts = [];
+  for(const p of realPeople){
+    const stats = statsFor(p, state.people.length || realPeople.length);
+    for(const t of TROPHIES){
+      let ok = false; try{ ok = !!t.test(stats); }catch(_){}
+      if(!ok) continue;
+      const key = p.id + '|' + t.name;
+      let at = map[key];
+      if(!at){
+        // 1re detection : "now" pour un compte deja actif, 0 (ignore) pour un tout 1er run
+        at = firstRun ? 0 : now;
+        map[key] = at;
+      }
+      if(at > 0) evts.push({ uid:p.id, name:p.name, trophyName:t.name, addedAt:at });
+    }
+  }
+  _saveTrophyDetect(map);
+  return evts;
+}
 function renderFeed(){
   const el=$('#feedList'); if(!el) return;
   // Rafraîchit le select personne quand la ligue change.
@@ -2531,6 +2568,7 @@ function renderFeed(){
     psel.value = feedPerson;
   }
   const items=[];
+  // Espèces observées
   for(const p of realPeople){
     if(feedPerson !== 'any' && p.id !== feedPerson) continue;
     const active=p._active||p.species; if(!active) continue;
@@ -2551,10 +2589,22 @@ function renderFeed(){
         else { if(isExotic(sci) || rarityReal(sci) !== +feedTier) continue; }
       }
       items.push({
+        kind:'obs',
         name:p.name, uid:p.id, bird:frName(v.sci,v.common), sci:(v.sci||''),
         abroad:foreignTick(v),
         ord: pd?pd.ord:0, disp: pd?pd.disp:'date inconnue',
         addedAt, manual: !!v.manual
+      });
+    }
+  }
+  // Trophees debloques (uniquement en mode "nouveautes", et filtre rareté ignore).
+  if(feedMode==='new' && feedTier==='any'){
+    for(const ev of _computeTrophyEvents()){
+      if(feedPerson !== 'any' && ev.uid !== feedPerson) continue;
+      items.push({
+        kind:'trophy',
+        name:ev.name, uid:ev.uid, trophyName:ev.trophyName,
+        ord:0, disp:'', addedAt:ev.addedAt
       });
     }
   }
@@ -2570,10 +2620,15 @@ function renderFeed(){
   }
   let lastSeen=0; try{ lastSeen = +localStorage.getItem('mb-seen-feed')||0; }catch(_){ }
   el.innerHTML=top.map(it=>{
-    const tt=realTier(it.sci, it.abroad);
-    const target='obs:'+it.uid+':'+it.sci.toLowerCase();
     const isNew = it.addedAt && it.addedAt > lastSeen;
     const badge = isNew ? ' <span class="feed-new">🆕 nouveau</span>' : '';
+    if(it.kind === 'trophy'){
+      return `<div class="feed-item"><span class="feed-dot" style="background:var(--gold)">🏆</span>
+        <div class="feed-body"><div><b>${esc(it.name)}</b> a débloqué le trophée <b>${esc(it.trophyName)}</b>${badge}</div>
+        <div class="feed-date">Trophée</div></div></div>`;
+    }
+    const tt=realTier(it.sci, it.abroad);
+    const target='obs:'+it.uid+':'+it.sci.toLowerCase();
     const tag = it.manual ? ' <span class="feed-tag">ajout manuel</span>' : '';
     return `<div class="feed-item"><span class="feed-dot" style="background:${tt.color}"></span>
       <div class="feed-body"><div><b>${esc(it.name)}</b> a observé <b>${esc(it.bird)}</b>${badge}${tag}</div>
@@ -4129,12 +4184,60 @@ function renderStats(me){
 }
 // ---- Pastilles "non lu" (Tchat / Photos / Fil / Requêtes) ----
 let chatLatest=0, photosLatest=0, feedLatest=0, requestsLatest=0;
+// Compte les elements NON LUS (posterieurs a `seen`, hors ceux de l'utilisateur courant).
+// Retourne un nombre entier, 0 = aucun nouveau (pas de badge).
+function _countUnread(view, seen){
+  const my = myUid;
+  const ms = (x)=> (x && x.toMillis) ? x.toMillis() : (typeof x==='number' ? x : 0);
+  if(view==='chat'){
+    return (lastChatMsgs||[]).filter(m => ms(m.createdAt) > seen && m.uid !== my).length;
+  }
+  if(view==='photos'){
+    return (photos||[]).filter(p => ms(p.createdAt) > seen && p.uid !== my).length;
+  }
+  if(view==='requests'){
+    return (requests||[]).filter(r => ms(r.createdAt) > seen && r.uid !== my).length;
+  }
+  if(view==='feed'){
+    // Nouvelles observations + nouveaux trophees debloques (hors les miens).
+    let n = 0;
+    for(const p of realPeople){
+      if(p.id === my) continue;
+      const src = p._active || p.species;
+      if(!src) continue;
+      for(const v of src.values()) if((v.addedAt||0) > seen) n++;
+    }
+    try{
+      const evts = _computeTrophyEvents ? _computeTrophyEvents() : [];
+      for(const ev of evts) if(ev.uid !== my && ev.addedAt > seen) n++;
+    }catch(_){}
+    return n;
+  }
+  return 0;
+}
 function updateTabDots(){
   [['chat',chatLatest],['photos',photosLatest],['feed',feedLatest],['requests',requestsLatest]].forEach(([v,latest])=>{
     const btn=[...document.querySelectorAll('.tab')].find(b=>b.dataset.view===v); if(!btn) return;
-    let seen=0; try{ seen=+localStorage.getItem('mb-seen-'+v)||0; }catch(_){ }
     const isActive=document.querySelector('.tab.on')?.dataset.view===v;
-    btn.classList.toggle('has-new', latest>seen && !isActive);
+    // Onglet actif : auto-marque comme vu (evite les faux positifs quand l'utilisateur
+    // envoie un message sur le tchat qu'il regarde et voit son propre message compte comme "nouveau").
+    if(isActive){
+      try{ localStorage.setItem('mb-seen-'+v, String(Date.now())); }catch(_){}
+      const b = btn.querySelector('.tab-count'); if(b) b.remove();
+      btn.classList.remove('has-new');
+      return;
+    }
+    let seen=0; try{ seen=+localStorage.getItem('mb-seen-'+v)||0; }catch(_){ }
+    const n = _countUnread(v, seen);
+    let badge = btn.querySelector('.tab-count');
+    if(n > 0){
+      if(!badge){ badge = document.createElement('span'); badge.className='tab-count'; btn.appendChild(badge); }
+      badge.textContent = n > 99 ? '99+' : String(n);
+      btn.classList.add('has-new');
+    } else {
+      if(badge) badge.remove();
+      btn.classList.remove('has-new');
+    }
   });
 }
 function markSeen(v){ try{ localStorage.setItem('mb-seen-'+v, String(Date.now())); }catch(_){ } updateTabDots(); }
