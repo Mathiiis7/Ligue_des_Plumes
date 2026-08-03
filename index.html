@@ -465,8 +465,12 @@
   .species-modal .sm-audio-hint { font-size:12px; color:var(--ink-3); }
   .species-modal .sm-obs h3 { font-size:13px; color:var(--ink-2); text-transform:uppercase; letter-spacing:.4px; margin:14px 0 6px; }
   .species-modal .sm-map-wrap { margin-top:14px; }
-  .species-modal .sm-map-title { font-size:13px; color:var(--ink-2); text-transform:uppercase; letter-spacing:.4px; margin:0 0 6px; font-weight:700; }
+  .species-modal .sm-map-header { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0 0 6px; flex-wrap:wrap; }
+  .species-modal .sm-map-title { font-size:13px; color:var(--ink-2); text-transform:uppercase; letter-spacing:.4px; font-weight:700; }
+  .species-modal .sm-map-seg { font-size:12px; }
+  .species-modal .sm-map-seg button { padding:4px 10px; font-size:12px; }
   .species-modal .sm-map { width:100%; height:220px; border-radius:10px; overflow:hidden; border:1px solid var(--line); background:var(--surface-2); }
+  .species-modal .sm-map-hint { font-size:11.5px; color:var(--ink-3); margin-top:4px; }
   .species-modal .sm-obs ul { margin:0; padding-left:18px; font-size:13.5px; color:var(--ink-2); line-height:1.55; }
   .species-modal .sm-obs .help { margin:6px 0; font-size:13px; color:var(--ink-3); }
   .species-modal .sm-links { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
@@ -1333,7 +1337,17 @@
         </div>
       </div>
       <div class="sm-obs" id="smObs"></div>
-      <div class="sm-map-wrap" id="smMapWrap" hidden><div class="sm-map-title">📍 Où on l'a vu</div><div id="smMap" class="sm-map"></div></div>
+      <div class="sm-map-wrap" id="smMapWrap" hidden>
+        <div class="sm-map-header">
+          <div class="sm-map-title">📍 Où on l'a vu</div>
+          <div class="seg sm-map-seg" id="smMapSeg">
+            <button type="button" data-map-mode="friends" class="on">Mes amis</button>
+            <button type="button" data-map-mode="ebird">eBird 30 j</button>
+          </div>
+        </div>
+        <div id="smMap" class="sm-map"></div>
+        <div class="sm-map-hint" id="smMapHint"></div>
+      </div>
       <div class="sm-links" id="smLinks"></div>
       <div class="sm-photo-credit" id="smPhotoCredit"></div>
     </div>
@@ -5399,49 +5413,120 @@ function openSpeciesModal(sci){
   `;
   modal.hidden = false;
 }
-// Instance Leaflet dediee a la fiche espece (recycle entre ouvertures).
+// Instance Leaflet dediee a la fiche espece + etat associe.
 let _smMapInstance = null, _smMapLayer = null;
-function _renderSpeciesMap(key){
-  const wrap = $('#smMapWrap'), el = $('#smMap'); if(!wrap || !el) return;
-  // Collecte les observations avec coordonnees (issue de MyEBirdData).
-  const points = [];
-  for(const p of realPeople){
-    const v = p.species && p.species.get(key);
-    if(v && typeof v.lat === 'number' && typeof v.lon === 'number'){
-      points.push({ lat:v.lat, lon:v.lon, name:p.name, si:p.si, loc:v.loc||'', date:v.date||'' });
+let _smCurrentKey = '', _smMapMode = 'friends', _smMarkers = [];
+const _SM_SERIES_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#34495e','#16a085','#c0392b'];
+function _smSetHint(txt){ const el=$('#smMapHint'); if(el) el.textContent = txt||''; }
+// Ré-etale les marqueurs par grappes de meme position, en PIXELS (donc adaptatif au zoom).
+// Appele apres chaque zoomend + apres l'initialisation.
+function _smSpreadMarkers(){
+  if(!_smMapInstance || !_smMarkers.length) return;
+  // Groupe par cle "lat×lon" arrondis a ~10 m
+  const groups = new Map();
+  for(const mk of _smMarkers){
+    const k = (mk._baseLat.toFixed(4))+'|'+(mk._baseLon.toFixed(4));
+    if(!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(mk);
+  }
+  const GOLDEN = Math.PI * (3 - Math.sqrt(5));
+  const R_PER = 14;   // pixels de rayon par element du groupe
+  for(const arr of groups.values()){
+    if(arr.length === 1){
+      arr[0].setLatLng([arr[0]._baseLat, arr[0]._baseLon]);
+      continue;
+    }
+    // Spirale en pixels autour du centre (le premier).
+    const center = _smMapInstance.latLngToLayerPoint([arr[0]._baseLat, arr[0]._baseLon]);
+    const maxR = R_PER * Math.sqrt(arr.length);
+    for(let i=0;i<arr.length;i++){
+      const r = maxR * Math.sqrt((i+0.5)/arr.length);
+      const th = i * GOLDEN;
+      const p = L.point(center.x + r*Math.cos(th), center.y + r*Math.sin(th));
+      const ll = _smMapInstance.layerPointToLatLng(p);
+      arr[i].setLatLng([ll.lat, ll.lng]);
     }
   }
-  if(!points.length){ wrap.hidden = true; if(_smMapLayer) _smMapLayer.clearLayers(); return; }
-  wrap.hidden = false;
-  // Init lazy si Leaflet est present.
-  if(!window.L){ wrap.hidden = true; return; }
+}
+// Recupere les obs eBird 30j pour cette espece (utilise le cache _ebFetch de la carte principale).
+async function _smFetchEbirdRecent(sci){
+  const code = _sciToCode(sci); if(!code) return [];
+  try{
+    const data = await _ebFetch(`https://api.ebird.org/v2/data/obs/FR/recent/${code}?back=30&maxResults=100&locale=fr`);
+    if(!Array.isArray(data)) return [];
+    return data.filter(o => typeof o.lat==='number' && typeof o.lng==='number').map(o => ({
+      lat:o.lat, lon:o.lng, name:o.locName||'lieu', si:0, loc:o.locName||'', date:(o.obsDt||'').slice(0,10),
+      count: (typeof o.howMany==='number'&&o.howMany>0)?o.howMany:null,
+      isEbird:true
+    }));
+  }catch(_){ return []; }
+}
+async function _renderSpeciesMap(key){
+  _smCurrentKey = key;
+  const wrap = $('#smMapWrap'), el = $('#smMap'); if(!wrap || !el || !window.L){ if(wrap) wrap.hidden=true; return; }
+  // Init du selecteur mode (mes amis / eBird)
+  document.querySelectorAll('#smMapSeg button').forEach(b => b.classList.toggle('on', b.dataset.mapMode === _smMapMode));
+  // Init de la carte si necessaire
   if(!_smMapInstance){
     _smMapInstance = L.map(el, { zoomControl:true, attributionControl:false });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(_smMapInstance);
     _smMapLayer = L.layerGroup().addTo(_smMapInstance);
+    // Re-spread des marqueurs a chaque fin de zoom pour eviter la superposition en zoom-out.
+    _smMapInstance.on('zoomend', _smSpreadMarkers);
   } else {
     _smMapLayer.clearLayers();
   }
+  _smMarkers = [];
+  _smSetHint('… chargement');
+  // Recolte les points selon le mode
+  let points = [];
+  if(_smMapMode === 'friends'){
+    for(const p of realPeople){
+      const v = p.species && p.species.get(key);
+      if(v && typeof v.lat === 'number' && typeof v.lon === 'number'){
+        points.push({ lat:v.lat, lon:v.lon, name:p.name, si:p.si, loc:v.loc||'', date:v.date||'' });
+      }
+    }
+  } else {
+    points = await _smFetchEbirdRecent(key);
+    // Si l'utilisateur a change de mode/espece pendant le fetch, on avorte.
+    if(_smCurrentKey !== key || _smMapMode !== 'ebird') return;
+  }
+  if(!points.length){
+    wrap.hidden = false;
+    _smSetHint(_smMapMode==='friends' ? 'Aucune obs de la ligue avec coordonnees pour cette espece.' : 'Pas d\'obs eBird recente (30j) en France pour cette espece.');
+    return;
+  }
+  wrap.hidden = false;
   const bounds = [];
-  const seriesColors = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#34495e','#16a085','#c0392b'];
   for(const p of points){
-    // Couleur cohérente avec le classement (var(--sX)) ; fallback tableau palette.
-    const col = seriesColors[p.si % seriesColors.length] || '#0b7c77';
+    const col = p.isEbird ? '#c73058' : (_SM_SERIES_COLORS[p.si % _SM_SERIES_COLORS.length] || '#0b7c77');
     const m = L.circleMarker([p.lat, p.lon], { radius:7, weight:2, color:'#fff', fillColor:col, fillOpacity:0.9, opacity:1 });
+    m._baseLat = p.lat; m._baseLon = p.lon;
     const gm = `<a href="https://www.google.com/maps?q=${p.lat},${p.lon}" target="_blank" rel="noopener">🗺️ Google Maps</a>`;
-    m.bindPopup(`<b>${esc(p.name)}</b><br><span>${esc(p.date||'')}${p.loc?' · '+esc(p.loc):''}</span><br>${gm}`);
+    const cntTxt = p.count ? ` · ${p.count} individu${p.count>1?'s':''}` : '';
+    m.bindPopup(`<b>${esc(p.name)}</b><br><span>${esc(p.date||'')}${p.loc?' · '+esc(p.loc):''}${cntTxt}</span><br>${gm}`);
     _smMapLayer.addLayer(m);
+    _smMarkers.push(m);
     bounds.push([p.lat, p.lon]);
   }
-  // Fit au contenu, avec un peu de padding et un zoom max raisonnable pour eviter la carte "collee".
+  _smSetHint(_smMapMode==='friends' ? `${points.length} obs de la ligue` : `${points.length} obs eBird (30 derniers jours, France)`);
   requestAnimationFrame(()=>{
     try{
       _smMapInstance.invalidateSize();
       if(bounds.length === 1){ _smMapInstance.setView(bounds[0], 10); }
       else { _smMapInstance.fitBounds(L.latLngBounds(bounds), { padding:[24,24], maxZoom:10 }); }
+      _smSpreadMarkers();
     }catch(_){}
   });
 }
+// Clic sur le selecteur mode : switch + rechargement.
+document.addEventListener('click', e=>{
+  const b = e.target.closest('#smMapSeg button[data-map-mode]'); if(!b) return;
+  _smMapMode = b.dataset.mapMode;
+  document.querySelectorAll('#smMapSeg button').forEach(x => x.classList.toggle('on', x===b));
+  if(_smCurrentKey) _renderSpeciesMap(_smCurrentKey);
+});
 function closeSpeciesModal(){
   const modal = $('#speciesModal'); if(!modal) return;
   modal.hidden = true;
