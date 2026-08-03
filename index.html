@@ -5359,7 +5359,7 @@ function openSpeciesModal(sci){
     items.sort((a,b)=> (a.date||'').localeCompare(b.date||''));
     obsBox.innerHTML = '<h3>Observations dans la ligue</h3><ul>' + items.map(x => {
       const d = x.date ? esc(x.date) : '<span class="help">date inconnue</span>';
-      const loc = x.loc ? ' — '+esc(x.loc) : '';
+      const loc = x.loc ? ' · '+esc(x.loc) : '';
       const flag = x.country && x.country!=='FR' ? ' '+(flagImg(x.country)||'') : '';
       return `<li><b>${esc(x.name)}${x.isMe?' (vous)':''}</b>${flag} · ${d}${loc}</li>`;
     }).join('') + '</ul>';
