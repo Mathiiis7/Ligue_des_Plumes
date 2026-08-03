@@ -4398,6 +4398,8 @@ function _timeStatsFor(active){
 }
 // Ord "virtuel" pour un 1er janvier : YYYY0101. Utile pour placer les gridlines annuelles.
 function _yearOrd(y){ return y*10000 + 101; }
+function _monthOrd(y, m){ return y*10000 + (m*100) + 1; }   // m = 1..12
+const _MONTH_ABBR = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
 function _renderCumulativeSVG(timeline){
   if(!timeline.length) return '';
   const minOrd = timeline[0].ord, maxOrd = timeline[timeline.length-1].ord;
@@ -4414,24 +4416,56 @@ function _renderCumulativeSVG(timeline){
   for(const pt of timeline) line += ` L ${x(pt.ord).toFixed(1)} ${y(pt.count).toFixed(1)}`;
   const area = line + ` L ${x(maxOrd).toFixed(1)} ${y(0).toFixed(1)} Z`;
 
-  // Grille annuelle : trace un tick + label pour chaque 1er janvier compris entre min et max.
-  // Si la periode couvre beaucoup d'annees on n'affiche qu'un label sur 2, 5, etc.
+  // Grille temporelle adaptative :
+  //  - periode <= 24 mois : ticks mensuels (label = "janv.", "févr.", ...), annee affichee au 1er mois
+  //  - periode > 24 mois : ticks annuels (comme avant)
   const firstYear = Math.floor(minOrd/10000);
+  const firstMonth = Math.floor((minOrd%10000)/100);
   const lastYear = Math.floor(maxOrd/10000);
-  const totalYears = lastYear - firstYear + 1;
-  const stepYear = totalYears <= 6 ? 1 : (totalYears <= 12 ? 2 : (totalYears <= 25 ? 5 : 10));
-  const gridLines = []; const yearLabels = [];
-  for(let y0 = firstYear; y0 <= lastYear + 1; y0++){
-    const ord = _yearOrd(y0);
-    if(ord < minOrd || ord > maxOrd) continue;
-    const xp = x(ord);
-    gridLines.push(`<line x1="${xp.toFixed(1)}" y1="${PT}" x2="${xp.toFixed(1)}" y2="${(PT+ih).toFixed(1)}" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"/>`);
-    if((y0 - firstYear) % stepYear === 0){
-      yearLabels.push(`<text x="${xp.toFixed(1)}" y="${(H-8).toFixed(1)}" font-size="10" fill="var(--ink-3)" text-anchor="middle">${y0}</text>`);
+  const lastMonth = Math.floor((maxOrd%10000)/100);
+  const totalMonths = (lastYear-firstYear)*12 + (lastMonth-firstMonth) + 1;
+  const gridLines = []; const labels = [];
+  if(totalMonths <= 24){
+    // Boucle mois par mois : commence au 1er du mois de la 1re obs.
+    let y0 = firstYear, m0 = firstMonth;
+    // Un label sur N mois selon la densite (evite surcharge). 1 si <=8 mois, 2 si <=16, sinon 3.
+    const stepM = totalMonths <= 8 ? 1 : (totalMonths <= 16 ? 2 : 3);
+    let i = 0;
+    while(y0 < lastYear || (y0 === lastYear && m0 <= lastMonth)){
+      const ord = _monthOrd(y0, m0);
+      if(ord >= minOrd && ord <= maxOrd){
+        const xp = x(ord);
+        gridLines.push(`<line x1="${xp.toFixed(1)}" y1="${PT}" x2="${xp.toFixed(1)}" y2="${(PT+ih).toFixed(1)}" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"/>`);
+        if(i % stepM === 0){
+          // Ajoute l'annee dans le label du 1er mois affiche OU du 1er janvier rencontre.
+          const showYear = i === 0 || m0 === 1;
+          const txt = showYear ? `${_MONTH_ABBR[m0-1]} ${y0}` : _MONTH_ABBR[m0-1];
+          labels.push(`<text x="${xp.toFixed(1)}" y="${(H-8).toFixed(1)}" font-size="10" fill="var(--ink-3)" text-anchor="middle">${txt}</text>`);
+        }
+      }
+      i++;
+      m0++; if(m0 > 12){ m0 = 1; y0++; }
+    }
+  } else {
+    // Vue annuelle : ticks pour chaque 1er janvier. Pas de label si trop d'annees.
+    const totalYears = lastYear - firstYear + 1;
+    const stepYear = totalYears <= 6 ? 1 : (totalYears <= 12 ? 2 : (totalYears <= 25 ? 5 : 10));
+    for(let y0 = firstYear; y0 <= lastYear + 1; y0++){
+      const ord = _yearOrd(y0);
+      if(ord < minOrd || ord > maxOrd) continue;
+      const xp = x(ord);
+      gridLines.push(`<line x1="${xp.toFixed(1)}" y1="${PT}" x2="${xp.toFixed(1)}" y2="${(PT+ih).toFixed(1)}" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"/>`);
+      if((y0 - firstYear) % stepYear === 0){
+        labels.push(`<text x="${xp.toFixed(1)}" y="${(H-8).toFixed(1)}" font-size="10" fill="var(--ink-3)" text-anchor="middle">${y0}</text>`);
+      }
     }
   }
-  // Tick de gauche (annee de la 1re obs) et de droite (annee de la derniere obs), toujours affiches.
-  if(!yearLabels.length){ yearLabels.push(`<text x="${PL}" y="${(H-8)}" font-size="10" fill="var(--ink-3)" text-anchor="start">${firstYear}</text>`); if(firstYear!==lastYear) yearLabels.push(`<text x="${W-PR}" y="${(H-8)}" font-size="10" fill="var(--ink-3)" text-anchor="end">${lastYear}</text>`); }
+  // Filet de secours : au moins la 1re et derniere date en label.
+  if(!labels.length){
+    labels.push(`<text x="${PL}" y="${(H-8)}" font-size="10" fill="var(--ink-3)" text-anchor="start">${_MONTH_ABBR[firstMonth-1]} ${firstYear}</text>`);
+    if(minOrd !== maxOrd) labels.push(`<text x="${W-PR}" y="${(H-8)}" font-size="10" fill="var(--ink-3)" text-anchor="end">${_MONTH_ABBR[lastMonth-1]} ${lastYear}</text>`);
+  }
+  const yearLabels = labels;
 
   // Grille horizontale : quelques niveaux (0, mid, max) avec labels a gauche.
   const yTicks = [0, Math.round(maxCount/2), maxCount].filter((v,i,a)=>a.indexOf(v)===i);
