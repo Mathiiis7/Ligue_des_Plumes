@@ -78,6 +78,41 @@ service cloud.firestore {
         allow update: if false;
         allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
       }
+
+      // Requêtes/suggestions : lecture par tous ; création par l'auteur (texte 1..500 chars) ;
+      // suppression par l'auteur ; mise à jour = changement de statut uniquement (admin côté client).
+      match /requests/{reqId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 500;
+        allow update: if request.auth != null
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+        allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      }
+
+      // Votes de requêtes : lecture par tous ; chacun (dé)pose son vote.
+      match /requestVotes/{voteId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+        allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+        allow update: if false;
+      }
+
+      // Historique des changements de nom (audit) : lecture par tous ; création uniquement,
+      // pas de modif ni suppression (append-only).
+      match /nameChanges/{cid} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null && request.resource.data.byUid == request.auth.uid;
+        allow update, delete: if false;
+      }
+
+      // Cache eBird partage entre les membres : lecture/écriture par tout connecté.
+      match /ebirdCache/{docId} {
+        allow read, write: if request.auth != null;
+      }
     }
   }
 }
