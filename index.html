@@ -5223,19 +5223,31 @@ const _spSoundCache = new Map();      // sci → url mp3 | null
 async function _fetchWikiPhoto(sci){
   const key = sci.toLowerCase();
   if(_spPhotoCache.has(key)) return _spPhotoCache.get(key);
-  // On tente FR puis EN si rien. Origin=* pour CORS.
-  const tryLang = async (lang)=>{
-    const u = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&pithumbsize=600&titles=${encodeURIComponent(sci)}&origin=*`;
+  // 1) iNaturalist : source la plus fiable, CORS ok, photos de qualite pour presque toutes les especes.
+  const tryINat = async ()=>{
     try{
-      const r = await fetch(u);
-      const j = await r.json();
-      const pages = j?.query?.pages || {};
-      const p = Object.values(pages)[0];
-      if(p?.thumbnail?.source) return { url:p.thumbnail.source, credit:'Wikipédia' };
+      const u = `https://api.inaturalist.org/v1/taxa/autocomplete?q=${encodeURIComponent(sci)}&rank=species&per_page=1`;
+      const r = await fetch(u); const j = await r.json();
+      const p = j?.results?.[0]?.default_photo;
+      const url = p?.medium_url || p?.square_url || null;
+      if(url) return { url, credit:'iNaturalist' };
     }catch(_){ }
     return null;
   };
-  let res = await tryLang('fr'); if(!res) res = await tryLang('en');
+  // 2) Wikipedia FR puis EN en fallback si iNat n'a rien.
+  const tryWiki = async (lang)=>{
+    try{
+      const u = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&pithumbsize=600&titles=${encodeURIComponent(sci)}&origin=*`;
+      const r = await fetch(u); const j = await r.json();
+      const pages = j?.query?.pages || {};
+      const p = Object.values(pages)[0];
+      if(p?.thumbnail?.source) return { url:p.thumbnail.source, credit:'Wikipédia '+lang.toUpperCase() };
+    }catch(_){ }
+    return null;
+  };
+  let res = await tryINat();
+  if(!res) res = await tryWiki('fr');
+  if(!res) res = await tryWiki('en');
   _spPhotoCache.set(key, res);
   return res;
 }
