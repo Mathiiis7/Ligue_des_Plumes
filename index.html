@@ -472,8 +472,8 @@
   .species-modal .sm-freq-lg { display:inline-flex; align-items:center; gap:5px; }
   .species-modal .sm-freq-sw { width:10px; height:10px; border-radius:50%; display:inline-block; }
   .species-modal .sm-media { display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
-  .species-modal .sm-photo-wrap { min-height:0; }
-  .species-modal .sm-photo { display:block; width:100%; max-height:280px; object-fit:cover; border-radius:10px; background:var(--surface-2); }
+  .species-modal .sm-photo-wrap { width:100%; max-width:340px; aspect-ratio:1/1; margin:0 auto; background:var(--surface-2); border-radius:10px; overflow:hidden; }
+  .species-modal .sm-photo { display:block; width:100%; height:100%; object-fit:contain; }
   .species-modal .sm-audio-wrap { display:flex; flex-direction:column; gap:6px; }
   .species-modal .sm-audio-row { display:flex; flex-direction:column; gap:3px; }
   .species-modal .sm-audio-lbl { font-size:11.5px; font-weight:700; color:var(--ink-2); text-transform:uppercase; letter-spacing:.03em; }
