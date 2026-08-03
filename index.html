@@ -3692,7 +3692,24 @@ async function _renderModeAbundance(){
   abFilter.sci = sci || '';
   abFilter.month = +($('#mapAbMonth')?.value||0);
   if(!sci){
-    if(cnt) cnt.textContent = inputVal ? 'Espèce sans donnée d\'abondance modélisée' : 'Tape une espèce dans la barre de recherche ci-dessus';
+    if(!cnt) return;
+    if(!inputVal){ cnt.textContent = 'Tape une espèce dans la barre de recherche ci-dessus'; return; }
+    // Espèce demandée mais pas dans Status & Trends : essaie de la reconnaître dans FR_NAMES
+    // pour offrir un lien direct vers la page eBird (qui a une carte de distribution) et vers la
+    // fiche espèce interne (photo/chant/obs du groupe).
+    const norm = _mapNorm(inputVal);
+    const anySci = Object.keys(FR_NAMES).find(s => (FR_NAMES[s]||'').toLowerCase() === inputVal.toLowerCase())
+                || Object.keys(FR_NAMES).find(s => _mapNorm(FR_NAMES[s]||s).includes(norm));
+    if(anySci){
+      const code = _sciToCode(anySci);
+      const nm = FR_NAMES[anySci] || anySci;
+      const ebirdLink = code
+        ? `<a href="https://ebird.org/species/${encodeURIComponent(code)}" target="_blank" rel="noopener">carte eBird ↗</a>`
+        : `<a href="https://ebird.org/search?q=${encodeURIComponent(anySci)}" target="_blank" rel="noopener">eBird ↗</a>`;
+      cnt.innerHTML = `<b>${esc(nm)}</b> n'a pas de données Cornell Status &amp; Trends. Voir sa carte de distribution sur ${ebirdLink} ou <a href="#" data-sci="${esc(anySci)}" class="sp-link">sa fiche</a>.`;
+    } else {
+      cnt.textContent = 'Espèce introuvable. Essaie un autre nom.';
+    }
     return;
   }
   const geojson = await _loadDeptGeoJSON();
