@@ -3115,18 +3115,19 @@ function _updateMapSuggest(){
   const box = $('#mapSearchSuggest'); if(!box) return;
   const q = _mapNorm(mapSearch).trim();
   const items = [];
-  // Mode "Où trouver" : suggestions = les 264 espèces avec data Status & Trends.
-  // (pas de couche eBird derrière, on suggère depuis REAL_ABUNDANCE_DEPT).
+  // Mode "Où trouver" : suggestions = TOUTES les especes de FR_NAMES.
+  // Celles avec data Status & Trends (~264) declenchent la choroplethe departementale.
+  // Les autres n'affichent que les obs eBird 30j (marqueurs) + un message expliquant l'absence.
   if(mapMode==='abundance'){
-    if(typeof REAL_ABUNDANCE_DEPT === 'object'){
-      for(const sci of Object.keys(REAL_ABUNDANCE_DEPT)){
-        const fr = FR_NAMES[sci] || sci;
-        if(q && !_mapNorm(fr).includes(q) && !sci.includes(q)) continue;
-        items.push({ sci, name:fr, kind:'sp-abundance' });
-      }
-      items.sort((a,b)=> a.name.localeCompare(b.name,'fr'));
+    const hasST = new Set(typeof REAL_ABUNDANCE_DEPT === 'object' ? Object.keys(REAL_ABUNDANCE_DEPT) : []);
+    for(const sci of Object.keys(FR_NAMES)){
+      const fr = FR_NAMES[sci] || sci;
+      if(q && !_mapNorm(fr).includes(q) && !sci.includes(q)) continue;
+      items.push({ sci, name:fr, kind:'sp-abundance', hasST:hasST.has(sci) });
     }
-    const top = items;   // pas de cap : la scroll box overflow-y gère (max 60vh)
+    // Espèces avec data S&T en tête (plus utiles pour cette vue), puis alpha.
+    items.sort((a,b)=> (b.hasST?1:0) - (a.hasST?1:0) || a.name.localeCompare(b.name,'fr'));
+    const top = items;
     if(!top.length){ box.classList.remove('open'); box.innerHTML=''; _mapSuggestItems=[]; return; }
     _mapSuggestItems = top;
     box.innerHTML = top.map((it, i) =>
@@ -3134,7 +3135,7 @@ function _updateMapSuggest(){
         `<span class="ss-dot" style="background:${sciColor(it.sci)}"></span>`+
         `<span>${esc(it.name)}</span>`+
         `<span class="ss-sci">${esc(it.sci)}</span>`+
-        `<span class="ss-hint">→ carte d'abondance</span></div>`
+        `<span class="ss-hint">${it.hasST?'→ carte d\'abondance':'→ obs 30j seulement'}</span></div>`
     ).join('');
     box.classList.add('open');
     return;
@@ -3677,39 +3678,40 @@ async function _renderModeAbundance(){
   const SRC = abFilter.metric === 'mean'
     ? (typeof REAL_ABUNDANCE_DEPT_MEAN === 'object' ? REAL_ABUNDANCE_DEPT_MEAN : REAL_ABUNDANCE_DEPT)
     : REAL_ABUNDANCE_DEPT;
-  // Résout le nom saisi -> sci name (parmi les espèces avec data)
+  // Resout le nom saisi -> sci name parmi TOUTES les especes FR (pas seulement S&T).
   let sci = null;
   if(inputVal){
-    const found = Object.keys(SRC).find(s =>
-      (FR_NAMES[s]||'').toLowerCase() === inputVal.toLowerCase());
-    if(found) sci = found;
-    else {
-      const norm = _mapNorm(inputVal);
-      sci = Object.keys(SRC).find(s =>
-        _mapNorm(FR_NAMES[s]||s).includes(norm));
-    }
+    const norm = _mapNorm(inputVal);
+    sci = Object.keys(FR_NAMES).find(s => (FR_NAMES[s]||'').toLowerCase() === inputVal.toLowerCase())
+       || Object.keys(FR_NAMES).find(s => _mapNorm(FR_NAMES[s]||s).includes(norm));
   }
   abFilter.sci = sci || '';
   abFilter.month = +($('#mapAbMonth')?.value||0);
   if(!sci){
     if(!cnt) return;
-    if(!inputVal){ cnt.textContent = 'Tape une espèce dans la barre de recherche ci-dessus'; return; }
-    // Espèce demandée mais pas dans Status & Trends : essaie de la reconnaître dans FR_NAMES
-    // pour offrir un lien direct vers la page eBird (qui a une carte de distribution) et vers la
-    // fiche espèce interne (photo/chant/obs du groupe).
-    const norm = _mapNorm(inputVal);
-    const anySci = Object.keys(FR_NAMES).find(s => (FR_NAMES[s]||'').toLowerCase() === inputVal.toLowerCase())
-                || Object.keys(FR_NAMES).find(s => _mapNorm(FR_NAMES[s]||s).includes(norm));
-    if(anySci){
-      const code = _sciToCode(anySci);
-      const nm = FR_NAMES[anySci] || anySci;
+    if(!inputVal) cnt.textContent = 'Tape une espèce dans la barre de recherche ci-dessus';
+    else cnt.textContent = 'Espèce introuvable. Essaie un autre nom.';
+    return;
+  }
+  // Espece sans data Status & Trends : on n'a pas de choroplethe departementale, mais on affiche
+  // quand meme les obs eBird 30j (les hotspots) pour donner une idee d'ou l'observer recemment.
+  const hasST = !!SRC[sci];
+  if(!hasST){
+    // Efface toute couche departementale precedente.
+    if(_lyrAbundance){ _lyrAbundance.remove(); _lyrAbundance = null; }
+    if(cnt){
+      const code = _sciToCode(sci);
+      const nm = FR_NAMES[sci] || sci;
       const ebirdLink = code
         ? `<a href="https://ebird.org/species/${encodeURIComponent(code)}" target="_blank" rel="noopener">carte eBird ↗</a>`
-        : `<a href="https://ebird.org/search?q=${encodeURIComponent(anySci)}" target="_blank" rel="noopener">eBird ↗</a>`;
-      cnt.innerHTML = `<b>${esc(nm)}</b> n'a pas de données Cornell Status &amp; Trends. Voir sa carte de distribution sur ${ebirdLink} ou <a href="#" data-sci="${esc(anySci)}" class="sp-link">sa fiche</a>.`;
-    } else {
-      cnt.textContent = 'Espèce introuvable. Essaie un autre nom.';
+        : `<a href="https://ebird.org/search?q=${encodeURIComponent(sci)}" target="_blank" rel="noopener">eBird ↗</a>`;
+      cnt.innerHTML = `<b>${esc(nm)}</b> · pas de données Cornell S&amp;T pour cette espèce. Affichage des obs eBird des 30 derniers jours ci-dessous. Voir aussi ${ebirdLink}.`;
     }
+    // Force l'affichage des hotspots 30j, fetch les obs recentes et rend la couche.
+    abFilter.showHotspots = true;
+    const hsChk = $('#mapAbShowHs'); if(hsChk) hsChk.checked = true;
+    const code = _sciToCode(sci);
+    if(code){ _loadAbHotspots(sci, code).then(()=>{ if(mapMode==='abundance') _renderAbHotspots(); }); }
     return;
   }
   const geojson = await _loadDeptGeoJSON();
