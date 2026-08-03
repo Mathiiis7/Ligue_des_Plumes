@@ -5526,7 +5526,9 @@ async function _renderSpeciesMap(key){
   wrap.hidden = false;
   const bounds = [];
   for(const p of points){
-    const col = p.isEbird ? '#c73058' : (_SM_SERIES_COLORS[p.si % _SM_SERIES_COLORS.length] || '#0b7c77');
+    // eBird 30j : couleur = rareté de l'espèce (gris pour exotique) — comme partout dans l'app.
+    // Amis : couleur = série du membre (identifie qui a coché).
+    const col = p.isEbird ? sciColor(key) : (_SM_SERIES_COLORS[p.si % _SM_SERIES_COLORS.length] || '#0b7c77');
     const m = L.circleMarker([p.lat, p.lon], { radius:7, weight:2, color:'#fff', fillColor:col, fillOpacity:0.9, opacity:1 });
     m._baseLat = p.lat; m._baseLon = p.lon;
     const gm = `<a href="https://www.google.com/maps?q=${p.lat},${p.lon}" target="_blank" rel="noopener">🗺️ Google Maps</a>`;
