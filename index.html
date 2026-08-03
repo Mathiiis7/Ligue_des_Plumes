@@ -458,7 +458,9 @@
   .species-modal .sm-media { display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
   .species-modal .sm-photo-wrap { min-height:0; }
   .species-modal .sm-photo { display:block; width:100%; max-height:280px; object-fit:cover; border-radius:10px; background:var(--surface-2); }
-  .species-modal .sm-audio-wrap { display:flex; flex-direction:column; gap:4px; }
+  .species-modal .sm-audio-wrap { display:flex; flex-direction:column; gap:6px; }
+  .species-modal .sm-audio-row { display:flex; flex-direction:column; gap:3px; }
+  .species-modal .sm-audio-lbl { font-size:11.5px; font-weight:700; color:var(--ink-2); text-transform:uppercase; letter-spacing:.03em; }
   .species-modal .sm-audio { width:100%; }
   .species-modal .sm-audio-hint { font-size:12px; color:var(--ink-3); }
   .species-modal .sm-obs h3 { font-size:13px; color:var(--ink-2); text-transform:uppercase; letter-spacing:.4px; margin:14px 0 6px; }
@@ -1321,7 +1323,11 @@
       </div>
       <div class="sm-media">
         <div class="sm-photo-wrap"><img class="sm-photo" id="smPhoto" alt="" hidden></div>
-        <div class="sm-audio-wrap"><audio class="sm-audio" id="smAudio" controls preload="none" hidden></audio><div class="sm-audio-hint" id="smAudioHint">🎧 Recherche du chant…</div></div>
+        <div class="sm-audio-wrap">
+          <div class="sm-audio-row" id="smSongRow" hidden><div class="sm-audio-lbl">🎵 Chant</div><audio class="sm-audio" id="smSong" controls preload="none"></audio></div>
+          <div class="sm-audio-row" id="smCallRow" hidden><div class="sm-audio-lbl">📣 Cri</div><audio class="sm-audio" id="smCall" controls preload="none"></audio></div>
+          <div class="sm-audio-hint" id="smAudioHint">🎧 Recherche du chant et du cri…</div>
+        </div>
       </div>
       <div class="sm-obs" id="smObs"></div>
       <div class="sm-links" id="smLinks"></div>
@@ -5289,9 +5295,7 @@ async function _fetchXenoSound(sci){
   const key = sci.toLowerCase();
   if(_spSoundCache.has(key)) return _spSoundCache.get(key);
   const [gen, sp] = sci.split(' ');
-  if(!gen || !sp){ _spSoundCache.set(key, null); return null; }
-  // Normalise l'URL retournee par xeno-canto : parfois protocol-relative ("//xeno-canto.org/…"),
-  // parfois HTTP → on force https pour eviter les blocages mixed-content sur GitHub Pages.
+  if(!gen || !sp){ _spSoundCache.set(key, {song:null, call:null}); return {song:null, call:null}; }
   const norm = u => { if(!u) return null; if(u.startsWith('//')) return 'https:' + u; if(u.startsWith('http://')) return 'https://' + u.slice(7); return u; };
   const tryQuery = async (extra) => {
     const q = 'gen:' + gen + ' sp:' + sp + (extra ? ' ' + extra : '');
@@ -5299,16 +5303,15 @@ async function _fetchXenoSound(sci){
       const r = await fetch('https://xeno-canto.org/api/2/recordings?query=' + encodeURIComponent(q));
       const j = await r.json();
       const recs = Array.isArray(j?.recordings) ? j.recordings : [];
-      // Priorite : qualite A d'abord (si on est en query permissive), puis premier dispo.
       const best = recs.find(x => (x.q||'').toUpperCase()==='A' && x.file) || recs.find(x => x.file);
       return best ? norm(best.file) : null;
     }catch(_){ return null; }
   };
-  // 1) enregistrements de qualite A (meilleure ecoute). 2) fallback : n'importe quelle qualite.
-  let url = await tryQuery('q:A');
-  if(!url) url = await tryQuery('');
-  // 3) Fallback iNaturalist : cherche une observation audio recente pour ce taxon.
-  if(!url){
+  // Deux categories separees. Pour chacune : qualite A d'abord, puis toutes qualites.
+  let song = await tryQuery('type:song q:A'); if(!song) song = await tryQuery('type:song');
+  let call = await tryQuery('type:call q:A'); if(!call) call = await tryQuery('type:call');
+  // Fallback iNaturalist si on n'a strictement rien.
+  if(!song && !call){
     try{
       const t = await fetch('https://api.inaturalist.org/v1/taxa/autocomplete?q=' + encodeURIComponent(sci) + '&rank=species&per_page=1');
       const tj = await t.json();
@@ -5317,12 +5320,13 @@ async function _fetchXenoSound(sci){
         const r = await fetch('https://api.inaturalist.org/v1/observations?taxon_id=' + tid + '&sounds=true&per_page=1&order=desc&order_by=votes');
         const j = await r.json();
         const soundUrl = j?.results?.[0]?.sounds?.[0]?.file_url;
-        if(soundUrl) url = norm(soundUrl);
+        if(soundUrl) song = norm(soundUrl);
       }
     }catch(_){ }
   }
-  _spSoundCache.set(key, url);
-  return url;
+  const out = { song, call };
+  _spSoundCache.set(key, out);
+  return out;
 }
 function openSpeciesModal(sci){
   if(!sci) return;
@@ -5339,12 +5343,19 @@ function openSpeciesModal(sci){
     img.src = p.url; img.hidden = false;
     cred.textContent = 'Photo : '+p.credit;
   });
-  // Son
-  const audio = $('#smAudio'), hint = $('#smAudioHint');
-  audio.hidden = true; audio.src = ''; hint.textContent = '🎧 Recherche du chant…'; hint.hidden = false;
-  _fetchXenoSound(sci).then(url => {
-    if(!url){ hint.textContent = 'Pas d\'enregistrement disponible sur xeno-canto.'; return; }
-    audio.src = url; audio.hidden = false; hint.hidden = true;
+  // Sons : chant + cri, deux lecteurs distincts.
+  const songRow=$('#smSongRow'), callRow=$('#smCallRow'), songEl=$('#smSong'), callEl=$('#smCall'), hint=$('#smAudioHint');
+  try{ songEl.pause(); callEl.pause(); }catch(_){}
+  songEl.src=''; callEl.src=''; songRow.hidden = true; callRow.hidden = true;
+  hint.textContent = '🎧 Recherche du chant et du cri…'; hint.hidden = false;
+  _fetchXenoSound(sci).then(r => {
+    const {song, call} = r || {};
+    if(song){ songEl.src = song; songRow.hidden = false; }
+    if(call){ callEl.src = call; callRow.hidden = false; }
+    if(!song && !call){ hint.textContent = 'Pas d\'enregistrement disponible sur xeno-canto.'; }
+    else if(!song){ hint.textContent = 'Chant non trouvé (cri disponible).'; }
+    else if(!call){ hint.textContent = 'Cri non trouvé (chant disponible).'; }
+    else { hint.hidden = true; }
   });
   // Observations dans la ligue
   const obsBox = $('#smObs');
@@ -5381,7 +5392,7 @@ function openSpeciesModal(sci){
 function closeSpeciesModal(){
   const modal = $('#speciesModal'); if(!modal) return;
   modal.hidden = true;
-  const audio = $('#smAudio'); if(audio){ try{ audio.pause(); }catch(_){} audio.src=''; }
+  for(const id of ['#smSong','#smCall']){ const a=$(id); if(a){ try{ a.pause(); }catch(_){} a.src=''; } }
 }
 // Délégation : ouvre la fiche au clic sur tout élément [data-sci], ferme au clic sur backdrop / croix.
 document.addEventListener('click', e=>{
