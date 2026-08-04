@@ -487,6 +487,10 @@
   .species-modal .sm-map-seg button { padding:4px 10px; font-size:12px; }
   .species-modal .sm-map { width:100%; height:220px; border-radius:10px; overflow:hidden; border:1px solid var(--line); background:var(--surface-2); }
   .species-modal .sm-map-hint { font-size:11.5px; color:var(--ink-3); margin-top:4px; }
+  .species-modal .sm-map-gbif-ctrl { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:12px; color:var(--ink-2); margin:0 0 6px; }
+  .species-modal .sm-map-gbif-ctrl label { display:inline-flex; align-items:center; gap:4px; }
+  .species-modal .sm-map-gbif-ctrl select, .species-modal .sm-map-gbif-ctrl input { font-size:12px; padding:2px 6px; border:1px solid var(--line); border-radius:6px; background:var(--surface-1); color:var(--ink-1); }
+  .species-modal .sm-map-gbif-ctrl input[type=number] { width:64px; }
   .species-modal .sm-obs ul { margin:0; padding-left:18px; font-size:13.5px; color:var(--ink-2); line-height:1.55; }
   .species-modal .sm-obs .help { margin:6px 0; font-size:13px; color:var(--ink-3); }
   .species-modal .sm-links { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
@@ -598,7 +602,6 @@
   .map-el .leaflet-popup-content .p-btn.pl-gmaps { background:#e9f2e2; border-color:#b6d3a3; color:#2e5b1a; }
   .map-el .leaflet-popup-content .p-btn.pl-transit { background:#fdecc8; border-color:#f0c977; color:#7a4d0f; }
   .map-el .leaflet-popup-content .p-btn.pl-ebird { background:#dfe9ee; border-color:#a3bdc9; color:#0b3d55; }
-  .map-el .leaflet-popup-content .p-btn.pl-ff { background:#f2e5f4; border-color:#c99ecf; color:#5e2a68; }
   .map-el .leaflet-popup-content .hs-cnt { font-size:11px; font-weight:600; color:#5a6b6a; margin-left:4px; white-space:nowrap; }
   .map-el .leaflet-popup-content .hs-cnt.loading { color:#8fa19f; font-style:italic; }
   .map-el .leaflet-popup-content .hs-cnt.hot { color:#0b7c77; }
@@ -1371,7 +1374,20 @@
           <div class="seg sm-map-seg" id="smMapSeg">
             <button type="button" data-map-mode="friends" class="on">Mes amis</button>
             <button type="button" data-map-mode="ebird">eBird 30 j</button>
+            <button type="button" data-map-mode="gbif">GBIF (mois)</button>
           </div>
+        </div>
+        <div class="sm-map-gbif-ctrl" id="smMapGbifCtrl" hidden>
+          <label>Mois <select id="smGbifMonth">
+            <option value="1">janvier</option><option value="2">février</option>
+            <option value="3">mars</option><option value="4">avril</option>
+            <option value="5">mai</option><option value="6">juin</option>
+            <option value="7">juillet</option><option value="8" selected>août</option>
+            <option value="9">septembre</option><option value="10">octobre</option>
+            <option value="11">novembre</option><option value="12">décembre</option>
+          </select></label>
+          <label>De <input id="smGbifYearMin" type="number" min="1970" max="2026" value="2018" step="1"></label>
+          <label>à <input id="smGbifYearMax" type="number" min="1970" max="2026" value="2022" step="1"></label>
         </div>
         <div id="smMap" class="sm-map"></div>
         <div class="sm-map-hint" id="smMapHint"></div>
@@ -3641,10 +3657,9 @@ function _renderAbHotspots(){
     const m = L.circleMarker([o.lat, o.lng], { radius:5, weight:1.5, color:'#fff', fillColor:c, fillOpacity:0.9, opacity:1 });
     const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
     const eb = o.locId ? `<a href="https://ebird.org/hotspot/${esc(o.locId)}" target="_blank" rel="noopener" class="p-link">🐦 eBird</a>` : '';
-    const ff = o.locName ? `<a href="https://www.google.com/search?q=${encodeURIComponent('site:faune-france.org "' + o.locName + '"')}" target="_blank" rel="noopener" class="p-link">🐦 Faune-France</a>` : '';
     m.bindPopup(`<b>🏞️ ${esc(o.locName||'?')}</b><br>`+
       `<span class="p-meta"><b>${esc(nm)}</b></span><br>`+
-      `<span class="p-meta">Vu le <b>${esc((o.obsDt||'').slice(0,10))}</b>${o.howMany?' · '+o.howMany+' individu'+(o.howMany>1?'s':''):''}</span><br>${gm} ${eb} ${ff}`);
+      `<span class="p-meta">Vu le <b>${esc((o.obsDt||'').slice(0,10))}</b>${o.howMany?' · '+o.howMany+' individu'+(o.howMany>1?'s':''):''}</span><br>${gm} ${eb}`);
     _lyrAbHotspots.addLayer(m);
     n++;
   }
@@ -3859,11 +3874,10 @@ async function _showSpeciesDetail(sciName, speciesCode){
       // Couleur = rareté de l'espèce (gris pour exotique), taille légèrement plus grosse que la couche missing.
       const dot = L.circleMarker([o.lat,o.lng], { radius:7, weight:2, color:'#fff', fillColor:color, fillOpacity:.9, opacity:1 });
       const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
-      const ff = o.locName ? ` · <a href="https://www.google.com/search?q=${encodeURIComponent('site:faune-france.org "' + o.locName + '"')}" target="_blank" rel="noopener" class="p-link">🐦 Faune-France</a>` : '';
       dot.bindPopup(`<b>${esc(nm)}</b> <span class="p-sci">${esc(sciName||'')}</span><br>`+
         `<span class="p-meta">📍 ${esc(o.locName||'?')}</span><br>`+
         `<span class="p-meta">${esc((o.obsDt||'').slice(0,10))}${o.howMany?' · '+o.howMany+' individus':''}</span><br>`+
-        `<span class="p-meta">Rareté : <b>${w}</b> · ${REAL_LABELS[w]||''}</span><br>${gm}${ff}`);
+        `<span class="p-meta">Rareté : <b>${w}</b> · ${REAL_LABELS[w]||''}</span><br>${gm}`);
       dot._q = _mapNorm(nm+' '+(sciName||'')+' '+(o.locName||''));
       dot._sciName = sciName; dot._speciesCode = speciesCode;
       _lyrDetail.addLayer(dot); count++;
@@ -4186,11 +4200,10 @@ async function _loadMissingLayer(zone, days=14, rarities=new Set(), onProgress){
       const nm = FR_NAMES[(o.sciName||'').toLowerCase()] || o.comName || o.sciName;
       const m = L.circleMarker([o.dispLat, o.dispLon], { radius:R, weight:1.5, color:'#fff', fillColor:sciColor(o.sciName), fillOpacity:.9, opacity:1 });
       const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lon}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
-      const ff = o.locName ? ` · <a href="https://www.google.com/search?q=${encodeURIComponent('site:faune-france.org "' + o.locName + '"')}" target="_blank" rel="noopener" class="p-link">🐦 Faune-France</a>` : '';
       m.bindPopup(`<b>${esc(nm)}</b> <span class="p-sci">${esc(o.sciName||'')}</span><br>`+
         `<span class="p-meta">🐦 <b>Vous ne l'avez pas encore</b></span><br>`+
         `<span class="p-meta">Vu le ${esc((o.obsDt||'').slice(0,10))} à ${esc(o.locName||'?')}${o.howMany?' · '+o.howMany:''}</span><br>`+
-        `<span class="p-meta">Rareté : <b>${w}</b> · ${REAL_LABELS[w]||''}</span><br>${gm}${ff}`);
+        `<span class="p-meta">Rareté : <b>${w}</b> · ${REAL_LABELS[w]||''}</span><br>${gm}`);
       m._q = _mapNorm(nm+' '+(o.sciName||'')+' '+(o.locName||''));
       m._speciesCode = o.speciesCode; m._sciName = o.sciName;
       _lyrMissing.addLayer(m);
@@ -4362,10 +4375,6 @@ async function _loadHotspotsLayer(region){
       // Ouvre Google Maps en mode transport en commun depuis la position actuelle (pas d'origin → device location).
       const tr = `<a href="https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}&travelmode=transit" target="_blank" rel="noopener" class="p-btn pl-transit">🚌 Transit</a>`;
       const eb = `<a href="https://ebird.org/hotspot/${esc(h.locId)}" target="_blank" rel="noopener" class="p-btn pl-ebird">🐦 eBird</a>`;
-      // Lien Faune-France : recherche Google restreinte, on inclut le nom du dept pour maximiser
-      // les chances de tomber sur la bonne page. Faune-France n'expose pas d'URL directe par lieu.
-      const ffQ = (h.locName||h.name||'') + (h.subnational2Name?' '+h.subnational2Name:'');
-      const ff = ffQ.trim() ? `<a href="https://www.google.com/search?q=${encodeURIComponent('site:faune-france.org "' + ffQ.trim() + '"')}" target="_blank" rel="noopener" class="p-btn pl-ff">🐦 Faune-France</a>` : '';
       const scope = hotspotSort==='recent' ? 'ces 30 jours' : 'au total (all-time)';
       const monthTag = monthFilter ? ` · <b>${toDoShown}</b> actifs en ${MONTH_NAMES[monthFilter]}` : '';
       const cntLine = (hotspotSort==='total')
@@ -4427,7 +4436,7 @@ async function _loadHotspotsLayer(region){
       const favBtn = myUid ? `<button class="hs-fav${isFav?' on':''}" data-loc="${esc(h.locId)}" title="${isFav?'Retirer des favoris':'Ajouter aux favoris'}">${isFav?'★':'☆'}</button>` : '';
       m.bindPopup(`<b>🏞️ ${esc(h.locName||h.name||'?')}</b> ${favBtn}<br>`+
         `<span class="p-meta">${h.subnational2Name?esc(h.subnational2Name)+' · ':''}${esc(h.subnational1Name||'')}${distTag}</span><br>`+
-        `<span class="p-meta">${cntLine}</span>${missingBlock}<br>${gm} ${tr} ${eb} ${ff}`,
+        `<span class="p-meta">${cntLine}</span>${missingBlock}<br>${gm} ${tr} ${eb}`,
         { maxHeight:340, autoPan:true });
       // Recherche : nom du hotspot + région/dept + noms fr des espèces manquantes ici
       // (permet à la barre "Filtrer par nom d'espèce" de matcher un hotspot où l'espèce est présente).
@@ -5612,9 +5621,6 @@ function openSpeciesModal(sci){
   const ebirdUrl = code ? `https://ebird.org/species/${encodeURIComponent(code)}` : `https://ebird.org/search?q=${encodeURIComponent(sci)}`;
   const wikiUrl = `https://fr.wikipedia.org/wiki/${encodeURIComponent(sci.replace(/ /g,'_'))}`;
   const xcUrl = `https://xeno-canto.org/species/${encodeURIComponent(sci.replace(/ /g,'-'))}`;
-  // NB : lien Faune-France retire au niveau espece — Google search restreint atterrissait
-  // rarement sur une page utile. Le lien Faune-France reste sur les popups d'hotspots ou il
-  // beneficie d'un contexte lieu-dit + departement pour matcher.
   $('#smLinks').innerHTML = `
     <a href="${ebirdUrl}" target="_blank" rel="noopener">🌍 eBird</a>
     <a href="${wikiUrl}" target="_blank" rel="noopener">📖 Wikipédia</a>
@@ -5625,6 +5631,8 @@ function openSpeciesModal(sci){
 // Instance Leaflet dediee a la fiche espece + etat associe.
 let _smMapInstance = null, _smMapLayer = null;
 let _smCurrentKey = '', _smMapMode = 'friends', _smMarkers = [];
+const _SM_MONTH_NAMES = ['','janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+const _gbifKeyBySci = new Map();
 const _SM_SERIES_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#34495e','#16a085','#c0392b'];
 function _smSetHint(txt){ const el=$('#smMapHint'); if(el) el.textContent = txt||''; }
 // Ré-etale les marqueurs qui se CHEVAUCHENT visuellement au zoom courant, en PIXELS.
@@ -5691,6 +5699,42 @@ async function _smFetchEbirdRecent(sci){
     return { points, error:null };
   }catch(_){ return { points:[], error:'network' }; }
 }
+// Resolution du nom scientifique vers un taxonKey GBIF (cache en memoire).
+async function _sciToGbifKey(sci){
+  if(_gbifKeyBySci.has(sci)) return _gbifKeyBySci.get(sci);
+  try{
+    const r = await fetch(`https://api.gbif.org/v1/species/match?name=${encodeURIComponent(sci)}`);
+    if(!r.ok) throw new Error('http');
+    const j = await r.json();
+    const key = (j.matchType === 'EXACT' || j.matchType === 'FUZZY') && j.speciesKey ? j.speciesKey : null;
+    _gbifKeyBySci.set(sci, key);
+    return key;
+  }catch(_){ _gbifKeyBySci.set(sci, null); return null; }
+}
+// Recupere les obs GBIF pour cette espece, sur un mois donne, sur une plage d'annees.
+// Limite a 300 points (une seule page) : GBIF renvoie count total en meta, utilise pour afficher un warning.
+async function _smFetchGbif(sci, month, yearMin, yearMax){
+  const key = await _sciToGbifKey(sci);
+  if(!key) return { points:[], total:0, error:'taxonomy' };
+  const yearParam = (yearMin===yearMax) ? String(yearMin) : `${yearMin},${yearMax}`;
+  const url = `https://api.gbif.org/v1/occurrence/search?taxonKey=${key}&country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=300`;
+  try{
+    const r = await fetch(url);
+    if(!r.ok) throw new Error('http');
+    const j = await r.json();
+    const points = (j.results||[])
+      .filter(o => typeof o.decimalLatitude==='number' && typeof o.decimalLongitude==='number')
+      .map(o => ({
+        lat:o.decimalLatitude, lon:o.decimalLongitude,
+        name: o.locality || o.stateProvince || 'lieu',
+        loc: o.locality || o.stateProvince || '',
+        date: (o.eventDate||'').slice(0,10),
+        count: (typeof o.individualCount==='number' && o.individualCount>0) ? o.individualCount : null,
+        isGbif:true
+      }));
+    return { points, total: j.count||0, error:null };
+  }catch(_){ return { points:[], total:0, error:'network' }; }
+}
 async function _renderSpeciesMap(key){
   _smCurrentKey = key;
   const wrap = $('#smMapWrap'), el = $('#smMap'); if(!wrap || !el || !window.L){ if(wrap) wrap.hidden=true; return; }
@@ -5707,9 +5751,12 @@ async function _renderSpeciesMap(key){
     _smMapLayer.clearLayers();
   }
   _smMarkers = [];
+  // Affiche / masque les controles GBIF selon le mode courant.
+  const gbifCtrl = $('#smMapGbifCtrl'); if(gbifCtrl) gbifCtrl.hidden = (_smMapMode !== 'gbif');
   _smSetHint('… chargement');
   // Recolte les points selon le mode
   let points = [];
+  let gbifTotal = 0, gbifMonth = 0, gbifYearMin = 0, gbifYearMax = 0;
   if(_smMapMode === 'friends'){
     for(const p of realPeople){
       const v = p.species && p.species.get(key);
@@ -5717,13 +5764,29 @@ async function _renderSpeciesMap(key){
         points.push({ lat:v.lat, lon:v.lon, name:p.name, si:p.si, loc:v.loc||'', date:v.date||'' });
       }
     }
-  } else {
+  } else if(_smMapMode === 'ebird'){
     const res = await _smFetchEbirdRecent(key);
     if(_smCurrentKey !== key || _smMapMode !== 'ebird') return;
     points = res.points;
     if(!points.length){
       wrap.hidden = false;
       _smSetHint(res.error==='taxonomy' ? 'Espece introuvable dans la taxonomie eBird.' : res.error==='network' ? 'Erreur reseau lors de la requete eBird.' : 'Pas d\'obs eBird recente (30j) en France pour cette espece.');
+      return;
+    }
+  } else if(_smMapMode === 'gbif'){
+    gbifMonth = parseInt($('#smGbifMonth')?.value, 10) || 8;
+    const yMinRaw = parseInt($('#smGbifYearMin')?.value, 10) || 2018;
+    const yMaxRaw = parseInt($('#smGbifYearMax')?.value, 10) || 2022;
+    gbifYearMin = Math.min(yMinRaw, yMaxRaw);
+    gbifYearMax = Math.max(yMinRaw, yMaxRaw);
+    _smSetHint(`… chargement GBIF (${_SM_MONTH_NAMES[gbifMonth]} ${gbifYearMin===gbifYearMax?gbifYearMin:gbifYearMin+' → '+gbifYearMax})`);
+    const res = await _smFetchGbif(key, gbifMonth, gbifYearMin, gbifYearMax);
+    if(_smCurrentKey !== key || _smMapMode !== 'gbif') return;
+    points = res.points;
+    gbifTotal = res.total;
+    if(!points.length){
+      wrap.hidden = false;
+      _smSetHint(res.error==='taxonomy' ? 'Espèce introuvable dans la base GBIF.' : res.error==='network' ? 'Erreur réseau lors de la requête GBIF.' : `Aucune obs GBIF en France pour ${_SM_MONTH_NAMES[gbifMonth]} ${gbifYearMin===gbifYearMax?gbifYearMin:gbifYearMin+' → '+gbifYearMax}.`);
       return;
     }
   }
@@ -5741,14 +5804,21 @@ async function _renderSpeciesMap(key){
     const m = L.circleMarker([p.lat, p.lon], { radius:7, weight:2, color:'#fff', fillColor:col, fillOpacity:0.9, opacity:1 });
     m._baseLat = p.lat; m._baseLon = p.lon;
     const gm = `<a href="https://www.google.com/maps?q=${p.lat},${p.lon}" target="_blank" rel="noopener">🗺️ Google Maps</a>`;
-    const ff = p.loc ? ` · <a href="https://www.google.com/search?q=${encodeURIComponent('site:faune-france.org "' + p.loc + '"')}" target="_blank" rel="noopener">🐦 Faune-France</a>` : '';
     const cntTxt = p.count ? ` · ${p.count} individu${p.count>1?'s':''}` : '';
-    m.bindPopup(`<b>${esc(p.name)}</b><br><span>${esc(p.date||'')}${p.loc?' · '+esc(p.loc):''}${cntTxt}</span><br>${gm}${ff}`);
+    m.bindPopup(`<b>${esc(p.name)}</b><br><span>${esc(p.date||'')}${p.loc?' · '+esc(p.loc):''}${cntTxt}</span><br>${gm}`);
     _smMapLayer.addLayer(m);
     _smMarkers.push(m);
     bounds.push([p.lat, p.lon]);
   }
-  _smSetHint(_smMapMode==='friends' ? `${points.length} obs de la ligue` : `${points.length} obs eBird (30 derniers jours, France)`);
+  if(_smMapMode==='friends'){
+    _smSetHint(`${points.length} obs de la ligue`);
+  } else if(_smMapMode==='ebird'){
+    _smSetHint(`${points.length} obs eBird (30 derniers jours, France)`);
+  } else {
+    const rangeTxt = gbifYearMin===gbifYearMax ? gbifYearMin : `${gbifYearMin} → ${gbifYearMax}`;
+    const truncTxt = (gbifTotal > points.length) ? ` sur ${gbifTotal.toLocaleString('fr-FR')} au total (tronqué)` : '';
+    _smSetHint(`${points.length} obs GBIF · ${_SM_MONTH_NAMES[gbifMonth]} ${rangeTxt}${truncTxt}`);
+  }
   requestAnimationFrame(()=>{
     try{
       _smMapInstance.invalidateSize();
@@ -5764,6 +5834,13 @@ document.addEventListener('click', e=>{
   _smMapMode = b.dataset.mapMode;
   document.querySelectorAll('#smMapSeg button').forEach(x => x.classList.toggle('on', x===b));
   if(_smCurrentKey) _renderSpeciesMap(_smCurrentKey);
+});
+// Changement mois/annees GBIF : reload la carte si on est en mode GBIF.
+document.addEventListener('change', e=>{
+  const t = e.target;
+  if(t && (t.id === 'smGbifMonth' || t.id === 'smGbifYearMin' || t.id === 'smGbifYearMax')){
+    if(_smMapMode === 'gbif' && _smCurrentKey) _renderSpeciesMap(_smCurrentKey);
+  }
 });
 function closeSpeciesModal(){
   const modal = $('#speciesModal'); if(!modal) return;
