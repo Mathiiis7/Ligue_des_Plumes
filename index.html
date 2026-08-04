@@ -5602,8 +5602,13 @@ function openSpeciesModal(sci){
   const ebirdUrl = code ? `https://ebird.org/species/${encodeURIComponent(code)}` : `https://ebird.org/search?q=${encodeURIComponent(sci)}`;
   const wikiUrl = `https://fr.wikipedia.org/wiki/${encodeURIComponent(sci.replace(/ /g,'_'))}`;
   const xcUrl = `https://xeno-canto.org/species/${encodeURIComponent(sci.replace(/ /g,'-'))}`;
+  // Faune-France n'expose pas d'URL directe par espece (leur ID interne n'est pas mappable
+  // sans acces API). Utilise une recherche Google restreinte au site : atterrit sur la page
+  // espece ou la galerie observations la plupart du temps.
+  const ffUrl = `https://www.google.com/search?q=${encodeURIComponent('site:faune-france.org "' + sci + '"')}`;
   $('#smLinks').innerHTML = `
     <a href="${ebirdUrl}" target="_blank" rel="noopener">🌍 eBird</a>
+    <a href="${ffUrl}" target="_blank" rel="noopener" title="Recherche sur Faune-France (LPO)">🐦 Faune-France</a>
     <a href="${wikiUrl}" target="_blank" rel="noopener">📖 Wikipédia</a>
     <a href="${xcUrl}" target="_blank" rel="noopener">🎵 xeno-canto</a>
   `;
