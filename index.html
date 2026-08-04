@@ -5857,13 +5857,29 @@ function _bboxOfRegion(regionCode){
   }
   return [latMin, latMax, lonMin, lonMax];
 }
-// Datasets a exclure des resultats GBIF cote client (doublons avec nos autres modes).
-// - eBird EOD : 4fa7b334-ce0d-4e88-aaae-2e0c138d049e (deja couvert par le mode eBird 30j).
-const _GBIF_EXCLUDE_DATASETS = new Set(['4fa7b334-ce0d-4e88-aaae-2e0c138d049e']);
+// Detecte les "localities" bidons (codes postaux, coordonnees, chaines vides) qu'on
+// prefere ignorer au profit de gadm.level3 (nom de commune propre, present a 100%).
+// Exemples rejetes : "24350, Grand-Brassac FR-Aquitaine 45.29139, 0.52765" (coordonnees),
+// "" (vide), "34567" (postal seul), "N/A" / "inconnu".
+function _gbifLocalityLooksReal(s){
+  if(!s) return false;
+  const t = s.trim();
+  if(t.length < 3) return false;
+  // Coordonnees embarquees (lat/lon en fin de chaine)
+  if(/-?\d+\.\d+\s*,\s*-?\d+\.\d+/.test(t)) return false;
+  // Postal seul, ou "n/a"
+  if(/^\d{4,5}$/.test(t)) return false;
+  if(/^(n\/a|na|inconnu|unknown)$/i.test(t)) return false;
+  return true;
+}
 // Recupere les obs GBIF pour cette espece, sur un mois donne, sur une plage d'annees.
 // bbox optionnelle = [latMin, latMax, lonMin, lonMax] pour filtrer geographiquement (region ou dept).
 // Limite a 300 points (une seule page) : GBIF renvoie count total en meta, utilise pour afficher un warning.
 // Extrait des champs riches (heure, observateur, comportement, lien source) pour les popups.
+// NB : on n'exclut PAS les records eBird EOD ici (contrairement a une version anterieure). Le mode
+// "eBird 30 j" couvre les 30 derniers jours en live ; le mode GBIF regarde l'historique
+// (annees precises), et les records eBird historiques sont de la donnee legitime. Les exclure
+// eliminait ~90% des points visibles sur les periodes recentes.
 async function _smFetchGbif(sci, month, yearMin, yearMax, bbox){
   const key = await _sciToGbifKey(sci);
   if(!key) return { points:[], total:0, error:'taxonomy' };
@@ -5877,20 +5893,22 @@ async function _smFetchGbif(sci, month, yearMin, yearMax, bbox){
     if(!r.ok) throw new Error('http');
     const j = await r.json();
     const rawResults = (j.results||[]).filter(o => typeof o.decimalLatitude==='number' && typeof o.decimalLongitude==='number');
-    let excluded = 0;
-    const points = [];
-    for(const o of rawResults){
-      if(_GBIF_EXCLUDE_DATASETS.has(o.datasetKey)){ excluded++; continue; }
-      // Nom affiche : locality > gadm.level3 (commune) > stateProvince > 'lieu'.
-      const commune = o.gadm && o.gadm.level3 && o.gadm.level3.name;
-      const dept = o.gadm && o.gadm.level2 && o.gadm.level2.name;
-      const name = o.locality || commune || dept || o.stateProvince || 'lieu';
-      // Observer : anonyme "obsrXXXXX" (eBird) -> masque ; obfuscation on affiche tel quel sinon.
+    const points = rawResults.map(o => {
+      // Localisation : gadm.level3 (commune, 100% populated) est la source la plus fiable.
+      // On ajoute locality en complement si elle a l'air propre (pas coords, pas code postal seul).
+      const commune = o.gadm && o.gadm.level3 && o.gadm.level3.name || '';
+      const dept = o.gadm && o.gadm.level2 && o.gadm.level2.name || '';
+      const localityClean = _gbifLocalityLooksReal(o.locality) ? o.locality.trim() : '';
+      // Nom affiche : locality precise si utile > commune > dept > 'lieu'.
+      const name = localityClean || commune || dept || 'lieu';
+      // Ligne meta secondaire : commune (+ dept) si on a deja affiche locality en titre.
+      const subloc = localityClean && commune ? (dept ? `${commune}, ${dept}` : commune) : (localityClean ? '' : dept);
+      // Observer : anonyme "obsrXXXXX" (eBird) -> masque ; sinon on affiche.
       const rawObs = o.recordedBy || '';
       const observer = /^obsr\d+$/i.test(rawObs) ? '' : rawObs;
-      points.push({
+      return {
         lat:o.decimalLatitude, lon:o.decimalLongitude,
-        name, loc: o.locality || commune || dept || '',
+        name, loc: subloc,
         commune, dept,
         date: (o.eventDate||'').slice(0,10),
         time: o.eventTime || '',
@@ -5903,16 +5921,9 @@ async function _smFetchGbif(sci, month, yearMin, yearMax, bbox){
         sourceUrl: o.references || '',
         gbifId: o.gbifID || o.key || '',
         isGbif:true
-      });
-    }
-    // Total ajuste : on retire les records eBird du compte affiche pour rester coherent.
-    // (GBIF ne permet pas de filtrer "NOT datasetKey" cote serveur, mais on peut au moins
-    // ajuster le total affiche a partir du ratio observe sur la page renvoyee.)
-    const totalRaw = j.count||0;
-    const totalAdj = excluded > 0 && rawResults.length > 0
-      ? Math.round(totalRaw * (points.length / rawResults.length))
-      : totalRaw;
-    return { points, total: totalAdj, error:null };
+      };
+    });
+    return { points, total: j.count||0, error:null };
   }catch(_){ return { points:[], total:0, error:'network' }; }
 }
 async function _renderSpeciesMap(key){
