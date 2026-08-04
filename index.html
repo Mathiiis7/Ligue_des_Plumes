@@ -5857,9 +5857,13 @@ function _bboxOfRegion(regionCode){
   }
   return [latMin, latMax, lonMin, lonMax];
 }
+// Datasets a exclure des resultats GBIF cote client (doublons avec nos autres modes).
+// - eBird EOD : 4fa7b334-ce0d-4e88-aaae-2e0c138d049e (deja couvert par le mode eBird 30j).
+const _GBIF_EXCLUDE_DATASETS = new Set(['4fa7b334-ce0d-4e88-aaae-2e0c138d049e']);
 // Recupere les obs GBIF pour cette espece, sur un mois donne, sur une plage d'annees.
 // bbox optionnelle = [latMin, latMax, lonMin, lonMax] pour filtrer geographiquement (region ou dept).
 // Limite a 300 points (une seule page) : GBIF renvoie count total en meta, utilise pour afficher un warning.
+// Extrait des champs riches (heure, observateur, comportement, lien source) pour les popups.
 async function _smFetchGbif(sci, month, yearMin, yearMax, bbox){
   const key = await _sciToGbifKey(sci);
   if(!key) return { points:[], total:0, error:'taxonomy' };
@@ -5872,17 +5876,43 @@ async function _smFetchGbif(sci, month, yearMin, yearMax, bbox){
     const r = await fetch(url);
     if(!r.ok) throw new Error('http');
     const j = await r.json();
-    const points = (j.results||[])
-      .filter(o => typeof o.decimalLatitude==='number' && typeof o.decimalLongitude==='number')
-      .map(o => ({
+    const rawResults = (j.results||[]).filter(o => typeof o.decimalLatitude==='number' && typeof o.decimalLongitude==='number');
+    let excluded = 0;
+    const points = [];
+    for(const o of rawResults){
+      if(_GBIF_EXCLUDE_DATASETS.has(o.datasetKey)){ excluded++; continue; }
+      // Nom affiche : locality > gadm.level3 (commune) > stateProvince > 'lieu'.
+      const commune = o.gadm && o.gadm.level3 && o.gadm.level3.name;
+      const dept = o.gadm && o.gadm.level2 && o.gadm.level2.name;
+      const name = o.locality || commune || dept || o.stateProvince || 'lieu';
+      // Observer : anonyme "obsrXXXXX" (eBird) -> masque ; obfuscation on affiche tel quel sinon.
+      const rawObs = o.recordedBy || '';
+      const observer = /^obsr\d+$/i.test(rawObs) ? '' : rawObs;
+      points.push({
         lat:o.decimalLatitude, lon:o.decimalLongitude,
-        name: o.locality || o.stateProvince || 'lieu',
-        loc: o.locality || o.stateProvince || '',
+        name, loc: o.locality || commune || dept || '',
+        commune, dept,
         date: (o.eventDate||'').slice(0,10),
+        time: o.eventTime || '',
         count: (typeof o.individualCount==='number' && o.individualCount>0) ? o.individualCount : null,
+        observer,
+        behavior: o.behavior || '',
+        lifeStage: o.lifeStage || '',
+        sex: o.sex || '',
+        datasetName: o.datasetName || '',
+        sourceUrl: o.references || '',
+        gbifId: o.gbifID || o.key || '',
         isGbif:true
-      }));
-    return { points, total: j.count||0, error:null };
+      });
+    }
+    // Total ajuste : on retire les records eBird du compte affiche pour rester coherent.
+    // (GBIF ne permet pas de filtrer "NOT datasetKey" cote serveur, mais on peut au moins
+    // ajuster le total affiche a partir du ratio observe sur la page renvoyee.)
+    const totalRaw = j.count||0;
+    const totalAdj = excluded > 0 && rawResults.length > 0
+      ? Math.round(totalRaw * (points.length / rawResults.length))
+      : totalRaw;
+    return { points, total: totalAdj, error:null };
   }catch(_){ return { points:[], total:0, error:'network' }; }
 }
 async function _renderSpeciesMap(key){
@@ -5971,7 +6001,23 @@ async function _renderSpeciesMap(key){
     m._baseLat = p.lat; m._baseLon = p.lon;
     const gm = `<a href="https://www.google.com/maps?q=${p.lat},${p.lon}" target="_blank" rel="noopener">🗺️ Google Maps</a>`;
     const cntTxt = p.count ? ` · ${p.count} individu${p.count>1?'s':''}` : '';
-    m.bindPopup(`<b>${esc(p.name)}</b><br><span>${esc(p.date||'')}${p.loc?' · '+esc(p.loc):''}${cntTxt}</span><br>${gm}`);
+    // Popup enrichi pour GBIF : heure, comportement, observateur, stage / sexe, source lien.
+    let extra = '';
+    if(p.isGbif){
+      const parts = [];
+      if(p.time) parts.push(`🕐 ${esc(p.time)}`);
+      if(p.behavior) parts.push(`🎯 ${esc(p.behavior)}`);
+      const stageSex = [p.lifeStage, p.sex].filter(Boolean).join(' · ');
+      if(stageSex) parts.push(`🐣 ${esc(stageSex)}`);
+      if(p.observer) parts.push(`👤 ${esc(p.observer)}`);
+      if(parts.length) extra += `<br><span style="font-size:11.5px;color:var(--ink-3)">${parts.join(' · ')}</span>`;
+      const links = [];
+      if(p.sourceUrl) links.push(`<a href="${esc(p.sourceUrl)}" target="_blank" rel="noopener">🔗 source</a>`);
+      if(p.gbifId) links.push(`<a href="https://www.gbif.org/occurrence/${esc(p.gbifId)}" target="_blank" rel="noopener">🌍 GBIF</a>`);
+      if(links.length) extra += `<br>${links.join(' · ')}`;
+      if(p.datasetName) extra += `<br><span style="font-size:10.5px;color:var(--ink-3);font-style:italic">${esc(p.datasetName)}</span>`;
+    }
+    m.bindPopup(`<b>${esc(p.name)}</b><br><span>${esc(p.date||'')}${p.loc?' · '+esc(p.loc):''}${cntTxt}</span>${extra}<br>${gm}`);
     _smMapLayer.addLayer(m);
     _smMarkers.push(m);
     bounds.push([p.lat, p.lon]);
