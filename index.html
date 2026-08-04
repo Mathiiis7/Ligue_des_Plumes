@@ -540,6 +540,8 @@
   .feed-item { display:flex; align-items:flex-start; gap:10px; padding:9px 4px; border-bottom:1px solid var(--line); }
   .feed-item:last-child { border-bottom:none; }
   .feed-dot { width:10px; height:10px; border-radius:50%; flex:none; margin-top:5px; }
+  /* Pour les events non-obs (trophees) : on remplace la pastille couleur par un emoji nu. */
+  .feed-emoji { font-size:18px; line-height:1; flex:none; margin-top:2px; background:transparent !important; width:auto !important; height:auto !important; border-radius:0 !important; }
   .feed-body { font-size:14px; color:var(--ink); }
   .feed-date { font-size:11.5px; color:var(--ink-3); margin-top:1px; }
   .feed-rar { font-weight:600; }
@@ -2884,7 +2886,7 @@ function renderFeed(){
     const isNew = it.addedAt && it.addedAt > lastSeen;
     const badge = isNew ? ' <span class="feed-new">🆕 nouveau</span>' : '';
     if(it.kind === 'unlock'){
-      return `<div class="feed-item"><span class="feed-dot" style="background:var(--gold)">🏆</span>
+      return `<div class="feed-item"><span class="feed-emoji">🏆</span>
         <div class="feed-body"><div><b>${esc(it.name)}</b> a débloqué le trophée <b>${esc(it.trophyName)}</b>${badge}</div>
         <div class="feed-date">Trophée</div></div></div>`;
     }
@@ -2892,12 +2894,12 @@ function renderFeed(){
       const takes = it.fromName
         ? `prend le trophée <b>${esc(it.trophyName)}</b> à <b>${esc(it.fromName)}</b>`
         : `s'empare du trophée <b>${esc(it.trophyName)}</b>`;
-      return `<div class="feed-item"><span class="feed-dot" style="background:var(--gold)">🏆</span>
+      return `<div class="feed-item"><span class="feed-emoji">🏆</span>
         <div class="feed-body"><div><b>${esc(it.name)}</b> ${takes} <span class="feed-tag">#birdygoat</span>${badge}</div>
         <div class="feed-date">Transfert</div></div></div>`;
     }
     if(it.kind === 'demote'){
-      return `<div class="feed-item"><span class="feed-dot" style="background:#b0838a">📉</span>
+      return `<div class="feed-item"><span class="feed-emoji">📉</span>
         <div class="feed-body"><div><b>${esc(it.name)}</b> passe de <b>${esc(it.fromTrophy)}</b> à <b>${esc(it.toTrophy)}</b> <span class="feed-tag">#birdyseum</span>${badge}</div>
         <div class="feed-date">Rétrogradé</div></div></div>`;
     }
