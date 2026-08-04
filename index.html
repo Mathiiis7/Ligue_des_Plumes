@@ -596,6 +596,7 @@
   .map-el .leaflet-popup-content .p-btn.pl-gmaps { background:#e9f2e2; border-color:#b6d3a3; color:#2e5b1a; }
   .map-el .leaflet-popup-content .p-btn.pl-transit { background:#fdecc8; border-color:#f0c977; color:#7a4d0f; }
   .map-el .leaflet-popup-content .p-btn.pl-ebird { background:#dfe9ee; border-color:#a3bdc9; color:#0b3d55; }
+  .map-el .leaflet-popup-content .p-btn.pl-ff { background:#f2e5f4; border-color:#c99ecf; color:#5e2a68; }
   .map-el .leaflet-popup-content .hs-cnt { font-size:11px; font-weight:600; color:#5a6b6a; margin-left:4px; white-space:nowrap; }
   .map-el .leaflet-popup-content .hs-cnt.loading { color:#8fa19f; font-style:italic; }
   .map-el .leaflet-popup-content .hs-cnt.hot { color:#0b7c77; }
@@ -4359,6 +4360,10 @@ async function _loadHotspotsLayer(region){
       // Ouvre Google Maps en mode transport en commun depuis la position actuelle (pas d'origin → device location).
       const tr = `<a href="https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}&travelmode=transit" target="_blank" rel="noopener" class="p-btn pl-transit">🚌 Transit</a>`;
       const eb = `<a href="https://ebird.org/hotspot/${esc(h.locId)}" target="_blank" rel="noopener" class="p-btn pl-ebird">🐦 eBird</a>`;
+      // Lien Faune-France : recherche Google restreinte, on inclut le nom du dept pour maximiser
+      // les chances de tomber sur la bonne page. Faune-France n'expose pas d'URL directe par lieu.
+      const ffQ = (h.locName||h.name||'') + (h.subnational2Name?' '+h.subnational2Name:'');
+      const ff = ffQ.trim() ? `<a href="https://www.google.com/search?q=${encodeURIComponent('site:faune-france.org "' + ffQ.trim() + '"')}" target="_blank" rel="noopener" class="p-btn pl-ff">🐦 Faune-France</a>` : '';
       const scope = hotspotSort==='recent' ? 'ces 30 jours' : 'au total (all-time)';
       const monthTag = monthFilter ? ` · <b>${toDoShown}</b> actifs en ${MONTH_NAMES[monthFilter]}` : '';
       const cntLine = (hotspotSort==='total')
@@ -4420,7 +4425,7 @@ async function _loadHotspotsLayer(region){
       const favBtn = myUid ? `<button class="hs-fav${isFav?' on':''}" data-loc="${esc(h.locId)}" title="${isFav?'Retirer des favoris':'Ajouter aux favoris'}">${isFav?'★':'☆'}</button>` : '';
       m.bindPopup(`<b>🏞️ ${esc(h.locName||h.name||'?')}</b> ${favBtn}<br>`+
         `<span class="p-meta">${h.subnational2Name?esc(h.subnational2Name)+' · ':''}${esc(h.subnational1Name||'')}${distTag}</span><br>`+
-        `<span class="p-meta">${cntLine}</span>${missingBlock}<br>${gm} ${tr} ${eb}`,
+        `<span class="p-meta">${cntLine}</span>${missingBlock}<br>${gm} ${tr} ${eb} ${ff}`,
         { maxHeight:340, autoPan:true });
       // Recherche : nom du hotspot + région/dept + noms fr des espèces manquantes ici
       // (permet à la barre "Filtrer par nom d'espèce" de matcher un hotspot où l'espèce est présente).
@@ -5605,13 +5610,11 @@ function openSpeciesModal(sci){
   const ebirdUrl = code ? `https://ebird.org/species/${encodeURIComponent(code)}` : `https://ebird.org/search?q=${encodeURIComponent(sci)}`;
   const wikiUrl = `https://fr.wikipedia.org/wiki/${encodeURIComponent(sci.replace(/ /g,'_'))}`;
   const xcUrl = `https://xeno-canto.org/species/${encodeURIComponent(sci.replace(/ /g,'-'))}`;
-  // Faune-France n'expose pas d'URL directe par espece (leur ID interne n'est pas mappable
-  // sans acces API). Utilise une recherche Google restreinte au site : atterrit sur la page
-  // espece ou la galerie observations la plupart du temps.
-  const ffUrl = `https://www.google.com/search?q=${encodeURIComponent('site:faune-france.org "' + sci + '"')}`;
+  // NB : lien Faune-France retire au niveau espece — Google search restreint atterrissait
+  // rarement sur une page utile. Le lien Faune-France reste sur les popups d'hotspots ou il
+  // beneficie d'un contexte lieu-dit + departement pour matcher.
   $('#smLinks').innerHTML = `
     <a href="${ebirdUrl}" target="_blank" rel="noopener">🌍 eBird</a>
-    <a href="${ffUrl}" target="_blank" rel="noopener" title="Recherche sur Faune-France (LPO)">🐦 Faune-France</a>
     <a href="${wikiUrl}" target="_blank" rel="noopener">📖 Wikipédia</a>
     <a href="${xcUrl}" target="_blank" rel="noopener">🎵 xeno-canto</a>
   `;
