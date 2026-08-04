@@ -5995,10 +5995,13 @@ async function _renderSpeciesMap(key){
   });
 }
 // Clic sur le selecteur mode : switch + rechargement.
+// On cache immediatement la barre de controles GBIF (region / dept / mois / annees) hors mode
+// GBIF, sans attendre le render : garantit qu'elle n'apparait pas sur "Mes amis" ou "eBird 30 j".
 document.addEventListener('click', e=>{
   const b = e.target.closest('#smMapSeg button[data-map-mode]'); if(!b) return;
   _smMapMode = b.dataset.mapMode;
   document.querySelectorAll('#smMapSeg button').forEach(x => x.classList.toggle('on', x===b));
+  const gbifCtrl = $('#smMapGbifCtrl'); if(gbifCtrl) gbifCtrl.hidden = (_smMapMode !== 'gbif');
   if(_smCurrentKey) _renderSpeciesMap(_smCurrentKey);
 });
 // Changement mois/annees/region/dept GBIF : reload la carte si on est en mode GBIF.
