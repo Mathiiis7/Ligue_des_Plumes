@@ -2759,12 +2759,16 @@ function _computeTrophyEvents(){
     const prevHolders = prev.holders || {};
     const prevTopRank = prev.topRank || {};
     const prevUnlocked = prev.unlocked || {};
-    // 2) NEW UNLOCKS pour les trophees NON competitifs (les autres passent par transfer/demote)
+    // 2) NEW UNLOCKS pour les trophees NON competitifs et NON base sur vote.
+    //    Exclus : classement (transfer/demote), single holder (transfer), et trophees a vote.
+    //    Les vote-based (Gros Bebe, Kimono, Necrophile) sont exclus car votesMap est peuple
+    //    de maniere asynchrone au boot → l'etat "just unlocked" flappait a chaque reload.
+    const VOTE_TROPHY_NAMES = new Set(TROPHIES.filter(t => t.special === 'vote').map(t => t.name));
     for(const p of realPeople){
       const was = new Set(prevUnlocked[p.id] || []);
       for(const tName of currUnlocked[p.id]){
         if(was.has(tName)) continue;
-        if(RANK_TROPHIES.includes(tName) || SINGLE_HOLDER_TROPHIES.has(tName)) continue;
+        if(RANK_TROPHIES.includes(tName) || SINGLE_HOLDER_TROPHIES.has(tName) || VOTE_TROPHY_NAMES.has(tName)) continue;
         evts.push({ kind:'unlock', at:now, uid:p.id, name:p.name, trophyName:tName });
       }
     }
