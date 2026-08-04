@@ -3638,9 +3638,10 @@ function _renderAbHotspots(){
     const m = L.circleMarker([o.lat, o.lng], { radius:5, weight:1.5, color:'#fff', fillColor:c, fillOpacity:0.9, opacity:1 });
     const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
     const eb = o.locId ? `<a href="https://ebird.org/hotspot/${esc(o.locId)}" target="_blank" rel="noopener" class="p-link">🐦 eBird</a>` : '';
+    const ff = o.locName ? `<a href="https://www.google.com/search?q=${encodeURIComponent('site:faune-france.org "' + o.locName + '"')}" target="_blank" rel="noopener" class="p-link">🐦 Faune-France</a>` : '';
     m.bindPopup(`<b>🏞️ ${esc(o.locName||'?')}</b><br>`+
       `<span class="p-meta"><b>${esc(nm)}</b></span><br>`+
-      `<span class="p-meta">Vu le <b>${esc((o.obsDt||'').slice(0,10))}</b>${o.howMany?' · '+o.howMany+' individu'+(o.howMany>1?'s':''):''}</span><br>${gm} ${eb}`);
+      `<span class="p-meta">Vu le <b>${esc((o.obsDt||'').slice(0,10))}</b>${o.howMany?' · '+o.howMany+' individu'+(o.howMany>1?'s':''):''}</span><br>${gm} ${eb} ${ff}`);
     _lyrAbHotspots.addLayer(m);
     n++;
   }
@@ -3855,10 +3856,11 @@ async function _showSpeciesDetail(sciName, speciesCode){
       // Couleur = rareté de l'espèce (gris pour exotique), taille légèrement plus grosse que la couche missing.
       const dot = L.circleMarker([o.lat,o.lng], { radius:7, weight:2, color:'#fff', fillColor:color, fillOpacity:.9, opacity:1 });
       const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
+      const ff = o.locName ? ` · <a href="https://www.google.com/search?q=${encodeURIComponent('site:faune-france.org "' + o.locName + '"')}" target="_blank" rel="noopener" class="p-link">🐦 Faune-France</a>` : '';
       dot.bindPopup(`<b>${esc(nm)}</b> <span class="p-sci">${esc(sciName||'')}</span><br>`+
         `<span class="p-meta">📍 ${esc(o.locName||'?')}</span><br>`+
         `<span class="p-meta">${esc((o.obsDt||'').slice(0,10))}${o.howMany?' · '+o.howMany+' individus':''}</span><br>`+
-        `<span class="p-meta">Rareté : <b>${w}</b> · ${REAL_LABELS[w]||''}</span><br>${gm}`);
+        `<span class="p-meta">Rareté : <b>${w}</b> · ${REAL_LABELS[w]||''}</span><br>${gm}${ff}`);
       dot._q = _mapNorm(nm+' '+(sciName||'')+' '+(o.locName||''));
       dot._sciName = sciName; dot._speciesCode = speciesCode;
       _lyrDetail.addLayer(dot); count++;
@@ -4181,10 +4183,11 @@ async function _loadMissingLayer(zone, days=14, rarities=new Set(), onProgress){
       const nm = FR_NAMES[(o.sciName||'').toLowerCase()] || o.comName || o.sciName;
       const m = L.circleMarker([o.dispLat, o.dispLon], { radius:R, weight:1.5, color:'#fff', fillColor:sciColor(o.sciName), fillOpacity:.9, opacity:1 });
       const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lon}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
+      const ff = o.locName ? ` · <a href="https://www.google.com/search?q=${encodeURIComponent('site:faune-france.org "' + o.locName + '"')}" target="_blank" rel="noopener" class="p-link">🐦 Faune-France</a>` : '';
       m.bindPopup(`<b>${esc(nm)}</b> <span class="p-sci">${esc(o.sciName||'')}</span><br>`+
         `<span class="p-meta">🐦 <b>Vous ne l'avez pas encore</b></span><br>`+
         `<span class="p-meta">Vu le ${esc((o.obsDt||'').slice(0,10))} à ${esc(o.locName||'?')}${o.howMany?' · '+o.howMany:''}</span><br>`+
-        `<span class="p-meta">Rareté : <b>${w}</b> · ${REAL_LABELS[w]||''}</span><br>${gm}`);
+        `<span class="p-meta">Rareté : <b>${w}</b> · ${REAL_LABELS[w]||''}</span><br>${gm}${ff}`);
       m._q = _mapNorm(nm+' '+(o.sciName||'')+' '+(o.locName||''));
       m._speciesCode = o.speciesCode; m._sciName = o.sciName;
       _lyrMissing.addLayer(m);
@@ -5733,8 +5736,9 @@ async function _renderSpeciesMap(key){
     const m = L.circleMarker([p.lat, p.lon], { radius:7, weight:2, color:'#fff', fillColor:col, fillOpacity:0.9, opacity:1 });
     m._baseLat = p.lat; m._baseLon = p.lon;
     const gm = `<a href="https://www.google.com/maps?q=${p.lat},${p.lon}" target="_blank" rel="noopener">🗺️ Google Maps</a>`;
+    const ff = p.loc ? ` · <a href="https://www.google.com/search?q=${encodeURIComponent('site:faune-france.org "' + p.loc + '"')}" target="_blank" rel="noopener">🐦 Faune-France</a>` : '';
     const cntTxt = p.count ? ` · ${p.count} individu${p.count>1?'s':''}` : '';
-    m.bindPopup(`<b>${esc(p.name)}</b><br><span>${esc(p.date||'')}${p.loc?' · '+esc(p.loc):''}${cntTxt}</span><br>${gm}`);
+    m.bindPopup(`<b>${esc(p.name)}</b><br><span>${esc(p.date||'')}${p.loc?' · '+esc(p.loc):''}${cntTxt}</span><br>${gm}${ff}`);
     _smMapLayer.addLayer(m);
     _smMarkers.push(m);
     bounds.push([p.lat, p.lon]);
