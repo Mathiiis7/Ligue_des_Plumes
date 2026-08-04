@@ -113,6 +113,15 @@ service cloud.firestore {
       match /ebirdCache/{docId} {
         allow read, write: if request.auth != null;
       }
+
+      // Evenements trophees (unlock / transfer / demote) : partages entre appareils.
+      // Ecrits par n'importe quel membre connecte, avec des IDs deterministes cote client
+      // pour eviter les doublons quand plusieurs appareils detectent le meme changement.
+      match /trophyEvents/{eid} {
+        allow read: if request.auth != null;
+        allow create, update: if request.auth != null;
+        allow delete: if false;
+      }
     }
   }
 }

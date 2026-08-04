@@ -1418,6 +1418,7 @@ let unsubPresence = null, onlineMap = new Map(), presenceTimer = null, presenceW
 let unsubVotes = null, votesMap = new Map(), unsubFavs = null;
 let unsubReactions = null, reactionsMap = new Map(), unsubPhotos = null, photos = [];
 let unsubComments = null, commentsMap = new Map();   // Map<target, Array<{id,uid,name,text,createdAt}>>
+let unsubTrophyEvents = null, trophyEventsList = [];   // events synchronises via Firestore (partages entre appareils)
 let unsubRequests = null, requests = [], unsubReqVotes = null, reqVotesMap = new Map();
 // Admin(s) : uid autorisé à changer le statut d'une requête (À faire / En cours / Fait).
 // Mathis (compte email) — ajouter d'autres uid si besoin.
@@ -2528,6 +2529,15 @@ function subscribe(){
   unsubReqVotes = onSnapshot(collection(db,'leagues',leagueId,'requestVotes'),
     snap=>{ const m=new Map(); snap.forEach(d=>{ const v=d.data()||{}; if(!v.requestId||!v.uid)return; if(!m.has(v.requestId))m.set(v.requestId,new Set()); m.get(v.requestId).add(v.uid); }); reqVotesMap=m; renderRequests(); },
     ()=>{});
+  if(unsubTrophyEvents){ unsubTrophyEvents(); unsubTrophyEvents=null; }
+  unsubTrophyEvents = onSnapshot(collection(db,'leagues',leagueId,'trophyEvents'),
+    snap=>{
+      const arr = [];
+      snap.forEach(d => { const v = d.data() || {}; if(!v.kind || !v.uid) return; arr.push({ id:d.id, ...v, at: v.at?.toMillis?.() || 0 }); });
+      arr.sort((a,b) => a.at - b.at);   // ordre chronologique croissant (renderFeed retriera desc)
+      trophyEventsList = arr;
+      renderFeed(); updateTabDots();
+    }, ()=>{});
 }
 // ---- Présence "en ligne" ----
 function presenceBeat(){
@@ -2723,24 +2733,23 @@ let _feedPeopleKey = '';
 const RANK_TROPHIES = ['Écologue originel','Écologue en chef','Écologue chevronné','Apprenti écologue','Écologue du dimanche'];
 const SINGLE_HOLDER_TROPHIES = new Set(['Mike Horn','Marco Polo']);
 // Etat competitif precedent (holders + top rang par joueur + trophees debloques) sauve entre renders.
+// Uniquement en localStorage : c'est le "point de comparaison" LOCAL a l'appareil qui detecte
+// les changements. Les evenements eux-memes sont dans Firestore (collection trophyEvents), donc
+// partages entre appareils.
 function _loadCompState(){ try{ return JSON.parse(localStorage.getItem('mb-comp-state')||'{}'); }catch(_){ return {}; } }
 function _saveCompState(s){ try{ localStorage.setItem('mb-comp-state', JSON.stringify(s)); }catch(_){} }
-// Liste persistante des evenements du fil ({kind, at, uid, name, ...}).
-function _loadFeedEvents(){ try{ return JSON.parse(localStorage.getItem('mb-feed-events')||'[]'); }catch(_){ return []; } }
-function _saveFeedEvents(evts){ try{ localStorage.setItem('mb-feed-events', JSON.stringify(evts.slice(-200))); }catch(_){} }
-// Calcule les evenements courants (unlock + transfer + demote) et les persiste. Retourne toute la liste
-// (utilisee par renderFeed pour l'affichage et _countUnread pour la pastille de l'onglet).
-function _computeTrophyEvents(){
-  if(!realPeople.length) return _loadFeedEvents();
+// Slug pour construire des IDs Firestore deterministes (evite les doublons quand deux appareils
+// detectent le meme changement au meme moment).
+function _slug(s){ return (s||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'').slice(0,60); }
+// Detecte les changements d'etat cote client, ecrit les nouveaux evenements dans Firestore.
+// La collection sert de source de verite : le fil affiche trophyEventsList (populee par le snapshot).
+function _detectTrophyEvents(){
+  if(!realPeople.length || !myUid || !leagueId) return;
   const prev = _loadCompState();
   const firstRun = !prev.unlocked;
   const N = state.people.length || realPeople.length;
-  const now = Date.now();
   const nameByUid = Object.fromEntries(realPeople.map(p=>[p.id, p.name]));
-  // 1) Etat courant
-  const currUnlocked = {};   // uid -> Array<trophyName>
-  const currHolders = {};    // trophyName -> Array<uid>
-  const currTopRank = {};    // uid -> trophyName (meilleur Ecologue detenu)
+  const currUnlocked = {}, currHolders = {}, currTopRank = {};
   for(const p of realPeople){
     const s = statsFor(p, N);
     const owned = [];
@@ -2754,34 +2763,27 @@ function _computeTrophyEvents(){
     currUnlocked[p.id] = owned;
     for(const rt of RANK_TROPHIES) if(owned.includes(rt)){ currTopRank[p.id] = rt; break; }
   }
-  const evts = _loadFeedEvents();
+  const toWrite = [];
   if(!firstRun){
-    const prevHolders = prev.holders || {};
-    const prevTopRank = prev.topRank || {};
-    const prevUnlocked = prev.unlocked || {};
-    // 2) NEW UNLOCKS pour les trophees NON competitifs et NON base sur vote.
-    //    Exclus : classement (transfer/demote), single holder (transfer), et trophees a vote.
-    //    Les vote-based (Gros Bebe, Kimono, Necrophile) sont exclus car votesMap est peuple
-    //    de maniere asynchrone au boot → l'etat "just unlocked" flappait a chaque reload.
+    const prevHolders = prev.holders || {}, prevTopRank = prev.topRank || {}, prevUnlocked = prev.unlocked || {};
     const VOTE_TROPHY_NAMES = new Set(TROPHIES.filter(t => t.special === 'vote').map(t => t.name));
     for(const p of realPeople){
       const was = new Set(prevUnlocked[p.id] || []);
       for(const tName of currUnlocked[p.id]){
         if(was.has(tName)) continue;
         if(RANK_TROPHIES.includes(tName) || SINGLE_HOLDER_TROPHIES.has(tName) || VOTE_TROPHY_NAMES.has(tName)) continue;
-        evts.push({ kind:'unlock', at:now, uid:p.id, name:p.name, trophyName:tName });
+        toWrite.push({ id:`unlock__${p.id}__${_slug(tName)}`, data:{ kind:'unlock', uid:p.id, name:p.name, trophyName:tName } });
       }
     }
-    // 3) TRANSFERTS pour trophees uniques (Mike Horn, Marco Polo)
     for(const tName of SINGLE_HOLDER_TROPHIES){
       const prevOwner = (prevHolders[tName] || [])[0] || null;
       const currOwner = (currHolders[tName] || [])[0] || null;
-      if(prevOwner === currOwner) continue;
-      if(currOwner){
-        evts.push({ kind:'transfer', at:now, uid:currOwner, name:nameByUid[currOwner]||'quelqu\'un', fromUid:prevOwner, fromName:prevOwner?(nameByUid[prevOwner]||'quelqu\'un'):null, trophyName:tName });
-      }
+      if(prevOwner === currOwner || !currOwner) continue;
+      toWrite.push({
+        id:`transfer_sh__${_slug(tName)}__${currOwner}__from_${prevOwner||'none'}`,
+        data:{ kind:'transfer', uid:currOwner, name:nameByUid[currOwner]||'quelqu\'un', fromUid:prevOwner||null, fromName:prevOwner?(nameByUid[prevOwner]||'quelqu\'un'):null, trophyName:tName }
+      });
     }
-    // 4) TRANSFERTS / DEMOTES pour trophees de classement (Ecologues)
     for(const p of realPeople){
       const c = currTopRank[p.id] || null;
       const q = prevTopRank[p.id] || null;
@@ -2789,25 +2791,31 @@ function _computeTrophyEvents(){
       if(c && q){
         const ci = RANK_TROPHIES.indexOf(c), qi = RANK_TROPHIES.indexOf(q);
         if(ci > qi){
-          // Rang baisse : demote
-          evts.push({ kind:'demote', at:now, uid:p.id, name:p.name, fromTrophy:q, toTrophy:c });
+          toWrite.push({ id:`demote__${p.id}__${_slug(q)}__to_${_slug(c)}`, data:{ kind:'demote', uid:p.id, name:p.name, fromTrophy:q, toTrophy:c } });
         } else {
-          // Rang monte : transfert (trouver de qui il a pris le trophee `c`)
           const prevOwnersOfC = prevHolders[c] || [];
           const src = prevOwnersOfC.find(u => u !== p.id) || null;
-          evts.push({ kind:'transfer', at:now, uid:p.id, name:p.name, fromUid:src, fromName:src?(nameByUid[src]||'quelqu\'un'):null, trophyName:c });
+          toWrite.push({
+            id:`transfer_rk__${_slug(c)}__${p.id}__from_${src||'none'}`,
+            data:{ kind:'transfer', uid:p.id, name:p.name, fromUid:src||null, fromName:src?(nameByUid[src]||'quelqu\'un'):null, trophyName:c }
+          });
         }
       } else if(c && !q){
-        // 1re fois qu'il rentre dans le classement
-        evts.push({ kind:'unlock', at:now, uid:p.id, name:p.name, trophyName:c });
+        toWrite.push({ id:`unlock__${p.id}__${_slug(c)}`, data:{ kind:'unlock', uid:p.id, name:p.name, trophyName:c } });
       }
     }
   }
-  // Persiste l'etat courant + les evenements (tronques a 200 derniers).
   _saveCompState({ unlocked:currUnlocked, holders:currHolders, topRank:currTopRank });
-  if(evts.length > 200) evts.splice(0, evts.length - 200);
-  _saveFeedEvents(evts);
-  return evts;
+  // Ecriture Firestore (ID deterministe → duplicates entre appareils sont un no-op).
+  for(const ev of toWrite){
+    try{ setDoc(doc(db,'leagues',leagueId,'trophyEvents',ev.id), { ...ev.data, at:serverTimestamp() }); }catch(_){}
+  }
+}
+// Retourne la liste actuelle des evenements (source = Firestore snapshot).
+function _computeTrophyEvents(){
+  // Detecte + persiste les nouveaux evts (async, non bloquant), retourne la liste actuelle.
+  try{ _detectTrophyEvents(); }catch(_){}
+  return trophyEventsList;
 }
 function renderFeed(){
   const el=$('#feedList'); if(!el) return;
