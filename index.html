@@ -5393,26 +5393,34 @@ async function _fetchXenoSound(sci){
   const [gen, sp] = sci.split(' ');
   if(!gen || !sp){ _spSoundCache.set(key, {song:null, call:null}); return {song:null, call:null}; }
   const norm = u => { if(!u) return null; if(u.startsWith('//')) return 'https:' + u; if(u.startsWith('http://')) return 'https://' + u.slice(7); return u; };
-  // Une seule requete (pas de filtre type), on trie localement. Le champ x.type contient
-  // des valeurs libres comme "song", "call", "alarm call", "flight call", "subsong", etc.
-  // Filtrer via ?query=type:call cote xeno-canto rate beaucoup de recs a cause du matching partiel.
-  let song = null, call = null;
-  try{
-    const r = await fetch('https://xeno-canto.org/api/2/recordings?query=' + encodeURIComponent('gen:' + gen + ' sp:' + sp));
-    const j = await r.json();
-    const recs = Array.isArray(j?.recordings) ? j.recordings : [];
-    const isSong = t => /\bsong\b/i.test(t||'');
-    // "Cri" = tout enregistrement non-chant avec un type renseigne (call, alarm call, flight call,
-    // drumming, juvenile, begging, etc.). Filtrage large : de nombreuses especes n'ont pas de recording
-    // taggue "call" mais ont "alarm", "flight", etc.
-    const isCall = t => !!t && !isSong(t);
-    const pickBy = fn => recs.find(x => (x.q||'').toUpperCase()==='A' && x.file && fn(x.type))
-                      || recs.find(x => x.file && fn(x.type));
-    const s = pickBy(isSong), c = pickBy(isCall);
-    if(s) song = norm(s.file);
-    if(c) call = norm(c.file);
-  }catch(_){ }
-  // Fallback iNaturalist si on n'a strictement rien.
+  // Deux requetes xeno-canto en parallele : une filtree "type:song", une filtree "type:call".
+  // Le filtre type: fait un match partiel cote serveur → "type:call" attrape aussi "flight call",
+  // "alarm call", "nocturnal call", etc. Beaucoup plus fiable qu'un fetch tout-en-un + tri local
+  // (qui plafonne a ~500 recs par page et manque les cris quand une espece a bcp de chants).
+  async function queryXC(typeStr, qA){
+    const bits = ['gen:' + gen, 'sp:' + sp];
+    if(typeStr) bits.push('type:' + typeStr);
+    if(qA) bits.push('q:A');
+    try{
+      const r = await fetch('https://xeno-canto.org/api/2/recordings?query=' + encodeURIComponent(bits.join(' ')));
+      const j = await r.json();
+      const recs = Array.isArray(j?.recordings) ? j.recordings : [];
+      const withFile = recs.find(x => x.file);
+      return withFile ? norm(withFile.file) : null;
+    }catch(_){ return null; }
+  }
+  // Pour chaque categorie : d'abord qualite A, puis toutes qualites.
+  let [song, call] = await Promise.all([
+    queryXC('song', true).then(u => u || queryXC('song', false)),
+    queryXC('call', true).then(u => u || queryXC('call', false)),
+  ]);
+  // Si on n'a toujours pas de cri, essaie explicitement les autres tags "non-song" courants.
+  if(!call){
+    for(const t of ['alarm', 'flight', 'nocturnal', 'begging']){
+      call = await queryXC(t, false); if(call) break;
+    }
+  }
+  // Fallback iNaturalist si on n'a STRICTEMENT rien du tout.
   if(!song && !call){
     try{
       const t = await fetch('https://api.inaturalist.org/v1/taxa/autocomplete?q=' + encodeURIComponent(sci) + '&rank=species&per_page=1');
