@@ -5023,10 +5023,13 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     if(!stillMine()) return { total:0, points:0, aborted:true };
   }
   // 4b) Passe 2 : rattrapage pour les especes eclipsees par les communes dans le batch.
-  // Skip completement quand polygone actif : la zone est petite (<50 km2 typique), la
-  // plupart des especes n'ont aucune obs a l'interieur, le rattrapage genere ~500 requetes
-  // pour rien et declenche du 429 (rate limit GBIF).
-  const missedKeys = polygonWKT ? [] : keys.filter(k => !speciesWithPoints.has(k));
+  // Skip par defaut : test empirique sur Yvelines aout 2024-25 = 500 especes, mediane 3 obs
+  // par espece, 83% avec <10 obs. Un lot de 40 especes ne satture quasi jamais les 300 obs
+  // de GBIF (pagination sur 900 en filet). Les especes absentes du batch principal sont
+  // presque toujours absentes de la zone (0 obs), pas eclipsees. Rescue genere ~500 requetes
+  // pour ~0 gain, plus le risque 429 (rate limit). On garde le code au cas ou on veut
+  // reactiver, mais on skip toujours.
+  const missedKeys = [];
   if(missedKeys.length){
     if(onProgress) onProgress('rescue', 0, missedKeys.length);
     let rescueDone = 0;
