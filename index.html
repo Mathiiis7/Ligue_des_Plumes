@@ -5230,13 +5230,21 @@ async function _loadHotspotCounts(marker){
   await Promise.all(Array.from({length:Math.min(CONC, items.length)}, worker));
   marker._countsLoaded = true; marker._countsInflight = false;
 }
+// Jeton de generation : chaque appel incrémente le compteur. A chaque checkpoint on
+// verifie que le compteur n'a pas bouge (i.e. qu'un autre appel n'a pas demarre entre-temps).
+// Si oui, on abandonne silencieusement pour ne pas ecraser la couche avec les hotspots
+// d'une zone perimee.
+let _hotspotsRunSeq = 0;
 async function _loadHotspotsLayer(region){
   if(!_lyrHotspots) return;
+  const myRun = ++_hotspotsRunSeq;
+  const stillMine = () => myRun === _hotspotsRunSeq;
   const key = region+':'+hotspotSort;
   if(_loaded.hotspots===key && _lyrHotspots.getLayers().length) return;
   _lyrHotspots.clearLayers();
   try{
     const list = await _ebFetch(`https://api.ebird.org/v2/ref/hotspot/${region}?fmt=json`);
+    if(!stillMine()) return;
     const CAP = 50;
     // Exclusion des hotspots dormants : dernière obs > 2 ans → probablement obsolète (accès fermé,
     // birder parti…). L'API n'expose pas de "N espèces sur 2 ans", c'est le seul filtre gratuit.
@@ -5260,11 +5268,13 @@ async function _loadHotspotsLayer(region){
       }
       const poolRaw = pool.slice(0, 200);
       const enriched = await _enrichHotspots(poolRaw, region, hotspotSort==='recent'?'recent':'all');
+      if(!stillMine()) return;
       const usable = enriched.filter(h => (h.allSp||0) > 0);
       if(hotspotSort==='todo') usable.sort((a,b)=> b.toDo - a.toDo);
       else usable.sort((a,b)=> b.allSp - a.allSp);
       top = usable.slice(0, CAP);
     }
+    if(!stillMine()){ _lyrHotspots.clearLayers(); return; }
     // Spread des hotspots qui partagent les mêmes coords (cas rare : ~6 paires sur 17k)
     const withCoords = top.filter(h=>typeof h.lat==='number' && typeof h.lng==='number').map(h=>({ ...h, lat:h.lat, lon:h.lng }));
     const groups = new Map();
