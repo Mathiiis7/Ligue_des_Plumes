@@ -4939,15 +4939,15 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     if(!stillMine()) return { total:0, points:0, aborted:true };
   }
   // 4b) Passe 2 : rattrapage pour les especes eclipsees par les communes dans le batch.
-  // On requete individuellement chaque taxonKey absent des resultats (limit petit, 5 par
-  // espece), avec un pool de concurrence. Empeche les rares d'etre invisibles quand une
-  // commune sature le lot des 300 points.
-  const missedKeys = keys.filter(k => !speciesWithPoints.has(k));
+  // Skip completement quand polygone actif : la zone est petite (<50 km2 typique), la
+  // plupart des especes n'ont aucune obs a l'interieur, le rattrapage genere ~500 requetes
+  // pour rien et declenche du 429 (rate limit GBIF).
+  const missedKeys = polygonWKT ? [] : keys.filter(k => !speciesWithPoints.has(k));
   if(missedKeys.length){
     if(onProgress) onProgress('rescue', 0, missedKeys.length);
     let rescueDone = 0;
     let cursor = 0;
-    const POOL = 10;
+    const POOL = 3;
     async function rescueWorker(){
       while(cursor < missedKeys.length){
         if(!stillMine()) return;
@@ -4955,8 +4955,12 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
         const k = missedKeys[i];
         const url = `https://api.gbif.org/v1/occurrence/search?taxonKey=${k}&country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=5${bboxParam}`;
         try{
-          const r = await fetch(url);
-          if(!r.ok){ if(page === 0) console.warn('GBIF fetch fail', r.status, url.slice(0,200)); break; }
+          let r = await fetch(url);
+          // Backoff sur 429 (rate limit GBIF) : attend 1s puis retry une fois.
+          if(r.status === 429){
+            await new Promise(res => setTimeout(res, 1000));
+            r = await fetch(url);
+          }
           if(r.ok){
             const j = await r.json();
             for(const o of (j.results || [])){
