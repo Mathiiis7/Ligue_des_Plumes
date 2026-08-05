@@ -3810,20 +3810,31 @@ async function _renderModeMissingGbif(){
   const monthNames = ['','janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
   const rangeTxt = (yMin === yMax) ? yMin : `${yMin} → ${yMax}`;
   if(cnt) cnt.textContent = `… GBIF ${monthNames[month]} ${rangeTxt}`;
+  const cacheKey = _gbifCacheKey(zone, month, yMin, yMax);
   const res = await _loadMissingLayerGbifBbox(bbox, month, yMin, yMax, (phase, done, total) => {
     if(!cnt) return;
-    if(phase === 'resolve') cnt.textContent = `… résolution ${done}/${total} espèces (1re fois lente, cache après)`;
+    if(phase === 'cache') cnt.textContent = '… lecture cache';
+    else if(phase === 'resolve') cnt.textContent = `… résolution ${done}/${total} espèces (1re fois lente, cache après)`;
     else if(phase === 'fetch') cnt.textContent = `… fetch ${done}/${total} lots`;
     else if(phase === 'rescue') cnt.textContent = `… rattrapage ${done}/${total} espèces (évite d'en cacher)`;
-  }, gadmFilter);
+  }, gadmFilter, cacheKey);
   // Si le run a ete annule par un render plus recent, on abandonne sans toucher a l'UI
   // (l'appel plus recent gere son propre affichage).
   if(res && res.aborted) return;
   _lyrMissing.addTo(_map);
   if(!res || !res.points){
-    if(cnt) cnt.textContent = res && res.empty
-      ? 'Vous avez toutes les espèces de la liste FR ! 🎯'
-      : `Aucune obs GBIF pour ${monthNames[month]} ${rangeTxt} sur cette zone`;
+    if(cnt){
+      if(res && res.empty){
+        cnt.textContent = 'Vous avez toutes les espèces de la liste FR ! 🎯';
+      } else {
+        // Hint sur le lag GBIF : mois trop récent (ce mois-ci ou mois passé sur année courante).
+        const now = new Date();
+        const nowY = now.getFullYear(), nowM = now.getMonth() + 1;
+        const tooRecent = (yMax >= nowY && month >= Math.max(1, nowM - 1));
+        const lagHint = tooRecent ? ' GBIF a un lag de 1 à 3 mois pour la France, essaie une année plus ancienne.' : '';
+        cnt.textContent = `Aucune obs GBIF pour ${monthNames[month]} ${rangeTxt} sur cette zone.${lagHint}`;
+      }
+    }
   } else {
     if(cnt) cnt.textContent = `${res.points} obs GBIF · ${res.species} espèce${res.species>1?'s':''} à cocher · ${monthNames[month]} ${rangeTxt}`;
   }
@@ -4509,11 +4520,95 @@ async function _loadMissingLayer(zone, days=14, rarities=new Set(), onProgress){
 // on verifie que le compteur n'a pas bouge. Si un nouveau render a demarre entre-temps,
 // on abandonne silencieusement (retour early) pour ne pas ecraser les resultats recents.
 let _gbifRunSeq = 0;
-async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgress, gadmFilter){
+// Cache localStorage 6h par (uid, dept, mois, annees). On stocke la liste allObs *raw*
+// (tous les obs GBIF avant filtrage rarete/life-list actuel). Sur lecture, on re-filtre
+// contre le missing set courant et les chips rarete — donc cocher une espece ou changer
+// les chips ne casse pas le cache, ca applique juste le nouveau filtre.
+const _GBIF_CACHE_TTL_MS = 6 * 3600 * 1000;
+function _gbifCacheKey(dept, month, yMin, yMax){
+  const uid = (typeof myUid !== 'undefined' && myUid) ? myUid : 'anon';
+  return `gbifMissing-v1-${uid}-${dept}-${month}-${yMin}-${yMax}`;
+}
+function _gbifCacheRead(key){
+  try{
+    const raw = localStorage.getItem(key); if(!raw) return null;
+    const obj = JSON.parse(raw);
+    if(!obj || !obj.t || !Array.isArray(obj.data)) return null;
+    if(Date.now() - obj.t > _GBIF_CACHE_TTL_MS){ localStorage.removeItem(key); return null; }
+    return obj.data;
+  }catch(_){ return null; }
+}
+function _gbifCacheWrite(key, data){
+  const record = JSON.stringify({ t: Date.now(), data });
+  try{ localStorage.setItem(key, record); return; }catch(_){}
+  // Quota probablement depasse : purge les entrees GBIF perimees puis retry une fois.
+  try{
+    const now = Date.now();
+    for(let i = localStorage.length - 1; i >= 0; i--){
+      const k = localStorage.key(i);
+      if(!k || !k.startsWith('gbifMissing-v1-')) continue;
+      try{ const o = JSON.parse(localStorage.getItem(k)); if(o && o.t && now - o.t > _GBIF_CACHE_TTL_MS) localStorage.removeItem(k); }catch(_){ localStorage.removeItem(k); }
+    }
+    localStorage.setItem(key, record);
+  }catch(_){}
+}
+// Reduit un obs GBIF a ses champs utiles pour minimiser la taille en cache.
+function _gbifSlimObs(o){
+  return {
+    lat: o.decimalLatitude, lon: o.decimalLongitude,
+    tk: o.taxonKey || o.speciesKey,
+    ed: o.eventDate, et: o.eventTime,
+    l2: o.gadm && o.gadm.level2 && o.gadm.level2.name,
+    l3: o.gadm && o.gadm.level3 && o.gadm.level3.name,
+    loc: o.locality, ic: o.individualCount, rb: o.recordedBy,
+    beh: o.behavior, ls: o.lifeStage, sx: o.sex,
+    dn: o.datasetName, ref: o.references, id: o.gbifID || o.key
+  };
+}
+// Expand le format slim vers la forme "obs GBIF" que le rest du code attend.
+function _gbifUnslim(s){
+  return {
+    decimalLatitude: s.lat, decimalLongitude: s.lon,
+    taxonKey: s.tk, speciesKey: s.tk,
+    eventDate: s.ed, eventTime: s.et,
+    gadm: { level2: s.l2 ? { name:s.l2 } : null, level3: s.l3 ? { name:s.l3 } : null },
+    locality: s.loc, individualCount: s.ic, recordedBy: s.rb,
+    behavior: s.beh, lifeStage: s.ls, sex: s.sx,
+    datasetName: s.dn, references: s.ref, gbifID: s.id
+  };
+}
+async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgress, gadmFilter, cacheKey){
   if(!_lyrMissing) return { total:0, points:0 };
   const myRun = ++_gbifRunSeq;
   const stillMine = () => myRun === _gbifRunSeq;
   _lyrMissing.clearLayers();
+  // Cache hit : on saute le fetch, on filtre + rend directement.
+  if(cacheKey){
+    const cached = _gbifCacheRead(cacheKey);
+    if(cached){
+      if(onProgress) onProgress('cache', 1, 1);
+      const me = realPeople.find(p => p.id === myUid);
+      const mine = new Set(me ? [...me.species.keys()] : []);
+      const rars = ebFilter.rarities;
+      const hasRar = rars && rars.size > 0;
+      const sciByKeyLocal = new Map();
+      // On reconstruit rapidement sci<->taxonKey depuis _gbifKeyBySci (deja resolu).
+      for(const [sci, k] of _gbifKeyBySci.entries()){ if(k) sciByKeyLocal.set(k, sci); }
+      const allObs = [];
+      for(const s of cached){
+        const sci = sciByKeyLocal.get(s.tk);
+        if(!sci) continue;
+        if(mine.has(sci)) continue;
+        if(hasRar){
+          const rk = isExotic(sci) ? 'exo' : rarityReal(sci);
+          if(!rars.has(rk)) continue;
+        }
+        allObs.push(_gbifUnslim(s));
+      }
+      return _gbifRenderAllObs(allObs, sciByKeyLocal, stillMine);
+    }
+  }
+
   // Lazy-load la taxonomie eBird pour permettre le clic sur un marqueur → fiche detail eBird.
   if(!_taxMap){ try{ await _loadTaxonomy(); }catch(_){} }
   // 1) Compute missing sci list from FR_NAMES minus user's life list, filtre par rarete
@@ -4566,7 +4661,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     // Pagination : on continue tant que GBIF renvoie 300 obs (indicateur de saturation)
     // ou qu'il indique endOfRecords=false. Cap securite a MAX_PAGES pour eviter les runs
     // interminables sur des zones tres denses.
-    const MAX_PAGES = 5;
+    const MAX_PAGES = 3;
     let offset = 0;
     for(let page = 0; page < MAX_PAGES; page++){
       const url = `https://api.gbif.org/v1/occurrence/search?${keysParam}&country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=300&offset=${offset}${bboxParam}`;
@@ -4639,11 +4734,20 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     await Promise.all(Array.from({length: Math.min(POOL, missedKeys.length)}, rescueWorker));
   }
   if(!stillMine()) return { total:0, points:0, aborted:true };
+  // Sauve en cache la version slim de allObs (raw, avant filtrage rarete/life-list courants).
+  // A la relecture on refiltre contre l'etat courant du user, donc pas besoin d'invalider
+  // quand il cocher une espece ou change les chips.
+  if(cacheKey && allObs.length){
+    try{ _gbifCacheWrite(cacheKey, allObs.map(_gbifSlimObs)); }catch(_){}
+  }
   if(!allObs.length) return { total:0, points:0 };
-  // 5) Build markers, colored per species (same style as eBird missing).
-  // Pas de spread degre ici : on stocke la vraie position et on laisse le zoomend handler
-  // faire un spread pixel-based (recalcule a chaque zoom, garde la position exacte quand
-  // les points ne se chevauchent pas visuellement au niveau de zoom courant).
+  return _gbifRenderAllObs(allObs, sciByKey, stillMine);
+}
+// Extrait de _loadMissingLayerGbifBbox : construit les marqueurs a partir de allObs + sciByKey.
+// Utilise par le chemin cache-hit ET le chemin fetch normal.
+function _gbifRenderAllObs(allObs, sciByKey, stillMine){
+  if(!allObs || !allObs.length) return { total:0, points:0 };
+  if(stillMine && !stillMine()) return { total:0, points:0, aborted:true };
   for(const o of allObs){ o.dispLat = o.decimalLatitude; o.dispLon = o.decimalLongitude; }
   // Tri : plus rares en dernier (rendues au-dessus).
   allObs.sort((a, b) => {
