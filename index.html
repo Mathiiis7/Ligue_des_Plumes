@@ -4021,8 +4021,19 @@ function _pointInPolygon(lat, lon, poly){
   return inside;
 }
 // Convertit un polygone [[lat,lon],...] en WKT GBIF ("lon lat", ferme).
+// IMPORTANT : GBIF exige un anneau exterieur CCW (sens anti-horaire). Un polygone en
+// sens horaire est interprete comme un "trou" (retourne 0 obs). On calcule le signe
+// via Shoelace et on inverse si necessaire.
 function _polygonToWKT(poly){
-  const closed = poly.concat([poly[0]]);
+  let signedArea = 0;
+  for(let i = 0; i < poly.length; i++){
+    const [y1, x1] = poly[i];
+    const [y2, x2] = poly[(i + 1) % poly.length];
+    signedArea += x1 * y2 - x2 * y1;
+  }
+  // signedArea > 0 = CCW (standard math), < 0 = CW. On veut CCW pour GBIF.
+  const oriented = signedArea >= 0 ? poly : poly.slice().reverse();
+  const closed = oriented.concat([oriented[0]]);
   return `POLYGON((${closed.map(([lat, lon]) => `${lon.toFixed(5)} ${lat.toFixed(5)}`).join(',')}))`;
 }
 // Entre en mode dessin : demarre les listeners map, prepare la couche.
