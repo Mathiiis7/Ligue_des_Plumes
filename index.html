@@ -1147,7 +1147,7 @@
           <option value="30">30 jours</option>
         </select>
         <label class="explorer-lbl" id="mapEbYearMinLbl" style="display:none;">De</label>
-        <input type="number" id="mapEbYearMin" style="display:none; width:60px; font-size:12px; padding:3px 6px; border:1px solid var(--line-2); border-radius:6px;" min="1970" max="2026" value="2018">
+        <input type="number" id="mapEbYearMin" style="display:none; width:60px; font-size:12px; padding:3px 6px; border:1px solid var(--line-2); border-radius:6px;" min="1970" max="2026" value="2021">
         <label class="explorer-lbl" id="mapEbYearMaxLbl" style="display:none;">à</label>
         <input type="number" id="mapEbYearMax" style="display:none; width:60px; font-size:12px; padding:3px 6px; border:1px solid var(--line-2); border-radius:6px;" min="1970" max="2026" value="2022">
         <label class="explorer-lbl" id="mapEbSortLbl" style="display:none;">Trier par</label>
@@ -3086,7 +3086,7 @@ let _loaded = { missing:'', hotspots:'' };   // clé de cache (région+jours)
 let mapFilter = { player:'all', tier:'any', country:'any' };
 // Filtres propres aux modes eBird
 // `rarities` = Set des niveaux sélectionnés (nombres 1-9 ou chaîne 'exo'). Vide = pas de filtre.
-let ebFilter = { region:'FR', days:14, rarities:new Set([1,2,3,4,5,6,7,8,9,'exo']), month:0, dept:'', minTodo:0, source:'ebird', yearMin:2018, yearMax:2022 };
+let ebFilter = { region:'FR', days:14, rarities:new Set([1,2,3,4,5,6,7,8,9,'exo']), month:0, dept:'', minTodo:0, source:'ebird', yearMin:2021, yearMax:2022 };
 let userPos = null;   // { lat, lon } — position utilisateur pour Haversine
 let myFavHotspots = new Set();   // Set des locId favoris de l'utilisateur (synchronisé Firestore)
 // Distance à vol d'oiseau entre 2 points (km).
@@ -3736,7 +3736,7 @@ async function _renderModeMissingGbif(){
     return;
   }
   const month = parseInt($('#mapEbMonth')?.value, 10) || 8;
-  const yMinRaw = parseInt($('#mapEbYearMin')?.value, 10) || 2018;
+  const yMinRaw = parseInt($('#mapEbYearMin')?.value, 10) || 2021;
   const yMaxRaw = parseInt($('#mapEbYearMax')?.value, 10) || 2022;
   const yMin = Math.min(yMinRaw, yMaxRaw);
   const yMax = Math.max(yMinRaw, yMaxRaw);
@@ -3747,6 +3747,7 @@ async function _renderModeMissingGbif(){
     if(!cnt) return;
     if(phase === 'resolve') cnt.textContent = `… résolution ${done}/${total} espèces (1re fois lente, cache après)`;
     else if(phase === 'fetch') cnt.textContent = `… fetch ${done}/${total} lots`;
+    else if(phase === 'rescue') cnt.textContent = `… rattrapage ${done}/${total} espèces (évite d'en cacher)`;
   });
   _lyrMissing.addTo(_map);
   if(!res || !res.points){
@@ -4223,7 +4224,7 @@ document.addEventListener('click', e=>{
 document.addEventListener('change', e=>{
   const t = e.target; if(!t) return;
   if(t.id === 'mapEbYearMin' || t.id === 'mapEbYearMax'){
-    ebFilter.yearMin = parseInt($('#mapEbYearMin')?.value, 10) || 2018;
+    ebFilter.yearMin = parseInt($('#mapEbYearMin')?.value, 10) || 2021;
     ebFilter.yearMax = parseInt($('#mapEbYearMax')?.value, 10) || 2022;
     if(mapMode === 'missing' && ebFilter.source === 'gbif') renderMap();
   }
@@ -4448,13 +4449,14 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
   const CHUNK = 80;
   const chunks = [];
   for(let i = 0; i < keys.length; i += CHUNK) chunks.push(keys.slice(i, i + CHUNK));
-  // 4) Fetch each chunk.
+  // 4) Fetch each chunk (passe 1 : batch multi-taxonKey, capture les especes communes).
   const yearParam = (yearMin===yearMax) ? String(yearMin) : `${yearMin},${yearMax}`;
   const bboxParam = bbox ? `&decimalLatitude=${bbox[0]},${bbox[1]}&decimalLongitude=${bbox[2]},${bbox[3]}` : '';
   let done = 0;
   if(onProgress) onProgress('fetch', 0, chunks.length);
   const allObs = [];
   const seenIds = new Set();
+  const speciesWithPoints = new Set();
   for(const chunk of chunks){
     const keysParam = chunk.map(k => `taxonKey=${k}`).join('&');
     const url = `https://api.gbif.org/v1/occurrence/search?${keysParam}&country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=300${bboxParam}`;
@@ -4468,11 +4470,47 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
           if(seenIds.has(id)) continue;
           seenIds.add(id);
           allObs.push(o);
+          const spKey = o.taxonKey || o.speciesKey;
+          if(spKey) speciesWithPoints.add(spKey);
         }
       }
     }catch(_){}
     done++;
     if(onProgress) onProgress('fetch', done, chunks.length);
+  }
+  // 4b) Passe 2 : rattrapage pour les especes eclipsees par les communes dans le batch.
+  // On requete individuellement chaque taxonKey absent des resultats (limit petit, 5 par
+  // espece), avec un pool de concurrence. Empeche les rares d'etre invisibles quand une
+  // commune sature le lot des 300 points.
+  const missedKeys = keys.filter(k => !speciesWithPoints.has(k));
+  if(missedKeys.length){
+    if(onProgress) onProgress('rescue', 0, missedKeys.length);
+    let rescueDone = 0;
+    let cursor = 0;
+    const POOL = 10;
+    async function rescueWorker(){
+      while(cursor < missedKeys.length){
+        const i = cursor++;
+        const k = missedKeys[i];
+        const url = `https://api.gbif.org/v1/occurrence/search?taxonKey=${k}&country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=5${bboxParam}`;
+        try{
+          const r = await fetch(url);
+          if(r.ok){
+            const j = await r.json();
+            for(const o of (j.results || [])){
+              if(typeof o.decimalLatitude !== 'number' || typeof o.decimalLongitude !== 'number') continue;
+              const id = o.gbifID || o.key || `${o.decimalLatitude},${o.decimalLongitude},${o.eventDate},${o.taxonKey}`;
+              if(seenIds.has(id)) continue;
+              seenIds.add(id);
+              allObs.push(o);
+            }
+          }
+        }catch(_){}
+        rescueDone++;
+        if(onProgress) onProgress('rescue', rescueDone, missedKeys.length);
+      }
+    }
+    await Promise.all(Array.from({length: Math.min(POOL, missedKeys.length)}, rescueWorker));
   }
   if(!allObs.length) return { total:0, points:0 };
   // 5) Build markers, colored per species (same style as eBird missing).
