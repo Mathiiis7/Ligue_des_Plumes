@@ -1147,9 +1147,9 @@
           <option value="30">30 jours</option>
         </select>
         <label class="explorer-lbl" id="mapEbYearMinLbl" style="display:none;">De</label>
-        <input type="number" id="mapEbYearMin" style="display:none; width:60px; font-size:12px; padding:3px 6px; border:1px solid var(--line-2); border-radius:6px;" min="1970" max="2026" value="2021">
+        <input type="number" id="mapEbYearMin" style="display:none; width:60px; font-size:12px; padding:3px 6px; border:1px solid var(--line-2); border-radius:6px;" min="1970" max="2026" value="2024">
         <label class="explorer-lbl" id="mapEbYearMaxLbl" style="display:none;">à</label>
-        <input type="number" id="mapEbYearMax" style="display:none; width:60px; font-size:12px; padding:3px 6px; border:1px solid var(--line-2); border-radius:6px;" min="1970" max="2026" value="2022">
+        <input type="number" id="mapEbYearMax" style="display:none; width:60px; font-size:12px; padding:3px 6px; border:1px solid var(--line-2); border-radius:6px;" min="1970" max="2026" value="2025">
         <label class="explorer-lbl" id="mapEbSortLbl" style="display:none;">Trier par</label>
         <select class="filt-sel" id="mapEbSort" style="display:none;">
           <option value="todo" selected>Espèces à cocher pour moi</option>
@@ -3086,7 +3086,7 @@ let _loaded = { missing:'', hotspots:'' };   // clé de cache (région+jours)
 let mapFilter = { player:'all', tier:'any', country:'any' };
 // Filtres propres aux modes eBird
 // `rarities` = Set des niveaux sélectionnés (nombres 1-9 ou chaîne 'exo'). Vide = pas de filtre.
-let ebFilter = { region:'FR', days:14, rarities:new Set([1,2,3,4,5,6,7,8,9,'exo']), month:0, dept:'', minTodo:0, source:'ebird', yearMin:2021, yearMax:2022 };
+let ebFilter = { region:'FR', days:14, rarities:new Set([1,2,3,4,5,6,7,8,9,'exo']), month:0, dept:'', minTodo:0, source:'ebird', yearMin:2024, yearMax:2025 };
 let userPos = null;   // { lat, lon } — position utilisateur pour Haversine
 let myFavHotspots = new Set();   // Set des locId favoris de l'utilisateur (synchronisé Firestore)
 // Distance à vol d'oiseau entre 2 points (km).
@@ -3475,6 +3475,55 @@ function _mapCollectPoints(){
 // Un marqueur par espèce. Quand plusieurs obs partagent la position exacte,
 // on éparpille en spirale (Fibonacci "sunflower") pour éviter la superposition.
 // Le popup indique le vrai lieu (loc) — le décalage est purement visuel.
+// Spread pixel-based sur les marqueurs de la couche missing (uniquement ceux ayant _baseLat
+// stocke, i.e. les points GBIF). Recalcule a chaque zoom : au-dela d'un certain zoom, les
+// points ne se chevauchent plus visuellement, donc ils reviennent a leur position exacte.
+// Le cluster fibonacci (identique au fiche espece) n'est applique qu'aux points colles a
+// moins de OVERLAP_PX pixels a l'ecran.
+function _mainMapSpreadGbifMarkers(){
+  if(!_map || !_lyrMissing) return;
+  const items = [];
+  _lyrMissing.eachLayer(mk => {
+    if(typeof mk._baseLat !== 'number') return;
+    mk.setLatLng([mk._baseLat, mk._baseLon]);
+    const p = _map.latLngToLayerPoint([mk._baseLat, mk._baseLon]);
+    items.push({ mk, x:p.x, y:p.y });
+  });
+  if(!items.length) return;
+  const OVERLAP_PX = 12;
+  const OV2 = OVERLAP_PX * OVERLAP_PX;
+  const assigned = new Array(items.length).fill(-1);
+  const clusters = [];
+  for(let i=0;i<items.length;i++){
+    if(assigned[i] !== -1) continue;
+    const idxs = [i]; assigned[i] = clusters.length;
+    let head = 0;
+    while(head < idxs.length){
+      const cur = idxs[head++];
+      for(let j=0;j<items.length;j++){
+        if(assigned[j] !== -1) continue;
+        const dx = items[j].x - items[cur].x, dy = items[j].y - items[cur].y;
+        if(dx*dx + dy*dy < OV2){ assigned[j] = clusters.length; idxs.push(j); }
+      }
+    }
+    clusters.push(idxs.map(k => items[k]));
+  }
+  const GOLDEN = Math.PI * (3 - Math.sqrt(5));
+  const R_PER = 7;
+  for(const cluster of clusters){
+    if(cluster.length <= 1) continue;
+    let cx=0, cy=0; for(const p of cluster){ cx += p.x; cy += p.y; }
+    cx /= cluster.length; cy /= cluster.length;
+    const maxR = R_PER * Math.sqrt(cluster.length);
+    for(let i=0;i<cluster.length;i++){
+      const r = maxR * Math.sqrt((i+0.5)/cluster.length);
+      const th = i * GOLDEN;
+      const p = L.point(cx + r*Math.cos(th), cy + r*Math.sin(th));
+      const ll = _map.layerPointToLatLng(p);
+      cluster[i].mk.setLatLng([ll.lat, ll.lng]);
+    }
+  }
+}
 function _spreadGroup(group){
   const n=group.length; if(n<=1){ group[0].dispLat=group[0].lat; group[0].dispLon=group[0].lon; return; }
   const GOLDEN=Math.PI*(3-Math.sqrt(5));
@@ -3572,6 +3621,10 @@ function _ensureMapInit(el){
   planLayer.addTo(_map);
   _lyrMissing = L.layerGroup();
   _lyrHotspots = L.layerGroup();
+  // Re-spread des marqueurs GBIF a chaque fin de zoom : points colles ecartes, points
+  // solitaires reviennent a leur position exacte. Ne touche pas les marqueurs eBird
+  // (qui n'ont pas _baseLat).
+  _map.on('zoomend', _mainMapSpreadGbifMarkers);
   L.control.layers({ 'Plan':planLayer, 'Satellite':satLayer }, {}, { position:'topright', collapsed:false }).addTo(_map);
   const legend = L.control({ position:'bottomright' });
   legend.onAdd = () => {
@@ -3748,8 +3801,8 @@ async function _renderModeMissingGbif(){
     if(r) gadmFilter = { level:'level1', name: r.name };
   }
   const month = parseInt($('#mapEbMonth')?.value, 10) || 8;
-  const yMinRaw = parseInt($('#mapEbYearMin')?.value, 10) || 2021;
-  const yMaxRaw = parseInt($('#mapEbYearMax')?.value, 10) || 2022;
+  const yMinRaw = parseInt($('#mapEbYearMin')?.value, 10) || 2024;
+  const yMaxRaw = parseInt($('#mapEbYearMax')?.value, 10) || 2025;
   const yMin = Math.min(yMinRaw, yMaxRaw);
   const yMax = Math.max(yMinRaw, yMaxRaw);
   const monthNames = ['','janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
@@ -3771,7 +3824,9 @@ async function _renderModeMissingGbif(){
   }
   _fitLayer(_lyrMissing);
   _mapApplyFilter();
-  setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
+  // Spread pixel-based apres fit : les marqueurs colles s'ecartent, les solitaires
+  // restent a leur position exacte. Re-run automatique a chaque zoom via zoomend.
+  setTimeout(()=>{ try{ _map.invalidateSize(); _mainMapSpreadGbifMarkers(); }catch(_){} }, 100);
 }
 async function _renderModeHotspots(){
   // Si un département est sélectionné, on l'utilise comme zone à interroger (plus fin).
@@ -4236,8 +4291,8 @@ document.addEventListener('click', e=>{
 document.addEventListener('change', e=>{
   const t = e.target; if(!t) return;
   if(t.id === 'mapEbYearMin' || t.id === 'mapEbYearMax'){
-    ebFilter.yearMin = parseInt($('#mapEbYearMin')?.value, 10) || 2021;
-    ebFilter.yearMax = parseInt($('#mapEbYearMax')?.value, 10) || 2022;
+    ebFilter.yearMin = parseInt($('#mapEbYearMin')?.value, 10) || 2024;
+    ebFilter.yearMax = parseInt($('#mapEbYearMax')?.value, 10) || 2025;
     if(mapMode === 'missing' && ebFilter.source === 'gbif') renderMap();
   }
   if(t.id === 'mapEbMonth' && mapMode === 'missing' && ebFilter.source === 'gbif'){
@@ -4536,14 +4591,10 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
   }
   if(!allObs.length) return { total:0, points:0 };
   // 5) Build markers, colored per species (same style as eBird missing).
-  const groups = new Map();
-  for(const o of allObs){ const k = o.decimalLatitude.toFixed(5)+','+o.decimalLongitude.toFixed(5); if(!groups.has(k)) groups.set(k, []); groups.get(k).push(o); }
-  for(const g of groups.values()){
-    // Utilise _spreadGroup pour eparpiller les points colles (existant dans le mode eBird).
-    const pts = g.map(o => ({ lat:o.decimalLatitude, lon:o.decimalLongitude, dispLat:o.decimalLatitude, dispLon:o.decimalLongitude }));
-    _spreadGroup(pts);
-    for(let i = 0; i < g.length; i++){ g[i].dispLat = pts[i].dispLat; g[i].dispLon = pts[i].dispLon; }
-  }
+  // Pas de spread degre ici : on stocke la vraie position et on laisse le zoomend handler
+  // faire un spread pixel-based (recalcule a chaque zoom, garde la position exacte quand
+  // les points ne se chevauchent pas visuellement au niveau de zoom courant).
+  for(const o of allObs){ o.dispLat = o.decimalLatitude; o.dispLon = o.decimalLongitude; }
   // Tri : plus rares en dernier (rendues au-dessus).
   allObs.sort((a, b) => {
     const sciA = sciByKey.get(a.taxonKey) || sciByKey.get(a.speciesKey) || '';
@@ -4568,6 +4619,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     const behavior = o.behavior || '';
     const cnt = (typeof o.individualCount === 'number' && o.individualCount > 0) ? o.individualCount : null;
     const m = L.circleMarker([o.dispLat, o.dispLon], { radius:6, weight:1.5, color:'#fff', fillColor:sciColor(sci), fillOpacity:.9, opacity:1 });
+    m._baseLat = o.decimalLatitude; m._baseLon = o.decimalLongitude;
     const gm = `<a href="https://www.google.com/maps?q=${o.decimalLatitude},${o.decimalLongitude}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
     const parts = [];
     if(time) parts.push(`🕐 ${esc(time)}`);
