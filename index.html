@@ -1094,6 +1094,7 @@
         <button data-mode="missing">🐦 À aller cocher</button>
         <button data-mode="hotspots">🏞️ Top hotspots</button>
         <button data-mode="abundance">🗺️ Où trouver</button>
+        <button data-mode="draw">✏️ Dessiner une zone</button>
       </div>
       <div class="map-search">
         <div class="map-search-input-wrap">
@@ -1214,8 +1215,28 @@
         <span class="map-count" id="mapAbCount"></span>
       </div>
       <div id="mapAbHint" class="help" style="display:none; margin:2px 0 8px; font-size:11.5px; line-height:1.4;"></div>
+      <div class="map-controls" id="mapCtrlsDraw" style="display:none;">
+        <button type="button" class="btn tiny" id="mapDrawStart" title="Clic sur la carte pour poser les sommets, double-clic ou clic sur le 1er point pour fermer">✏️ Dessiner</button>
+        <button type="button" class="btn tiny" id="mapDrawClear" title="Effacer le polygone">🗑️ Effacer</button>
+        <label class="explorer-lbl" for="mapDrawMonth">Mois</label>
+        <select class="filt-sel" id="mapDrawMonth">
+          <option value="0">Toute l'année</option>
+          <option value="1">janvier</option><option value="2">février</option>
+          <option value="3">mars</option><option value="4">avril</option>
+          <option value="5">mai</option><option value="6">juin</option>
+          <option value="7">juillet</option><option value="8" selected>août</option>
+          <option value="9">septembre</option><option value="10">octobre</option>
+          <option value="11">novembre</option><option value="12">décembre</option>
+        </select>
+        <label class="explorer-lbl">De</label>
+        <input type="number" id="mapDrawYearMin" style="width:60px; font-size:12px; padding:3px 6px; border:1px solid var(--line-2); border-radius:6px;" min="1970" max="2026" value="2024">
+        <label class="explorer-lbl">à</label>
+        <input type="number" id="mapDrawYearMax" style="width:60px; font-size:12px; padding:3px 6px; border:1px solid var(--line-2); border-radius:6px;" min="1970" max="2026" value="2025">
+        <span class="map-count" id="mapDrawCount">Clique « Dessiner » puis pose des points sur la carte</span>
+      </div>
       <div id="mapNote" class="help" style="margin:6px 0 8px; display:none;"></div>
       <div id="mapEl" class="map-el"></div>
+      <div id="mapDrawResults" style="display:none; margin-top:10px; max-height:360px; overflow:auto; border:1px solid var(--line); border-radius:8px; padding:8px 12px; background:var(--surface-2);"></div>
       <div class="map-timeline" id="mapTimeline" style="display:none;">
         <button class="btn tiny" id="mapTlPlay" title="Lancer l'animation dans le temps">▶</button>
         <div class="tl-sliders">
@@ -3589,8 +3610,11 @@ async function renderMap(){
   const mine = mapMode==='mine';
   const abund = mapMode==='abundance';
   $('#mapCtrlsMine').style.display = mine ? '' : 'none';
-  $('#mapCtrlsEbird').style.display = (mine||abund) ? 'none' : '';
+  const drawMode = mapMode === 'draw';
+  $('#mapCtrlsEbird').style.display = (mine||abund||drawMode) ? 'none' : '';
   $('#mapCtrlsAbundance').style.display = abund ? '' : 'none';
+  const drawCtrl = $('#mapCtrlsDraw'); if(drawCtrl) drawCtrl.style.display = drawMode ? '' : 'none';
+  const drawRes = $('#mapDrawResults'); if(drawRes) drawRes.style.display = (drawMode && drawRes.dataset.hasResults === '1') ? '' : 'none';
   $('#mapTimeline').style.display = mine ? '' : 'none';
   $('#mapStats').style.display = mine ? '' : 'none';
   $('#mapNote').style.display = 'none';
@@ -3610,6 +3634,7 @@ async function renderMap(){
   if(mapMode==='missing') return _renderModeMissing();
   if(mapMode==='hotspots') return _renderModeHotspots();
   if(mapMode==='abundance') return _renderModeAbundance();
+  if(mapMode==='draw') return _renderModeDraw();
 }
 function _ensureMapInit(el){
   if(_map) return;
@@ -3945,6 +3970,211 @@ const _INSEE_TO_APP = (function(){
   }
   return map;
 })();
+// ---- Mode "Dessiner une zone" : polygone libre + query GBIF ----
+// Etat du dessinateur : vertices en cours, layers Leaflet pour visualisation, listener refs.
+let _lyrDraw = null;         // Layer group : polygon + vertex markers + preview line
+let _drawState = {
+  active: false,             // true = mode dessin actif (clics ajoutent des sommets)
+  vertices: [],              // [[lat, lon], ...]
+  poly: null,                // L.polygon/polyline en construction
+  preview: null,             // L.polyline "sommet courant -> curseur"
+  vertexMarkers: [],         // L.circleMarker par sommet
+  finalPoly: null,           // L.polygon ferme quand valide
+  onMapClick: null,          // Ref au listener a demonter
+  onMapMove: null,
+  onKeyDown: null,
+};
+async function _renderModeDraw(){
+  // Assure la couche
+  if(!_lyrDraw){ _lyrDraw = L.layerGroup().addTo(_map); }
+  else if(!_map.hasLayer(_lyrDraw)) _lyrDraw.addTo(_map);
+  // Si un polygone valide existe deja et qu'on revient au mode -> juste re-afficher (pas re-fetch).
+  const cnt = $('#mapDrawCount');
+  if(_drawState.finalPoly){
+    if(cnt) cnt.textContent = `Polygone actif — modifie les filtres pour ré-interroger, ou clique « Effacer » pour recommencer`;
+  } else if(!_drawState.active){
+    if(cnt) cnt.textContent = 'Clique « Dessiner » puis pose des points sur la carte (double-clic pour fermer)';
+  }
+}
+// Entre en mode dessin : demarre les listeners map, prepare la couche.
+function _drawStart(){
+  if(!_map || !_lyrDraw) return;
+  _drawClear();
+  _drawState.active = true;
+  _drawState.vertices = [];
+  _map.getContainer().style.cursor = 'crosshair';
+  const cnt = $('#mapDrawCount');
+  if(cnt) cnt.textContent = 'Clique sur la carte pour poser des sommets (double-clic pour fermer, Echap pour annuler)';
+  _drawState.onMapClick = (e) => {
+    _drawState.vertices.push([e.latlng.lat, e.latlng.lng]);
+    _drawRedraw();
+  };
+  _drawState.onMapMove = (e) => {
+    if(!_drawState.vertices.length) return;
+    const last = _drawState.vertices[_drawState.vertices.length - 1];
+    if(_drawState.preview){ _lyrDraw.removeLayer(_drawState.preview); _drawState.preview = null; }
+    _drawState.preview = L.polyline([last, [e.latlng.lat, e.latlng.lng]], { color:'#0b7c77', weight:2, opacity:0.6, dashArray:'4,4' });
+    _drawState.preview.addTo(_lyrDraw);
+  };
+  _drawState.onKeyDown = (e) => {
+    if(e.key === 'Escape'){ _drawClear(); }
+  };
+  _map.on('click', _drawState.onMapClick);
+  _map.on('mousemove', _drawState.onMapMove);
+  _map.on('dblclick', _drawFinish);
+  _map.doubleClickZoom.disable();
+  document.addEventListener('keydown', _drawState.onKeyDown);
+}
+function _drawRedraw(){
+  // Redessine la ligne poly (sommets connectes) + les petits cercles sur chaque sommet.
+  if(_drawState.poly){ _lyrDraw.removeLayer(_drawState.poly); _drawState.poly = null; }
+  for(const m of _drawState.vertexMarkers) _lyrDraw.removeLayer(m);
+  _drawState.vertexMarkers = [];
+  if(_drawState.vertices.length >= 2){
+    _drawState.poly = L.polyline(_drawState.vertices, { color:'#0b7c77', weight:2.5, opacity:0.8 });
+    _drawState.poly.addTo(_lyrDraw);
+  }
+  _drawState.vertices.forEach((v, i) => {
+    const m = L.circleMarker(v, { radius:5, weight:2, color:'#fff', fillColor: i===0 ? '#e74c3c' : '#0b7c77', fillOpacity:1, opacity:1 });
+    // Clic sur le 1er sommet = fermer aussi.
+    if(i === 0){
+      m.on('click', (e) => { L.DomEvent.stopPropagation(e); if(_drawState.vertices.length >= 3) _drawFinish(); });
+    }
+    m.addTo(_lyrDraw);
+    _drawState.vertexMarkers.push(m);
+  });
+  const cnt = $('#mapDrawCount');
+  if(cnt) cnt.textContent = `${_drawState.vertices.length} sommet${_drawState.vertices.length>1?'s':''} · double-clic pour fermer${_drawState.vertices.length>=3?' (ou clic sur le 1er sommet rouge)':''}`;
+}
+// Ferme le polygone (au moins 3 sommets) et lance la query GBIF.
+async function _drawFinish(){
+  if(!_drawState.active || _drawState.vertices.length < 3) return;
+  // Cleanup listeners dessin.
+  if(_drawState.onMapClick) _map.off('click', _drawState.onMapClick);
+  if(_drawState.onMapMove) _map.off('mousemove', _drawState.onMapMove);
+  _map.off('dblclick', _drawFinish);
+  _map.doubleClickZoom.enable();
+  if(_drawState.onKeyDown) document.removeEventListener('keydown', _drawState.onKeyDown);
+  if(_drawState.preview){ _lyrDraw.removeLayer(_drawState.preview); _drawState.preview = null; }
+  if(_drawState.poly){ _lyrDraw.removeLayer(_drawState.poly); _drawState.poly = null; }
+  _map.getContainer().style.cursor = '';
+  _drawState.active = false;
+  // Rend le polygone final (rempli).
+  _drawState.finalPoly = L.polygon(_drawState.vertices, { color:'#0b7c77', weight:2.5, fillColor:'#0b7c77', fillOpacity:0.12 });
+  _drawState.finalPoly.addTo(_lyrDraw);
+  // Lance la query.
+  await _drawQueryGbif();
+}
+// Efface tout : polygone + resultats + reset l'etat de dessin.
+function _drawClear(){
+  if(_lyrDraw){ _lyrDraw.clearLayers(); }
+  if(_drawState.onMapClick){ _map.off('click', _drawState.onMapClick); _drawState.onMapClick = null; }
+  if(_drawState.onMapMove){ _map.off('mousemove', _drawState.onMapMove); _drawState.onMapMove = null; }
+  _map.off('dblclick', _drawFinish);
+  _map.doubleClickZoom.enable();
+  if(_drawState.onKeyDown){ document.removeEventListener('keydown', _drawState.onKeyDown); _drawState.onKeyDown = null; }
+  if(_map) _map.getContainer().style.cursor = '';
+  _drawState = { active:false, vertices:[], poly:null, preview:null, vertexMarkers:[], finalPoly:null, onMapClick:null, onMapMove:null, onKeyDown:null };
+  const res = $('#mapDrawResults'); if(res){ res.style.display = 'none'; res.dataset.hasResults = '0'; res.innerHTML = ''; }
+  const cnt = $('#mapDrawCount'); if(cnt) cnt.textContent = 'Clique « Dessiner » puis pose des points sur la carte';
+}
+// Query GBIF avec le polygone en WKT + facet speciesKey pour compter par espece.
+async function _drawQueryGbif(){
+  if(!_drawState.finalPoly || _drawState.vertices.length < 3) return;
+  const cnt = $('#mapDrawCount');
+  const monthRaw = parseInt($('#mapDrawMonth')?.value, 10) || 0;
+  const yMinRaw = parseInt($('#mapDrawYearMin')?.value, 10) || 2024;
+  const yMaxRaw = parseInt($('#mapDrawYearMax')?.value, 10) || 2025;
+  const yMin = Math.min(yMinRaw, yMaxRaw);
+  const yMax = Math.max(yMinRaw, yMaxRaw);
+  const yearParam = (yMin === yMax) ? String(yMin) : `${yMin},${yMax}`;
+  const monthParam = monthRaw > 0 ? `&month=${monthRaw}` : '';
+  // WKT : GBIF veut "lon lat" (attention a l'ordre) et le polygone ferme (1er sommet = dernier).
+  const closed = _drawState.vertices.concat([_drawState.vertices[0]]);
+  const wkt = `POLYGON((${closed.map(([lat, lon]) => `${lon.toFixed(5)} ${lat.toFixed(5)}`).join(',')}))`;
+  if(cnt) cnt.textContent = '… interrogation GBIF';
+  try{
+    const url = `https://api.gbif.org/v1/occurrence/search?country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}${monthParam}&geometry=${encodeURIComponent(wkt)}&facet=speciesKey&facetLimit=500&limit=200`;
+    const r = await fetch(url);
+    if(!r.ok) throw new Error('http ' + r.status);
+    const j = await r.json();
+    _drawRenderResults(j, monthRaw, yMin, yMax);
+  }catch(e){
+    if(cnt) cnt.textContent = 'Erreur GBIF : ' + e.message;
+  }
+}
+// Rend la liste des especes trouvees dans le panneau resultats.
+function _drawRenderResults(j, monthRaw, yMin, yMax){
+  const cnt = $('#mapDrawCount');
+  const res = $('#mapDrawResults');
+  const facets = (j.facets || []).find(f => f.field === 'SPECIES_KEY');
+  const counts = facets ? facets.counts : [];
+  // Construit un lookup speciesKey -> { name, sci } depuis les results renvoyes (echantillon).
+  const nameByKey = new Map();
+  for(const o of (j.results || [])){
+    const k = o.speciesKey || o.taxonKey;
+    if(k && !nameByKey.has(k)){
+      const sci = (o.species || '').toLowerCase();
+      const nm = FR_NAMES[sci] || o.vernacularName || o.species || String(k);
+      nameByKey.set(k, { sci, nm });
+    }
+  }
+  const me = realPeople.find(p => p.id === myUid);
+  const mine = new Set(me ? [...me.species.keys()] : []);
+  // Enrichit chaque facet avec nom + statut cocher.
+  const rows = counts.map(f => {
+    const key = parseInt(f.name, 10);
+    const info = nameByKey.get(key);
+    const sci = info?.sci || '';
+    const nm = info?.nm || `Espèce GBIF #${key}`;
+    return { key, sci, nm, count: f.count, cocher: sci && !mine.has(sci) };
+  });
+  // Tri : "à cocher" en premier, puis par rareté, puis alphabetique.
+  rows.sort((a, b) => {
+    if(a.cocher !== b.cocher) return a.cocher ? -1 : 1;
+    const rA = rarityReal(a.sci) || 0, rB = rarityReal(b.sci) || 0;
+    if(rA !== rB) return rB - rA;
+    return a.nm.localeCompare(b.nm, 'fr');
+  });
+  const totalObs = j.count || 0;
+  const totalSp = rows.length;
+  const toCocher = rows.filter(r => r.cocher).length;
+  const monthNames = ['toute l\'année','janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  const rangeTxt = (yMin === yMax) ? yMin : `${yMin} → ${yMax}`;
+  if(cnt) cnt.textContent = `${totalObs} obs · ${totalSp} espèce${totalSp>1?'s':''} · ${toCocher} à cocher · ${monthNames[monthRaw]} ${rangeTxt}`;
+  if(!rows.length){
+    res.innerHTML = '<div class="help" style="font-size:12.5px;">Aucune espèce trouvée dans cette zone pour cette période. Essaie une année ou un mois différent (GBIF a un lag de 1 à 3 mois).</div>';
+    res.style.display = ''; res.dataset.hasResults = '1';
+    return;
+  }
+  const html = '<div style="font-size:13px; margin-bottom:8px; color:var(--ink-2);">Cliquez une espèce pour voir sa fiche</div>' +
+    '<ul style="list-style:none; margin:0; padding:0;">' +
+    rows.map(r => {
+      const w = rarityReal(r.sci) || 0;
+      const badge = r.cocher ? ' <span style="background:#e74c3c; color:#fff; font-size:10px; padding:1px 6px; border-radius:4px; margin-left:6px;">à cocher</span>' : '';
+      const rarDot = w ? `<span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${sciColor(r.sci)}; margin-right:8px; vertical-align:middle;"></span>` : '';
+      return `<li data-sci="${esc(r.sci)}" style="padding:6px 4px; border-bottom:1px solid var(--line); cursor:pointer; display:flex; align-items:center; gap:6px;">
+        ${rarDot}
+        <span style="flex:1;"><b>${esc(r.nm)}</b>${badge} <span style="color:var(--ink-3); font-size:11.5px;">${esc(r.sci)}</span></span>
+        <span style="color:var(--ink-2); font-size:12px; font-variant-numeric:tabular-nums;">${r.count} obs</span>
+      </li>`;
+    }).join('') + '</ul>';
+  res.innerHTML = html;
+  res.style.display = ''; res.dataset.hasResults = '1';
+}
+// Delegation click : boutons Dessiner/Effacer + click sur une espece dans la liste resultats.
+document.addEventListener('click', (e) => {
+  if(e.target.closest('#mapDrawStart')){ _drawStart(); return; }
+  if(e.target.closest('#mapDrawClear')){ _drawClear(); return; }
+  const li = e.target.closest('#mapDrawResults li[data-sci]');
+  if(li){ const sci = li.dataset.sci; if(sci) openSpeciesModal(sci); }
+});
+// Changement mois/annees en mode draw : re-run la query si un polygone valide existe.
+document.addEventListener('change', (e) => {
+  if(e.target.id === 'mapDrawMonth' || e.target.id === 'mapDrawYearMin' || e.target.id === 'mapDrawYearMax'){
+    if(mapMode === 'draw' && _drawState.finalPoly) _drawQueryGbif();
+  }
+});
 async function _renderModeAbundance(){
   const cnt = $('#mapAbCount');
   // Charge la taxonomie en fond (nécessaire pour _sciToCode → fetch hotspots au zoom)
