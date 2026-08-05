@@ -4544,7 +4544,12 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
         for(const o of (j.results || [])){
           if(typeof o.decimalLatitude !== 'number' || typeof o.decimalLongitude !== 'number') continue;
           if(!passesGadm(o)) continue;
-          const id = o.gbifID || o.key || `${o.decimalLatitude},${o.decimalLongitude},${o.eventDate},${o.taxonKey}`;
+          // Dedup semantique : meme espece + meme position (arrondi ~10m) + meme jour
+          // = meme obs reelle, meme si dupliquee entre datasets (Faune-France propage
+          // aux mirrors, eBird / iNat re-ingested, etc.). Le gbifID diverge entre les
+          // versions dupliquees, il ne suffit donc pas.
+          const spKey0 = o.taxonKey || o.speciesKey || 0;
+          const id = `${spKey0}_${o.decimalLatitude.toFixed(4)}_${o.decimalLongitude.toFixed(4)}_${(o.eventDate||'').slice(0,10)}`;
           if(seenIds.has(id)) continue;
           seenIds.add(id);
           allObs.push(o);
