@@ -4514,8 +4514,9 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
   // sciByKey pour retrouver le nom scientifique a partir du taxonKey retourne par GBIF.
   const sciByKey = new Map();
   for(const [sci, k] of sciToKey.entries()){ if(k) sciByKey.set(k, sci); }
-  // 3) Chunk taxonKeys en batches de 80 (chaque URL ~1400 chars).
-  const CHUNK = 80;
+  // 3) Chunk taxonKeys en batches de 40 (chaque URL ~700 chars, marge confortable).
+  // Batches plus petits = moins de saturation de la limite 300 obs/reponse GBIF.
+  const CHUNK = 40;
   const chunks = [];
   for(let i = 0; i < keys.length; i += CHUNK) chunks.push(keys.slice(i, i + CHUNK));
   // 4) Fetch each chunk (passe 1 : batch multi-taxonKey, capture les especes communes).
@@ -4536,28 +4537,41 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
   };
   for(const chunk of chunks){
     const keysParam = chunk.map(k => `taxonKey=${k}`).join('&');
-    const url = `https://api.gbif.org/v1/occurrence/search?${keysParam}&country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=300${bboxParam}`;
-    try{
-      const r = await fetch(url);
-      if(r.ok){
-        const j = await r.json();
-        for(const o of (j.results || [])){
-          if(typeof o.decimalLatitude !== 'number' || typeof o.decimalLongitude !== 'number') continue;
-          if(!passesGadm(o)) continue;
-          // Dedup semantique : meme espece + meme position (arrondi ~10m) + meme jour
-          // = meme obs reelle, meme si dupliquee entre datasets (Faune-France propage
-          // aux mirrors, eBird / iNat re-ingested, etc.). Le gbifID diverge entre les
-          // versions dupliquees, il ne suffit donc pas.
-          const spKey0 = o.taxonKey || o.speciesKey || 0;
-          const id = `${spKey0}_${o.decimalLatitude.toFixed(4)}_${o.decimalLongitude.toFixed(4)}_${(o.eventDate||'').slice(0,10)}`;
-          if(seenIds.has(id)) continue;
-          seenIds.add(id);
-          allObs.push(o);
-          const spKey = o.taxonKey || o.speciesKey;
-          if(spKey) speciesWithPoints.add(spKey);
-        }
-      }
-    }catch(_){}
+    // Pagination : on continue tant que GBIF renvoie 300 obs (indicateur de saturation)
+    // ou qu'il indique endOfRecords=false. Cap securite a MAX_PAGES pour eviter les runs
+    // interminables sur des zones tres denses.
+    const MAX_PAGES = 5;
+    let offset = 0;
+    for(let page = 0; page < MAX_PAGES; page++){
+      const url = `https://api.gbif.org/v1/occurrence/search?${keysParam}&country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=300&offset=${offset}${bboxParam}`;
+      let batchLen = 0, endOfRecords = true;
+      try{
+        const r = await fetch(url);
+        if(r.ok){
+          const j = await r.json();
+          batchLen = (j.results || []).length;
+          endOfRecords = !!j.endOfRecords;
+          for(const o of (j.results || [])){
+            if(typeof o.decimalLatitude !== 'number' || typeof o.decimalLongitude !== 'number') continue;
+            if(!passesGadm(o)) continue;
+            // Dedup semantique : meme espece + meme position (arrondi ~10m) + meme jour
+            // = meme obs reelle, meme si dupliquee entre datasets (Faune-France propage
+            // aux mirrors, eBird / iNat re-ingested, etc.). Le gbifID diverge entre les
+            // versions dupliquees, il ne suffit donc pas.
+            const spKey0 = o.taxonKey || o.speciesKey || 0;
+            const id = `${spKey0}_${o.decimalLatitude.toFixed(4)}_${o.decimalLongitude.toFixed(4)}_${(o.eventDate||'').slice(0,10)}`;
+            if(seenIds.has(id)) continue;
+            seenIds.add(id);
+            allObs.push(o);
+            const spKey = o.taxonKey || o.speciesKey;
+            if(spKey) speciesWithPoints.add(spKey);
+          }
+        } else { break; }
+      }catch(_){ break; }
+      // Stoppe si GBIF dit "fini" ou si la page n'est pas pleine (moins de 300 = saturation non atteinte).
+      if(endOfRecords || batchLen < 300) break;
+      offset += 300;
+    }
     done++;
     if(onProgress) onProgress('fetch', done, chunks.length);
   }
