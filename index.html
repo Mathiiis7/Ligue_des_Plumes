@@ -1094,7 +1094,6 @@
         <button data-mode="missing">🐦 À aller cocher</button>
         <button data-mode="hotspots">🏞️ Top hotspots</button>
         <button data-mode="abundance">🗺️ Où trouver</button>
-        <button data-mode="draw">✏️ Dessiner une zone</button>
       </div>
       <div class="map-search">
         <div class="map-search-input-wrap">
@@ -1188,6 +1187,8 @@
           <button type="button" class="btn tiny" id="mapEbMinTodoInc" style="padding:2px 8px; font-size:15px; border-radius:0 6px 6px 0;" title="+1">+</button>
         </div>
         <span id="mapEbMinTodoSuffix" class="explorer-lbl" style="display:none;">espèces à cocher</span>
+        <button type="button" class="btn tiny" id="mapDrawStart" style="display:none;" title="Clic sur la carte pour poser les sommets, double-clic ou clic sur le 1er point pour fermer. Marche pour les 2 sources.">✏️ Dessiner une zone</button>
+        <button type="button" class="btn tiny" id="mapDrawClear" style="display:none;" title="Efface le polygone et revient au filtre région/département">🗑️ Effacer</button>
         <span class="map-count" id="mapEbCount"></span>
       </div>
       <div class="map-controls" id="mapCtrlsAbundance" style="display:none;">
@@ -1215,25 +1216,6 @@
         <span class="map-count" id="mapAbCount"></span>
       </div>
       <div id="mapAbHint" class="help" style="display:none; margin:2px 0 8px; font-size:11.5px; line-height:1.4;"></div>
-      <div class="map-controls" id="mapCtrlsDraw" style="display:none;">
-        <button type="button" class="btn tiny" id="mapDrawStart" title="Clic sur la carte pour poser les sommets, double-clic ou clic sur le 1er point pour fermer">✏️ Dessiner</button>
-        <button type="button" class="btn tiny" id="mapDrawClear" title="Effacer le polygone">🗑️ Effacer</button>
-        <label class="explorer-lbl" for="mapDrawMonth">Mois</label>
-        <select class="filt-sel" id="mapDrawMonth">
-          <option value="0">Toute l'année</option>
-          <option value="1">janvier</option><option value="2">février</option>
-          <option value="3">mars</option><option value="4">avril</option>
-          <option value="5">mai</option><option value="6">juin</option>
-          <option value="7">juillet</option><option value="8" selected>août</option>
-          <option value="9">septembre</option><option value="10">octobre</option>
-          <option value="11">novembre</option><option value="12">décembre</option>
-        </select>
-        <label class="explorer-lbl">De</label>
-        <input type="number" id="mapDrawYearMin" style="width:60px; font-size:12px; padding:3px 6px; border:1px solid var(--line-2); border-radius:6px;" min="1970" max="2026" value="2024">
-        <label class="explorer-lbl">à</label>
-        <input type="number" id="mapDrawYearMax" style="width:60px; font-size:12px; padding:3px 6px; border:1px solid var(--line-2); border-radius:6px;" min="1970" max="2026" value="2025">
-        <span class="map-count" id="mapDrawCount">Clique « Dessiner » puis pose des points sur la carte</span>
-      </div>
       <div id="mapNote" class="help" style="margin:6px 0 8px; display:none;"></div>
       <div id="mapEl" class="map-el"></div>
       <div id="mapDrawResults" style="display:none; margin-top:10px; max-height:360px; overflow:auto; border:1px solid var(--line); border-radius:8px; padding:8px 12px; background:var(--surface-2);"></div>
@@ -3107,7 +3089,7 @@ let _loaded = { missing:'', hotspots:'' };   // clé de cache (région+jours)
 let mapFilter = { player:'all', tier:'any', country:'any' };
 // Filtres propres aux modes eBird
 // `rarities` = Set des niveaux sélectionnés (nombres 1-9 ou chaîne 'exo'). Vide = pas de filtre.
-let ebFilter = { region:'FR', days:14, rarities:new Set([1,2,3,4,5,6,7,8,9,'exo']), month:0, dept:'', minTodo:0, source:'ebird', yearMin:2024, yearMax:2025 };
+let ebFilter = { region:'FR', days:14, rarities:new Set([1,2,3,4,5,6,7,8,9,'exo']), month:0, dept:'', minTodo:0, source:'ebird', yearMin:2024, yearMax:2025, polygon:null };
 let userPos = null;   // { lat, lon } — position utilisateur pour Haversine
 let myFavHotspots = new Set();   // Set des locId favoris de l'utilisateur (synchronisé Firestore)
 // Distance à vol d'oiseau entre 2 points (km).
@@ -3610,11 +3592,16 @@ async function renderMap(){
   const mine = mapMode==='mine';
   const abund = mapMode==='abundance';
   $('#mapCtrlsMine').style.display = mine ? '' : 'none';
-  const drawMode = mapMode === 'draw';
-  $('#mapCtrlsEbird').style.display = (mine||abund||drawMode) ? 'none' : '';
+  $('#mapCtrlsEbird').style.display = (mine||abund) ? 'none' : '';
   $('#mapCtrlsAbundance').style.display = abund ? '' : 'none';
-  const drawCtrl = $('#mapCtrlsDraw'); if(drawCtrl) drawCtrl.style.display = drawMode ? '' : 'none';
-  const drawRes = $('#mapDrawResults'); if(drawRes) drawRes.style.display = (drawMode && drawRes.dataset.hasResults === '1') ? '' : 'none';
+  // Boutons Dessiner/Effacer visibles seulement en mode "A cocher".
+  const showDraw = mapMode === 'missing';
+  const drawStart = $('#mapDrawStart'), drawClear = $('#mapDrawClear');
+  if(drawStart) drawStart.style.display = showDraw ? '' : 'none';
+  if(drawClear) drawClear.style.display = (showDraw && ebFilter.polygon) ? '' : 'none';
+  // Panneau resultats : visible seulement en missing avec polygone actif ET resultats presents.
+  const drawRes = $('#mapDrawResults');
+  if(drawRes) drawRes.style.display = (mapMode==='missing' && ebFilter.polygon && drawRes.dataset.hasResults === '1') ? '' : 'none';
   $('#mapTimeline').style.display = mine ? '' : 'none';
   $('#mapStats').style.display = mine ? '' : 'none';
   $('#mapNote').style.display = 'none';
@@ -3634,7 +3621,6 @@ async function renderMap(){
   if(mapMode==='missing') return _renderModeMissing();
   if(mapMode==='hotspots') return _renderModeHotspots();
   if(mapMode==='abundance') return _renderModeAbundance();
-  if(mapMode==='draw') return _renderModeDraw();
 }
 function _ensureMapInit(el){
   if(_map) return;
@@ -3766,11 +3752,10 @@ async function _renderModeMissing(){
     setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
     return;
   }
-  // Vue "FR entière" : toujours vide + hint. Trop lourd d'afficher les obs France entière
-  // (des milliers de points). L'utilisateur doit choisir une région/dept OU une espèce.
-  if(zone === 'FR'){
+  // Vue "FR entière" : sauf si un polygone est actif (auquel cas on fetche FR et filtre client-side).
+  if(zone === 'FR' && !ebFilter.polygon){
     if(_lyrMissing){ _lyrMissing.clearLayers(); }
-    if(cnt) cnt.textContent = 'Choisis une région/département ou tape une espèce dans la barre pour voir les points';
+    if(cnt) cnt.textContent = 'Choisis une région/département ou dessine une zone, ou tape une espèce dans la barre';
     setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
     return;
   }
@@ -3797,6 +3782,7 @@ async function _renderModeMissing(){
     : (rarLbl ? `Aucune espèce ${rarLbl} à cocher${zoneLbl}` : `Rien à cocher${zoneLbl} — vous les avez toutes ! 🎯`);
   _fitLayer(_lyrMissing);
   _mapApplyFilter();
+  _populateMissingResultsPanel();
   setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
 }
 // Rendu du mode "A cocher" version GBIF (historique). Utilise le mois + plage annees
@@ -3804,28 +3790,33 @@ async function _renderModeMissing(){
 // eBird pour permettre le toggle rapide entre les deux sources.
 async function _renderModeMissingGbif(){
   const cnt = $('#mapEbCount');
-  // Mode GBIF : dept OBLIGATOIRE (region = trop de points, carte injouable, dedup lourde).
-  const zone = ebFilter.dept;
-  if(!zone || !/^FR-[A-Z]+-([0-9A-Z]+)$/.test(zone)){
-    if(_lyrMissing){ _lyrMissing.clearLayers(); }
-    if(cnt) cnt.textContent = 'Choisis un département (obligatoire en GBIF, région = trop de points)';
-    setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
-    return;
-  }
-  const bbox = _mapZoneToBbox(zone);
-  if(!bbox){
-    if(_lyrMissing){ _lyrMissing.clearLayers(); }
-    if(cnt) cnt.textContent = 'Département inconnu';
-    return;
-  }
-  // Filtre gadm strict : la bbox est un rectangle qui deborde sur les depts voisins.
-  // On rejette cote client les obs dont gadm.level2 ne matche pas le dept selectionne.
-  let gadmFilter = null;
-  const deptM = zone.match(/^FR-[A-Z]+-([0-9A-Z]+)$/);
-  if(deptM){
-    let dc = deptM[1]; if(dc === '75C') dc = '75';
-    const d = FR_DEPTS.find(x => x[0] === dc);
-    if(d) gadmFilter = { level:'level2', name: d[1] };
+  // Zone : polygone dessine > dept selectionne. Region non acceptee ici (trop de points).
+  let bbox = null, gadmFilter = null, polygonWKT = null, zone = '';
+  if(ebFilter.polygon){
+    polygonWKT = _polygonToWKT(ebFilter.polygon);
+    zone = 'polygon';
+  } else {
+    zone = ebFilter.dept;
+    if(!zone || !/^FR-[A-Z]+-([0-9A-Z]+)$/.test(zone)){
+      if(_lyrMissing){ _lyrMissing.clearLayers(); }
+      if(cnt) cnt.textContent = 'Choisis un département ou dessine une zone (obligatoire en GBIF, région entière = trop de points)';
+      setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
+      return;
+    }
+    bbox = _mapZoneToBbox(zone);
+    if(!bbox){
+      if(_lyrMissing){ _lyrMissing.clearLayers(); }
+      if(cnt) cnt.textContent = 'Département inconnu';
+      return;
+    }
+    // Filtre gadm strict : la bbox est un rectangle qui deborde sur les depts voisins.
+    // On rejette cote client les obs dont gadm.level2 ne matche pas le dept selectionne.
+    const deptM = zone.match(/^FR-[A-Z]+-([0-9A-Z]+)$/);
+    if(deptM){
+      let dc = deptM[1]; if(dc === '75C') dc = '75';
+      const d = FR_DEPTS.find(x => x[0] === dc);
+      if(d) gadmFilter = { level:'level2', name: d[1] };
+    }
   }
   const month = parseInt($('#mapEbMonth')?.value, 10) || 8;
   const yMinRaw = parseInt($('#mapEbYearMin')?.value, 10) || 2024;
@@ -3835,14 +3826,16 @@ async function _renderModeMissingGbif(){
   const monthNames = ['','janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
   const rangeTxt = (yMin === yMax) ? yMin : `${yMin} → ${yMax}`;
   if(cnt) cnt.textContent = `… GBIF ${monthNames[month]} ${rangeTxt}`;
-  const cacheKey = _gbifCacheKey(zone, month, yMin, yMax);
+  // Cache : le polygone est une signature unique (hash simplifie sur les coord).
+  // Pas de cache si polygon actif : on l'ecrit pas non plus (le polygone peut changer a chaque essai).
+  const cacheKey = polygonWKT ? null : _gbifCacheKey(zone, month, yMin, yMax);
   const res = await _loadMissingLayerGbifBbox(bbox, month, yMin, yMax, (phase, done, total) => {
     if(!cnt) return;
     if(phase === 'cache') cnt.textContent = '… lecture cache';
     else if(phase === 'resolve') cnt.textContent = `… résolution ${done}/${total} espèces (1re fois lente, cache après)`;
     else if(phase === 'fetch') cnt.textContent = `… fetch ${done}/${total} lots`;
     else if(phase === 'rescue') cnt.textContent = `… rattrapage ${done}/${total} espèces (évite d'en cacher)`;
-  }, gadmFilter, cacheKey);
+  }, gadmFilter, cacheKey, polygonWKT);
   // Si le run a ete annule par un render plus recent, on abandonne sans toucher a l'UI
   // (l'appel plus recent gere son propre affichage).
   if(res && res.aborted) return;
@@ -3865,9 +3858,41 @@ async function _renderModeMissingGbif(){
   }
   _fitLayer(_lyrMissing);
   _mapApplyFilter();
+  // Panneau resultats : liste espece+count depuis les marqueurs de _lyrMissing (uniquement
+  // si polygone actif, sinon inutile — les markers sur la carte suffisent).
+  _populateMissingResultsPanel();
   // Spread pixel-based apres fit : les marqueurs colles s'ecartent, les solitaires
   // restent a leur position exacte. Re-run automatique a chaque zoom via zoomend.
   setTimeout(()=>{ try{ _map.invalidateSize(); _mainMapSpreadGbifMarkers(); }catch(_){} }, 100);
+}
+// Aggrege les especes des marqueurs actuellement dans _lyrMissing et les affiche dans
+// le panneau resultats. Appele en missing mode quand un polygone est actif.
+function _populateMissingResultsPanel(){
+  const res = $('#mapDrawResults'); if(!res) return;
+  if(mapMode !== 'missing' || !ebFilter.polygon){
+    res.style.display = 'none'; res.dataset.hasResults = '0';
+    return;
+  }
+  const me = realPeople.find(p => p.id === myUid);
+  const mine = new Set(me ? [...me.species.keys()] : []);
+  const counts = new Map();  // sci -> count
+  if(_lyrMissing){
+    _lyrMissing.eachLayer(m => {
+      const sci = (m._sciName || '').toLowerCase();
+      if(!sci) return;
+      counts.set(sci, (counts.get(sci) || 0) + 1);
+    });
+  }
+  const rows = [];
+  for(const [sci, count] of counts.entries()){
+    rows.push({
+      sci,
+      name: FR_NAMES[sci] || sci,
+      count,
+      cocher: !mine.has(sci),
+    });
+  }
+  _renderDrawResultsPanel(rows);
 }
 async function _renderModeHotspots(){
   // Si un département est sélectionné, on l'utilise comme zone à interroger (plus fin).
@@ -3984,21 +4009,27 @@ let _drawState = {
   onMapMove: null,
   onKeyDown: null,
 };
-async function _renderModeDraw(){
-  // Assure la couche
-  if(!_lyrDraw){ _lyrDraw = L.layerGroup().addTo(_map); }
-  else if(!_map.hasLayer(_lyrDraw)) _lyrDraw.addTo(_map);
-  // Si un polygone valide existe deja et qu'on revient au mode -> juste re-afficher (pas re-fetch).
-  const cnt = $('#mapDrawCount');
-  if(_drawState.finalPoly){
-    if(cnt) cnt.textContent = `Polygone actif — modifie les filtres pour ré-interroger, ou clique « Effacer » pour recommencer`;
-  } else if(!_drawState.active){
-    if(cnt) cnt.textContent = 'Clique « Dessiner » puis pose des points sur la carte (double-clic pour fermer)';
+// Test point-in-polygon (algorithme ray casting). poly = [[lat, lon], ...].
+function _pointInPolygon(lat, lon, poly){
+  let inside = false;
+  for(let i = 0, j = poly.length - 1; i < poly.length; j = i++){
+    const yi = poly[i][0], xi = poly[i][1], yj = poly[j][0], xj = poly[j][1];
+    const intersect = ((yi > lat) !== (yj > lat)) &&
+                       (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+    if(intersect) inside = !inside;
   }
+  return inside;
+}
+// Convertit un polygone [[lat,lon],...] en WKT GBIF ("lon lat", ferme).
+function _polygonToWKT(poly){
+  const closed = poly.concat([poly[0]]);
+  return `POLYGON((${closed.map(([lat, lon]) => `${lon.toFixed(5)} ${lat.toFixed(5)}`).join(',')}))`;
 }
 // Entre en mode dessin : demarre les listeners map, prepare la couche.
 function _drawStart(){
-  if(!_map || !_lyrDraw) return;
+  if(!_map) return;
+  if(!_lyrDraw){ _lyrDraw = L.layerGroup().addTo(_map); }
+  else if(!_map.hasLayer(_lyrDraw)) _lyrDraw.addTo(_map);
   _drawClear();
   _drawState.active = true;
   _drawState.vertices = [];
@@ -4046,10 +4077,10 @@ function _drawRedraw(){
   const cnt = $('#mapDrawCount');
   if(cnt) cnt.textContent = `${_drawState.vertices.length} sommet${_drawState.vertices.length>1?'s':''} · double-clic pour fermer${_drawState.vertices.length>=3?' (ou clic sur le 1er sommet rouge)':''}`;
 }
-// Ferme le polygone (au moins 3 sommets) et lance la query GBIF.
+// Ferme le polygone (au moins 3 sommets) : set ebFilter.polygon + trigger renderMap.
+// Le filtrage effectif se fait dans _loadMissingLayer (eBird) et _loadMissingLayerGbifBbox (GBIF).
 async function _drawFinish(){
   if(!_drawState.active || _drawState.vertices.length < 3) return;
-  // Cleanup listeners dessin.
   if(_drawState.onMapClick) _map.off('click', _drawState.onMapClick);
   if(_drawState.onMapMove) _map.off('mousemove', _drawState.onMapMove);
   _map.off('dblclick', _drawFinish);
@@ -4059,13 +4090,15 @@ async function _drawFinish(){
   if(_drawState.poly){ _lyrDraw.removeLayer(_drawState.poly); _drawState.poly = null; }
   _map.getContainer().style.cursor = '';
   _drawState.active = false;
-  // Rend le polygone final (rempli).
   _drawState.finalPoly = L.polygon(_drawState.vertices, { color:'#0b7c77', weight:2.5, fillColor:'#0b7c77', fillOpacity:0.12 });
   _drawState.finalPoly.addTo(_lyrDraw);
-  // Lance la query.
-  await _drawQueryGbif();
+  // Bascule sur le polygone dans le filtre missing.
+  ebFilter.polygon = _drawState.vertices.slice();
+  _loaded.missing = ''; // invalide le cache de layer
+  const drawClear = $('#mapDrawClear'); if(drawClear) drawClear.style.display = '';
+  renderMap();
 }
-// Efface tout : polygone + resultats + reset l'etat de dessin.
+// Efface tout : polygone + filtres associes + re-render sans polygone.
 function _drawClear(){
   if(_lyrDraw){ _lyrDraw.clearLayers(); }
   if(_drawState.onMapClick){ _map.off('click', _drawState.onMapClick); _drawState.onMapClick = null; }
@@ -4076,77 +4109,27 @@ function _drawClear(){
   if(_map) _map.getContainer().style.cursor = '';
   _drawState = { active:false, vertices:[], poly:null, preview:null, vertexMarkers:[], finalPoly:null, onMapClick:null, onMapMove:null, onKeyDown:null };
   const res = $('#mapDrawResults'); if(res){ res.style.display = 'none'; res.dataset.hasResults = '0'; res.innerHTML = ''; }
-  const cnt = $('#mapDrawCount'); if(cnt) cnt.textContent = 'Clique « Dessiner » puis pose des points sur la carte';
+  const drawClear = $('#mapDrawClear'); if(drawClear) drawClear.style.display = 'none';
+  const hadPoly = !!ebFilter.polygon;
+  ebFilter.polygon = null;
+  _loaded.missing = '';
+  if(hadPoly && mapMode === 'missing') renderMap();
 }
-// Query GBIF avec le polygone en WKT + facet speciesKey pour compter par espece.
-async function _drawQueryGbif(){
-  if(!_drawState.finalPoly || _drawState.vertices.length < 3) return;
-  const cnt = $('#mapDrawCount');
-  const monthRaw = parseInt($('#mapDrawMonth')?.value, 10) || 0;
-  const yMinRaw = parseInt($('#mapDrawYearMin')?.value, 10) || 2024;
-  const yMaxRaw = parseInt($('#mapDrawYearMax')?.value, 10) || 2025;
-  const yMin = Math.min(yMinRaw, yMaxRaw);
-  const yMax = Math.max(yMinRaw, yMaxRaw);
-  const yearParam = (yMin === yMax) ? String(yMin) : `${yMin},${yMax}`;
-  const monthParam = monthRaw > 0 ? `&month=${monthRaw}` : '';
-  // WKT : GBIF veut "lon lat" (attention a l'ordre) et le polygone ferme (1er sommet = dernier).
-  const closed = _drawState.vertices.concat([_drawState.vertices[0]]);
-  const wkt = `POLYGON((${closed.map(([lat, lon]) => `${lon.toFixed(5)} ${lat.toFixed(5)}`).join(',')}))`;
-  if(cnt) cnt.textContent = '… interrogation GBIF';
-  try{
-    const url = `https://api.gbif.org/v1/occurrence/search?country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}${monthParam}&geometry=${encodeURIComponent(wkt)}&facet=speciesKey&facetLimit=500&limit=200`;
-    const r = await fetch(url);
-    if(!r.ok) throw new Error('http ' + r.status);
-    const j = await r.json();
-    _drawRenderResults(j, monthRaw, yMin, yMax);
-  }catch(e){
-    if(cnt) cnt.textContent = 'Erreur GBIF : ' + e.message;
-  }
-}
-// Rend la liste des especes trouvees dans le panneau resultats.
-function _drawRenderResults(j, monthRaw, yMin, yMax){
-  const cnt = $('#mapDrawCount');
-  const res = $('#mapDrawResults');
-  const facets = (j.facets || []).find(f => f.field === 'SPECIES_KEY');
-  const counts = facets ? facets.counts : [];
-  // Construit un lookup speciesKey -> { name, sci } depuis les results renvoyes (echantillon).
-  const nameByKey = new Map();
-  for(const o of (j.results || [])){
-    const k = o.speciesKey || o.taxonKey;
-    if(k && !nameByKey.has(k)){
-      const sci = (o.species || '').toLowerCase();
-      const nm = FR_NAMES[sci] || o.vernacularName || o.species || String(k);
-      nameByKey.set(k, { sci, nm });
-    }
-  }
-  const me = realPeople.find(p => p.id === myUid);
-  const mine = new Set(me ? [...me.species.keys()] : []);
-  // Enrichit chaque facet avec nom + statut cocher.
-  const rows = counts.map(f => {
-    const key = parseInt(f.name, 10);
-    const info = nameByKey.get(key);
-    const sci = info?.sci || '';
-    const nm = info?.nm || `Espèce GBIF #${key}`;
-    return { key, sci, nm, count: f.count, cocher: sci && !mine.has(sci) };
-  });
-  // Tri : "à cocher" en premier, puis par rareté, puis alphabetique.
-  rows.sort((a, b) => {
-    if(a.cocher !== b.cocher) return a.cocher ? -1 : 1;
-    const rA = rarityReal(a.sci) || 0, rB = rarityReal(b.sci) || 0;
-    if(rA !== rB) return rB - rA;
-    return a.nm.localeCompare(b.nm, 'fr');
-  });
-  const totalObs = j.count || 0;
-  const totalSp = rows.length;
-  const toCocher = rows.filter(r => r.cocher).length;
-  const monthNames = ['toute l\'année','janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
-  const rangeTxt = (yMin === yMax) ? yMin : `${yMin} → ${yMax}`;
-  if(cnt) cnt.textContent = `${totalObs} obs · ${totalSp} espèce${totalSp>1?'s':''} · ${toCocher} à cocher · ${monthNames[monthRaw]} ${rangeTxt}`;
-  if(!rows.length){
-    res.innerHTML = '<div class="help" style="font-size:12.5px;">Aucune espèce trouvée dans cette zone pour cette période. Essaie une année ou un mois différent (GBIF a un lag de 1 à 3 mois).</div>';
+// Rend la liste des especes trouvees dans le panneau resultats (partagee entre eBird et GBIF).
+// speciesRows = [{ sci, name, count, cocher }, ...] deja calcule par le mode appelant.
+function _renderDrawResultsPanel(speciesRows){
+  const res = $('#mapDrawResults'); if(!res) return;
+  if(!speciesRows.length){
+    res.innerHTML = '<div class="help" style="font-size:12.5px;">Aucune espèce trouvée dans cette zone. Essaie une autre période, source ou zone.</div>';
     res.style.display = ''; res.dataset.hasResults = '1';
     return;
   }
+  const rows = speciesRows.slice().sort((a, b) => {
+    if(a.cocher !== b.cocher) return a.cocher ? -1 : 1;
+    const rA = rarityReal(a.sci) || 0, rB = rarityReal(b.sci) || 0;
+    if(rA !== rB) return rB - rA;
+    return (a.name||'').localeCompare(b.name||'', 'fr');
+  });
   const html = '<div style="font-size:13px; margin-bottom:8px; color:var(--ink-2);">Cliquez une espèce pour voir sa fiche</div>' +
     '<ul style="list-style:none; margin:0; padding:0;">' +
     rows.map(r => {
@@ -4155,7 +4138,7 @@ function _drawRenderResults(j, monthRaw, yMin, yMax){
       const rarDot = w ? `<span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${sciColor(r.sci)}; margin-right:8px; vertical-align:middle;"></span>` : '';
       return `<li data-sci="${esc(r.sci)}" style="padding:6px 4px; border-bottom:1px solid var(--line); cursor:pointer; display:flex; align-items:center; gap:6px;">
         ${rarDot}
-        <span style="flex:1;"><b>${esc(r.nm)}</b>${badge} <span style="color:var(--ink-3); font-size:11.5px;">${esc(r.sci)}</span></span>
+        <span style="flex:1;"><b>${esc(r.name)}</b>${badge} <span style="color:var(--ink-3); font-size:11.5px;">${esc(r.sci)}</span></span>
         <span style="color:var(--ink-2); font-size:12px; font-variant-numeric:tabular-nums;">${r.count} obs</span>
       </li>`;
     }).join('') + '</ul>';
@@ -4168,12 +4151,6 @@ document.addEventListener('click', (e) => {
   if(e.target.closest('#mapDrawClear')){ _drawClear(); return; }
   const li = e.target.closest('#mapDrawResults li[data-sci]');
   if(li){ const sci = li.dataset.sci; if(sci) openSpeciesModal(sci); }
-});
-// Changement mois/annees en mode draw : re-run la query si un polygone valide existe.
-document.addEventListener('change', (e) => {
-  if(e.target.id === 'mapDrawMonth' || e.target.id === 'mapDrawYearMin' || e.target.id === 'mapDrawYearMax'){
-    if(mapMode === 'draw' && _drawState.finalPoly) _drawQueryGbif();
-  }
 });
 async function _renderModeAbundance(){
   const cnt = $('#mapAbCount');
@@ -4716,6 +4693,12 @@ async function _loadMissingLayer(zone, days=14, rarities=new Set(), onProgress){
       }
       await Promise.all(Array.from({length:Math.min(CONCURRENCY, filtered.length)}, worker));
     }
+    // Filtre polygone (point-in-polygon) : si un polygone dessine est actif, ne garde
+    // que les obs a l'interieur. La fetch eBird se fait sur la region/dept classique,
+    // le polygone raffine ensuite cote client.
+    if(ebFilter.polygon){
+      allObs = allObs.filter(o => _pointInPolygon(o.lat, o.lon, ebFilter.polygon));
+    }
     // Éparpille les obs qui partagent la même position (sunflower).
     const groups = new Map();
     for(const o of allObs){ const k=o.lat.toFixed(5)+','+o.lon.toFixed(5); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(o); }
@@ -4807,7 +4790,7 @@ function _gbifUnslim(s){
     datasetName: s.dn, references: s.ref, gbifID: s.id
   };
 }
-async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgress, gadmFilter, cacheKey){
+async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgress, gadmFilter, cacheKey, polygonWKT){
   if(!_lyrMissing) return { total:0, points:0 };
   const myRun = ++_gbifRunSeq;
   const stillMine = () => myRun === _gbifRunSeq;
@@ -4878,7 +4861,11 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
   for(let i = 0; i < keys.length; i += CHUNK) chunks.push(keys.slice(i, i + CHUNK));
   // 4) Fetch each chunk (passe 1 : batch multi-taxonKey, capture les especes communes).
   const yearParam = (yearMin===yearMax) ? String(yearMin) : `${yearMin},${yearMax}`;
-  const bboxParam = bbox ? `&decimalLatitude=${bbox[0]},${bbox[1]}&decimalLongitude=${bbox[2]},${bbox[3]}` : '';
+  // Si polygone WKT fourni : `geometry=` cote serveur GBIF (precis, remplace la bbox et le gadmFilter).
+  // Sinon bbox + gadm classiques (region/dept).
+  const geoParam = polygonWKT ? `&geometry=${encodeURIComponent(polygonWKT)}` : (bbox ? `&decimalLatitude=${bbox[0]},${bbox[1]}&decimalLongitude=${bbox[2]},${bbox[3]}` : '');
+  const bboxParam = geoParam;
+  if(polygonWKT) gadmFilter = null;
   let done = 0;
   if(onProgress) onProgress('fetch', 0, chunks.length);
   const allObs = [];
