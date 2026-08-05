@@ -3779,26 +3779,28 @@ async function _renderModeMissing(){
 // eBird pour permettre le toggle rapide entre les deux sources.
 async function _renderModeMissingGbif(){
   const cnt = $('#mapEbCount');
-  const zone = ebFilter.dept || ebFilter.region;
-  const bbox = _mapZoneToBbox(zone);
-  // FR entier interdit : trop de resultats, taxonKeys en excedent.
-  if(!bbox){
+  // Mode GBIF : dept OBLIGATOIRE (region = trop de points, carte injouable, dedup lourde).
+  const zone = ebFilter.dept;
+  if(!zone || !/^FR-[A-Z]+-([0-9A-Z]+)$/.test(zone)){
     if(_lyrMissing){ _lyrMissing.clearLayers(); }
-    if(cnt) cnt.textContent = 'Choisis une région ou un département pour interroger GBIF';
+    if(cnt) cnt.textContent = 'Choisis un département (obligatoire en GBIF — région = trop de points)';
     setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
     return;
   }
+  const bbox = _mapZoneToBbox(zone);
+  if(!bbox){
+    if(_lyrMissing){ _lyrMissing.clearLayers(); }
+    if(cnt) cnt.textContent = 'Département inconnu';
+    return;
+  }
   // Filtre gadm strict : la bbox est un rectangle qui deborde sur les depts voisins.
-  // On rejette cote client les obs dont gadm.level1/level2 ne matche pas la zone selectionnee.
+  // On rejette cote client les obs dont gadm.level2 ne matche pas le dept selectionne.
   let gadmFilter = null;
   const deptM = zone.match(/^FR-[A-Z]+-([0-9A-Z]+)$/);
   if(deptM){
     let dc = deptM[1]; if(dc === '75C') dc = '75';
     const d = FR_DEPTS.find(x => x[0] === dc);
     if(d) gadmFilter = { level:'level2', name: d[1] };
-  } else if(/^FR-[A-Z]+$/.test(zone)){
-    const r = FR_REGIONS.find(x => x.code === zone);
-    if(r) gadmFilter = { level:'level1', name: r.name };
   }
   const month = parseInt($('#mapEbMonth')?.value, 10) || 8;
   const yMinRaw = parseInt($('#mapEbYearMin')?.value, 10) || 2024;
@@ -4319,7 +4321,8 @@ document.addEventListener('click', e=>{
   const showSort = mapMode==='hotspots';
   if(srtLbl) srtLbl.style.display = showSort ? '' : 'none';
   if(srtSel) srtSel.style.display = showSort ? '' : 'none';
-  const showRar = mapMode==='missing' && ebFilter.source==='ebird';
+  // Rareté chips : visibles en mode "A cocher" quelle que soit la source (eBird ou GBIF).
+  const showRar = mapMode==='missing';
   if(rarLbl) rarLbl.style.display = showRar ? '' : 'none';
   if(rarChips) rarChips.style.display = showRar ? 'inline-flex' : 'none';
   // Source toggle : visible seulement en mode "A cocher".
@@ -4499,10 +4502,18 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
   _lyrMissing.clearLayers();
   // Lazy-load la taxonomie eBird pour permettre le clic sur un marqueur → fiche detail eBird.
   if(!_taxMap){ try{ await _loadTaxonomy(); }catch(_){} }
-  // 1) Compute missing sci list from FR_NAMES minus user's life list.
+  // 1) Compute missing sci list from FR_NAMES minus user's life list, filtre par rarete
+  // (mêmes chips que le mode eBird : Set de niveaux 1-9 + 'exo', vide = pas de filtre).
   const me = realPeople.find(p => p.id === myUid);
   const mine = new Set(me ? [...me.species.keys()] : []);
-  const missingSci = Object.keys(FR_NAMES).filter(sci => !mine.has(sci));
+  const rars = ebFilter.rarities;
+  const hasRar = rars && rars.size > 0;
+  const passRar = sci => {
+    if(!hasRar) return true;
+    if(isExotic(sci)) return rars.has('exo');
+    return rars.has(rarityReal(sci));
+  };
+  const missingSci = Object.keys(FR_NAMES).filter(sci => !mine.has(sci) && passRar(sci));
   if(!missingSci.length){ return { total:0, points:0, empty:true }; }
   // 2) Resolve to taxonKeys in parallel (10 workers, cached in localStorage).
   if(onProgress) onProgress('resolve', 0, missingSci.length);
