@@ -4307,6 +4307,9 @@ document.addEventListener('click', e=>{
 });
 // Change handler pour les inputs annee GBIF (mode "A cocher"). Debounce 400ms pour eviter
 // de lancer un fetch a chaque tick des fleches haut/bas de l'input number.
+// mapEbMonth : PAS de handler ici — le change handler general (id==='mapEbMonth') declenche
+// deja renderMap(), qui dispatche vers _renderModeMissingGbif en source GBIF. Sans ce filtre,
+// on aurait 2 renders concurrents a chaque changement de mois.
 let _gbifYearDebounce = 0;
 document.addEventListener('change', e=>{
   const t = e.target; if(!t) return;
@@ -4317,9 +4320,6 @@ document.addEventListener('change', e=>{
     _gbifYearDebounce = setTimeout(() => {
       if(mapMode === 'missing' && ebFilter.source === 'gbif') renderMap();
     }, 400);
-  }
-  if(t.id === 'mapEbMonth' && mapMode === 'missing' && ebFilter.source === 'gbif'){
-    renderMap();
   }
 });
 // Mode selector
@@ -4756,7 +4756,11 @@ function _gbifRenderAllObs(allObs, sciByKey, stillMine){
     return rarityReal(sciA) - rarityReal(sciB);
   });
   const speciesSeen = new Set();
+  let renderCount = 0;
   for(const o of allObs){
+    // Verifie tous les 50 marqueurs si un run plus recent a demarre : evite d'ajouter des
+    // marqueurs perimes en cas de changement de filtre rapide durant un gros rendu.
+    if((++renderCount % 50) === 0 && stillMine && !stillMine()){ _lyrMissing.clearLayers(); return { total:0, points:0, aborted:true }; }
     const sci = sciByKey.get(o.taxonKey) || sciByKey.get(o.speciesKey) || (o.species || '').toLowerCase();
     if(!sci) continue;
     speciesSeen.add(sci);
