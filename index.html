@@ -4135,10 +4135,9 @@ function _renderDrawResultsPanel(speciesRows){
     res.style.display = ''; res.dataset.hasResults = '1';
     return;
   }
+  // Tri : nombre d'observations decroissant en premier ; a egalite nom alphabetique.
   const rows = speciesRows.slice().sort((a, b) => {
-    if(a.cocher !== b.cocher) return a.cocher ? -1 : 1;
-    const rA = rarityReal(a.sci) || 0, rB = rarityReal(b.sci) || 0;
-    if(rA !== rB) return rB - rA;
+    if(a.count !== b.count) return b.count - a.count;
     return (a.name||'').localeCompare(b.name||'', 'fr');
   });
   const html = '<div style="font-size:11.5px; margin-bottom:6px; color:var(--ink-2);">Cliquez une espèce pour voir sa fiche</div>' +
