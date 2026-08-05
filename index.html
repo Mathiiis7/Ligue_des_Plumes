@@ -3561,30 +3561,45 @@ function _mapMarker(pt, groupSize){
   m._sciName = pt.sci; m._common = pt.common;   // pour l'autocomplétion (nom espèce dans le dropdown)
   return m;
 }
-// Lazy-load des grosses donnees eBird (freq par region, abondance par dept) : ~4.8 MB au total.
-// Historiquement inlinees dans index.html, elles alourdissaient le boot pour tout le monde.
-// Extraites en /data/*.json, chargees uniquement au 1er ouverture de la carte. Puis cachees
-// par le service worker (stale-while-revalidate) pour etre instant sur les visites suivantes.
-let _mapDataPromise = null;
-async function _loadMapData(){
-  if(_mapDataPromise) return _mapDataPromise;
-  _mapDataPromise = (async () => {
+// Lazy-load des grosses donnees eBird, splitees par usage pour minimiser le boot :
+// - freq_by_region.json (~2.5 MB) : requis pour les modes mine / missing / hotspots (filtre
+//   saison + hint). Chargee au 1er render de la carte.
+// - abundance_dept*.json (~2.4 MB) : requis SEULEMENT pour "Ou trouver" (choropleth).
+//   Chargees a l'ouverture de ce mode uniquement. Economise 2.4 MB si l'user n'y va jamais.
+// Le service worker cache tout ca en stale-while-revalidate -> instant les visites suivantes.
+let _freqDataPromise = null;
+async function _loadFreqData(){
+  if(_freqDataPromise) return _freqDataPromise;
+  _freqDataPromise = (async () => {
     try{
-      const [reg, dept, deptMean] = await Promise.all([
-        fetch('data/freq_by_region.json').then(r => r.json()),
+      REAL_FREQ_MONTHLY_BY_REGION = await fetch('data/freq_by_region.json').then(r => r.json());
+    }catch(err){
+      console.error('Erreur chargement freq_by_region', err);
+      _freqDataPromise = null;
+    }
+  })();
+  return _freqDataPromise;
+}
+let _abundanceDataPromise = null;
+async function _loadAbundanceData(){
+  if(_abundanceDataPromise) return _abundanceDataPromise;
+  _abundanceDataPromise = (async () => {
+    try{
+      const [dept, deptMean] = await Promise.all([
         fetch('data/abundance_dept.json').then(r => r.json()),
         fetch('data/abundance_dept_mean.json').then(r => r.json()),
       ]);
-      REAL_FREQ_MONTHLY_BY_REGION = reg;
       REAL_ABUNDANCE_DEPT = dept;
       REAL_ABUNDANCE_DEPT_MEAN = deptMean;
     }catch(err){
-      console.error('Erreur chargement donnees carte', err);
-      _mapDataPromise = null;   // permet un retry au prochain appel
+      console.error('Erreur chargement abundance_dept', err);
+      _abundanceDataPromise = null;
     }
   })();
-  return _mapDataPromise;
+  return _abundanceDataPromise;
 }
+// Compat : ancien nom, redirige vers freq (le seul requis pour tous les modes non-abondance).
+async function _loadMapData(){ return _loadFreqData(); }
 async function renderMap(){
   const el = document.getElementById('mapEl'); if(!el || !window.L) return;
   await _loadMapData();
@@ -4183,6 +4198,12 @@ document.addEventListener('click', (e) => {
 });
 async function _renderModeAbundance(){
   const cnt = $('#mapAbCount');
+  // Charge les donnees d'abondance (2.4 MB) uniquement quand on entre dans "Ou trouver".
+  // Bloquant : la choropleth en depend. En background pour les prochaines fois (SW cache).
+  if(!Object.keys(REAL_ABUNDANCE_DEPT).length){
+    if(cnt) cnt.textContent = '… chargement données d\'abondance (2.4 MB, une seule fois)';
+    await _loadAbundanceData();
+  }
   // Charge la taxonomie en fond (nécessaire pour _sciToCode → fetch hotspots au zoom)
   _loadTaxonomy().catch(()=>{});
   // Init la couche hotspots (une fois)
