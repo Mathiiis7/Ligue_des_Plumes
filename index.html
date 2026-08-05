@@ -1399,8 +1399,8 @@
             <option value="9">septembre</option><option value="10">octobre</option>
             <option value="11">novembre</option><option value="12">décembre</option>
           </select></label>
-          <label>De <input id="smGbifYearMin" type="number" min="1970" max="2026" value="2018" step="1"></label>
-          <label>à <input id="smGbifYearMax" type="number" min="1970" max="2026" value="2022" step="1"></label>
+          <label>De <input id="smGbifYearMin" type="number" min="1970" max="2026" value="2023" step="1"></label>
+          <label>à <input id="smGbifYearMax" type="number" min="1970" max="2026" value="2025" step="1"></label>
           <label>Région <select id="smGbifRegion"><option value="">toute la France</option></select></label>
           <label>Dépt <select id="smGbifDept"><option value="">tous</option></select></label>
         </div>
@@ -6841,8 +6841,8 @@ async function _renderSpeciesMap(key){
     }
   } else if(_smMapMode === 'gbif'){
     gbifMonth = parseInt($('#smGbifMonth')?.value, 10) || 8;
-    const yMinRaw = parseInt($('#smGbifYearMin')?.value, 10) || 2018;
-    const yMaxRaw = parseInt($('#smGbifYearMax')?.value, 10) || 2022;
+    const yMinRaw = parseInt($('#smGbifYearMin')?.value, 10) || 2023;
+    const yMaxRaw = parseInt($('#smGbifYearMax')?.value, 10) || 2025;
     gbifYearMin = Math.min(yMinRaw, yMaxRaw);
     gbifYearMax = Math.max(yMinRaw, yMaxRaw);
     // Portee geographique : dept > region > France entiere.
