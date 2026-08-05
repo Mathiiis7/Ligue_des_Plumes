@@ -3816,6 +3816,9 @@ async function _renderModeMissingGbif(){
     else if(phase === 'fetch') cnt.textContent = `… fetch ${done}/${total} lots`;
     else if(phase === 'rescue') cnt.textContent = `… rattrapage ${done}/${total} espèces (évite d'en cacher)`;
   }, gadmFilter);
+  // Si le run a ete annule par un render plus recent, on abandonne sans toucher a l'UI
+  // (l'appel plus recent gere son propre affichage).
+  if(res && res.aborted) return;
   _lyrMissing.addTo(_map);
   if(!res || !res.points){
     if(cnt) cnt.textContent = res && res.empty
@@ -4291,13 +4294,18 @@ document.addEventListener('click', e=>{
   const modeBtn = document.querySelector(`#mapModes button[data-mode="${mapMode}"]`);
   if(modeBtn) modeBtn.click();
 });
-// Change handler pour les inputs annee GBIF (mode "A cocher").
+// Change handler pour les inputs annee GBIF (mode "A cocher"). Debounce 400ms pour eviter
+// de lancer un fetch a chaque tick des fleches haut/bas de l'input number.
+let _gbifYearDebounce = 0;
 document.addEventListener('change', e=>{
   const t = e.target; if(!t) return;
   if(t.id === 'mapEbYearMin' || t.id === 'mapEbYearMax'){
     ebFilter.yearMin = parseInt($('#mapEbYearMin')?.value, 10) || 2024;
     ebFilter.yearMax = parseInt($('#mapEbYearMax')?.value, 10) || 2025;
-    if(mapMode === 'missing' && ebFilter.source === 'gbif') renderMap();
+    clearTimeout(_gbifYearDebounce);
+    _gbifYearDebounce = setTimeout(() => {
+      if(mapMode === 'missing' && ebFilter.source === 'gbif') renderMap();
+    }, 400);
   }
   if(t.id === 'mapEbMonth' && mapMode === 'missing' && ebFilter.source === 'gbif'){
     renderMap();
@@ -4497,8 +4505,14 @@ async function _loadMissingLayer(zone, days=14, rarities=new Set(), onProgress){
 // - Limite de points GBIF = 300 par requete, on prend toutes les chunks et on merge.
 // - Le premier appel est lent (resolution ~500 taxonKeys si vide, ~500 req), les suivants
 //   sont instantanes grace au cache localStorage.
+// Jeton de generation : chaque appel incrémente le compteur, et à chaque checkpoint
+// on verifie que le compteur n'a pas bouge. Si un nouveau render a demarre entre-temps,
+// on abandonne silencieusement (retour early) pour ne pas ecraser les resultats recents.
+let _gbifRunSeq = 0;
 async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgress, gadmFilter){
   if(!_lyrMissing) return { total:0, points:0 };
+  const myRun = ++_gbifRunSeq;
+  const stillMine = () => myRun === _gbifRunSeq;
   _lyrMissing.clearLayers();
   // Lazy-load la taxonomie eBird pour permettre le clic sur un marqueur → fiche detail eBird.
   if(!_taxMap){ try{ await _loadTaxonomy(); }catch(_){} }
@@ -4520,6 +4534,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
   const { sciToKey } = await _sciListToGbifKeys(missingSci, 10, (done, total) => {
     if(onProgress) onProgress('resolve', done, total);
   });
+  if(!stillMine()) return { total:0, points:0, aborted:true };
   const keys = [...sciToKey.values()].filter(k => k);
   if(!keys.length) return { total:0, points:0 };
   // sciByKey pour retrouver le nom scientifique a partir du taxonKey retourne par GBIF.
@@ -4585,6 +4600,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     }
     done++;
     if(onProgress) onProgress('fetch', done, chunks.length);
+    if(!stillMine()) return { total:0, points:0, aborted:true };
   }
   // 4b) Passe 2 : rattrapage pour les especes eclipsees par les communes dans le batch.
   // On requete individuellement chaque taxonKey absent des resultats (limit petit, 5 par
@@ -4598,6 +4614,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     const POOL = 10;
     async function rescueWorker(){
       while(cursor < missedKeys.length){
+        if(!stillMine()) return;
         const i = cursor++;
         const k = missedKeys[i];
         const url = `https://api.gbif.org/v1/occurrence/search?taxonKey=${k}&country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=5${bboxParam}`;
@@ -4621,6 +4638,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     }
     await Promise.all(Array.from({length: Math.min(POOL, missedKeys.length)}, rescueWorker));
   }
+  if(!stillMine()) return { total:0, points:0, aborted:true };
   if(!allObs.length) return { total:0, points:0 };
   // 5) Build markers, colored per species (same style as eBird missing).
   // Pas de spread degre ici : on stocke la vraie position et on laisse le zoomend handler
