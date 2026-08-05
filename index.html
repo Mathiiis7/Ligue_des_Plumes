@@ -3984,11 +3984,13 @@ async function _renderModeAbundance(){
         : `<a href="https://ebird.org/search?q=${encodeURIComponent(sci)}" target="_blank" rel="noopener">eBird ↗</a>`;
       cnt.innerHTML = `<b>${esc(nm)}</b> · pas de répartition par département disponible pour cette espèce. Voici les observations récentes (30 j) ci-dessous. Voir aussi ${ebirdLink}.`;
     }
-    // Force l'affichage des hotspots 30j, fetch les obs recentes et rend la couche.
-    abFilter.showHotspots = true;
-    const hsChk = $('#mapAbShowHs'); if(hsChk) hsChk.checked = true;
-    const code = _sciToCode(sci);
-    if(code){ _loadAbHotspots(sci, code).then(()=>{ if(mapMode==='abundance') _renderAbHotspots(); }); }
+    // Fetch les obs 30j SEULEMENT si la case "voir hotspots 30j" est deja cochee.
+    // Auparavant on la forcait a true en fallback quand pas de S&T, ce qui ecrasait
+    // le choix explicite de l'utilisateur qui l'avait decochee.
+    if(abFilter.showHotspots){
+      const code = _sciToCode(sci);
+      if(code){ _loadAbHotspots(sci, code).then(()=>{ if(mapMode==='abundance') _renderAbHotspots(); }); }
+    }
     return;
   }
   const geojson = await _loadDeptGeoJSON();
