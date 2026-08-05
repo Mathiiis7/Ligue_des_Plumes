@@ -4527,7 +4527,7 @@ let _gbifRunSeq = 0;
 const _GBIF_CACHE_TTL_MS = 6 * 3600 * 1000;
 function _gbifCacheKey(dept, month, yMin, yMax){
   const uid = (typeof myUid !== 'undefined' && myUid) ? myUid : 'anon';
-  return `gbifMissing-v1-${uid}-${dept}-${month}-${yMin}-${yMax}`;
+  return `gbifMissing-v2-${uid}-${dept}-${month}-${yMin}-${yMax}`;
 }
 function _gbifCacheRead(key){
   try{
@@ -4546,7 +4546,7 @@ function _gbifCacheWrite(key, data){
     const now = Date.now();
     for(let i = localStorage.length - 1; i >= 0; i--){
       const k = localStorage.key(i);
-      if(!k || !k.startsWith('gbifMissing-v1-')) continue;
+      if(!k || !k.startsWith('gbifMissing-v2-')) continue;
       try{ const o = JSON.parse(localStorage.getItem(k)); if(o && o.t && now - o.t > _GBIF_CACHE_TTL_MS) localStorage.removeItem(k); }catch(_){ localStorage.removeItem(k); }
     }
     localStorage.setItem(key, record);
@@ -4595,6 +4595,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
       // On reconstruit rapidement sci<->taxonKey depuis _gbifKeyBySci (deja resolu).
       for(const [sci, k] of _gbifKeyBySci.entries()){ if(k) sciByKeyLocal.set(k, sci); }
       const allObs = [];
+      const seenCache = new Set();
       for(const s of cached){
         const sci = sciByKeyLocal.get(s.tk);
         if(!sci) continue;
@@ -4603,6 +4604,11 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
           const rk = isExotic(sci) ? 'exo' : rarityReal(sci);
           if(!rars.has(rk)) continue;
         }
+        // Dedup safety net (au cas ou le cache aurait ete ecrit avec une version anterieure
+        // sans dedup semantique, ou aurait subi une ecriture concurrente).
+        const idc = `${s.tk}_${(s.lat||0).toFixed(4)}_${(s.lon||0).toFixed(4)}_${(s.ed||'').slice(0,10)}`;
+        if(seenCache.has(idc)) continue;
+        seenCache.add(idc);
         allObs.push(_gbifUnslim(s));
       }
       return _gbifRenderAllObs(allObs, sciByKeyLocal, stillMine);
