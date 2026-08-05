@@ -4879,6 +4879,14 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     const g = o.gadm && o.gadm[gadmFilter.level];
     return g && g.name === gadmFilter.name;
   };
+  // Filet de securite : si polygone actif, on rejette cote client tout obs hors du vrai
+  // polygone (au cas ou le `geometry=` server GBIF laisse passer par erreur, ou pour les
+  // obs de la passe rattrapage qui pourraient ne pas etre filtrees).
+  const polygonForCheck = polygonWKT ? ebFilter.polygon : null;
+  const passesPolygon = o => {
+    if(!polygonForCheck) return true;
+    return _pointInPolygon(o.decimalLatitude, o.decimalLongitude, polygonForCheck);
+  };
   for(const chunk of chunks){
     const keysParam = chunk.map(k => `taxonKey=${k}`).join('&');
     // Pagination : on continue tant que GBIF renvoie 300 obs (indicateur de saturation)
@@ -4897,7 +4905,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
           endOfRecords = !!j.endOfRecords;
           for(const o of (j.results || [])){
             if(typeof o.decimalLatitude !== 'number' || typeof o.decimalLongitude !== 'number') continue;
-            if(!passesGadm(o)) continue;
+            if(!passesGadm(o) || !passesPolygon(o)) continue;
             // Dedup semantique : meme espece + meme position (arrondi ~10m) + meme jour
             // = meme obs reelle, meme si dupliquee entre datasets (Faune-France propage
             // aux mirrors, eBird / iNat re-ingested, etc.). Le gbifID diverge entre les
@@ -4938,11 +4946,12 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
         const url = `https://api.gbif.org/v1/occurrence/search?taxonKey=${k}&country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=5${bboxParam}`;
         try{
           const r = await fetch(url);
+          if(!r.ok){ if(page === 0) console.warn('GBIF fetch fail', r.status, url.slice(0,200)); break; }
           if(r.ok){
             const j = await r.json();
             for(const o of (j.results || [])){
               if(typeof o.decimalLatitude !== 'number' || typeof o.decimalLongitude !== 'number') continue;
-              if(!passesGadm(o)) continue;
+              if(!passesGadm(o) || !passesPolygon(o)) continue;
               const id = o.gbifID || o.key || `${o.decimalLatitude},${o.decimalLongitude},${o.eventDate},${o.taxonKey}`;
               if(seenIds.has(id)) continue;
               seenIds.add(id);
