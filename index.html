@@ -4872,6 +4872,50 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
   };
   const missingSci = Object.keys(FR_NAMES).filter(sci => !mine.has(sci) && passRar(sci));
   if(!missingSci.length){ return { total:0, points:0, empty:true }; }
+  // Fast path polygone : on skip la resolution des taxonKeys (le point qui prenait ~30s
+  // la 1re fois). On fetch toutes les obs dans la bbox (sans filtre taxonKey server-side)
+  // puis on filtre client-side par missing set + rarete + polygone exact.
+  // Marche seulement pour bbox = polygone (zones petites, volume gerable). Pour dept, on
+  // continue avec la resolution taxonKeys (economise beaucoup de bande passante).
+  if(ebFilter.polygon && bbox){
+    const missingSet = new Set(missingSci);
+    if(onProgress) onProgress('fetch', 0, 1);
+    const yearParam = (yearMin===yearMax) ? String(yearMin) : `${yearMin},${yearMax}`;
+    const bboxParam = `&decimalLatitude=${bbox[0]},${bbox[1]}&decimalLongitude=${bbox[2]},${bbox[3]}`;
+    const allObs = [];
+    const seenIds = new Set();
+    // Pagination : jusqu'a 3 pages de 300 obs = 900 obs max dans la bbox. Suffit pour
+    // une zone raisonnable (polygone tire ~100-500 obs typiquement).
+    for(let page = 0; page < 3; page++){
+      const url = `https://api.gbif.org/v1/occurrence/search?country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=300&offset=${page*300}${bboxParam}`;
+      try{
+        const r = await fetch(url);
+        if(!r.ok) break;
+        const j = await r.json();
+        const batch = j.results || [];
+        for(const o of batch){
+          if(typeof o.decimalLatitude !== 'number' || typeof o.decimalLongitude !== 'number') continue;
+          // Filtre 1 : polygone exact (client-side).
+          if(!_pointInPolygon(o.decimalLatitude, o.decimalLongitude, ebFilter.polygon)) continue;
+          // Filtre 2 : missing set + rarete.
+          const sci = (o.species || '').toLowerCase();
+          if(!sci || !missingSet.has(sci)) continue;
+          // Dedup semantique.
+          const id = `${o.taxonKey||o.speciesKey||0}_${o.decimalLatitude.toFixed(4)}_${o.decimalLongitude.toFixed(4)}_${(o.eventDate||'').slice(0,10)}`;
+          if(seenIds.has(id)) continue;
+          seenIds.add(id);
+          allObs.push(o);
+        }
+        if(onProgress) onProgress('fetch', page+1, 3);
+        if(j.endOfRecords || batch.length < 300) break;
+      }catch(_){ break; }
+      if(!stillMine()) return { total:0, points:0, aborted:true };
+    }
+    // Construit sciByKey pour le render (a partir des obs recuperees).
+    const sciByKey = new Map();
+    for(const o of allObs){ const k = o.taxonKey || o.speciesKey; if(k) sciByKey.set(k, (o.species||'').toLowerCase()); }
+    return _gbifRenderAllObs(allObs, sciByKey, stillMine);
+  }
   // 2) Resolve to taxonKeys in parallel (10 workers, cached in localStorage).
   if(onProgress) onProgress('resolve', 0, missingSci.length);
   const { sciToKey } = await _sciListToGbifKeys(missingSci, 10, (done, total) => {
