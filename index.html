@@ -3735,6 +3735,18 @@ async function _renderModeMissingGbif(){
     setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
     return;
   }
+  // Filtre gadm strict : la bbox est un rectangle qui deborde sur les depts voisins.
+  // On rejette cote client les obs dont gadm.level1/level2 ne matche pas la zone selectionnee.
+  let gadmFilter = null;
+  const deptM = zone.match(/^FR-[A-Z]+-([0-9A-Z]+)$/);
+  if(deptM){
+    let dc = deptM[1]; if(dc === '75C') dc = '75';
+    const d = FR_DEPTS.find(x => x[0] === dc);
+    if(d) gadmFilter = { level:'level2', name: d[1] };
+  } else if(/^FR-[A-Z]+$/.test(zone)){
+    const r = FR_REGIONS.find(x => x.code === zone);
+    if(r) gadmFilter = { level:'level1', name: r.name };
+  }
   const month = parseInt($('#mapEbMonth')?.value, 10) || 8;
   const yMinRaw = parseInt($('#mapEbYearMin')?.value, 10) || 2021;
   const yMaxRaw = parseInt($('#mapEbYearMax')?.value, 10) || 2022;
@@ -3748,7 +3760,7 @@ async function _renderModeMissingGbif(){
     if(phase === 'resolve') cnt.textContent = `… résolution ${done}/${total} espèces (1re fois lente, cache après)`;
     else if(phase === 'fetch') cnt.textContent = `… fetch ${done}/${total} lots`;
     else if(phase === 'rescue') cnt.textContent = `… rattrapage ${done}/${total} espèces (évite d'en cacher)`;
-  });
+  }, gadmFilter);
   _lyrMissing.addTo(_map);
   if(!res || !res.points){
     if(cnt) cnt.textContent = res && res.empty
@@ -4425,7 +4437,7 @@ async function _loadMissingLayer(zone, days=14, rarities=new Set(), onProgress){
 // - Limite de points GBIF = 300 par requete, on prend toutes les chunks et on merge.
 // - Le premier appel est lent (resolution ~500 taxonKeys si vide, ~500 req), les suivants
 //   sont instantanes grace au cache localStorage.
-async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgress){
+async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgress, gadmFilter){
   if(!_lyrMissing) return { total:0, points:0 };
   _lyrMissing.clearLayers();
   // Lazy-load la taxonomie eBird pour permettre le clic sur un marqueur → fiche detail eBird.
@@ -4457,6 +4469,14 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
   const allObs = [];
   const seenIds = new Set();
   const speciesWithPoints = new Set();
+  // Filtre gadm precis (rejette les obs dans la bbox mais hors du vrai polygone du dept/region).
+  // Ex : bbox Yvelines inclut des coins d'Essonne / Val-d'Oise ; on les jette.
+  // gadmFilter = { level:'level2', name:'Yvelines' } pour dept, { level:'level1', name:'...' } pour region.
+  const passesGadm = o => {
+    if(!gadmFilter) return true;
+    const g = o.gadm && o.gadm[gadmFilter.level];
+    return g && g.name === gadmFilter.name;
+  };
   for(const chunk of chunks){
     const keysParam = chunk.map(k => `taxonKey=${k}`).join('&');
     const url = `https://api.gbif.org/v1/occurrence/search?${keysParam}&country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=300${bboxParam}`;
@@ -4466,6 +4486,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
         const j = await r.json();
         for(const o of (j.results || [])){
           if(typeof o.decimalLatitude !== 'number' || typeof o.decimalLongitude !== 'number') continue;
+          if(!passesGadm(o)) continue;
           const id = o.gbifID || o.key || `${o.decimalLatitude},${o.decimalLongitude},${o.eventDate},${o.taxonKey}`;
           if(seenIds.has(id)) continue;
           seenIds.add(id);
@@ -4499,6 +4520,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
             const j = await r.json();
             for(const o of (j.results || [])){
               if(typeof o.decimalLatitude !== 'number' || typeof o.decimalLongitude !== 'number') continue;
+              if(!passesGadm(o)) continue;
               const id = o.gbifID || o.key || `${o.decimalLatitude},${o.decimalLongitude},${o.eventDate},${o.taxonKey}`;
               if(seenIds.has(id)) continue;
               seenIds.add(id);
