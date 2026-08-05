@@ -446,8 +446,8 @@
   .img-modal.open { display:flex; }
   .img-modal img { max-width:96vw; max-height:92vh; border-radius:10px; }
   /* Modal fiche espèce (ouvert au clic sur un nom d'oiseau) */
-  .species-modal { position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; padding:16px; }
-  .species-modal[hidden] { display:none; }
+  .species-modal { position:fixed !important; inset:0; z-index:2147483000 !important; display:flex; align-items:center; justify-content:center; padding:16px; }
+  .species-modal[hidden] { display:none !important; }
   .species-modal .sm-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.55); cursor:zoom-out; }
   .species-modal .sm-box { position:relative; background:var(--surface); border-radius:16px; padding:20px 22px 22px; max-width:640px; width:100%; max-height:94vh; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,.35); }
   .species-modal .sm-close { position:absolute; top:10px; right:12px; background:transparent; border:none; font-size:20px; color:var(--ink-3); cursor:pointer; padding:4px 8px; border-radius:6px; }
@@ -4173,16 +4173,16 @@ function _renderDrawResultsPanel(speciesRows){
     if(a.count !== b.count) return b.count - a.count;
     return (a.name||'').localeCompare(b.name||'', 'fr');
   });
-  const html = '<div style="font-size:11.5px; margin-bottom:6px; color:var(--ink-2);">Cliquez une espèce pour voir sa fiche</div>' +
-    '<ul style="list-style:none; margin:0; padding:0; font-size:12px;">' +
+  const html = '<div style="font-size:10.5px !important; margin-bottom:4px; color:var(--ink-2);">Cliquez une espèce pour voir sa fiche</div>' +
+    '<ul style="list-style:none; margin:0; padding:0; font-size:11px !important;">' +
     rows.map(r => {
       const w = rarityReal(r.sci) || 0;
-      const badge = r.cocher ? ' <span style="background:#e74c3c; color:#fff; font-size:9px; padding:1px 5px; border-radius:4px; margin-left:5px;">à cocher</span>' : '';
-      const rarDot = w ? `<span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${sciColor(r.sci)}; margin-right:6px; vertical-align:middle;"></span>` : '';
-      return `<li data-sci="${esc(r.sci)}" style="padding:3px 4px; border-bottom:1px solid var(--line); cursor:pointer; display:flex; align-items:center; gap:5px; line-height:1.35;">
+      const badge = r.cocher ? ' <span style="background:#e74c3c; color:#fff; font-size:8.5px !important; padding:0 4px; border-radius:3px; margin-left:4px;">à cocher</span>' : '';
+      const rarDot = w ? `<span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:${sciColor(r.sci)}; margin-right:5px; vertical-align:middle;"></span>` : '';
+      return `<li data-sci="${esc(r.sci)}" style="padding:2px 4px; border-bottom:1px solid var(--line); cursor:pointer; display:flex; align-items:center; gap:4px; line-height:1.3; font-size:11px !important;">
         ${rarDot}
-        <span style="flex:1;"><b>${esc(r.name)}</b>${badge} <span style="color:var(--ink-3); font-size:10.5px;">${esc(r.sci)}</span></span>
-        <span style="color:var(--ink-2); font-size:11px; font-variant-numeric:tabular-nums;">${r.count} obs</span>
+        <span style="flex:1; font-size:11px !important;"><b style="font-size:11px !important; font-weight:600;">${esc(r.name)}</b>${badge} <span style="color:var(--ink-3); font-size:9.5px !important; font-style:italic;">${esc(r.sci)}</span></span>
+        <span style="color:var(--ink-2); font-size:10.5px !important; font-variant-numeric:tabular-nums;">${r.count} obs</span>
       </li>`;
     }).join('') + '</ul>';
   res.innerHTML = html;
