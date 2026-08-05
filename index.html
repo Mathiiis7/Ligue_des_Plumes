@@ -3783,7 +3783,7 @@ async function _renderModeMissingGbif(){
   const zone = ebFilter.dept;
   if(!zone || !/^FR-[A-Z]+-([0-9A-Z]+)$/.test(zone)){
     if(_lyrMissing){ _lyrMissing.clearLayers(); }
-    if(cnt) cnt.textContent = 'Choisis un département (obligatoire en GBIF — région = trop de points)';
+    if(cnt) cnt.textContent = 'Choisis un département (obligatoire en GBIF, région = trop de points)';
     setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
     return;
   }
