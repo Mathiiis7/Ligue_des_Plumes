@@ -1135,12 +1135,21 @@
         <select class="filt-sel" id="mapEbDept" style="display:none;">
           <option value="" selected>Tous les départements</option>
         </select>
+        <label class="explorer-lbl" id="mapEbSourceLbl" style="display:none;">Source</label>
+        <div class="seg" id="mapEbSource" style="display:none; margin-right:8px;">
+          <button type="button" data-source="ebird" class="on">eBird 30 j</button>
+          <button type="button" data-source="gbif">GBIF (mois)</button>
+        </div>
         <label class="explorer-lbl" id="mapEbDaysLbl">Derniers</label>
         <select class="filt-sel" id="mapEbDays">
           <option value="7">7 jours</option>
           <option value="14" selected>14 jours</option>
           <option value="30">30 jours</option>
         </select>
+        <label class="explorer-lbl" id="mapEbYearMinLbl" style="display:none;">De</label>
+        <input type="number" id="mapEbYearMin" style="display:none; width:60px; font-size:12px; padding:3px 6px; border:1px solid var(--line-2); border-radius:6px;" min="1970" max="2026" value="2018">
+        <label class="explorer-lbl" id="mapEbYearMaxLbl" style="display:none;">à</label>
+        <input type="number" id="mapEbYearMax" style="display:none; width:60px; font-size:12px; padding:3px 6px; border:1px solid var(--line-2); border-radius:6px;" min="1970" max="2026" value="2022">
         <label class="explorer-lbl" id="mapEbSortLbl" style="display:none;">Trier par</label>
         <select class="filt-sel" id="mapEbSort" style="display:none;">
           <option value="todo" selected>Espèces à cocher pour moi</option>
@@ -3077,7 +3086,7 @@ let _loaded = { missing:'', hotspots:'' };   // clé de cache (région+jours)
 let mapFilter = { player:'all', tier:'any', country:'any' };
 // Filtres propres aux modes eBird
 // `rarities` = Set des niveaux sélectionnés (nombres 1-9 ou chaîne 'exo'). Vide = pas de filtre.
-let ebFilter = { region:'FR', days:14, rarities:new Set([1,2,3,4,5,6,7,8,9,'exo']), month:0, dept:'', minTodo:0 };
+let ebFilter = { region:'FR', days:14, rarities:new Set([1,2,3,4,5,6,7,8,9,'exo']), month:0, dept:'', minTodo:0, source:'ebird', yearMin:2018, yearMax:2022 };
 let userPos = null;   // { lat, lon } — position utilisateur pour Haversine
 let myFavHotspots = new Set();   // Set des locId favoris de l'utilisateur (synchronisé Firestore)
 // Distance à vol d'oiseau entre 2 points (km).
@@ -3638,7 +3647,25 @@ function _renderModeMine(el){
   setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
 }
 // ---- Modes eBird (missing / hotspots) ----
+// Bbox pour une zone eBird ("FR", "FR-IDF", "FR-IDF-78"). Retourne null si FR entier.
+function _mapZoneToBbox(zone){
+  if(!zone || zone === 'FR') return null;
+  // FR-XXX-YY -> dept (le dernier segment est le code INSEE : "78", "2A", "75C" pour Paris)
+  const m = zone.match(/^FR-[A-Z]+-([0-9A-Z]+)$/);
+  if(m){
+    let deptCode = m[1];
+    // Cas Paris = "75C" dans DEPT_NAMES, mais "75" dans FR_DEPTS
+    if(deptCode === '75C') deptCode = '75';
+    const d = FR_DEPTS.find(x => x[0] === deptCode);
+    if(d) return [d[3], d[4], d[5], d[6]];
+  }
+  // FR-XXX -> region
+  if(/^FR-[A-Z]+$/.test(zone)) return _bboxOfRegion(zone);
+  return null;
+}
 async function _renderModeMissing(){
+  // Dispatch selon source : eBird 30j (comportement actuel) vs GBIF historique (nouveau).
+  if(ebFilter.source === 'gbif') return _renderModeMissingGbif();
   const region=ebFilter.region, days=ebFilter.days, rars=ebFilter.rarities;
   // Charge la taxonomie en fond (nécessaire pour l'autocomplétion "toutes les espèces manquantes"
   // qui a besoin de _sciToCode pour ensuite pouvoir cliquer et voir les obs).
@@ -3690,6 +3717,45 @@ async function _renderModeMissing(){
     ? (heavy ? `${nObs} obs · ${nSp.size} espèce${nSp.size>1?'s':''}${rarLbl?' '+rarLbl:''}${zoneLbl}`
              : `${nSp.size} espèce${nSp.size>1?'s':''} à cocher${rarLbl?' ('+rarLbl+')':''}${zoneLbl}`)
     : (rarLbl ? `Aucune espèce ${rarLbl} à cocher${zoneLbl}` : `Rien à cocher${zoneLbl} — vous les avez toutes ! 🎯`);
+  _fitLayer(_lyrMissing);
+  _mapApplyFilter();
+  setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
+}
+// Rendu du mode "A cocher" version GBIF (historique). Utilise le mois + plage annees
+// courants et la zone selectionnee (dept ou region requise). Meme couche que le mode
+// eBird pour permettre le toggle rapide entre les deux sources.
+async function _renderModeMissingGbif(){
+  const cnt = $('#mapEbCount');
+  const zone = ebFilter.dept || ebFilter.region;
+  const bbox = _mapZoneToBbox(zone);
+  // FR entier interdit : trop de resultats, taxonKeys en excedent.
+  if(!bbox){
+    if(_lyrMissing){ _lyrMissing.clearLayers(); }
+    if(cnt) cnt.textContent = 'Choisis une région ou un département pour interroger GBIF';
+    setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
+    return;
+  }
+  const month = parseInt($('#mapEbMonth')?.value, 10) || 8;
+  const yMinRaw = parseInt($('#mapEbYearMin')?.value, 10) || 2018;
+  const yMaxRaw = parseInt($('#mapEbYearMax')?.value, 10) || 2022;
+  const yMin = Math.min(yMinRaw, yMaxRaw);
+  const yMax = Math.max(yMinRaw, yMaxRaw);
+  const monthNames = ['','janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  const rangeTxt = (yMin === yMax) ? yMin : `${yMin} → ${yMax}`;
+  if(cnt) cnt.textContent = `… GBIF ${monthNames[month]} ${rangeTxt}`;
+  const res = await _loadMissingLayerGbifBbox(bbox, month, yMin, yMax, (phase, done, total) => {
+    if(!cnt) return;
+    if(phase === 'resolve') cnt.textContent = `… résolution ${done}/${total} espèces (1re fois lente, cache après)`;
+    else if(phase === 'fetch') cnt.textContent = `… fetch ${done}/${total} lots`;
+  });
+  _lyrMissing.addTo(_map);
+  if(!res || !res.points){
+    if(cnt) cnt.textContent = res && res.empty
+      ? 'Vous avez toutes les espèces de la liste FR ! 🎯'
+      : `Aucune obs GBIF pour ${monthNames[month]} ${rangeTxt} sur cette zone`;
+  } else {
+    if(cnt) cnt.textContent = `${res.points} obs GBIF · ${res.species} espèce${res.species>1?'s':''} à cocher · ${monthNames[month]} ${rangeTxt}`;
+  }
   _fitLayer(_lyrMissing);
   _mapApplyFilter();
   setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
@@ -4142,6 +4208,29 @@ document.addEventListener('click', async e=>{
   try{ await updateDoc(doc(db,'leagues',leagueId,'members',myUid),
     { favHotspots:[...myFavHotspots] }); }catch(err){ showError(err); }
 });
+// Source toggle inside mode "A cocher" : eBird 30j vs GBIF (mois).
+// Rebalance les controles UI (rareté / année) et relance le render.
+document.addEventListener('click', e=>{
+  const b = e.target.closest('#mapEbSource button[data-source]');
+  if(!b) return;
+  ebFilter.source = b.dataset.source;
+  document.querySelectorAll('#mapEbSource button').forEach(x=>x.classList.toggle('on', x===b));
+  // Rejoue toute la logique show/hide en simulant un click sur le bouton mode courant.
+  const modeBtn = document.querySelector(`#mapModes button[data-mode="${mapMode}"]`);
+  if(modeBtn) modeBtn.click();
+});
+// Change handler pour les inputs annee GBIF (mode "A cocher").
+document.addEventListener('change', e=>{
+  const t = e.target; if(!t) return;
+  if(t.id === 'mapEbYearMin' || t.id === 'mapEbYearMax'){
+    ebFilter.yearMin = parseInt($('#mapEbYearMin')?.value, 10) || 2018;
+    ebFilter.yearMax = parseInt($('#mapEbYearMax')?.value, 10) || 2022;
+    if(mapMode === 'missing' && ebFilter.source === 'gbif') renderMap();
+  }
+  if(t.id === 'mapEbMonth' && mapMode === 'missing' && ebFilter.source === 'gbif'){
+    renderMap();
+  }
+});
 // Mode selector
 document.addEventListener('click', e=>{
   const b = e.target.closest('#mapModes button[data-mode]');
@@ -4160,13 +4249,27 @@ document.addEventListener('click', e=>{
   const showSort = mapMode==='hotspots';
   if(srtLbl) srtLbl.style.display = showSort ? '' : 'none';
   if(srtSel) srtSel.style.display = showSort ? '' : 'none';
-  const showRar = mapMode==='missing';
+  const showRar = mapMode==='missing' && ebFilter.source==='ebird';
   if(rarLbl) rarLbl.style.display = showRar ? '' : 'none';
   if(rarChips) rarChips.style.display = showRar ? 'inline-flex' : 'none';
-  // "Mois" ne s'applique qu'au mode "todo" (spplist all-time filtrée par saisonnalité).
-  // En "recent" (30j) c'est presque un no-op — le 30j actuel est déjà d'un mois précis.
-  // En "total" (compteur eBird) on n'a pas la liste des espèces → inapplicable.
-  const showMon = mapMode==='hotspots' && hotspotSort==='todo';
+  // Source toggle : visible seulement en mode "A cocher".
+  const srcLbl=$('#mapEbSourceLbl'), srcSeg=$('#mapEbSource');
+  const showSrc = mapMode==='missing';
+  if(srcLbl) srcLbl.style.display = showSrc ? '' : 'none';
+  if(srcSeg) srcSeg.style.display = showSrc ? 'inline-flex' : 'none';
+  // Year range : visible seulement en mode "A cocher" + source GBIF.
+  const showYr = mapMode==='missing' && ebFilter.source==='gbif';
+  ['mapEbYearMinLbl','mapEbYearMin','mapEbYearMaxLbl','mapEbYearMax'].forEach(id=>{
+    const el = document.getElementById(id); if(el) el.style.display = showYr ? '' : 'none';
+  });
+  // "Derniers X jours" cache en source GBIF (l'API GBIF n'utilise pas ce filtre).
+  if(mapMode==='missing' && ebFilter.source==='gbif'){
+    if(daysLbl) daysLbl.style.display = 'none';
+    if(daysSel) daysSel.style.display = 'none';
+  }
+  // "Mois" ne s'applique qu'au mode "todo" (spplist all-time filtrée par saisonnalité)
+  // OU au mode "A cocher" version GBIF (mois choisi sur la plage annees).
+  const showMon = (mapMode==='hotspots' && hotspotSort==='todo') || (mapMode==='missing' && ebFilter.source==='gbif');
   if(monLbl) monLbl.style.display = showMon ? '' : 'none';
   if(monSel) monSel.style.display = showMon ? '' : 'none';
   // Filtres hotspot-only (min à cocher, contient espèce, favoris, géoloc) : visibles uniquement en mode hotspots.
@@ -4313,6 +4416,121 @@ async function _loadMissingLayer(zone, days=14, rarities=new Set(), onProgress){
     }
     _loaded.missing = key;
   } catch(_){ }
+}
+// Charge la couche "A cocher" via GBIF (historique) : cherche dans la region/dept, mois et annees
+// donnes, les obs des especes que l'utilisateur n'a PAS dans sa life list. Colore par espece.
+// - Zone requise (region ou dept). FR entier refuse (trop de resultats, taxonKeys en excedent).
+// - Batch taxonKeys : chunks de ~80 par URL pour rester sous la limite ~8kB de GBIF.
+// - Limite de points GBIF = 300 par requete, on prend toutes les chunks et on merge.
+// - Le premier appel est lent (resolution ~500 taxonKeys si vide, ~500 req), les suivants
+//   sont instantanes grace au cache localStorage.
+async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgress){
+  if(!_lyrMissing) return { total:0, points:0 };
+  _lyrMissing.clearLayers();
+  // Lazy-load la taxonomie eBird pour permettre le clic sur un marqueur → fiche detail eBird.
+  if(!_taxMap){ try{ await _loadTaxonomy(); }catch(_){} }
+  // 1) Compute missing sci list from FR_NAMES minus user's life list.
+  const me = realPeople.find(p => p.id === myUid);
+  const mine = new Set(me ? [...me.species.keys()] : []);
+  const missingSci = Object.keys(FR_NAMES).filter(sci => !mine.has(sci));
+  if(!missingSci.length){ return { total:0, points:0, empty:true }; }
+  // 2) Resolve to taxonKeys in parallel (10 workers, cached in localStorage).
+  if(onProgress) onProgress('resolve', 0, missingSci.length);
+  const { sciToKey } = await _sciListToGbifKeys(missingSci, 10, (done, total) => {
+    if(onProgress) onProgress('resolve', done, total);
+  });
+  const keys = [...sciToKey.values()].filter(k => k);
+  if(!keys.length) return { total:0, points:0 };
+  // sciByKey pour retrouver le nom scientifique a partir du taxonKey retourne par GBIF.
+  const sciByKey = new Map();
+  for(const [sci, k] of sciToKey.entries()){ if(k) sciByKey.set(k, sci); }
+  // 3) Chunk taxonKeys en batches de 80 (chaque URL ~1400 chars).
+  const CHUNK = 80;
+  const chunks = [];
+  for(let i = 0; i < keys.length; i += CHUNK) chunks.push(keys.slice(i, i + CHUNK));
+  // 4) Fetch each chunk.
+  const yearParam = (yearMin===yearMax) ? String(yearMin) : `${yearMin},${yearMax}`;
+  const bboxParam = bbox ? `&decimalLatitude=${bbox[0]},${bbox[1]}&decimalLongitude=${bbox[2]},${bbox[3]}` : '';
+  let done = 0;
+  if(onProgress) onProgress('fetch', 0, chunks.length);
+  const allObs = [];
+  const seenIds = new Set();
+  for(const chunk of chunks){
+    const keysParam = chunk.map(k => `taxonKey=${k}`).join('&');
+    const url = `https://api.gbif.org/v1/occurrence/search?${keysParam}&country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=300${bboxParam}`;
+    try{
+      const r = await fetch(url);
+      if(r.ok){
+        const j = await r.json();
+        for(const o of (j.results || [])){
+          if(typeof o.decimalLatitude !== 'number' || typeof o.decimalLongitude !== 'number') continue;
+          const id = o.gbifID || o.key || `${o.decimalLatitude},${o.decimalLongitude},${o.eventDate},${o.taxonKey}`;
+          if(seenIds.has(id)) continue;
+          seenIds.add(id);
+          allObs.push(o);
+        }
+      }
+    }catch(_){}
+    done++;
+    if(onProgress) onProgress('fetch', done, chunks.length);
+  }
+  if(!allObs.length) return { total:0, points:0 };
+  // 5) Build markers, colored per species (same style as eBird missing).
+  const groups = new Map();
+  for(const o of allObs){ const k = o.decimalLatitude.toFixed(5)+','+o.decimalLongitude.toFixed(5); if(!groups.has(k)) groups.set(k, []); groups.get(k).push(o); }
+  for(const g of groups.values()){
+    // Utilise _spreadGroup pour eparpiller les points colles (existant dans le mode eBird).
+    const pts = g.map(o => ({ lat:o.decimalLatitude, lon:o.decimalLongitude, dispLat:o.decimalLatitude, dispLon:o.decimalLongitude }));
+    _spreadGroup(pts);
+    for(let i = 0; i < g.length; i++){ g[i].dispLat = pts[i].dispLat; g[i].dispLon = pts[i].dispLon; }
+  }
+  // Tri : plus rares en dernier (rendues au-dessus).
+  allObs.sort((a, b) => {
+    const sciA = sciByKey.get(a.taxonKey) || sciByKey.get(a.speciesKey) || '';
+    const sciB = sciByKey.get(b.taxonKey) || sciByKey.get(b.speciesKey) || '';
+    return rarityReal(sciA) - rarityReal(sciB);
+  });
+  const speciesSeen = new Set();
+  for(const o of allObs){
+    const sci = sciByKey.get(o.taxonKey) || sciByKey.get(o.speciesKey) || (o.species || '').toLowerCase();
+    if(!sci) continue;
+    speciesSeen.add(sci);
+    const nm = FR_NAMES[sci] || o.vernacularName || sci;
+    const w = rarityReal(sci);
+    const commune = o.gadm && o.gadm.level3 && o.gadm.level3.name || '';
+    const dept = o.gadm && o.gadm.level2 && o.gadm.level2.name || '';
+    const localityRaw = (o.locality || '').trim();
+    const localityClean = (localityRaw && localityRaw.length >= 3 && !/-?\d+\.\d+\s*,\s*-?\d+\.\d+/.test(localityRaw) && !/^\d{4,5}$/.test(localityRaw)) ? localityRaw : '';
+    const loc = localityClean || commune || dept || 'lieu';
+    const rawObs = o.recordedBy || '';
+    const observer = /^obsr\d+$/i.test(rawObs) ? '' : rawObs;
+    const time = o.eventTime || '';
+    const behavior = o.behavior || '';
+    const cnt = (typeof o.individualCount === 'number' && o.individualCount > 0) ? o.individualCount : null;
+    const m = L.circleMarker([o.dispLat, o.dispLon], { radius:6, weight:1.5, color:'#fff', fillColor:sciColor(sci), fillOpacity:.9, opacity:1 });
+    const gm = `<a href="https://www.google.com/maps?q=${o.decimalLatitude},${o.decimalLongitude}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
+    const parts = [];
+    if(time) parts.push(`🕐 ${esc(time)}`);
+    if(behavior) parts.push(`🎯 ${esc(behavior)}`);
+    if(observer) parts.push(`👤 ${esc(observer)}`);
+    const metaExtra = parts.length ? `<br><span class="p-meta">${parts.join(' · ')}</span>` : '';
+    const links = [];
+    if(o.references) links.push(`<a href="${esc(o.references)}" target="_blank" rel="noopener" class="p-link">🔗 source</a>`);
+    if(o.gbifID || o.key) links.push(`<a href="https://www.gbif.org/occurrence/${esc(o.gbifID||o.key)}" target="_blank" rel="noopener" class="p-link">🌍 GBIF</a>`);
+    const linksHtml = links.length ? `<br>${links.join(' · ')}` : '';
+    m.bindPopup(`<b>${esc(nm)}</b> <span class="p-sci">${esc(sci)}</span><br>`+
+      `<span class="p-meta">🐦 <b>Vous ne l'avez pas encore</b></span><br>`+
+      `<span class="p-meta">Vu le ${esc((o.eventDate||'').slice(0,10))} · ${esc(loc)}${cnt?' · '+cnt:''}</span>${metaExtra}<br>`+
+      `<span class="p-meta">Rareté : <b>${w}</b> · ${REAL_LABELS[w]||''}</span>${linksHtml}<br>${gm}`);
+    m._q = _mapNorm(nm+' '+sci+' '+loc);
+    m._sciName = sci;
+    // Resout le code eBird pour permettre le clic marqueur -> fiche detail eBird
+    // (comme les marqueurs du mode eBird missing).
+    const ebCode = _sciToCode(sci);
+    if(ebCode) m._speciesCode = ebCode;
+    _lyrMissing.addLayer(m);
+  }
+  return { total:allObs.length, points:_lyrMissing.getLayers().length, species:speciesSeen.size };
 }
 // Charge la taxonomie eBird (code->sciName). Une fois par navigateur, cache localStorage permanent.
 async function _loadTaxonomy(){
@@ -5737,6 +5955,27 @@ let _smCurrentKey = '', _smMapMode = 'friends', _smMarkers = [];
 const _SM_MONTH_NAMES = ['','janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
 const _gbifKeyBySci = new Map();
 let _smGbifSelectsInit = false;
+// Restaure le cache GBIF taxonKey depuis localStorage (persistant entre sessions).
+// Sans persistance, chaque nouvelle session paierait ~500 lookups /species/match a l'ouverture
+// du mode missing GBIF (~1 min de resolution la 1re fois).
+try{
+  const raw = localStorage.getItem('gbifKeyBySci-v1');
+  if(raw){
+    const obj = JSON.parse(raw);
+    for(const [k, v] of Object.entries(obj)) _gbifKeyBySci.set(k, v);
+  }
+}catch(_){}
+// Sauvegarde du cache (debounce simple : on ecrit apres chaque batch de resolutions).
+let _gbifKeyCacheSaveTimer = 0;
+function _persistGbifKeyCache(){
+  clearTimeout(_gbifKeyCacheSaveTimer);
+  _gbifKeyCacheSaveTimer = setTimeout(() => {
+    try{
+      const obj = Object.fromEntries(_gbifKeyBySci);
+      localStorage.setItem('gbifKeyBySci-v1', JSON.stringify(obj));
+    }catch(_){}
+  }, 500);
+}
 // Peuple les dropdowns Region et Departement une seule fois.
 function _smInitGbifSelects(){
   if(_smGbifSelectsInit) return;
@@ -5831,7 +6070,7 @@ async function _smFetchEbirdRecent(sci){
     return { points, error:null };
   }catch(_){ return { points:[], error:'network' }; }
 }
-// Resolution du nom scientifique vers un taxonKey GBIF (cache en memoire).
+// Resolution du nom scientifique vers un taxonKey GBIF (cache en memoire + localStorage).
 async function _sciToGbifKey(sci){
   if(_gbifKeyBySci.has(sci)) return _gbifKeyBySci.get(sci);
   try{
@@ -5840,8 +6079,40 @@ async function _sciToGbifKey(sci){
     const j = await r.json();
     const key = (j.matchType === 'EXACT' || j.matchType === 'FUZZY') && j.speciesKey ? j.speciesKey : null;
     _gbifKeyBySci.set(sci, key);
+    _persistGbifKeyCache();
     return key;
-  }catch(_){ _gbifKeyBySci.set(sci, null); return null; }
+  }catch(_){ _gbifKeyBySci.set(sci, null); _persistGbifKeyCache(); return null; }
+}
+// Resout une liste de noms scientifiques en taxonKeys GBIF en parallele (concurrence limitee).
+// Retourne { sciToKey: Map<sci, taxonKey|null>, resolved:N, cached:M } et rapporte la progression.
+async function _sciListToGbifKeys(sciList, concurrency = 10, onProgress){
+  const result = new Map();
+  const uncached = [];
+  for(const sci of sciList){
+    if(_gbifKeyBySci.has(sci)){ result.set(sci, _gbifKeyBySci.get(sci)); }
+    else { uncached.push(sci); }
+  }
+  const cachedN = result.size;
+  if(!uncached.length){
+    if(onProgress) onProgress(cachedN, cachedN);
+    return { sciToKey: result, resolved: 0, cached: cachedN };
+  }
+  let done = cachedN;
+  if(onProgress) onProgress(done, sciList.length);
+  // Pool simple : N workers qui piochent dans la queue.
+  let cursor = 0;
+  async function worker(){
+    while(cursor < uncached.length){
+      const i = cursor++;
+      const sci = uncached[i];
+      const k = await _sciToGbifKey(sci);
+      result.set(sci, k);
+      done++;
+      if(onProgress) onProgress(done, sciList.length);
+    }
+  }
+  await Promise.all(Array.from({length: Math.min(concurrency, uncached.length)}, worker));
+  return { sciToKey: result, resolved: uncached.length, cached: cachedN };
 }
 // Calcule la bbox union pour une region : union des bbox de tous ses departements.
 // Retourne null si aucun departement (region invalide).
