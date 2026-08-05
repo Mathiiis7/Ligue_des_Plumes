@@ -3794,7 +3794,16 @@ async function _renderModeMissingGbif(){
   // Zone : polygone dessine > dept selectionne. Region non acceptee ici (trop de points).
   let bbox = null, gadmFilter = null, polygonWKT = null, zone = '';
   if(ebFilter.polygon){
-    polygonWKT = _polygonToWKT(ebFilter.polygon);
+    // GBIF rejette silencieusement les polygones auto-intersectants. Pour etre robuste,
+    // on envoie la bbox du polygone (toujours valide) cote serveur, et on affine avec
+    // _pointInPolygon cote client (via passesPolygon dans la fetch fn).
+    const p = ebFilter.polygon;
+    let latMin=90, latMax=-90, lonMin=180, lonMax=-180;
+    for(const [la, lo] of p){ if(la<latMin)latMin=la; if(la>latMax)latMax=la; if(lo<lonMin)lonMin=lo; if(lo>lonMax)lonMax=lo; }
+    bbox = [latMin, latMax, lonMin, lonMax];
+    // polygonWKT reste null : on fait tout via bbox + client-side. Mais on set une flag
+    // pour indiquer au fetch qu'un polygone existe (pour le filet passesPolygon).
+    polygonWKT = null;
     zone = 'polygon';
   } else {
     zone = ebFilter.dept;
@@ -4899,10 +4908,10 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     const g = o.gadm && o.gadm[gadmFilter.level];
     return g && g.name === gadmFilter.name;
   };
-  // Filet de securite : si polygone actif, on rejette cote client tout obs hors du vrai
-  // polygone (au cas ou le `geometry=` server GBIF laisse passer par erreur, ou pour les
-  // obs de la passe rattrapage qui pourraient ne pas etre filtrees).
-  const polygonForCheck = polygonWKT ? ebFilter.polygon : null;
+  // Filet de securite : quand un polygone est actif dans ebFilter, on rejette cote client
+  // tout obs hors du vrai polygone. Fait tout le travail de precision quand on utilise la
+  // bbox cote serveur (au lieu du `geometry=` qui rejette les polygones auto-intersectants).
+  const polygonForCheck = ebFilter.polygon;
   const passesPolygon = o => {
     if(!polygonForCheck) return true;
     return _pointInPolygon(o.decimalLatitude, o.decimalLongitude, polygonForCheck);
