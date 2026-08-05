@@ -1187,7 +1187,8 @@
           <button type="button" class="btn tiny" id="mapEbMinTodoInc" style="padding:2px 8px; font-size:15px; border-radius:0 6px 6px 0;" title="+1">+</button>
         </div>
         <span id="mapEbMinTodoSuffix" class="explorer-lbl" style="display:none;">espèces à cocher</span>
-        <button type="button" class="btn tiny" id="mapDrawStart" style="display:none;" title="Clic sur la carte pour poser les sommets, double-clic ou clic sur le 1er point pour fermer. Marche pour les 2 sources.">✏️ Dessiner une zone</button>
+        <button type="button" class="btn tiny" id="mapDrawStart" style="display:none;" title="Clic sur la carte pour poser les sommets, puis « Fermer » (ou double-clic).">✏️ Dessiner une zone</button>
+        <button type="button" class="btn tiny" id="mapDrawFinish" style="display:none;" title="Ferme le polygone (au moins 3 sommets requis)">✅ Fermer</button>
         <button type="button" class="btn tiny" id="mapDrawClear" style="display:none;" title="Efface le polygone et revient au filtre région/département">🗑️ Effacer</button>
         <span class="map-count" id="mapEbCount"></span>
       </div>
@@ -4077,16 +4078,22 @@ function _drawRedraw(){
     _drawState.poly.addTo(_lyrDraw);
   }
   _drawState.vertices.forEach((v, i) => {
-    const m = L.circleMarker(v, { radius:5, weight:2, color:'#fff', fillColor: i===0 ? '#e74c3c' : '#0b7c77', fillOpacity:1, opacity:1 });
-    // Clic sur le 1er sommet = fermer aussi.
-    if(i === 0){
+    // 1er sommet plus grand + zone de clic elargie pour faciliter la fermeture.
+    const isFirst = i === 0;
+    const m = L.circleMarker(v, { radius: isFirst ? 9 : 5, weight:2, color:'#fff', fillColor: isFirst ? '#e74c3c' : '#0b7c77', fillOpacity:1, opacity:1 });
+    if(isFirst){
       m.on('click', (e) => { L.DomEvent.stopPropagation(e); if(_drawState.vertices.length >= 3) _drawFinish(); });
+      m.on('mouseover', () => { m.setStyle({ radius:12 }); });
+      m.on('mouseout', () => { m.setStyle({ radius:9 }); });
     }
     m.addTo(_lyrDraw);
     _drawState.vertexMarkers.push(m);
   });
+  // Bouton Fermer : visible des qu'on a au moins 3 sommets.
+  const finishBtn = $('#mapDrawFinish');
+  if(finishBtn) finishBtn.style.display = (_drawState.active && _drawState.vertices.length >= 3) ? '' : 'none';
   const cnt = $('#mapDrawCount');
-  if(cnt) cnt.textContent = `${_drawState.vertices.length} sommet${_drawState.vertices.length>1?'s':''} · double-clic pour fermer${_drawState.vertices.length>=3?' (ou clic sur le 1er sommet rouge)':''}`;
+  if(cnt) cnt.textContent = `${_drawState.vertices.length} sommet${_drawState.vertices.length>1?'s':''}${_drawState.vertices.length>=3?' · clique « Fermer » quand c\'est bon (ou double-clic sur la carte)':' · continue à poser des points'}`;
 }
 // Ferme le polygone (au moins 3 sommets) : set ebFilter.polygon + trigger renderMap.
 // Le filtrage effectif se fait dans _loadMissingLayer (eBird) et _loadMissingLayerGbifBbox (GBIF).
@@ -4107,6 +4114,7 @@ async function _drawFinish(){
   ebFilter.polygon = _drawState.vertices.slice();
   _loaded.missing = ''; // invalide le cache de layer
   const drawClear = $('#mapDrawClear'); if(drawClear) drawClear.style.display = '';
+  const finishBtn = $('#mapDrawFinish'); if(finishBtn) finishBtn.style.display = 'none';
   renderMap();
 }
 // Efface tout : polygone + filtres associes + re-render sans polygone.
@@ -4121,6 +4129,7 @@ function _drawClear(){
   _drawState = { active:false, vertices:[], poly:null, preview:null, vertexMarkers:[], finalPoly:null, onMapClick:null, onMapMove:null, onKeyDown:null };
   const res = $('#mapDrawResults'); if(res){ res.style.display = 'none'; res.dataset.hasResults = '0'; res.innerHTML = ''; }
   const drawClear = $('#mapDrawClear'); if(drawClear) drawClear.style.display = 'none';
+  const finishBtn = $('#mapDrawFinish'); if(finishBtn) finishBtn.style.display = 'none';
   const hadPoly = !!ebFilter.polygon;
   ebFilter.polygon = null;
   _loaded.missing = '';
@@ -4158,6 +4167,7 @@ function _renderDrawResultsPanel(speciesRows){
 // Delegation click : boutons Dessiner/Effacer + click sur une espece dans la liste resultats.
 document.addEventListener('click', (e) => {
   if(e.target.closest('#mapDrawStart')){ _drawStart(); return; }
+  if(e.target.closest('#mapDrawFinish')){ _drawFinish(); return; }
   if(e.target.closest('#mapDrawClear')){ _drawClear(); return; }
   const li = e.target.closest('#mapDrawResults li[data-sci]');
   if(li){ const sci = li.dataset.sci; if(sci) openSpeciesModal(sci); }
