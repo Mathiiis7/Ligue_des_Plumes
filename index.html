@@ -3923,7 +3923,11 @@ async function _renderModeHotspots(){
   // Si un département est sélectionné, on l'utilise comme zone à interroger (plus fin).
   const zone = ebFilter.dept || ebFilter.region;
   const cnt=$('#mapEbCount'); if(cnt) cnt.textContent='… chargement';
+  // Snapshot du sequence courant : si un autre render demarre entre-temps, on ne touche
+  // plus a l'UI (addTo, fitLayer, textContent) pour eviter d'ecraser avec la mauvaise zone.
+  const myRun = _hotspotsRunSeq + 1;
   await _loadHotspotsLayer(zone);
+  if(myRun !== _hotspotsRunSeq) return;
   _lyrHotspots.addTo(_map);
   const n = _lyrHotspots.getLayers().length;
   const zoneLbl = esc(_zoneLabel());
