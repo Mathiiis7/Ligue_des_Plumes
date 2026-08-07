@@ -1533,6 +1533,13 @@ const HABITAT_TO_SCIS = (() => {
 })();
 function isExotic(sci){ return EXOTIC[(sci||'').trim().toLowerCase()]===1; }
 function rarityReal(sci){ if(isExotic(sci)) return 1; return REAL_RARITY[(sci||'').trim().toLowerCase()] || 1; }
+// Retourne true si l'espece est calibree dans REAL_RARITY (catalogue FR). False = espece
+// hors-FR (Sittelle de Neumayer, Mesange lugubre, etc.) dont la rareté n'est pas connue
+// et qui doit etre affichee en gris "rareté inconnue" au lieu de vert "très commun".
+function hasRarityCalibration(sci){
+  const k = (sci||'').trim().toLowerCase();
+  return isExotic(sci) || !!REAL_RARITY[k];
+}
 // Fréquence eBird fine (part des listes) — pour départager les oiseaux d'un même poids.
 // Absente (espèce hors bar chart eBird = encore plus rare) -> -1 (classée la plus rare).
 function realFreq(sci){ if(isExotic(sci)) return 1; const f=REAL_FREQ[(sci||'').trim().toLowerCase()]; return f==null ? -1 : f; }
@@ -1686,7 +1693,13 @@ function realColor(w){
   return `hsl(${hue} 60% 47%)`;
 }
 // Couleur pastille sur la carte : gris pour les exotiques (comme dans le classement), sinon barème rareté.
-function sciColor(sci){ return isExotic(sci) ? '#7e8a99' : realColor(rarityReal(sci)); }
+function sciColor(sci){
+  if(isExotic(sci)) return '#7e8a99';
+  // Espece hors FR sans calibration : gris moyen "rareté inconnue" (evite le vert
+  // trompeur "très commun" pour une Sittelle de Neumayer par ex).
+  if(!hasRarityCalibration(sci)) return '#94a3b8';
+  return realColor(rarityReal(sci));
+}
 // Fréquence eBird au mois M (1-12) pour une espèce. Retourne 0 si l'espèce n'est pas dans le bar chart.
 // Seuil 0.01 = présente sur ≥ 1 % des sorties ce mois-là (≈ 10 obs / 1000 listes) — assez pour être
 // une cible saisonnière crédible, filtre les vagrants et queues de migration.
