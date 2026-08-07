@@ -5018,41 +5018,45 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     // life list" pour l'etranger (pas de restriction catalogue, pas de filtre rarete
     // car rarityReal n'est calibree que pour la FR).
     const missingSet = isForeign ? null : new Set(missingSci);
-    if(onProgress) onProgress('fetch', 0, 1);
-    const yearParam = (yearMin===yearMax) ? String(yearMin) : `${yearMin},${yearMax}`;
     const bboxParam = `&decimalLatitude=${bbox[0]},${bbox[1]}&decimalLongitude=${bbox[2]},${bbox[3]}`;
     const allObs = [];
     const seenIds = new Set();
-    // Pagination : jusqu'a 3 pages de 300 obs = 900 obs max dans la bbox. Suffit pour
-    // une zone raisonnable (polygone tire ~100-500 obs typiquement).
-    for(let page = 0; page < 3; page++){
-      const url = `https://api.gbif.org/v1/occurrence/search?country=${encodeURIComponent(ebFilter.country||'FR')}&classKey=212&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=300&offset=${page*300}${bboxParam}`;
-      try{
-        const r = await fetch(url);
-        if(!r.ok) break;
-        const j = await r.json();
-        const batch = j.results || [];
-        for(const o of batch){
-          if(typeof o.decimalLatitude !== 'number' || typeof o.decimalLongitude !== 'number') continue;
-          // Filtre 1 : polygone exact (client-side) - seulement si polygone actif.
-          if(ebFilter.polygon && !_pointInPolygon(o.decimalLatitude, o.decimalLongitude, ebFilter.polygon)) continue;
-          // Filtre 2 : missing.
-          //   FR : espece dans missingSet (FR_NAMES filtre par rarete + not-in-mine).
-          //   Etranger : espece pas dans la life list du user (peu importe si dans FR_NAMES).
-          const sci = (o.species || '').toLowerCase();
-          if(!sci) continue;
-          if(missingSet){ if(!missingSet.has(sci)) continue; }
-          else { if(mine.has(sci)) continue; }
-          // Dedup semantique.
-          const id = `${o.taxonKey||o.speciesKey||0}_${o.decimalLatitude.toFixed(4)}_${o.decimalLongitude.toFixed(4)}_${(o.eventDate||'').slice(0,10)}`;
-          if(seenIds.has(id)) continue;
-          seenIds.add(id);
-          allObs.push(o);
-        }
-        if(onProgress) onProgress('fetch', page+1, 3);
-        if(j.endOfRecords || batch.length < 300) break;
-      }catch(_){ break; }
-      if(!stillMine()) return { total:0, points:0, aborted:true };
+    // Fetch par annee (GBIF trie par date desc, sans ca la 1re page prend tout la derniere
+    // annee et masque les autres). Boucle explicite sur chaque annee de la plage, avec
+    // pagination 2 pages par annee = 600 obs max/an.
+    const years = [];
+    for(let y = yearMin; y <= yearMax; y++) years.push(y);
+    let totalDone = 0;
+    const totalSteps = years.length * 2;
+    for(const y of years){
+      for(let page = 0; page < 2; page++){
+        const url = `https://api.gbif.org/v1/occurrence/search?country=${encodeURIComponent(ebFilter.country||'FR')}&classKey=212&hasCoordinate=true&year=${y}&month=${month}&limit=300&offset=${page*300}${bboxParam}`;
+        let batchLen = 0, endOfRecords = true;
+        try{
+          const r = await fetch(url);
+          if(r.ok){
+            const j = await r.json();
+            batchLen = (j.results || []).length;
+            endOfRecords = !!j.endOfRecords;
+            for(const o of (j.results || [])){
+              if(typeof o.decimalLatitude !== 'number' || typeof o.decimalLongitude !== 'number') continue;
+              if(ebFilter.polygon && !_pointInPolygon(o.decimalLatitude, o.decimalLongitude, ebFilter.polygon)) continue;
+              const sci = (o.species || '').toLowerCase();
+              if(!sci) continue;
+              if(missingSet){ if(!missingSet.has(sci)) continue; }
+              else { if(mine.has(sci)) continue; }
+              const id = `${o.taxonKey||o.speciesKey||0}_${o.decimalLatitude.toFixed(4)}_${o.decimalLongitude.toFixed(4)}_${(o.eventDate||'').slice(0,10)}`;
+              if(seenIds.has(id)) continue;
+              seenIds.add(id);
+              allObs.push(o);
+            }
+          } else { break; }
+        }catch(_){ break; }
+        totalDone++;
+        if(onProgress) onProgress('fetch', totalDone, totalSteps);
+        if(!stillMine()) return { total:0, points:0, aborted:true };
+        if(endOfRecords || batchLen < 300) break;
+      }
     }
     // Construit sciByKey pour le render (a partir des obs recuperees).
     const sciByKey = new Map();
