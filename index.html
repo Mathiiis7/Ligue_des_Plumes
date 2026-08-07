@@ -1114,6 +1114,24 @@
         </select>
       </div>
       <div class="map-controls" id="mapCtrlsEbird" style="display:none;">
+        <label class="explorer-lbl" for="mapEbCountry">Pays</label>
+        <select class="filt-sel" id="mapEbCountry" title="Pays d'exploration. Défaut France. Change pour explorer des hotspots à l'étranger (voyages).">
+          <option value="FR" selected>🇫🇷 France</option>
+          <option value="ME">🇲🇪 Monténégro</option>
+          <option value="ES">🇪🇸 Espagne</option>
+          <option value="PT">🇵🇹 Portugal</option>
+          <option value="IT">🇮🇹 Italie</option>
+          <option value="GR">🇬🇷 Grèce</option>
+          <option value="HR">🇭🇷 Croatie</option>
+          <option value="AL">🇦🇱 Albanie</option>
+          <option value="MA">🇲🇦 Maroc</option>
+          <option value="CH">🇨🇭 Suisse</option>
+          <option value="BE">🇧🇪 Belgique</option>
+          <option value="DE">🇩🇪 Allemagne</option>
+          <option value="GB">🇬🇧 Royaume-Uni</option>
+          <option value="TR">🇹🇷 Turquie</option>
+          <option value="IS">🇮🇸 Islande</option>
+        </select>
         <label class="explorer-lbl">Région</label>
         <select class="filt-sel" id="mapEbRegion">
           <option value="FR" selected>🇫🇷 France entière</option>
@@ -3090,7 +3108,54 @@ let _loaded = { missing:'', hotspots:'' };   // clé de cache (région+jours)
 let mapFilter = { player:'all', tier:'any', country:'any' };
 // Filtres propres aux modes eBird
 // `rarities` = Set des niveaux sélectionnés (nombres 1-9 ou chaîne 'exo'). Vide = pas de filtre.
-let ebFilter = { region:'FR', days:14, rarities:new Set([1,2,3,4,5,6,7,8,9,'exo']), month:0, dept:'', minTodo:0, source:'ebird', yearMin:2024, yearMax:2025, polygon:null };
+let ebFilter = { country:'FR', region:'FR', days:14, rarities:new Set([1,2,3,4,5,6,7,8,9,'exo']), month:0, dept:'', minTodo:0, source:'ebird', yearMin:2024, yearMax:2025, polygon:null };
+// Cache pays -> [{code, name}] pour ne pas re-fetcher a chaque changement de pays.
+const _ebRegionsCache = new Map();  // countryCode -> [{code, name}, ...]
+const _ebSubregionsCache = new Map();   // regionCode -> [{code, name}, ...]
+async function _fetchEbSubregions(parentCode, level){
+  // level = 'subnational1' (pays -> regions) ou 'subnational2' (region -> depts).
+  const cache = level === 'subnational1' ? _ebRegionsCache : _ebSubregionsCache;
+  if(cache.has(parentCode)) return cache.get(parentCode);
+  try{
+    const list = await _ebFetch(`https://api.ebird.org/v2/ref/region/list/${level}/${parentCode}`);
+    const out = Array.isArray(list) ? list.map(r => ({code:r.code, name:r.name})) : [];
+    out.sort((a,b) => a.name.localeCompare(b.name, 'fr'));
+    cache.set(parentCode, out);
+    return out;
+  }catch(_){ cache.set(parentCode, []); return []; }
+}
+async function _repopulateEbRegionsForCountry(country){
+  const sel = $('#mapEbRegion'); if(!sel) return;
+  // Cas FR : on garde le sélecteur statique existant (13 régions ISO) pour ne rien casser.
+  // Cas autres pays : fetch dynamique via eBird API.
+  if(country === 'FR'){
+    // Restaure les options FR d'origine (regenerated from FR_REGIONS constant).
+    sel.innerHTML = '<option value="FR" selected>Toute la France</option>' +
+      FR_REGIONS.map(r=>`<option value="${esc(r.code)}">${esc(r.name)}</option>`).join('');
+    ebFilter.region = 'FR'; ebFilter.dept = '';
+    _refreshDeptSel();
+    return;
+  }
+  sel.innerHTML = `<option value="${esc(country)}" selected>Tout le pays</option><option value="" disabled>… chargement</option>`;
+  const regs = await _fetchEbSubregions(country, 'subnational1');
+  sel.innerHTML = `<option value="${esc(country)}" selected>Tout le pays</option>` +
+    regs.map(r=>`<option value="${esc(r.code)}">${esc(r.name)}</option>`).join('');
+  ebFilter.region = country; ebFilter.dept = '';
+  await _repopulateEbDeptsForRegion(country);
+}
+async function _repopulateEbDeptsForRegion(regionCode){
+  const sel = $('#mapEbDept'), lbl = $('#mapEbDeptLbl'); if(!sel) return;
+  // Cas FR : on delegue au refresh existant (statique).
+  if(ebFilter.country === 'FR'){ _refreshDeptSel(); return; }
+  // Cas pays etranger, region du pays lui-meme (subnational0) : pas de subnational2 utile.
+  if(!/-/.test(regionCode)){ sel.style.display='none'; if(lbl) lbl.style.display='none'; return; }
+  sel.innerHTML = '<option value="" selected>Toutes provinces</option><option value="" disabled>… chargement</option>';
+  sel.style.display=''; if(lbl) lbl.style.display='';
+  const subs = await _fetchEbSubregions(regionCode, 'subnational2');
+  sel.innerHTML = '<option value="" selected>Toutes provinces</option>' +
+    subs.map(r=>`<option value="${esc(r.code)}">${esc(r.name)} (${esc(r.code.slice(-2))})</option>`).join('');
+  if(!subs.length){ sel.style.display='none'; if(lbl) lbl.style.display='none'; }
+}
 let userPos = null;   // { lat, lon } — position utilisateur pour Haversine
 let myFavHotspots = new Set();   // Set des locId favoris de l'utilisateur (synchronisé Firestore)
 // Distance à vol d'oiseau entre 2 points (km).
@@ -3806,21 +3871,16 @@ async function _renderModeMissing(){
 // eBird pour permettre le toggle rapide entre les deux sources.
 async function _renderModeMissingGbif(){
   const cnt = $('#mapEbCount');
-  // Zone : polygone dessine > dept selectionne. Region non acceptee ici (trop de points).
+  // Zone : polygone dessine > dept selectionne (FR) ou region eBird pour l'etranger.
   let bbox = null, gadmFilter = null, polygonWKT = null, zone = '';
   if(ebFilter.polygon){
-    // GBIF rejette silencieusement les polygones auto-intersectants. Pour etre robuste,
-    // on envoie la bbox du polygone (toujours valide) cote serveur, et on affine avec
-    // _pointInPolygon cote client (via passesPolygon dans la fetch fn).
     const p = ebFilter.polygon;
     let latMin=90, latMax=-90, lonMin=180, lonMax=-180;
     for(const [la, lo] of p){ if(la<latMin)latMin=la; if(la>latMax)latMax=la; if(lo<lonMin)lonMin=lo; if(lo>lonMax)lonMax=lo; }
     bbox = [latMin, latMax, lonMin, lonMax];
-    // polygonWKT reste null : on fait tout via bbox + client-side. Mais on set une flag
-    // pour indiquer au fetch qu'un polygone existe (pour le filet passesPolygon).
     polygonWKT = null;
     zone = 'polygon';
-  } else {
+  } else if(ebFilter.country === 'FR'){
     zone = ebFilter.dept;
     if(!zone || !/^FR-[A-Z]+-([0-9A-Z]+)$/.test(zone)){
       if(_lyrMissing){ _lyrMissing.clearLayers(); }
@@ -3834,13 +3894,27 @@ async function _renderModeMissingGbif(){
       if(cnt) cnt.textContent = 'Département inconnu';
       return;
     }
-    // Filtre gadm strict : la bbox est un rectangle qui deborde sur les depts voisins.
-    // On rejette cote client les obs dont gadm.level2 ne matche pas le dept selectionne.
     const deptM = zone.match(/^FR-[A-Z]+-([0-9A-Z]+)$/);
     if(deptM){
       let dc = deptM[1]; if(dc === '75C') dc = '75';
       const d = FR_DEPTS.find(x => x[0] === dc);
       if(d) gadmFilter = { level:'level2', name: d[1] };
+    }
+  } else {
+    // Pays etranger : accepte region (subnational1) ou dept (subnational2) ou juste le pays.
+    // Bbox recuperee via eBird ref/region/info pour filtrer server-side. GadmFilter non applique
+    // (les noms GADM par pays sont trop variables, on se contente de la bbox).
+    zone = ebFilter.dept || ebFilter.region || ebFilter.country;
+    try{
+      const info = await _ebFetch(`https://api.ebird.org/v2/ref/region/info/${zone}`);
+      if(info && info.bounds){
+        bbox = [info.bounds.minY, info.bounds.maxY, info.bounds.minX, info.bounds.maxX];
+      }
+    }catch(_){}
+    if(!bbox){
+      if(_lyrMissing){ _lyrMissing.clearLayers(); }
+      if(cnt) cnt.textContent = 'Zone eBird inconnue ' + zone;
+      return;
     }
   }
   const month = parseInt($('#mapEbMonth')?.value, 10) || 8;
@@ -4202,6 +4276,14 @@ document.addEventListener('click', (e) => {
 });
 async function _renderModeAbundance(){
   const cnt = $('#mapAbCount');
+  // Cornell S&T n'est disponible que pour la France dans notre app. Message en clair
+  // si l'utilisateur est sur un autre pays.
+  if(ebFilter.country && ebFilter.country !== 'FR'){
+    if(cnt) cnt.textContent = 'Mode "Où trouver" disponible seulement en France (données Cornell S&T). Change le sélecteur pays.';
+    if(_lyrAbundance){ _lyrAbundance.remove(); _lyrAbundance = null; }
+    if(_lyrAbHotspots){ _lyrAbHotspots.clearLayers(); _lyrAbHotspots.remove(); }
+    return;
+  }
   // Charge les donnees d'abondance (2.4 MB) uniquement quand on entre dans "Ou trouver".
   // Bloquant : la choropleth en depend. En background pour les prochaines fois (SW cache).
   if(!Object.keys(REAL_ABUNDANCE_DEPT).length){
@@ -4427,12 +4509,15 @@ document.addEventListener('change', e=>{
   if(e.target.id==='mapPlayerSel'){ mapFilter.player=e.target.value; renderMap(); }
   else if(e.target.id==='mapTierSel'){ mapFilter.tier=e.target.value; renderMap(); }
   else if(e.target.id==='mapCountrySel'){ mapFilter.country=e.target.value; renderMap(); }
+  else if(e.target.id==='mapEbCountry'){
+    ebFilter.country = e.target.value || 'FR';
+    _loaded.missing=''; _loaded.hotspots='';
+    _repopulateEbRegionsForCountry(ebFilter.country).then(() => { renderMap(); });
+  }
   else if(e.target.id==='mapEbRegion'){
     ebFilter.region=e.target.value; ebFilter.dept='';
-    _loaded.missing=''; _loaded.hotspots=''; _refreshDeptSel();
-    renderMap();
-    // Si une espèce était sélectionnée, on la re-fetch pour la nouvelle zone (au lieu de virer).
-    _reloadSpeciesForZone();
+    _loaded.missing=''; _loaded.hotspots='';
+    _repopulateEbDeptsForRegion(ebFilter.region).then(() => { renderMap(); _reloadSpeciesForZone(); });
   }
   else if(e.target.id==='mapEbDept'){
     ebFilter.dept=e.target.value||'';
@@ -4912,7 +4997,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     // Pagination : jusqu'a 3 pages de 300 obs = 900 obs max dans la bbox. Suffit pour
     // une zone raisonnable (polygone tire ~100-500 obs typiquement).
     for(let page = 0; page < 3; page++){
-      const url = `https://api.gbif.org/v1/occurrence/search?country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=300&offset=${page*300}${bboxParam}`;
+      const url = `https://api.gbif.org/v1/occurrence/search?country=${encodeURIComponent(ebFilter.country||'FR')}&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=300&offset=${page*300}${bboxParam}`;
       try{
         const r = await fetch(url);
         if(!r.ok) break;
@@ -4993,7 +5078,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     const MAX_PAGES = 3;
     let offset = 0;
     for(let page = 0; page < MAX_PAGES; page++){
-      const url = `https://api.gbif.org/v1/occurrence/search?${keysParam}&country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=300&offset=${offset}${bboxParam}`;
+      const url = `https://api.gbif.org/v1/occurrence/search?${keysParam}&country=${encodeURIComponent(ebFilter.country||'FR')}&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=300&offset=${offset}${bboxParam}`;
       let batchLen = 0, endOfRecords = true;
       try{
         const r = await fetch(url);
