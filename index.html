@@ -5021,7 +5021,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     // Pagination : jusqu'a 3 pages de 300 obs = 900 obs max dans la bbox. Suffit pour
     // une zone raisonnable (polygone tire ~100-500 obs typiquement).
     for(let page = 0; page < 3; page++){
-      const url = `https://api.gbif.org/v1/occurrence/search?country=${encodeURIComponent(ebFilter.country||'FR')}&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=300&offset=${page*300}${bboxParam}`;
+      const url = `https://api.gbif.org/v1/occurrence/search?country=${encodeURIComponent(ebFilter.country||'FR')}&classKey=212&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=300&offset=${page*300}${bboxParam}`;
       try{
         const r = await fetch(url);
         if(!r.ok) break;
@@ -5106,7 +5106,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     const MAX_PAGES = 3;
     let offset = 0;
     for(let page = 0; page < MAX_PAGES; page++){
-      const url = `https://api.gbif.org/v1/occurrence/search?${keysParam}&country=${encodeURIComponent(ebFilter.country||'FR')}&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=300&offset=${offset}${bboxParam}`;
+      const url = `https://api.gbif.org/v1/occurrence/search?${keysParam}&country=${encodeURIComponent(ebFilter.country||'FR')}&classKey=212&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=300&offset=${offset}${bboxParam}`;
       let batchLen = 0, endOfRecords = true;
       try{
         const r = await fetch(url);
