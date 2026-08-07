@@ -5026,10 +5026,11 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     // pagination 2 pages par annee = 600 obs max/an.
     const years = [];
     for(let y = yearMin; y <= yearMax; y++) years.push(y);
+    const PAGES_PER_YEAR = 3;
     let totalDone = 0;
-    const totalSteps = years.length * 2;
+    const totalSteps = years.length * PAGES_PER_YEAR;
     for(const y of years){
-      for(let page = 0; page < 2; page++){
+      for(let page = 0; page < PAGES_PER_YEAR; page++){
         const url = `https://api.gbif.org/v1/occurrence/search?country=${encodeURIComponent(ebFilter.country||'FR')}&classKey=212&hasCoordinate=true&year=${y}&month=${month}&limit=300&offset=${page*300}${bboxParam}`;
         let batchLen = 0, endOfRecords = true;
         try{
