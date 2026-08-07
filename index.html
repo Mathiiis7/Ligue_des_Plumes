@@ -4981,14 +4981,25 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     return rars.has(rarityReal(sci));
   };
   const missingSci = Object.keys(FR_NAMES).filter(sci => !mine.has(sci) && passRar(sci));
-  if(!missingSci.length){ return { total:0, points:0, empty:true }; }
-  // Fast path polygone : on skip la resolution des taxonKeys (le point qui prenait ~30s
-  // la 1re fois). On fetch toutes les obs dans la bbox (sans filtre taxonKey server-side)
-  // puis on filtre client-side par missing set + rarete + polygone exact.
-  // Marche seulement pour bbox = polygone (zones petites, volume gerable). Pour dept, on
-  // continue avec la resolution taxonKeys (economise beaucoup de bande passante).
-  if(ebFilter.polygon && bbox){
-    const missingSet = new Set(missingSci);
+  const isForeignEarly = ebFilter.country && ebFilter.country !== 'FR';
+  // Pour l'etranger on n'utilise pas missingSci (voir fast path), donc pas d'early return sur vide.
+  if(!isForeignEarly && !missingSci.length){ return { total:0, points:0, empty:true }; }
+  // Fast path : on skip la resolution des taxonKeys (le point qui prenait ~30s la 1re
+  // fois). On fetch toutes les obs dans la bbox (sans filtre taxonKey server-side) puis
+  // on filtre client-side.
+  // Utilise pour :
+  //  - polygone : zone petite, volume gerable
+  //  - pays etranger : FR_NAMES ne couvre pas les especes locales (Sittelle de Krüper,
+  //    Traquet a queue rousse au Montenegro, etc.), donc la restriction par
+  //    taxonKeys FR ferait louper toutes les especes non-FR. On accepte toute obs dont
+  //    l'espece n'est pas dans la life list utilisateur.
+  const isForeign = ebFilter.country && ebFilter.country !== 'FR';
+  const useFastPath = (ebFilter.polygon || isForeign) && bbox;
+  if(useFastPath){
+    // Missing set : FR_NAMES pour FR (avec filtre rarete), ou "toute espece non dans la
+    // life list" pour l'etranger (pas de restriction catalogue, pas de filtre rarete
+    // car rarityReal n'est calibree que pour la FR).
+    const missingSet = isForeign ? null : new Set(missingSci);
     if(onProgress) onProgress('fetch', 0, 1);
     const yearParam = (yearMin===yearMax) ? String(yearMin) : `${yearMin},${yearMax}`;
     const bboxParam = `&decimalLatitude=${bbox[0]},${bbox[1]}&decimalLongitude=${bbox[2]},${bbox[3]}`;
@@ -5005,11 +5016,15 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
         const batch = j.results || [];
         for(const o of batch){
           if(typeof o.decimalLatitude !== 'number' || typeof o.decimalLongitude !== 'number') continue;
-          // Filtre 1 : polygone exact (client-side).
-          if(!_pointInPolygon(o.decimalLatitude, o.decimalLongitude, ebFilter.polygon)) continue;
-          // Filtre 2 : missing set + rarete.
+          // Filtre 1 : polygone exact (client-side) - seulement si polygone actif.
+          if(ebFilter.polygon && !_pointInPolygon(o.decimalLatitude, o.decimalLongitude, ebFilter.polygon)) continue;
+          // Filtre 2 : missing.
+          //   FR : espece dans missingSet (FR_NAMES filtre par rarete + not-in-mine).
+          //   Etranger : espece pas dans la life list du user (peu importe si dans FR_NAMES).
           const sci = (o.species || '').toLowerCase();
-          if(!sci || !missingSet.has(sci)) continue;
+          if(!sci) continue;
+          if(missingSet){ if(!missingSet.has(sci)) continue; }
+          else { if(mine.has(sci)) continue; }
           // Dedup semantique.
           const id = `${o.taxonKey||o.speciesKey||0}_${o.decimalLatitude.toFixed(4)}_${o.decimalLongitude.toFixed(4)}_${(o.eventDate||'').slice(0,10)}`;
           if(seenIds.has(id)) continue;
