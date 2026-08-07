@@ -4947,8 +4947,13 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
   const myRun = ++_gbifRunSeq;
   const stillMine = () => myRun === _gbifRunSeq;
   _lyrMissing.clearLayers();
+  // Skip cache pour pays etranger : la lecture cache utilise _gbifKeyBySci pour resoudre
+  // taxonKey -> sci name, mais ce mapping n'est peuple que par la resolution FR (skipped
+  // pour l'etranger via fast path). Resultat : toutes les obs cachees etaient droppees ->
+  // 0 obs affichees sur ME meme apres changement d'annees.
+  const skipCache = ebFilter.country && ebFilter.country !== 'FR';
   // Cache hit : on saute le fetch, on filtre + rend directement.
-  if(cacheKey){
+  if(cacheKey && !skipCache){
     const cached = _gbifCacheRead(cacheKey);
     if(cached){
       if(onProgress) onProgress('cache', 1, 1);
@@ -5187,7 +5192,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
   // Sauve en cache la version slim de allObs (raw, avant filtrage rarete/life-list courants).
   // A la relecture on refiltre contre l'etat courant du user, donc pas besoin d'invalider
   // quand il cocher une espece ou change les chips.
-  if(cacheKey && allObs.length){
+  if(cacheKey && !skipCache && allObs.length){
     try{ _gbifCacheWrite(cacheKey, allObs.map(_gbifSlimObs)); }catch(_){}
   }
   if(!allObs.length) return { total:0, points:0 };
