@@ -4874,13 +4874,15 @@ async function _loadMissingLayer(zone, days=14, rarities=new Set(), onProgress){
     const groups = new Map();
     for(const o of allObs){ const k=o.lat.toFixed(5)+','+o.lon.toFixed(5); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(o); }
     for(const g of groups.values()) _spreadGroup(g);
-    // Tri : plus rares au-dessus (ajoutées en dernier => rendues dessus).
-    allObs.sort((a,b)=> rarityReal(a.sciName) - rarityReal(b.sciName));
+    // Tri : plus rares au-dessus (ajoutées en dernier => rendues dessus). Rarete
+    // country-aware pour que le tri respecte la vraie rarete du pays visite.
+    const country = ebFilter.country || 'FR';
+    allObs.sort((a,b)=> rarityForCountry(a.sciName, country) - rarityForCountry(b.sciName, country));
     const R = heavy ? 6 : 7, W = heavy ? 2 : 2.5;
     for(const o of allObs){
-      const w = rarityReal(o.sciName);
+      const w = rarityForCountry(o.sciName, country);
       const nm = FR_NAMES[(o.sciName||'').toLowerCase()] || o.comName || o.sciName;
-      const m = L.circleMarker([o.dispLat, o.dispLon], { radius:R, weight:1.5, color:'#fff', fillColor:sciColor(o.sciName), fillOpacity:.9, opacity:1 });
+      const m = L.circleMarker([o.dispLat, o.dispLon], { radius:R, weight:1.5, color:'#fff', fillColor:sciColorForCountry(o.sciName, country), fillOpacity:.9, opacity:1 });
       const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lon}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
       m.bindPopup(`<b>${esc(nm)}</b> <span class="p-sci">${esc(o.sciName||'')}</span><br>`+
         `<span class="p-meta">🐦 <b>Vous ne l'avez pas encore</b></span><br>`+
