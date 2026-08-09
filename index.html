@@ -3168,11 +3168,17 @@ async function _repopulateEbRegionsForCountry(country){
     return;
   }
   sel.innerHTML = `<option value="${esc(country)}" selected>Tout le pays</option><option value="" disabled>… chargement</option>`;
-  const regs = await _fetchEbSubregions(country, 'subnational1');
-  sel.innerHTML = `<option value="${esc(country)}" selected>Tout le pays</option>` +
-    regs.map(r=>`<option value="${esc(r.code)}">${esc(r.name)}</option>`).join('');
   ebFilter.region = country; ebFilter.dept = '';
-  await _repopulateEbDeptsForRegion(country);
+  try{
+    const regs = await _fetchEbSubregions(country, 'subnational1');
+    sel.innerHTML = `<option value="${esc(country)}" selected>Tout le pays</option>` +
+      regs.map(r=>`<option value="${esc(r.code)}">${esc(r.name)}</option>`).join('');
+    await _repopulateEbDeptsForRegion(country);
+  }catch(err){
+    // Fallback : au moins on garde l'option "Tout le pays" cliquable.
+    sel.innerHTML = `<option value="${esc(country)}" selected>Tout le pays</option>`;
+    console.warn('eBird subregions fetch failed for', country, err);
+  }
 }
 async function _repopulateEbDeptsForRegion(regionCode){
   const sel = $('#mapEbDept'), lbl = $('#mapEbDeptLbl'); if(!sel) return;
@@ -4544,7 +4550,11 @@ document.addEventListener('change', e=>{
   else if(e.target.id==='mapEbCountry'){
     ebFilter.country = e.target.value || 'FR';
     _loaded.missing=''; _loaded.hotspots='';
-    _repopulateEbRegionsForCountry(ebFilter.country).then(() => { renderMap(); });
+    // Fire renderMap dans TOUS les cas (succes, echec fetch, cache miss),
+    // sinon la carte reste vide ou avec l'ancienne selection si l'API eBird foire.
+    _repopulateEbRegionsForCountry(ebFilter.country)
+      .catch(err => console.warn('eBird regions fetch failed for', ebFilter.country, err))
+      .finally(() => { renderMap(); });
   }
   else if(e.target.id==='mapEbRegion'){
     ebFilter.region=e.target.value; ebFilter.dept='';
