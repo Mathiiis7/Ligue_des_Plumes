@@ -1818,8 +1818,15 @@ function build(){
       const k=universe.get(key).counts;
       const nm=frName(v.sci, v.common);
       if(k<rarestK || (k===rarestK && rarest && nm.localeCompare(rarest,'fr')<0)){ rarestK=k; rarest=nm; }
+      // Dernière acquisition : date d'obs si dispo, sinon date d'ajout manuel (v.addedAt).
+      // Sans ce fallback, les ajouts manuels sans date renseignee n'apparaissent jamais.
       const pd=parseDate(v.date);
       if(pd && pd.ord>lastOrd){ lastOrd=pd.ord; last=nm; lastDisp=pd.disp; }
+      else if(!pd && typeof v.addedAt === 'number' && v.addedAt > lastOrd){
+        lastOrd = v.addedAt; last = nm;
+        const d = new Date(v.addedAt);
+        lastDisp = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+      }
       real += rarityReal(v.sci);
       if(maxRW>1 && rarityReal(v.sci)===maxRW){ holdsRarest=true; if(!rrNames.includes(nm)) rrNames.push(nm); }
     }
