@@ -2520,14 +2520,25 @@ function renderTrophies(data){
     if(t.special==='vote'){
       const voteId = t.voteId || 'grosBebe';
       const threshold = t.voteThreshold || 2;
-      const votes = (votesMap.get(voteId)?.get(sel.id)?.size) || 0;
+      const voterUids = votesMap.get(voteId)?.get(sel.id);
+      const votes = voterUids?.size || 0;
       stateTxt = ok ? `Validé ✓ · ${votes} votes` : `${votes} / ${threshold} votes`;
       const canSelfVote = t.voteSelfCheck ? t.voteSelfCheck() : false;
       if(sel.id===myUid && !canSelfVote){ extra = `<div class="vote-note">🗳️ Les autres votent pour vous (partagez la preuve dans le tchat)</div>`; }
       else if(myMemberName()){
-        const iVoted = votesMap.get(voteId)?.get(sel.id)?.has(myUid);
+        const iVoted = voterUids?.has(myUid);
         extra = `<button class="vote-btn${iVoted?' voted':''}" data-vote-target="${esc(sel.id)}" data-vote-trophy="${esc(voteId)}">${iVoted?'✓ Voté — retirer':'Valider ✅'}</button>`;
       } else { extra = `<div class="vote-note">Connecte-toi pour pouvoir voter</div>`; }
+      // Liste des votants (petit texte sous le bouton). Toujours visible, meme sans etre logge.
+      if(voterUids && voterUids.size){
+        const names = [...voterUids]
+          .map(uid => state.people.find(p => p.id === uid)?.name || '?')
+          .filter(n => n && n !== '?')
+          .sort((a,b) => a.localeCompare(b, 'fr'));
+        if(names.length){
+          extra += `<div class="vote-voters" style="margin-top:6px; font-size:11px; color:var(--ink-3);">👥 ${names.join(', ')}</div>`;
+        }
+      }
     }
     return `<div class="trophy ${ok?'on':'off'}${clic?' clic':''}"${clic?` data-detail="${detailIdx}"`:''}${tip?` title="${esc(tip)}"`:''}>
       <div class="tico">${t.icon}</div>
