@@ -4401,7 +4401,7 @@ function _renderDrawResultsPanel(speciesRows){
       const w = rarityForCountry(r.sci, country);
       const badge = r.cocher ? ' <span style="background:#e74c3c; color:#fff; font-size:8.5px !important; padding:0 4px; border-radius:3px; margin-left:4px;">à cocher</span>' : '';
       const rarDot = w ? `<span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:${sciColorForCountry(r.sci, country)}; margin-right:5px; vertical-align:middle;"></span>` : '';
-      return `<li data-sci="${esc(r.sci)}" style="padding:2px 4px; border-bottom:1px solid var(--line); cursor:pointer; display:flex; align-items:center; gap:4px; line-height:1.3; font-size:11px !important;">
+      return `<li class="sp-link" data-sci="${esc(r.sci)}" style="padding:2px 4px; border-bottom:1px solid var(--line); cursor:pointer; display:flex; align-items:center; gap:4px; line-height:1.3; font-size:11px !important;">
         ${rarDot}
         <span style="flex:1; font-size:11px !important;"><b style="font-size:11px !important; font-weight:600;">${esc(r.name)}</b>${badge} <span style="color:var(--ink-3); font-size:9.5px !important; font-style:italic;">${esc(r.sci)}</span></span>
         <span style="color:var(--ink-2); font-size:10.5px !important; font-variant-numeric:tabular-nums;">${r.count} obs</span>
