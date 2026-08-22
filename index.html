@@ -1546,9 +1546,22 @@ function hasRarityCalibration(sci){
 // ce pays (marker sera colore gris "inconnue" dans sciColorForCountry). Utile pour les modes
 // carte voyage : FR bat REAL_RARITY, ME bat REAL_RARITY_ME_EBIRD, autres pays -> 0 gris.
 // SEPARE de rarityReal(sci) qui reste FR-only pour ne pas polluer trophees/classement/Ligue.
+// Alias sci -> sci canonique. GBIF traine encore les anciens noms taxonomiques sur beaucoup
+// de datasets. Utilise par rarityForCountry pour resoudre "bubulcus ibis" -> "ardea ibis"
+// (Heron garde-boeufs), "phylloscopus sibillatrix" (2 L) -> "sibilatrix", etc.
+const SCI_ALIAS = {
+  'bubulcus ibis': 'ardea ibis',
+  'phylloscopus sibillatrix': 'phylloscopus sibilatrix',
+  'accipiter gentilis': 'astur gentilis',
+  'accipiter brevipes': 'tachyspiza brevipes',
+  'phalacrocorax aristotelis': 'gulosus aristotelis',
+  'sylvia communis': 'curruca communis',
+  'charadrius alexandrinus': 'anarhynchus alexandrinus',
+};
 function rarityForCountry(sci, country){
   if(isExotic(sci)) return 1;
-  const k = (sci||'').trim().toLowerCase();
+  let k = (sci||'').trim().toLowerCase();
+  if(SCI_ALIAS[k]) k = SCI_ALIAS[k];
   const table = country === 'ME' ? REAL_RARITY_ME_EBIRD : REAL_RARITY;
   return table[k] || 0;
 }
