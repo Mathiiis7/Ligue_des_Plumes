@@ -588,7 +588,9 @@
   .map-el .leaflet-popup-content { font:inherit; font-size:13px; line-height:1.45; color:var(--ink); margin:8px 12px; }
   .map-el .leaflet-popup-content b { color:var(--ink); }
   .map-el .leaflet-popup-content .p-sci { font-style:italic; color:var(--ink-3); font-size:11.5px; }
-  .map-el .leaflet-popup-content .p-meta { font-size:11.5px; color:var(--ink-3); margin-top:3px; }
+  .map-el .leaflet-popup-content .p-meta { display:block; margin-top:3px; font-size:11.5px; color:var(--ink-3); }
+  .map-el .leaflet-popup-content .p-meta-first { display:block; margin-top:3px; }
+  .map-el .leaflet-popup-content .p-nl { display:block; margin-top:3px; }
   .map-el .leaflet-popup-content .p-head { margin-bottom:6px; }
   .map-el .leaflet-popup-content .p-list { list-style:none; padding:0; margin:0; max-height:220px; overflow-y:auto; }
   .map-el .leaflet-popup-content .p-list li { display:flex; align-items:baseline; gap:6px; padding:3px 0; border-bottom:1px solid var(--line); font-size:12.5px; }
@@ -3809,15 +3811,15 @@ function _spreadGroup(group){
 function _mapMarker(pt, groupSize){
   const color = sciColor(pt.sci);
   const m = L.circleMarker([pt.dispLat, pt.dispLon], { radius:6, weight:1.5, color:'#fff', fillColor:color, fillOpacity:.85, opacity:1 });
-  const date = pt.date ? ` <span class="p-meta">· ${esc(pt.date)}</span>` : '';
+  const date = pt.date ? ` · ${esc(pt.date)}` : '';
   const cc = pt.cc ? ` · ${esc(countryLabel(pt.cc))}` : '';
   const loc = pt.loc ? esc(pt.loc) : '';
-  const groupNote = groupSize>1 ? `<br><span class="p-meta">Vu ici avec ${groupSize-1} autre${groupSize-1>1?'s':''} espèce${groupSize-1>1?'s':''}</span>` : '';
+  const groupNote = groupSize>1 ? `<span class="p-meta">Vu ici avec ${groupSize-1} autre${groupSize-1>1?'s':''} espèce${groupSize-1>1?'s':''}</span>` : '';
   // Lien Google Maps : toujours fiable (basé sur lat/lon) — remplace le lien eBird qui échoue pour les lieux perso.
-  const gmLink = `<br><a href="https://www.google.com/maps?q=${pt.lat},${pt.lon}" target="_blank" rel="noopener" class="p-link">🗺️ Voir sur Google Maps</a>`;
+  const gmLink = `<span class="p-meta"><a href="https://www.google.com/maps?q=${pt.lat},${pt.lon}" target="_blank" rel="noopener" class="p-link">🗺️ Voir sur Google Maps</a></span>`;
   m.bindPopup(
-    `<b>${esc(pt.common)}</b> <span class="p-sci">${esc(pt.sci)}</span><br>`+
-    `<span class="p-meta">Vu par <b>${esc(pt.who)}</b>${loc?' à '+loc:''}${cc}${date}</span><br>`+
+    `<b>${esc(pt.common)}</b> <span class="p-sci">${esc(pt.sci)}</span>`+
+    `<span class="p-meta">Vu par <b>${esc(pt.who)}</b>${loc?' à '+loc:''}${cc}${date}</span>`+
     `<span class="p-meta">${_rarityBadge(pt.w, (ebFilter && ebFilter.country) || "FR", pt.sci)}</span>`+
     groupNote + gmLink
   );
@@ -4070,6 +4072,14 @@ async function _renderModeMissing(){
 // eBird pour permettre le toggle rapide entre les deux sources.
 async function _renderModeMissingGbif(){
   const cnt = $('#mapEbCount');
+  // Si une espece est deja chargee dans _lyrDetail, on skip complètement (même guard que
+  // la version eBird ligne ~4031). Empeche un renderMap en vol d'ecraser le count "N obs
+  // GBIF de X" ecrit par _showSpeciesDetailGbif.
+  if(_lyrDetail && _lyrDetail.getLayers && _lyrDetail.getLayers().length){
+    if(_lyrMissing && _map.hasLayer(_lyrMissing)) _map.removeLayer(_lyrMissing);
+    setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
+    return;
+  }
   // Zone : polygone dessine > dept selectionne (FR) ou region eBird pour l'etranger.
   let bbox = null, gadmFilter = null, polygonWKT = null, zone = '';
   if(ebFilter.polygon){
@@ -4262,9 +4272,9 @@ function _renderAbHotspots(){
     const m = L.circleMarker([o.lat, o.lng], { radius:5, weight:1.5, color:'#fff', fillColor:c, fillOpacity:0.9, opacity:1 });
     const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
     const eb = o.locId ? `<a href="https://ebird.org/hotspot/${esc(o.locId)}" target="_blank" rel="noopener" class="p-link">🐦 eBird</a>` : '';
-    m.bindPopup(`<b>🏞️ ${esc(o.locName||'?')}</b><br>`+
-      `<span class="p-meta"><b>${esc(nm)}</b></span><br>`+
-      `<span class="p-meta">Vu le <b>${esc((o.obsDt||'').slice(0,10))}</b>${o.howMany?' · '+o.howMany+' individu'+(o.howMany>1?'s':''):''}</span><br>${gm} ${eb}`);
+    m.bindPopup(`<b>🏞️ ${esc(o.locName||'?')}</b>`+
+      `<span class="p-meta"><b>${esc(nm)}</b></span>`+
+      `<span class="p-meta">Vu le <b>${esc((o.obsDt||'').slice(0,10))}</b>${o.howMany?' · '+o.howMany+' individu'+(o.howMany>1?'s':''):''}</span><span class="p-meta">${gm} ${eb}</span>`);
     _lyrAbHotspots.addLayer(m);
     n++;
   }
@@ -4676,10 +4686,10 @@ async function _showSpeciesDetailGbif(sciName){
       const cntObs = (typeof o.individualCount === 'number' && o.individualCount > 0) ? o.individualCount : null;
       const gm = `<a href="https://www.google.com/maps?q=${o.decimalLatitude},${o.decimalLongitude}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
       const gbifLink = o.gbifID ? `<a href="https://www.gbif.org/occurrence/${esc(o.gbifID)}" target="_blank" rel="noopener" class="p-link">🌍 GBIF</a> · ` : '';
-      dot.bindPopup(`<b class="sp-link" data-sci="${esc(sciName)}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;">${esc(nm)}</b> <span class="p-sci">${esc(sciName)}</span><br>`+
-        `<span class="p-meta">📍 ${esc(loc)}</span><br>`+
-        `<span class="p-meta">${esc((o.eventDate||'').slice(0,10))}${cntObs?' · '+cntObs+' individus':''}</span><br>`+
-        `<span class="p-meta">${_rarityBadge(w, country, sciName)}</span><br>${gbifLink}${gm}`);
+      dot.bindPopup(`<b class="sp-link" data-sci="${esc(sciName)}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;">${esc(nm)}</b> <span class="p-sci">${esc(sciName)}</span>`+
+        `<span class="p-meta">📍 ${esc(loc)}</span>`+
+        `<span class="p-meta">${esc((o.eventDate||'').slice(0,10))}${cntObs?' · '+cntObs+' individus':''}</span>`+
+        `<span class="p-meta">${_rarityBadge(w, country, sciName)}</span><span class="p-meta">${gbifLink}${gm}</span>`);
       dot._sciName = sciName;
       _lyrDetail.addLayer(dot);
     }
@@ -4733,10 +4743,10 @@ async function _showSpeciesDetail(sciName, speciesCode){
       // Couleur = rareté de l'espèce (gris pour exotique), taille légèrement plus grosse que la couche missing.
       const dot = L.circleMarker([o.lat,o.lng], { radius:7, weight:2, color:'#fff', fillColor:color, fillOpacity:.9, opacity:1 });
       const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
-      dot.bindPopup(`<b class="sp-link" data-sci="${esc(sciName||'')}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;">${esc(nm)}</b> <span class="p-sci">${esc(sciName||'')}</span><br>`+
-        `<span class="p-meta">📍 ${esc(o.locName||'?')}</span><br>`+
-        `<span class="p-meta">${esc((o.obsDt||'').slice(0,10))}${o.howMany?' · '+o.howMany+' individus':''}</span><br>`+
-        `<span class="p-meta">${_rarityBadge(w, (ebFilter && ebFilter.country) || "FR", sciName)}</span><br>${gm}`);
+      dot.bindPopup(`<b class="sp-link" data-sci="${esc(sciName||'')}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;">${esc(nm)}</b> <span class="p-sci">${esc(sciName||'')}</span>`+
+        `<span class="p-meta">📍 ${esc(o.locName||'?')}</span>`+
+        `<span class="p-meta">${esc((o.obsDt||'').slice(0,10))}${o.howMany?' · '+o.howMany+' individus':''}</span>`+
+        `<span class="p-meta">${_rarityBadge(w, (ebFilter && ebFilter.country) || "FR", sciName)}</span><span class="p-meta">${gm}</span>`);
       dot._q = _mapNorm(nm+' '+(sciName||'')+' '+(o.locName||''));
       dot._sciName = sciName; dot._speciesCode = speciesCode;
       _lyrDetail.addLayer(dot); count++;
@@ -5125,8 +5135,8 @@ async function _loadMissingLayer(zone, days=14, rarities=new Set(), onProgress){
       const nm = FR_NAMES[(o.sciName||'').toLowerCase()] || o.comName || o.sciName;
       const m = L.circleMarker([o.dispLat, o.dispLon], { radius:R, weight:1.5, color:'#fff', fillColor:sciColorForCountry(o.sciName, country), fillOpacity:.9, opacity:1 });
       const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lon}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
-      m.bindPopup(`<b class="sp-link" data-sci="${esc(o.sciName||'')}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;">${esc(nm)}</b> <span class="p-sci">${esc(o.sciName||'')}</span><br>`+`<span class="p-meta">Vu le ${esc((o.obsDt||'').slice(0,10))} à ${esc(o.locName||'?')}${o.howMany?' · '+o.howMany:''}</span><br>`+
-        `<span class="p-meta">${_rarityBadge(w, (ebFilter && ebFilter.country) || "FR", o.sciName)}</span><br>${gm}`);
+      m.bindPopup(`<b class="sp-link" data-sci="${esc(o.sciName||'')}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;">${esc(nm)}</b> <span class="p-sci">${esc(o.sciName||'')}</span>`+`<span class="p-meta">Vu le ${esc((o.obsDt||'').slice(0,10))} à ${esc(o.locName||'?')}${o.howMany?' · '+o.howMany:''}</span>`+
+        `<span class="p-meta">${_rarityBadge(w, (ebFilter && ebFilter.country) || "FR", o.sciName)}</span><span class="p-meta">${gm}</span>`);
       m._q = _mapNorm(nm+' '+(o.sciName||'')+' '+(o.locName||''));
       m._speciesCode = o.speciesCode; m._sciName = o.sciName;
       _lyrMissing.addLayer(m);
@@ -5571,13 +5581,13 @@ function _gbifRenderAllObs(allObs, sciByKey, stillMine){
     if(time) parts.push(`🕐 ${esc(time)}`);
     if(behavior) parts.push(`🎯 ${esc(behavior)}`);
     if(observer) parts.push(`👤 ${esc(observer)}`);
-    const metaExtra = parts.length ? `<br><span class="p-meta">${parts.join(' · ')}</span>` : '';
+    const metaExtra = parts.length ? `<span class="p-meta">${parts.join(' · ')}</span>` : '';
     const links = [];
     if(o.references) links.push(`<a href="${esc(o.references)}" target="_blank" rel="noopener" class="p-link">🔗 source</a>`);
     if(o.gbifID || o.key) links.push(`<a href="https://www.gbif.org/occurrence/${esc(o.gbifID||o.key)}" target="_blank" rel="noopener" class="p-link">🌍 GBIF</a>`);
-    const linksHtml = links.length ? `<br>${links.join(' · ')}` : '';
-    m.bindPopup(`<b class="sp-link" data-sci="${esc(sci)}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;">${esc(nm)}</b> <span class="p-sci">${esc(sci)}</span><br>`+`<span class="p-meta">Vu le ${esc((o.eventDate||'').slice(0,10))} · ${esc(loc)}${cnt?' · '+cnt:''}</span>${metaExtra}<br>`+
-      `<span class="p-meta">${_rarityBadge(w, (ebFilter && ebFilter.country) || "FR", sci)}</span>${linksHtml}<br>${gm}`);
+    const linksHtml = links.length ? `<span class="p-meta">${links.join(' · ')}</span>` : '';
+    m.bindPopup(`<b class="sp-link" data-sci="${esc(sci)}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;">${esc(nm)}</b> <span class="p-sci">${esc(sci)}</span>`+`<span class="p-meta">Vu le ${esc((o.eventDate||'').slice(0,10))} · ${esc(loc)}${cnt?' · '+cnt:''}</span>${metaExtra}`+
+      `<span class="p-meta">${_rarityBadge(w, (ebFilter && ebFilter.country) || "FR", sci)}</span>${linksHtml}<span class="p-meta">${gm}</span>`);
     m._q = _mapNorm(nm+' '+sci+' '+loc);
     m._sciName = sci;
     // Resout le code eBird pour permettre le clic marqueur -> fiche detail eBird
@@ -5821,9 +5831,9 @@ async function _loadHotspotsLayer(region){
       // Étoile favori (toggle, persistée en Firestore via handler global).
       const isFav = myFavHotspots.has(h.locId);
       const favBtn = myUid ? `<button class="hs-fav${isFav?' on':''}" data-loc="${esc(h.locId)}" title="${isFav?'Retirer des favoris':'Ajouter aux favoris'}">${isFav?'★':'☆'}</button>` : '';
-      m.bindPopup(`<b>🏞️ ${esc(h.locName||h.name||'?')}</b> ${favBtn}<br>`+
-        `<span class="p-meta">${h.subnational2Name?esc(h.subnational2Name)+' · ':''}${esc(h.subnational1Name||'')}${distTag}</span><br>`+
-        `<span class="p-meta">${cntLine}</span>${missingBlock}<br>${gm} ${tr} ${eb}`,
+      m.bindPopup(`<b>🏞️ ${esc(h.locName||h.name||'?')}</b> ${favBtn}`+
+        `<span class="p-meta">${h.subnational2Name?esc(h.subnational2Name)+' · ':''}${esc(h.subnational1Name||'')}${distTag}</span>`+
+        `<span class="p-meta">${cntLine}</span>${missingBlock}<span class="p-meta">${gm} ${tr} ${eb}</span>`,
         { maxHeight:340, autoPan:true });
       // Recherche : nom du hotspot + région/dept + noms fr des espèces manquantes ici
       // (permet à la barre "Filtrer par nom d'espèce" de matcher un hotspot où l'espèce est présente).
