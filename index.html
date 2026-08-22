@@ -3712,6 +3712,9 @@ function _mapCollectPoints(){
 // moins de OVERLAP_PX pixels a l'ecran.
 function _mainMapSpreadGbifMarkers(){
   if(!_map || !_lyrMissing) return;
+  // Ne fait rien si la couche n'est pas actuellement affichee (evite de perturber
+  // les recherches _showSpeciesDetail qui removent _lyrMissing sans clearer).
+  if(!_map.hasLayer(_lyrMissing)) return;
   const items = [];
   _lyrMissing.eachLayer(mk => {
     if(typeof mk._baseLat !== 'number') return;
