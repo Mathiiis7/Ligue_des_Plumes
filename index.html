@@ -4837,11 +4837,15 @@ async function _loadMissingLayer(zone, days=14, rarities=new Set(), onProgress){
   const heavy = (zone !== 'FR') || hasRar;
   const rarKey = hasRar ? [...rarities].sort().join(',') : 'all';
   const key = zone+':'+days+':'+(heavy?rarKey:'light');
-  // Helper : espèce passe le filtre rareté ?
+  // Helper : espèce passe le filtre rareté ? Country-aware (utilise rarityForCountry).
+  // Si espece non calibree pour ce pays (rarityForCountry retourne 0) -> passe (rarite
+  // inconnue mais on la garde plutot que la cacher silencieusement).
   const passRar = sp => {
     if(!hasRar) return true;
     if(isExotic(sp.sciName)) return rarities.has('exo');
-    return rarities.has(rarityReal(sp.sciName));
+    const w = rarityForCountry(sp.sciName, ebFilter.country || 'FR');
+    if(!w) return true;
+    return rarities.has(w);
   };
   if(_loaded.missing===key && _lyrMissing.getLayers().length) return;
   _lyrMissing.clearLayers();
@@ -5042,10 +5046,14 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
   const mine = new Set(me ? [...me.species.keys()] : []);
   const rars = ebFilter.rarities;
   const hasRar = rars && rars.size > 0;
+  // Filtre rareté country-aware. Espece non calibree pour ce pays -> passe.
+  const country = ebFilter.country || 'FR';
   const passRar = sci => {
     if(!hasRar) return true;
     if(isExotic(sci)) return rars.has('exo');
-    return rars.has(rarityReal(sci));
+    const w = rarityForCountry(sci, country);
+    if(!w) return true;
+    return rars.has(w);
   };
   const missingSci = Object.keys(FR_NAMES).filter(sci => !mine.has(sci) && passRar(sci));
   const isForeignEarly = ebFilter.country && ebFilter.country !== 'FR';
@@ -5094,7 +5102,11 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
               const sci = (o.species || '').toLowerCase();
               if(!sci) continue;
               if(missingSet){ if(!missingSet.has(sci)) continue; }
-              else { if(mine.has(sci)) continue; }
+              else {
+                // Etranger : pas dans la life list ET passe le filtre rarete country-aware.
+                if(mine.has(sci)) continue;
+                if(!passRar(sci)) continue;
+              }
               const id = `${o.taxonKey||o.speciesKey||0}_${o.decimalLatitude.toFixed(4)}_${o.decimalLongitude.toFixed(4)}_${(o.eventDate||'').slice(0,10)}`;
               if(seenIds.has(id)) continue;
               seenIds.add(id);
