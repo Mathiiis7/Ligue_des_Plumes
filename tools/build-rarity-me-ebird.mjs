@@ -33,6 +33,10 @@ const norm = s => s.toLowerCase()
 // Le bar chart utilise les noms courts UI (Grand Gravelot), l'API retourne les noms
 // CINFO longs (Pluvier grand-gravelot). Sans cet alias, ~30 especes du bar chart ME
 // ne sont pas matchees vers un sciName.
+// Ces aliases mappent le nom UI du bar chart -> le nom retourne par eBird taxonomy API
+// (locale=fr). La plupart des especes ont le meme nom des deux cotes ; seules quelques
+// unes ont un raccourci UI different du nom CINFO long. Attention : ne PAS confondre
+// avec les alias FR_NAMES (nom app) -> API : ici c'est bar chart -> API.
 const BAR_CHART_ALIAS = {
   'Grand Gravelot': 'Pluvier grand-gravelot',
   'Petit Gravelot': 'Pluvier petit-gravelot',
@@ -44,15 +48,6 @@ const BAR_CHART_ALIAS = {
   'Guignard d’Eurasie': 'Pluvier guignard',   // apostrophe typographique dans le bar chart
   'Guignard d\'Eurasie': 'Pluvier guignard',
   'Harle bièvre': 'Grand Harle',
-  'Chouette de Tengmalm': 'Nyctale de Tengmalm',
-  'Grand-duc d\'Europe': 'Hibou grand-duc',
-  'Bartramie des champs': 'Maubèche des champs',
-  'Orite à longue queue': 'Mésange à longue queue',
-  'Monticole de roche': 'Monticole merle-de-roche',
-  'Monticole bleu': 'Monticole merle-bleu',
-  'Robin à flancs roux': 'Rossignol à flancs roux',
-  'Viréo à œil rouge': 'Viréo aux yeux rouges',
-  'Plongeon imbrin': 'Plongeon huard',
 };
 // 1) Parse bar chart : FR name -> freq peak. Applique BAR_CHART_ALIAS si necessaire pour
 // que le norm() du nom bar chart matche celui de l'eBird taxonomy API.
