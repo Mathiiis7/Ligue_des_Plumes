@@ -1623,22 +1623,22 @@ function rarityForCountry(sci, country){
   if(SCI_ALIAS[k]) k = SCI_ALIAS[k];
   const c = country || 'FR';
   const table = c === 'ME' ? REAL_RARITY_ME_EBIRD : REAL_RARITY;
-  // Pour un pays etranger : si l'espece a une valeur dans le catalogue local, on l'utilise
-  // meme si l'espece est marquee exotique en FR (Faisan de Colchide, Pintade de Numidie
-  // sont dans le bar chart eBird ME comme populations naturalisees). Sinon fallback exotique.
   const v = table[k];
   if(v) return v;
   if(isExotic(sci)) return 1;
-  return 0;
+  // FR : convention REAL_RARITY exclut les tier 1 (defaut = tres commun). Absent = 1.
+  // Etranger : catalogue explicite, absent = vraiment inconnue.
+  return c === 'FR' ? 1 : 0;
 }
 function sciColorForCountry(sci, country){
   const c = country || 'FR';
   let k = (sci||'').trim().toLowerCase();
   if(SCI_ALIAS[k]) k = SCI_ALIAS[k];
   const table = c === 'ME' ? REAL_RARITY_ME_EBIRD : REAL_RARITY;
-  // Ordre : catalogue local (couleur normale) > gris exotique > gris inconnue.
   if(table[k]) return realColor(table[k]);
   if(isExotic(sci)) return '#7e8a99';
+  // FR : convention absent = tier 1 (couleur "tres commun"). Etranger : gris inconnue.
+  if(c === 'FR') return realColor(1);
   return '#94a3b8';
 }
 // Drapeau du pays pour afficher dans les popups "Rareté 🇲🇪 : X · Label" (montre que la
@@ -3505,7 +3505,7 @@ function _updateMapSuggest(){
     _mapSuggestItems = top;
     box.innerHTML = top.map((it, i) =>
       `<div class="map-search-suggest-item" data-idx="${i}">`+
-        `<span class="ss-dot" style="background:${sciColor(it.sci)}"></span>`+
+        `<span class="ss-dot" style="background:${sciColorForCountry(it.sci, (ebFilter && ebFilter.country) || 'FR')}"></span>`+
         `<span>${esc(it.name)}</span>`+
         `<span class="ss-sci">${esc(it.sci)}</span>`+
         `<span class="ss-hint">${it.hasST?'→ carte d\'abondance':'→ obs 30j seulement'}</span></div>`
@@ -3573,14 +3573,14 @@ function _updateMapSuggest(){
   box.innerHTML = top.map((it, i) => {
     if(it && it.kind==='sp-hotspot'){
       return `<div class="map-search-suggest-item" data-idx="${i}">`+
-        `<span class="ss-dot" style="background:${sciColor(it.sci)}"></span>`+
+        `<span class="ss-dot" style="background:${sciColorForCountry(it.sci, (ebFilter && ebFilter.country) || 'FR')}"></span>`+
         `<span>${esc(it.name)}</span>`+
         `<span class="ss-sci">${esc(it.sci)}</span>`+
         `<span class="ss-hint">→ filtrer les hotspots</span></div>`;
     }
     if(it && it.kind==='sp-missing'){
       return `<div class="map-search-suggest-item" data-idx="${i}">`+
-        `<span class="ss-dot" style="background:${sciColor(it.sci)}"></span>`+
+        `<span class="ss-dot" style="background:${sciColorForCountry(it.sci, (ebFilter && ebFilter.country) || 'FR')}"></span>`+
         `<span>${esc(it.name)}</span>`+
         `<span class="ss-sci">${esc(it.sci)}</span>`+
         `<span class="ss-hint">→ toutes les obs récentes</span></div>`;
