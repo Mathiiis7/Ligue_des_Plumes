@@ -3442,6 +3442,9 @@ function _mapApplyFilter(){
 }
 // Si une espèce est sélectionnée dans la barre de recherche, la RE-FETCHE pour la nouvelle
 // zone (dept > région > FR) au lieu de garder les obs France-wide obsolètes. Sinon efface.
+// True si l'utilisateur a un terme de recherche actif (utilise pour skip renderMap :
+// pas la peine de reload les 1200+ obs generales si on cherche une seule espece).
+function _hasSpeciesSearch(){ return !!(mapSearch && mapSearch.trim().length >= 2); }
 function _reloadSpeciesForZone(){
   const q = (mapSearch||'').trim();
   const hasDetail = _lyrDetail && _lyrDetail.getLayers && _lyrDetail.getLayers().length;
@@ -4783,20 +4786,20 @@ document.addEventListener('change', e=>{
   else if(e.target.id==='mapEbRegion'){
     ebFilter.region=e.target.value; ebFilter.dept='';
     _loaded.missing=''; _loaded.hotspots='';
-    _repopulateEbDeptsForRegion(ebFilter.region).then(() => { renderMap(); _reloadSpeciesForZone(); });
+    _repopulateEbDeptsForRegion(ebFilter.region).then(() => { if(!_hasSpeciesSearch()) renderMap(); _reloadSpeciesForZone(); });
   }
   else if(e.target.id==='mapEbDept'){
     ebFilter.dept=e.target.value||'';
     _loaded.hotspots=''; _loaded.missing='';
-    renderMap();
+    if(!_hasSpeciesSearch()) renderMap();
     _reloadSpeciesForZone();
   }
   else if(e.target.id==='mapEbDays'){
     ebFilter.days=+e.target.value; _loaded.missing='';
-    renderMap();
+    if(!_hasSpeciesSearch()) renderMap();
     _reloadSpeciesForZone();
   }
-  else if(e.target.id==='mapEbMonth'){ ebFilter.month=+e.target.value||0; _loaded.hotspots=''; renderMap(); _reloadSpeciesForZone(); }
+  else if(e.target.id==='mapEbMonth'){ ebFilter.month=+e.target.value||0; _loaded.hotspots=''; if(!_hasSpeciesSearch()) renderMap(); _reloadSpeciesForZone(); }
   else if(e.target.id==='mapAbMonth'){ abFilter.month=+e.target.value||0; if(mapMode==='abundance') renderMap(); }
   else if(e.target.id==='mapAbShowHs'){ abFilter.showHotspots = !!e.target.checked; if(mapMode==='abundance') _renderAbHotspots(); }
 });
