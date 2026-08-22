@@ -1210,6 +1210,7 @@
         <button type="button" class="btn tiny" id="mapDrawClear" style="display:none;" title="Efface le polygone et revient au filtre région/département">🗑️ Effacer</button>
         <span class="map-count" id="mapEbCount"></span>
       </div>
+      <div id="mapCountryHint" class="help" style="display:none; font-size:11.5px; margin:-4px 0 6px; color:var(--ink-3);"></div>
       <div class="map-controls" id="mapCtrlsAbundance" style="display:none;">
         <div class="seg" id="mapAbView" style="margin-right:8px;">
           <button type="button" data-view="abs" class="on" title="Couleur = abondance réelle (même échelle pour toutes espèces). Un oiseau rare reste pâle même dans son meilleur dept — signal honnête.">📍 Absolu</button>
@@ -1542,6 +1543,21 @@ function hasRarityCalibration(sci){
   const k = (sci||'').trim().toLowerCase();
   return isExotic(sci) || !!REAL_RARITY[k];
 }
+// Met a jour le hint sous les ctrls carte qui explicite la calibration rarete utilisee.
+// Affiche seulement si country != FR (pour FR c'est evident, pas besoin de le dire).
+function _updateCountryHint(){
+  const el = document.getElementById('mapCountryHint'); if(!el) return;
+  const c = (typeof ebFilter !== 'undefined' && ebFilter.country) || 'FR';
+  if(c === 'FR'){ el.style.display = 'none'; el.textContent = ''; return; }
+  const flag = COUNTRY_FLAG[c] || '🌍';
+  const calibrated = (c === 'ME');
+  if(calibrated){
+    el.textContent = `${flag} Rareté et couleurs calibrées pour ce pays (eBird bar chart).`;
+  } else {
+    el.textContent = `${flag} Rareté non calibrée pour ce pays : marqueurs en gris "inconnue".`;
+  }
+  el.style.display = '';
+}
 // Rareté par pays. Passe explicitement 'FR' ou 'ME' etc. Retourne 0 si pas calibre pour
 // ce pays (marker sera colore gris "inconnue" dans sciColorForCountry). Utile pour les modes
 // carte voyage : FR bat REAL_RARITY, ME bat REAL_RARITY_ME_EBIRD, autres pays -> 0 gris.
@@ -1593,6 +1609,18 @@ function sciColorForCountry(sci, country){
   const w = rarityForCountry(sci, country);
   if(!w) return '#94a3b8';
   return realColor(w);
+}
+// Drapeau du pays pour afficher dans les popups "Rareté 🇲🇪 : X · Label" (montre que la
+// calibration est celle du pays courant). Retourne '' pour FR (defaut, pas de drapeau).
+const COUNTRY_FLAG = {
+  'FR':'🇫🇷','ME':'🇲🇪','ES':'🇪🇸','PT':'🇵🇹','IT':'🇮🇹','GR':'🇬🇷','HR':'🇭🇷',
+  'AL':'🇦🇱','MA':'🇲🇦','CH':'🇨🇭','BE':'🇧🇪','DE':'🇩🇪','GB':'🇬🇧','TR':'🇹🇷','IS':'🇮🇸',
+};
+function _rarityBadge(w, country){
+  const c = country || 'FR';
+  const flag = (c === 'FR') ? '' : (COUNTRY_FLAG[c] || '') + ' ';
+  if(!w){ return `Rareté ${flag}: inconnue`; }
+  return `Rareté ${flag}: <b>${w}</b> · ${REAL_LABELS[w]||''}`;
 }
 // Fréquence eBird fine (part des listes) — pour départager les oiseaux d'un même poids.
 // Absente (espèce hors bar chart eBird = encore plus rare) -> -1 (classée la plus rare).
@@ -3710,7 +3738,7 @@ function _mapMarker(pt, groupSize){
   m.bindPopup(
     `<b>${esc(pt.common)}</b> <span class="p-sci">${esc(pt.sci)}</span><br>`+
     `<span class="p-meta">Vu par <b>${esc(pt.who)}</b>${loc?' à '+loc:''}${cc}${date}</span><br>`+
-    `<span class="p-meta">Rareté : <b>${pt.w}</b> · ${REAL_LABELS[pt.w]||'niveau '+pt.w}</span>`+
+    `<span class="p-meta">${_rarityBadge(pt.w, (ebFilter && ebFilter.country) || "FR")}</span>`+
     groupNote + gmLink
   );
   m._q = _mapNorm(pt.common+' '+pt.sci+' '+(pt.loc||'')+' '+(pt.who||''));
@@ -4567,7 +4595,7 @@ async function _showSpeciesDetail(sciName, speciesCode){
       dot.bindPopup(`<b>${esc(nm)}</b> <span class="p-sci">${esc(sciName||'')}</span><br>`+
         `<span class="p-meta">📍 ${esc(o.locName||'?')}</span><br>`+
         `<span class="p-meta">${esc((o.obsDt||'').slice(0,10))}${o.howMany?' · '+o.howMany+' individus':''}</span><br>`+
-        `<span class="p-meta">Rareté : <b>${w}</b> · ${REAL_LABELS[w]||''}</span><br>${gm}`);
+        `<span class="p-meta">${_rarityBadge(w, (ebFilter && ebFilter.country) || "FR")}</span><br>${gm}`);
       dot._q = _mapNorm(nm+' '+(sciName||'')+' '+(o.locName||''));
       dot._sciName = sciName; dot._speciesCode = speciesCode;
       _lyrDetail.addLayer(dot); count++;
@@ -4604,8 +4632,7 @@ document.addEventListener('change', e=>{
   else if(e.target.id==='mapEbCountry'){
     ebFilter.country = e.target.value || 'FR';
     _loaded.missing=''; _loaded.hotspots='';
-    // Fire renderMap dans TOUS les cas (succes, echec fetch, cache miss),
-    // sinon la carte reste vide ou avec l'ancienne selection si l'API eBird foire.
+    _updateCountryHint();
     _repopulateEbRegionsForCountry(ebFilter.country)
       .catch(err => console.warn('eBird regions fetch failed for', ebFilter.country, err))
       .finally(() => { renderMap(); });
@@ -4955,7 +4982,7 @@ async function _loadMissingLayer(zone, days=14, rarities=new Set(), onProgress){
       m.bindPopup(`<b>${esc(nm)}</b> <span class="p-sci">${esc(o.sciName||'')}</span><br>`+
         `<span class="p-meta">🐦 <b>Vous ne l'avez pas encore</b></span><br>`+
         `<span class="p-meta">Vu le ${esc((o.obsDt||'').slice(0,10))} à ${esc(o.locName||'?')}${o.howMany?' · '+o.howMany:''}</span><br>`+
-        `<span class="p-meta">Rareté : <b>${w}</b> · ${REAL_LABELS[w]||''}</span><br>${gm}`);
+        `<span class="p-meta">${_rarityBadge(w, (ebFilter && ebFilter.country) || "FR")}</span><br>${gm}`);
       m._q = _mapNorm(nm+' '+(o.sciName||'')+' '+(o.locName||''));
       m._speciesCode = o.speciesCode; m._sciName = o.sciName;
       _lyrMissing.addLayer(m);
@@ -5348,7 +5375,7 @@ function _gbifRenderAllObs(allObs, sciByKey, stillMine){
     m.bindPopup(`<b>${esc(nm)}</b> <span class="p-sci">${esc(sci)}</span><br>`+
       `<span class="p-meta">🐦 <b>Vous ne l'avez pas encore</b></span><br>`+
       `<span class="p-meta">Vu le ${esc((o.eventDate||'').slice(0,10))} · ${esc(loc)}${cnt?' · '+cnt:''}</span>${metaExtra}<br>`+
-      `<span class="p-meta">Rareté : <b>${w}</b> · ${REAL_LABELS[w]||''}</span>${linksHtml}<br>${gm}`);
+      `<span class="p-meta">${_rarityBadge(w, (ebFilter && ebFilter.country) || "FR")}</span>${linksHtml}<br>${gm}`);
     m._q = _mapNorm(nm+' '+sci+' '+loc);
     m._sciName = sci;
     // Resout le code eBird pour permettre le clic marqueur -> fiche detail eBird
