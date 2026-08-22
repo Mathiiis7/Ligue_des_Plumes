@@ -1597,6 +1597,18 @@ const SCI_ALIAS = {
   'sylvia sarda': 'curruca sarda',
   'sylvia conspicillata': 'curruca conspicillata',
 };
+// Verifie si l'utilisateur a l'espece (dans mine), en tenant compte des alias taxonomiques.
+// GBIF renvoie souvent l'ancien nom (bubulcus ibis) alors que le CSV eBird utilise le
+// nouveau (ardea ibis). Sans normalisation, l'espece resterait "a cocher" a tort.
+function _mineHas(mine, sci){
+  const k = (sci||'').trim().toLowerCase();
+  if(mine.has(k)) return true;
+  if(SCI_ALIAS[k] && mine.has(SCI_ALIAS[k])) return true;
+  // Verifie aussi le sens inverse : si le user a l'ancien nom, la nouvelle taxonomie GBIF
+  // devrait matcher.
+  for(const [old, canon] of Object.entries(SCI_ALIAS)){ if(canon === k && mine.has(old)) return true; }
+  return false;
+}
 function rarityForCountry(sci, country){
   let k = (sci||'').trim().toLowerCase();
   if(SCI_ALIAS[k]) k = SCI_ALIAS[k];
@@ -3506,7 +3518,7 @@ function _updateMapSuggest(){
     const mine = new Set(me ? [...me.species.keys()] : []);
     const seen = new Set();
     for(const sci in FR_NAMES){
-      if(mine.has(sci)) continue;   // déjà cochée par l'utilisateur
+      if(_mineHas(mine, sci)) continue;   // déjà cochée par l'utilisateur
       const fr = FR_NAMES[sci];
       if(q && !_mapNorm(fr).includes(q) && !sci.includes(q)) continue;
       if(seen.has(sci)) continue; seen.add(sci);
@@ -4117,7 +4129,7 @@ function _populateMissingResultsPanel(){
       sci,
       name: FR_NAMES[sci] || sci,
       count,
-      cocher: !mine.has(sci),
+      cocher: !_mineHas(mine, sci),
     });
   }
   _renderDrawResultsPanel(rows);
@@ -5095,7 +5107,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
       for(const s of cached){
         const sci = sciByKeyLocal.get(s.tk);
         if(!sci) continue;
-        if(mine.has(sci)) continue;
+        if(_mineHas(mine, sci)) continue;
         if(hasRar){
           const rk = isExotic(sci) ? 'exo' : rarityReal(sci);
           if(!rars.has(rk)) continue;
@@ -5128,7 +5140,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     if(!w) return true;
     return rars.has(w);
   };
-  const missingSci = Object.keys(FR_NAMES).filter(sci => !mine.has(sci) && passRar(sci));
+  const missingSci = Object.keys(FR_NAMES).filter(sci => !_mineHas(mine, sci) && passRar(sci));
   const isForeignEarly = ebFilter.country && ebFilter.country !== 'FR';
   // Pour l'etranger on n'utilise pas missingSci (voir fast path), donc pas d'early return sur vide.
   if(!isForeignEarly && !missingSci.length){ return { total:0, points:0, empty:true }; }
@@ -5152,7 +5164,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     const localTable = ebFilter.country === 'ME' ? REAL_RARITY_ME_EBIRD : null;
     if(localTable){
       const targetSci = Object.keys(localTable)
-        .filter(sci => !mine.has(sci))
+        .filter(sci => !_mineHas(mine, sci))
         .filter(sci => { const w = localTable[sci]; return w && rars.has(w); });
       if(!targetSci.length){ return { total:0, points:0, empty:true }; }
       if(onProgress) onProgress('resolve', 0, targetSci.length);
@@ -5237,7 +5249,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
               if(missingSet){ if(!missingSet.has(sci)) continue; }
               else {
                 // Etranger : pas dans la life list ET passe le filtre rarete country-aware.
-                if(mine.has(sci)) continue;
+                if(_mineHas(mine, sci)) continue;
                 if(!passRar(sci)) continue;
               }
               const id = `${o.taxonKey||o.speciesKey||0}_${o.decimalLatitude.toFixed(4)}_${o.decimalLongitude.toFixed(4)}_${(o.eventDate||'').slice(0,10)}`;
