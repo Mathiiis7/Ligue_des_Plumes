@@ -4606,14 +4606,16 @@ async function _showSpeciesDetail(sciName, speciesCode){
   const days = ebFilter.days || 14;
   if(!_lyrDetail){ _lyrDetail = L.layerGroup(); }
   _lyrDetail.clearLayers(); _lyrDetail.addTo(_map);
-  // Cascade dept → région → FR : les endpoints eBird /recent/{speciesCode} sont capricieux
-  // (parfois vide pour un dept alors qu'une région voisine a des obs). On élargit auto,
-  // en affichant un hint pour prévenir l'utilisateur du niveau réellement affiché.
+  // Cascade dept → région → pays : les endpoints eBird /recent/{speciesCode} sont capricieux
+  // (parfois vide pour un dept alors qu'une région voisine a des obs). On élargit auto
+  // jusqu'au pays de ebFilter.country (pas hardcode FR).
+  const cty = ebFilter.country || 'FR';
+  const ctyName = { FR:'la France', ME:'le Monténégro', ES:"l'Espagne", PT:'le Portugal', IT:"l'Italie", GR:'la Grèce', HR:'la Croatie', AL:"l'Albanie", MA:'le Maroc', CH:'la Suisse', BE:'la Belgique', DE:"l'Allemagne", GB:'le Royaume-Uni', TR:'la Turquie', IS:"l'Islande" }[cty] || cty;
   const zones = [];
   const deptLbl = ebFilter.dept ? (DEPT_NAMES[ebFilter.dept]||ebFilter.dept) : '';
   if(ebFilter.dept) zones.push({z: ebFilter.dept, lbl: deptLbl, level: 'dept'});
-  if(ebFilter.region && ebFilter.region !== 'FR') zones.push({z: ebFilter.region, lbl: 'la région', level: 'region'});
-  zones.push({z: 'FR', lbl: 'toute la France', level: 'fr'});
+  if(ebFilter.region && ebFilter.region !== cty) zones.push({z: ebFilter.region, lbl: 'la région', level: 'region'});
+  zones.push({z: cty, lbl: 'tout ' + ctyName, level: 'country'});
   try{
     const nm = FR_NAMES[(sciName||'').toLowerCase()] || sciName;
     const country = ebFilter.country || 'FR';
@@ -4628,7 +4630,7 @@ async function _showSpeciesDetail(sciName, speciesCode){
     // Si vraiment rien nulle part : laisse la couche missing visible + hint clair.
     if(!used){
       const cnt = $('#mapEbCount');
-      if(cnt) cnt.textContent = `Aucune obs récente de ${esc(nm)} en France (${days} j)`;
+      if(cnt) cnt.textContent = `Aucune obs récente de ${esc(nm)} dans ${ctyName} (${days} j eBird)`;
       return 0;
     }
     if(_lyrMissing && _map.hasLayer(_lyrMissing)) _map.removeLayer(_lyrMissing);
