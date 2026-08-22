@@ -3443,9 +3443,12 @@ function _mapApplyFilter(){
 // Si une espèce est sélectionnée dans la barre de recherche, la RE-FETCHE pour la nouvelle
 // zone (dept > région > FR) au lieu de garder les obs France-wide obsolètes. Sinon efface.
 function _reloadSpeciesForZone(){
-  if(!_lyrDetail || !_lyrDetail.getLayers || !_lyrDetail.getLayers().length){ return; }
   const q = (mapSearch||'').trim();
-  if(!q){ _lyrDetail.remove(); _lyrDetail.clearLayers(); return; }
+  const hasDetail = _lyrDetail && _lyrDetail.getLayers && _lyrDetail.getLayers().length;
+  // Refetch si une espece est chargee (_lyrDetail non vide) OU si l'utilisateur a un
+  // terme dans la barre (ex: recherche 14j qui a retourne 0 obs, on switch 30j → refetch).
+  if(!hasDetail && !q) return;
+  if(!q){ if(_lyrDetail){ _lyrDetail.remove(); _lyrDetail.clearLayers(); } return; }
   // Résout le nom saisi vers un sciName + code
   const me = realPeople.find(p=>p.id===myUid);
   const mine = new Set(me ? [...me.species.keys()] : []);
@@ -3461,9 +3464,11 @@ function _reloadSpeciesForZone(){
       if(_mapNorm(FR_NAMES[s]||s).includes(norm)){ sci = s; break; }
     }
   }
+  // En source GBIF on n'a pas besoin du code eBird : on va direct au fetch GBIF cible.
+  if(sci && ebFilter.source === 'gbif'){ _showSpeciesDetailGbif(sci); return; }
   const code = sci ? _sciToCode(sci) : null;
   if(sci && code){ _showSpeciesDetail(sci, code); }
-  else { _lyrDetail.remove(); _lyrDetail.clearLayers(); }
+  else { if(_lyrDetail){ _lyrDetail.remove(); _lyrDetail.clearLayers(); } }
 }
 let _mapSearchGbifTmr = null;
 $('#mapSearch')?.addEventListener('input', e=>{
@@ -4791,7 +4796,7 @@ document.addEventListener('change', e=>{
     renderMap();
     _reloadSpeciesForZone();
   }
-  else if(e.target.id==='mapEbMonth'){ ebFilter.month=+e.target.value||0; _loaded.hotspots=''; renderMap(); }
+  else if(e.target.id==='mapEbMonth'){ ebFilter.month=+e.target.value||0; _loaded.hotspots=''; renderMap(); _reloadSpeciesForZone(); }
   else if(e.target.id==='mapAbMonth'){ abFilter.month=+e.target.value||0; if(mapMode==='abundance') renderMap(); }
   else if(e.target.id==='mapAbShowHs'){ abFilter.showHotspots = !!e.target.checked; if(mapMode==='abundance') _renderAbHotspots(); }
 });
@@ -4925,7 +4930,7 @@ document.addEventListener('change', e=>{
     ebFilter.yearMax = parseInt($('#mapEbYearMax')?.value, 10) || 2025;
     clearTimeout(_gbifYearDebounce);
     _gbifYearDebounce = setTimeout(() => {
-      if(mapMode === 'missing' && ebFilter.source === 'gbif') renderMap();
+      if(mapMode === 'missing' && ebFilter.source === 'gbif'){ renderMap(); _reloadSpeciesForZone(); }
     }, 400);
   }
 });
