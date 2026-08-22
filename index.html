@@ -1557,6 +1557,24 @@ const SCI_ALIAS = {
   'phalacrocorax aristotelis': 'gulosus aristotelis',
   'sylvia communis': 'curruca communis',
   'charadrius alexandrinus': 'anarhynchus alexandrinus',
+  // Cecropis daurica split : en Europe c'est desormais Cecropis rufula (Red-rumped Swallow
+  // europeenne/africaine) ; C. daurica reste pour l'asiatique. GBIF traine encore les
+  // anciens noms sur beaucoup de datasets.
+  'cecropis daurica': 'cecropis rufula',
+  'hirundo daurica': 'cecropis rufula',
+  // Traquet oreillard split : Oenanthe hispanica (ouest) et O. melanoleuca (est). Aux Balkans
+  // c'est melanoleuca ; les anciens records / dataset legacy utilisent encore hispanica.
+  'oenanthe hispanica': 'oenanthe melanoleuca',
+  // Sylvia -> Curruca (fauvettes) : anciens noms de genre pour toutes les fauvettes.
+  'sylvia curruca': 'curruca curruca',
+  'sylvia cantillans': 'curruca cantillans',
+  'sylvia melanocephala': 'curruca melanocephala',
+  'sylvia nisoria': 'curruca nisoria',
+  'sylvia hortensis': 'curruca crassirostris',   // Orphean split : est = crassirostris aux Balkans
+  'sylvia crassirostris': 'curruca crassirostris',
+  'sylvia undata': 'curruca undata',
+  'sylvia sarda': 'curruca sarda',
+  'sylvia conspicillata': 'curruca conspicillata',
 };
 function rarityForCountry(sci, country){
   if(isExotic(sci)) return 1;
