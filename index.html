@@ -5003,9 +5003,7 @@ async function _loadMissingLayer(zone, days=14, rarities=new Set(), onProgress){
       const nm = FR_NAMES[(o.sciName||'').toLowerCase()] || o.comName || o.sciName;
       const m = L.circleMarker([o.dispLat, o.dispLon], { radius:R, weight:1.5, color:'#fff', fillColor:sciColorForCountry(o.sciName, country), fillOpacity:.9, opacity:1 });
       const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lon}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
-      m.bindPopup(`<b class="sp-link" data-sci="${esc(o.sciName||'')}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;">${esc(nm)}</b> <span class="p-sci">${esc(o.sciName||'')}</span><br>`+
-        `<span class="p-meta">🐦 <b>Vous ne l'avez pas encore</b></span><br>`+
-        `<span class="p-meta">Vu le ${esc((o.obsDt||'').slice(0,10))} à ${esc(o.locName||'?')}${o.howMany?' · '+o.howMany:''}</span><br>`+
+      m.bindPopup(`<b class="sp-link" data-sci="${esc(o.sciName||'')}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;">${esc(nm)}</b> <span class="p-sci">${esc(o.sciName||'')}</span><br>`+`<span class="p-meta">Vu le ${esc((o.obsDt||'').slice(0,10))} à ${esc(o.locName||'?')}${o.howMany?' · '+o.howMany:''}</span><br>`+
         `<span class="p-meta">${_rarityBadge(w, (ebFilter && ebFilter.country) || "FR")}</span><br>${gm}`);
       m._q = _mapNorm(nm+' '+(o.sciName||'')+' '+(o.locName||''));
       m._speciesCode = o.speciesCode; m._sciName = o.sciName;
@@ -5456,9 +5454,7 @@ function _gbifRenderAllObs(allObs, sciByKey, stillMine){
     if(o.references) links.push(`<a href="${esc(o.references)}" target="_blank" rel="noopener" class="p-link">🔗 source</a>`);
     if(o.gbifID || o.key) links.push(`<a href="https://www.gbif.org/occurrence/${esc(o.gbifID||o.key)}" target="_blank" rel="noopener" class="p-link">🌍 GBIF</a>`);
     const linksHtml = links.length ? `<br>${links.join(' · ')}` : '';
-    m.bindPopup(`<b class="sp-link" data-sci="${esc(sci)}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;">${esc(nm)}</b> <span class="p-sci">${esc(sci)}</span><br>`+
-      `<span class="p-meta">🐦 <b>Vous ne l'avez pas encore</b></span><br>`+
-      `<span class="p-meta">Vu le ${esc((o.eventDate||'').slice(0,10))} · ${esc(loc)}${cnt?' · '+cnt:''}</span>${metaExtra}<br>`+
+    m.bindPopup(`<b class="sp-link" data-sci="${esc(sci)}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;">${esc(nm)}</b> <span class="p-sci">${esc(sci)}</span><br>`+`<span class="p-meta">Vu le ${esc((o.eventDate||'').slice(0,10))} · ${esc(loc)}${cnt?' · '+cnt:''}</span>${metaExtra}<br>`+
       `<span class="p-meta">${_rarityBadge(w, (ebFilter && ebFilter.country) || "FR")}</span>${linksHtml}<br>${gm}`);
     m._q = _mapNorm(nm+' '+sci+' '+loc);
     m._sciName = sci;
