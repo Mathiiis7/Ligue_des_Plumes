@@ -4613,8 +4613,9 @@ async function _showSpeciesDetail(sciName, speciesCode){
   zones.push({z: 'FR', lbl: 'toute la France', level: 'fr'});
   try{
     const nm = FR_NAMES[(sciName||'').toLowerCase()] || sciName;
-    const w = rarityReal(sciName);
-    const color = sciColor(sciName);
+    const country = ebFilter.country || 'FR';
+    const w = rarityForCountry(sciName, country);
+    const color = sciColorForCountry(sciName, country);
     let data = [], used = null;
     for(const z of zones){
       const url = `https://api.ebird.org/v2/data/obs/${z.z}/recent/${speciesCode}?back=${days}&maxResults=100&locale=fr`;
