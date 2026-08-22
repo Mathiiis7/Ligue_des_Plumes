@@ -1091,7 +1091,7 @@
       </details>
       <div class="seg map-mode" id="mapModes">
         <button data-mode="mine" class="on">📍 Mes observations</button>
-        <button data-mode="missing">🐦 À aller cocher</button>
+        <button data-mode="missing">🐦 Observés récemment</button>
         <button data-mode="hotspots">🏞️ Top hotspots</button>
         <button data-mode="abundance">🗺️ Où trouver</button>
       </div>
@@ -1208,6 +1208,9 @@
         <button type="button" class="btn tiny" id="mapDrawStart" style="display:none;" title="Clic sur la carte pour poser les sommets, puis « Fermer » (ou double-clic).">✏️ Dessiner une zone</button>
         <button type="button" class="btn tiny" id="mapDrawFinish" style="display:none;" title="Ferme le polygone (au moins 3 sommets requis)">✅ Fermer</button>
         <button type="button" class="btn tiny" id="mapDrawClear" style="display:none;" title="Efface le polygone et revient au filtre région/département">🗑️ Effacer</button>
+        <label class="explorer-lbl" style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="Afficher aussi les espèces déjà dans ta life list (utile pour vérifier si tes obs sont cohérentes avec la localisation)">
+          <input type="checkbox" id="mapEbShowObserved" style="vertical-align:middle;"> Inclure déjà observés
+        </label>
         <span class="map-count" id="mapEbCount"></span>
       </div>
       <div id="mapCountryHint" class="help" style="display:none; font-size:11.5px; margin:-4px 0 6px; color:var(--ink-3);"></div>
@@ -1599,14 +1602,21 @@ const SCI_ALIAS = {
 // Verifie si l'utilisateur a l'espece (dans mine), en tenant compte des alias taxonomiques.
 // GBIF renvoie souvent l'ancien nom (bubulcus ibis) alors que le CSV eBird utilise le
 // nouveau (ardea ibis). Sans normalisation, l'espece resterait "a cocher" a tort.
-function _mineHas(mine, sci){
+// Retourne true si l'utilisateur a deja cette espece dans sa life list (avec aliases
+// taxonomiques). Le veritable check est encapsule dans _mineHasStrict, tandis que _mineHas
+// est le point d'entree utilise par les filtres "manquantes" : quand ebFilter.showObserved
+// est active, _mineHas retourne false pour tous, ce qui inclut les especes deja observees
+// dans les resultats "a cocher".
+function _mineHasStrict(mine, sci){
   const k = (sci||'').trim().toLowerCase();
   if(mine.has(k)) return true;
   if(SCI_ALIAS[k] && mine.has(SCI_ALIAS[k])) return true;
-  // Verifie aussi le sens inverse : si le user a l'ancien nom, la nouvelle taxonomie GBIF
-  // devrait matcher.
   for(const [old, canon] of Object.entries(SCI_ALIAS)){ if(canon === k && mine.has(old)) return true; }
   return false;
+}
+function _mineHas(mine, sci){
+  if(typeof ebFilter !== 'undefined' && ebFilter.showObserved) return false;
+  return _mineHasStrict(mine, sci);
 }
 function rarityForCountry(sci, country){
   let k = (sci||'').trim().toLowerCase();
@@ -3251,7 +3261,7 @@ let _loaded = { missing:'', hotspots:'' };   // clé de cache (région+jours)
 let mapFilter = { player:'all', tier:'any', country:'any' };
 // Filtres propres aux modes eBird
 // `rarities` = Set des niveaux sélectionnés (nombres 1-9 ou chaîne 'exo'). Vide = pas de filtre.
-let ebFilter = { country:'FR', region:'FR', days:14, rarities:new Set([1,2,3,4,5,6,7,8,9,'exo']), month:0, dept:'', minTodo:0, source:'ebird', yearMin:2024, yearMax:2025, polygon:null };
+let ebFilter = { country:'FR', region:'FR', days:14, rarities:new Set([1,2,3,4,5,6,7,8,9,'exo']), month:0, dept:'', minTodo:0, source:'ebird', yearMin:2024, yearMax:2025, polygon:null, showObserved:false };
 // Cache pays -> [{code, name}] pour ne pas re-fetcher a chaque changement de pays.
 const _ebRegionsCache = new Map();  // countryCode -> [{code, name}, ...]
 const _ebSubregionsCache = new Map();   // regionCode -> [{code, name}, ...]
@@ -4137,7 +4147,7 @@ function _populateMissingResultsPanel(){
       sci,
       name: FR_NAMES[sci] || sci,
       count,
-      cocher: !_mineHas(mine, sci),
+      cocher: !_mineHasStrict(mine, sci),
     });
   }
   _renderDrawResultsPanel(rows);
@@ -4659,6 +4669,11 @@ document.addEventListener('change', e=>{
   if(e.target.id==='mapPlayerSel'){ mapFilter.player=e.target.value; renderMap(); }
   else if(e.target.id==='mapTierSel'){ mapFilter.tier=e.target.value; renderMap(); }
   else if(e.target.id==='mapCountrySel'){ mapFilter.country=e.target.value; renderMap(); }
+  else if(e.target.id==='mapEbShowObserved'){
+    ebFilter.showObserved = !!e.target.checked;
+    _loaded.missing='';
+    renderMap();
+  }
   else if(e.target.id==='mapEbCountry'){
     ebFilter.country = e.target.value || 'FR';
     _loaded.missing=''; _loaded.hotspots='';
