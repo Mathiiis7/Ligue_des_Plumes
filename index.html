@@ -5142,6 +5142,66 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
   //    taxonKeys FR ferait louper toutes les especes non-FR. On accepte toute obs dont
   //    l'espece n'est pas dans la life list utilisateur.
   const isForeign = ebFilter.country && ebFilter.country !== 'FR';
+  // Chemin cible : pour un pays etranger avec filtre rarete restrictif (< 5 chips), on
+  // sort du fast path pour construire la liste des especes cibles depuis le catalogue
+  // local (REAL_RARITY_ME_EBIRD pour ME), resoudre leurs taxonKeys, et fetcher precisement.
+  // Sinon le fast path aveugle rate les tier 8-9 (GBIF trie par date desc, on chope les
+  // obs recentes des especes communes).
+  const restrictiveRar = hasRar && rars.size < 5;
+  if(isForeign && restrictiveRar && bbox){
+    const localTable = ebFilter.country === 'ME' ? REAL_RARITY_ME_EBIRD : null;
+    if(localTable){
+      const targetSci = Object.keys(localTable)
+        .filter(sci => !mine.has(sci))
+        .filter(sci => { const w = localTable[sci]; return w && rars.has(w); });
+      if(!targetSci.length){ return { total:0, points:0, empty:true }; }
+      if(onProgress) onProgress('resolve', 0, targetSci.length);
+      const { sciToKey } = await _sciListToGbifKeys(targetSci, 10, (done, total) => {
+        if(onProgress) onProgress('resolve', done, total);
+      });
+      if(!stillMine()) return { total:0, points:0, aborted:true };
+      const keys = [...sciToKey.values()].filter(k => k);
+      if(!keys.length) return { total:0, points:0 };
+      // Batch fetch chunks 40 keys / 3 pages / all years.
+      const CHUNK = 40, PAGES = 3;
+      const bboxParam = `&decimalLatitude=${bbox[0]},${bbox[1]}&decimalLongitude=${bbox[2]},${bbox[3]}`;
+      const yearParam = (yearMin===yearMax) ? String(yearMin) : `${yearMin},${yearMax}`;
+      const chunks = [];
+      for(let i = 0; i < keys.length; i += CHUNK) chunks.push(keys.slice(i, i + CHUNK));
+      const allObs = []; const seenIds = new Set();
+      let done = 0; const total = chunks.length * PAGES;
+      for(const chunk of chunks){
+        const keysParam = chunk.map(k => `taxonKey=${k}`).join('&');
+        for(let page = 0; page < PAGES; page++){
+          const url = `https://api.gbif.org/v1/occurrence/search?${keysParam}&country=${encodeURIComponent(ebFilter.country)}&classKey=212&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=300&offset=${page*300}${bboxParam}`;
+          let batchLen = 0, endOfRecords = true;
+          try{
+            const r = await fetch(url);
+            if(r.ok){
+              const j = await r.json();
+              batchLen = (j.results||[]).length;
+              endOfRecords = !!j.endOfRecords;
+              for(const o of (j.results||[])){
+                if(typeof o.decimalLatitude !== 'number' || typeof o.decimalLongitude !== 'number') continue;
+                if(ebFilter.polygon && !_pointInPolygon(o.decimalLatitude, o.decimalLongitude, ebFilter.polygon)) continue;
+                const id = `${o.taxonKey||o.speciesKey||0}_${o.decimalLatitude.toFixed(4)}_${o.decimalLongitude.toFixed(4)}_${(o.eventDate||'').slice(0,10)}`;
+                if(seenIds.has(id)) continue;
+                seenIds.add(id);
+                allObs.push(o);
+              }
+            } else { break; }
+          }catch(_){ break; }
+          done++;
+          if(onProgress) onProgress('fetch', done, total);
+          if(!stillMine()) return { total:0, points:0, aborted:true };
+          if(endOfRecords || batchLen < 300) break;
+        }
+      }
+      const sciByKey = new Map();
+      for(const [sci, k] of sciToKey.entries()){ if(k) sciByKey.set(k, sci); }
+      return _gbifRenderAllObs(allObs, sciByKey, stillMine);
+    }
+  }
   const useFastPath = (ebFilter.polygon || isForeign) && bbox;
   if(useFastPath){
     // Missing set : FR_NAMES pour FR (avec filtre rarete), ou "toute espece non dans la
