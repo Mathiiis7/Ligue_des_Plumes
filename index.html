@@ -5077,7 +5077,8 @@ async function _loadMissingLayer(zone, days=14, rarities=new Set(), onProgress){
     const missingSp = []; const seenSp = new Set();
     for(const o of data){
       const k=(o.sciName||'').toLowerCase();
-      if(!k || mine.has(k) || seenSp.has(k)) continue;
+      if(!k || seenSp.has(k)) continue;
+      if(_mineHas(mine, k)) continue;   // respecte ebFilter.showObserved (bypass si coche)
       if(!o.speciesCode) continue;
       if(isNonSpecies(o.comName||'', o.sciName||'')) continue;
       seenSp.add(k);
