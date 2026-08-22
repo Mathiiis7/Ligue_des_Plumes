@@ -3465,11 +3465,38 @@ function _reloadSpeciesForZone(){
   if(sci && code){ _showSpeciesDetail(sci, code); }
   else { _lyrDetail.remove(); _lyrDetail.clearLayers(); }
 }
+let _mapSearchGbifTmr = null;
 $('#mapSearch')?.addEventListener('input', e=>{
   const prev = mapSearch;
   mapSearch = e.target.value; _mapApplyFilter(); _updateMapSuggest();
-  // Barre vidée en mode À cocher : efface aussi l'obs d'espèce chargée (sinon elle reste).
-  if(mapMode==='missing' && prev && !mapSearch && _lyrDetail){
+  // Mode À cocher + source GBIF : la barre pilote un refetch cible GBIF (sinon on filtre
+  // juste les 1200+ markers pre-charges par substring ce qui est incoherent avec la rarete
+  // + le spread garderait les positions decalees). Debounce 350ms.
+  if(mapMode==='missing' && ebFilter.source==='gbif'){
+    clearTimeout(_mapSearchGbifTmr);
+    _mapSearchGbifTmr = setTimeout(()=>{
+      const q = _mapNorm(mapSearch).trim();
+      if(!q){
+        if(_lyrDetail){ _lyrDetail.remove(); _lyrDetail.clearLayers(); }
+        if(_lyrMissing && !_map.hasLayer(_lyrMissing)) _lyrMissing.addTo(_map);
+        return;
+      }
+      let sci = null;
+      for(const s in FR_NAMES){
+        if((FR_NAMES[s]||'').toLowerCase() === mapSearch.toLowerCase()){ sci = s; break; }
+      }
+      if(!sci){
+        let uniq = null, count = 0;
+        for(const s in FR_NAMES){
+          if(_mapNorm(FR_NAMES[s]||s).includes(q)){ uniq = s; count++; if(count > 1) break; }
+        }
+        if(count === 1) sci = uniq;
+      }
+      if(sci) _showSpeciesDetailGbif(sci);
+    }, 350);
+  }
+  // Barre vidée en mode À cocher eBird : efface aussi l'obs d'espèce chargée (sinon elle reste).
+  else if(mapMode==='missing' && prev && !mapSearch && _lyrDetail){
     _lyrDetail.remove(); _lyrDetail.clearLayers();
   }
   // Mode "Où trouver" : la barre pilote la choroplèthe → re-render.
