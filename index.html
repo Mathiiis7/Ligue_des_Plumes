@@ -1636,15 +1636,23 @@ const COUNTRY_FLAG = {
   'FR':'🇫🇷','ME':'🇲🇪','ES':'🇪🇸','PT':'🇵🇹','IT':'🇮🇹','GR':'🇬🇷','HR':'🇭🇷',
   'AL':'🇦🇱','MA':'🇲🇦','CH':'🇨🇭','BE':'🇧🇪','DE':'🇩🇪','GB':'🇬🇧','TR':'🇹🇷','IS':'🇮🇸',
 };
-function _rarityBadge(w, country){
+function _rarityBadge(w, country, sci){
   const c = country || 'FR';
-  // Drapeau : <img> depuis flagcdn.com (CDN gratuit, cache aggresif). Fonctionne sur
-  // Windows contrairement aux emojis unicode flags qui montrent les lettres du code pays.
-  const flagImg = (c === 'FR') ? '' : `<img src="https://flagcdn.com/20x15/${c.toLowerCase()}.png" alt="${c}" style="vertical-align:middle;margin-right:5px;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.08);"> `;
-  if(!w){ return `${flagImg}Rareté inconnue`; }
-  const col = realColor(w);
-  const pill = `<span style="display:inline-block;background:${col};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11.5px;vertical-align:middle;">${w}</span>`;
-  return `${flagImg}${pill} ${REAL_LABELS[w]||''}`;
+  const flagImg = c => `<img src="https://flagcdn.com/20x15/${c.toLowerCase()}.png" alt="${c}" style="vertical-align:middle;margin-right:5px;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.08);">`;
+  const pillFor = tier => tier ? `<span style="display:inline-block;background:${realColor(tier)};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11.5px;vertical-align:middle;">${tier}</span>` : '<span style="display:inline-block;background:#94a3b8;color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">?</span>';
+  const mainFlag = (c === 'FR') ? '' : flagImg(c) + ' ';
+  const mainPart = w
+    ? `${mainFlag}${pillFor(w)} ${REAL_LABELS[w]||''}`
+    : `${mainFlag}Rareté inconnue`;
+  // En pays etranger : compare avec la rarete FR entre parentheses pour reference.
+  if(c !== 'FR' && sci){
+    const wFR = rarityForCountry(sci, 'FR');
+    const frBadge = wFR
+      ? `${flagImg('FR')} ${pillFor(wFR)} ${REAL_LABELS[wFR]||''}`
+      : `${flagImg('FR')} inconnue`;
+    return `${mainPart} <span style="color:var(--ink-3);font-size:10.5px;">(${frBadge})</span>`;
+  }
+  return mainPart;
 }
 // Fréquence eBird fine (part des listes) — pour départager les oiseaux d'un même poids.
 // Absente (espèce hors bar chart eBird = encore plus rare) -> -1 (classée la plus rare).
@@ -3762,7 +3770,7 @@ function _mapMarker(pt, groupSize){
   m.bindPopup(
     `<b>${esc(pt.common)}</b> <span class="p-sci">${esc(pt.sci)}</span><br>`+
     `<span class="p-meta">Vu par <b>${esc(pt.who)}</b>${loc?' à '+loc:''}${cc}${date}</span><br>`+
-    `<span class="p-meta">${_rarityBadge(pt.w, (ebFilter && ebFilter.country) || "FR")}</span>`+
+    `<span class="p-meta">${_rarityBadge(pt.w, (ebFilter && ebFilter.country) || "FR", pt.sci)}</span>`+
     groupNote + gmLink
   );
   m._q = _mapNorm(pt.common+' '+pt.sci+' '+(pt.loc||'')+' '+(pt.who||''));
@@ -4619,7 +4627,7 @@ async function _showSpeciesDetail(sciName, speciesCode){
       dot.bindPopup(`<b class="sp-link" data-sci="${esc(sciName||'')}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;">${esc(nm)}</b> <span class="p-sci">${esc(sciName||'')}</span><br>`+
         `<span class="p-meta">📍 ${esc(o.locName||'?')}</span><br>`+
         `<span class="p-meta">${esc((o.obsDt||'').slice(0,10))}${o.howMany?' · '+o.howMany+' individus':''}</span><br>`+
-        `<span class="p-meta">${_rarityBadge(w, (ebFilter && ebFilter.country) || "FR")}</span><br>${gm}`);
+        `<span class="p-meta">${_rarityBadge(w, (ebFilter && ebFilter.country) || "FR", sciName)}</span><br>${gm}`);
       dot._q = _mapNorm(nm+' '+(sciName||'')+' '+(o.locName||''));
       dot._sciName = sciName; dot._speciesCode = speciesCode;
       _lyrDetail.addLayer(dot); count++;
@@ -5004,7 +5012,7 @@ async function _loadMissingLayer(zone, days=14, rarities=new Set(), onProgress){
       const m = L.circleMarker([o.dispLat, o.dispLon], { radius:R, weight:1.5, color:'#fff', fillColor:sciColorForCountry(o.sciName, country), fillOpacity:.9, opacity:1 });
       const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lon}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
       m.bindPopup(`<b class="sp-link" data-sci="${esc(o.sciName||'')}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;">${esc(nm)}</b> <span class="p-sci">${esc(o.sciName||'')}</span><br>`+`<span class="p-meta">Vu le ${esc((o.obsDt||'').slice(0,10))} à ${esc(o.locName||'?')}${o.howMany?' · '+o.howMany:''}</span><br>`+
-        `<span class="p-meta">${_rarityBadge(w, (ebFilter && ebFilter.country) || "FR")}</span><br>${gm}`);
+        `<span class="p-meta">${_rarityBadge(w, (ebFilter && ebFilter.country) || "FR", o.sciName)}</span><br>${gm}`);
       m._q = _mapNorm(nm+' '+(o.sciName||'')+' '+(o.locName||''));
       m._speciesCode = o.speciesCode; m._sciName = o.sciName;
       _lyrMissing.addLayer(m);
@@ -5455,7 +5463,7 @@ function _gbifRenderAllObs(allObs, sciByKey, stillMine){
     if(o.gbifID || o.key) links.push(`<a href="https://www.gbif.org/occurrence/${esc(o.gbifID||o.key)}" target="_blank" rel="noopener" class="p-link">🌍 GBIF</a>`);
     const linksHtml = links.length ? `<br>${links.join(' · ')}` : '';
     m.bindPopup(`<b class="sp-link" data-sci="${esc(sci)}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;">${esc(nm)}</b> <span class="p-sci">${esc(sci)}</span><br>`+`<span class="p-meta">Vu le ${esc((o.eventDate||'').slice(0,10))} · ${esc(loc)}${cnt?' · '+cnt:''}</span>${metaExtra}<br>`+
-      `<span class="p-meta">${_rarityBadge(w, (ebFilter && ebFilter.country) || "FR")}</span>${linksHtml}<br>${gm}`);
+      `<span class="p-meta">${_rarityBadge(w, (ebFilter && ebFilter.country) || "FR", sci)}</span>${linksHtml}<br>${gm}`);
     m._q = _mapNorm(nm+' '+sci+' '+loc);
     m._sciName = sci;
     // Resout le code eBird pour permettre le clic marqueur -> fiche detail eBird
