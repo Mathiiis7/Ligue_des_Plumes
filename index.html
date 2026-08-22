@@ -1549,11 +1549,12 @@ function _updateCountryHint(){
   const el = document.getElementById('mapCountryHint'); if(!el) return;
   const c = (typeof ebFilter !== 'undefined' && ebFilter.country) || 'FR';
   if(c === 'FR'){ el.style.display = 'none'; el.innerHTML = ''; return; }
-  const flagImg = `<img src="https://flagcdn.com/20x15/${c.toLowerCase()}.png" alt="${c}" style="vertical-align:middle;margin-right:6px;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.08);">`;
+  const flg = flagImg(c) || '';
+  const wrap = `<span style="display:inline-block;vertical-align:middle;margin-right:6px;">${flg}</span>`;
   const calibrated = (c === 'ME');
   el.innerHTML = calibrated
-    ? `${flagImg} Rareté et couleurs calibrées pour ce pays (eBird bar chart).`
-    : `${flagImg} Rareté non calibrée pour ce pays : marqueurs en gris "inconnue".`;
+    ? `${wrap} Rareté et couleurs calibrées pour ce pays (eBird bar chart).`
+    : `${wrap} Rareté non calibrée pour ce pays : marqueurs en gris "inconnue".`;
   el.style.display = '';
 }
 // Rareté par pays. Passe explicitement 'FR' ou 'ME' etc. Retourne 0 si pas calibre pour
@@ -1638,21 +1639,18 @@ const COUNTRY_FLAG = {
 };
 function _rarityBadge(w, country, sci){
   const c = country || 'FR';
-  const flagImg = c => `<img src="https://flagcdn.com/20x15/${c.toLowerCase()}.png" alt="${c}" style="vertical-align:middle;margin-right:5px;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.08);">`;
   const pillFor = tier => tier ? `<span style="display:inline-block;background:${realColor(tier)};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11.5px;vertical-align:middle;">${tier}</span>` : '<span style="display:inline-block;background:#94a3b8;color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">?</span>';
-  const mainFlag = (c === 'FR') ? '' : flagImg(c) + ' ';
-  const mainPart = w
-    ? `${mainFlag}${pillFor(w)} ${REAL_LABELS[w]||''}`
-    : `${mainFlag}Rareté inconnue`;
-  // En pays etranger : compare avec la rarete FR entre parentheses pour reference.
-  if(c !== 'FR' && sci){
-    const wFR = rarityForCountry(sci, 'FR');
-    const frBadge = wFR
-      ? `${flagImg('FR')} ${pillFor(wFR)} ${REAL_LABELS[wFR]||''}`
-      : `${flagImg('FR')} inconnue`;
-    return `${mainPart} <span style="color:var(--ink-3);font-size:10.5px;">(${frBadge})</span>`;
-  }
-  return mainPart;
+  const lineFor = (cc, tier) => {
+    const flg = flagImg(cc) || '';
+    const flgSpan = `<span style="display:inline-block;vertical-align:middle;margin-right:5px;">${flg}</span>`;
+    if(tier) return `${flgSpan}${pillFor(tier)} ${REAL_LABELS[tier]||''}`;
+    return `${flgSpan}Rareté inconnue`;
+  };
+  // Pays FR : une seule ligne, drapeau (comme dans les listes classement).
+  if(c === 'FR') return lineFor('FR', w);
+  // Pays etranger : ligne 1 = rarete du pays, ligne 2 = rarete FR pour comparaison.
+  const wFR = sci ? rarityForCountry(sci, 'FR') : 0;
+  return `${lineFor(c, w)}<br>${lineFor('FR', wFR)}`;
 }
 // Fréquence eBird fine (part des listes) — pour départager les oiseaux d'un même poids.
 // Absente (espèce hors bar chart eBird = encore plus rare) -> -1 (classée la plus rare).
