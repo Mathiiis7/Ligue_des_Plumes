@@ -1640,9 +1640,12 @@ const COUNTRY_FLAG = {
 };
 function _rarityBadge(w, country){
   const c = country || 'FR';
-  const flag = (c === 'FR') ? '' : (COUNTRY_FLAG[c] || '') + ' ';
-  if(!w){ return `Rareté ${flag}: inconnue`; }
-  return `Rareté ${flag}: <b>${w}</b> · ${REAL_LABELS[w]||''}`;
+  const flag = (c === 'FR') ? '' : (COUNTRY_FLAG[c] || '🌍') + ' ';
+  if(!w){ return `${flag}Rareté inconnue`; }
+  const col = realColor(w);
+  // Pastille coloree avec le tier + label a cote. Drapeau du pays d'abord si etranger.
+  const pill = `<span style="display:inline-block;background:${col};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11.5px;vertical-align:middle;">${w}</span>`;
+  return `${flag}${pill} ${REAL_LABELS[w]||''}`;
 }
 // Fréquence eBird fine (part des listes) — pour départager les oiseaux d'un même poids.
 // Absente (espèce hors bar chart eBird = encore plus rare) -> -1 (classée la plus rare).
