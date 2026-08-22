@@ -4601,8 +4601,66 @@ async function _renderModeAbundance(){
 // Charge et affiche toutes les obs récentes d'une espèce (endpoint /recent/{speciesCode}).
 // Utilise la zone effective (dept > région > national). Cache la couche "missing" pour ne montrer
 // QUE l'espèce sélectionnée (retour au layer normal via n'importe quel changement de filtre).
+// Version GBIF de _showSpeciesDetail : fetch les obs GBIF d'une espece pour le pays +
+// mois + plage annees courants, rend sur _lyrDetail.
+async function _showSpeciesDetailGbif(sciName){
+  if(!_map) return;
+  const cnt = $('#mapEbCount');
+  if(!_lyrDetail){ _lyrDetail = L.layerGroup(); }
+  _lyrDetail.clearLayers(); _lyrDetail.addTo(_map);
+  if(_lyrMissing && _map.hasLayer(_lyrMissing)) _map.removeLayer(_lyrMissing);
+  const nm = FR_NAMES[(sciName||'').toLowerCase()] || sciName;
+  const country = ebFilter.country || 'FR';
+  const ctyName = { FR:'la France', ME:'le Monténégro', ES:"l'Espagne", PT:'le Portugal', IT:"l'Italie", GR:'la Grèce', HR:'la Croatie', AL:"l'Albanie", MA:'le Maroc', CH:'la Suisse', BE:'la Belgique', DE:"l'Allemagne", GB:'le Royaume-Uni', TR:'la Turquie', IS:"l'Islande" }[country] || country;
+  const w = rarityForCountry(sciName, country);
+  const color = sciColorForCountry(sciName, country);
+  const month = parseInt($('#mapEbMonth')?.value, 10) || 0;
+  const yMin = Math.min(ebFilter.yearMin, ebFilter.yearMax);
+  const yMax = Math.max(ebFilter.yearMin, ebFilter.yearMax);
+  const yearParam = (yMin===yMax) ? String(yMin) : `${yMin},${yMax}`;
+  const monthParam = month > 0 ? `&month=${month}` : '';
+  if(cnt) cnt.textContent = `… GBIF ${nm} ${yMin}-${yMax}`;
+  const key = await _sciToGbifKey(sciName);
+  if(!key){ if(cnt) cnt.textContent = `Espèce introuvable dans la taxonomie GBIF`; return 0; }
+  try{
+    const url = `https://api.gbif.org/v1/occurrence/search?taxonKey=${key}&country=${encodeURIComponent(country)}&classKey=212&hasCoordinate=true&year=${encodeURIComponent(yearParam)}${monthParam}&limit=300`;
+    const r = await fetch(url);
+    if(!r.ok){ if(cnt) cnt.textContent = `Erreur GBIF`; return 0; }
+    const j = await r.json();
+    const obs = j.results || [];
+    if(!obs.length){
+      if(cnt) cnt.textContent = `Aucune obs GBIF de ${nm} dans ${ctyName} pour cette période`;
+      return 0;
+    }
+    for(const o of obs){
+      if(typeof o.decimalLatitude !== 'number' || typeof o.decimalLongitude !== 'number') continue;
+      const dot = L.circleMarker([o.decimalLatitude, o.decimalLongitude], { radius:7, weight:2, color:'#fff', fillColor:color, fillOpacity:.9, opacity:1 });
+      const commune = o.gadm && o.gadm.level3 && o.gadm.level3.name || '';
+      const dept = o.gadm && o.gadm.level2 && o.gadm.level2.name || '';
+      const loc = o.locality || commune || dept || 'lieu';
+      const cntObs = (typeof o.individualCount === 'number' && o.individualCount > 0) ? o.individualCount : null;
+      const gm = `<a href="https://www.google.com/maps?q=${o.decimalLatitude},${o.decimalLongitude}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
+      const gbifLink = o.gbifID ? `<a href="https://www.gbif.org/occurrence/${esc(o.gbifID)}" target="_blank" rel="noopener" class="p-link">🌍 GBIF</a> · ` : '';
+      dot.bindPopup(`<b class="sp-link" data-sci="${esc(sciName)}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;">${esc(nm)}</b> <span class="p-sci">${esc(sciName)}</span><br>`+
+        `<span class="p-meta">📍 ${esc(loc)}</span><br>`+
+        `<span class="p-meta">${esc((o.eventDate||'').slice(0,10))}${cntObs?' · '+cntObs+' individus':''}</span><br>`+
+        `<span class="p-meta">${_rarityBadge(w, country, sciName)}</span><br>${gbifLink}${gm}`);
+      dot._sciName = sciName;
+      _lyrDetail.addLayer(dot);
+    }
+    if(cnt) cnt.textContent = `${obs.length} obs GBIF de ${nm} dans ${ctyName} (${yMin===yMax?yMin:yMin+'-'+yMax})`;
+    _fitLayer(_lyrDetail);
+    return obs.length;
+  }catch(err){
+    if(cnt) cnt.textContent = `Erreur : ${err.message}`;
+    return 0;
+  }
+}
 async function _showSpeciesDetail(sciName, speciesCode){
   if(!_map || !speciesCode) return;
+  if(ebFilter.source === 'gbif'){
+    return _showSpeciesDetailGbif(sciName);
+  }
   const days = ebFilter.days || 14;
   if(!_lyrDetail){ _lyrDetail = L.layerGroup(); }
   _lyrDetail.clearLayers(); _lyrDetail.addTo(_map);
