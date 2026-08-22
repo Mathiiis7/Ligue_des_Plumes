@@ -1598,17 +1598,27 @@ const SCI_ALIAS = {
   'sylvia conspicillata': 'curruca conspicillata',
 };
 function rarityForCountry(sci, country){
-  if(isExotic(sci)) return 1;
   let k = (sci||'').trim().toLowerCase();
   if(SCI_ALIAS[k]) k = SCI_ALIAS[k];
-  const table = country === 'ME' ? REAL_RARITY_ME_EBIRD : REAL_RARITY;
-  return table[k] || 0;
+  const c = country || 'FR';
+  const table = c === 'ME' ? REAL_RARITY_ME_EBIRD : REAL_RARITY;
+  // Pour un pays etranger : si l'espece a une valeur dans le catalogue local, on l'utilise
+  // meme si l'espece est marquee exotique en FR (Faisan de Colchide, Pintade de Numidie
+  // sont dans le bar chart eBird ME comme populations naturalisees). Sinon fallback exotique.
+  const v = table[k];
+  if(v) return v;
+  if(isExotic(sci)) return 1;
+  return 0;
 }
 function sciColorForCountry(sci, country){
+  const c = country || 'FR';
+  let k = (sci||'').trim().toLowerCase();
+  if(SCI_ALIAS[k]) k = SCI_ALIAS[k];
+  const table = c === 'ME' ? REAL_RARITY_ME_EBIRD : REAL_RARITY;
+  // Ordre : catalogue local (couleur normale) > gris exotique > gris inconnue.
+  if(table[k]) return realColor(table[k]);
   if(isExotic(sci)) return '#7e8a99';
-  const w = rarityForCountry(sci, country);
-  if(!w) return '#94a3b8';
-  return realColor(w);
+  return '#94a3b8';
 }
 // Drapeau du pays pour afficher dans les popups "Rareté 🇲🇪 : X · Label" (montre que la
 // calibration est celle du pays courant). Retourne '' pour FR (defaut, pas de drapeau).
