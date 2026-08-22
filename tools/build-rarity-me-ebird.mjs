@@ -29,7 +29,33 @@ const norm = s => s.toLowerCase()
   .normalize('NFD').replace(/\p{Diacritic}/gu, '')
   .replace(/[^a-z0-9]/g, '');
 
-// 1) Parse bar chart : FR name -> freq peak
+// Alias FR name du bar chart -> FR name que retourne eBird taxonomy API (locale=fr).
+// Le bar chart utilise les noms courts UI (Grand Gravelot), l'API retourne les noms
+// CINFO longs (Pluvier grand-gravelot). Sans cet alias, ~30 especes du bar chart ME
+// ne sont pas matchees vers un sciName.
+const BAR_CHART_ALIAS = {
+  'Grand Gravelot': 'Pluvier grand-gravelot',
+  'Petit Gravelot': 'Pluvier petit-gravelot',
+  'Gravelot à collier interrompu': 'Pluvier à collier interrompu',
+  'Gravelot semipalmé': 'Pluvier semipalmé',
+  'Gravelot kildir': 'Pluvier kildir',
+  'Gravelot de Leschenault': 'Pluvier de Leschenault',
+  'Gravelot asiatique': 'Pluvier asiatique',
+  'Guignard d’Eurasie': 'Pluvier guignard',   // apostrophe typographique dans le bar chart
+  'Guignard d\'Eurasie': 'Pluvier guignard',
+  'Harle bièvre': 'Grand Harle',
+  'Chouette de Tengmalm': 'Nyctale de Tengmalm',
+  'Grand-duc d\'Europe': 'Hibou grand-duc',
+  'Bartramie des champs': 'Maubèche des champs',
+  'Orite à longue queue': 'Mésange à longue queue',
+  'Monticole de roche': 'Monticole merle-de-roche',
+  'Monticole bleu': 'Monticole merle-bleu',
+  'Robin à flancs roux': 'Rossignol à flancs roux',
+  'Viréo à œil rouge': 'Viréo aux yeux rouges',
+  'Plongeon imbrin': 'Plongeon huard',
+};
+// 1) Parse bar chart : FR name -> freq peak. Applique BAR_CHART_ALIAS si necessaire pour
+// que le norm() du nom bar chart matche celui de l'eBird taxonomy API.
 function parseBarchart(path){
   const out = {};
   for(const ln of readFileSync(path, 'utf8').split(/\r?\n/)){
@@ -39,7 +65,8 @@ function parseBarchart(path){
     const nums = p.slice(1).map(Number).filter(x => !isNaN(x));
     if(!nm || nums.length < 12 || /sample size/i.test(nm)) continue;
     const clean = nm.replace(/\s*\(.*?\)\s*/g, ' ').trim();
-    out[norm(clean)] = { name: clean, freq: Math.max(...nums) };
+    const canonical = BAR_CHART_ALIAS[clean] || clean;
+    out[norm(canonical)] = { name: canonical, freq: Math.max(...nums) };
   }
   return out;
 }
