@@ -1651,16 +1651,18 @@ function _rarityBadge(w, country, sci){
   const c = country || 'FR';
   const pillFor = tier => tier ? `<span style="display:inline-block;background:${realColor(tier)};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11.5px;vertical-align:middle;">${tier}</span>` : '<span style="display:inline-block;background:#94a3b8;color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">?</span>';
   const lineFor = (cc, tier) => {
+    // Drapeau : force une hauteur fixe (12px) pour que tous les pays s'affichent a la
+    // meme taille visuelle (les images flagcdn ont des aspect-ratios differents).
     const flg = flagImg(cc) || '';
-    const flgSpan = `<span style="display:inline-block;vertical-align:middle;margin-right:5px;">${flg}</span>`;
+    const flgFixed = flg.replace('<img ', '<img style="height:12px;width:auto;vertical-align:middle;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.08);" ');
+    const flgSpan = `<span style="display:inline-block;vertical-align:middle;margin-right:6px;">${flgFixed}</span>`;
     if(tier) return `${flgSpan}${pillFor(tier)} ${REAL_LABELS[tier]||''}`;
     return `${flgSpan}Rareté inconnue`;
   };
-  // Pays FR : une seule ligne, drapeau (comme dans les listes classement).
   if(c === 'FR') return lineFor('FR', w);
-  // Pays etranger : ligne 1 = rarete du pays, ligne 2 = rarete FR pour comparaison.
   const wFR = sci ? rarityForCountry(sci, 'FR') : 0;
-  return `${lineFor(c, w)}<br>${lineFor('FR', wFR)}`;
+  // Ligne 1 rarete du pays visite, ligne 2 rarete FR. Petit espace vertical entre les deux.
+  return `<div>${lineFor(c, w)}</div><div style="margin-top:3px;">${lineFor('FR', wFR)}</div>`;
 }
 // Fréquence eBird fine (part des listes) — pour départager les oiseaux d'un même poids.
 // Absente (espèce hors bar chart eBird = encore plus rare) -> -1 (classée la plus rare).
