@@ -920,7 +920,7 @@
             <div class="manual-suggest" id="manualSuggest"></div>
           </div>
           <select id="manualCountry" title="Pays d'observation">
-            <option value="FR">🇫🇷 France</option>
+            <option value="FR">France</option>
             <option value="OTHER">🌍 À l'étranger</option>
           </select>
           <input type="date" id="manualDate" title="Date (optionnelle)">
@@ -1116,25 +1116,25 @@
       <div class="map-controls" id="mapCtrlsEbird" style="display:none;">
         <label class="explorer-lbl" for="mapEbCountry">Pays</label>
         <select class="filt-sel" id="mapEbCountry" title="Pays d'exploration. Défaut France. Change pour explorer des hotspots à l'étranger (voyages).">
-          <option value="FR" selected>🇫🇷 France</option>
-          <option value="ME">🇲🇪 Monténégro</option>
-          <option value="ES">🇪🇸 Espagne</option>
-          <option value="PT">🇵🇹 Portugal</option>
-          <option value="IT">🇮🇹 Italie</option>
-          <option value="GR">🇬🇷 Grèce</option>
-          <option value="HR">🇭🇷 Croatie</option>
-          <option value="AL">🇦🇱 Albanie</option>
-          <option value="MA">🇲🇦 Maroc</option>
-          <option value="CH">🇨🇭 Suisse</option>
-          <option value="BE">🇧🇪 Belgique</option>
-          <option value="DE">🇩🇪 Allemagne</option>
-          <option value="GB">🇬🇧 Royaume-Uni</option>
-          <option value="TR">🇹🇷 Turquie</option>
-          <option value="IS">🇮🇸 Islande</option>
+          <option value="FR" selected>France</option>
+          <option value="ME">Monténégro</option>
+          <option value="ES">Espagne</option>
+          <option value="PT">Portugal</option>
+          <option value="IT">Italie</option>
+          <option value="GR">Grèce</option>
+          <option value="HR">Croatie</option>
+          <option value="AL">Albanie</option>
+          <option value="MA">Maroc</option>
+          <option value="CH">Suisse</option>
+          <option value="BE">Belgique</option>
+          <option value="DE">Allemagne</option>
+          <option value="GB">Royaume-Uni</option>
+          <option value="TR">Turquie</option>
+          <option value="IS">Islande</option>
         </select>
         <label class="explorer-lbl">Région</label>
         <select class="filt-sel" id="mapEbRegion">
-          <option value="FR" selected>🇫🇷 France entière</option>
+          <option value="FR" selected>France</option>
           <option value="FR-ARA">Auvergne-Rhône-Alpes</option>
           <option value="FR-BFC">Bourgogne-Franche-Comté</option>
           <option value="FR-BRE">Bretagne</option>
@@ -1548,14 +1548,12 @@ function hasRarityCalibration(sci){
 function _updateCountryHint(){
   const el = document.getElementById('mapCountryHint'); if(!el) return;
   const c = (typeof ebFilter !== 'undefined' && ebFilter.country) || 'FR';
-  if(c === 'FR'){ el.style.display = 'none'; el.textContent = ''; return; }
-  const flag = COUNTRY_FLAG[c] || '🌍';
+  if(c === 'FR'){ el.style.display = 'none'; el.innerHTML = ''; return; }
+  const flagImg = `<img src="https://flagcdn.com/20x15/${c.toLowerCase()}.png" alt="${c}" style="vertical-align:middle;margin-right:6px;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.08);">`;
   const calibrated = (c === 'ME');
-  if(calibrated){
-    el.textContent = `${flag} Rareté et couleurs calibrées pour ce pays (eBird bar chart).`;
-  } else {
-    el.textContent = `${flag} Rareté non calibrée pour ce pays : marqueurs en gris "inconnue".`;
-  }
+  el.innerHTML = calibrated
+    ? `${flagImg} Rareté et couleurs calibrées pour ce pays (eBird bar chart).`
+    : `${flagImg} Rareté non calibrée pour ce pays : marqueurs en gris "inconnue".`;
   el.style.display = '';
 }
 // Rareté par pays. Passe explicitement 'FR' ou 'ME' etc. Retourne 0 si pas calibre pour
@@ -1640,12 +1638,13 @@ const COUNTRY_FLAG = {
 };
 function _rarityBadge(w, country){
   const c = country || 'FR';
-  const flag = (c === 'FR') ? '' : (COUNTRY_FLAG[c] || '🌍') + ' ';
-  if(!w){ return `${flag}Rareté inconnue`; }
+  // Drapeau : <img> depuis flagcdn.com (CDN gratuit, cache aggresif). Fonctionne sur
+  // Windows contrairement aux emojis unicode flags qui montrent les lettres du code pays.
+  const flagImg = (c === 'FR') ? '' : `<img src="https://flagcdn.com/20x15/${c.toLowerCase()}.png" alt="${c}" style="vertical-align:middle;margin-right:5px;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.08);"> `;
+  if(!w){ return `${flagImg}Rareté inconnue`; }
   const col = realColor(w);
-  // Pastille coloree avec le tier + label a cote. Drapeau du pays d'abord si etranger.
   const pill = `<span style="display:inline-block;background:${col};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11.5px;vertical-align:middle;">${w}</span>`;
-  return `${flag}${pill} ${REAL_LABELS[w]||''}`;
+  return `${flagImg}${pill} ${REAL_LABELS[w]||''}`;
 }
 // Fréquence eBird fine (part des listes) — pour départager les oiseaux d'un même poids.
 // Absente (espèce hors bar chart eBird = encore plus rare) -> -1 (classée la plus rare).
@@ -3268,7 +3267,7 @@ async function _repopulateEbRegionsForCountry(country){
   // Cas autres pays : fetch dynamique via eBird API.
   if(country === 'FR'){
     // Restaure les options FR d'origine (regenerated from FR_REGIONS constant).
-    sel.innerHTML = '<option value="FR" selected>Toute la France</option>' +
+    sel.innerHTML = '<option value="FR" selected>France</option>' +
       FR_REGIONS.map(r=>`<option value="${esc(r.code)}">${esc(r.name)}</option>`).join('');
     ebFilter.region = 'FR'; ebFilter.dept = '';
     _refreshDeptSel();
