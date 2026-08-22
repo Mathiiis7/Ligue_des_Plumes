@@ -4029,7 +4029,9 @@ async function _renderModeMissing(){
   // Si un oiseau est actuellement en spotlight, on ignore complètement les chips de rareté :
   // la couche "missing" n'est pas rechargée, seul le spotlight reste visible. L'utilisateur
   // vide la barre de recherche (ou re-clique une région/dept) pour revenir au mode normal.
-  if(_lyrDetail && _lyrDetail.getLayers && _lyrDetail.getLayers().length){
+  // _hasSpeciesSearch aussi : couvre la fenetre entre le clearLayers de _showSpeciesDetail
+  // et son fetch (sinon _lyrDetail momentanement vide, le guard ne matche pas).
+  if((_lyrDetail && _lyrDetail.getLayers && _lyrDetail.getLayers().length) || _hasSpeciesSearch()){
     if(_lyrMissing && _map.hasLayer(_lyrMissing)) _map.removeLayer(_lyrMissing);
     setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
     return;
@@ -4075,7 +4077,10 @@ async function _renderModeMissingGbif(){
   // Si une espece est deja chargee dans _lyrDetail, on skip complètement (même guard que
   // la version eBird ligne ~4031). Empeche un renderMap en vol d'ecraser le count "N obs
   // GBIF de X" ecrit par _showSpeciesDetailGbif.
-  if(_lyrDetail && _lyrDetail.getLayers && _lyrDetail.getLayers().length){
+  // On ajoute aussi le check _hasSpeciesSearch : couvre la fenetre entre le clearLayers de
+  // _showSpeciesDetailGbif et son fetch qui aboutit (sinon _lyrDetail est momentanement vide
+  // et le guard ci-dessus ne matche pas).
+  if((_lyrDetail && _lyrDetail.getLayers && _lyrDetail.getLayers().length) || _hasSpeciesSearch()){
     if(_lyrMissing && _map.hasLayer(_lyrMissing)) _map.removeLayer(_lyrMissing);
     setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
     return;
