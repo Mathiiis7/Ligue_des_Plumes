@@ -1551,7 +1551,7 @@ const HABITAT_TO_SCIS = (() => {
   return idx;
 })();
 function isExotic(sci){ return EXOTIC[(sci||'').trim().toLowerCase()]===1; }
-function rarityReal(sci){ if(isExotic(sci)) return 1; return REAL_RARITY[(sci||'').trim().toLowerCase()] || 1; }
+function rarityReal(sci){ return REAL_RARITY[(sci||'').trim().toLowerCase()] || 1; }
 // Retourne true si l'espece est calibree dans REAL_RARITY (catalogue FR). False = espece
 // hors-FR (Sittelle de Neumayer, Mesange lugubre, etc.) dont la rareté n'est pas connue
 // et qui doit etre affichee en gris "rareté inconnue" au lieu de vert "très commun".
@@ -1644,12 +1644,13 @@ function rarityForCountry(sci, country){
   let k = (sci||'').trim().toLowerCase();
   if(SCI_ALIAS[k]) k = SCI_ALIAS[k];
   const c = country || 'FR';
-  // Exotique = gris tier 1 : convention app (introduits/echappes ne comptent pas comme
-  // "rares" au sens biodiversite meme si eBird les classe rares statistiquement).
-  // Check AVANT REAL_RARITY : sinon Leiothrix jaune (freq 0.4% en FR) sortait tier 7.
-  if(isExotic(sci)) return 1;
   const table = c === 'ME' ? REAL_RARITY_ME_EBIRD : REAL_RARITY;
   const v = table[k];
+  // Exotique : on utilise le tier eBird reel s'il existe (permet de distinguer Perruche a
+  // collier tier 3 tres visible a Paris vs Oie a tete barree tier 8 uniquement dans les
+  // parcs zoo). Fallback tier 1 si aucune data (echappe rarement vu). Le filtre 'exo' les
+  // continue de les grouper separement, la couleur marker reste grise (isExotic).
+  if(isExotic(sci)) return v || 1;
   if(v) return v;
   // FR : convention REAL_RARITY exclut les tier 1 (defaut = tres commun). Absent = 1 SAUF
   // si l'espece est presente dans un catalogue etranger (typiquement Balkans/Mediterranee) :
