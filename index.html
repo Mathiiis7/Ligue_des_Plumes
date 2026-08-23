@@ -3475,6 +3475,17 @@ function _reloadSpeciesForZone(){
   if(sci && code){ _showSpeciesDetail(sci, code); }
   else { if(_lyrDetail){ _lyrDetail.remove(); _lyrDetail.clearLayers(); } }
 }
+// Restaure la vue generale "missing" apres la vidange de la barre de recherche :
+// nettoie _lyrDetail et re-ajoute _lyrMissing (ou renderMap si vide).
+function _restoreMissingView(){
+  if(_lyrDetail){ _lyrDetail.remove(); _lyrDetail.clearLayers(); }
+  const hasMiss = _lyrMissing && _lyrMissing.getLayers && _lyrMissing.getLayers().length;
+  if(hasMiss){
+    if(!_map.hasLayer(_lyrMissing)) _lyrMissing.addTo(_map);
+  } else {
+    renderMap();
+  }
+}
 let _mapSearchGbifTmr = null;
 $('#mapSearch')?.addEventListener('input', e=>{
   const prev = mapSearch;
@@ -3486,11 +3497,7 @@ $('#mapSearch')?.addEventListener('input', e=>{
     clearTimeout(_mapSearchGbifTmr);
     _mapSearchGbifTmr = setTimeout(()=>{
       const q = _mapNorm(mapSearch).trim();
-      if(!q){
-        if(_lyrDetail){ _lyrDetail.remove(); _lyrDetail.clearLayers(); }
-        if(_lyrMissing && !_map.hasLayer(_lyrMissing)) _lyrMissing.addTo(_map);
-        return;
-      }
+      if(!q){ _restoreMissingView(); return; }
       let sci = null;
       for(const s in FR_NAMES){
         if((FR_NAMES[s]||'').toLowerCase() === mapSearch.toLowerCase()){ sci = s; break; }
@@ -3506,8 +3513,8 @@ $('#mapSearch')?.addEventListener('input', e=>{
     }, 350);
   }
   // Barre vidée en mode À cocher eBird : efface aussi l'obs d'espèce chargée (sinon elle reste).
-  else if(mapMode==='missing' && prev && !mapSearch && _lyrDetail){
-    _lyrDetail.remove(); _lyrDetail.clearLayers();
+  else if(mapMode==='missing' && prev && !mapSearch){
+    _restoreMissingView();
   }
   // Mode "Où trouver" : la barre pilote la choroplèthe → re-render.
   if(mapMode==='abundance') renderMap();
