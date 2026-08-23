@@ -1136,7 +1136,7 @@
         </select>
         <label class="explorer-lbl">Région</label>
         <select class="filt-sel" id="mapEbRegion">
-          <option value="FR" selected>France</option>
+          <option value="FR" selected>Toutes les régions</option>
           <option value="FR-ARA">Auvergne-Rhône-Alpes</option>
           <option value="FR-BFC">Bourgogne-Franche-Comté</option>
           <option value="FR-BRE">Bretagne</option>
@@ -3310,7 +3310,7 @@ async function _repopulateEbRegionsForCountry(country){
   // Cas autres pays : fetch dynamique via eBird API.
   if(country === 'FR'){
     // Restaure les options FR d'origine (regenerated from FR_REGIONS constant).
-    sel.innerHTML = '<option value="FR" selected>France</option>' +
+    sel.innerHTML = '<option value="FR" selected>Toutes les régions</option>' +
       FR_REGIONS.map(r=>`<option value="${esc(r.code)}">${esc(r.name)}</option>`).join('');
     ebFilter.region = 'FR'; ebFilter.dept = '';
     _refreshDeptSel();
