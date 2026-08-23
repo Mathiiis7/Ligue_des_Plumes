@@ -4153,12 +4153,14 @@ async function _renderModeMissingGbif(){
       return;
     }
   }
-  const month = parseInt($('#mapEbMonth')?.value, 10) || 8;
+  // Month = 0 signifie "Tous" (aucun filtre GBIF month). Support via monthParam vide
+  // dans les URLs. Default 0 pour respecter la valeur "Tous" de l'UI.
+  const month = parseInt($('#mapEbMonth')?.value, 10) || 0;
   const yMinRaw = parseInt($('#mapEbYearMin')?.value, 10) || 2024;
   const yMaxRaw = parseInt($('#mapEbYearMax')?.value, 10) || 2025;
   const yMin = Math.min(yMinRaw, yMaxRaw);
   const yMax = Math.max(yMinRaw, yMaxRaw);
-  const monthNames = ['','janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  const monthNames = ["toute l'année",'janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
   const rangeTxt = (yMin === yMax) ? yMin : `${yMin} → ${yMax}`;
   if(cnt) cnt.textContent = `… GBIF ${monthNames[month]} ${rangeTxt}`;
   // Cache : le polygone est une signature unique (hash simplifie sur les coord).
@@ -5329,6 +5331,8 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
   if(!_lyrMissing) return { total:0, points:0 };
   const myRun = ++_gbifRunSeq;
   const stillMine = () => myRun === _gbifRunSeq;
+  // month = 0 signifie "toute l'annee" (aucun filtre GBIF month) -> monthParam vide dans les URLs.
+  const monthParam = month > 0 ? `&month=${month}` : '';
   _lyrMissing.clearLayers();
   // Skip cache pour pays etranger : la lecture cache utilise _gbifKeyBySci pour resoudre
   // taxonKey -> sci name, mais ce mapping n'est peuple que par la resolution FR (skipped
@@ -5430,7 +5434,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
       for(const chunk of chunks){
         const keysParam = chunk.map(k => `taxonKey=${k}`).join('&');
         for(let page = 0; page < PAGES; page++){
-          const url = `https://api.gbif.org/v1/occurrence/search?${keysParam}&country=${encodeURIComponent(ebFilter.country)}&classKey=212&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=300&offset=${page*300}${bboxParam}`;
+          const url = `https://api.gbif.org/v1/occurrence/search?${keysParam}&country=${encodeURIComponent(ebFilter.country)}&classKey=212&hasCoordinate=true&year=${encodeURIComponent(yearParam)}${monthParam}&limit=300&offset=${page*300}${bboxParam}`;
           let batchLen = 0, endOfRecords = true;
           try{
             const r = await fetch(url);
@@ -5478,7 +5482,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     const totalSteps = years.length * PAGES_PER_YEAR;
     for(const y of years){
       for(let page = 0; page < PAGES_PER_YEAR; page++){
-        const url = `https://api.gbif.org/v1/occurrence/search?country=${encodeURIComponent(ebFilter.country||'FR')}&classKey=212&hasCoordinate=true&year=${y}&month=${month}&limit=300&offset=${page*300}${bboxParam}`;
+        const url = `https://api.gbif.org/v1/occurrence/search?country=${encodeURIComponent(ebFilter.country||'FR')}&classKey=212&hasCoordinate=true&year=${y}${monthParam}&limit=300&offset=${page*300}${bboxParam}`;
         let batchLen = 0, endOfRecords = true;
         try{
           const r = await fetch(url);
@@ -5567,7 +5571,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     const MAX_PAGES = 3;
     let offset = 0;
     for(let page = 0; page < MAX_PAGES; page++){
-      const url = `https://api.gbif.org/v1/occurrence/search?${keysParam}&country=${encodeURIComponent(ebFilter.country||'FR')}&classKey=212&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=300&offset=${offset}${bboxParam}`;
+      const url = `https://api.gbif.org/v1/occurrence/search?${keysParam}&country=${encodeURIComponent(ebFilter.country||'FR')}&classKey=212&hasCoordinate=true&year=${encodeURIComponent(yearParam)}${monthParam}&limit=300&offset=${offset}${bboxParam}`;
       let batchLen = 0, endOfRecords = true;
       try{
         const r = await fetch(url);
@@ -5618,7 +5622,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
         if(!stillMine()) return;
         const i = cursor++;
         const k = missedKeys[i];
-        const url = `https://api.gbif.org/v1/occurrence/search?taxonKey=${k}&country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=5${bboxParam}`;
+        const url = `https://api.gbif.org/v1/occurrence/search?taxonKey=${k}&country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}${monthParam}&limit=5${bboxParam}`;
         try{
           let r = await fetch(url);
           // Backoff sur 429 (rate limit GBIF) : attend 1s puis retry une fois.
