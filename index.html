@@ -7326,22 +7326,24 @@ async function _fetchWikiPhoto(sci){
   _spPhotoCache.set(key, res);
   return res;
 }
+// Cle xeno-canto API v3 (Mathis). La v2 a ete fermee en 2024, v3 exige une cle par compte.
+// Regenerable sur https://xeno-canto.org/account si abusee.
+const XC_API_KEY = 'a082ff6c2adafb02ea6b275da67cd903988f82ea';
 async function _fetchXenoSound(sci){
   const key = sci.toLowerCase();
   if(_spSoundCache.has(key)) return _spSoundCache.get(key);
   const [gen, sp] = sci.split(' ');
   if(!gen || !sp){ _spSoundCache.set(key, {song:null, call:null}); return {song:null, call:null}; }
   const norm = u => { if(!u) return null; if(u.startsWith('//')) return 'https:' + u; if(u.startsWith('http://')) return 'https://' + u.slice(7); return u; };
-  // Deux requetes xeno-canto en parallele : une filtree "type:song", une filtree "type:call".
+  // Deux requetes xeno-canto v3 en parallele : une filtree "type:song", une filtree "type:call".
   // Le filtre type: fait un match partiel cote serveur → "type:call" attrape aussi "flight call",
-  // "alarm call", "nocturnal call", etc. Beaucoup plus fiable qu'un fetch tout-en-un + tri local
-  // (qui plafonne a ~500 recs par page et manque les cris quand une espece a bcp de chants).
+  // "alarm call", "nocturnal call", etc. Beaucoup plus fiable qu'un fetch tout-en-un + tri local.
   async function queryXC(typeStr, qA){
     const bits = ['gen:' + gen, 'sp:' + sp];
     if(typeStr) bits.push('type:' + typeStr);
     if(qA) bits.push('q:A');
     try{
-      const r = await fetch('https://xeno-canto.org/api/2/recordings?query=' + encodeURIComponent(bits.join(' ')));
+      const r = await fetch('https://xeno-canto.org/api/3/recordings?query=' + encodeURIComponent(bits.join(' ')) + '&key=' + XC_API_KEY);
       const j = await r.json();
       const recs = Array.isArray(j?.recordings) ? j.recordings : [];
       const withFile = recs.find(x => x.file);
