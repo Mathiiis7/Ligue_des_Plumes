@@ -3491,18 +3491,15 @@ function _reloadSpeciesForZone(){
   // terme dans la barre (ex: recherche 14j qui a retourne 0 obs, on switch 30j → refetch).
   if(!hasDetail && !q) return;
   if(!q){ if(_lyrDetail){ _lyrDetail.remove(); _lyrDetail.clearLayers(); } return; }
-  // Résout le nom saisi vers un sciName + code
-  const me = realPeople.find(p=>p.id===myUid);
-  const mine = new Set(me ? [...me.species.keys()] : []);
+  // Résout le nom saisi vers un sciName. On NE filtre PAS par mine ici : l'utilisateur a
+  // explicitement cherche cette espece, on refetch quoi qu'il arrive (meme si deja cochee).
   let sci = null;
   for(const s in FR_NAMES){
-    if(mine.has(s)) continue;
     if((FR_NAMES[s]||'').toLowerCase() === q.toLowerCase()){ sci = s; break; }
   }
   if(!sci){
     const norm = _mapNorm(q);
     for(const s in FR_NAMES){
-      if(mine.has(s)) continue;
       if(_mapNorm(FR_NAMES[s]||s).includes(norm)){ sci = s; break; }
     }
   }
@@ -4719,7 +4716,9 @@ async function _showSpeciesDetailGbif(sciName){
   if(!_map) return;
   const cnt = $('#mapEbCount');
   if(!_lyrDetail){ _lyrDetail = L.layerGroup(); }
-  _lyrDetail.clearLayers(); _lyrDetail.addTo(_map);
+  // NE PAS clearLayers ici : on garde les vieux markers visibles pendant le fetch pour
+  // eviter le flash "carte vide". On remplace en swap a la fin (voir plus bas).
+  _lyrDetail.addTo(_map);
   if(_lyrMissing && _map.hasLayer(_lyrMissing)) _map.removeLayer(_lyrMissing);
   const nm = FR_NAMES[(sciName||'').toLowerCase()] || sciName;
   const country = ebFilter.country || 'FR';
@@ -4821,9 +4820,14 @@ async function _showSpeciesDetailGbif(sciName){
   }
   try{
     if(!obs.length){
+      // Aucune obs pour cette source : on nettoie les vieux markers avant d'afficher le message.
+      _lyrDetail.clearLayers();
       if(cnt) cnt.textContent = `Aucune obs GBIF de ${nm} dans ${ctyName} pour cette période`;
       return 0;
     }
+    // Swap : cree la nouvelle couche puis remplace les vieux markers d'un coup (evite le
+    // flash "carte vide" pendant le fetch, sensible sur reseau lent).
+    const newMarkers = [];
     for(const o of obs){
       if(typeof o.decimalLatitude !== 'number' || typeof o.decimalLongitude !== 'number') continue;
       const dot = L.circleMarker([o.decimalLatitude, o.decimalLongitude], { radius:7, weight:2, color:'#fff', fillColor:color, fillOpacity:.9, opacity:1 });
@@ -4838,8 +4842,10 @@ async function _showSpeciesDetailGbif(sciName){
         `<span class="p-meta">${esc((o.eventDate||'').slice(0,10))}${cntObs?' · '+cntObs+' individus':''}</span>`+
         `<span class="p-meta">${_rarityBadge(w, country, sciName)}</span><span class="p-meta">${gbifLink}${gm}</span>`);
       dot._sciName = sciName;
-      _lyrDetail.addLayer(dot);
+      newMarkers.push(dot);
     }
+    _lyrDetail.clearLayers();
+    for(const dot of newMarkers) _lyrDetail.addLayer(dot);
     const trunc = (totalCount > obs.length && !gadmFilter && !cached) ? ` (sur ${totalCount} au total, tronqué)` : '';
     const cacheTag = cached ? ' · cache' : '';
     if(cnt) cnt.textContent = `${obs.length} obs GBIF de ${nm} dans ${ctyName}${zoneLabelExtra} (${yMin===yMax?yMin:yMin+'-'+yMax})${trunc}${cacheTag}`;
@@ -4857,7 +4863,9 @@ async function _showSpeciesDetail(sciName, speciesCode){
   }
   const days = ebFilter.days || 14;
   if(!_lyrDetail){ _lyrDetail = L.layerGroup(); }
-  _lyrDetail.clearLayers(); _lyrDetail.addTo(_map);
+  // Ne pas clearLayers ici : on garde les vieux markers visibles pendant le fetch
+  // (swap en fin de fonction quand les nouvelles obs sont pretes, cf. _showSpeciesDetailGbif).
+  _lyrDetail.addTo(_map);
   // Cascade dept → région → pays : les endpoints eBird /recent/{speciesCode} sont capricieux
   // (parfois vide pour un dept alors qu'une région voisine a des obs). On élargit auto
   // jusqu'au pays de ebFilter.country (pas hardcode FR).
@@ -4881,12 +4889,14 @@ async function _showSpeciesDetail(sciName, speciesCode){
     }
     // Si vraiment rien nulle part : laisse la couche missing visible + hint clair.
     if(!used){
+      _lyrDetail.clearLayers();   // nettoie les vieux markers avant d'afficher le message
       const cnt = $('#mapEbCount');
       if(cnt) cnt.textContent = `Aucune obs récente de ${esc(nm)} dans ${ctyName} (${days} j eBird)`;
       return 0;
     }
     if(_lyrMissing && _map.hasLayer(_lyrMissing)) _map.removeLayer(_lyrMissing);
-    let count = 0;
+    // Swap : construit les nouveaux markers puis remplace en un coup (evite le flash "vide").
+    const newMarkers = [];
     for(const o of data){
       if(typeof o.lat!=='number'||typeof o.lng!=='number') continue;
       // Couleur = rareté de l'espèce (gris pour exotique), taille légèrement plus grosse que la couche missing.
@@ -4898,8 +4908,11 @@ async function _showSpeciesDetail(sciName, speciesCode){
         `<span class="p-meta">${_rarityBadge(w, (ebFilter && ebFilter.country) || "FR", sciName)}</span><span class="p-meta">${gm}</span>`);
       dot._q = _mapNorm(nm+' '+(sciName||'')+' '+(o.locName||''));
       dot._sciName = sciName; dot._speciesCode = speciesCode;
-      _lyrDetail.addLayer(dot); count++;
+      newMarkers.push(dot);
     }
+    _lyrDetail.clearLayers();
+    for(const dot of newMarkers) _lyrDetail.addLayer(dot);
+    const count = newMarkers.length;
     // Fit sur les points chargés
     const latlngs=[]; _lyrDetail.eachLayer(l=>{ const ll=l.getLatLng?l.getLatLng():null; if(ll) latlngs.push([ll.lat,ll.lng]); });
     if(latlngs.length){ _map.fitBounds(L.latLngBounds(latlngs), { padding:[40,40], maxZoom:11 }); }
