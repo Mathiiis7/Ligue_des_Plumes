@@ -3484,6 +3484,10 @@ function _mapApplyFilter(){
 // True si l'utilisateur a un terme de recherche actif (utilise pour skip renderMap :
 // pas la peine de reload les 1200+ obs generales si on cherche une seule espece).
 function _hasSpeciesSearch(){ return !!(mapSearch && mapSearch.trim().length >= 2); }
+// Compteur de generation partage par _showSpeciesDetail et _showSpeciesDetailGbif : evite
+// les races quand l'user change plusieurs filtres d'affilee (dept -> region -> source :
+// 3 fetches concurrents, seul le dernier doit ecrire dans _lyrDetail et #mapEbCount).
+let _spDetailGen = 0;
 // Cache/reveler les controles inutiles quand une espece est chargee (rarete, dessiner,
 // inclure deja observes). Applique uniquement en mode "A cocher".
 function _toggleSpeciesSearchUI(searchActive){
@@ -4737,6 +4741,10 @@ async function _renderModeAbundance(){
 async function _showSpeciesDetailGbif(sciName){
   if(!_map) return;
   _toggleSpeciesSearchUI(true);
+  // Generation counter : si un fetch plus recent est parti pendant le notre (user clicke
+  // rapidement dept+region+source), on abandonne silencieusement les writes UI a la fin.
+  const myGen = ++_spDetailGen;
+  const stillMine = () => myGen === _spDetailGen;
   const cnt = $('#mapEbCount');
   if(!_lyrDetail){ _lyrDetail = L.layerGroup(); }
   // NE PAS clearLayers ici : on garde les vieux markers visibles pendant le fetch pour
@@ -4842,6 +4850,7 @@ async function _showSpeciesDetailGbif(sciName){
     }
   }
   try{
+    if(!stillMine()) return 0;   // un fetch plus recent a demarre : on abandonne
     if(!obs.length){
       // Aucune obs pour cette source : on nettoie les vieux markers avant d'afficher le message.
       _lyrDetail.clearLayers();
@@ -4867,6 +4876,7 @@ async function _showSpeciesDetailGbif(sciName){
       dot._sciName = sciName;
       newMarkers.push(dot);
     }
+    if(!stillMine()) return 0;
     _lyrDetail.clearLayers();
     for(const dot of newMarkers) _lyrDetail.addLayer(dot);
     const trunc = (totalCount > obs.length && !gadmFilter && !cached) ? ` (sur ${totalCount} au total, tronqué)` : '';
@@ -4885,6 +4895,8 @@ async function _showSpeciesDetail(sciName, speciesCode){
     return _showSpeciesDetailGbif(sciName);
   }
   _toggleSpeciesSearchUI(true);
+  const myGen = ++_spDetailGen;
+  const stillMine = () => myGen === _spDetailGen;
   const days = ebFilter.days || 14;
   if(!_lyrDetail){ _lyrDetail = L.layerGroup(); }
   // Ne pas clearLayers ici : on garde les vieux markers visibles pendant le fetch
@@ -4911,6 +4923,7 @@ async function _showSpeciesDetail(sciName, speciesCode){
       const r = await _ebFetch(url);
       if(Array.isArray(r) && r.length){ data = r; used = z; break; }
     }
+    if(!stillMine()) return 0;
     // Si vraiment rien nulle part : laisse la couche missing visible + hint clair.
     if(!used){
       _lyrDetail.clearLayers();   // nettoie les vieux markers avant d'afficher le message
@@ -4934,6 +4947,7 @@ async function _showSpeciesDetail(sciName, speciesCode){
       dot._sciName = sciName; dot._speciesCode = speciesCode;
       newMarkers.push(dot);
     }
+    if(!stillMine()) return 0;
     _lyrDetail.clearLayers();
     for(const dot of newMarkers) _lyrDetail.addLayer(dot);
     const count = newMarkers.length;
