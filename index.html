@@ -1967,7 +1967,7 @@ function realTier(sci, abroad){
     const cat = _exoticCategory(kk);
     if(cat === 'N' || cat === 'P'){
       const t = REAL_RARITY_EXO_GBIF[kk] || REAL_RARITY[kk];
-      if(t) return { id:'r'+t, ord:t, label: (EXOTIC_CATEGORY_LABEL[cat]||'') + ' · ' + (REAL_LABELS[t]||('niveau '+t)), color:realColor(t) };
+      if(t) return { id:'r'+t, ord:t, label: REAL_LABELS[t]||('niveau '+t), color:realColor(t) };
     }
     return { id:'exo', ord:0, label: EXOTIC_CATEGORY_LABEL[cat] || 'Exotique', color:'#7e8a99' };
   }
