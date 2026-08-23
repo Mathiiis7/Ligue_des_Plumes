@@ -3255,8 +3255,14 @@ function _detectTrophyEvents(){
     }
   }
   _saveCompState({ unlocked:currUnlocked, holders:currHolders, topRank:currTopRank });
-  // Ecriture Firestore (ID deterministe → duplicates entre appareils sont un no-op).
+  // Ecriture Firestore (ID deterministe). AVANT : setDoc ecrasait le champ 'at' -> chaque
+  // appareil qui detectait l'event (a cause d'un localStorage frais / vide) mettait a jour
+  // le timestamp -> l'event remontait en tete du feed comme "nouveau". Bug visible : trophies
+  // qui reapparaissent aleatoirement.
+  // MAINTENANT : on skip si l'event existe deja dans trophyEventsList (populee par snapshot).
+  const existingIds = new Set((trophyEventsList||[]).map(e => e.id));
   for(const ev of toWrite){
+    if(existingIds.has(ev.id)) continue;
     try{ setDoc(doc(db,'leagues',leagueId,'trophyEvents',ev.id), { ...ev.data, at:serverTimestamp() }); }catch(_){}
   }
 }
