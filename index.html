@@ -7742,14 +7742,37 @@ async function _smFetchGbif(sci, month, yearMin, yearMax, bbox){
   // Multi-taxonKey si l'espece a des cles secondaires connues (splits taxonomiques).
   const extraKeys = GBIF_EXTRA_TAXONKEYS[(sci||'').toLowerCase()] || [];
   const keysParam = [key, ...extraKeys].map(k => `taxonKey=${k}`).join('&');
-  let url = `https://api.gbif.org/v1/occurrence/search?${keysParam}&country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}${monthParam}&limit=300`;
-  if(bbox){
-    url += `&decimalLatitude=${bbox[0]},${bbox[1]}&decimalLongitude=${bbox[2]},${bbox[3]}`;
-  }
+  const bboxParam = bbox ? `&decimalLatitude=${bbox[0]},${bbox[1]}&decimalLongitude=${bbox[2]},${bbox[3]}` : '';
+  const mkUrl = (page) => `https://api.gbif.org/v1/occurrence/search?${keysParam}&country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}${monthParam}${bboxParam}&limit=300&offset=${page*300}`;
+  // Pagination parallele : 1er appel donne count, on lance les pages restantes en parallele.
+  // Cap MAX_PAGES = 10 (3000 obs max). safeFetch tolere echec reseau isole.
+  const MAX_PAGES = 10;
+  const safeFetch = async (url) => {
+    for(let attempt = 0; attempt < 2; attempt++){
+      try{ const r = await fetch(url); if(r.ok) return await r.json(); }catch(_){}
+    }
+    return { results:[], _err:true };
+  };
   try{
-    const r = await fetch(url);
-    if(!r.ok) throw new Error('http');
-    const j = await r.json();
+    const j0 = await safeFetch(mkUrl(0));
+    if(j0._err) throw new Error('network');
+    const totalCount = j0.count || 0;
+    let allResults = j0.results || [];
+    if(!j0.endOfRecords && allResults.length === 300 && totalCount > 300){
+      const nPages = Math.min(MAX_PAGES, Math.ceil(totalCount / 300));
+      const pages = Array.from({length: nPages - 1}, (_, i) => i + 1);
+      const POOL = 3;
+      let cursor = 0;
+      async function worker(){
+        while(cursor < pages.length){
+          const p = pages[cursor++];
+          const j = await safeFetch(mkUrl(p));
+          if(!j._err) allResults.push(...(j.results || []));
+        }
+      }
+      await Promise.all(Array.from({length: Math.min(POOL, pages.length)}, worker));
+    }
+    const j = { count: totalCount, results: allResults };
     const rawResults = (j.results||[]).filter(o => typeof o.decimalLatitude==='number' && typeof o.decimalLongitude==='number');
     const points = rawResults.map(o => {
       // Localisation : gadm.level3 (commune, 100% populated) est la source la plus fiable.
