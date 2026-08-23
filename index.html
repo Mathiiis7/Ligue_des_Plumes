@@ -1688,6 +1688,11 @@ function _rarityBadge(w, country, sci){
     const flg = flagImg(cc) || '';
     const flgFixed = flg.replace('<img ', '<img style="height:12px;width:auto;vertical-align:middle;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.08);" ');
     const flgSpan = `<span style="display:inline-block;vertical-align:middle;margin-right:6px;">${flgFixed}</span>`;
+    // Cas exotique : badge gris "Exotique" (introduit/echappe, pas classe en rarete).
+    if(sci && isExotic(sci)){
+      const pill = `<span style="display:inline-block;background:#7e8a99;color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">0</span>`;
+      return `${flgSpan}${pill} Exotique`;
+    }
     // Cas special FR : espece hors-aire (jamais observee en France, connue uniquement dans
     // les catalogues etrangers) -> badge gris "Hors aire", pas tier "Exceptionnel" trompeur.
     if(cc === 'FR' && sciKey && _isForeignOnly(sciKey)){
