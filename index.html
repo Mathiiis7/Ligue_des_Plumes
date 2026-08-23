@@ -1418,7 +1418,12 @@
           </div>
         </div>
         <div class="sm-map-gbif-ctrl" id="smMapGbifCtrl" hidden>
-          <label>Mois <select id="smGbifMonth">
+          <label id="smEbDaysLbl" hidden>Derniers <select id="smEbDays">
+            <option value="7">7 jours</option>
+            <option value="14">14 jours</option>
+            <option value="30" selected>30 jours</option>
+          </select></label>
+          <label id="smGbifMonthLbl">Mois <select id="smGbifMonth">
             <option value="1">janvier</option><option value="2">février</option>
             <option value="3">mars</option><option value="4">avril</option>
             <option value="5">mai</option><option value="6">juin</option>
@@ -1426,8 +1431,8 @@
             <option value="9">septembre</option><option value="10">octobre</option>
             <option value="11">novembre</option><option value="12">décembre</option>
           </select></label>
-          <label>De <input id="smGbifYearMin" type="number" min="1970" max="2026" value="2023" step="1"></label>
-          <label>à <input id="smGbifYearMax" type="number" min="1970" max="2026" value="2025" step="1"></label>
+          <label id="smGbifYearMinLbl">De <input id="smGbifYearMin" type="number" min="1970" max="2026" value="2023" step="1"></label>
+          <label id="smGbifYearMaxLbl">à <input id="smGbifYearMax" type="number" min="1970" max="2026" value="2025" step="1"></label>
           <label>Région <select id="smGbifRegion"><option value="">toute la France</option></select></label>
           <label>Dépt <select id="smGbifDept"><option value="">tous</option></select></label>
         </div>
@@ -7576,12 +7581,14 @@ function _smSpreadMarkers(){
 // Recupere les obs eBird 30j pour cette espece. Recupere d'abord la taxonomie eBird si elle
 // n'est pas encore chargee (sinon _sciToCode retourne null). Retourne {points, error} pour
 // permettre a l'UI de differencier "pas de code trouve" vs "pas de rec ent" vs erreur.
-async function _smFetchEbirdRecent(sci){
+async function _smFetchEbirdRecent(sci, days, zone){
   if(!_taxMap){ try{ await _loadTaxonomy(); }catch(_){} }
   const code = _sciToCode(sci);
   if(!code){ return { points:[], error:'taxonomy' }; }
+  const d = days || 30;
+  const z = zone || 'FR';
   try{
-    const data = await _ebFetch(`https://api.ebird.org/v2/data/obs/FR/recent/${code}?back=30&maxResults=100&locale=fr`);
+    const data = await _ebFetch(`https://api.ebird.org/v2/data/obs/${z}/recent/${code}?back=${d}&maxResults=100&locale=fr`);
     if(!Array.isArray(data)){ return { points:[], error:'network' }; }
     const points = data.filter(o => typeof o.lat==='number' && typeof o.lng==='number').map(o => ({
       lat:o.lat, lon:o.lng, name:o.locName||'lieu', si:0, loc:o.locName||'', date:(o.obsDt||'').slice(0,10),
@@ -7734,9 +7741,16 @@ async function _renderSpeciesMap(key){
     _smMapLayer.clearLayers();
   }
   _smMarkers = [];
-  // Affiche / masque les controles GBIF selon le mode courant.
-  const gbifCtrl = $('#smMapGbifCtrl'); if(gbifCtrl) gbifCtrl.hidden = (_smMapMode !== 'gbif');
-  if(_smMapMode === 'gbif') _smInitGbifSelects();
+  // Affiche / masque les controles selon le mode. Region+Dept visibles pour eBird ET GBIF,
+  // Mois+Annee uniquement GBIF, Derniers uniquement eBird.
+  const gbifCtrl = $('#smMapGbifCtrl'); if(gbifCtrl) gbifCtrl.hidden = (_smMapMode === 'friends');
+  const isEb = _smMapMode === 'ebird', isGbif = _smMapMode === 'gbif';
+  const setVis = (id, show) => { const el = document.getElementById(id); if(el) el.hidden = !show; };
+  setVis('smEbDaysLbl', isEb);
+  setVis('smGbifMonthLbl', isGbif);
+  setVis('smGbifYearMinLbl', isGbif);
+  setVis('smGbifYearMaxLbl', isGbif);
+  if(isEb || isGbif) _smInitGbifSelects();
   _smSetHint('… chargement');
   // Recolte les points selon le mode
   let points = [];
@@ -7749,12 +7763,25 @@ async function _renderSpeciesMap(key){
       }
     }
   } else if(_smMapMode === 'ebird'){
-    const res = await _smFetchEbirdRecent(key);
+    const days = parseInt($('#smEbDays')?.value, 10) || 30;
+    const regionCode = $('#smGbifRegion')?.value || '';
+    const deptCode = $('#smGbifDept')?.value || '';
+    // Format eBird zone : FR / FR-XXX / FR-XXX-YY. Construit depuis FR_DEPTS[2] (region).
+    let zone = 'FR', zoneLbl = 'France';
+    if(deptCode){
+      const d = FR_DEPTS.find(x => x[0] === deptCode);
+      if(d){ zone = `${d[2]}-${d[0]}`; zoneLbl = d[1]; }
+    } else if(regionCode){
+      zone = regionCode;
+      const r = FR_REGIONS.find(x => x.code === regionCode);
+      if(r) zoneLbl = r.name;
+    }
+    const res = await _smFetchEbirdRecent(key, days, zone);
     if(_smCurrentKey !== key || _smMapMode !== 'ebird') return;
     points = res.points;
     if(!points.length){
       wrap.hidden = false;
-      _smSetHint(res.error==='taxonomy' ? 'Espece introuvable dans la taxonomie eBird.' : res.error==='network' ? 'Erreur reseau lors de la requete eBird.' : 'Pas d\'obs eBird recente (30j) en France pour cette espece.');
+      _smSetHint(res.error==='taxonomy' ? 'Espece introuvable dans la taxonomie eBird.' : res.error==='network' ? 'Erreur reseau lors de la requete eBird.' : `Pas d'obs eBird recente (${days}j) dans ${zoneLbl} pour cette espece.`);
       return;
     }
   } else if(_smMapMode === 'gbif'){
@@ -7850,19 +7877,23 @@ document.addEventListener('click', e=>{
   const b = e.target.closest('#smMapSeg button[data-map-mode]'); if(!b) return;
   _smMapMode = b.dataset.mapMode;
   document.querySelectorAll('#smMapSeg button').forEach(x => x.classList.toggle('on', x===b));
-  const gbifCtrl = $('#smMapGbifCtrl'); if(gbifCtrl) gbifCtrl.hidden = (_smMapMode !== 'gbif');
+  const gbifCtrl = $('#smMapGbifCtrl'); if(gbifCtrl) gbifCtrl.hidden = (_smMapMode === 'friends');
   if(_smCurrentKey) _renderSpeciesMap(_smCurrentKey);
 });
-// Changement mois/annees/region/dept GBIF : reload la carte si on est en mode GBIF.
+// Changement des selecteurs : reload la carte si on est en mode eBird ou GBIF.
 // Region change : repeuple d'abord le dropdown Dept, puis relance le rendu.
 document.addEventListener('change', e=>{
   const t = e.target; if(!t) return;
   if(t.id === 'smGbifRegion'){
     _smPopulateGbifDepts(t.value);
-    if(_smMapMode === 'gbif' && _smCurrentKey) _renderSpeciesMap(_smCurrentKey);
+    if((_smMapMode === 'gbif' || _smMapMode === 'ebird') && _smCurrentKey) _renderSpeciesMap(_smCurrentKey);
     return;
   }
-  if(t.id === 'smGbifMonth' || t.id === 'smGbifYearMin' || t.id === 'smGbifYearMax' || t.id === 'smGbifDept'){
+  if(t.id === 'smGbifDept' || t.id === 'smEbDays'){
+    if((_smMapMode === 'gbif' || _smMapMode === 'ebird') && _smCurrentKey) _renderSpeciesMap(_smCurrentKey);
+    return;
+  }
+  if(t.id === 'smGbifMonth' || t.id === 'smGbifYearMin' || t.id === 'smGbifYearMax'){
     if(_smMapMode === 'gbif' && _smCurrentKey) _renderSpeciesMap(_smCurrentKey);
   }
 });
