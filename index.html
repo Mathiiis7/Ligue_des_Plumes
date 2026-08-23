@@ -1605,6 +1605,15 @@ const HABITAT_TO_SCIS = (() => {
 })();
 function isExotic(sci){ return EXOTIC[(sci||'').trim().toLowerCase()]===1; }
 function rarityReal(sci){ return REAL_RARITY[(sci||'').trim().toLowerCase()] || 1; }
+// Version category-aware pour les filtres et le tri : les exotiques renvoient leur vrai
+// tier (via _exoticTier). Utilisee par le feed, la carte "A cocher", les stats profil,
+// les suggests, MEGA_CATALOG, etc. rarityReal (ci-dessus) reste utilise pour les cas ou
+// on veut le tier "brut" du catalogue REAL_RARITY sans distinction exotique.
+function rarityForFilter(sci){
+  const k = (sci||'').trim().toLowerCase();
+  if(isExotic(sci)){ return _exoticTier(k) || 1; }
+  return REAL_RARITY[k] || 1;
+}
 // Retourne true si l'espece est calibree dans REAL_RARITY (catalogue FR). False = espece
 // hors-FR (Sittelle de Neumayer, Mesange lugubre, etc.) dont la rareté n'est pas connue
 // et qui doit etre affichee en gris "rareté inconnue" au lieu de vert "très commun".
@@ -1788,10 +1797,16 @@ function _rarityBadge(w, country, sci){
 // Absente (espèce hors bar chart eBird = encore plus rare) -> -1 (classée la plus rare).
 function realFreq(sci){ if(isExotic(sci)) return 1; const f=REAL_FREQ[(sci||'').trim().toLowerCase()]; return f==null ? -1 : f; }
 // Catalogue de tous les oiseaux "graal" possibles en France (poids >= 8 : Très rare ou Exceptionnel)
-const MEGA_CATALOG = Object.keys(REAL_RARITY)
-  .filter(sci=>rarityReal(sci)>=8)
-  .map(sci=>({ sci, name:frName(sci, sci), w:rarityReal(sci) }))
-  .sort((a,b)=> b.w-a.w || a.name.localeCompare(b.name,'fr'));
+// Union REAL_RARITY (wild) + REAL_RARITY_EXO_GBIF (exotiques N/P prime GBIF). Exclut les
+// exotiques X (echappes isoles) et C (domestiques) : eux ne comptent pas pour le graal.
+const MEGA_CATALOG = (function(){
+  const seen = new Map();   // sci -> weight
+  for(const sci in REAL_RARITY){ if(_isExoticNotCounted(sci)) continue; const w = rarityForFilter(sci); if(w >= 8) seen.set(sci, w); }
+  if(typeof REAL_RARITY_EXO_GBIF === 'object'){
+    for(const sci in REAL_RARITY_EXO_GBIF){ if(_isExoticNotCounted(sci)) continue; const w = rarityForFilter(sci); if(w >= 8 && !seen.has(sci)) seen.set(sci, w); }
+  }
+  return [...seen.entries()].map(([sci,w])=>({ sci, name:frName(sci, sci), w })).sort((a,b)=> b.w-a.w || a.name.localeCompare(b.name,'fr'));
+})();
 
 
 /* ---------------- CSV ---------------- */
@@ -2016,7 +2031,12 @@ const inRef = sci => { const k=(sci||'').trim().toLowerCase(); return (k in REAL
 // (Un oiseau français vu d'abord à l'étranger — ex. Pinson — reste compté : la life list
 //  eBird ne garde que la 1re obs, donc son lieu n'est pas fiable pour l'exclure.)
 const foreignTick = v => v.fr===false && !inRef(v.sci);
-const countsFR = v => !foreignTick(v);           // compte sauf vrai cochage étranger
+// Exotique X (Echappe isole) ou C (Origine domestique) : ne compte PAS dans les points
+// (Perruche naturalisee et Leiothrix jaune comptent car classes N; Cygne noir, Paon bleu,
+//  Coq bankiva, perroquets echappes ne comptent pas). N/P = obs "reelles", X/C = obs de
+//  zoo / echappees isolees.
+function _isExoticNotCounted(sci){ if(!isExotic(sci)) return false; const c = _exoticCategory((sci||'').trim().toLowerCase()); return c === 'X' || c === 'C'; }
+const countsFR = v => !foreignTick(v) && !_isExoticNotCounted(v.sci);
 const seenFR = v => !v.country || v.country==='FR';  // observé EN France (ou pays inconnu) — pour Mike Horn
 const holdersFR = u => u.counts!=null ? u.counts : [...u.seenBy.values()].filter(countsFR).length;
 // Pays (code ISO 2 lettres)
@@ -3308,8 +3328,11 @@ function renderFeed(){
       // Filtre rareté : 1..9 (rareté réelle) ou 'exo' (exotiques/échappés).
       const sci = (v.sci||'').toLowerCase();
       if(feedTier !== 'any'){
-        if(feedTier === 'exo'){ if(!isExotic(sci)) continue; }
-        else { if(isExotic(sci) || rarityReal(sci) !== +feedTier) continue; }
+        // Chip 'exo' = uniquement les X/C (echappes / domestiques). Les N/P (naturalises,
+        // vus en parcs) sont exposes sous leur vrai tier via rarityForFilter.
+        const cat = isExotic(sci) ? _exoticCategory(sci) : '';
+        if(feedTier === 'exo'){ if(!(cat === 'X' || cat === 'C')) continue; }
+        else { if(cat === 'X' || cat === 'C' || rarityForFilter(sci) !== +feedTier) continue; }
       }
       items.push({
         kind:'obs',
@@ -3885,7 +3908,9 @@ $('#mapSearchSuggest')?.addEventListener('mousedown', e=>{
     const s = $('#mapSearch'); s.value = m.name; mapSearch = m.name;
     // Auto-check la rareté de cette espèce si elle est décochée, sinon elle ne s'affichera pas
     // quand l'utilisateur reviendra à la vue régionale.
-    const rarKey = isExotic(m.sci) ? 'exo' : rarityReal(m.sci);
+    // N/P exotiques exposes sous leur tier reel via rarityForFilter (chip 'exo' = X/C seulement).
+    const cat = isExotic(m.sci) ? _exoticCategory(m.sci) : '';
+    const rarKey = (cat === 'X' || cat === 'C') ? 'exo' : rarityForFilter(m.sci);
     if(!ebFilter.rarities.has(rarKey)){
       ebFilter.rarities.add(rarKey);
       _refreshRarChips();
@@ -5532,7 +5557,11 @@ async function _loadMissingLayer(zone, days=14, rarities=new Set(), onProgress){
   // inconnue mais on la garde plutot que la cacher silencieusement).
   const passRar = sp => {
     if(!hasRar) return true;
-    if(isExotic(sp.sciName)) return rarities.has('exo');
+    if(isExotic(sp.sciName)){
+      const cat = _exoticCategory(sp.sciName);
+      if(cat === 'X' || cat === 'C') return rarities.has('exo');
+      // N/P : tier reel via rarityForCountry (qui dispatch vers _exoticTier).
+    }
     const w = rarityForCountry(sp.sciName, ebFilter.country || 'FR');
     if(!w) return true;
     return rarities.has(w);
@@ -5715,7 +5744,8 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
         if(!sci) continue;
         if(_mineHas(mine, sci)) continue;
         if(hasRar){
-          const rk = isExotic(sci) ? 'exo' : rarityReal(sci);
+          const cat = isExotic(sci) ? _exoticCategory(sci) : '';
+          const rk = (cat === 'X' || cat === 'C') ? 'exo' : rarityForFilter(sci);
           if(!rars.has(rk)) continue;
         }
         // Dedup safety net (au cas ou le cache aurait ete ecrit avec une version anterieure
@@ -5741,7 +5771,14 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
   const country = ebFilter.country || 'FR';
   const passRar = sci => {
     if(!hasRar) return true;
-    if(isExotic(sci)) return rars.has('exo');
+    if(isExotic(sci)){
+      const cat = _exoticCategory(sci);
+      if(cat === 'X' || cat === 'C') return rars.has('exo');
+      // N / P : traites comme les wild birds au tier reel.
+      const w = rarityForCountry(sci, country);
+      if(!w) return true;
+      return rars.has(w);
+    }
     const w = rarityForCountry(sci, country);
     if(!w) return true;
     return rars.has(w);
@@ -6508,7 +6545,7 @@ function renderStats(me){
   for(const v of active.values()){
     if(!countsFR(v)) continue;
     total++;
-    const w=rarityReal(v.sci); if(w>maxW){ maxW=w; rareName=frName(v.sci,v.common); rareTier=realTier(v.sci, false); }
+    const w=rarityForFilter(v.sci); if(w>maxW){ maxW=w; rareName=frName(v.sci,v.common); rareTier=realTier(v.sci, false); }
     const f=familyOf(v.sci); famCount[f]=(famCount[f]||0)+1;
   }
   const fams=Object.entries(famCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
@@ -8126,7 +8163,7 @@ function _updateMatrixSuggest(){
   // En mode rareté réelle, on préfixe une pastille colorée du niveau de rareté de l'espèce.
   const showRealDot = state.boardMode === 'real';
   box.innerHTML = items.map((it,i)=>{
-    const dot = showRealDot ? `<span class="ss-dot" style="background:${realColor(rarityReal(it.sci))}"></span>` : '';
+    const dot = showRealDot ? `<span class="ss-dot" style="background:${sciColor(it.sci)}"></span>` : '';
     return `<div class="map-search-suggest-item" data-idx="${i}">${dot}`
       +`<span>${esc(it.name)}</span>`
       +(state.showSci?`<span class="ss-sci">${esc(it.sci)}</span>`:'')
