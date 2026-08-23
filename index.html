@@ -1527,21 +1527,17 @@ const REAL_RARITY = {"acanthis flammea":6,"acanthis hornemanni":7,"accipiter nis
 // C = Origine domestique / statut incertain
 // Non liste = defaut X (echappe presume).
 const EXOTIC_CATEGORY = {
-  // Naturalises (populations etablies FR)
+  // Naturalises (population etablie reproductrice, statut eBird "Naturalized" FR)
   'alopochen aegyptiaca':'N', 'branta canadensis':'N', 'psittacula krameri':'N',
   'phasianus colchicus':'N', 'alectoris chukar':'N', 'oxyura jamaicensis':'N',
   'threskiornis aethiopicus':'N', 'leiothrix lutea':'N',
-  // Provisoires (obs regulieres, parcs semi-libres, pas de repro confirmee)
-  'anser indicus':'P', 'cygnus atratus':'P', 'cygnus melancoryphus':'P',
-  'aix galericulata':'P', 'aix sponsa':'P', 'phoenicopterus ruber':'P',
-  'tadorna ferruginea':'P',
-  // Origine domestique / statut incertain
+  // Origine domestique / statut incertain (ferme, elevage)
   'gallus gallus':'C', 'numida meleagris':'C', 'cairina moschata':'C',
   'phasianus versicolor':'C', 'colinus virginianus':'C',
   'francolinus francolinus':'C', 'callipepla californica':'C',
   'anser cygnoides':'C',
-  // Tous les autres exotiques (perroquets, canards de collection, becs de cires...) = X
-  // par defaut via la fonction _exoticCategory.
+  // Tous les autres (perroquets, cygnes, oies exotiques, mandarin, paon, canards de
+  // collection, becs de cires...) = X "Escapee" par defaut via _exoticCategory.
 };
 function _exoticCategory(sci){
   const k = (sci||'').trim().toLowerCase();
