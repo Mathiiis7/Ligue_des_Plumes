@@ -7377,11 +7377,16 @@ async function _fetchXenoSound(sci){
   const key = sci.toLowerCase();
   if(_spSoundCache.has(key)) return _spSoundCache.get(key);
   const [gen, sp] = sci.split(' ');
-  if(!gen || !sp){ _spSoundCache.set(key, {song:null, call:null}); return {song:null, call:null}; }
+  if(!gen || !sp){ const empty = {song:null, call:null, songList:[], callList:[]}; _spSoundCache.set(key, empty); return empty; }
   const norm = u => { if(!u) return null; if(u.startsWith('//')) return 'https:' + u; if(u.startsWith('http://')) return 'https://' + u.slice(7); return u; };
-  // Deux requetes xeno-canto v3 en parallele : une filtree "type:song", une filtree "type:call".
-  // Le filtre type: fait un match partiel cote serveur → "type:call" attrape aussi "flight call",
-  // "alarm call", "nocturnal call", etc. Beaucoup plus fiable qu'un fetch tout-en-un + tri local.
+  // Slim : garde les champs utiles pour l'UI (audio, sonogramme, qualite, lieu, date, duree, enregistreur).
+  const slim = r => ({
+    id: r.id, file: norm(r.file),
+    sono: norm(r.sono?.med || r.sono?.large || r.sono?.small),
+    q: r.q || '', loc: r.loc || '', cnt: r.cnt || '',
+    date: r.date || '', length: r.length || '',
+    rec: r.rec || '', url: norm(r.url), type: r.type || ''
+  });
   async function queryXC(typeStr, qA){
     const bits = ['gen:' + gen, 'sp:' + sp];
     if(typeStr) bits.push('type:' + typeStr);
@@ -7390,38 +7395,88 @@ async function _fetchXenoSound(sci){
       const r = await fetch('https://xeno-canto.org/api/3/recordings?query=' + encodeURIComponent(bits.join(' ')) + '&key=' + XC_API_KEY);
       const j = await r.json();
       const recs = Array.isArray(j?.recordings) ? j.recordings : [];
-      const withFile = recs.find(x => x.file);
-      return withFile ? norm(withFile.file) : null;
-    }catch(_){ return null; }
+      return recs.filter(x => x.file).slice(0, 8).map(slim);   // top 8 avec audio
+    }catch(_){ return []; }
   }
-  // Pour chaque categorie : d'abord qualite A, puis toutes qualites.
-  let [song, call] = await Promise.all([
-    queryXC('song', true).then(u => u || queryXC('song', false)),
-    queryXC('call', true).then(u => u || queryXC('call', false)),
-  ]);
-  // Si on n'a toujours pas de cri, essaie explicitement les autres tags "non-song" courants.
-  if(!call){
+  // Chaque categorie : d'abord qualite A, complete avec qualites toutes si necessaire (max 8).
+  const [songA, callA] = await Promise.all([queryXC('song', true), queryXC('call', true)]);
+  let songList = songA, callList = callA;
+  if(songList.length < 4){ const extra = await queryXC('song', false); const seen = new Set(songList.map(r=>r.id)); for(const r of extra){ if(!seen.has(r.id)){ songList.push(r); if(songList.length >= 8) break; } } }
+  if(callList.length < 4){ const extra = await queryXC('call', false); const seen = new Set(callList.map(r=>r.id)); for(const r of extra){ if(!seen.has(r.id)){ callList.push(r); if(callList.length >= 8) break; } } }
+  // Si pas de cri, tente les autres tags "non-song" courants (les 3 premiers combines).
+  if(!callList.length){
     for(const t of ['alarm', 'flight', 'nocturnal', 'begging']){
-      call = await queryXC(t, false); if(call) break;
+      const extra = await queryXC(t, false);
+      callList.push(...extra.slice(0, 3));
+      if(callList.length >= 3) break;
     }
   }
-  // Fallback iNaturalist si on n'a STRICTEMENT rien du tout.
-  if(!song && !call){
+  // Fallback iNaturalist si xeno-canto n'a strictement rien.
+  if(!songList.length && !callList.length){
     try{
       const t = await fetch('https://api.inaturalist.org/v1/taxa/autocomplete?q=' + encodeURIComponent(sci) + '&rank=species&per_page=1');
       const tj = await t.json();
       const tid = tj?.results?.[0]?.id;
       if(tid){
-        const r = await fetch('https://api.inaturalist.org/v1/observations?taxon_id=' + tid + '&sounds=true&per_page=1&order=desc&order_by=votes');
+        const r = await fetch('https://api.inaturalist.org/v1/observations?taxon_id=' + tid + '&sounds=true&per_page=3&order=desc&order_by=votes');
         const j = await r.json();
-        const soundUrl = j?.results?.[0]?.sounds?.[0]?.file_url;
-        if(soundUrl) song = norm(soundUrl);
+        for(const obs of (j?.results||[])){
+          const s = obs.sounds?.[0]; if(s?.file_url){ songList.push({ id:'inat-'+obs.id, file: norm(s.file_url), sono:null, q:'', loc:obs.place_guess||'', cnt:'', date:(obs.observed_on||'').slice(0,10), length:'', rec:obs.user?.login||'iNat', url:'https://www.inaturalist.org/observations/'+obs.id, type:'song' }); }
+        }
       }
     }catch(_){ }
   }
-  const out = { song, call };
+  // Compat : garde 'song' et 'call' comme les 1eres URLs pour l'ancien code (quiz, notif).
+  const out = {
+    song: songList[0]?.file || null,
+    call: callList[0]?.file || null,
+    songList, callList
+  };
   _spSoundCache.set(key, out);
   return out;
+}
+// Rend une section audio (chant ou cri) avec :
+//   - Label du type
+//   - Lecteur principal (1er enregistrement, id fixe pour compat mutex/quiz)
+//   - Sonogramme du principal
+//   - Meta line (qualite, lieu, date, duree, enregistreur, lien xeno-canto)
+//   - <details> deplie "Autres enregistrements (N)" avec les suivants (audio + sono + meta)
+function _renderSpeciesAudioBlock(container, label, primaryId, list){
+  container.innerHTML = '';
+  if(!list || !list.length) return;
+  const primary = list[0];
+  const others = list.slice(1);
+  const metaLine = r => {
+    const bits = [];
+    if(r.q) bits.push('<b>Q'+esc(r.q)+'</b>');
+    const loc = [r.loc, r.cnt].filter(Boolean).join(', ');
+    if(loc) bits.push(esc(loc));
+    if(r.date) bits.push(esc(r.date));
+    if(r.length) bits.push(esc(r.length));
+    if(r.rec) bits.push('par '+esc(r.rec));
+    if(r.url) bits.push(`<a href="${esc(r.url)}" target="_blank" rel="noopener">xeno-canto ↗</a>`);
+    return bits.join(' · ');
+  };
+  const sonoImg = r => r.sono ? `<img src="${esc(r.sono)}" alt="Spectrogramme" style="width:100%; max-height:110px; object-fit:cover; border-radius:6px; margin:4px 0;">` : '';
+  const rowHtml = (r, id) => `
+    <div class="sm-audio-lbl">${esc(label)}</div>
+    ${sonoImg(r)}
+    <audio class="sm-audio" id="${esc(id)}" controls preload="none"><source src="${esc(r.file)}"></audio>
+    <div class="sm-audio-hint" style="margin-top:2px;">${metaLine(r)}</div>`;
+  container.insertAdjacentHTML('beforeend', rowHtml(primary, primaryId));
+  if(others.length){
+    const items = others.map((r, i) => `
+      <div class="sm-audio-row" style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--line);">
+        ${sonoImg(r)}
+        <audio class="sm-audio" controls preload="none"><source src="${esc(r.file)}"></audio>
+        <div class="sm-audio-hint" style="margin-top:2px;">${metaLine(r)}</div>
+      </div>`).join('');
+    container.insertAdjacentHTML('beforeend', `
+      <details style="margin-top:8px;">
+        <summary style="cursor:pointer; font-size:12px; color:var(--ink-3); user-select:none;">▼ ${esc(label)} — ${others.length} autre${others.length>1?'s':''} enregistrement${others.length>1?'s':''}</summary>
+        <div style="margin-top:6px;">${items}</div>
+      </details>`);
+  }
 }
 // Chips info (rareté + famille + habitats) sous le titre de la fiche.
 function _renderSpeciesInfoChips(key){
@@ -7538,17 +7593,21 @@ function openSpeciesModal(sci){
     img.src = p.url; img.hidden = false;
     cred.textContent = 'Photo : '+p.credit;
   });
-  // Sons : chant + cri, deux lecteurs distincts.
-  const songRow=$('#smSongRow'), callRow=$('#smCallRow'), songEl=$('#smSong'), callEl=$('#smCall'), hint=$('#smAudioHint');
-  try{ songEl.pause(); callEl.pause(); }catch(_){}
-  songEl.src=''; callEl.src=''; songRow.hidden = true; callRow.hidden = true;
+  // Sons : chant + cri, chaque section a un lecteur + sonogramme + menu deroulant multi-enregistrements.
+  const songRow=$('#smSongRow'), callRow=$('#smCallRow'), hint=$('#smAudioHint');
+  try{ $('#smSong')?.pause(); $('#smCall')?.pause(); }catch(_){}
+  songRow.hidden = true; callRow.hidden = true;
+  songRow.innerHTML = ''; callRow.innerHTML = '';
   hint.textContent = '🎧 Recherche du chant et du cri…'; hint.hidden = false;
   _fetchXenoSound(sci).then(r => {
-    const {song, call} = r || {};
-    if(song){ songEl.src = song; songRow.hidden = false; }
-    if(call){ callEl.src = call; callRow.hidden = false; }
-    if(!song && !call){ hint.textContent = 'Pas d\'enregistrement disponible sur xeno-canto.'; }
+    const { songList = [], callList = [] } = r || {};
+    _renderSpeciesAudioBlock(songRow, 'Chant', 'smSong', songList);
+    _renderSpeciesAudioBlock(callRow, 'Cri', 'smCall', callList);
+    if(songList.length) songRow.hidden = false;
+    if(callList.length) callRow.hidden = false;
+    if(!songList.length && !callList.length){ hint.textContent = "Pas d'enregistrement disponible sur xeno-canto."; }
     else { hint.hidden = true; }
+    // Mutex audio wrapper-level (voir IIFE en bas) : couvre auto les nouveaux <audio>.
   });
   // Observations dans la ligue
   const obsBox = $('#smObs');
@@ -8123,15 +8182,20 @@ function closeSpeciesModal(){
   // On garde _smMapInstance en memoire (recycle plus rapide), on vide juste la couche marqueurs.
   if(_smMapLayer) _smMapLayer.clearLayers();
 }
-// Mutex audio Chant/Cri : lancer l'un stoppe l'autre pour eviter la cacophonie.
+// Mutex audio dans la fiche espece : lancer un lecteur (chant, cri, ou secondaire deplie)
+// pause tous les autres. Delegation au niveau du wrapper -> couvre les <audio> ajoutes
+// dynamiquement dans les <details> "Autres enregistrements".
 (function(){
-  const wire = (aId, otherId) => {
-    const el = document.getElementById(aId); if(!el) return;
-    el.addEventListener('play', () => { const o = document.getElementById(otherId); if(o && !o.paused){ try{ o.pause(); }catch(_){} } });
+  const wrap = () => document.querySelector('.sm-audio-wrap');
+  const bind = () => {
+    const w = wrap(); if(!w) return;
+    w.addEventListener('play', e => {
+      if(e.target?.tagName !== 'AUDIO') return;
+      w.querySelectorAll('audio').forEach(a => { if(a !== e.target && !a.paused){ try{ a.pause(); }catch(_){} } });
+    }, true);   // capture pour attraper les evts des <audio> nested
   };
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', () => { wire('smSong','smCall'); wire('smCall','smSong'); });
-  } else { wire('smSong','smCall'); wire('smCall','smSong'); }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
+  else bind();
 })();
 // Délégation : ouvre la fiche au clic sur tout élément [data-sci], ferme au clic sur backdrop / croix.
 document.addEventListener('click', e=>{
