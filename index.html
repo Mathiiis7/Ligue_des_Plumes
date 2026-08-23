@@ -1923,7 +1923,17 @@ function realColor(w){
 }
 // Couleur pastille sur la carte : gris pour les exotiques (comme dans le classement), sinon barème rareté.
 function sciColor(sci){
-  if(isExotic(sci)) return '#7e8a99';
+  if(isExotic(sci)){
+    // Categorie N (introduit etabli) / P (semi-libre) : couleur tier reel (comme wild).
+    // X (echappe) / C (domestique) : gris.
+    const kk = (sci||'').trim().toLowerCase();
+    const cat = _exoticCategory(kk);
+    if(cat === 'N' || cat === 'P'){
+      const t = REAL_RARITY_EXO_GBIF[kk] || REAL_RARITY[kk];
+      if(t) return realColor(t);
+    }
+    return '#7e8a99';
+  }
   // Espece hors FR sans calibration : gris moyen "rareté inconnue" (evite le vert
   // trompeur "très commun" pour une Sittelle de Neumayer par ex).
   if(!hasRarityCalibration(sci)) return '#94a3b8';
