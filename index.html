@@ -1543,6 +1543,16 @@ function _exoticCategory(sci){
   const k = (sci||'').trim().toLowerCase();
   return EXOTIC_CATEGORY[k] || (isExotic(k) ? 'X' : '');
 }
+// Tier pour un exotique. Selon la categorie, on prime la source la plus juste :
+//   N (etabli sauvage) / C (domestique) -> eBird (effort-normalise, refllete la vraie
+//     frequence de rencontre en pleine nature).
+//   X (echappe parcs) / P (semi-libre)  -> GBIF (capte les parcs urbains qu'eBird filtre).
+function _exoticTier(sci){
+  const k = (sci||'').trim().toLowerCase();
+  const cat = _exoticCategory(k);
+  if(cat === 'N' || cat === 'C') return REAL_RARITY[k] || REAL_RARITY_EXO_GBIF[k];
+  return REAL_RARITY_EXO_GBIF[k] || REAL_RARITY[k];
+}
 const EXOTIC_CATEGORY_LABEL = {
   'N':'Introduit établi',   // pop reproductrice etablie hors aire naturelle
   'P':'Vu en parcs',        // regulier mais surtout parcs semi-captifs
@@ -1680,13 +1690,9 @@ function rarityForCountry(sci, country){
   const c = country || 'FR';
   const table = c === 'ME' ? REAL_RARITY_ME_EBIRD : REAL_RARITY;
   const v = table[k];
-  // Exotique : prime la table GBIF (inclut iNaturalist / obs de parcs publics que eBird
-  // sous-classe car il filtre les captifs). Ex : Oie a tete barree eBird tier 8 mais on la
-  // voit tout le temps au Jardin d'Acclim -> GBIF tier 6. Fallback eBird puis 1.
+  // Exotique : tier selon categorie via _exoticTier (eBird pour N/C, GBIF pour X/P).
   if(isExotic(sci)){
-    const exG = REAL_RARITY_EXO_GBIF[k];
-    if(exG) return exG;
-    return v || 1;
+    return _exoticTier(k) || 1;
   }
   if(v) return v;
   // FR : convention REAL_RARITY exclut les tier 1 (defaut = tres commun). Absent = 1 SAUF
@@ -1706,7 +1712,7 @@ function sciColorForCountry(sci, country){
   if(isExotic(sci)){
     const cat = _exoticCategory(k);
     if(cat === 'N' || cat === 'P'){
-      const t = REAL_RARITY_EXO_GBIF[k] || REAL_RARITY[k];
+      const t = _exoticTier(k);
       if(t) return realColor(t);
     }
     return '#7e8a99';
@@ -1742,7 +1748,7 @@ function _rarityBadge(w, country, sci){
     // Pour X (echappes) et C (domestiques) : pastille GRISE car ce ne sont pas de "vrais"
     // oiseaux sauvages (echappes isoles / domestiques evades).
     if(sci && isExotic(sci)){
-      const realTier = REAL_RARITY_EXO_GBIF[sciKey] || REAL_RARITY[sciKey];
+      const realTier = _exoticTier(sciKey);
       const cat = _exoticCategory(sciKey);
       const catLbl = EXOTIC_CATEGORY_LABEL[cat] || 'Exotique';
       const useColor = (cat === 'N' || cat === 'P') && realTier;
@@ -1929,7 +1935,7 @@ function sciColor(sci){
     const kk = (sci||'').trim().toLowerCase();
     const cat = _exoticCategory(kk);
     if(cat === 'N' || cat === 'P'){
-      const t = REAL_RARITY_EXO_GBIF[kk] || REAL_RARITY[kk];
+      const t = _exoticTier(kk);
       if(t) return realColor(t);
     }
     return '#7e8a99';
@@ -1976,7 +1982,7 @@ function realTier(sci, abroad){
     const kk = (sci||'').trim().toLowerCase();
     const cat = _exoticCategory(kk);
     if(cat === 'N' || cat === 'P'){
-      const t = REAL_RARITY_EXO_GBIF[kk] || REAL_RARITY[kk];
+      const t = _exoticTier(kk);
       if(t) return { id:'r'+t, ord:t, label: REAL_LABELS[t]||('niveau '+t), color:realColor(t) };
     }
     return { id:'exo', ord:0, label: EXOTIC_CATEGORY_LABEL[cat] || 'Exotique', color:'#7e8a99' };
