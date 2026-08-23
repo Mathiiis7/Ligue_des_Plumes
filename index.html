@@ -1213,8 +1213,8 @@
         <label id="mapEbShowObservedLbl" class="explorer-lbl" style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="Afficher aussi les espèces déjà dans ta life list (utile pour vérifier si tes obs sont cohérentes avec la localisation)">
           <input type="checkbox" id="mapEbShowObserved" style="vertical-align:middle;"> Inclure déjà observés
         </label>
-        <label id="mapEbAbundanceLbl" class="explorer-lbl" style="display:none;align-items:center;gap:4px;cursor:pointer;" title="Ajoute une choroplèthe d'abondance par département (données Cornell Status & Trends, ~264 espèces disponibles). Le rouge = dept avec le plus d'oiseaux à l'hectare en moyenne.">
-          <input type="checkbox" id="mapEbAbundance" style="vertical-align:middle;"> Abondance par dept
+        <label id="mapEbAbundanceLbl" class="explorer-lbl" style="display:none;align-items:center;gap:4px;cursor:pointer;" title="Colore chaque département selon la densité d'oiseaux de cette espèce (données Cornell Status & Trends, ~264 espèces disponibles). Rouge = beaucoup, jaune/vert = peu.">
+          <input type="checkbox" id="mapEbAbundance" style="vertical-align:middle;"> Colorer les départements
         </label>
         <span class="map-count" id="mapEbCount"></span>
       </div>
@@ -4767,7 +4767,7 @@ async function _renderAbundanceOverlayFor(sci){
   if(!speciesData){
     _removeAbundanceOverlay();
     const cnt = $('#mapEbCount');
-    if(cnt){ cnt.textContent = `Pas de données Cornell S&T pour ${FR_NAMES[sci]||sci} — décoche la choroplèthe.`; }
+    if(cnt){ cnt.textContent = `Pas de données de densité par département pour ${FR_NAMES[sci]||sci} — décoche la case.`; }
     return;
   }
   const geojson = await _loadDeptGeoJSON();
