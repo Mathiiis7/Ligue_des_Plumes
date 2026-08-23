@@ -836,6 +836,7 @@
     <button class="tab" data-view="photos">📸 Photos</button>
     <button class="tab" data-view="feed">🆕 Fil</button>
     <button class="tab" data-view="requests">💡 Requêtes</button>
+    <button class="tab" data-view="quiz">🎵 Quiz</button>
   </nav>
 
   <div id="viewLoad">
@@ -1376,6 +1377,48 @@
         <button type="submit" class="btn">Proposer</button>
       </form>
       <div class="req-list" id="reqList"><p class="help" style="margin:0;">Chargement…</p></div>
+    </section>
+  </div>
+
+  <div id="viewQuiz" style="display:none;">
+    <section class="panel" style="padding:20px; margin-top:22px;">
+      <div class="section-head">
+        <div><div class="eyebrow">Reconnaissance auditive</div><h2>🎵 Quiz des chants</h2>
+          <p class="help" style="margin-top:2px;">Écoute et devine l'espèce. Les sons viennent de xeno-canto.</p></div>
+      </div>
+      <div class="quiz-ctrls" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:10px 0 14px;">
+        <label class="explorer-lbl">Niveau
+          <select id="quizLevel" class="filt-sel">
+            <option value="easy" selected>Facile (tier 1-3)</option>
+            <option value="med">Moyen (tier 1-5)</option>
+            <option value="hard">Difficile (tier 1-8)</option>
+          </select>
+        </label>
+        <label class="explorer-lbl">Source
+          <select id="quizPool" class="filt-sel">
+            <option value="all" selected>Toutes espèces FR</option>
+            <option value="mine">Mes espèces cochées</option>
+          </select>
+        </label>
+        <label class="explorer-lbl">Type
+          <select id="quizType" class="filt-sel">
+            <option value="both" selected>Chant ou cri</option>
+            <option value="song">Chant seulement</option>
+            <option value="call">Cri seulement</option>
+          </select>
+        </label>
+        <div style="margin-left:auto; font-size:13px; color:var(--ink-2);">
+          Score : <b id="quizScore">0</b> / <b id="quizTotal">0</b> · Streak <b id="quizStreak">0</b>
+        </div>
+      </div>
+      <div id="quizStage" style="border:1px solid var(--line); border-radius:12px; padding:16px; background:var(--surface-2); min-height:220px;">
+        <p class="help" style="margin:0;">Clique sur <b>Nouveau quiz</b> pour commencer.</p>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:12px;">
+        <button type="button" class="btn" id="quizStart">▶ Nouveau quiz</button>
+        <button type="button" class="btn" id="quizSkip" hidden>⏭ Passer</button>
+        <button type="button" class="btn" id="quizNext" hidden>➡ Suivante</button>
+      </div>
     </section>
   </div>
 
@@ -7047,7 +7090,7 @@ $('#manualAddBtn')?.addEventListener('click', async ()=>{
   btn.disabled=false;
 });
 
-const VIEWS = { load:'#viewLoad', profil:'#viewProfil', ranking:'#viewRanking', map:'#viewMap', trophies:'#viewTrophies', chat:'#viewChat', photos:'#viewPhotos', feed:'#viewFeed', requests:'#viewRequests' };
+const VIEWS = { load:'#viewLoad', profil:'#viewProfil', ranking:'#viewRanking', map:'#viewMap', trophies:'#viewTrophies', chat:'#viewChat', photos:'#viewPhotos', feed:'#viewFeed', requests:'#viewRequests', quiz:'#viewQuiz' };
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
   b.classList.add('on');
@@ -7063,6 +7106,7 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   if(b.dataset.view==='feed'){ renderFeed(); markSeen('feed'); }
   if(b.dataset.view==='profil'){ const me=realPeople.find(p=>p.id===myUid); fillProfile(me); renderStats(me); }
   if(b.dataset.view==='requests'){ renderRequests(); markSeen('requests'); }
+  if(b.dataset.view==='quiz') renderQuizInit();
   if(b.dataset.view==='map') renderMap();
   try{ localStorage.setItem('mb-last-tab', b.dataset.view); }catch(_){ }
 }));
@@ -8079,6 +8123,16 @@ function closeSpeciesModal(){
   // On garde _smMapInstance en memoire (recycle plus rapide), on vide juste la couche marqueurs.
   if(_smMapLayer) _smMapLayer.clearLayers();
 }
+// Mutex audio Chant/Cri : lancer l'un stoppe l'autre pour eviter la cacophonie.
+(function(){
+  const wire = (aId, otherId) => {
+    const el = document.getElementById(aId); if(!el) return;
+    el.addEventListener('play', () => { const o = document.getElementById(otherId); if(o && !o.paused){ try{ o.pause(); }catch(_){} } });
+  };
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', () => { wire('smSong','smCall'); wire('smCall','smSong'); });
+  } else { wire('smSong','smCall'); wire('smCall','smSong'); }
+})();
 // Délégation : ouvre la fiche au clic sur tout élément [data-sci], ferme au clic sur backdrop / croix.
 document.addEventListener('click', e=>{
   const cl = e.target.closest('[data-sm-close]');
@@ -8367,6 +8421,111 @@ $('#authReset')?.addEventListener('click', async ()=>{
 onAuthStateChanged(auth, user=>{
   if(user){ myUid=user.uid; updateAuthUI(user); boot(); }
   else { myUid=null; signInAnonymously(auth).catch(err=>{ showError(err); }); }
+});
+/* ---------------- Quiz chants (xeno-canto v3) ---------------- */
+// Quiz MVP : 1 audio d'espece + 4 choix (dont 3 distracteurs de la meme famille).
+// Score/streak sauve dans localStorage. Audio via xeno-canto v3 (voir _fetchXenoSound).
+let _quizCurrent = null;   // { sci, correctIdx, choices:[sci...] }
+function _quizStats(){ try{ return JSON.parse(localStorage.getItem('mb-quiz-stats')||'{"score":0,"total":0,"streak":0}'); }catch(_){ return {score:0,total:0,streak:0}; } }
+function _quizSaveStats(s){ try{ localStorage.setItem('mb-quiz-stats', JSON.stringify(s)); }catch(_){} }
+function _quizRefreshStatsUI(){
+  const s = _quizStats();
+  const a=$('#quizScore'), b=$('#quizTotal'), c=$('#quizStreak');
+  if(a) a.textContent = s.score; if(b) b.textContent = s.total; if(c) c.textContent = s.streak;
+}
+function renderQuizInit(){ _quizRefreshStatsUI(); }
+// Pool d'especes selon niveau + source.
+function _quizPickPool(){
+  const lvl = ($('#quizLevel')?.value) || 'easy';
+  const src = ($('#quizPool')?.value) || 'all';
+  const maxTier = lvl === 'easy' ? 3 : lvl === 'med' ? 5 : 8;
+  let pool = [];
+  if(src === 'mine'){
+    const me = realPeople.find(p => p.id === myUid);
+    if(me && me.species) pool = [...me.species.keys()];
+  } else {
+    pool = Object.keys(FR_NAMES);
+  }
+  // Filtre : rareté <= maxTier, pas exotique X/C (pas de son fiable), FR_NAMES existe.
+  return pool.filter(sci => {
+    if(_isExoticNotCounted(sci)) return false;
+    if(!FR_NAMES[sci]) return false;
+    const t = rarityForFilter(sci);
+    return t >= 1 && t <= maxTier;
+  });
+}
+function _quizPickDistracters(sci, pool, n){
+  const fam = familyOf(sci);
+  const sameFam = pool.filter(s => s !== sci && familyOf(s) === fam);
+  const others = pool.filter(s => s !== sci && familyOf(s) !== fam);
+  const shuffle = arr => arr.map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).map(v=>v[1]);
+  const picked = shuffle(sameFam).slice(0, n);
+  if(picked.length < n) picked.push(...shuffle(others).slice(0, n - picked.length));
+  return picked;
+}
+async function _quizStart(){
+  const stage = $('#quizStage'); if(!stage) return;
+  stage.innerHTML = '<p class="help" style="margin:0;">🔎 Sélection de l\'espèce…</p>';
+  $('#quizNext').hidden = true;
+  $('#quizSkip').hidden = true;
+  const pool = _quizPickPool();
+  if(!pool.length){ stage.innerHTML = '<p class="help" style="margin:0;">Aucune espèce dans le pool. Change de niveau / source.</p>'; return; }
+  // On tente jusqu'a 5 especes au hasard avant d'abandonner (certaines n'ont pas de sons xeno-canto).
+  const typeOpt = ($('#quizType')?.value) || 'both';
+  for(let attempt = 0; attempt < 5; attempt++){
+    const sci = pool[Math.floor(Math.random() * pool.length)];
+    stage.innerHTML = `<p class="help" style="margin:0;">🎧 Chargement du son (${attempt+1}/5)…</p>`;
+    const sounds = await _fetchXenoSound(sci);
+    let audioUrl = null;
+    if(typeOpt === 'song') audioUrl = sounds.song;
+    else if(typeOpt === 'call') audioUrl = sounds.call;
+    else audioUrl = sounds.song || sounds.call;
+    if(!audioUrl) continue;   // espece sans son -> reessaie
+    const distracters = _quizPickDistracters(sci, pool, 3);
+    if(distracters.length < 3) continue;
+    const choices = [sci, ...distracters].map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).map(v=>v[1]);
+    const correctIdx = choices.indexOf(sci);
+    _quizCurrent = { sci, correctIdx, choices, audioUrl };
+    stage.innerHTML = `
+      <div style="text-align:center;">
+        <audio id="quizAudio" controls autoplay style="width:100%; max-width:520px;"><source src="${esc(audioUrl)}"></audio>
+        <p class="help" style="margin:8px 0 12px;">Quelle espèce est-ce ?</p>
+        <div id="quizChoices" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; max-width:520px; margin:0 auto;">
+          ${choices.map((c,i)=>`<button type="button" class="btn" data-quiz-choice="${i}">${esc(FR_NAMES[c]||c)}</button>`).join('')}
+        </div>
+      </div>`;
+    $('#quizSkip').hidden = false;
+    return;
+  }
+  stage.innerHTML = '<p class="help" style="margin:0;">Pas de son trouvé dans le pool après 5 essais. Ré-essaie ou change de niveau.</p>';
+}
+function _quizAnswer(idx){
+  if(!_quizCurrent) return;
+  const correct = idx === _quizCurrent.correctIdx;
+  const s = _quizStats();
+  s.total += 1;
+  if(correct){ s.score += 1; s.streak += 1; } else { s.streak = 0; }
+  _quizSaveStats(s); _quizRefreshStatsUI();
+  const box = $('#quizChoices'); if(box){
+    box.querySelectorAll('button').forEach((b, i) => {
+      b.disabled = true;
+      if(i === _quizCurrent.correctIdx){ b.style.background = 'rgb(34 197 94 / .15)'; b.style.borderColor = '#22c55e'; b.style.color = '#166534'; }
+      else if(i === idx){ b.style.background = 'rgb(239 68 68 / .15)'; b.style.borderColor = '#ef4444'; b.style.color = '#991b1b'; }
+    });
+  }
+  const stage = $('#quizStage'); if(stage){
+    const nm = FR_NAMES[_quizCurrent.sci] || _quizCurrent.sci;
+    const verdict = correct ? '<span style="color:#16a34a; font-weight:700;">✓ Bravo !</span>' : '<span style="color:#dc2626; font-weight:700;">✗ Raté</span>';
+    stage.insertAdjacentHTML('beforeend', `<p style="text-align:center; margin:14px 0 0;">${verdict} — c'était <b class="sp-link" data-sci="${esc(_quizCurrent.sci)}" style="cursor:pointer; text-decoration:underline dotted;">${esc(nm)}</b> <span class="p-sci">${esc(_quizCurrent.sci)}</span></p>`);
+  }
+  $('#quizNext').hidden = false;
+  $('#quizSkip').hidden = true;
+}
+document.addEventListener('click', e => {
+  const start = e.target.closest('#quizStart'); if(start){ _quizStart(); return; }
+  const next = e.target.closest('#quizNext'); if(next){ _quizStart(); return; }
+  const skip = e.target.closest('#quizSkip'); if(skip){ _quizStart(); return; }
+  const choice = e.target.closest('[data-quiz-choice]'); if(choice){ _quizAnswer(+choice.dataset.quizChoice); return; }
 });
 // PWA : installation sur l'écran d'accueil
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
