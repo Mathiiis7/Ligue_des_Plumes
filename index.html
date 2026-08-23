@@ -584,7 +584,7 @@
   /* Retire les flèches spinner natives sur #mapEbMinTodo (on a nos propres boutons +/-) */
   #mapEbMinTodo::-webkit-outer-spin-button, #mapEbMinTodo::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
   .map-count { margin-left:auto; font-size:12.5px; color:var(--ink-3); font-weight:600; }
-  .map-el { height:520px; width:100%; border-radius:12px; overflow:hidden; border:1px solid var(--line); background:var(--surface-2); }
+  .map-el { height:min(760px, 78vh); min-height:520px; width:100%; border-radius:12px; overflow:hidden; border:1px solid var(--line); background:var(--surface-2); }
   .map-el .leaflet-popup-content { font:inherit; font-size:13px; line-height:1.45; color:var(--ink); margin:8px 12px; }
   .map-el .leaflet-popup-content b { color:var(--ink); }
   .map-el .leaflet-popup-content .p-sci { font-style:italic; color:var(--ink-3); font-size:11.5px; }
