@@ -4028,7 +4028,7 @@ function _mapMarker(pt, groupSize){
   // Lien Google Maps : toujours fiable (basé sur lat/lon) — remplace le lien eBird qui échoue pour les lieux perso.
   const gmLink = `<span class="p-meta"><a href="https://www.google.com/maps?q=${pt.lat},${pt.lon}" target="_blank" rel="noopener" class="p-link">🗺️ Voir sur Google Maps</a></span>`;
   m.bindPopup(
-    `<b>${esc(pt.common)}</b> <span class="p-sci">${esc(pt.sci)}</span>`+
+    `<b class="sp-link" data-sci="${esc(pt.sci)}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;">${esc(pt.common)}</b> <span class="p-sci">${esc(pt.sci)}</span>`+
     `<span class="p-meta">Vu par <b>${esc(pt.who)}</b>${loc?' à '+loc:''}${cc}${date}</span>`+
     `<span class="p-meta">${_rarityBadge(pt.w, (ebFilter && ebFilter.country) || "FR", pt.sci)}</span>`+
     groupNote + gmLink
