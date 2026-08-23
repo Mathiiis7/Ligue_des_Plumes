@@ -1210,7 +1210,7 @@
         <button type="button" class="btn tiny" id="mapDrawStart" style="display:none;" title="Clic sur la carte pour poser les sommets, puis « Fermer » (ou double-clic).">✏️ Dessiner une zone</button>
         <button type="button" class="btn tiny" id="mapDrawFinish" style="display:none;" title="Ferme le polygone (au moins 3 sommets requis)">✅ Fermer</button>
         <button type="button" class="btn tiny" id="mapDrawClear" style="display:none;" title="Efface le polygone et revient au filtre région/département">🗑️ Effacer</button>
-        <label class="explorer-lbl" style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="Afficher aussi les espèces déjà dans ta life list (utile pour vérifier si tes obs sont cohérentes avec la localisation)">
+        <label id="mapEbShowObservedLbl" class="explorer-lbl" style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="Afficher aussi les espèces déjà dans ta life list (utile pour vérifier si tes obs sont cohérentes avec la localisation)">
           <input type="checkbox" id="mapEbShowObserved" style="vertical-align:middle;"> Inclure déjà observés
         </label>
         <span class="map-count" id="mapEbCount"></span>
@@ -3484,6 +3484,27 @@ function _mapApplyFilter(){
 // True si l'utilisateur a un terme de recherche actif (utilise pour skip renderMap :
 // pas la peine de reload les 1200+ obs generales si on cherche une seule espece).
 function _hasSpeciesSearch(){ return !!(mapSearch && mapSearch.trim().length >= 2); }
+// Cache/reveler les controles inutiles quand une espece est chargee (rarete, dessiner,
+// inclure deja observes). Applique uniquement en mode "A cocher".
+function _toggleSpeciesSearchUI(searchActive){
+  if(mapMode !== 'missing') return;
+  const hide = !!searchActive;
+  const ids = ['mapEbRarityLbl','mapEbRarityChips','mapDrawStart','mapDrawFinish','mapDrawClear','mapEbShowObservedLbl'];
+  for(const id of ids){
+    const el = document.getElementById(id);
+    if(!el) continue;
+    if(hide){
+      if(el.style.display !== 'none'){ el.dataset._savedDisplay = el.style.display || ''; el.style.display = 'none'; }
+    } else {
+      // Restaure uniquement si on avait bien cache : sinon garde ce que le mode a mis (draw
+      // finish/clear par exemple ne doivent pas reapparaitre s'ils etaient deja hidden).
+      if(el.dataset._savedDisplay !== undefined){
+        el.style.display = el.dataset._savedDisplay;
+        delete el.dataset._savedDisplay;
+      }
+    }
+  }
+}
 function _reloadSpeciesForZone(){
   const q = (mapSearch||'').trim();
   const hasDetail = _lyrDetail && _lyrDetail.getLayers && _lyrDetail.getLayers().length;
@@ -3514,6 +3535,7 @@ function _reloadSpeciesForZone(){
 // sinon on garde des donnees potentiellement stale + le compteur ne se met pas a jour).
 function _restoreMissingView(){
   if(_lyrDetail){ _lyrDetail.remove(); _lyrDetail.clearLayers(); }
+  _toggleSpeciesSearchUI(false);
   _loaded.missing = '';   // invalide le cache pour forcer un fetch complet
   renderMap();
 }
@@ -4714,6 +4736,7 @@ async function _renderModeAbundance(){
 // mois + plage annees courants, rend sur _lyrDetail.
 async function _showSpeciesDetailGbif(sciName){
   if(!_map) return;
+  _toggleSpeciesSearchUI(true);
   const cnt = $('#mapEbCount');
   if(!_lyrDetail){ _lyrDetail = L.layerGroup(); }
   // NE PAS clearLayers ici : on garde les vieux markers visibles pendant le fetch pour
@@ -4861,6 +4884,7 @@ async function _showSpeciesDetail(sciName, speciesCode){
   if(ebFilter.source === 'gbif'){
     return _showSpeciesDetailGbif(sciName);
   }
+  _toggleSpeciesSearchUI(true);
   const days = ebFilter.days || 14;
   if(!_lyrDetail){ _lyrDetail = L.layerGroup(); }
   // Ne pas clearLayers ici : on garde les vieux markers visibles pendant le fetch
