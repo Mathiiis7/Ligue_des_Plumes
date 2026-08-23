@@ -2074,12 +2074,13 @@ const inRef = sci => { const k=(sci||'').trim().toLowerCase(); return (k in REAL
 // (Un oiseau français vu d'abord à l'étranger — ex. Pinson — reste compté : la life list
 //  eBird ne garde que la 1re obs, donc son lieu n'est pas fiable pour l'exclure.)
 const foreignTick = v => v.fr===false && !inRef(v.sci);
-// Exotique X (Echappe isole) ou C (Origine domestique) : ne compte PAS dans les points
-// (Perruche naturalisee et Leiothrix jaune comptent car classes N; Cygne noir, Paon bleu,
-//  Coq bankiva, perroquets echappes ne comptent pas). N/P = obs "reelles", X/C = obs de
-//  zoo / echappees isolees.
+// X (Echappe isole) et C (Origine domestique) : classes "exotique meme cochee" -> comptent
+// dans le TOTAL d'especes et le SCORE (comme les autres cochages), mais sont exclus des
+// calculs de rarete (Mike Horn, "plus rare", scoreReal) via _countsForRarity ci-dessous.
 function _isExoticNotCounted(sci){ if(!isExotic(sci)) return false; const c = _exoticCategory((sci||'').trim().toLowerCase()); return c === 'X' || c === 'C'; }
-const countsFR = v => !foreignTick(v) && !_isExoticNotCounted(v.sci);
+const countsFR = v => !foreignTick(v);
+// Sous-filtre : exclut aussi les exotiques X/C (utilise pour les stats rarete uniquement).
+const _countsForRarity = v => countsFR(v) && !_isExoticNotCounted(v.sci);
 const seenFR = v => !v.country || v.country==='FR';  // observé EN France (ou pays inconnu) — pour Mike Horn
 const holdersFR = u => u.counts!=null ? u.counts : [...u.seenBy.values()].filter(countsFR).length;
 // Pays (code ISO 2 lettres)
@@ -2117,8 +2118,9 @@ function build(){
       } }
   }
   // l'espèce la plus rare (rareté réelle) présente dans la ligue — France seule
+  // Exclut les exotiques X/C : un Ara ararauna echappe ne peut pas devenir "la plus rare".
   let maxRW=1;
-  for(const u of universe.values()){ if(u.counts===0) continue; const w=rarityReal(u.sci); if(w>maxRW) maxRW=w; }
+  for(const u of universe.values()){ if(u.counts===0) continue; if(_isExoticNotCounted(u.sci)) continue; const w=rarityReal(u.sci); if(w>maxRW) maxRW=w; }
   // par joueur : espèce la plus rare (vue par le moins de monde) + dernière acquisition (date la + récente)
   state.people.forEach(p=>{
     let rarest=null, rarestK=Infinity, last=null, lastOrd=-1, lastDisp='', real=0, holdsRarest=false;
@@ -2127,9 +2129,9 @@ function build(){
       if(!countsFR(v)) continue;   // hors compétition (étranger)
       const k=universe.get(key).counts;
       const nm=frName(v.sci, v.common);
-      if(k<rarestK || (k===rarestK && rarest && nm.localeCompare(rarest,'fr')<0)){ rarestK=k; rarest=nm; }
+      // Rarete-based : ignore les exotiques X/C pour le calcul "plus rare".
+      if(!_isExoticNotCounted(v.sci) && (k<rarestK || (k===rarestK && rarest && nm.localeCompare(rarest,'fr')<0))){ rarestK=k; rarest=nm; }
       // Dernière acquisition : date d'obs si dispo, sinon date d'ajout manuel (v.addedAt).
-      // Sans ce fallback, les ajouts manuels sans date renseignee n'apparaissent jamais.
       const pd=parseDate(v.date);
       if(pd && pd.ord>lastOrd){ lastOrd=pd.ord; last=nm; lastDisp=pd.disp; }
       else if(!pd && typeof v.addedAt === 'number' && v.addedAt > lastOrd){
@@ -2137,24 +2139,27 @@ function build(){
         const d = new Date(v.addedAt);
         lastDisp = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
       }
-      real += rarityReal(v.sci);
-      if(maxRW>1 && rarityReal(v.sci)===maxRW){ holdsRarest=true; if(!rrNames.includes(nm)) rrNames.push(nm); }
+      // scoreReal : somme des poids rarete. Exclut les exotiques X/C (evite qu'un Coq bankiva
+      // ajoute au score real via son fallback tier 1).
+      if(!_isExoticNotCounted(v.sci)){
+        real += rarityReal(v.sci);
+        if(maxRW>1 && rarityReal(v.sci)===maxRW){ holdsRarest=true; if(!rrNames.includes(nm)) rrNames.push(nm); }
+      }
     }
     rrNames.sort((a,b)=>a.localeCompare(b,'fr'));
     p.rarestName=rarest; p.lastAcqName=last; p.lastAcqDisp=lastDisp; p.scoreReal=real;
   });
   // Mike Horn : UNE seule personne = celle qui détient l'oiseau le plus rare de la ligue.
   // Rareté d'un oiseau = poids (1-9) puis, à poids égal, la fréquence eBird (plus fine).
-  // Pour chaque joueur : son oiseau le plus rare (poids max, puis fréquence min) + combien
-  // d'oiseaux il a à ce niveau. Départage final : plus d'oiseaux au top, puis score réel.
+  // Exclut les X/C exotiques : Mike Horn ne peut pas se gagner avec un Cygne noir de parc.
   state.people.forEach(p=>{
     let w=0, f=Infinity, name='';
-    for(const [key,v] of p._active){ if(!countsFR(v) || !seenFR(v)) continue;   // Mike Horn = rareté vue EN France
+    for(const [key,v] of p._active){ if(!_countsForRarity(v) || !seenFR(v)) continue;
       const rw=rarityReal(v.sci), rf=realFreq(v.sci);
       if(rw>w || (rw===w && rf<f)){ w=rw; f=rf; name=frName(v.sci,v.common); }
       else if(rw===w && rf===f){ const nm=frName(v.sci,v.common); if(nm.localeCompare(name,'fr')<0) name=nm; }
     }
-    let cnt=0; for(const [key,v] of p._active){ if(!countsFR(v) || !seenFR(v)) continue; if(rarityReal(v.sci)===w && realFreq(v.sci)===f) cnt++; }
+    let cnt=0; for(const [key,v] of p._active){ if(!_countsForRarity(v) || !seenFR(v)) continue; if(rarityReal(v.sci)===w && realFreq(v.sci)===f) cnt++; }
     p._mike={ w, f, name, cnt };
   });
   const cands=state.people.filter(p=>p._mike.w>1);
