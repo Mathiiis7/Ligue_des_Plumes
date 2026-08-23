@@ -4673,11 +4673,23 @@ async function _showSpeciesDetailGbif(sciName){
   const key = await _sciToGbifKey(sciName);
   if(!key){ if(cnt) cnt.textContent = `Espèce introuvable dans la taxonomie GBIF`; return 0; }
   try{
-    const url = `https://api.gbif.org/v1/occurrence/search?taxonKey=${key}&country=${encodeURIComponent(country)}&classKey=212&hasCoordinate=true&year=${encodeURIComponent(yearParam)}${monthParam}&limit=300`;
-    const r = await fetch(url);
-    if(!r.ok){ if(cnt) cnt.textContent = `Erreur GBIF`; return 0; }
-    const j = await r.json();
-    const obs = j.results || [];
+    // Pagination : GBIF limite chaque page a 300, on parcourt jusqu'a MAX_PAGES pages
+    // (3000 obs max) pour eviter d'en manquer sur les especes tres communes en FR.
+    // On stop des qu'une page renvoie endOfRecords ou < 300 obs.
+    const MAX_PAGES = 10;
+    const obs = [];
+    let totalCount = 0;
+    for(let page = 0; page < MAX_PAGES; page++){
+      const url = `https://api.gbif.org/v1/occurrence/search?taxonKey=${key}&country=${encodeURIComponent(country)}&classKey=212&hasCoordinate=true&year=${encodeURIComponent(yearParam)}${monthParam}&limit=300&offset=${page*300}`;
+      if(cnt && page > 0) cnt.textContent = `… GBIF ${nm} ${yMin}-${yMax} (${obs.length}+)`;
+      const r = await fetch(url);
+      if(!r.ok){ if(cnt) cnt.textContent = `Erreur GBIF`; return 0; }
+      const j = await r.json();
+      if(page === 0) totalCount = j.count || 0;
+      const results = j.results || [];
+      obs.push(...results);
+      if(j.endOfRecords || results.length < 300) break;
+    }
     if(!obs.length){
       if(cnt) cnt.textContent = `Aucune obs GBIF de ${nm} dans ${ctyName} pour cette période`;
       return 0;
@@ -4698,7 +4710,8 @@ async function _showSpeciesDetailGbif(sciName){
       dot._sciName = sciName;
       _lyrDetail.addLayer(dot);
     }
-    if(cnt) cnt.textContent = `${obs.length} obs GBIF de ${nm} dans ${ctyName} (${yMin===yMax?yMin:yMin+'-'+yMax})`;
+    const trunc = (totalCount > obs.length) ? ` (sur ${totalCount} au total, tronqué)` : '';
+    if(cnt) cnt.textContent = `${obs.length} obs GBIF de ${nm} dans ${ctyName} (${yMin===yMax?yMin:yMin+'-'+yMax})${trunc}`;
     _fitLayer(_lyrDetail);
     return obs.length;
   }catch(err){
