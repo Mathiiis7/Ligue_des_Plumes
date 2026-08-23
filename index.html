@@ -1620,6 +1620,15 @@ function _mineHas(mine, sci){
   if(typeof ebFilter !== 'undefined' && ebFilter.showObserved) return false;
   return _mineHasStrict(mine, sci);
 }
+// Si une espece est absente de REAL_RARITY FR MAIS presente dans un catalogue etranger
+// (aujourd'hui REAL_RARITY_ME_EBIRD), c'est une espece qui n'a jamais ete observee en France
+// (Sittelle de Neumayer, Ammomane, Fauvette du desert...). On la traite comme "exceptionnelle"
+// (tier 9) plutot que tier 1 par defaut.
+function _isForeignOnly(k){
+  if(REAL_RARITY[k]) return false;
+  if(typeof REAL_RARITY_ME_EBIRD !== 'undefined' && REAL_RARITY_ME_EBIRD[k]) return true;
+  return false;
+}
 function rarityForCountry(sci, country){
   let k = (sci||'').trim().toLowerCase();
   if(SCI_ALIAS[k]) k = SCI_ALIAS[k];
@@ -1628,9 +1637,11 @@ function rarityForCountry(sci, country){
   const v = table[k];
   if(v) return v;
   if(isExotic(sci)) return 1;
-  // FR : convention REAL_RARITY exclut les tier 1 (defaut = tres commun). Absent = 1.
-  // Etranger : catalogue explicite, absent = vraiment inconnue.
-  return c === 'FR' ? 1 : 0;
+  // FR : convention REAL_RARITY exclut les tier 1 (defaut = tres commun). Absent = 1 SAUF
+  // si l'espece est presente dans un catalogue etranger (typiquement Balkans/Mediterranee) :
+  // c'est alors une accidentelle qui n'existe pas en France -> tier 9.
+  if(c === 'FR'){ return _isForeignOnly(k) ? 9 : 1; }
+  return 0;
 }
 function sciColorForCountry(sci, country){
   const c = country || 'FR';
@@ -1639,8 +1650,9 @@ function sciColorForCountry(sci, country){
   const table = c === 'ME' ? REAL_RARITY_ME_EBIRD : REAL_RARITY;
   if(table[k]) return realColor(table[k]);
   if(isExotic(sci)) return '#7e8a99';
-  // FR : convention absent = tier 1 (couleur "tres commun"). Etranger : gris inconnue.
-  if(c === 'FR') return realColor(1);
+  // FR : convention absent = tier 1 sauf si presente uniquement a l'etranger -> tier 9.
+  // Etranger : gris inconnue.
+  if(c === 'FR') return realColor(_isForeignOnly(k) ? 9 : 1);
   return '#94a3b8';
 }
 // Drapeau du pays pour afficher dans les popups "Rareté 🇲🇪 : X · Label" (montre que la
