@@ -1424,6 +1424,7 @@
             <option value="30" selected>30 jours</option>
           </select></label>
           <label id="smGbifMonthLbl">Mois <select id="smGbifMonth">
+            <option value="0">Tous</option>
             <option value="1">janvier</option><option value="2">février</option>
             <option value="3">mars</option><option value="4">avril</option>
             <option value="5">mai</option><option value="6">juin</option>
@@ -1434,7 +1435,7 @@
           <label id="smGbifYearMinLbl">De <input id="smGbifYearMin" type="number" min="1970" max="2026" value="2023" step="1"></label>
           <label id="smGbifYearMaxLbl">à <input id="smGbifYearMax" type="number" min="1970" max="2026" value="2025" step="1"></label>
           <label>Région <select id="smGbifRegion"><option value="">toute la France</option></select></label>
-          <label>Dépt <select id="smGbifDept"><option value="">tous</option></select></label>
+          <label id="smGbifDeptLbl" hidden>Dépt <select id="smGbifDept"><option value="">tous</option></select></label>
         </div>
         <div id="smMap" class="sm-map"></div>
         <div class="sm-map-hint" id="smMapHint"></div>
@@ -7478,7 +7479,7 @@ function openSpeciesModal(sci){
 // Instance Leaflet dediee a la fiche espece + etat associe.
 let _smMapInstance = null, _smMapLayer = null;
 let _smCurrentKey = '', _smMapMode = 'friends', _smMarkers = [];
-const _SM_MONTH_NAMES = ['','janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+const _SM_MONTH_NAMES = ["toute l'année",'janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
 const _gbifKeyBySci = new Map();
 let _smGbifSelectsInit = false;
 // Restaure le cache GBIF taxonKey depuis localStorage (persistant entre sessions).
@@ -7503,6 +7504,23 @@ function _persistGbifKeyCache(){
   }, 500);
 }
 // Peuple les dropdowns Region et Departement une seule fois.
+// Applique la visibilite des filtres selon le mode courant + presence d'une region.
+// Appele depuis _renderSpeciesMap ET le click handler du selecteur mode (pour repondre
+// instantanement sans attendre la fin du fetch).
+function _smApplyFilterVisibility(){
+  const gbifCtrl = document.getElementById('smMapGbifCtrl');
+  if(gbifCtrl) gbifCtrl.hidden = (_smMapMode === 'friends');
+  const isEb = _smMapMode === 'ebird', isGbif = _smMapMode === 'gbif';
+  const setVis = (id, show) => { const el = document.getElementById(id); if(el) el.hidden = !show; };
+  setVis('smEbDaysLbl', isEb);
+  setVis('smGbifMonthLbl', isGbif);
+  setVis('smGbifYearMinLbl', isGbif);
+  setVis('smGbifYearMaxLbl', isGbif);
+  // Dept visible uniquement si une region est selectionnee (evite d'avoir un dropdown
+  // avec les 96 depts FR quand on n'a pas encore choisi de region).
+  const region = document.getElementById('smGbifRegion')?.value || '';
+  setVis('smGbifDeptLbl', (isEb || isGbif) && !!region);
+}
 function _smInitGbifSelects(){
   if(_smGbifSelectsInit) return;
   const regSel = $('#smGbifRegion');
@@ -7702,7 +7720,9 @@ async function _smFetchGbif(sci, month, yearMin, yearMax, bbox){
   const key = await _sciToGbifKey(sci);
   if(!key) return { points:[], total:0, error:'taxonomy' };
   const yearParam = (yearMin===yearMax) ? String(yearMin) : `${yearMin},${yearMax}`;
-  let url = `https://api.gbif.org/v1/occurrence/search?taxonKey=${key}&country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}&month=${month}&limit=300`;
+  // month=0 = toute l'annee (aucun filtre GBIF month).
+  const monthParam = month > 0 ? `&month=${month}` : '';
+  let url = `https://api.gbif.org/v1/occurrence/search?taxonKey=${key}&country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}${monthParam}&limit=300`;
   if(bbox){
     url += `&decimalLatitude=${bbox[0]},${bbox[1]}&decimalLongitude=${bbox[2]},${bbox[3]}`;
   }
@@ -7761,15 +7781,9 @@ async function _renderSpeciesMap(key){
   }
   _smMarkers = [];
   // Affiche / masque les controles selon le mode. Region+Dept visibles pour eBird ET GBIF,
-  // Mois+Annee uniquement GBIF, Derniers uniquement eBird.
-  const gbifCtrl = $('#smMapGbifCtrl'); if(gbifCtrl) gbifCtrl.hidden = (_smMapMode === 'friends');
-  const isEb = _smMapMode === 'ebird', isGbif = _smMapMode === 'gbif';
-  const setVis = (id, show) => { const el = document.getElementById(id); if(el) el.hidden = !show; };
-  setVis('smEbDaysLbl', isEb);
-  setVis('smGbifMonthLbl', isGbif);
-  setVis('smGbifYearMinLbl', isGbif);
-  setVis('smGbifYearMaxLbl', isGbif);
-  if(isEb || isGbif) _smInitGbifSelects();
+  // Mois+Annee uniquement GBIF, Derniers uniquement eBird. Dept visible seulement si region.
+  _smApplyFilterVisibility();
+  if(_smMapMode === 'ebird' || _smMapMode === 'gbif') _smInitGbifSelects();
   _smSetHint('… chargement');
   // Recolte les points selon le mode
   let points = [];
@@ -7804,7 +7818,7 @@ async function _renderSpeciesMap(key){
       return;
     }
   } else if(_smMapMode === 'gbif'){
-    gbifMonth = parseInt($('#smGbifMonth')?.value, 10) || 8;
+    gbifMonth = parseInt($('#smGbifMonth')?.value, 10) || 0;
     const yMinRaw = parseInt($('#smGbifYearMin')?.value, 10) || 2023;
     const yMaxRaw = parseInt($('#smGbifYearMax')?.value, 10) || 2025;
     gbifYearMin = Math.min(yMinRaw, yMaxRaw);
@@ -7896,7 +7910,7 @@ document.addEventListener('click', e=>{
   const b = e.target.closest('#smMapSeg button[data-map-mode]'); if(!b) return;
   _smMapMode = b.dataset.mapMode;
   document.querySelectorAll('#smMapSeg button').forEach(x => x.classList.toggle('on', x===b));
-  const gbifCtrl = $('#smMapGbifCtrl'); if(gbifCtrl) gbifCtrl.hidden = (_smMapMode === 'friends');
+  _smApplyFilterVisibility();
   if(_smCurrentKey) _renderSpeciesMap(_smCurrentKey);
 });
 // Changement des selecteurs : reload la carte si on est en mode eBird ou GBIF.
@@ -7905,6 +7919,7 @@ document.addEventListener('change', e=>{
   const t = e.target; if(!t) return;
   if(t.id === 'smGbifRegion'){
     _smPopulateGbifDepts(t.value);
+    _smApplyFilterVisibility();   // dept visible / hidden selon si region choisie
     if((_smMapMode === 'gbif' || _smMapMode === 'ebird') && _smCurrentKey) _renderSpeciesMap(_smCurrentKey);
     return;
   }
