@@ -1959,7 +1959,18 @@ function activeInMonth(sci, m, region, subregion){
   return v >= Math.min(0.01, 0.3 * peak);
 }
 function realTier(sci, abroad){
-  if(isExotic(sci)) return { id:'exo', ord:0, label:'Exotique', color:'#7e8a99' };
+  if(isExotic(sci)){
+    // Categorie eBird : N (introduit etabli) et P (semi-libre) meritent leur tier reel
+    // (populations qui se comportent comme des sauvages). X (echappe) et C (domestique)
+    // restent en "Exotique" gris uniforme.
+    const kk = (sci||'').trim().toLowerCase();
+    const cat = _exoticCategory(kk);
+    if(cat === 'N' || cat === 'P'){
+      const t = REAL_RARITY_EXO_GBIF[kk] || REAL_RARITY[kk];
+      if(t) return { id:'r'+t, ord:t, label: (EXOTIC_CATEGORY_LABEL[cat]||'') + ' · ' + (REAL_LABELS[t]||('niveau '+t)), color:realColor(t) };
+    }
+    return { id:'exo', ord:0, label: EXOTIC_CATEGORY_LABEL[cat] || 'Exotique', color:'#7e8a99' };
+  }
   const key=(sci||'').trim().toLowerCase();
   // Espèce hors des 648 de référence France : ne pas prétendre "Très commun".
   // Si les données eBird (colonne State/Province) confirment qu'elle n'a été vue
