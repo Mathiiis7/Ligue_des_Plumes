@@ -1418,6 +1418,7 @@
             <button type="button" data-map-mode="ebird">eBird 30 j</button>
             <button type="button" data-map-mode="gbif">GBIF (mois)</button>
           </div>
+          <button type="button" id="smOpenBigMap" class="btn tiny" style="margin-left:auto;" title="Ouvrir cette espèce sur la grande carte (plus de points, tous les filtres)">↗ Voir en grand</button>
         </div>
         <div class="sm-map-gbif-ctrl" id="smMapGbifCtrl" hidden>
           <label id="smEbDaysLbl" hidden>Derniers <select id="smEbDays">
@@ -7949,6 +7950,37 @@ async function _renderSpeciesMap(key){
 // Clic sur le selecteur mode : switch + rechargement.
 // On cache immediatement la barre de controles GBIF (region / dept / mois / annees) hors mode
 // GBIF, sans attendre le render : garantit qu'elle n'apparait pas sur "Mes amis" ou "eBird 30 j".
+// Bouton "Voir en grand" : ferme le modal fiche et ouvre la grande carte "Observes
+// recemment" avec l'espece pre-recherchee et le mode courant (eBird ou GBIF).
+document.addEventListener('click', e=>{
+  const btn = e.target.closest('#smOpenBigMap'); if(!btn) return;
+  const sci = _smCurrentKey; if(!sci) return;
+  const nm = FR_NAMES[(sci||'').toLowerCase()] || sci;
+  // Reporte la source (eBird / GBIF) de la fiche vers la grande carte si possible.
+  if(_smMapMode === 'gbif' || _smMapMode === 'ebird'){
+    if(typeof ebFilter !== 'undefined'){
+      ebFilter.source = _smMapMode === 'gbif' ? 'gbif' : 'ebird';
+      document.querySelectorAll('#mapEbSource button').forEach(x => x.classList.toggle('on', x.dataset.source === ebFilter.source));
+    }
+  }
+  // Ferme le modal.
+  closeSpeciesModal();
+  // Bascule vers l'onglet Carte + mode À cocher (missing).
+  const mapTab = [...document.querySelectorAll('.tab')].find(t => t.dataset.view === 'map');
+  if(mapTab) mapTab.click();
+  const missingModeBtn = document.querySelector('#mapModes button[data-mode="missing"]');
+  if(missingModeBtn && mapMode !== 'missing') missingModeBtn.click();
+  // Injecte le nom d'espece dans la barre puis declenche le refetch cible.
+  setTimeout(() => {
+    const s = document.getElementById('mapSearch');
+    if(s){ s.value = nm; mapSearch = nm; }
+    const code = _sciToCode ? _sciToCode(sci) : null;
+    if(ebFilter.source === 'gbif'){ _showSpeciesDetailGbif(sci); }
+    else if(code){ _showSpeciesDetail(sci, code); }
+    // Scroll vers la carte pour la mettre en vue.
+    const mapEl = document.getElementById('mapEl'); if(mapEl) mapEl.scrollIntoView({ behavior:'smooth', block:'start' });
+  }, 100);
+});
 document.addEventListener('click', e=>{
   const b = e.target.closest('#smMapSeg button[data-map-mode]'); if(!b) return;
   _smMapMode = b.dataset.mapMode;
