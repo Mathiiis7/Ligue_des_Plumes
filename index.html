@@ -7599,13 +7599,32 @@ async function _smFetchEbirdRecent(sci, days, zone){
   }catch(_){ return { points:[], error:'network' }; }
 }
 // Resolution du nom scientifique vers un taxonKey GBIF (cache en memoire + localStorage).
+// Alias eBird->GBIF pour especes ou les 2 taxonomies divergent (GBIF garde parfois un
+// nom obsolete que eBird a splitte). Ex : eBird "Cecropis rufula" (split 2020) alors
+// que GBIF ne connait que "Cecropis daurica" au niveau espece.
+const GBIF_SCI_ALIAS = {
+  'cecropis rufula': 'cecropis daurica',
+  // ajoute ici d'autres divergences si on tombe dessus.
+};
 async function _sciToGbifKey(sci){
-  if(_gbifKeyBySci.has(sci)) return _gbifKeyBySci.get(sci);
-  try{
-    const r = await fetch(`https://api.gbif.org/v1/species/match?name=${encodeURIComponent(sci)}`);
+  // Cache hit sauf si valeur null ET on a un alias GBIF connu : retry pour recuperer.
+  if(_gbifKeyBySci.has(sci)){
+    const cached = _gbifKeyBySci.get(sci);
+    if(cached || !GBIF_SCI_ALIAS[(sci||'').toLowerCase()]) return cached;
+  }
+  // Essai 1 : nom eBird tel quel.
+  const tryFetch = async (name) => {
+    const r = await fetch(`https://api.gbif.org/v1/species/match?name=${encodeURIComponent(name)}`);
     if(!r.ok) throw new Error('http');
     const j = await r.json();
-    const key = (j.matchType === 'EXACT' || j.matchType === 'FUZZY') && j.speciesKey ? j.speciesKey : null;
+    return ((j.matchType === 'EXACT' || j.matchType === 'FUZZY') && j.speciesKey) ? j.speciesKey : null;
+  };
+  try{
+    let key = await tryFetch(sci);
+    // Essai 2 : alias GBIF si le nom eBird n'a pas matche au niveau espece.
+    if(!key && GBIF_SCI_ALIAS[(sci||'').toLowerCase()]){
+      key = await tryFetch(GBIF_SCI_ALIAS[(sci||'').toLowerCase()]);
+    }
     _gbifKeyBySci.set(sci, key);
     _persistGbifKeyCache();
     return key;
