@@ -1547,7 +1547,12 @@ function _exoticCategory(sci){
   const k = (sci||'').trim().toLowerCase();
   return EXOTIC_CATEGORY[k] || (isExotic(k) ? 'X' : '');
 }
-const EXOTIC_CATEGORY_LABEL = { 'N':'Naturalisé', 'P':'Provisoire', 'X':'Échappé', 'C':'Domestique' };
+const EXOTIC_CATEGORY_LABEL = {
+  'N':'Introduit établi',   // pop reproductrice etablie hors aire naturelle
+  'P':'Vu en parcs',        // regulier mais surtout parcs semi-captifs
+  'X':'Échappé isolé',      // individu echappe, pas de pop
+  'C':'Origine domestique'  // ferme, elevage, hybride domestique
+};
 // Rarete "observabilite reelle" des exotiques en FR, calibree via GBIF (inclut iNaturalist,
 // donc capture les obs de parcs publics que eBird filtre pour "captif"). Prime sur REAL_RARITY
 // pour les exotiques dans rarityForCountry (voir plus bas). Regenerable :
