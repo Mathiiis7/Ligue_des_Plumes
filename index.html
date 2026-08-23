@@ -3354,7 +3354,24 @@ for(const reg in REGION_TO_DEPTS) REGION_TO_DEPTS[reg].sort((a,b)=>DEPT_NAMES[a]
 const REGION_NAMES = Object.fromEntries(FR_REGIONS.map(r=>[r.code, r.name]));
 // Label zone pour compteurs : jamais affiché — la région/dept sélectionnée est déjà
 // visible dans les sélecteurs juste au-dessus, pas besoin de la répéter.
-function _zoneLabel(){ return ''; }
+function _zoneLabel(){
+  // Renvoie " · <dept>" ou " · <region>" ou " · <pays>", precede d'un separateur.
+  // Vide si pays FR sans region/dept (vue nationale par defaut).
+  const cty = ebFilter.country || 'FR';
+  if(ebFilter.dept){
+    const nm = DEPT_NAMES[ebFilter.dept] || ebFilter.dept;
+    return ` · ${nm}`;
+  }
+  if(ebFilter.region && ebFilter.region !== cty){
+    const nm = REGION_NAMES[ebFilter.region] || ebFilter.region;
+    return ` · ${nm}`;
+  }
+  if(cty !== 'FR'){
+    const map = { ME:'Monténégro', ES:'Espagne', PT:'Portugal', IT:'Italie', GR:'Grèce', HR:'Croatie', AL:'Albanie', MA:'Maroc', CH:'Suisse', BE:'Belgique', DE:'Allemagne', GB:'Royaume-Uni', TR:'Turquie', IS:'Islande' };
+    return ` · ${map[cty] || cty}`;
+  }
+  return '';
+}
 // (Re)peuple le sélecteur département en fonction de la région choisie.
 function _refreshDeptSel(){
   const sel = $('#mapEbDept'), lbl = $('#mapEbDeptLbl'); if(!sel) return;
@@ -4082,10 +4099,11 @@ async function _renderModeMissing(){
   // Label rareté : jamais affiché — les chips colorées en haut le disent déjà.
   const rarLbl = '';
   const zoneLbl = esc(_zoneLabel());
+  const srcLbl = ` · eBird ${days}j`;
   if(cnt) cnt.textContent = nObs
-    ? (heavy ? `${nObs} obs · ${nSp.size} espèce${nSp.size>1?'s':''}${rarLbl?' '+rarLbl:''}${zoneLbl}`
-             : `${nSp.size} espèce${nSp.size>1?'s':''} à cocher${rarLbl?' ('+rarLbl+')':''}${zoneLbl}`)
-    : (rarLbl ? `Aucune espèce ${rarLbl} à cocher${zoneLbl}` : `Rien à cocher${zoneLbl} — vous les avez toutes ! 🎯`);
+    ? (heavy ? `${nObs} obs · ${nSp.size} espèce${nSp.size>1?'s':''}${rarLbl?' '+rarLbl:''}${zoneLbl}${srcLbl}`
+             : `${nSp.size} espèce${nSp.size>1?'s':''} à cocher${rarLbl?' ('+rarLbl+')':''}${zoneLbl}${srcLbl}`)
+    : (rarLbl ? `Aucune espèce ${rarLbl} à cocher${zoneLbl}${srcLbl}` : `Rien à cocher${zoneLbl}${srcLbl} — vous les avez toutes ! 🎯`);
   _fitLayer(_lyrMissing);
   _mapApplyFilter();
   _populateMissingResultsPanel();
@@ -4191,7 +4209,7 @@ async function _renderModeMissingGbif(){
       }
     }
   } else {
-    if(cnt) cnt.textContent = `${res.points} obs GBIF · ${res.species} espèce${res.species>1?'s':''} à cocher · ${monthNames[month]} ${rangeTxt}`;
+    if(cnt) cnt.textContent = `${res.points} obs GBIF · ${res.species} espèce${res.species>1?'s':''} à cocher${_zoneLabel()} · ${monthNames[month]} ${rangeTxt}`;
   }
   _fitLayer(_lyrMissing);
   _mapApplyFilter();
