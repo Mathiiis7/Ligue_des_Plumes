@@ -4796,7 +4796,7 @@ document.addEventListener('change', e=>{
     _updateCountryHint();
     _repopulateEbRegionsForCountry(ebFilter.country)
       .catch(err => console.warn('eBird regions fetch failed for', ebFilter.country, err))
-      .finally(() => { renderMap(); });
+      .finally(() => { renderMap(); _reloadSpeciesForZone(); });
   }
   else if(e.target.id==='mapEbRegion'){
     ebFilter.region=e.target.value; ebFilter.dept='';
