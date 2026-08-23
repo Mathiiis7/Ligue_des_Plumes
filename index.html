@@ -4707,27 +4707,25 @@ async function _showSpeciesDetailGbif(sciName){
     totalCount = obs.length;
   } else {
     try{
-      // Pagination : GBIF limite chaque page a 300, on parcourt jusqu'a MAX_PAGES pages
-      // (3000 obs max) pour eviter d'en manquer sur les especes tres communes en FR.
-      // On stop des qu'une page renvoie endOfRecords ou < 300 obs.
+      // Pagination parallele : 1er appel donne count, on lance les pages restantes en parallele.
+      // Bien plus rapide que la version sequentielle (facteur ~N sur N pages). Cap 10 pages = 3000 obs.
       const MAX_PAGES = 10;
-      obs = [];
-      totalCount = 0;
-      for(let page = 0; page < MAX_PAGES; page++){
-        const url = `https://api.gbif.org/v1/occurrence/search?taxonKey=${key}&country=${encodeURIComponent(country)}&classKey=212&hasCoordinate=true&year=${encodeURIComponent(yearParam)}${monthParam}${bboxParam}&limit=300&offset=${page*300}`;
-        if(cnt && page > 0) cnt.textContent = `… GBIF ${nm} ${yMin}-${yMax} (${obs.length}+)`;
-        const r = await fetch(url);
-        if(!r.ok){ if(cnt) cnt.textContent = `Erreur GBIF`; return 0; }
-        const j = await r.json();
-        if(page === 0) totalCount = j.count || 0;
-        const results = j.results || [];
-        // gadmFilter FR : filtre client-side sur le nom de departement (bbox seule peut inclure
-        // des points hors dept, notamment sur les cotes / frontieres regionales).
-        const filtered = gadmFilter
-          ? results.filter(o => o.gadm && o.gadm[gadmFilter.level] && o.gadm[gadmFilter.level].name === gadmFilter.name)
-          : results;
-        obs.push(...filtered);
-        if(j.endOfRecords || results.length < 300) break;
+      const mkUrl = (page) => `https://api.gbif.org/v1/occurrence/search?taxonKey=${key}&country=${encodeURIComponent(country)}&classKey=212&hasCoordinate=true&year=${encodeURIComponent(yearParam)}${monthParam}${bboxParam}&limit=300&offset=${page*300}`;
+      const applyFilter = (results) => gadmFilter
+        ? results.filter(o => o.gadm && o.gadm[gadmFilter.level] && o.gadm[gadmFilter.level].name === gadmFilter.name)
+        : results;
+      const r0 = await fetch(mkUrl(0));
+      if(!r0.ok){ if(cnt) cnt.textContent = `Erreur GBIF`; return 0; }
+      const j0 = await r0.json();
+      totalCount = j0.count || 0;
+      obs = applyFilter(j0.results || []);
+      if(!j0.endOfRecords && (j0.results||[]).length === 300 && totalCount > 300){
+        const nPages = Math.min(MAX_PAGES, Math.ceil(totalCount / 300));
+        if(cnt) cnt.textContent = `… GBIF ${nm} ${yMin}-${yMax} (fetch ${nPages-1} pages en parallele)`;
+        const pageResults = await Promise.all(
+          Array.from({length: nPages - 1}, (_, i) => fetch(mkUrl(i + 1)).then(r => r.ok ? r.json() : {results:[]}))
+        );
+        for(const j of pageResults) obs.push(...applyFilter(j.results || []));
       }
       if(obs.length) _gbifCacheWrite(spCacheKey, obs.map(_gbifSlimObs));
     }catch(err){
