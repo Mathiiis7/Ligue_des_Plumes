@@ -7716,13 +7716,23 @@ function _gbifLocalityLooksReal(s){
 // "eBird 30 j" couvre les 30 derniers jours en live ; le mode GBIF regarde l'historique
 // (annees precises), et les records eBird historiques sont de la donnee legitime. Les exclure
 // eliminait ~90% des points visibles sur les periodes recentes.
+// Cas special : especes splittees ou GBIF backbone n'a pas suivi eBird. On query PLUSIEURS
+// taxonKeys en meme temps (GBIF supporte taxonKey multiples). Ex : Cecropis rufula (eBird)
+// est classee au niveau genre Cecropis (6085729) pour les obs iNaturalist recentes 2023+,
+// et au niveau espece Cecropis daurica (9717283) pour les obs plus anciennes / eBird.
+const GBIF_EXTRA_TAXONKEYS = {
+  'cecropis rufula': [6085729],   // genre Cecropis (attrape les obs iNat 2023+ mal typees)
+};
 async function _smFetchGbif(sci, month, yearMin, yearMax, bbox){
   const key = await _sciToGbifKey(sci);
   if(!key) return { points:[], total:0, error:'taxonomy' };
   const yearParam = (yearMin===yearMax) ? String(yearMin) : `${yearMin},${yearMax}`;
   // month=0 = toute l'annee (aucun filtre GBIF month).
   const monthParam = month > 0 ? `&month=${month}` : '';
-  let url = `https://api.gbif.org/v1/occurrence/search?taxonKey=${key}&country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}${monthParam}&limit=300`;
+  // Multi-taxonKey si l'espece a des cles secondaires connues (splits taxonomiques).
+  const extraKeys = GBIF_EXTRA_TAXONKEYS[(sci||'').toLowerCase()] || [];
+  const keysParam = [key, ...extraKeys].map(k => `taxonKey=${k}`).join('&');
+  let url = `https://api.gbif.org/v1/occurrence/search?${keysParam}&country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}${monthParam}&limit=300`;
   if(bbox){
     url += `&decimalLatitude=${bbox[0]},${bbox[1]}&decimalLongitude=${bbox[2]},${bbox[3]}`;
   }
