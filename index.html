@@ -5004,6 +5004,9 @@ document.addEventListener('click', e=>{
   _updateLegend();
   if(typeof _updateAbHint==='function') _updateAbHint();
   renderMap();
+  // Refetch de l'espece si une recherche est active (utile au switch source eBird->GBIF :
+  // renderMap seul est skip par le guard _hasSpeciesSearch, il faut donc reflancer la fiche).
+  _reloadSpeciesForZone();
 });
 document.addEventListener('change', e=>{
   if(e.target.id==='mapEbSort'){
