@@ -4671,7 +4671,8 @@ async function _showSpeciesDetailGbif(sciName){
   const monthParam = month > 0 ? `&month=${month}` : '';
   if(cnt) cnt.textContent = `… GBIF ${nm} ${yMin}-${yMax}`;
   // Filtre zone : reproduit la logique de _renderModeMissingGbif.
-  // FR : dept selectionne -> bbox + gadmFilter level2 (nom dept). Sinon FR entiere.
+  // FR : dept -> bbox + gadmFilter level2 (nom dept). Region -> bbox union des dept (pas
+  // de gadmFilter, GBIF n'a pas de niveau region). Sinon FR entiere.
   // Etranger : region/dept selectionne -> bbox via eBird ref/region/info. Sinon pays entier.
   let bbox = null, gadmFilter = null, zoneLabelExtra = '';
   if(country === 'FR' && ebFilter.dept && /^FR-[A-Z]+-([0-9A-Z]+)$/.test(ebFilter.dept)){
@@ -4682,6 +4683,9 @@ async function _showSpeciesDetailGbif(sciName){
       const d = FR_DEPTS.find(x => x[0] === dc);
       if(d){ gadmFilter = { level:'level2', name: d[1] }; zoneLabelExtra = ` · ${d[1]}`; }
     }
+  } else if(country === 'FR' && ebFilter.region && /^FR-[A-Z]+$/.test(ebFilter.region)){
+    bbox = _bboxOfRegion(ebFilter.region);
+    zoneLabelExtra = ` · ${ebFilter.region}`;
   } else if(country !== 'FR' && (ebFilter.dept || ebFilter.region)){
     const zone = ebFilter.dept || ebFilter.region;
     try{
