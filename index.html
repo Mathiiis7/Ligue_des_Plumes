@@ -4879,8 +4879,16 @@ async function _renderAbundanceOverlayFor(sci){
   const speciesData = SRC[sci];
   if(!speciesData){
     _removeAbundanceOverlay();
-    const cnt = $('#mapEbCount');
-    if(cnt){ cnt.textContent = `Pas de données de densité par département pour ${FR_NAMES[sci]||sci} — décoche la case.`; }
+    // Pas de data pour cette espece : decoche automatiquement la case + retire ses controles
+    // (evite d'ecraser le count "N obs de X" avec un message d'erreur intrusif).
+    const cb = document.getElementById('mapEbAbundance');
+    if(cb && cb.checked){
+      cb.checked = false;
+      _toggleAbundanceControls(false);
+      // Petit toast dans le hint pays (pas dans le count principal qui affiche les obs).
+      const hint = document.getElementById('mapCountryHint');
+      if(hint){ hint.textContent = `Pas de données de densité par département pour ${FR_NAMES[sci]||sci}`; hint.style.display = ''; setTimeout(() => { if(hint) hint.style.display = 'none'; }, 4000); }
+    }
     return;
   }
   const geojson = await _loadDeptGeoJSON();
