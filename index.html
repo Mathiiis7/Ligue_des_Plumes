@@ -4714,18 +4714,38 @@ async function _showSpeciesDetailGbif(sciName){
       const applyFilter = (results) => gadmFilter
         ? results.filter(o => o.gadm && o.gadm[gadmFilter.level] && o.gadm[gadmFilter.level].name === gadmFilter.name)
         : results;
-      const r0 = await fetch(mkUrl(0));
-      if(!r0.ok){ if(cnt) cnt.textContent = `Erreur GBIF`; return 0; }
-      const j0 = await r0.json();
+      // Helper : fetch resilient (retry x1 sur echec reseau, retour {results:[]} sinon).
+      // Reseau mobile en voyage peut faire echouer 1 requete sur 5 -> on ne veut pas casser tout.
+      const safeGbif = async (url) => {
+        for(let attempt = 0; attempt < 2; attempt++){
+          try{
+            const r = await fetch(url);
+            if(r.ok) return await r.json();
+          }catch(_){}
+        }
+        return { results:[], _err:true };
+      };
+      const j0 = await safeGbif(mkUrl(0));
+      if(j0._err){ if(cnt) cnt.textContent = `Erreur reseau — reessaie dans un instant`; return 0; }
       totalCount = j0.count || 0;
       obs = applyFilter(j0.results || []);
       if(!j0.endOfRecords && (j0.results||[]).length === 300 && totalCount > 300){
         const nPages = Math.min(MAX_PAGES, Math.ceil(totalCount / 300));
-        if(cnt) cnt.textContent = `… GBIF ${nm} ${yMin}-${yMax} (fetch ${nPages-1} pages en parallele)`;
-        const pageResults = await Promise.all(
-          Array.from({length: nPages - 1}, (_, i) => fetch(mkUrl(i + 1)).then(r => r.ok ? r.json() : {results:[]}))
-        );
-        for(const j of pageResults) obs.push(...applyFilter(j.results || []));
+        if(cnt) cnt.textContent = `… GBIF ${nm} ${yMin}-${yMax} (fetch ${nPages-1} pages)`;
+        // Concurrence 3 (mobile en voyage aime pas 5+ paralleles) via pool worker.
+        const pages = Array.from({length: nPages - 1}, (_, i) => i + 1);
+        const POOL = 3;
+        let cursor = 0, failed = 0;
+        async function worker(){
+          while(cursor < pages.length){
+            const p = pages[cursor++];
+            const j = await safeGbif(mkUrl(p));
+            if(j._err) failed++;
+            else obs.push(...applyFilter(j.results || []));
+          }
+        }
+        await Promise.all(Array.from({length: Math.min(POOL, pages.length)}, worker));
+        if(failed && cnt) cnt.textContent = `… ${failed} pages en echec, on garde ce qu'on a`;
       }
       if(obs.length) _gbifCacheWrite(spCacheKey, obs.map(_gbifSlimObs));
     }catch(err){
