@@ -3522,6 +3522,7 @@ function _toggleSpeciesSearchUI(searchActive){
     const cb = document.getElementById('mapEbAbundance');
     if(cb) cb.checked = false;
     _removeAbundanceOverlay();
+    _toggleAbundanceControls(false);
   }
 }
 function _reloadSpeciesForZone(){
@@ -3973,8 +3974,9 @@ async function renderMap(){
   $('#mapCtrlsMine').style.display = mine ? '' : 'none';
   $('#mapCtrlsEbird').style.display = (mine||abund) ? 'none' : '';
   $('#mapCtrlsAbundance').style.display = abund ? '' : 'none';
-  // Boutons Dessiner/Effacer visibles seulement en mode "A cocher".
-  const showDraw = mapMode === 'missing';
+  // Boutons Dessiner/Effacer visibles seulement en mode "A cocher" ET quand aucune espece
+  // n'est chargee (fiche espece = dessiner n'a pas de sens, on affiche deja les obs cibles).
+  const showDraw = mapMode === 'missing' && !_hasSpeciesSearch();
   const drawStart = $('#mapDrawStart'), drawClear = $('#mapDrawClear');
   if(drawStart) drawStart.style.display = showDraw ? '' : 'none';
   if(drawClear) drawClear.style.display = (showDraw && ebFilter.polygon) ? '' : 'none';
@@ -4751,21 +4753,42 @@ async function _renderModeAbundance(){
 // Overlay choroplethe abondance depart (Cornell Status & Trends) pour une espece donnee.
 // Utilise depuis le mode "A cocher" quand la checkbox #mapEbAbundance est activee et qu'une
 // espece est chargee. Rend uniquement en FR (donnees S&T FR-only) et si l'espece a des data.
+// Respecte les filtres abFilter (view abs/rank, metric max/mean, month).
+let _lastAbundanceSci = null;
 async function _renderAbundanceOverlayFor(sci){
   if(!_map || !sci) return;
   if(ebFilter.country !== 'FR'){ _removeAbundanceOverlay(); return; }
+  _lastAbundanceSci = sci;
   if(!Object.keys(REAL_ABUNDANCE_DEPT).length) await _loadAbundanceData();
-  const SRC = REAL_ABUNDANCE_DEPT;
+  const SRC = abFilter.metric === 'mean'
+    ? (typeof REAL_ABUNDANCE_DEPT_MEAN === 'object' && Object.keys(REAL_ABUNDANCE_DEPT_MEAN).length ? REAL_ABUNDANCE_DEPT_MEAN : REAL_ABUNDANCE_DEPT)
+    : REAL_ABUNDANCE_DEPT;
   const speciesData = SRC[sci];
-  if(!speciesData){ _removeAbundanceOverlay(); return; }   // espece hors catalogue S&T
+  if(!speciesData){
+    _removeAbundanceOverlay();
+    const cnt = $('#mapEbCount');
+    if(cnt){ cnt.textContent = `Pas de données Cornell S&T pour ${FR_NAMES[sci]||sci} — décoche la choroplèthe.`; }
+    return;
+  }
   const geojson = await _loadDeptGeoJSON();
-  const valueForDept = appCode => { const arr = speciesData[appCode]; return arr ? Math.max(...arr) : 0; };
+  const m = +($('#mapAbMonth')?.value || 0);
+  const valueForDept = appCode => { const arr = speciesData[appCode]; if(!arr) return 0; return m ? (arr[m-1]||0) : Math.max(...arr); };
+  const scored = Object.keys(speciesData).map(app => ({ app, v:valueForDept(app) })).filter(x => x.v > 0).sort((a,b) => b.v - a.v);
+  const rankByApp = {}; scored.forEach((x, i) => { rankByApp[x.app] = i+1; });
+  const totalRanked = scored.length;
+  const colorScoreFor = app => { const rank = rankByApp[app]; if(!rank) return 0; return 1 - (rank - 1) / Math.max(1, totalRanked - 1); };
   if(_lyrAbundance){ _lyrAbundance.remove(); _lyrAbundance = null; }
   _lyrAbundance = L.geoJSON(geojson, {
     style: (f) => {
       const insee = f.properties.code;
       const app = _INSEE_TO_APP[insee];
       if(!app) return { fillOpacity:0, weight:0 };
+      if(abFilter.view === 'rank'){
+        const score = colorScoreFor(app);
+        if(!rankByApp[app]) return { fillOpacity:0, weight:0 };
+        const hue = Math.round(60 - 60*score);
+        return { fillColor:`hsl(${hue},85%,${Math.round(52 - score*20)}%)`, fillOpacity:0.35 + 0.5*score, weight:1, color:'#666' };
+      }
       return _abColorAbs(valueForDept(app));
     },
     onEachFeature: (f, layer) => {
@@ -4778,18 +4801,36 @@ async function _renderAbundanceOverlayFor(sci){
       let bestMonth = 1, bestV = 0;
       if(arr) for(let i=0;i<12;i++){ if(arr[i]>bestV){ bestV=arr[i]; bestMonth=i+1; } }
       const MONTHS = ['','janv.','févr.','mars','avr.','mai','juin','juill.','août','sept.','oct.','nov.','déc.'];
+      const metricLbl = abFilter.metric === 'mean' ? 'moyenne dept' : 'peak dept';
+      const scope = m ? `en ${MONTHS[m]}` : "toute l'année";
+      const rank = rankByApp[app];
+      const rankLbl = rank ? `<b>${rank}<sup>e</sup></b> sur ${totalRanked} depts` : 'non classé (0 obs)';
       layer.bindPopup(`<b>${esc(nm)}</b> <span class="p-sci">${esc(sci)}</span>`+
-        `<span class="p-meta"><b>${esc(f.properties.nom)}</b> (${esc(insee)})</span>`+
-        `<span class="p-meta">Abondance peak dept : <b>${v.toFixed(3)}</b> (${_abLabel(v)})</span>`+
-        (bestV>0 ? `<span class="p-meta">Meilleur mois : <b>${MONTHS[bestMonth]}</b> (${bestV.toFixed(3)})</span>` : ''));
+        `<span class="p-meta"><b>${esc(f.properties.nom)}</b> (${esc(insee)}) — ${rankLbl}</span>`+
+        `<span class="p-meta">Abondance ${metricLbl} · ${scope} : <b>${v.toFixed(3)}</b> (${_abLabel(v)})</span>`+
+        (m && bestMonth !== m ? `<span class="p-meta">Meilleur mois ici : <b>${MONTHS[bestMonth]}</b> (${bestV.toFixed(3)})</span>` : ''));
     }
   });
-  // AddTo puis bringToBack pour que la choropleth reste derriere les circleMarkers du species.
   _lyrAbundance.addTo(_map);
   try{ _lyrAbundance.bringToBack(); }catch(_){}
 }
 function _removeAbundanceOverlay(){
   if(_lyrAbundance){ _lyrAbundance.remove(); _lyrAbundance = null; }
+  _lastAbundanceSci = null;
+}
+// Affiche/cache les controles filtre abondance (view, metric, mois) quand la checkbox est on/off.
+function _toggleAbundanceControls(show){
+  const ctrls = document.getElementById('mapCtrlsAbundance');
+  if(!ctrls) return;
+  if(show){
+    ctrls.style.display = '';
+    // Cache la ligne "Points obs 30j" et le compteur #mapAbCount qui font doublon avec la
+    // couche species + le #mapEbCount principal.
+    const hs = document.getElementById('mapAbShowHs'); if(hs) hs.closest('label').style.display = 'none';
+    const abCnt = document.getElementById('mapAbCount'); if(abCnt) abCnt.style.display = 'none';
+  } else {
+    ctrls.style.display = 'none';
+  }
 }
 // Charge et affiche toutes les obs récentes d'une espèce (endpoint /recent/{speciesCode}).
 // Utilise la zone effective (dept > région > national). Cache la couche "missing" pour ne montrer
@@ -5048,6 +5089,7 @@ document.addEventListener('change', e=>{
   }
   else if(e.target.id==='mapEbAbundance'){
     // Toggle choropleth abondance dept pour l'espece courante (S&T FR seulement).
+    _toggleAbundanceControls(!!e.target.checked);
     if(e.target.checked){
       const q = (mapSearch||'').trim();
       let sci = null;
@@ -5057,6 +5099,12 @@ document.addEventListener('change', e=>{
     } else {
       _removeAbundanceOverlay();
     }
+  }
+  else if(e.target.id==='mapAbMonth'){
+    abFilter.month = +e.target.value || 0;
+    // Legacy : abundance mode utilise renderMap. Nouveau : si overlay fusionne actif, re-render.
+    if(mapMode === 'abundance') renderMap();
+    else if(_lastAbundanceSci && document.getElementById('mapEbAbundance')?.checked){ _renderAbundanceOverlayFor(_lastAbundanceSci); }
   }
   else if(e.target.id==='mapEbCountry'){
     ebFilter.country = e.target.value || 'FR';
@@ -5092,7 +5140,7 @@ document.addEventListener('change', e=>{
     _reloadSpeciesForZone();
   }
   else if(e.target.id==='mapEbMonth'){ ebFilter.month=+e.target.value||0; _loaded.hotspots=''; if(!_hasSpeciesSearch()) renderMap(); _reloadSpeciesForZone(); }
-  else if(e.target.id==='mapAbMonth'){ abFilter.month=+e.target.value||0; if(mapMode==='abundance') renderMap(); }
+  // mapAbMonth handled above (nouveau : cover fusion overlay + legacy abundance mode).
   else if(e.target.id==='mapAbShowHs'){ abFilter.showHotspots = !!e.target.checked; if(mapMode==='abundance') _renderAbHotspots(); }
 });
 // Hint visible sous les toggles du mode "Où trouver" — explique ce que fait l'option active
@@ -5117,6 +5165,7 @@ document.addEventListener('click', e=>{
   document.querySelectorAll('#mapAbMetric button').forEach(x=>x.classList.toggle('on', x===b));
   _updateAbHint();
   if(mapMode==='abundance') renderMap();
+  else if(_lastAbundanceSci && document.getElementById('mapEbAbundance')?.checked) _renderAbundanceOverlayFor(_lastAbundanceSci);
 });
 // Toggle vue Absolu / Rang pour le mode "Où trouver"
 document.addEventListener('click', e=>{
@@ -5127,6 +5176,7 @@ document.addEventListener('click', e=>{
   _updateLegend();
   _updateAbHint();
   if(mapMode==='abundance') renderMap();
+  else if(_lastAbundanceSci && document.getElementById('mapEbAbundance')?.checked) _renderAbundanceOverlayFor(_lastAbundanceSci);
 });
 // Slider "min à cocher" + champ "contient espèce" (event input pour réponse live).
 // Ces filtres sont client-side mais nécessitent un re-render de la couche → on invalide le cache.
