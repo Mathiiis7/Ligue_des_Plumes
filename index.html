@@ -1488,7 +1488,7 @@ let unsubPresence = null, onlineMap = new Map(), presenceTimer = null, presenceW
 let unsubVotes = null, votesMap = new Map(), unsubFavs = null;
 let unsubReactions = null, reactionsMap = new Map(), unsubPhotos = null, photos = [];
 let unsubComments = null, commentsMap = new Map();   // Map<target, Array<{id,uid,name,text,createdAt}>>
-let unsubTrophyEvents = null, trophyEventsList = [];   // events synchronises via Firestore (partages entre appareils)
+let unsubTrophyEvents = null, trophyEventsList = [], _trophyEventsLoaded = false;   // events synchronises via Firestore (partages entre appareils)
 let unsubRequests = null, requests = [], unsubReqVotes = null, reqVotesMap = new Map();
 // Admin(s) : uid autorisé à changer le statut d'une requête (À faire / En cours / Fait).
 // Mathis (compte email) — ajouter d'autres uid si besoin.
@@ -2979,12 +2979,14 @@ function subscribe(){
     snap=>{ const m=new Map(); snap.forEach(d=>{ const v=d.data()||{}; if(!v.requestId||!v.uid)return; if(!m.has(v.requestId))m.set(v.requestId,new Set()); m.get(v.requestId).add(v.uid); }); reqVotesMap=m; renderRequests(); },
     ()=>{});
   if(unsubTrophyEvents){ unsubTrophyEvents(); unsubTrophyEvents=null; }
+  _trophyEventsLoaded = false;
   unsubTrophyEvents = onSnapshot(collection(db,'leagues',leagueId,'trophyEvents'),
     snap=>{
       const arr = [];
       snap.forEach(d => { const v = d.data() || {}; if(!v.kind || !v.uid) return; arr.push({ id:d.id, ...v, at: v.at?.toMillis?.() || 0 }); });
       arr.sort((a,b) => a.at - b.at);   // ordre chronologique croissant (renderFeed retriera desc)
       trophyEventsList = arr;
+      _trophyEventsLoaded = true;   // 1re reponse recue -> _detectTrophyEvents peut ecrire sans race
       renderFeed(); updateTabDots();
     }, ()=>{});
 }
@@ -3194,6 +3196,10 @@ function _slug(s){ return (s||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').repla
 // La collection sert de source de verite : le fil affiche trophyEventsList (populee par le snapshot).
 function _detectTrophyEvents(){
   if(!realPeople.length || !myUid || !leagueId) return;
+  // On attend que le snapshot Firestore ait repondu au moins une fois : sinon existingIds
+  // est vide et on re-ecrit tous les events avec un nouveau serverTimestamp (bug historique
+  // "trophees qui reapparaissent au hasard").
+  if(!_trophyEventsLoaded) return;
   const prev = _loadCompState();
   const firstRun = !prev.unlocked;
   const N = state.people.length || realPeople.length;
