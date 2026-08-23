@@ -4670,6 +4670,29 @@ async function _showSpeciesDetailGbif(sciName){
   const yearParam = (yMin===yMax) ? String(yMin) : `${yMin},${yMax}`;
   const monthParam = month > 0 ? `&month=${month}` : '';
   if(cnt) cnt.textContent = `… GBIF ${nm} ${yMin}-${yMax}`;
+  // Filtre zone : reproduit la logique de _renderModeMissingGbif.
+  // FR : dept selectionne -> bbox + gadmFilter level2 (nom dept). Sinon FR entiere.
+  // Etranger : region/dept selectionne -> bbox via eBird ref/region/info. Sinon pays entier.
+  let bbox = null, gadmFilter = null, zoneLabelExtra = '';
+  if(country === 'FR' && ebFilter.dept && /^FR-[A-Z]+-([0-9A-Z]+)$/.test(ebFilter.dept)){
+    bbox = _mapZoneToBbox(ebFilter.dept);
+    const deptM = ebFilter.dept.match(/^FR-[A-Z]+-([0-9A-Z]+)$/);
+    if(deptM){
+      let dc = deptM[1]; if(dc === '75C') dc = '75';
+      const d = FR_DEPTS.find(x => x[0] === dc);
+      if(d){ gadmFilter = { level:'level2', name: d[1] }; zoneLabelExtra = ` · ${d[1]}`; }
+    }
+  } else if(country !== 'FR' && (ebFilter.dept || ebFilter.region)){
+    const zone = ebFilter.dept || ebFilter.region;
+    try{
+      const info = await _ebFetch(`https://api.ebird.org/v2/ref/region/info/${zone}`);
+      if(info && info.bounds){
+        bbox = [info.bounds.minY, info.bounds.maxY, info.bounds.minX, info.bounds.maxX];
+        if(info.result) zoneLabelExtra = ` · ${info.result}`;
+      }
+    }catch(_){}
+  }
+  const bboxParam = bbox ? `&decimalLatitude=${bbox[0]},${bbox[1]}&decimalLongitude=${bbox[2]},${bbox[3]}` : '';
   const key = await _sciToGbifKey(sciName);
   if(!key){ if(cnt) cnt.textContent = `Espèce introuvable dans la taxonomie GBIF`; return 0; }
   try{
@@ -4680,14 +4703,19 @@ async function _showSpeciesDetailGbif(sciName){
     const obs = [];
     let totalCount = 0;
     for(let page = 0; page < MAX_PAGES; page++){
-      const url = `https://api.gbif.org/v1/occurrence/search?taxonKey=${key}&country=${encodeURIComponent(country)}&classKey=212&hasCoordinate=true&year=${encodeURIComponent(yearParam)}${monthParam}&limit=300&offset=${page*300}`;
+      const url = `https://api.gbif.org/v1/occurrence/search?taxonKey=${key}&country=${encodeURIComponent(country)}&classKey=212&hasCoordinate=true&year=${encodeURIComponent(yearParam)}${monthParam}${bboxParam}&limit=300&offset=${page*300}`;
       if(cnt && page > 0) cnt.textContent = `… GBIF ${nm} ${yMin}-${yMax} (${obs.length}+)`;
       const r = await fetch(url);
       if(!r.ok){ if(cnt) cnt.textContent = `Erreur GBIF`; return 0; }
       const j = await r.json();
       if(page === 0) totalCount = j.count || 0;
       const results = j.results || [];
-      obs.push(...results);
+      // gadmFilter FR : filtre client-side sur le nom de departement (bbox seule peut inclure
+      // des points hors dept, notamment sur les cotes / frontieres regionales).
+      const filtered = gadmFilter
+        ? results.filter(o => o.gadm && o.gadm[gadmFilter.level] && o.gadm[gadmFilter.level].name === gadmFilter.name)
+        : results;
+      obs.push(...filtered);
       if(j.endOfRecords || results.length < 300) break;
     }
     if(!obs.length){
@@ -4710,8 +4738,8 @@ async function _showSpeciesDetailGbif(sciName){
       dot._sciName = sciName;
       _lyrDetail.addLayer(dot);
     }
-    const trunc = (totalCount > obs.length) ? ` (sur ${totalCount} au total, tronqué)` : '';
-    if(cnt) cnt.textContent = `${obs.length} obs GBIF de ${nm} dans ${ctyName} (${yMin===yMax?yMin:yMin+'-'+yMax})${trunc}`;
+    const trunc = (totalCount > obs.length && !gadmFilter) ? ` (sur ${totalCount} au total, tronqué)` : '';
+    if(cnt) cnt.textContent = `${obs.length} obs GBIF de ${nm} dans ${ctyName}${zoneLabelExtra} (${yMin===yMax?yMin:yMin+'-'+yMax})${trunc}`;
     _fitLayer(_lyrDetail);
     return obs.length;
   }catch(err){
