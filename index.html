@@ -1664,12 +1664,20 @@ const COUNTRY_FLAG = {
 function _rarityBadge(w, country, sci){
   const c = country || 'FR';
   const pillFor = tier => tier ? `<span style="display:inline-block;background:${realColor(tier)};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11.5px;vertical-align:middle;">${tier}</span>` : '<span style="display:inline-block;background:#94a3b8;color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">?</span>';
+  // sciKey normalise pour tester _isForeignOnly (couvre les alias taxo).
+  const sciKey = (() => { if(!sci) return ''; let k=(sci||'').trim().toLowerCase(); if(SCI_ALIAS[k]) k=SCI_ALIAS[k]; return k; })();
   const lineFor = (cc, tier) => {
     // Drapeau : force une hauteur fixe (12px) pour que tous les pays s'affichent a la
     // meme taille visuelle (les images flagcdn ont des aspect-ratios differents).
     const flg = flagImg(cc) || '';
     const flgFixed = flg.replace('<img ', '<img style="height:12px;width:auto;vertical-align:middle;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.08);" ');
     const flgSpan = `<span style="display:inline-block;vertical-align:middle;margin-right:6px;">${flgFixed}</span>`;
+    // Cas special FR : espece hors-aire (jamais observee en France, connue uniquement dans
+    // les catalogues etrangers) -> badge gris "Hors aire", pas tier "Exceptionnel" trompeur.
+    if(cc === 'FR' && sciKey && _isForeignOnly(sciKey)){
+      const pill = `<span style="display:inline-block;background:#7e8a99;color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">—</span>`;
+      return `${flgSpan}${pill} Hors aire`;
+    }
     if(tier) return `${flgSpan}${pillFor(tier)} ${REAL_LABELS[tier]||''}`;
     return `${flgSpan}Rareté inconnue`;
   };
