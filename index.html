@@ -1748,8 +1748,11 @@ function _rarityBadge(w, country, sci){
       const pillBg = useColor ? realColor(realTier) : '#7e8a99';
       const pillTxt = useColor ? String(realTier) : cat;
       const pill = `<span style="display:inline-block;background:${pillBg};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">${pillTxt}</span>`;
-      const tail = realTier ? ` <span style="opacity:.7;font-size:11px;">· ${REAL_LABELS[realTier]||''}</span>` : '';
-      return `${flgSpan}${pill} ${catLbl}${tail}`;
+      // Ordre : [pill] <label du tier> · <categorie exotique>. Le pill = numero de tier,
+      // donc son label immediat = "Peu commun" etc, categorie en meta gris a droite.
+      const tierLbl = realTier ? ` ${REAL_LABELS[realTier]||''}` : '';
+      const catTail = ` <span style="opacity:.7;font-size:11px;">· ${catLbl}</span>`;
+      return `${flgSpan}${pill}${tierLbl}${catTail}`;
     }
     // Cas special FR : espece hors-aire (jamais observee en France, connue uniquement dans
     // les catalogues etrangers) -> badge gris "Hors aire", pas tier "Exceptionnel" trompeur.
