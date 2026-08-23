@@ -1636,10 +1636,13 @@ function rarityForCountry(sci, country){
   let k = (sci||'').trim().toLowerCase();
   if(SCI_ALIAS[k]) k = SCI_ALIAS[k];
   const c = country || 'FR';
+  // Exotique = gris tier 1 : convention app (introduits/echappes ne comptent pas comme
+  // "rares" au sens biodiversite meme si eBird les classe rares statistiquement).
+  // Check AVANT REAL_RARITY : sinon Leiothrix jaune (freq 0.4% en FR) sortait tier 7.
+  if(isExotic(sci)) return 1;
   const table = c === 'ME' ? REAL_RARITY_ME_EBIRD : REAL_RARITY;
   const v = table[k];
   if(v) return v;
-  if(isExotic(sci)) return 1;
   // FR : convention REAL_RARITY exclut les tier 1 (defaut = tres commun). Absent = 1 SAUF
   // si l'espece est presente dans un catalogue etranger (typiquement Balkans/Mediterranee) :
   // c'est alors une accidentelle qui n'existe pas en France -> tier 9.
@@ -1650,9 +1653,11 @@ function sciColorForCountry(sci, country){
   const c = country || 'FR';
   let k = (sci||'').trim().toLowerCase();
   if(SCI_ALIAS[k]) k = SCI_ALIAS[k];
+  // Exotique = gris. Check AVANT REAL_RARITY (sinon Leiothrix jaune, freq 0.4%, sortait
+  // en couleur tier 7 "Rare" alors que c'est un introduit qui doit rester gris).
+  if(isExotic(sci)) return '#7e8a99';
   const table = c === 'ME' ? REAL_RARITY_ME_EBIRD : REAL_RARITY;
   if(table[k]) return realColor(table[k]);
-  if(isExotic(sci)) return '#7e8a99';
   // FR : convention absent = tier 1 sauf si presente uniquement a l'etranger -> tier 9.
   // Etranger : gris inconnue.
   if(c === 'FR') return realColor(_isForeignOnly(k) ? 9 : 1);
