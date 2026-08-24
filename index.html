@@ -246,7 +246,7 @@
   .rar-chip-m .dot { width:12px; height:12px; border:2px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.25); margin-right:2px; }
   /* Chips pays : drapeau seul, sans texte. */
   .flag-chip { padding:3px 5px; min-width:26px; justify-content:center; }
-  .flag-chip img.flag { display:block; height:14px; width:auto; border-radius:2px; box-shadow:0 0 0 1px rgba(0,0,0,.15); }
+  .flag-chip img.flag { display:block; height:14px; width:calc(14px * 4 / 3); border-radius:2px; box-shadow:0 0 0 1px rgba(0,0,0,.15); object-fit:cover; object-position:center; }
   .flag-chip .flag-fallback { font:600 11px/1 system-ui; color:var(--ink-3); }
   /* Chips famille : plus petites, compactes (il y en a beaucoup). */
   .fam-chip { padding:4px 9px; font-size:11.5px; }
@@ -324,18 +324,20 @@
     color:var(--ink-3); font-size:12px; }
   td.pcol { text-align:center; padding:0; position:relative; }
   .abroad-mark { position:absolute; bottom:1px; right:1px; font-size:8px; line-height:1; pointer-events:none; }
-  .abroad-mark .flag { height:8px; vertical-align:0; border-radius:1px; box-shadow:0 0 0 .5px rgba(0,0,0,.25); }
+  .abroad-mark .flag { height:8px; width:calc(8px * 4 / 3); vertical-align:0; border-radius:1px; box-shadow:0 0 0 .5px rgba(0,0,0,.25); object-fit:cover; object-position:center; }
   .abroad-mark-inline { margin-left:3px; font-size:9px; }
-  .abroad-mark-inline .flag { height:9px; vertical-align:-1px; box-shadow:0 0 0 .5px rgba(0,0,0,.2); }
+  .abroad-mark-inline .flag { height:9px; width:calc(9px * 4 / 3); vertical-align:-1px; box-shadow:0 0 0 .5px rgba(0,0,0,.2); object-fit:cover; object-position:center; }
   td.pcol.is-seen { background:color-mix(in srgb,var(--accent) 18%,var(--surface)) !important;
     color:var(--accent-ink); font-weight:700; }
   td.pcol.is-foreign { background:color-mix(in srgb,#8a7fb3 16%,var(--surface)) !important; }
   td.pcol.is-foreign .chk { font-size:11px; }
   .mc-person.is-foreign { opacity:.7; }
   td.pcol .chk { font-style:normal; font-size:13px; }
-  .flag { display:inline-block; height:13px; width:auto; vertical-align:-2px; border-radius:2px; box-shadow:0 0 0 .5px rgba(0,0,0,.18); }
+  /* Tous les drapeaux ont un aspect-ratio uniforme (4/3) + object-fit cover : plus de
+     variation de largeur entre pays (le Nepal ou la Suisse ne rompent plus l'alignement). */
+  .flag { display:inline-block; height:13px; width:calc(13px * 4 / 3); vertical-align:-2px; border-radius:2px; box-shadow:0 0 0 .5px rgba(0,0,0,.18); object-fit:cover; object-position:center; }
   .country-badge { display:inline-flex; align-items:center; gap:8px; padding:5px 12px; border-radius:20px; background:var(--surface-2); border:1px solid var(--line); font-size:13.5px; font-weight:600; color:var(--ink); white-space:nowrap; }
-  .country-badge .flag { height:16px; vertical-align:0; }
+  .country-badge .flag { height:16px; width:calc(16px * 4 / 3); vertical-align:0; }
   .chip { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:4px;
     white-space:nowrap; background:color-mix(in srgb,var(--tc) 16%,transparent); color:var(--tc);
     border:1px solid color-mix(in srgb,var(--tc) 30%,transparent); }
@@ -1918,7 +1920,7 @@ function _rarityBadge(w, country, sci){
     // Drapeau : force une hauteur fixe (12px) pour que tous les pays s'affichent a la
     // meme taille visuelle (les images flagcdn ont des aspect-ratios differents).
     const flg = flagImg(cc) || '';
-    const flgFixed = flg.replace('<img ', '<img style="height:12px;width:auto;vertical-align:middle;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.08);" ');
+    const flgFixed = flg.replace('<img ', '<img style="height:12px;width:16px;object-fit:cover;object-position:center;vertical-align:middle;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.08);" ');
     const flgSpan = `<span style="display:inline-block;vertical-align:middle;margin-right:6px;">${flgFixed}</span>`;
     // Cas exotique : badge avec categorie eBird (N/P/X/C) + tier "observabilite reelle"
     // (GBIF pour capturer les obs de parcs publics que eBird sous-classe).
@@ -7812,7 +7814,7 @@ function _renderSpeciesRarityCard(key){
     const cat = isExo ? _exoticCategory(k) : '';
     const catLbl = cat ? (EXOTIC_CATEGORY_LABEL[cat] || '') : '';
     const country = avail.find(c => c.code === cc) || avail[0];
-    const flgFixed = (country.flag||'').replace('<img ', '<img style="height:14px;width:auto;vertical-align:middle;border-radius:2px;margin-right:8px;box-shadow:0 0 0 1px rgba(0,0,0,.08);" ');
+    const flgFixed = (country.flag||'').replace('<img ', '<img style="height:14px;width:19px;object-fit:cover;object-position:center;vertical-align:middle;border-radius:2px;margin-right:8px;box-shadow:0 0 0 1px rgba(0,0,0,.08);" ');
     const pill = `<span style="display:inline-block;background:${color};color:#fff;padding:3px 12px;border-radius:8px;font-weight:800;font-size:15px;min-width:28px;text-align:center;margin-right:10px;">${w}</span>`;
     const catBadge = catLbl ? `<span style="font-size:12px;color:var(--ink-3);margin-left:10px;">· ${esc(catLbl)}</span>` : '';
     $('#smRarityLine').innerHTML = `<div style="display:flex;align-items:center;gap:6px;padding:6px 0;">${flgFixed}${pill}<span style="font-weight:600;color:var(--ink);">${esc(label)}</span>${catBadge}</div>`;
