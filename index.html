@@ -1572,7 +1572,7 @@
         <div class="sm-panel" data-sm-panel="info">
           <!-- Photo card en haut : image entiere, ratio 16/9, credit dessous -->
           <div class="sm-card sm-photo-card" id="smPhotoCard" hidden>
-            <img id="smHeroImg" alt="" src="" onerror="this.closest('.sm-photo-card').hidden=true">
+            <img id="smHeroImg" alt="" src="" crossorigin="anonymous" onerror="this.closest('.sm-photo-card').hidden=true">
           </div>
           <div class="sm-card">
             <div class="sm-card-title">Description</div>
@@ -7800,18 +7800,16 @@ function _renderSpeciesFreqChart(key){
 // Extrait la couleur "vive" dominante d'une image (echantillonnage canvas). Retourne
 // [r,g,b] ou null si CORS bloque ou image inaccessible. Cache par URL.
 const _domColorCache = new Map();
-async function _extractDominantColor(url){
+async function _extractDominantColor(url, existingImg){
   if(!url) return null;
   if(_domColorCache.has(url)) return _domColorCache.get(url);
-  return new Promise(resolve => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      try{
-        const size = 32;   // canvas 32x32 : assez pour extraire une couleur representative
-        const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
-        const ctx = cv.getContext('2d');
-        ctx.drawImage(img, 0, 0, size, size);
+  // Helper : sample un HTMLImageElement charge, retourne [r,g,b] ou null.
+  const sampleImg = (img) => {
+    try{
+      const size = 32;
+      const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
+      const ctx = cv.getContext('2d');
+      ctx.drawImage(img, 0, 0, size, size);
         const data = ctx.getImageData(0, 0, size, size).data;
         // Groupe les pixels par bucket colore (5 bits par canal) et compte les occurrences
         // ponderes par la saturation (favorise les couleurs vives sur le gris/fond).
@@ -7828,12 +7826,24 @@ async function _extractDominantColor(url){
           if(!buckets.has(k)) buckets.set(k, { r, g, b, w:0 });
           buckets.get(k).w += w;
         }
-        let best = null;
-        for(const v of buckets.values()){ if(!best || v.w > best.w) best = v; }
-        const rgb = best ? [best.r, best.g, best.b] : null;
-        _domColorCache.set(url, rgb);
-        resolve(rgb);
-      }catch(_){ _domColorCache.set(url, null); resolve(null); }
+      let best = null;
+      for(const v of buckets.values()){ if(!best || v.w > best.w) best = v; }
+      return best ? [best.r, best.g, best.b] : null;
+    }catch(_){ return null; }   // canvas taint (CORS) -> null
+  };
+  // Essai 1 : image existante (hero) deja chargee avec crossorigin.
+  if(existingImg && existingImg.complete && existingImg.naturalWidth > 0){
+    const rgb = sampleImg(existingImg);
+    if(rgb){ _domColorCache.set(url, rgb); return rgb; }
+  }
+  // Essai 2 : cree une nouvelle Image avec crossOrigin explicite.
+  return new Promise(resolve => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const rgb = sampleImg(img);
+      _domColorCache.set(url, rgb);
+      resolve(rgb);
     };
     img.onerror = () => { _domColorCache.set(url, null); resolve(null); };
     img.src = url;
@@ -7914,20 +7924,27 @@ function openSpeciesModal(sci){
   if(cred) cred.textContent = '';
   _fetchWikiPhoto(sci).then(p => {
     if(!p || !p.url){ if(cred) cred.textContent = 'Pas de photo trouvée sur Wikipédia'; return; }
-    if(hero) hero.src = p.url;
+    if(hero){
+      // On attend le load pour extraire la couleur du meme element (le browser reuse
+      // la ressource CORS-enabled deja fetche par ce <img crossorigin>).
+      const applyColor = () => {
+        _extractDominantColor(p.url, hero).then(rgb => {
+          if(rgb && hdr){
+            const [r,g,b] = rgb;
+            const primary = `rgb(${r},${g},${b})`;
+            const dark = `rgb(${Math.round(r*.4)},${Math.round(g*.4)},${Math.round(b*.4)})`;
+            hdr.style.background = `linear-gradient(135deg, ${primary} 0%, ${dark} 100%)`;
+          }
+        }).catch(()=>{});
+      };
+      hero.onload = applyColor;
+      hero.src = p.url;
+      // Si l'image etait deja en cache, onload ne fire pas -> tente direct.
+      if(hero.complete && hero.naturalWidth > 0) applyColor();
+    }
     if(photoCard) photoCard.hidden = false;
     if(photoCap) photoCap.textContent = 'Photo : ' + p.credit;
     if(cred) cred.textContent = 'Photo : ' + p.credit;
-    // Essaie d'extraire la couleur dominante de la photo pour habiller le header.
-    // Fallback silencieux sur la couleur rarete si CORS bloque.
-    _extractDominantColor(p.url).then(rgb => {
-      if(rgb && hdr){
-        const [r,g,b] = rgb;
-        const primary = `rgb(${r},${g},${b})`;
-        const dark = `rgb(${Math.round(r*.4)},${Math.round(g*.4)},${Math.round(b*.4)})`;
-        hdr.style.background = `linear-gradient(135deg, ${primary} 0%, ${dark} 100%)`;
-      }
-    }).catch(()=>{});
   });
   // Sons : chant + cri, chaque section a un lecteur + sonogramme + menu deroulant multi-enregistrements.
   const songRow=$('#smSongRow'), callRow=$('#smCallRow'), hint=$('#smAudioHint');
