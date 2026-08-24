@@ -2794,7 +2794,10 @@ function statsFor(me, N){
     if(ALCID_SET.has(sci)){ hasPenguin=true; alcidOwnedSet.add(sci); }
     if(MANCHOT_SET.has(sci)){ hasPenguin=true; manchotOwnedSet.add(sci); }
     if(sci==='todiramphus pyrrhopygius') hasFireKingfisher=true;
-    if(rarityReal(sci)>=8){ megaList.push(frName(v.sci, v.common)); megaOwnedSet.add(sci); }
+    // Trophee Saint-Graal : aligne sur MEGA_CATALOG (exclut X/C, utilise rarityForFilter
+    // pour les N/P sous leur tier GBIF). Sans ces 2 checks, Cacatua alba (X tier 9)
+    // debloquait le trophee alors qu'elle n'apparait pas dans le catalogue.
+    if(!_isExoticNotCounted(sci) && rarityForFilter(sci)>=8){ megaList.push(frName(v.sci, v.common)); megaOwnedSet.add(sci); }
     if(/teste[- ]?de[- ]?buch|arcachon/i.test(v.loc||'')) locTeste=true;
     const habs = habitatsOf(sci); if(habs) for(const h of habs) if(habOwned[h]) habOwned[h].add(sci);
   }
