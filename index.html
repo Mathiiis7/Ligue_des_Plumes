@@ -501,13 +501,14 @@
   .xa-bar { position:relative; height:38px; border-radius:6px; overflow:hidden; background:var(--surface-3); cursor:pointer; }
   .xa-bar-sono { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.85; pointer-events:none; }
   .xa-bar-progress { position:absolute; top:0; bottom:0; left:0; width:0; background:linear-gradient(90deg, rgba(255,255,255,0), color-mix(in srgb, var(--accent) 30%, transparent)); pointer-events:none; transition:width .05s linear; }
-  .xa-bar-playhead { position:absolute; top:0; bottom:0; width:3px; margin-left:-1.5px; background:var(--accent-2); box-shadow:0 0 6px color-mix(in srgb, var(--accent-2) 90%, transparent), 0 0 2px #fff; left:0; pointer-events:none; transition:left .05s linear; opacity:0; }
-  .xa-player.playing .xa-bar-playhead { opacity:1; }
+  .xa-bar-playhead { position:absolute; top:-2px; bottom:-2px; width:3px; margin-left:-1.5px; background:var(--accent-2); box-shadow:0 0 6px color-mix(in srgb, var(--accent-2) 90%, transparent), 0 0 2px #fff; left:0; pointer-events:none; transition:left .06s linear; opacity:0; z-index:2; }
+  .xa-player.has-progress .xa-bar-playhead { opacity:1; }
   .xa-bar-fallback { position:absolute; inset:0; display:grid; place-items:center; color:var(--ink-3); font-size:11px; font-style:italic; }
   .xa-time { font:600 10.5px/1 var(--mono, ui-monospace); color:var(--ink-3); display:flex; justify-content:space-between; padding:0 2px; }
   /* Section "autres enregistrements" : plus compact + separateur clair pour eviter la
-     confusion avec le block suivant (chant vs cri). */
-  .xa-more { margin-top:8px; padding-top:4px; border-top:1px solid var(--line); }
+     confusion avec le block suivant (chant vs cri). Le details a un border-bottom pour
+     terminer proprement la section Chant avant que la section Cri commence. */
+  .xa-more { margin-top:8px; padding:4px 10px 10px; border-top:1px dashed var(--line-2); border-bottom:2px solid var(--line-2); margin-bottom:14px; background:color-mix(in srgb, var(--surface-2) 40%, transparent); border-radius:0 0 8px 8px; }
   .xa-more summary { cursor:pointer; padding:8px 4px 6px; font-size:12px; color:var(--ink-3); user-select:none; }
   .xa-more summary:hover { color:var(--ink-2); }
   .xa-more[open] summary { color:var(--accent-ink); }
@@ -7639,7 +7640,7 @@ function _renderSpeciesAudioBlock(container, label, primaryId, list){
         </div>
         <div class="xa-time"><span data-xa-cur>0:00</span><span data-xa-dur>${esc(r.length||'--:--')}</span></div>
       </div>
-      <audio${audioId?` id="${esc(audioId)}"`:''} preload="metadata" style="display:none;"><source src="${esc(r.file)}"></audio>
+      <audio${audioId?` id="${esc(audioId)}"`:''} preload="metadata" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;"><source src="${esc(r.file)}"></audio>
     </div>`;
   };
   const blockHtml = (r, audioId) => `
@@ -7685,12 +7686,15 @@ function _wireCustomAudioPlayer(playerEl){
     const pct = (audio.currentTime / audio.duration) * 100;
     if(progress) progress.style.width = pct + '%';
     if(playhead) playhead.style.left = pct + '%';
+    if(curEl) curEl.textContent = fmt(audio.currentTime);
   };
+  let rafId = null;
+  const rafLoop = () => { updatePos(); if(!audio.paused && !audio.ended) rafId = requestAnimationFrame(rafLoop); };
   playBtn.addEventListener('click', () => { if(audio.paused){ audio.play().catch(()=>{}); } else { audio.pause(); } });
-  audio.addEventListener('play', () => { playBtn.textContent = '⏸'; playBtn.classList.add('on'); playerEl.classList.add('playing'); });
-  audio.addEventListener('pause', () => { playBtn.textContent = '▶'; playBtn.classList.remove('on'); });
-  audio.addEventListener('ended', () => { playBtn.textContent = '▶'; playBtn.classList.remove('on'); playerEl.classList.remove('playing'); if(progress) progress.style.width = '0%'; if(playhead) playhead.style.left = '0%'; });
-  audio.addEventListener('timeupdate', () => { updatePos(); if(curEl) curEl.textContent = fmt(audio.currentTime); });
+  audio.addEventListener('play', () => { playBtn.textContent = '⏸'; playBtn.classList.add('on'); playerEl.classList.add('playing','has-progress'); if(rafId) cancelAnimationFrame(rafId); rafId = requestAnimationFrame(rafLoop); });
+  audio.addEventListener('pause', () => { playBtn.textContent = '▶'; playBtn.classList.remove('on'); if(rafId){ cancelAnimationFrame(rafId); rafId = null; } });
+  audio.addEventListener('ended', () => { playBtn.textContent = '▶'; playBtn.classList.remove('on'); playerEl.classList.remove('playing','has-progress'); if(progress) progress.style.width = '0%'; if(playhead) playhead.style.left = '0%'; if(rafId){ cancelAnimationFrame(rafId); rafId = null; } });
+  audio.addEventListener('timeupdate', updatePos);
   audio.addEventListener('loadedmetadata', () => { if(durEl && isFinite(audio.duration)) durEl.textContent = fmt(audio.duration); });
   if(seekEl){
     seekEl.addEventListener('click', e => {
