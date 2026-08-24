@@ -7637,7 +7637,7 @@ function openSpeciesModal(sci){
   const items = [];
   for(const p of realPeople){
     const v = p.species && p.species.get(key);
-    if(v) items.push({ name:p.name, date:v.date||'', loc:v.loc||'', country:v.country||'FR', isMe:p.isMe });
+    if(v) items.push({ name:p.name, date:v.date||'', loc:v.loc||'', country:v.country||'FR', isMe:p.isMe, obs: v.obs||1 });
   }
   if(!items.length){
     obsBox.innerHTML = '<h3>Observations</h3><p class="help">Personne ne l\'a encore observée dans la ligue.</p>';
@@ -7647,7 +7647,9 @@ function openSpeciesModal(sci){
       const d = x.date ? esc(x.date) : '<span class="help">date inconnue</span>';
       const loc = x.loc ? ' · '+esc(x.loc) : '';
       const flag = x.country && x.country!=='FR' ? ' '+(flagImg(x.country)||'') : '';
-      return `<li><b>${esc(x.name)}${x.isMe?' (vous)':''}</b>${flag} · ${d}${loc}</li>`;
+      // Badge multi-obs : "×N fois" si l'user a la meme espece dans plus d'un checklist eBird.
+      const multi = x.obs > 1 ? ` <span class="chip" style="background:var(--surface-2); font-size:11px; padding:1px 6px;">×${x.obs}</span>` : '';
+      return `<li><b>${esc(x.name)}${x.isMe?' (vous)':''}</b>${flag}${multi} · ${d}${loc}</li>`;
     }).join('') + '</ul>';
   }
   // Mini carte des observations du groupe pour cette espece (marqueurs par membre avec coords).
