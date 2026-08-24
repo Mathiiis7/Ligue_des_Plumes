@@ -1127,6 +1127,9 @@
         <select class="filt-sel" id="mapCountrySel" aria-label="Filtrer par pays">
           <option value="any">Tous les pays</option>
         </select>
+        <label class="explorer-lbl" style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="Afficher toutes les obs (chaque cochage separement) au lieu d'une seule par espece par personne">
+          <input type="checkbox" id="mapMineShowAllObs" style="vertical-align:middle;"> Afficher tous les cochages
+        </label>
       </div>
       <div class="map-controls" id="mapCtrlsEbird" style="display:none;">
         <label class="explorer-lbl" for="mapEbCountry">Pays</label>
@@ -1462,6 +1465,9 @@
                 <button type="button" data-map-mode="ebird">eBird 30 j</button>
                 <button type="button" data-map-mode="gbif">GBIF</button>
               </div>
+              <label id="smShowAllObsLbl" style="display:none;align-items:center;gap:4px;cursor:pointer;font-size:12px;margin-left:8px;" title="Affiche chaque cochage separement au lieu d'une seule obs par personne">
+                <input type="checkbox" id="smShowAllObs" style="vertical-align:middle;"> Tous les cochages
+              </label>
               <button type="button" id="smOpenBigMap" class="btn tiny" style="margin-left:auto;" title="Ouvrir cette espèce sur la grande carte (plus de points, tous les filtres)">↗ Voir en grand</button>
             </div>
             <div class="sm-map-gbif-ctrl" id="smMapGbifCtrl" hidden>
@@ -3543,7 +3549,7 @@ let mapMode = 'mine';
 let _lyrMissing=null, _lyrHotspots=null;
 let _loaded = { missing:'', hotspots:'' };   // clé de cache (région+jours)
 // Filtres propres au mode "mine"
-let mapFilter = { player:'all', tier:'any', country:'any' };
+let mapFilter = { player:'all', tier:'any', country:'any', showAllObs:false };
 // Filtres propres aux modes eBird
 // `rarities` = Set des niveaux sélectionnés (nombres 1-9 ou chaîne 'exo'). Vide = pas de filtre.
 let ebFilter = { country:'FR', region:'FR', days:14, rarities:new Set([1,2,3,4,5,6,7,8,9,'exo']), month:0, dept:'', minTodo:0, source:'ebird', yearMin:2024, yearMax:2025, polygon:null, showObserved:false };
@@ -4084,14 +4090,20 @@ function _fillMapSelects(pts){
 }
 function _mapCollectPoints(){
   const pts=[];
+  const showAll = !!(mapFilter && mapFilter.showAllObs);
   for(const p of state.people){
     const active = p._active || p.species; if(!active) continue;
     for(const v of active.values()){
       const w = rarityReal(v.sci);
       const common = frName(v.sci, v.common);
-      // Nouvelle regle : si v.allObs existe (import recent), on genere 1 marker par
-      // obs. Fallback vieux format : 1 marker sur v.lat/v.lon uniquement.
-      const obsList = Array.isArray(v.allObs) && v.allObs.length ? v.allObs : (typeof v.lat==='number' && typeof v.lon==='number' ? [{ lat:v.lat, lon:v.lon, date:v.date, loc:v.loc, cc:v.country, locId:v.locId }] : []);
+      // showAll = false (defaut) : 1 marker par espece par personne (l'obs canonique).
+      // showAll = true : 1 marker PAR obs (utilise allObs, jusqu'a 20 par espece).
+      let obsList;
+      if(showAll){
+        obsList = Array.isArray(v.allObs) && v.allObs.length ? v.allObs : (typeof v.lat==='number' && typeof v.lon==='number' ? [{ lat:v.lat, lon:v.lon, date:v.date, loc:v.loc, cc:v.country, locId:v.locId }] : []);
+      } else {
+        obsList = (typeof v.lat==='number' && typeof v.lon==='number') ? [{ lat:v.lat, lon:v.lon, date:v.date, loc:v.loc, cc:v.country, locId:v.locId }] : [];
+      }
       for(const o of obsList){
         if(typeof o.lat!=='number' || typeof o.lon!=='number') continue;
         if(o.lat<-90||o.lat>90||o.lon<-180||o.lon>180) continue;
@@ -5359,6 +5371,7 @@ document.addEventListener('change', e=>{
   if(e.target.id==='mapPlayerSel'){ mapFilter.player=e.target.value; renderMap(); }
   else if(e.target.id==='mapTierSel'){ mapFilter.tier=e.target.value; renderMap(); }
   else if(e.target.id==='mapCountrySel'){ mapFilter.country=e.target.value; renderMap(); }
+  else if(e.target.id==='mapMineShowAllObs'){ mapFilter.showAllObs = !!e.target.checked; renderMap(); }
   else if(e.target.id==='mapEbShowObserved'){
     ebFilter.showObserved = !!e.target.checked;
     _loaded.missing='';
@@ -7778,6 +7791,9 @@ function _persistGbifKeyCache(){
 function _smApplyFilterVisibility(){
   const gbifCtrl = document.getElementById('smMapGbifCtrl');
   if(gbifCtrl) gbifCtrl.hidden = (_smMapMode === 'friends');
+  // Checkbox "Tous les cochages" : visible uniquement en mode Mes amis.
+  const showAllLbl = document.getElementById('smShowAllObsLbl');
+  if(showAllLbl) showAllLbl.style.display = (_smMapMode === 'friends') ? 'inline-flex' : 'none';
   const isEb = _smMapMode === 'ebird', isGbif = _smMapMode === 'gbif';
   const setVis = (id, show) => { const el = document.getElementById(id); if(el) el.hidden = !show; };
   setVis('smEbDaysLbl', isEb);
@@ -8090,10 +8106,17 @@ async function _renderSpeciesMap(key){
   let points = [];
   let gbifTotal = 0, gbifMonth = 0, gbifYearMin = 0, gbifYearMax = 0, gbifScopeLabel = '';
   if(_smMapMode === 'friends'){
+    const showAll = !!document.getElementById('smShowAllObs')?.checked;
     for(const p of realPeople){
       const v = p.species && p.species.get(key);
-      if(v && typeof v.lat === 'number' && typeof v.lon === 'number'){
-        points.push({ lat:v.lat, lon:v.lon, name:p.name, si:p.si, loc:v.loc||'', date:v.date||'' });
+      if(!v) continue;
+      // showAll : iter allObs (chaque cochage). Sinon : 1 obs par personne (lat/lon canoniques).
+      const list = showAll && Array.isArray(v.allObs) && v.allObs.length
+        ? v.allObs
+        : (typeof v.lat === 'number' && typeof v.lon === 'number' ? [{ lat:v.lat, lon:v.lon, date:v.date||'', loc:v.loc||'' }] : []);
+      for(const o of list){
+        if(typeof o.lat !== 'number' || typeof o.lon !== 'number') continue;
+        points.push({ lat:o.lat, lon:o.lon, name:p.name, si:p.si, loc:o.loc||'', date:o.date||'' });
       }
     }
   } else if(_smMapMode === 'ebird'){
@@ -8276,6 +8299,9 @@ document.addEventListener('change', e=>{
   }
   if(t.id === 'smGbifMonth' || t.id === 'smGbifYearMin' || t.id === 'smGbifYearMax'){
     if(_smMapMode === 'gbif' && _smCurrentKey) _renderSpeciesMap(_smCurrentKey);
+  }
+  if(t.id === 'smShowAllObs'){
+    if(_smMapMode === 'friends' && _smCurrentKey) _renderSpeciesMap(_smCurrentKey);
   }
 });
 function closeSpeciesModal(){
