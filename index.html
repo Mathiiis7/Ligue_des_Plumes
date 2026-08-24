@@ -2128,16 +2128,22 @@ function build(){
   // Exclut les exotiques X/C : un Ara ararauna echappe ne peut pas devenir "la plus rare".
   let maxRW=1;
   for(const u of universe.values()){ if(u.counts===0) continue; if(_isExoticNotCounted(u.sci)) continue; const w=rarityReal(u.sci); if(w>maxRW) maxRW=w; }
-  // par joueur : espèce la plus rare (vue par le moins de monde) + dernière acquisition (date la + récente)
+  // par joueur : espèce la plus rare (rarete REELLE, pas nb de detenteurs) + derniere acquisition.
+  // "Plus rare" = tier REAL_RARITY le plus haut, tie-break sur frequence eBird la plus basse.
+  // Exclut les exotiques X/C (Cygne noir, perroquets echappes, Coq bankiva). Meme critere que
+  // Mike Horn + profil stats.
   state.people.forEach(p=>{
-    let rarest=null, rarestK=Infinity, last=null, lastOrd=-1, lastDisp='', real=0, holdsRarest=false;
+    let rarest=null, rarestW=0, rarestF=Infinity, last=null, lastOrd=-1, lastDisp='', real=0;
     const rrNames=[];
     for(const [key,v] of p._active){
       if(!countsFR(v)) continue;   // hors compétition (étranger)
-      const k=universe.get(key).counts;
       const nm=frName(v.sci, v.common);
-      // Rarete-based : ignore les exotiques X/C pour le calcul "plus rare".
-      if(!_isExoticNotCounted(v.sci) && (k<rarestK || (k===rarestK && rarest && nm.localeCompare(rarest,'fr')<0))){ rarestK=k; rarest=nm; }
+      if(!_isExoticNotCounted(v.sci)){
+        const rw=rarityReal(v.sci), rf=realFreq(v.sci);
+        if(rw>rarestW || (rw===rarestW && rf<rarestF) || (rw===rarestW && rf===rarestF && rarest && nm.localeCompare(rarest,'fr')<0)){
+          rarestW=rw; rarestF=rf; rarest=nm;
+        }
+      }
       // Dernière acquisition : date d'obs si dispo, sinon date d'ajout manuel (v.addedAt).
       const pd=parseDate(v.date);
       if(pd && pd.ord>lastOrd){ lastOrd=pd.ord; last=nm; lastDisp=pd.disp; }
@@ -2146,11 +2152,10 @@ function build(){
         const d = new Date(v.addedAt);
         lastDisp = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
       }
-      // scoreReal : somme des poids rarete. Exclut les exotiques X/C (evite qu'un Coq bankiva
-      // ajoute au score real via son fallback tier 1).
+      // scoreReal : somme des poids rarete. Exclut les exotiques X/C.
       if(!_isExoticNotCounted(v.sci)){
         real += rarityReal(v.sci);
-        if(maxRW>1 && rarityReal(v.sci)===maxRW){ holdsRarest=true; if(!rrNames.includes(nm)) rrNames.push(nm); }
+        if(maxRW>1 && rarityReal(v.sci)===maxRW){ if(!rrNames.includes(nm)) rrNames.push(nm); }
       }
     }
     rrNames.sort((a,b)=>a.localeCompare(b,'fr'));
