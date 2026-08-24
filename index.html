@@ -7511,10 +7511,12 @@ const _spSoundCache = new Map();      // sci → url mp3 | null
 async function _fetchWikiPhoto(sci){
   const key = sci.toLowerCase();
   if(_spPhotoCache.has(key)) return _spPhotoCache.get(key);
-  // 1) iNaturalist : source la plus fiable, CORS ok, photos de qualite pour presque toutes les especes.
-  const tryINat = async ()=>{
+  const frNm = FR_NAMES[key] || '';
+  // iNaturalist : essaie sci name puis alias GBIF/SCI puis nom FR.
+  const tryINat = async (q)=>{
+    if(!q) return null;
     try{
-      const u = `https://api.inaturalist.org/v1/taxa/autocomplete?q=${encodeURIComponent(sci)}&rank=species&per_page=1`;
+      const u = `https://api.inaturalist.org/v1/taxa/autocomplete?q=${encodeURIComponent(q)}&rank=species&per_page=1`;
       const r = await fetch(u); const j = await r.json();
       const p = j?.results?.[0]?.default_photo;
       const url = p?.medium_url || p?.square_url || null;
@@ -7522,10 +7524,11 @@ async function _fetchWikiPhoto(sci){
     }catch(_){ }
     return null;
   };
-  // 2) Wikipedia FR puis EN en fallback si iNat n'a rien.
-  const tryWiki = async (lang)=>{
+  // Wikipedia : essaie titre exact (sci) puis nom FR. Origin=* pour CORS.
+  const tryWiki = async (lang, q)=>{
+    if(!q) return null;
     try{
-      const u = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&pithumbsize=600&titles=${encodeURIComponent(sci)}&origin=*`;
+      const u = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&pithumbsize=600&titles=${encodeURIComponent(q)}&origin=*`;
       const r = await fetch(u); const j = await r.json();
       const pages = j?.query?.pages || {};
       const p = Object.values(pages)[0];
@@ -7533,9 +7536,33 @@ async function _fetchWikiPhoto(sci){
     }catch(_){ }
     return null;
   };
-  let res = await tryINat();
-  if(!res) res = await tryWiki('fr');
-  if(!res) res = await tryWiki('en');
+  // Wikipedia recherche puis image : quand le titre exact n'existe pas mais que la page est
+  // trouvable via search (ex Fauvette babillarde -> page "Curruca curruca" ou vice-versa).
+  const tryWikiSearch = async (lang, q)=>{
+    if(!q) return null;
+    try{
+      const su = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch=${encodeURIComponent(q)}&srlimit=1&origin=*`;
+      const sr = await fetch(su); const sj = await sr.json();
+      const title = sj?.query?.search?.[0]?.title; if(!title) return null;
+      const iu = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&pithumbsize=600&titles=${encodeURIComponent(title)}&origin=*`;
+      const ir = await fetch(iu); const ij = await ir.json();
+      const pages = ij?.query?.pages || {};
+      const p = Object.values(pages)[0];
+      if(p?.thumbnail?.source) return { url:p.thumbnail.source, credit:'Wikipédia '+lang.toUpperCase() };
+    }catch(_){ }
+    return null;
+  };
+  // Fallback aliases eBird<->GBIF (ex : cecropis rufula / cecropis daurica).
+  const altSci = (typeof GBIF_SCI_ALIAS !== 'undefined' && GBIF_SCI_ALIAS[key]) || (typeof SCI_ALIAS !== 'undefined' && SCI_ALIAS[key]) || '';
+  let res = await tryINat(sci);
+  if(!res && altSci) res = await tryINat(altSci);
+  if(!res && frNm) res = await tryINat(frNm);
+  if(!res) res = await tryWiki('fr', sci);
+  if(!res && frNm) res = await tryWiki('fr', frNm);
+  if(!res) res = await tryWiki('en', sci);
+  if(!res && altSci) res = await tryWiki('en', altSci);
+  if(!res && frNm) res = await tryWikiSearch('fr', frNm);
+  if(!res) res = await tryWikiSearch('en', sci);
   _spPhotoCache.set(key, res);
   return res;
 }
@@ -7630,7 +7657,9 @@ function _renderSpeciesAudioBlock(container, label, primaryId, list){
   };
   const playerHtml = (r, audioId) => {
     const sono = r.sono ? `<img class="xa-bar-sono" src="${esc(r.sono)}" alt="Spectrogramme" onerror="this.remove()">` : `<div class="xa-bar-fallback">Pas de spectrogramme</div>`;
-    return `<div class="xa-player">
+    // Pas d'element audio dans le HTML : cree via new Audio() dans _wireCustomAudioPlayer
+    // (evite les problemes de events qui ne firent pas sur des audio hidden).
+    return `<div class="xa-player" data-xa-src="${esc(r.file)}"${audioId?` data-xa-id="${esc(audioId)}"`:''}>
       <button type="button" class="xa-play" data-xa-play aria-label="Lire / pause">▶</button>
       <div class="xa-body">
         <div class="xa-bar" data-xa-seek>
@@ -7640,7 +7669,6 @@ function _renderSpeciesAudioBlock(container, label, primaryId, list){
         </div>
         <div class="xa-time"><span data-xa-cur>0:00</span><span data-xa-dur>${esc(r.length||'--:--')}</span></div>
       </div>
-      <audio${audioId?` id="${esc(audioId)}"`:''} preload="metadata" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;"><source src="${esc(r.file)}"></audio>
     </div>`;
   };
   const blockHtml = (r, audioId) => `
@@ -7672,14 +7700,25 @@ function _renderSpeciesAudioBlock(container, label, primaryId, list){
 }
 // Cable un player custom : play/pause, seek clic, progress bar animee, time text.
 function _wireCustomAudioPlayer(playerEl){
-  const audio = playerEl.querySelector('audio');
+  if(playerEl.dataset.xaWired) return;
+  playerEl.dataset.xaWired = '1';
+  const src = playerEl.dataset.xaSrc;
+  const audioId = playerEl.dataset.xaId;
+  if(!src) return;
+  const audio = new Audio(src);
+  audio.preload = 'auto';
+  if(audioId) audio.id = audioId;
+  // Ancre l'audio dans le player pour que le mutex wrapper-level (querySelectorAll('audio'))
+  // le voie et puisse le mettre en pause quand un autre demarre.
+  playerEl.appendChild(audio);
+  audio.style.display = 'none';
   const playBtn = playerEl.querySelector('[data-xa-play]');
   const seekEl = playerEl.querySelector('[data-xa-seek]');
   const progress = playerEl.querySelector('.xa-bar-progress');
   const playhead = playerEl.querySelector('.xa-bar-playhead');
   const curEl = playerEl.querySelector('[data-xa-cur]');
   const durEl = playerEl.querySelector('[data-xa-dur]');
-  if(!audio || !playBtn) return;
+  if(!playBtn) return;
   const fmt = s => { if(!isFinite(s) || s < 0) return '0:00'; const m = Math.floor(s/60), r = Math.floor(s%60); return m+':'+String(r).padStart(2,'0'); };
   const updatePos = () => {
     if(!audio.duration) return;
