@@ -446,11 +446,21 @@
   .img-modal.open { display:flex; }
   .img-modal img { max-width:96vw; max-height:92vh; border-radius:10px; }
   /* Modal fiche espèce (ouvert au clic sur un nom d'oiseau) */
-  .species-modal { position:fixed !important; inset:0; z-index:2147483000 !important; display:flex; align-items:center; justify-content:center; padding:16px; }
+  /* Drawer lateral (droite) : slide-in, remplace le modal centre pour ne pas cacher toute la page. */
+  .species-modal { position:fixed !important; inset:0; z-index:2147483000 !important; display:block; padding:0; pointer-events:none; }
   .species-modal[hidden] { display:none !important; }
-  .species-modal .sm-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.55); cursor:zoom-out; }
-  .species-modal .sm-box { position:relative; background:var(--surface); border-radius:16px; padding:20px 22px 22px; max-width:640px; width:100%; max-height:94vh; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,.35); }
-  .species-modal .sm-close { position:absolute; top:10px; right:12px; background:transparent; border:none; font-size:20px; color:var(--ink-3); cursor:pointer; padding:4px 8px; border-radius:6px; }
+  .species-modal .sm-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.35); cursor:zoom-out; pointer-events:auto; animation:sm-fade-in .18s ease both; }
+  .species-modal .sm-box { position:absolute; top:0; right:0; bottom:0; background:var(--surface); border-radius:16px 0 0 16px; padding:0; width:min(560px, 100vw); height:100vh; overflow:hidden; box-shadow:-8px 0 24px rgba(0,0,0,.25); display:flex; flex-direction:column; pointer-events:auto; animation:sm-slide-in .22s ease both; }
+  @keyframes sm-slide-in { from { transform:translateX(100%); } to { transform:translateX(0); } }
+  @keyframes sm-fade-in { from { opacity:0; } to { opacity:1; } }
+  /* Zone tabs (nav) */
+  .species-modal .sm-tabs { display:flex; gap:0; border-bottom:1px solid var(--line); background:var(--surface-2); padding:0 8px; flex:none; }
+  .species-modal .sm-tab { flex:1; padding:10px 6px; text-align:center; font:600 12.5px system-ui; color:var(--ink-3); background:transparent; border:none; border-bottom:2px solid transparent; cursor:pointer; transition:color .12s, border-color .12s; }
+  .species-modal .sm-tab:hover { color:var(--ink-2); }
+  .species-modal .sm-tab.on { color:var(--accent-ink); border-bottom-color:var(--accent); }
+  .species-modal .sm-scroll { flex:1; overflow-y:auto; padding:16px 20px 20px; }
+  .species-modal .sm-panel[hidden] { display:none; }
+  .species-modal .sm-close { position:absolute; top:10px; right:12px; background:var(--surface); border:1px solid var(--line-2); font-size:16px; color:var(--ink-2); cursor:pointer; padding:4px 10px; border-radius:8px; z-index:2; }
   .species-modal .sm-close:hover { background:var(--surface-2); color:var(--ink); }
   .species-modal .sm-header { margin-bottom:12px; padding-right:30px; }
   .species-modal .sm-title { margin:0; font-size:20px; color:var(--ink); }
@@ -1431,39 +1441,30 @@
     <div class="sm-backdrop" data-sm-close></div>
     <div class="sm-box">
       <button class="sm-close" data-sm-close aria-label="Fermer">✕</button>
-      <div class="sm-header">
-        <h2 class="sm-title" id="smTitle"></h2>
+      <div class="sm-header sm-scroll" style="flex:none; overflow:visible; padding:14px 20px 10px; border-bottom:1px solid var(--line);">
+        <h2 class="sm-title" id="smTitle" style="padding-right:36px;"></h2>
         <div class="sm-sci" id="smSci"></div>
         <div class="sm-info-chips" id="smInfoChips"></div>
       </div>
-      <div class="sm-media">
-        <div class="sm-photo-wrap"><img class="sm-photo" id="smPhoto" alt="" hidden></div>
-        <div class="sm-audio-wrap">
-          <div class="sm-audio-row" id="smSongRow" hidden><div class="sm-audio-lbl">Chant</div><audio class="sm-audio" id="smSong" controls preload="none"></audio></div>
-          <div class="sm-audio-row" id="smCallRow" hidden><div class="sm-audio-lbl">Cri</div><audio class="sm-audio" id="smCall" controls preload="none"></audio></div>
-          <div class="sm-audio-hint" id="smAudioHint">🎧 Recherche du chant et du cri…</div>
-        </div>
-      </div>
-      <div class="sm-desc" id="smDesc"></div>
-      <div class="sm-freq" id="smFreqWrap" hidden>
-        <div class="sm-freq-title">Quand la trouver <span class="sm-freq-src" id="smFreqSrc"></span></div>
-        <div class="sm-freq-chart-wrap">
-          <svg id="smFreqChart" class="sm-freq-chart" viewBox="0 0 360 130" preserveAspectRatio="xMidYMid meet"></svg>
-          <div class="sm-freq-legend"><span class="sm-freq-lg"><span class="sm-freq-sw" style="background:var(--accent)"></span>Mois actuel</span><span class="sm-freq-lg"><span class="sm-freq-sw" style="background:var(--gold)"></span>Pic annuel</span></div>
-        </div>
-      </div>
-      <div class="sm-obs" id="smObs"></div>
-      <div class="sm-map-wrap" id="smMapWrap" hidden>
-        <div class="sm-map-header">
-          <div class="sm-map-title">📍 Où on l'a vu</div>
-          <div class="seg sm-map-seg" id="smMapSeg">
-            <button type="button" data-map-mode="friends" class="on">Mes amis</button>
-            <button type="button" data-map-mode="ebird">eBird 30 j</button>
-            <button type="button" data-map-mode="gbif">GBIF (mois)</button>
-          </div>
-          <button type="button" id="smOpenBigMap" class="btn tiny" style="margin-left:auto;" title="Ouvrir cette espèce sur la grande carte (plus de points, tous les filtres)">↗ Voir en grand</button>
-        </div>
-        <div class="sm-map-gbif-ctrl" id="smMapGbifCtrl" hidden>
+      <nav class="sm-tabs" role="tablist">
+        <button type="button" class="sm-tab on" data-sm-tab="map">📍 Carte</button>
+        <button type="button" class="sm-tab" data-sm-tab="sound">🎵 Sons</button>
+        <button type="button" class="sm-tab" data-sm-tab="info">📝 Info</button>
+        <button type="button" class="sm-tab" data-sm-tab="friends">👥 Amis</button>
+      </nav>
+      <div class="sm-scroll">
+        <!-- Onglet Carte (par defaut) -->
+        <div class="sm-panel" data-sm-panel="map">
+          <div class="sm-map-wrap" id="smMapWrap" hidden style="margin:0;">
+            <div class="sm-map-header" style="margin-bottom:8px;">
+              <div class="seg sm-map-seg" id="smMapSeg">
+                <button type="button" data-map-mode="friends" class="on">Mes amis</button>
+                <button type="button" data-map-mode="ebird">eBird 30 j</button>
+                <button type="button" data-map-mode="gbif">GBIF</button>
+              </div>
+              <button type="button" id="smOpenBigMap" class="btn tiny" style="margin-left:auto;" title="Ouvrir cette espèce sur la grande carte (plus de points, tous les filtres)">↗ Voir en grand</button>
+            </div>
+            <div class="sm-map-gbif-ctrl" id="smMapGbifCtrl" hidden>
           <label id="smEbDaysLbl" hidden>Derniers <select id="smEbDays">
             <option value="7">7 jours</option>
             <option value="14">14 jours</option>
@@ -1483,11 +1484,37 @@
           <label>Région <select id="smGbifRegion"><option value="">toute la France</option></select></label>
           <label id="smGbifDeptLbl" hidden>Dépt <select id="smGbifDept"><option value="">tous</option></select></label>
         </div>
-        <div id="smMap" class="sm-map"></div>
-        <div class="sm-map-hint" id="smMapHint"></div>
+            <div id="smMap" class="sm-map" style="min-height:400px; height:calc(100vh - 260px);"></div>
+            <div class="sm-map-hint" id="smMapHint"></div>
+          </div>
+        </div>
+        <!-- Onglet Sons -->
+        <div class="sm-panel" data-sm-panel="sound" hidden>
+          <div class="sm-audio-wrap">
+            <div class="sm-audio-row" id="smSongRow" hidden></div>
+            <div class="sm-audio-row" id="smCallRow" hidden></div>
+            <div class="sm-audio-hint" id="smAudioHint">🎧 Recherche du chant et du cri…</div>
+          </div>
+        </div>
+        <!-- Onglet Info : photo + description + freq + liens -->
+        <div class="sm-panel" data-sm-panel="info" hidden>
+          <div class="sm-photo-wrap"><img class="sm-photo" id="smPhoto" alt="" hidden></div>
+          <div class="sm-desc" id="smDesc"></div>
+          <div class="sm-freq" id="smFreqWrap" hidden>
+            <div class="sm-freq-title">Quand la trouver <span class="sm-freq-src" id="smFreqSrc"></span></div>
+            <div class="sm-freq-chart-wrap">
+              <svg id="smFreqChart" class="sm-freq-chart" viewBox="0 0 360 130" preserveAspectRatio="xMidYMid meet"></svg>
+              <div class="sm-freq-legend"><span class="sm-freq-lg"><span class="sm-freq-sw" style="background:var(--accent)"></span>Mois actuel</span><span class="sm-freq-lg"><span class="sm-freq-sw" style="background:var(--gold)"></span>Pic annuel</span></div>
+            </div>
+          </div>
+          <div class="sm-links" id="smLinks"></div>
+          <div class="sm-photo-credit" id="smPhotoCredit"></div>
+        </div>
+        <!-- Onglet Amis : obs dans la ligue -->
+        <div class="sm-panel" data-sm-panel="friends" hidden>
+          <div class="sm-obs" id="smObs"></div>
+        </div>
       </div>
-      <div class="sm-links" id="smLinks"></div>
-      <div class="sm-photo-credit" id="smPhotoCredit"></div>
     </div>
   </div>
 
@@ -7627,6 +7654,21 @@ function _renderSpeciesFreqChart(key){
   // Legende deplacee en HTML sous le SVG (voir .sm-freq-legend) pour ne pas chevaucher les labels mois.
   svg.innerHTML = out;
 }
+// Bascule d'onglet du drawer fiche espece. Persiste le choix en localStorage.
+function _smSetTab(tab){
+  const validTabs = ['map','sound','info','friends'];
+  if(!validTabs.includes(tab)) tab = 'map';
+  document.querySelectorAll('.sm-tab').forEach(b => b.classList.toggle('on', b.dataset.smTab === tab));
+  document.querySelectorAll('.sm-panel').forEach(p => p.hidden = (p.dataset.smPanel !== tab));
+  try{ localStorage.setItem('mb-sm-tab', tab); }catch(_){}
+  // Refresh la carte quand on retourne sur l'onglet Carte (Leaflet a besoin de recalculer
+  // sa taille apres reveal, sinon carte grise 50% visible).
+  if(tab === 'map' && _smMapInstance){ setTimeout(() => { try{ _smMapInstance.invalidateSize(); }catch(_){} }, 60); }
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('.sm-tab[data-sm-tab]'); if(!b) return;
+  _smSetTab(b.dataset.smTab);
+});
 function openSpeciesModal(sci){
   if(!sci) return;
   const key = sci.toLowerCase();
@@ -7634,6 +7676,10 @@ function openSpeciesModal(sci){
   const nm = FR_NAMES[key] || sci;
   $('#smTitle').textContent = nm;
   $('#smSci').textContent = sci;
+  // Restaure le dernier onglet visite (defaut : Carte).
+  let lastTab = 'map';
+  try{ lastTab = localStorage.getItem('mb-sm-tab') || 'map'; }catch(_){}
+  _smSetTab(lastTab);
   // Chips info : rareté (couleur), famille, habitats
   _renderSpeciesInfoChips(key);
   // Description Wikipedia (async)
