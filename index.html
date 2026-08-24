@@ -6596,12 +6596,18 @@ function renderStats(me){
   if(!me || !me._active){ box.style.display='none'; box.innerHTML=''; return; }
   box.style.display='';
   const active=me._active;
-  let total=0, rareName='—', rareTier=null, maxW=0; const famCount={};
+  let total=0, rareName='—', rareTier=null, maxW=0, maxFreq=Infinity; const famCount={};
   for(const v of active.values()){
     if(!countsFR(v)) continue;
     total++;
-    const w=rarityForFilter(v.sci); if(w>maxW){ maxW=w; rareName=frName(v.sci,v.common); rareTier=realTier(v.sci, false); }
     const f=familyOf(v.sci); famCount[f]=(famCount[f]||0)+1;
+    // "Plus rare" : exclut les exotiques X/C (cohérent avec Mike Horn + classement).
+    // Tie-break sur la frequence eBird : si 2 especes ont le meme tier, la plus rare est
+    // celle avec la fréquence la plus basse (evite d'afficher Canard chipeau tier 4 alors
+    // qu'une autre espece du meme tier a une frequence beaucoup plus basse).
+    if(!_countsForRarity(v)) continue;
+    const w=rarityForFilter(v.sci), rf=realFreq(v.sci);
+    if(w>maxW || (w===maxW && rf<maxFreq)){ maxW=w; maxFreq=rf; rareName=frName(v.sci,v.common); rareTier=realTier(v.sci, false); }
   }
   const fams=Object.entries(famCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const maxFam=fams.length?fams[0][1]:1;
