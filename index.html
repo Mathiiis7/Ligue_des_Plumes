@@ -453,9 +453,12 @@
   .species-modal .sm-box { position:absolute; top:0; right:0; bottom:0; background:var(--surface-2); border-radius:20px 0 0 20px; padding:0; width:min(720px, 100vw); height:100vh; overflow:hidden; box-shadow:-8px 0 32px rgba(0,0,0,.28); display:flex; flex-direction:column; pointer-events:auto; animation:sm-slide-in .22s cubic-bezier(.2,.9,.3,1) both; }
   @keyframes sm-slide-in { from { transform:translateX(100%); } to { transform:translateX(0); } }
   @keyframes sm-fade-in { from { opacity:0; } to { opacity:1; } }
-  /* Header hero : photo pleine largeur, gradient sombre en bas, titre par-dessus */
+  /* Header hero : photo pleine largeur. Astuce "Netflix" : la meme photo est en fond floute
+     (cover) + agrandie en premier plan (contain). Resultat : pas de bandes vides moches, mais
+     l'oiseau reste visible en entier. */
   .species-modal .sm-header { position:relative; flex:none; height:320px; overflow:hidden; background:linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%); border-radius:20px 0 0 0; }
-  .species-modal .sm-hero-img { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:center; background:linear-gradient(135deg, color-mix(in srgb, var(--accent) 60%, #000) 0%, color-mix(in srgb, var(--accent-2) 60%, #000) 100%); }
+  .species-modal .sm-hero-bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:blur(24px) brightness(.65) saturate(1.1); transform:scale(1.1); }
+  .species-modal .sm-hero-img { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:center; }
   .species-modal .sm-hero-fade { position:absolute; inset:0; background:linear-gradient(to bottom, rgba(0,0,0,0) 30%, rgba(0,0,0,.55) 65%, rgba(0,0,0,.9) 100%); }
   .species-modal .sm-hero-body { position:absolute; left:20px; right:20px; bottom:14px; color:#fff; }
   .species-modal .sm-title { margin:0; font-family:var(--serif); font-weight:700; font-size:26px; color:#fff; letter-spacing:.2px; text-shadow:0 1px 2px rgba(0,0,0,.9), 0 2px 12px rgba(0,0,0,.7); }
@@ -1463,6 +1466,7 @@
     <div class="sm-box">
       <button class="sm-close" data-sm-close aria-label="Fermer">✕</button>
       <div class="sm-header">
+        <img class="sm-hero-bg" id="smHeroBg" alt="" src="" onerror="this.style.display='none'" aria-hidden="true">
         <img class="sm-hero-img" id="smHeroImg" alt="" src="" onerror="this.style.display='none'">
         <div class="sm-hero-fade"></div>
         <div class="sm-hero-body">
@@ -7760,13 +7764,15 @@ function openSpeciesModal(sci){
   _renderSpeciesDesc(sci);
   // Barre chart de fréquence mensuelle (national ou régional)
   _renderSpeciesFreqChart(key);
-  // Photo : mise en header hero + garde le credit dans l'onglet Info.
-  const hero = $('#smHeroImg'), cred = $('#smPhotoCredit');
+  // Photo : mise en header hero (photo entiere + fond floute pour combler les bandes).
+  const hero = $('#smHeroImg'), heroBg = $('#smHeroBg'), cred = $('#smPhotoCredit');
   if(hero){ hero.src = ''; hero.style.display = ''; }
+  if(heroBg){ heroBg.src = ''; heroBg.style.display = ''; }
   if(cred) cred.textContent = '';
   _fetchWikiPhoto(sci).then(p => {
     if(!p || !p.url){ if(cred) cred.textContent = 'Pas de photo trouvée sur Wikipédia'; return; }
     if(hero){ hero.src = p.url; hero.style.display = ''; }
+    if(heroBg){ heroBg.src = p.url; heroBg.style.display = ''; }
     if(cred) cred.textContent = 'Photo : '+p.credit;
   });
   // Sons : chant + cri, chaque section a un lecteur + sonogramme + menu deroulant multi-enregistrements.
