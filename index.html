@@ -1955,13 +1955,20 @@ function ingest(filename, text){
         if(hasCoords){ existing.lat = lat; existing.lon = lon; }
         if(locId) existing.locId = locId;
       }
+      // Ajoute au tableau allObs (toutes les coords de cette espece pour cet user).
+      if(hasCoords){
+        if(!existing.allObs) existing.allObs = [];
+        existing.allObs.push({ lat, lon, date, loc, cc, locId });
+      }
     } else {
-      species.set(key, { common:common||sci, sci, date, loc, obs:1,
+      const entry = { common:common||sci, sci, date, loc, obs:1,
         fr: hasGeo ? inFR : undefined,             // undefined = pays inconnu (pas de colonne)
         country: cc,                               // pays de la 1re obs (code ISO) — pour le filtre
         lat: hasCoords?lat:null, lon: hasCoords?lon:null,  // coords de la 1re obs (pour la carte)
         locId: locId||null,                        // eBird LocID (pour lien vers hotspot)
-        nonSpecies:isNonSpecies(common,sci) });
+        nonSpecies:isNonSpecies(common,sci) };
+      if(hasCoords) entry.allObs = [{ lat, lon, date, loc, cc, locId }];
+      species.set(key, entry);
     }
   }
   if(!species.size) return null;
@@ -2918,6 +2925,8 @@ function memberToPerson(id, data, si){
     lat: (typeof e.la==='number')?e.la:null,   // coords éventuelles (MyEBirdData)
     lon: (typeof e.lo==='number')?e.lo:null,
     locId: e.li||null,                         // LocID eBird pour lien hotspot
+    // allObs (oa) = tableau de toutes les obs coord (import recent). Fallback : reconstruit depuis lat/lon si vieux format.
+    allObs: Array.isArray(e.oa) ? e.oa : ((typeof e.la==='number' && typeof e.lo==='number') ? [{ lat:e.la, lon:e.lo, date:e.d||'', loc:e.l||'', cc:e.co||null, locId:e.li||null }] : []),
     manual: e.m===1,                           // ajout manuel (préservé lors des ré-imports)
     addedAt: typeof e.a==='number' ? e.a : 0,  // ms unix : date à laquelle l'espèce est apparue chez ce joueur
     // recalculé à la lecture (pas figé au moment de l'upload) : ainsi toute
@@ -4051,12 +4060,19 @@ function _mapCollectPoints(){
   for(const p of state.people){
     const active = p._active || p.species; if(!active) continue;
     for(const v of active.values()){
-      if(typeof v.lat!=='number' || typeof v.lon!=='number') continue;
-      if(v.lat<-90||v.lat>90||v.lon<-180||v.lon>180) continue;
-      const pd = parseDate(v.date||''); const ord = pd?pd.ord:null;
-      pts.push({ uid:p.id, who:p.name, si:p.si, sci:v.sci, common:frName(v.sci,v.common),
-        lat:v.lat, lon:v.lon, loc:v.loc||'', date:v.date||'', dateOrd:ord, cc:v.country||null,
-        locId:v.locId||null, w:rarityReal(v.sci), obs:v.obs||1 });
+      const w = rarityReal(v.sci);
+      const common = frName(v.sci, v.common);
+      // Nouvelle regle : si v.allObs existe (import recent), on genere 1 marker par
+      // obs. Fallback vieux format : 1 marker sur v.lat/v.lon uniquement.
+      const obsList = Array.isArray(v.allObs) && v.allObs.length ? v.allObs : (typeof v.lat==='number' && typeof v.lon==='number' ? [{ lat:v.lat, lon:v.lon, date:v.date, loc:v.loc, cc:v.country, locId:v.locId }] : []);
+      for(const o of obsList){
+        if(typeof o.lat!=='number' || typeof o.lon!=='number') continue;
+        if(o.lat<-90||o.lat>90||o.lon<-180||o.lon>180) continue;
+        const pd = parseDate(o.date||''); const ord = pd?pd.ord:null;
+        pts.push({ uid:p.id, who:p.name, si:p.si, sci:v.sci, common,
+          lat:o.lat, lon:o.lon, loc:o.loc||'', date:o.date||'', dateOrd:ord, cc:o.cc||null,
+          locId:o.locId||null, w, obs:v.obs||1, totalObs:v.obs||1 });
+      }
     }
   }
   return pts;
@@ -6765,6 +6781,9 @@ async function saveMyList(name, speciesMap, regions){
     if(v.country) e.co = v.country;        // code pays de la 1re obs (FR, ES, US...)
     if(v.lat!=null && v.lon!=null){ e.la = v.lat; e.lo = v.lon; }   // coords pour la carte (MyEBirdData)
     if(v.locId) e.li = v.locId;                                     // LocID eBird -> lien vers hotspot
+    // Toutes les coords (pour rendre 1 marker par obs sur la carte). Cap 20 obs
+    // par espece pour eviter d'exploser Firestore doc size sur especes ultra communes.
+    if(Array.isArray(v.allObs) && v.allObs.length > 1){ e.oa = v.allObs.slice(0, 20); }
     if(v.manual) e.m = 1;                                           // ajout manuel -> à préserver au ré-import
     if(v.addedAt) e.a = v.addedAt;                                  // horodatage d'apparition (pour tri "nouveautés" du fil)
     return e; });
