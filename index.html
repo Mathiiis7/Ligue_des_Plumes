@@ -7942,11 +7942,17 @@ function openSpeciesModal(sci){
   const nm = FR_NAMES[key] || sci;
   $('#smTitle').textContent = nm;
   $('#smSci').textContent = sci;
-  // Header : degrade base sur la couleur rarete (fallback), sera remplace par la couleur
-  // dominante extraite de la photo une fois qu'elle est chargee (voir plus bas).
+  // Header : degrade base sur la couleur du 1er habitat de l'espece. Un couleur par milieu
+  // (foret=vert, eau=bleu, montagne=violet, urbain=gris, etc.).
   const hdr = modal.querySelector('.sm-header');
   if(hdr){
-    const c = sciColor(sci);
+    const habs = habitatsOf(sci) || [];
+    const HAB_COLORS = {
+      forestier:'#2d7a3f', hzhumide:'#1e6f6a', eaudouce:'#1e6091', pelagique:'#1a3d75',
+      littoral:'#3a92c4', montagne:'#7a5b96', steppe:'#c99a3f', bocage:'#7ba236',
+      urbain:'#6b6f75', rocher:'#8b6b47'
+    };
+    const c = (habs.length && HAB_COLORS[habs[0]]) || sciColor(sci);
     hdr.style.background = `linear-gradient(135deg, ${c} 0%, color-mix(in srgb, ${c} 55%, #000) 100%)`;
   }
   // Restaure le dernier onglet visite (defaut : Info).
@@ -7967,24 +7973,7 @@ function openSpeciesModal(sci){
   if(cred) cred.textContent = '';
   _fetchWikiPhoto(sci).then(p => {
     if(!p || !p.url){ if(cred) cred.textContent = 'Pas de photo trouvée sur Wikipédia'; return; }
-    if(hero){
-      // On attend le load pour extraire la couleur du meme element (le browser reuse
-      // la ressource CORS-enabled deja fetche par ce <img crossorigin>).
-      const applyColor = () => {
-        _extractDominantColor(p.url, hero).then(rgb => {
-          if(rgb && hdr){
-            const [r,g,b] = rgb;
-            const primary = `rgb(${r},${g},${b})`;
-            const dark = `rgb(${Math.round(r*.4)},${Math.round(g*.4)},${Math.round(b*.4)})`;
-            hdr.style.background = `linear-gradient(135deg, ${primary} 0%, ${dark} 100%)`;
-          }
-        }).catch(()=>{});
-      };
-      hero.onload = applyColor;
-      hero.src = p.url;
-      // Si l'image etait deja en cache, onload ne fire pas -> tente direct.
-      if(hero.complete && hero.naturalWidth > 0) applyColor();
-    }
+    if(hero) hero.src = p.url;
     if(photoCard) photoCard.hidden = false;
     if(photoCap) photoCap.textContent = 'Photo : ' + p.credit;
     if(cred) cred.textContent = 'Photo : ' + p.credit;
