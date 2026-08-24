@@ -1536,7 +1536,6 @@
           <!-- Photo card en haut : image entiere, ratio 16/9, credit dessous -->
           <div class="sm-card sm-photo-card" id="smPhotoCard" hidden>
             <img id="smHeroImg" alt="" src="" onerror="this.closest('.sm-photo-card').hidden=true">
-            <div class="photo-caption" id="smPhotoCaption"></div>
           </div>
           <div class="sm-card">
             <div class="sm-card-title">Description</div>
@@ -7755,6 +7754,12 @@ function openSpeciesModal(sci){
   const nm = FR_NAMES[key] || sci;
   $('#smTitle').textContent = nm;
   $('#smSci').textContent = sci;
+  // Header : degrade dynamique selon la rarete de l'espece (couleur pastille tier).
+  const hdr = modal.querySelector('.sm-header');
+  if(hdr){
+    const c = sciColor(sci);   // couleur rarete (ou gris pour exotiques X/C)
+    hdr.style.background = `linear-gradient(135deg, ${c} 0%, color-mix(in srgb, ${c} 55%, #000) 100%)`;
+  }
   // Restaure le dernier onglet visite (defaut : Info).
   let lastTab = 'info';
   try{ lastTab = localStorage.getItem('mb-sm-tab') || 'info'; }catch(_){}
