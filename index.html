@@ -446,21 +446,39 @@
   .img-modal.open { display:flex; }
   .img-modal img { max-width:96vw; max-height:92vh; border-radius:10px; }
   /* Modal fiche espèce (ouvert au clic sur un nom d'oiseau) */
-  /* Drawer lateral (droite) : slide-in, remplace le modal centre pour ne pas cacher toute la page. */
+  /* ========== Drawer fiche espece : style "Cards colorees Merlin/eBird" ========== */
   .species-modal { position:fixed !important; inset:0; z-index:2147483000 !important; display:block; padding:0; pointer-events:none; }
   .species-modal[hidden] { display:none !important; }
   .species-modal .sm-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.35); cursor:zoom-out; pointer-events:auto; animation:sm-fade-in .18s ease both; }
-  .species-modal .sm-box { position:absolute; top:0; right:0; bottom:0; background:var(--surface); border-radius:16px 0 0 16px; padding:0; width:min(560px, 100vw); height:100vh; overflow:hidden; box-shadow:-8px 0 24px rgba(0,0,0,.25); display:flex; flex-direction:column; pointer-events:auto; animation:sm-slide-in .22s ease both; }
+  .species-modal .sm-box { position:absolute; top:0; right:0; bottom:0; background:var(--surface-2); border-radius:20px 0 0 20px; padding:0; width:min(720px, 100vw); height:100vh; overflow:hidden; box-shadow:-8px 0 32px rgba(0,0,0,.28); display:flex; flex-direction:column; pointer-events:auto; animation:sm-slide-in .22s cubic-bezier(.2,.9,.3,1) both; }
   @keyframes sm-slide-in { from { transform:translateX(100%); } to { transform:translateX(0); } }
   @keyframes sm-fade-in { from { opacity:0; } to { opacity:1; } }
-  /* Zone tabs (nav) */
-  .species-modal .sm-tabs { display:flex; gap:0; border-bottom:1px solid var(--line); background:var(--surface-2); padding:0 8px; flex:none; }
-  .species-modal .sm-tab { flex:1; padding:10px 6px; text-align:center; font:600 12.5px system-ui; color:var(--ink-3); background:transparent; border:none; border-bottom:2px solid transparent; cursor:pointer; transition:color .12s, border-color .12s; }
-  .species-modal .sm-tab:hover { color:var(--ink-2); }
-  .species-modal .sm-tab.on { color:var(--accent-ink); border-bottom-color:var(--accent); }
-  .species-modal .sm-scroll { flex:1; overflow-y:auto; padding:16px 20px 20px; }
+  /* Header hero : photo pleine largeur, gradient sombre en bas, titre par-dessus */
+  .species-modal .sm-header { position:relative; flex:none; height:200px; overflow:hidden; background:linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%); border-radius:20px 0 0 0; }
+  .species-modal .sm-hero-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.85; }
+  .species-modal .sm-hero-fade { position:absolute; inset:0; background:linear-gradient(to bottom, rgba(0,0,0,0) 40%, rgba(0,0,0,.75) 100%); }
+  .species-modal .sm-hero-body { position:absolute; left:20px; right:20px; bottom:14px; color:#fff; }
+  .species-modal .sm-title { margin:0; font-family:var(--serif); font-weight:600; font-size:26px; color:#fff; letter-spacing:.2px; text-shadow:0 2px 8px rgba(0,0,0,.5); }
+  .species-modal .sm-sci { font-size:14px; color:rgba(255,255,255,.85); font-style:italic; margin-top:2px; text-shadow:0 1px 4px rgba(0,0,0,.6); }
+  .species-modal .sm-info-chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+  .species-modal .sm-info-chips .chip { font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:14px; background:rgba(255,255,255,.95); color:var(--ink); border:none; display:inline-flex; align-items:center; gap:5px; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+  .species-modal .sm-info-chips .chip .dot { width:9px; height:9px; border-radius:50%; }
+  .species-modal .sm-info-chips .chip.rar-chip-fill { color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.35); font-weight:800; }
+  /* Bouton fermer : rond blanc glassy en haut a droite */
+  .species-modal .sm-close { position:absolute; top:14px; right:16px; background:rgba(255,255,255,.95); border:none; font-size:18px; color:var(--ink); cursor:pointer; width:34px; height:34px; border-radius:50%; box-shadow:0 2px 8px rgba(0,0,0,.3); z-index:3; display:grid; place-items:center; transition:transform .12s; }
+  .species-modal .sm-close:hover { transform:scale(1.08); }
+  /* Nav tabs : pills colorees arrondies */
+  .species-modal .sm-tabs { display:flex; gap:6px; padding:12px 16px; background:var(--surface-2); flex:none; border-bottom:1px solid var(--line); overflow-x:auto; scrollbar-width:none; }
+  .species-modal .sm-tabs::-webkit-scrollbar { display:none; }
+  .species-modal .sm-tab { flex:1; min-width:auto; padding:9px 14px; font:600 13px/1 system-ui; color:var(--ink-3); background:var(--surface); border:1.5px solid transparent; border-radius:22px; cursor:pointer; transition:all .15s ease; white-space:nowrap; }
+  .species-modal .sm-tab:hover { color:var(--ink); background:var(--surface); border-color:var(--line-2); }
+  .species-modal .sm-tab.on { color:#fff; background:var(--accent); border-color:var(--accent); box-shadow:0 2px 8px color-mix(in srgb, var(--accent) 40%, transparent); }
+  /* Zone scroll principale : cards separees avec ombres */
+  .species-modal .sm-scroll { flex:1; overflow-y:auto; padding:14px 16px 20px; background:var(--surface-2); }
   .species-modal .sm-panel[hidden] { display:none; }
-  .species-modal .sm-close { position:absolute; top:10px; right:12px; background:var(--surface); border:1px solid var(--line-2); font-size:16px; color:var(--ink-2); cursor:pointer; padding:4px 10px; border-radius:8px; z-index:2; }
+  .species-modal .sm-card { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.04); }
+  .species-modal .sm-card:last-child { margin-bottom:0; }
+  .species-modal .sm-card-title { font:700 11.5px/1.2 system-ui; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); margin:0 0 10px; }
   .species-modal .sm-close:hover { background:var(--surface-2); color:var(--ink); }
   .species-modal .sm-header { margin-bottom:12px; padding-right:30px; }
   .species-modal .sm-title { margin:0; font-size:20px; color:var(--ink); }
@@ -1444,10 +1462,14 @@
     <div class="sm-backdrop" data-sm-close></div>
     <div class="sm-box">
       <button class="sm-close" data-sm-close aria-label="Fermer">✕</button>
-      <div class="sm-header sm-scroll" style="flex:none; overflow:visible; padding:14px 20px 10px; border-bottom:1px solid var(--line);">
-        <h2 class="sm-title" id="smTitle" style="padding-right:36px;"></h2>
-        <div class="sm-sci" id="smSci"></div>
-        <div class="sm-info-chips" id="smInfoChips"></div>
+      <div class="sm-header">
+        <img class="sm-hero-img" id="smHeroImg" alt="" src="" onerror="this.style.display='none'">
+        <div class="sm-hero-fade"></div>
+        <div class="sm-hero-body">
+          <h2 class="sm-title" id="smTitle"></h2>
+          <div class="sm-sci" id="smSci"></div>
+          <div class="sm-info-chips" id="smInfoChips"></div>
+        </div>
       </div>
       <nav class="sm-tabs" role="tablist">
         <button type="button" class="sm-tab on" data-sm-tab="map">📍 Carte</button>
@@ -1458,6 +1480,7 @@
       <div class="sm-scroll">
         <!-- Onglet Carte (par defaut) -->
         <div class="sm-panel" data-sm-panel="map">
+          <div class="sm-card" style="padding:12px;">
           <div class="sm-map-wrap" id="smMapWrap" hidden style="margin:0;">
             <div class="sm-map-header" style="margin-bottom:8px;">
               <div class="seg sm-map-seg" id="smMapSeg">
@@ -1490,35 +1513,47 @@
           <label>Région <select id="smGbifRegion"><option value="">toute la France</option></select></label>
           <label id="smGbifDeptLbl" hidden>Dépt <select id="smGbifDept"><option value="">tous</option></select></label>
         </div>
-            <div id="smMap" class="sm-map" style="min-height:400px; height:calc(100vh - 260px);"></div>
+            <div id="smMap" class="sm-map" style="min-height:400px; height:calc(100vh - 340px); border-radius:10px;"></div>
             <div class="sm-map-hint" id="smMapHint"></div>
+          </div>
           </div>
         </div>
         <!-- Onglet Sons -->
         <div class="sm-panel" data-sm-panel="sound" hidden>
-          <div class="sm-audio-wrap">
-            <div class="sm-audio-row" id="smSongRow" hidden></div>
-            <div class="sm-audio-row" id="smCallRow" hidden></div>
-            <div class="sm-audio-hint" id="smAudioHint">🎧 Recherche du chant et du cri…</div>
+          <div class="sm-card">
+            <div class="sm-audio-wrap">
+              <div class="sm-audio-row" id="smSongRow" hidden></div>
+              <div class="sm-audio-row" id="smCallRow" hidden></div>
+              <div class="sm-audio-hint" id="smAudioHint">🎧 Recherche du chant et du cri…</div>
+            </div>
           </div>
         </div>
         <!-- Onglet Info : photo + description + freq + liens -->
         <div class="sm-panel" data-sm-panel="info" hidden>
-          <div class="sm-photo-wrap"><img class="sm-photo" id="smPhoto" alt="" hidden></div>
-          <div class="sm-desc" id="smDesc"></div>
-          <div class="sm-freq" id="smFreqWrap" hidden>
-            <div class="sm-freq-title">Quand la trouver <span class="sm-freq-src" id="smFreqSrc"></span></div>
+          <div class="sm-card">
+            <div class="sm-card-title">Description</div>
+            <div class="sm-desc" id="smDesc"></div>
+          </div>
+          <div class="sm-card" id="smFreqCard" hidden>
+            <div class="sm-card-title">Quand la trouver <span class="sm-freq-src" id="smFreqSrc"></span></div>
             <div class="sm-freq-chart-wrap">
               <svg id="smFreqChart" class="sm-freq-chart" viewBox="0 0 360 130" preserveAspectRatio="xMidYMid meet"></svg>
               <div class="sm-freq-legend"><span class="sm-freq-lg"><span class="sm-freq-sw" style="background:var(--accent)"></span>Mois actuel</span><span class="sm-freq-lg"><span class="sm-freq-sw" style="background:var(--gold)"></span>Pic annuel</span></div>
             </div>
           </div>
-          <div class="sm-links" id="smLinks"></div>
-          <div class="sm-photo-credit" id="smPhotoCredit"></div>
+          <div class="sm-freq" id="smFreqWrap" hidden></div>
+          <div class="sm-card">
+            <div class="sm-card-title">Liens</div>
+            <div class="sm-links" id="smLinks"></div>
+          </div>
+          <div class="sm-photo-credit" id="smPhotoCredit" style="text-align:center; font-size:11px; color:var(--ink-3); margin-top:6px;"></div>
+          <img class="sm-photo" id="smPhoto" alt="" hidden style="display:none;">
         </div>
         <!-- Onglet Amis : obs dans la ligue -->
         <div class="sm-panel" data-sm-panel="friends" hidden>
-          <div class="sm-obs" id="smObs"></div>
+          <div class="sm-card">
+            <div class="sm-obs" id="smObs"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -7618,14 +7653,15 @@ function _renderSpeciesDesc(sci){
 // Mini bar chart 12 mois : freq eBird nationale (fallback REAL_FREQ_MONTHLY).
 const _MONTH_ABBR3 = ['janv','févr','mars','avr','mai','juin','juil','août','sept','oct','nov','déc'];
 function _renderSpeciesFreqChart(key){
-  const wrap = $('#smFreqWrap'), svg = $('#smFreqChart'), srcEl = $('#smFreqSrc');
-  if(!wrap || !svg) return;
+  const wrap = $('#smFreqWrap'), card = $('#smFreqCard'), svg = $('#smFreqChart'), srcEl = $('#smFreqSrc');
+  if(!svg) return;
   const arr = (typeof REAL_FREQ_MONTHLY === 'object' && REAL_FREQ_MONTHLY[key]) ? REAL_FREQ_MONTHLY[key] : null;
-  if(!arr || arr.length !== 12){ wrap.hidden = true; return; }
+  if(!arr || arr.length !== 12){ if(wrap) wrap.hidden = true; if(card) card.hidden = true; return; }
   const maxV = Math.max(0.0001, ...arr);
   const bestIdx = arr.indexOf(maxV);
   const curM = new Date().getMonth();
-  wrap.hidden = false;
+  if(wrap) wrap.hidden = false;
+  if(card) card.hidden = false;
   srcEl.textContent = `pic en ${_MONTH_FR[bestIdx]} (${Math.round(maxV*100)} %)`;
   // Chart layout : 360×130 viewBox. Barre = 20 px large + 4 gouttiere, textes en dessous.
   const W = 360, H = 130, PT = 12, PB = 26, PL = 32, PR = 8;
@@ -7699,13 +7735,14 @@ function openSpeciesModal(sci){
   _renderSpeciesDesc(sci);
   // Barre chart de fréquence mensuelle (national ou régional)
   _renderSpeciesFreqChart(key);
-  // Photo
-  const img = $('#smPhoto'), cred = $('#smPhotoCredit');
-  img.hidden = true; img.src=''; cred.textContent = '';
+  // Photo : mise en header hero + garde le credit dans l'onglet Info.
+  const hero = $('#smHeroImg'), cred = $('#smPhotoCredit');
+  if(hero){ hero.src = ''; hero.style.display = ''; }
+  if(cred) cred.textContent = '';
   _fetchWikiPhoto(sci).then(p => {
-    if(!p || !p.url){ cred.textContent = 'Pas de photo trouvée sur Wikipédia'; return; }
-    img.src = p.url; img.hidden = false;
-    cred.textContent = 'Photo : '+p.credit;
+    if(!p || !p.url){ if(cred) cred.textContent = 'Pas de photo trouvée sur Wikipédia'; return; }
+    if(hero){ hero.src = p.url; hero.style.display = ''; }
+    if(cred) cred.textContent = 'Photo : '+p.credit;
   });
   // Sons : chant + cri, chaque section a un lecteur + sonogramme + menu deroulant multi-enregistrements.
   const songRow=$('#smSongRow'), callRow=$('#smCallRow'), hint=$('#smAudioHint');
