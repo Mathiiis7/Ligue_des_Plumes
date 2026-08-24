@@ -460,6 +460,10 @@
   .species-modal .sm-hero-img, .species-modal .sm-hero-bg, .species-modal .sm-hero-fade, .species-modal .sm-hero-body { display:none !important; }
   .species-modal .sm-title { margin:0; font-family:var(--serif); font-weight:700; font-size:24px; color:#fff; letter-spacing:.2px; padding-right:40px; text-shadow:0 1px 2px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.25); }
   .species-modal .sm-sci { display:inline-block; font-size:13px; color:#fff; font-style:italic; margin-top:6px; padding:2px 10px; background:rgba(0,0,0,.28); backdrop-filter:blur(4px); border-radius:12px; }
+  /* Contraste : fond clair (steppe, littoral, bocage...) -> texte fonce */
+  .species-modal .sm-header.sm-header-dark-text .sm-title { color:#1a1a1a; text-shadow:0 1px 1px rgba(255,255,255,.3), 0 0 6px rgba(255,255,255,.4); }
+  .species-modal .sm-header.sm-header-dark-text .sm-sci { color:#1a1a1a; background:rgba(255,255,255,.4); }
+  .species-modal .sm-header.sm-header-dark-text .sm-info-chips .chip { background:rgba(0,0,0,.15); color:#1a1a1a; }
   .species-modal .sm-info-chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
   .species-modal .sm-info-chips .chip { font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:14px; background:rgba(255,255,255,.95); color:var(--ink); border:none; display:inline-flex; align-items:center; gap:5px; box-shadow:0 1px 3px rgba(0,0,0,.15); }
   .species-modal .sm-info-chips .chip .dot { width:9px; height:9px; border-radius:50%; }
@@ -7779,38 +7783,43 @@ function _renderSpeciesInfoChips(key){
   }
   box.innerHTML = chips.join('');
 }
-// Card "Rareté par pays" : liste les pays pour lesquels on a une calibration + tier + label.
-// Seuls les pays avec une table dediee apparaissent (aujourd'hui FR et ME).
+// Card Rarete : FR par defaut + dropdown pour switch entre pays calibres. Ligne du tier
+// affichee juste sous le select (pill + label + categorie exotique si applicable).
 function _renderSpeciesRarityCard(key){
   const box = $('#smRarityCard'); if(!box) return;
   const k = (key||'').toLowerCase().trim();
-  // Table des pays avec calibration : {code, label, flag, table, isExoTable}
   const COUNTRIES = [
-    { code:'FR', name:'France', flag:flagImg('FR')||'🇫🇷' },
-    { code:'ME', name:'Monténégro', flag:flagImg('ME')||'🇲🇪' },
+    { code:'FR', name:'France', flag:flagImg('FR')||'' },
+    { code:'ME', name:'Monténégro', flag:flagImg('ME')||'' },
   ];
-  const rows = [];
-  for(const c of COUNTRIES){
-    const w = rarityForCountry(k, c.code);
-    if(!w) continue;   // pas calibre pour ce pays -> on skip
+  // Pays disponibles pour cette espece : ceux ou rarityForCountry retourne une valeur.
+  const avail = COUNTRIES.filter(c => !!rarityForCountry(k, c.code));
+  if(!avail.length){ box.hidden = true; return; }
+  box.hidden = false;
+  const selectOpts = avail.map(c => `<option value="${esc(c.code)}">${esc(c.name)}</option>`).join('');
+  box.innerHTML = `
+    <div class="sm-card-title" style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+      <span>Rareté</span>
+      <select id="smRarityCountrySel" class="filt-sel" style="font-size:11px; padding:2px 6px; font-weight:600; text-transform:none; letter-spacing:0;">${selectOpts}</select>
+    </div>
+    <div id="smRarityLine"></div>`;
+  const renderLine = (cc) => {
+    const w = rarityForCountry(k, cc);
+    if(!w){ $('#smRarityLine').innerHTML = '<span class="help">Pas de calibration pour ce pays.</span>'; return; }
     const label = (typeof REAL_LABELS === 'object' && REAL_LABELS[w]) || ('niveau '+w);
     const color = realColor(w);
     const isExo = isExotic(k);
     const cat = isExo ? _exoticCategory(k) : '';
     const catLbl = cat ? (EXOTIC_CATEGORY_LABEL[cat] || '') : '';
-    const flgFixed = (c.flag||'').replace('<img ', '<img style="height:14px;width:auto;vertical-align:middle;border-radius:2px;margin-right:6px;box-shadow:0 0 0 1px rgba(0,0,0,.08);" ');
-    const pill = `<span style="display:inline-block;background:${color};color:#fff;padding:2px 10px;border-radius:6px;font-weight:800;font-size:13px;min-width:22px;text-align:center;">${w}</span>`;
-    const catBadge = catLbl ? `<span style="font-size:11px;color:var(--ink-3);margin-left:8px;">· ${esc(catLbl)}</span>` : '';
-    rows.push(`<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px dashed var(--line);">
-      <span style="flex:0 0 auto;">${flgFixed}<b>${esc(c.name)}</b></span>
-      ${pill}
-      <span style="color:var(--ink-2);font-size:13px;">${esc(label)}</span>
-      ${catBadge}
-    </div>`);
-  }
-  if(!rows.length){ box.hidden = true; return; }
-  box.hidden = false;
-  box.innerHTML = '<div class="sm-card-title">Rareté par pays</div>' + rows.join('');
+    const country = avail.find(c => c.code === cc) || avail[0];
+    const flgFixed = (country.flag||'').replace('<img ', '<img style="height:14px;width:auto;vertical-align:middle;border-radius:2px;margin-right:8px;box-shadow:0 0 0 1px rgba(0,0,0,.08);" ');
+    const pill = `<span style="display:inline-block;background:${color};color:#fff;padding:3px 12px;border-radius:8px;font-weight:800;font-size:15px;min-width:28px;text-align:center;margin-right:10px;">${w}</span>`;
+    const catBadge = catLbl ? `<span style="font-size:12px;color:var(--ink-3);margin-left:10px;">· ${esc(catLbl)}</span>` : '';
+    $('#smRarityLine').innerHTML = `<div style="display:flex;align-items:center;gap:6px;padding:6px 0;">${flgFixed}${pill}<span style="font-weight:600;color:var(--ink);">${esc(label)}</span>${catBadge}</div>`;
+  };
+  renderLine('FR');
+  const sel = $('#smRarityCountrySel');
+  if(sel){ sel.value = 'FR'; sel.addEventListener('change', e => renderLine(e.target.value)); }
 }
 // Description Wikipedia (extrait 1er paragraphe) via API REST summary. FR puis EN en fallback.
 const _spDescCache = new Map();
@@ -8008,6 +8017,11 @@ function openSpeciesModal(sci){
     };
     const c = (habs.length && HAB_COLORS[habs[0]]) || sciColor(sci);
     hdr.style.background = `linear-gradient(135deg, ${c} 0%, color-mix(in srgb, ${c} 55%, #000) 100%)`;
+    // Contraste texte auto : hex -> luminance perceptuelle. Fond clair -> texte fonce.
+    const hex2rgb = h => { const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(h); return m ? [parseInt(m[1],16), parseInt(m[2],16), parseInt(m[3],16)] : [128,128,128]; };
+    const [rr,gg,bb] = hex2rgb(c);
+    const lum = (0.299*rr + 0.587*gg + 0.114*bb) / 255;
+    hdr.classList.toggle('sm-header-dark-text', lum > 0.62);
   }
   // Restaure le dernier onglet visite (defaut : Info).
   let lastTab = 'info';
