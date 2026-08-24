@@ -487,9 +487,7 @@
   .xa-block { margin-bottom:14px; }
   .xa-block:last-child { margin-bottom:0; }
   .xa-hdr { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
-  .xa-hdr-lbl { font:700 12px/1 system-ui; text-transform:uppercase; letter-spacing:.08em; padding:5px 10px; border-radius:12px; color:#fff; }
-  .xa-hdr-lbl.song { background:linear-gradient(135deg, #16a34a, #0e8339); }
-  .xa-hdr-lbl.call { background:linear-gradient(135deg, #ea580c, #c2410c); }
+  .xa-hdr-lbl { font:700 12px/1 system-ui; text-transform:uppercase; letter-spacing:.08em; padding:5px 10px; border-radius:12px; color:var(--ink); background:var(--surface-2); border:1px solid var(--line); }
   .xa-hdr-meta { font-size:11.5px; color:var(--ink-3); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .xa-hdr-link { font-size:11px; color:var(--accent-ink); text-decoration:none; flex:none; }
   .xa-hdr-link:hover { text-decoration:underline; }
@@ -502,18 +500,26 @@
   .xa-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
   .xa-bar { position:relative; height:38px; border-radius:6px; overflow:hidden; background:var(--surface-3); cursor:pointer; }
   .xa-bar-sono { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.85; pointer-events:none; }
-  .xa-bar-progress { position:absolute; top:0; bottom:0; left:0; width:0; background:linear-gradient(90deg, color-mix(in srgb, var(--accent) 50%, transparent), color-mix(in srgb, var(--accent) 25%, transparent)); border-right:2px solid var(--accent); pointer-events:none; transition:width .05s linear; }
+  .xa-bar-progress { position:absolute; top:0; bottom:0; left:0; width:0; background:linear-gradient(90deg, rgba(255,255,255,0), color-mix(in srgb, var(--accent) 30%, transparent)); pointer-events:none; transition:width .05s linear; }
+  .xa-bar-playhead { position:absolute; top:0; bottom:0; width:3px; margin-left:-1.5px; background:var(--accent-2); box-shadow:0 0 6px color-mix(in srgb, var(--accent-2) 90%, transparent), 0 0 2px #fff; left:0; pointer-events:none; transition:left .05s linear; opacity:0; }
+  .xa-player.playing .xa-bar-playhead { opacity:1; }
   .xa-bar-fallback { position:absolute; inset:0; display:grid; place-items:center; color:var(--ink-3); font-size:11px; font-style:italic; }
   .xa-time { font:600 10.5px/1 var(--mono, ui-monospace); color:var(--ink-3); display:flex; justify-content:space-between; padding:0 2px; }
-  /* Section "autres enregistrements" : plus compact */
-  .xa-more { margin-top:8px; }
-  .xa-more summary { cursor:pointer; padding:6px 4px; font-size:12px; color:var(--ink-3); user-select:none; }
+  /* Section "autres enregistrements" : plus compact + separateur clair pour eviter la
+     confusion avec le block suivant (chant vs cri). */
+  .xa-more { margin-top:8px; padding-top:4px; border-top:1px solid var(--line); }
+  .xa-more summary { cursor:pointer; padding:8px 4px 6px; font-size:12px; color:var(--ink-3); user-select:none; }
   .xa-more summary:hover { color:var(--ink-2); }
   .xa-more[open] summary { color:var(--accent-ink); }
   .xa-more-list { margin-top:6px; display:flex; flex-direction:column; gap:8px; }
   .xa-more .xa-player { padding:6px 8px; }
   .xa-more .xa-play { width:36px; height:36px; font-size:13px; }
   .xa-more .xa-bar { height:32px; }
+  /* Espace visuel entre les blocs Chant et Cri (par-dessus la marge existante) */
+  .xa-block { padding-bottom:14px; border-bottom:2px solid var(--line-2); }
+  .xa-block:last-child { border-bottom:none; padding-bottom:0; }
+  .xa-more .xa-block { border-bottom:1px dashed var(--line); padding-bottom:8px; }
+  .xa-more .xa-block:last-child { border-bottom:none; padding-bottom:0; }
   .species-modal .sm-close:hover { background:var(--surface-2); color:var(--ink); }
   .species-modal .sm-header { margin-bottom:12px; padding-right:30px; }
   .species-modal .sm-title { margin:0; font-size:20px; color:var(--ink); }
@@ -7629,6 +7635,7 @@ function _renderSpeciesAudioBlock(container, label, primaryId, list){
         <div class="xa-bar" data-xa-seek>
           ${sono}
           <div class="xa-bar-progress"></div>
+          <div class="xa-bar-playhead"></div>
         </div>
         <div class="xa-time"><span data-xa-cur>0:00</span><span data-xa-dur>${esc(r.length||'--:--')}</span></div>
       </div>
@@ -7638,7 +7645,7 @@ function _renderSpeciesAudioBlock(container, label, primaryId, list){
   const blockHtml = (r, audioId) => `
     <div class="xa-block">
       <div class="xa-hdr">
-        <span class="xa-hdr-lbl ${cls}">${cls==='song'?'🎵 '+esc(label):'🔊 '+esc(label)}</span>
+        <span class="xa-hdr-lbl">${esc(label)}</span>
         <span class="xa-hdr-meta">${shortMeta(r)}${r.rec?' · par '+esc(r.rec):''}</span>
         ${r.url?`<a class="xa-hdr-link" href="${esc(r.url)}" target="_blank" rel="noopener">xeno-canto ↗</a>`:''}
       </div>
@@ -7668,25 +7675,30 @@ function _wireCustomAudioPlayer(playerEl){
   const playBtn = playerEl.querySelector('[data-xa-play]');
   const seekEl = playerEl.querySelector('[data-xa-seek]');
   const progress = playerEl.querySelector('.xa-bar-progress');
+  const playhead = playerEl.querySelector('.xa-bar-playhead');
   const curEl = playerEl.querySelector('[data-xa-cur]');
   const durEl = playerEl.querySelector('[data-xa-dur]');
   if(!audio || !playBtn) return;
   const fmt = s => { if(!isFinite(s) || s < 0) return '0:00'; const m = Math.floor(s/60), r = Math.floor(s%60); return m+':'+String(r).padStart(2,'0'); };
+  const updatePos = () => {
+    if(!audio.duration) return;
+    const pct = (audio.currentTime / audio.duration) * 100;
+    if(progress) progress.style.width = pct + '%';
+    if(playhead) playhead.style.left = pct + '%';
+  };
   playBtn.addEventListener('click', () => { if(audio.paused){ audio.play().catch(()=>{}); } else { audio.pause(); } });
-  audio.addEventListener('play', () => { playBtn.textContent = '⏸'; playBtn.classList.add('on'); });
+  audio.addEventListener('play', () => { playBtn.textContent = '⏸'; playBtn.classList.add('on'); playerEl.classList.add('playing'); });
   audio.addEventListener('pause', () => { playBtn.textContent = '▶'; playBtn.classList.remove('on'); });
-  audio.addEventListener('ended', () => { playBtn.textContent = '▶'; playBtn.classList.remove('on'); if(progress) progress.style.width = '0%'; });
-  audio.addEventListener('timeupdate', () => {
-    if(progress && audio.duration) progress.style.width = (audio.currentTime / audio.duration * 100) + '%';
-    if(curEl) curEl.textContent = fmt(audio.currentTime);
-  });
+  audio.addEventListener('ended', () => { playBtn.textContent = '▶'; playBtn.classList.remove('on'); playerEl.classList.remove('playing'); if(progress) progress.style.width = '0%'; if(playhead) playhead.style.left = '0%'; });
+  audio.addEventListener('timeupdate', () => { updatePos(); if(curEl) curEl.textContent = fmt(audio.currentTime); });
   audio.addEventListener('loadedmetadata', () => { if(durEl && isFinite(audio.duration)) durEl.textContent = fmt(audio.duration); });
   if(seekEl){
     seekEl.addEventListener('click', e => {
-      if(!audio.duration) return;
+      if(!audio.duration){ audio.load(); return; }   // load si pas encore de metadata
       const r = seekEl.getBoundingClientRect();
       const p = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
       audio.currentTime = p * audio.duration;
+      updatePos();
     });
   }
 }
