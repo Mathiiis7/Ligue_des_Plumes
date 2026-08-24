@@ -7701,6 +7701,10 @@ function _renderSpeciesAudioBlock(container, label, primaryId, list){
   container.querySelectorAll('.xa-player').forEach(_wireCustomAudioPlayer);
 }
 // Cable un player custom : play/pause, seek clic, progress bar animee, time text.
+// Registre global des audios de fiche espece pour un mutex fiable : quand un audio play,
+// on pause tous les autres. Wrapper-level listener n'attrappait pas les audios crees via
+// new Audio() correctement (events media ne bubblent pas).
+if(typeof _xaAudios === 'undefined') var _xaAudios = new Set();
 function _wireCustomAudioPlayer(playerEl){
   if(playerEl.dataset.xaWired) return;
   playerEl.dataset.xaWired = '1';
@@ -7710,10 +7714,13 @@ function _wireCustomAudioPlayer(playerEl){
   const audio = new Audio(src);
   audio.preload = 'auto';
   if(audioId) audio.id = audioId;
-  // Ancre l'audio dans le player pour que le mutex wrapper-level (querySelectorAll('audio'))
-  // le voie et puisse le mettre en pause quand un autre demarre.
   playerEl.appendChild(audio);
   audio.style.display = 'none';
+  _xaAudios.add(audio);
+  // Mutex direct sur cet audio : au play, pause tous les autres du registre.
+  audio.addEventListener('play', () => {
+    for(const other of _xaAudios){ if(other !== audio && !other.paused){ try{ other.pause(); other.currentTime = 0; }catch(_){} } }
+  });
   const playBtn = playerEl.querySelector('[data-xa-play]');
   const seekEl = playerEl.querySelector('[data-xa-seek]');
   const progress = playerEl.querySelector('.xa-bar-progress');
@@ -8593,6 +8600,11 @@ document.addEventListener('change', e=>{
 function closeSpeciesModal(){
   const modal = $('#speciesModal'); if(!modal) return;
   modal.hidden = true;
+  // Pause + purge tous les audios du registre (evite les accumulations entre fiches).
+  if(typeof _xaAudios !== 'undefined'){
+    for(const a of _xaAudios){ try{ a.pause(); a.src = ''; }catch(_){} }
+    _xaAudios.clear();
+  }
   for(const id of ['#smSong','#smCall']){ const a=$(id); if(a){ try{ a.pause(); }catch(_){} a.src=''; } }
   // On garde _smMapInstance en memoire (recycle plus rapide), on vide juste la couche marqueurs.
   if(_smMapLayer) _smMapLayer.clearLayers();
