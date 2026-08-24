@@ -483,6 +483,7 @@
   .species-modal .sm-card { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.04); }
   .species-modal .sm-card:last-child { margin-bottom:0; }
   .species-modal .sm-card-title { font:700 11.5px/1.2 system-ui; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); margin:0 0 10px; }
+  .species-modal #smRarityCard > div:last-child { border-bottom:none !important; padding-bottom:0 !important; }
   /* ==== Custom audio player (fiche espece, onglet Sons) ==== */
   .xa-block { margin-bottom:14px; }
   .xa-block:last-child { margin-bottom:0; }
@@ -1581,6 +1582,7 @@
             <div class="sm-card-title">Description</div>
             <div class="sm-desc" id="smDesc"></div>
           </div>
+          <div class="sm-card" id="smRarityCard" hidden></div>
           <div class="sm-card" id="smFreqCard" hidden>
             <div class="sm-card-title">Quand la trouver <span class="sm-freq-src" id="smFreqSrc"></span></div>
             <div class="sm-freq-chart-wrap">
@@ -7768,14 +7770,47 @@ function _wireCustomAudioPlayer(playerEl){
 function _renderSpeciesInfoChips(key){
   const box = $('#smInfoChips'); if(!box) return;
   const chips = [];
-  const t = realTier(key, false);
-  if(t && t.label) chips.push(`<span class="chip rar-chip-fill" title="Rareté réelle en France" style="background:${t.color};border-color:${t.color};">${esc(t.label)}</span>`);
+  // Rarete deplacee dans une card dediee (voir _renderSpeciesRarityCard) : le header
+  // ne montre plus que Famille + Habitats pour rester lisible.
   const fam = familyOf(key); if(fam) chips.push(`<span class="chip" title="Famille taxonomique">${esc(fam)}</span>`);
   const habs = (typeof habitatsOf === 'function') ? habitatsOf(key) : null;
   if(Array.isArray(habs)){
     for(const h of habs){ const lbl = (typeof HABITAT_LABELS === 'object' && HABITAT_LABELS[h]) ? HABITAT_LABELS[h] : h; chips.push(`<span class="chip">${esc(lbl)}</span>`); }
   }
   box.innerHTML = chips.join('');
+}
+// Card "Rareté par pays" : liste les pays pour lesquels on a une calibration + tier + label.
+// Seuls les pays avec une table dediee apparaissent (aujourd'hui FR et ME).
+function _renderSpeciesRarityCard(key){
+  const box = $('#smRarityCard'); if(!box) return;
+  const k = (key||'').toLowerCase().trim();
+  // Table des pays avec calibration : {code, label, flag, table, isExoTable}
+  const COUNTRIES = [
+    { code:'FR', name:'France', flag:flagImg('FR')||'🇫🇷' },
+    { code:'ME', name:'Monténégro', flag:flagImg('ME')||'🇲🇪' },
+  ];
+  const rows = [];
+  for(const c of COUNTRIES){
+    const w = rarityForCountry(k, c.code);
+    if(!w) continue;   // pas calibre pour ce pays -> on skip
+    const label = (typeof REAL_LABELS === 'object' && REAL_LABELS[w]) || ('niveau '+w);
+    const color = realColor(w);
+    const isExo = isExotic(k);
+    const cat = isExo ? _exoticCategory(k) : '';
+    const catLbl = cat ? (EXOTIC_CATEGORY_LABEL[cat] || '') : '';
+    const flgFixed = (c.flag||'').replace('<img ', '<img style="height:14px;width:auto;vertical-align:middle;border-radius:2px;margin-right:6px;box-shadow:0 0 0 1px rgba(0,0,0,.08);" ');
+    const pill = `<span style="display:inline-block;background:${color};color:#fff;padding:2px 10px;border-radius:6px;font-weight:800;font-size:13px;min-width:22px;text-align:center;">${w}</span>`;
+    const catBadge = catLbl ? `<span style="font-size:11px;color:var(--ink-3);margin-left:8px;">· ${esc(catLbl)}</span>` : '';
+    rows.push(`<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px dashed var(--line);">
+      <span style="flex:0 0 auto;">${flgFixed}<b>${esc(c.name)}</b></span>
+      ${pill}
+      <span style="color:var(--ink-2);font-size:13px;">${esc(label)}</span>
+      ${catBadge}
+    </div>`);
+  }
+  if(!rows.length){ box.hidden = true; return; }
+  box.hidden = false;
+  box.innerHTML = '<div class="sm-card-title">Rareté par pays</div>' + rows.join('');
 }
 // Description Wikipedia (extrait 1er paragraphe) via API REST summary. FR puis EN en fallback.
 const _spDescCache = new Map();
@@ -7978,8 +8013,9 @@ function openSpeciesModal(sci){
   let lastTab = 'info';
   try{ lastTab = localStorage.getItem('mb-sm-tab') || 'info'; }catch(_){}
   _smSetTab(lastTab);
-  // Chips info : rareté (couleur), famille, habitats
+  // Chips info : famille + habitats (rarete deplacee dans card dediee).
   _renderSpeciesInfoChips(key);
+  _renderSpeciesRarityCard(key);
   // Description Wikipedia (async)
   _renderSpeciesDesc(sci);
   // Barre chart de fréquence mensuelle (national ou régional)
