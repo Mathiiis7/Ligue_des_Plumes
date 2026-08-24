@@ -1472,18 +1472,13 @@
         <div class="sm-info-chips" id="smInfoChips"></div>
       </div>
       <nav class="sm-tabs" role="tablist">
-        <button type="button" class="sm-tab on" data-sm-tab="map">📍 Carte & amis</button>
+        <button type="button" class="sm-tab on" data-sm-tab="info">📝 Info</button>
+        <button type="button" class="sm-tab" data-sm-tab="map">📍 Carte & amis</button>
         <button type="button" class="sm-tab" data-sm-tab="sound">🎵 Sons</button>
-        <button type="button" class="sm-tab" data-sm-tab="info">📝 Info</button>
       </nav>
       <div class="sm-scroll">
-        <!-- Onglet Carte (par defaut) -->
-        <div class="sm-panel" data-sm-panel="map">
-          <!-- Photo card en haut : image entiere, ratio 16/9, credit dessous -->
-          <div class="sm-card sm-photo-card" id="smPhotoCard" hidden>
-            <img id="smHeroImg" alt="" src="" onerror="this.closest('.sm-photo-card').hidden=true">
-            <div class="photo-caption" id="smPhotoCaption"></div>
-          </div>
+        <!-- Onglet Carte -->
+        <div class="sm-panel" data-sm-panel="map" hidden>
           <div class="sm-card" style="padding:12px;">
           <div class="sm-map-wrap" id="smMapWrap" hidden style="margin:0;">
             <div class="sm-map-header" style="margin-bottom:8px;">
@@ -1536,8 +1531,13 @@
             </div>
           </div>
         </div>
-        <!-- Onglet Info : photo + description + freq + liens -->
-        <div class="sm-panel" data-sm-panel="info" hidden>
+        <!-- Onglet Info (par defaut) : photo + description + freq + liens -->
+        <div class="sm-panel" data-sm-panel="info">
+          <!-- Photo card en haut : image entiere, ratio 16/9, credit dessous -->
+          <div class="sm-card sm-photo-card" id="smPhotoCard" hidden>
+            <img id="smHeroImg" alt="" src="" onerror="this.closest('.sm-photo-card').hidden=true">
+            <div class="photo-caption" id="smPhotoCaption"></div>
+          </div>
           <div class="sm-card">
             <div class="sm-card-title">Description</div>
             <div class="sm-desc" id="smDesc"></div>
@@ -7755,9 +7755,9 @@ function openSpeciesModal(sci){
   const nm = FR_NAMES[key] || sci;
   $('#smTitle').textContent = nm;
   $('#smSci').textContent = sci;
-  // Restaure le dernier onglet visite (defaut : Carte).
-  let lastTab = 'map';
-  try{ lastTab = localStorage.getItem('mb-sm-tab') || 'map'; }catch(_){}
+  // Restaure le dernier onglet visite (defaut : Info).
+  let lastTab = 'info';
+  try{ lastTab = localStorage.getItem('mb-sm-tab') || 'info'; }catch(_){}
   _smSetTab(lastTab);
   // Chips info : rareté (couleur), famille, habitats
   _renderSpeciesInfoChips(key);
