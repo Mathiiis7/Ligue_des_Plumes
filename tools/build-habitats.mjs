@@ -177,7 +177,128 @@ const HABITATS = {};
 const familyMisses = {};
 let noFamCount = 0, mappedCount = 0;
 
+// Overrides especes : quand la famille est trop generique pour bien classer.
+// L'habitat en premier = habitat principal (utilise par la couleur du header fiche).
+const SPECIES_OVERRIDES = {
+  // Rapaces de montagne (Accipitridae par defaut est [forestier,bocage,montagne])
+  'aquila chrysaetos': ['montagne','rocher','bocage'],
+  'aquila fasciata': ['montagne','rocher','forestier'],
+  'aquila heliaca': ['steppe','bocage'],
+  'aquila adalberti': ['forestier','steppe'],
+  'aquila nipalensis': ['steppe','montagne'],
+  'aegypius monachus': ['montagne','forestier','rocher'],
+  'gyps fulvus': ['montagne','rocher','bocage'],
+  'gyps rueppelli': ['montagne','rocher'],
+  'gypaetus barbatus': ['montagne','rocher'],
+  'neophron percnopterus': ['montagne','rocher','steppe'],
+  'aquila clanga': ['forestier','hzhumide'],   // aigle criard
+  'clanga clanga': ['forestier','hzhumide'],
+  'clanga pomarina': ['forestier','bocage'],
+  'circaetus gallicus': ['forestier','bocage','montagne'],
+  'circus aeruginosus': ['hzhumide'],
+  'circus cyaneus': ['bocage','steppe'],
+  'circus macrourus': ['steppe','bocage'],
+  'circus pygargus': ['bocage','steppe'],
+  'accipiter nisus': ['forestier','bocage','urbain'],
+  'accipiter gentilis': ['forestier','montagne'],
+  'astur gentilis': ['forestier','montagne'],
+  'buteo lagopus': ['steppe','montagne'],
+  'buteo rufinus': ['steppe','montagne'],
+  'buteo buteo': ['bocage','forestier'],
+  'pernis apivorus': ['forestier','bocage'],
+  'milvus migrans': ['bocage','hzhumide','urbain'],
+  'milvus milvus': ['bocage','forestier'],
+  'haliaeetus albicilla': ['littoral','hzhumide','eaudouce'],
+  'haliaeetus leucocephalus': ['littoral','eaudouce'],
+  'pandion haliaetus': ['littoral','eaudouce','hzhumide'],
+  'elanus caeruleus': ['bocage','steppe'],
+  // Faucons
+  'falco peregrinus': ['rocher','montagne','urbain'],
+  'falco columbarius': ['bocage','steppe'],
+  'falco tinnunculus': ['bocage','urbain'],
+  'falco naumanni': ['steppe','bocage'],
+  'falco vespertinus': ['bocage','steppe'],
+  'falco subbuteo': ['bocage','forestier'],
+  'falco cherrug': ['steppe'],
+  'falco biarmicus': ['montagne','rocher','steppe'],
+  'falco eleonorae': ['rocher','littoral'],
+  'falco rusticolus': ['montagne','littoral'],
+  // Corvides de montagne
+  'pyrrhocorax graculus': ['montagne','rocher'],
+  'pyrrhocorax pyrrhocorax': ['montagne','rocher','bocage'],
+  'nucifraga caryocatactes': ['montagne','forestier'],
+  // Monticoles / rocher
+  'monticola saxatilis': ['montagne','rocher'],
+  'monticola solitarius': ['rocher','montagne'],
+  // Galliformes de montagne
+  'lagopus lagopus': ['steppe','montagne'],
+  'lagopus muta': ['montagne'],
+  'lyrurus tetrix': ['montagne','forestier'],
+  'tetrao urogallus': ['forestier','montagne'],
+  'alectoris graeca': ['montagne','rocher'],
+  'alectoris rufa': ['bocage','steppe'],
+  'alectoris chukar': ['montagne','steppe'],
+  // Passereaux montagnards
+  'montifringilla nivalis': ['montagne','rocher'],
+  'prunella collaris': ['montagne','rocher'],
+  'prunella modularis': ['forestier','bocage'],
+  'phoenicurus ochruros': ['rocher','urbain','montagne'],
+  'oenanthe oenanthe': ['bocage','steppe','montagne'],
+  'anthus spinoletta': ['montagne','bocage'],
+  'linaria flavirostris': ['montagne','bocage'],
+  'carduelis citrinella': ['montagne','forestier'],
+  'carduelis corsicana': ['montagne','forestier'],
+  // Martinets
+  'tachymarptis melba': ['montagne','rocher','urbain'],
+  'apus apus': ['urbain','rocher'],
+  'apus pallidus': ['rocher','urbain'],
+  'apus caffer': ['rocher','urbain'],
+  'apus affinis': ['urbain','rocher'],
+  // Chocardidae / grimpereaux
+  'certhia familiaris': ['forestier','montagne'],
+  'certhia brachydactyla': ['forestier','urbain'],
+  'tichodroma muraria': ['rocher','montagne'],   // deja ok via famille
+  // Nyctales / chouettes montagnardes
+  'aegolius funereus': ['forestier','montagne'],
+  'glaucidium passerinum': ['forestier','montagne'],
+  'bubo scandiacus': ['steppe','montagne'],
+  'surnia ulula': ['forestier'],
+  // Rousserolles/phragmites - deja hzhumide, correct
+  // Especes aquatiques ambigues
+  'gavia adamsii': ['littoral','pelagique'],
+  'gavia immer': ['littoral','eaudouce'],
+  'fratercula arctica': ['pelagique','littoral'],
+  'alca torda': ['pelagique','littoral'],
+  'uria aalge': ['pelagique','littoral'],
+  'uria lomvia': ['pelagique','littoral'],
+  'alle alle': ['pelagique','littoral'],
+  // Grand-duc / hulottes urbaines
+  'bubo bubo': ['rocher','montagne','forestier'],
+  // Cincle plongeur = torrent (deja eaudouce/montagne)
+  // Petronia petronia / Moineau soulcie
+  'petronia petronia': ['bocage','rocher'],
+  'passer domesticus': ['urbain','bocage'],
+  'passer montanus': ['bocage','urbain'],
+  'passer hispaniolensis': ['bocage','urbain'],
+  // Hirondelles specifiques
+  'ptyonoprogne rupestris': ['rocher','montagne'],
+  'delichon urbicum': ['urbain','bocage'],
+  'hirundo rustica': ['bocage','urbain'],
+  'riparia riparia': ['hzhumide','eaudouce'],
+  'cecropis rufula': ['rocher','bocage','urbain'],
+  // Fauvettes mediterraneennes
+  'curruca sarda': ['bocage','montagne'],
+  'curruca undata': ['bocage'],
+  'curruca melanocephala': ['bocage'],
+  'sylvia melanocephala': ['bocage'],
+  // Pipit farlouse vs spioncelle
+  'anthus pratensis': ['bocage','hzhumide'],
+  'anthus petrosus': ['littoral','rocher'],
+};
+
 for (const sci of sciNames) {
+  const ov = SPECIES_OVERRIDES[sci];
+  if (ov) { HABITATS[sci] = [...ov]; mappedCount++; continue; }
   const fam = sciToFam[sci];
   if (!fam) { noFamCount++; continue; }
   const cats = FAMILY_TO_CATS[fam];
