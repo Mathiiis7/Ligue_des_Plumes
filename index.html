@@ -455,7 +455,7 @@
   @keyframes sm-fade-in { from { opacity:0; } to { opacity:1; } }
   /* Header hero : photo pleine largeur, gradient sombre en bas, titre par-dessus */
   .species-modal .sm-header { position:relative; flex:none; height:320px; overflow:hidden; background:linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%); border-radius:20px 0 0 0; }
-  .species-modal .sm-hero-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center 30%; opacity:.95; }
+  .species-modal .sm-hero-img { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:center; background:linear-gradient(135deg, color-mix(in srgb, var(--accent) 60%, #000) 0%, color-mix(in srgb, var(--accent-2) 60%, #000) 100%); }
   .species-modal .sm-hero-fade { position:absolute; inset:0; background:linear-gradient(to bottom, rgba(0,0,0,0) 40%, rgba(0,0,0,.75) 100%); }
   .species-modal .sm-hero-body { position:absolute; left:20px; right:20px; bottom:14px; color:#fff; }
   .species-modal .sm-title { margin:0; font-family:var(--serif); font-weight:600; font-size:26px; color:#fff; letter-spacing:.2px; text-shadow:0 2px 8px rgba(0,0,0,.5); }
