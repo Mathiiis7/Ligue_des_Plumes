@@ -8013,6 +8013,12 @@ function openSpeciesModal(sci){
   let lastTab = 'info';
   try{ lastTab = localStorage.getItem('mb-sm-tab') || 'info'; }catch(_){}
   _smSetTab(lastTab);
+  // Purge le registre audios de la fiche precedente (evite fuite memoire quand on
+  // enchaine plusieurs fiches sans jamais fermer le modal).
+  if(typeof _xaAudios !== 'undefined'){
+    for(const a of _xaAudios){ try{ a.pause(); a.src = ''; a.load?.(); }catch(_){} }
+    _xaAudios.clear();
+  }
   // Chips info : famille + habitats (rarete deplacee dans card dediee).
   _renderSpeciesInfoChips(key);
   _renderSpeciesRarityCard(key);
