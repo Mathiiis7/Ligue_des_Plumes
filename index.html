@@ -454,8 +454,8 @@
   @keyframes sm-slide-in { from { transform:translateX(100%); } to { transform:translateX(0); } }
   @keyframes sm-fade-in { from { opacity:0; } to { opacity:1; } }
   /* Header hero : photo pleine largeur, gradient sombre en bas, titre par-dessus */
-  .species-modal .sm-header { position:relative; flex:none; height:200px; overflow:hidden; background:linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%); border-radius:20px 0 0 0; }
-  .species-modal .sm-hero-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.85; }
+  .species-modal .sm-header { position:relative; flex:none; height:320px; overflow:hidden; background:linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%); border-radius:20px 0 0 0; }
+  .species-modal .sm-hero-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center 30%; opacity:.95; }
   .species-modal .sm-hero-fade { position:absolute; inset:0; background:linear-gradient(to bottom, rgba(0,0,0,0) 40%, rgba(0,0,0,.75) 100%); }
   .species-modal .sm-hero-body { position:absolute; left:20px; right:20px; bottom:14px; color:#fff; }
   .species-modal .sm-title { margin:0; font-family:var(--serif); font-weight:600; font-size:26px; color:#fff; letter-spacing:.2px; text-shadow:0 2px 8px rgba(0,0,0,.5); }
@@ -1472,10 +1472,9 @@
         </div>
       </div>
       <nav class="sm-tabs" role="tablist">
-        <button type="button" class="sm-tab on" data-sm-tab="map">📍 Carte</button>
+        <button type="button" class="sm-tab on" data-sm-tab="map">📍 Carte & amis</button>
         <button type="button" class="sm-tab" data-sm-tab="sound">🎵 Sons</button>
         <button type="button" class="sm-tab" data-sm-tab="info">📝 Info</button>
-        <button type="button" class="sm-tab" data-sm-tab="friends">👥 Amis</button>
       </nav>
       <div class="sm-scroll">
         <!-- Onglet Carte (par defaut) -->
@@ -1513,9 +1512,13 @@
           <label>Région <select id="smGbifRegion"><option value="">toute la France</option></select></label>
           <label id="smGbifDeptLbl" hidden>Dépt <select id="smGbifDept"><option value="">tous</option></select></label>
         </div>
-            <div id="smMap" class="sm-map" style="min-height:400px; height:calc(100vh - 340px); border-radius:10px;"></div>
+            <div id="smMap" class="sm-map" style="min-height:340px; height:min(60vh, calc(100vh - 480px)); border-radius:10px;"></div>
             <div class="sm-map-hint" id="smMapHint"></div>
           </div>
+          </div>
+          <!-- Liste des amis qui ont vu cette espece, sous la carte. Clic sur un nom = pan+zoom sur son marker. -->
+          <div class="sm-card">
+            <div class="sm-obs" id="smObs"></div>
           </div>
         </div>
         <!-- Onglet Sons -->
@@ -1548,12 +1551,6 @@
           </div>
           <div class="sm-photo-credit" id="smPhotoCredit" style="text-align:center; font-size:11px; color:var(--ink-3); margin-top:6px;"></div>
           <img class="sm-photo" id="smPhoto" alt="" hidden style="display:none;">
-        </div>
-        <!-- Onglet Amis : obs dans la ligue -->
-        <div class="sm-panel" data-sm-panel="friends" hidden>
-          <div class="sm-card">
-            <div class="sm-obs" id="smObs"></div>
-          </div>
         </div>
       </div>
     </div>
@@ -7705,7 +7702,7 @@ function _renderSpeciesFreqChart(key){
 }
 // Bascule d'onglet du drawer fiche espece. Persiste le choix en localStorage.
 function _smSetTab(tab){
-  const validTabs = ['map','sound','info','friends'];
+  const validTabs = ['map','sound','info'];
   if(!validTabs.includes(tab)) tab = 'map';
   document.querySelectorAll('.sm-tab').forEach(b => b.classList.toggle('on', b.dataset.smTab === tab));
   document.querySelectorAll('.sm-panel').forEach(p => p.hidden = (p.dataset.smPanel !== tab));
@@ -7718,6 +7715,34 @@ document.addEventListener('click', e => {
   const b = e.target.closest('.sm-tab[data-sm-tab]'); if(!b) return;
   _smSetTab(b.dataset.smTab);
 });
+// Clic sur un ami dans la liste sous la carte : bascule sur mode "Mes amis" si necessaire,
+// pan+zoom sur ses marker(s), et ouvre le popup s'il n'y en a qu'un.
+document.addEventListener('click', e => {
+  const li = e.target.closest('[data-sm-friend-uid]'); if(!li) return;
+  const uid = li.dataset.smFriendUid;
+  if(!_smMapInstance || !_smMarkers) return;
+  if(_smMapMode !== 'friends'){
+    _smMapMode = 'friends';
+    document.querySelectorAll('#smMapSeg button').forEach(b => b.classList.toggle('on', b.dataset.mapMode === 'friends'));
+    if(_smCurrentKey){ _renderSpeciesMap(_smCurrentKey); }
+    // On attend la fin du render pour pan, sinon les markers n'existent pas encore.
+    setTimeout(() => _smPanToFriend(uid), 350);
+    return;
+  }
+  _smPanToFriend(uid);
+});
+function _smPanToFriend(uid){
+  if(!_smMapInstance || !Array.isArray(_smMarkers)) return;
+  const mine = _smMarkers.filter(m => m._uid === uid);
+  if(!mine.length) return;
+  const latlngs = mine.map(m => m.getLatLng());
+  if(mine.length === 1){
+    _smMapInstance.setView(latlngs[0], 13, { animate:true });
+    setTimeout(() => mine[0].openPopup?.(), 250);
+  } else {
+    _smMapInstance.fitBounds(L.latLngBounds(latlngs), { padding:[40,40], maxZoom:13 });
+  }
+}
 function openSpeciesModal(sci){
   if(!sci) return;
   const key = sci.toLowerCase();
@@ -7765,19 +7790,21 @@ function openSpeciesModal(sci){
   const items = [];
   for(const p of realPeople){
     const v = p.species && p.species.get(key);
-    if(v) items.push({ name:p.name, date:v.date||'', loc:v.loc||'', country:v.country||'FR', isMe:p.isMe, obs: v.obs||1 });
+    if(v) items.push({ uid:p.id, name:p.name, date:v.date||'', loc:v.loc||'', country:v.country||'FR', isMe:p.isMe, obs: v.obs||1, hasCoords: typeof v.lat === 'number' });
   }
   if(!items.length){
-    obsBox.innerHTML = '<h3>Observations</h3><p class="help">Personne ne l\'a encore observée dans la ligue.</p>';
+    obsBox.innerHTML = '<div class="sm-card-title">Amis</div><p class="help" style="margin:0;">Personne ne l\'a encore observée dans la ligue.</p>';
   } else {
     items.sort((a,b)=> (a.date||'').localeCompare(b.date||''));
-    obsBox.innerHTML = '<h3>Observations dans la ligue</h3><ul>' + items.map(x => {
+    obsBox.innerHTML = '<div class="sm-card-title">Amis qui l\'ont observée</div><ul style="list-style:none; padding:0; margin:0;">' + items.map(x => {
       const d = x.date ? esc(x.date) : '<span class="help">date inconnue</span>';
       const loc = x.loc ? ' · '+esc(x.loc) : '';
       const flag = x.country && x.country!=='FR' ? ' '+(flagImg(x.country)||'') : '';
-      // Badge multi-obs : "×N fois" si l'user a la meme espece dans plus d'un checklist eBird.
       const multi = x.obs > 1 ? ` <span class="chip" style="background:var(--surface-2); font-size:11px; padding:1px 6px;">×${x.obs}</span>` : '';
-      return `<li><b>${esc(x.name)}${x.isMe?' (vous)':''}</b>${flag}${multi} · ${d}${loc}</li>`;
+      const clickHint = x.hasCoords ? ' style="cursor:pointer; padding:6px 8px; border-radius:6px; transition:background .1s;" onmouseover="this.style.background=\'var(--surface-2)\'" onmouseout="this.style.background=\'\'"' : ' style="padding:6px 8px;"';
+      const dataUid = x.hasCoords ? ` data-sm-friend-uid="${esc(x.uid)}"` : '';
+      const pin = x.hasCoords ? '📍 ' : '';
+      return `<li${clickHint}${dataUid}>${pin}<b>${esc(x.name)}${x.isMe?' (vous)':''}</b>${flag}${multi} · ${d}${loc}</li>`;
     }).join('') + '</ul>';
   }
   // Mini carte des observations du groupe pour cette espece (marqueurs par membre avec coords).
@@ -8153,7 +8180,7 @@ async function _renderSpeciesMap(key){
         : (typeof v.lat === 'number' && typeof v.lon === 'number' ? [{ lat:v.lat, lon:v.lon, date:v.date||'', loc:v.loc||'' }] : []);
       for(const o of list){
         if(typeof o.lat !== 'number' || typeof o.lon !== 'number') continue;
-        points.push({ lat:o.lat, lon:o.lon, name:p.name, si:p.si, loc:o.loc||'', date:o.date||'' });
+        points.push({ lat:o.lat, lon:o.lon, name:p.name, si:p.si, loc:o.loc||'', date:o.date||'', uid:p.id });
       }
     }
   } else if(_smMapMode === 'ebird'){
@@ -8223,6 +8250,7 @@ async function _renderSpeciesMap(key){
     const col = sciColor(key);
     const m = L.circleMarker([p.lat, p.lon], { radius:7, weight:2, color:'#fff', fillColor:col, fillOpacity:0.9, opacity:1 });
     m._baseLat = p.lat; m._baseLon = p.lon;
+    if(p.uid) m._uid = p.uid;   // pour lier click friend list -> pan marker
     const gm = `<a href="https://www.google.com/maps?q=${p.lat},${p.lon}" target="_blank" rel="noopener">🗺️ Google Maps</a>`;
     const cntTxt = p.count ? ` · ${p.count} individu${p.count>1?'s':''}` : '';
     // Popup enrichi pour GBIF : heure, comportement, observateur, stage / sexe, source lien.
