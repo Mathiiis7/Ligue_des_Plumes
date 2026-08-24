@@ -458,8 +458,8 @@
      qui ne marchait pas bien avec la variete de formats photo Wikipedia. */
   .species-modal .sm-header { position:relative; flex:none; padding:18px 22px 16px; background:linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%); border-radius:20px 0 0 0; color:#fff; }
   .species-modal .sm-hero-img, .species-modal .sm-hero-bg, .species-modal .sm-hero-fade, .species-modal .sm-hero-body { display:none !important; }
-  .species-modal .sm-title { margin:0; font-family:var(--serif); font-weight:700; font-size:24px; color:#fff; letter-spacing:.2px; padding-right:40px; }
-  .species-modal .sm-sci { font-size:14px; color:rgba(255,255,255,.85); font-style:italic; margin-top:2px; }
+  .species-modal .sm-title { margin:0; font-family:var(--serif); font-weight:700; font-size:24px; color:#fff; letter-spacing:.2px; padding-right:40px; text-shadow:0 1px 2px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.25); }
+  .species-modal .sm-sci { display:inline-block; font-size:13px; color:#fff; font-style:italic; margin-top:6px; padding:2px 10px; background:rgba(0,0,0,.28); backdrop-filter:blur(4px); border-radius:12px; }
   .species-modal .sm-info-chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
   .species-modal .sm-info-chips .chip { font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:14px; background:rgba(255,255,255,.95); color:var(--ink); border:none; display:inline-flex; align-items:center; gap:5px; box-shadow:0 1px 3px rgba(0,0,0,.15); }
   .species-modal .sm-info-chips .chip .dot { width:9px; height:9px; border-radius:50%; }
@@ -7785,6 +7785,48 @@ function _renderSpeciesFreqChart(key){
   // Legende deplacee en HTML sous le SVG (voir .sm-freq-legend) pour ne pas chevaucher les labels mois.
   svg.innerHTML = out;
 }
+// Extrait la couleur "vive" dominante d'une image (echantillonnage canvas). Retourne
+// [r,g,b] ou null si CORS bloque ou image inaccessible. Cache par URL.
+const _domColorCache = new Map();
+async function _extractDominantColor(url){
+  if(!url) return null;
+  if(_domColorCache.has(url)) return _domColorCache.get(url);
+  return new Promise(resolve => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try{
+        const size = 32;   // canvas 32x32 : assez pour extraire une couleur representative
+        const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
+        const ctx = cv.getContext('2d');
+        ctx.drawImage(img, 0, 0, size, size);
+        const data = ctx.getImageData(0, 0, size, size).data;
+        // Groupe les pixels par bucket colore (5 bits par canal) et compte les occurrences
+        // ponderes par la saturation (favorise les couleurs vives sur le gris/fond).
+        const buckets = new Map();
+        for(let i = 0; i < data.length; i += 4){
+          const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
+          if(a < 128) continue;
+          // Skip presque-noir et presque-blanc pour eviter le fond neutre.
+          const max = Math.max(r,g,b), min = Math.min(r,g,b);
+          if(max < 30 || min > 225) continue;
+          const sat = max === 0 ? 0 : (max - min) / max;
+          const k = ((r>>3)<<10) | ((g>>3)<<5) | (b>>3);
+          const w = 1 + sat * 3;   // weight : couleurs saturees comptent 4x plus
+          if(!buckets.has(k)) buckets.set(k, { r, g, b, w:0 });
+          buckets.get(k).w += w;
+        }
+        let best = null;
+        for(const v of buckets.values()){ if(!best || v.w > best.w) best = v; }
+        const rgb = best ? [best.r, best.g, best.b] : null;
+        _domColorCache.set(url, rgb);
+        resolve(rgb);
+      }catch(_){ _domColorCache.set(url, null); resolve(null); }
+    };
+    img.onerror = () => { _domColorCache.set(url, null); resolve(null); };
+    img.src = url;
+  });
+}
 // Bascule d'onglet du drawer fiche espece. Persiste le choix en localStorage.
 function _smSetTab(tab){
   const validTabs = ['map','sound','info'];
@@ -7835,10 +7877,11 @@ function openSpeciesModal(sci){
   const nm = FR_NAMES[key] || sci;
   $('#smTitle').textContent = nm;
   $('#smSci').textContent = sci;
-  // Header : degrade dynamique selon la rarete de l'espece (couleur pastille tier).
+  // Header : degrade base sur la couleur rarete (fallback), sera remplace par la couleur
+  // dominante extraite de la photo une fois qu'elle est chargee (voir plus bas).
   const hdr = modal.querySelector('.sm-header');
   if(hdr){
-    const c = sciColor(sci);   // couleur rarete (ou gris pour exotiques X/C)
+    const c = sciColor(sci);
     hdr.style.background = `linear-gradient(135deg, ${c} 0%, color-mix(in srgb, ${c} 55%, #000) 100%)`;
   }
   // Restaure le dernier onglet visite (defaut : Info).
@@ -7851,8 +7894,7 @@ function openSpeciesModal(sci){
   _renderSpeciesDesc(sci);
   // Barre chart de fréquence mensuelle (national ou régional)
   _renderSpeciesFreqChart(key);
-  // Photo : card 16/9 en haut de l'onglet Carte. Ratio fixe, cover -> pas de bandes vides
-  // ni de zoom extreme.
+  // Photo : card 16/9 en haut de l'onglet Info. Ratio fixe, cover.
   const hero = $('#smHeroImg'), photoCard = $('#smPhotoCard'), photoCap = $('#smPhotoCaption'), cred = $('#smPhotoCredit');
   if(hero) hero.src = '';
   if(photoCard) photoCard.hidden = true;
@@ -7864,6 +7906,16 @@ function openSpeciesModal(sci){
     if(photoCard) photoCard.hidden = false;
     if(photoCap) photoCap.textContent = 'Photo : ' + p.credit;
     if(cred) cred.textContent = 'Photo : ' + p.credit;
+    // Essaie d'extraire la couleur dominante de la photo pour habiller le header.
+    // Fallback silencieux sur la couleur rarete si CORS bloque.
+    _extractDominantColor(p.url).then(rgb => {
+      if(rgb && hdr){
+        const [r,g,b] = rgb;
+        const primary = `rgb(${r},${g},${b})`;
+        const dark = `rgb(${Math.round(r*.4)},${Math.round(g*.4)},${Math.round(b*.4)})`;
+        hdr.style.background = `linear-gradient(135deg, ${primary} 0%, ${dark} 100%)`;
+      }
+    }).catch(()=>{});
   });
   // Sons : chant + cri, chaque section a un lecteur + sonogramme + menu deroulant multi-enregistrements.
   const songRow=$('#smSongRow'), callRow=$('#smCallRow'), hint=$('#smAudioHint');
