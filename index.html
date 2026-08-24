@@ -1942,10 +1942,18 @@ function ingest(filename, text){
     if(existing){
       existing.obs++;
       if(inFR) existing.fr = true;                 // au moins une obs en France
-      if(date && (!existing.date || date<existing.date)){
-        existing.date=date; existing.loc=loc; existing.country=cc;
-        if(hasCoords){ existing.lat=lat; existing.lon=lon; }
-        if(locId) existing.locId=locId;
+      // Regle de priorite pour l'obs "canonique" affichee (date/loc/country/coords) :
+      //   1. Si l'obs actuelle est FR et l'existing est etranger, on ecrase (FR prime).
+      //   2. Sinon, on garde l'obs la plus ancienne du meme "rang" (FR ou etranger).
+      const currIsFR = inFR;
+      const existingIsFR = existing.country === 'FR';
+      const shouldReplace = (currIsFR && !existingIsFR)
+        || (currIsFR === existingIsFR && date && (!existing.date || date < existing.date));
+      if(shouldReplace){
+        if(date) existing.date = date;
+        existing.loc = loc; existing.country = cc;
+        if(hasCoords){ existing.lat = lat; existing.lon = lon; }
+        if(locId) existing.locId = locId;
       }
     } else {
       species.set(key, { common:common||sci, sci, date, loc, obs:1,
@@ -4045,7 +4053,7 @@ function _mapCollectPoints(){
       const pd = parseDate(v.date||''); const ord = pd?pd.ord:null;
       pts.push({ uid:p.id, who:p.name, si:p.si, sci:v.sci, common:frName(v.sci,v.common),
         lat:v.lat, lon:v.lon, loc:v.loc||'', date:v.date||'', dateOrd:ord, cc:v.country||null,
-        locId:v.locId||null, w:rarityReal(v.sci) });
+        locId:v.locId||null, w:rarityReal(v.sci), obs:v.obs||1 });
     }
   }
   return pts;
@@ -4128,9 +4136,11 @@ function _mapMarker(pt, groupSize){
   const groupNote = groupSize>1 ? `<span class="p-meta">Vu ici avec ${groupSize-1} autre${groupSize-1>1?'s':''} espèce${groupSize-1>1?'s':''}</span>` : '';
   // Lien Google Maps : toujours fiable (basé sur lat/lon) — remplace le lien eBird qui échoue pour les lieux perso.
   const gmLink = `<span class="p-meta"><a href="https://www.google.com/maps?q=${pt.lat},${pt.lon}" target="_blank" rel="noopener" class="p-link">🗺️ Voir sur Google Maps</a></span>`;
+  // Badge multi-obs : "xN" si l'user a coche l'espece dans plus d'un checklist eBird.
+  const multi = pt.obs > 1 ? ` <span class="chip" style="background:var(--surface-2); font-size:11px; padding:1px 6px; margin-left:3px;">×${pt.obs}</span>` : '';
   m.bindPopup(
     `<b class="sp-link" data-sci="${esc(pt.sci)}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;">${esc(pt.common)}</b> <span class="p-sci">${esc(pt.sci)}</span>`+
-    `<span class="p-meta">Vu par <b>${esc(pt.who)}</b>${loc?' à '+loc:''}${cc}${date}</span>`+
+    `<span class="p-meta">Vu par <b>${esc(pt.who)}</b>${multi}${loc?' à '+loc:''}${cc}${date}</span>`+
     `<span class="p-meta">${_rarityBadge(pt.w, (ebFilter && ebFilter.country) || "FR", pt.sci)}</span>`+
     groupNote + gmLink
   );
