@@ -483,6 +483,37 @@
   .species-modal .sm-card { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.04); }
   .species-modal .sm-card:last-child { margin-bottom:0; }
   .species-modal .sm-card-title { font:700 11.5px/1.2 system-ui; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); margin:0 0 10px; }
+  /* ==== Custom audio player (fiche espece, onglet Sons) ==== */
+  .xa-block { margin-bottom:14px; }
+  .xa-block:last-child { margin-bottom:0; }
+  .xa-hdr { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .xa-hdr-lbl { font:700 12px/1 system-ui; text-transform:uppercase; letter-spacing:.08em; padding:5px 10px; border-radius:12px; color:#fff; }
+  .xa-hdr-lbl.song { background:linear-gradient(135deg, #16a34a, #0e8339); }
+  .xa-hdr-lbl.call { background:linear-gradient(135deg, #ea580c, #c2410c); }
+  .xa-hdr-meta { font-size:11.5px; color:var(--ink-3); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .xa-hdr-link { font-size:11px; color:var(--accent-ink); text-decoration:none; flex:none; }
+  .xa-hdr-link:hover { text-decoration:underline; }
+  /* Container principal : play + spectrogramme + temps */
+  .xa-player { display:flex; align-items:center; gap:10px; padding:8px 10px; background:var(--surface-2); border:1px solid var(--line); border-radius:12px; }
+  .xa-play { flex:none; width:44px; height:44px; border-radius:50%; border:none; background:var(--accent); color:#fff; font-size:16px; cursor:pointer; display:grid; place-items:center; transition:transform .1s, background .1s; box-shadow:0 2px 6px color-mix(in srgb, var(--accent) 30%, transparent); }
+  .xa-play:hover { transform:scale(1.05); }
+  .xa-play:active { transform:scale(.96); }
+  .xa-play.on { background:var(--accent-2); box-shadow:0 2px 6px color-mix(in srgb, var(--accent-2) 30%, transparent); }
+  .xa-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+  .xa-bar { position:relative; height:38px; border-radius:6px; overflow:hidden; background:var(--surface-3); cursor:pointer; }
+  .xa-bar-sono { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.85; pointer-events:none; }
+  .xa-bar-progress { position:absolute; top:0; bottom:0; left:0; width:0; background:linear-gradient(90deg, color-mix(in srgb, var(--accent) 50%, transparent), color-mix(in srgb, var(--accent) 25%, transparent)); border-right:2px solid var(--accent); pointer-events:none; transition:width .05s linear; }
+  .xa-bar-fallback { position:absolute; inset:0; display:grid; place-items:center; color:var(--ink-3); font-size:11px; font-style:italic; }
+  .xa-time { font:600 10.5px/1 var(--mono, ui-monospace); color:var(--ink-3); display:flex; justify-content:space-between; padding:0 2px; }
+  /* Section "autres enregistrements" : plus compact */
+  .xa-more { margin-top:8px; }
+  .xa-more summary { cursor:pointer; padding:6px 4px; font-size:12px; color:var(--ink-3); user-select:none; }
+  .xa-more summary:hover { color:var(--ink-2); }
+  .xa-more[open] summary { color:var(--accent-ink); }
+  .xa-more-list { margin-top:6px; display:flex; flex-direction:column; gap:8px; }
+  .xa-more .xa-player { padding:6px 8px; }
+  .xa-more .xa-play { width:36px; height:36px; font-size:13px; }
+  .xa-more .xa-bar { height:32px; }
   .species-modal .sm-close:hover { background:var(--surface-2); color:var(--ink); }
   .species-modal .sm-header { margin-bottom:12px; padding-right:30px; }
   .species-modal .sm-title { margin:0; font-size:20px; color:var(--ink); }
@@ -7572,41 +7603,91 @@ async function _fetchXenoSound(sci){
 //   - Sonogramme du principal
 //   - Meta line (qualite, lieu, date, duree, enregistreur, lien xeno-canto)
 //   - <details> deplie "Autres enregistrements (N)" avec les suivants (audio + sono + meta)
+// Rend une section audio (chant/cri) avec un player custom :
+//  - Header : pill colore (vert=chant, orange=cri) + short meta (qualite, lieu, date, duree)
+//  - Player : bouton play rond + spectrogramme comme progress bar + time counter
+//  - <details> pour les autres enregistrements avec le meme player compact
 function _renderSpeciesAudioBlock(container, label, primaryId, list){
   container.innerHTML = '';
   if(!list || !list.length) return;
   const primary = list[0];
   const others = list.slice(1);
-  const metaLine = r => {
+  const cls = /cri/i.test(label) ? 'call' : 'song';
+  const shortMeta = r => {
     const bits = [];
-    if(r.q) bits.push('<b>Q'+esc(r.q)+'</b>');
-    const loc = [r.loc, r.cnt].filter(Boolean).join(', ');
-    if(loc) bits.push(esc(loc));
+    if(r.q) bits.push('Q'+esc(r.q));
+    if(r.cnt) bits.push(esc(r.cnt));
     if(r.date) bits.push(esc(r.date));
     if(r.length) bits.push(esc(r.length));
-    if(r.rec) bits.push('par '+esc(r.rec));
-    if(r.url) bits.push(`<a href="${esc(r.url)}" target="_blank" rel="noopener">xeno-canto ↗</a>`);
     return bits.join(' · ');
   };
-  const sonoImg = r => r.sono ? `<img src="${esc(r.sono)}" alt="Spectrogramme" style="width:100%; max-height:110px; object-fit:cover; border-radius:6px; margin:4px 0;">` : '';
-  const rowHtml = (r, id) => `
-    <div class="sm-audio-lbl">${esc(label)}</div>
-    ${sonoImg(r)}
-    <audio class="sm-audio" id="${esc(id)}" controls preload="none"><source src="${esc(r.file)}"></audio>
-    <div class="sm-audio-hint" style="margin-top:2px;">${metaLine(r)}</div>`;
-  container.insertAdjacentHTML('beforeend', rowHtml(primary, primaryId));
+  const playerHtml = (r, audioId) => {
+    const sono = r.sono ? `<img class="xa-bar-sono" src="${esc(r.sono)}" alt="Spectrogramme" onerror="this.remove()">` : `<div class="xa-bar-fallback">Pas de spectrogramme</div>`;
+    return `<div class="xa-player">
+      <button type="button" class="xa-play" data-xa-play aria-label="Lire / pause">▶</button>
+      <div class="xa-body">
+        <div class="xa-bar" data-xa-seek>
+          ${sono}
+          <div class="xa-bar-progress"></div>
+        </div>
+        <div class="xa-time"><span data-xa-cur>0:00</span><span data-xa-dur>${esc(r.length||'--:--')}</span></div>
+      </div>
+      <audio${audioId?` id="${esc(audioId)}"`:''} preload="metadata" style="display:none;"><source src="${esc(r.file)}"></audio>
+    </div>`;
+  };
+  const blockHtml = (r, audioId) => `
+    <div class="xa-block">
+      <div class="xa-hdr">
+        <span class="xa-hdr-lbl ${cls}">${cls==='song'?'🎵 '+esc(label):'🔊 '+esc(label)}</span>
+        <span class="xa-hdr-meta">${shortMeta(r)}${r.rec?' · par '+esc(r.rec):''}</span>
+        ${r.url?`<a class="xa-hdr-link" href="${esc(r.url)}" target="_blank" rel="noopener">xeno-canto ↗</a>`:''}
+      </div>
+      ${playerHtml(r, audioId)}
+    </div>`;
+  container.insertAdjacentHTML('beforeend', blockHtml(primary, primaryId));
   if(others.length){
-    const items = others.map((r, i) => `
-      <div class="sm-audio-row" style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--line);">
-        ${sonoImg(r)}
-        <audio class="sm-audio" controls preload="none"><source src="${esc(r.file)}"></audio>
-        <div class="sm-audio-hint" style="margin-top:2px;">${metaLine(r)}</div>
-      </div>`).join('');
+    const items = others.map(r => `<div class="xa-block">
+      <div class="xa-hdr">
+        <span class="xa-hdr-meta">${shortMeta(r)}${r.rec?' · '+esc(r.rec):''}</span>
+        ${r.url?`<a class="xa-hdr-link" href="${esc(r.url)}" target="_blank" rel="noopener">xeno-canto ↗</a>`:''}
+      </div>
+      ${playerHtml(r, '')}
+    </div>`).join('');
     container.insertAdjacentHTML('beforeend', `
-      <details style="margin-top:8px;">
-        <summary style="cursor:pointer; font-size:12px; color:var(--ink-3); user-select:none;">▼ ${esc(label)} — ${others.length} autre${others.length>1?'s':''} enregistrement${others.length>1?'s':''}</summary>
-        <div style="margin-top:6px;">${items}</div>
+      <details class="xa-more">
+        <summary>▼ ${others.length} autre${others.length>1?'s':''} enregistrement${others.length>1?'s':''}</summary>
+        <div class="xa-more-list">${items}</div>
       </details>`);
+  }
+  // Wire les players custom (play + seek + progress update + time counter).
+  container.querySelectorAll('.xa-player').forEach(_wireCustomAudioPlayer);
+}
+// Cable un player custom : play/pause, seek clic, progress bar animee, time text.
+function _wireCustomAudioPlayer(playerEl){
+  const audio = playerEl.querySelector('audio');
+  const playBtn = playerEl.querySelector('[data-xa-play]');
+  const seekEl = playerEl.querySelector('[data-xa-seek]');
+  const progress = playerEl.querySelector('.xa-bar-progress');
+  const curEl = playerEl.querySelector('[data-xa-cur]');
+  const durEl = playerEl.querySelector('[data-xa-dur]');
+  if(!audio || !playBtn) return;
+  const fmt = s => { if(!isFinite(s) || s < 0) return '0:00'; const m = Math.floor(s/60), r = Math.floor(s%60); return m+':'+String(r).padStart(2,'0'); };
+  playBtn.addEventListener('click', () => { if(audio.paused){ audio.play().catch(()=>{}); } else { audio.pause(); } });
+  audio.addEventListener('play', () => { playBtn.textContent = '⏸'; playBtn.classList.add('on'); });
+  audio.addEventListener('pause', () => { playBtn.textContent = '▶'; playBtn.classList.remove('on'); });
+  audio.addEventListener('ended', () => { playBtn.textContent = '▶'; playBtn.classList.remove('on'); if(progress) progress.style.width = '0%'; });
+  audio.addEventListener('timeupdate', () => {
+    if(progress && audio.duration) progress.style.width = (audio.currentTime / audio.duration * 100) + '%';
+    if(curEl) curEl.textContent = fmt(audio.currentTime);
+  });
+  audio.addEventListener('loadedmetadata', () => { if(durEl && isFinite(audio.duration)) durEl.textContent = fmt(audio.duration); });
+  if(seekEl){
+    seekEl.addEventListener('click', e => {
+      if(!audio.duration) return;
+      const r = seekEl.getBoundingClientRect();
+      const p = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+      audio.currentTime = p * audio.duration;
+    });
   }
 }
 // Chips info (rareté + famille + habitats) sous le titre de la fiche.
