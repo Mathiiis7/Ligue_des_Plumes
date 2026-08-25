@@ -1956,6 +1956,23 @@ const HABITAT_TO_SCIS = (() => {
   return idx;
 })();
 function isExotic(sci){ return EXOTIC[(sci||'').trim().toLowerCase()]===1; }
+// Override manuel : especes classees exotiques (dans EXOTIC, qui reflete la situation
+// France/Europe de l'ouest) mais qui sont en realite NATIVES dans certains pays. Utilise
+// par isExoticInCountry() pour ne pas afficher a tort la pastille exotique dans les vues
+// pays ou l'espece est indigene.
+// Pour eBird ME (Balkans/mer Adriatique) : la Perdrix choukar est native de l'aire
+// balkanique-anatolienne. Ajouter d'autres cas au besoin (ex: francolinus francolinus
+// historiquement native aux Balkans mais eteinte a l'etat sauvage aujourd'hui).
+const NATIVE_IN = {
+  'alectoris chukar': ['ME','AL','GR','HR','TR'],
+};
+function isExoticInCountry(sci, country){
+  const k = (sci||'').trim().toLowerCase();
+  if(!EXOTIC[k]) return false;
+  const nativeIn = NATIVE_IN[k];
+  if(nativeIn && country && nativeIn.includes(country)) return false;
+  return true;
+}
 function rarityReal(sci){ return REAL_RARITY[(sci||'').trim().toLowerCase()] || 1; }
 // Version category-aware pour les filtres et le tri : les exotiques renvoient leur vrai
 // tier (via _exoticTier). Utilisee par le feed, la carte "A cocher", les stats profil,
@@ -9380,7 +9397,10 @@ function _pkdxRender(){
       if(!tier) continue;
       const nm = FR_NAMES[sci] || sci;
       const fam = familyOf(sci);
-      const exo = isExotic(sci);
+      // exo est pays-specifique : une espece exotique en FR peut etre native en ME
+      // (Perdrix choukar par ex). Le badge violet et le filtre "Exotiques seulement"
+      // reflete cette realite locale.
+      const exo = isExoticInCountry(sci, country);
       all.push({ sci, nm, fam, tier, exo });
     }
     // Tri : par ordre taxonomique IOC/eBird (FAMILY_ORDER), puis dans chaque famille du
