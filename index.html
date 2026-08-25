@@ -2178,12 +2178,14 @@ function sciColorForCountry(sci, country){
   const c = country || 'FR';
   let k = (sci||'').trim().toLowerCase();
   if(SCI_ALIAS[k]) k = SCI_ALIAS[k];
-  // Exotique : depend de la categorie eBird.
+  // Exotique per-pays via eBird API (priorite) + fallback curated. Coherent avec
+  // rarityForCountry qui utilise aussi exoticCategoryInCountry.
   //  N (Naturalise) / P (Provisoire) = populations qui se comportent comme des sauvages
-  //    installees -> couleur du tier reel (GBIF prime, eBird fallback).
-  //  X (Echappe) / C (Domestique) = pas de vraies populations, marker gris.
-  if(isExotic(sci)){
-    const cat = _exoticCategory(k);
+  //    installees -> couleur du tier reel.
+  //  X (Echappe) / C (Domestique) + parcs semi-libres = marker gris (tier 0).
+  if(isExoticInCountry(sci, c)){
+    if(isParkOnlyExotic(sci)) return '#7e8a99';
+    const cat = exoticCategoryInCountry(sci, c) || _exoticCategory(k);
     if(cat === 'N' || cat === 'P'){
       const t = _exoticTier(k);
       if(t) return realColor(t);
@@ -2432,10 +2434,11 @@ function realColor(w){
 // Couleur pastille sur la carte : gris pour les exotiques (comme dans le classement), sinon barème rareté.
 function sciColor(sci){
   if(isExotic(sci)){
-    // Categorie N (introduit etabli) / P (semi-libre) : couleur tier reel (comme wild).
-    // X (echappe) / C (domestique) : gris.
+    // Categorie via eBird API (priorite FR) + fallback curated. N/P : couleur tier reel,
+    // X/C + parcs semi-libres : gris.
     const kk = (sci||'').trim().toLowerCase();
-    const cat = _exoticCategory(kk);
+    if(isParkOnlyExotic(sci)) return '#7e8a99';
+    const cat = exoticCategoryInCountry(sci, 'FR') || _exoticCategory(kk);
     if(cat === 'N' || cat === 'P'){
       const t = _exoticTier(kk);
       if(t) return realColor(t);
