@@ -48,7 +48,7 @@ import { dirname, join } from 'node:path';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dir, '..');
-const BARCHART = join(__dir, 'ebird-barchart-FR-2015-2026.txt');
+const BARCHART = join(__dir, 'ebird-barchart-FR-2019-2026.txt');
 
 // --- Seuils : pic de fréquence -> poids (source de vérité) ---
 const THRESHOLDS = [

@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
-const BARCHART = join(__dir, 'ebird-barchart-ME-2015-2026.txt');
+const BARCHART = join(__dir, 'ebird-barchart-ME-2019-2026.txt');
 const OUT = join(__dir, 'real-rarity-me-ebird.generated.js');
 const GBIF_ME = join(__dir, 'real-rarity-me.generated.js');
 
