@@ -9,8 +9,25 @@
 <link rel="icon" href="logo.png">
 <title>Ligue Merlin Bird</title>
 <!-- Leaflet (carte OpenStreetMap) -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<!-- Preconnect anticipe l'ouverture TCP+TLS vers les CDN critiques (Leaflet, Firebase, iNat, xeno-canto). -->
+<link rel="preconnect" href="https://unpkg.com" crossorigin>
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
+<!-- Modulepreload : dit au navigateur de commencer a fetch les modules Firebase pendant le parsing HTML (au lieu d'attendre que le module principal les importe). -->
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js" crossorigin>
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js" crossorigin>
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js" crossorigin>
+<link rel="preconnect" href="https://api.inaturalist.org" crossorigin>
+<link rel="dns-prefetch" href="https://xeno-canto.org">
+<link rel="dns-prefetch" href="https://fr.wikipedia.org">
+<link rel="dns-prefetch" href="https://api.ebird.org">
+<!-- Leaflet CSS : media=print + onload=all evite le blocage du 1er render (Carte pas dans l'onglet par defaut). -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""></noscript>
+<!-- Leaflet JS : defer -> ne bloque plus le parsing HTML. Le module principal (aussi defer par nature)
+     tourne apres, donc L. est defini avant. -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" defer></script>
 <style>
   :root {
     --bg: #eef2f1;
@@ -889,7 +906,10 @@
   .mcard.missing { opacity:.55; }
   /* ============ POKEDEX GRID ============ */
   .pkdx-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:10px; margin-top:6px; }
-  .pkdx-card { position:relative; border:2px solid var(--line-2); background:var(--surface); border-radius:12px; padding:8px 8px 10px; cursor:pointer; transition:transform .1s, box-shadow .1s; overflow:hidden; }
+  .pkdx-card { position:relative; border:2px solid var(--line-2); background:var(--surface); border-radius:12px; padding:8px 8px 10px; cursor:pointer; transition:transform .1s, box-shadow .1s; overflow:hidden;
+    /* Virtualisation cote navigateur : ne paint/layout que les cartes visibles,
+       reserve 220px pour eviter les sauts au scroll. Enorme gain sur 720 cartes. */
+    content-visibility:auto; contain-intrinsic-size:220px; }
   .pkdx-card:hover { transform:translateY(-2px); box-shadow:0 6px 14px rgba(0,0,0,.12); border-color:var(--accent); }
   .pkdx-card .pkdx-num { position:absolute; top:6px; left:8px; font:700 10px ui-monospace, monospace; color:var(--ink-3); background:rgba(255,255,255,.85); padding:1px 6px; border-radius:8px; z-index:2; }
   .pkdx-card .pkdx-tier { position:absolute; top:6px; right:8px; width:20px; height:20px; border-radius:50%; color:#fff; font:800 10px system-ui; display:grid; place-items:center; box-shadow:0 1px 3px rgba(0,0,0,.3); z-index:2; }
