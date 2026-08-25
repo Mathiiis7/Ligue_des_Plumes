@@ -1943,6 +1943,13 @@ const SCI_ALIAS = {
   'sylvia sarda': 'curruca sarda',
   'sylvia conspicillata': 'curruca conspicillata',
 };
+// FR_NAMES contient volontairement le vieux nom ET le canonique (ex: 'phalacrocorax
+// aristotelis' + 'gulosus aristotelis' -> tous les deux 'Cormoran huppé'). Utile pour
+// le reverse-lookup quand GBIF ou un CSV renvoie encore l'ancien nom. Mais toute liste
+// UI qui itere Object.keys(FR_NAMES) doit filtrer ces sources d'alias pour eviter les
+// doublons visuels (Pokedex, "manquantes", suggest de recherche, etc.).
+const _isSciAliasSource = sci => !!(SCI_ALIAS[sci] && FR_NAMES[SCI_ALIAS[sci]]);
+
 // Verifie si l'utilisateur a l'espece (dans mine), en tenant compte des alias taxonomiques.
 // GBIF renvoie souvent l'ancien nom (bubulcus ibis) alors que le CSV eBird utilise le
 // nouveau (ardea ibis). Sans normalisation, l'espece resterait "a cocher" a tort.
@@ -2587,7 +2594,7 @@ function renderMatrix({universe,N}){
   let uni = universe;
   if(state.showMissing){
     const have=new Set(universe.map(u=>(u.sci||'').toLowerCase()));
-    const missing=Object.keys(FR_NAMES).filter(sci=>!have.has(sci))
+    const missing=Object.keys(FR_NAMES).filter(sci=>!have.has(sci) && !_isSciAliasSource(sci))
       .map(sci=>({ key:'miss:'+sci, common:frName(sci,sci), sci, seenBy:new Map(), missing:true }));
     uni = universe.concat(missing);
   }
@@ -4065,6 +4072,7 @@ function _updateMapSuggest(){
   if(mapMode==='abundance'){
     const hasST = new Set(typeof REAL_ABUNDANCE_DEPT === 'object' ? Object.keys(REAL_ABUNDANCE_DEPT) : []);
     for(const sci of Object.keys(FR_NAMES)){
+      if(_isSciAliasSource(sci)) continue;
       const fr = FR_NAMES[sci] || sci;
       if(q && !_mapNorm(fr).includes(q) && !sci.includes(q)) continue;
       items.push({ sci, name:fr, kind:'sp-abundance', hasST:hasST.has(sci) });
@@ -4109,6 +4117,7 @@ function _updateMapSuggest(){
     const mine = new Set(me ? [...me.species.keys()] : []);
     const seen = new Set();
     for(const sci in FR_NAMES){
+      if(_isSciAliasSource(sci)) continue;
       if(_mineHas(mine, sci)) continue;   // déjà cochée par l'utilisateur
       const fr = FR_NAMES[sci];
       if(q && !_mapNorm(fr).includes(q) && !sci.includes(q)) continue;
@@ -6102,7 +6111,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     if(!w) return true;
     return rars.has(w);
   };
-  const missingSci = Object.keys(FR_NAMES).filter(sci => !_mineHas(mine, sci) && passRar(sci));
+  const missingSci = Object.keys(FR_NAMES).filter(sci => !_mineHas(mine, sci) && passRar(sci) && !_isSciAliasSource(sci));
   const isForeignEarly = ebFilter.country && ebFilter.country !== 'FR';
   // Pour l'etranger on n'utilise pas missingSci (voir fast path), donc pas d'early return sur vide.
   if(!isForeignEarly && !missingSci.length){ return { total:0, points:0, empty:true }; }
@@ -7274,7 +7283,7 @@ $('#pickMapSearch')?.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.pre
 
 // Index de recherche : { key: sci lowercase, fr: nom français, norm: forme normalisée pour matcher }
 const _mnorm = s => s.toLowerCase().replace(/œ/g,'oe').replace(/æ/g,'ae').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,' ').trim();
-const MANUAL_INDEX = Object.keys(FR_NAMES).map(sci=>({ sci, fr:FR_NAMES[sci], normFr:_mnorm(FR_NAMES[sci]), normSci:_mnorm(sci) }));
+const MANUAL_INDEX = Object.keys(FR_NAMES).filter(sci=>!_isSciAliasSource(sci)).map(sci=>({ sci, fr:FR_NAMES[sci], normFr:_mnorm(FR_NAMES[sci]), normSci:_mnorm(sci) }));
 let manualPickedSci = null;
 function manualSearch(q){
   q = _mnorm(q);
@@ -9226,6 +9235,11 @@ function _pkdxRender(){
   const rows = [];
   for(const sci in FR_NAMES){
     if(_isExoticNotCounted(sci)) continue;   // X/C exclus du pokedex (pas de "vrais" oiseaux sauvages)
+    // Dedup taxonomique : si `sci` est le vieux nom (source d'un SCI_ALIAS) ET le nom
+    // canonique existe aussi dans FR_NAMES, on saute la vieille entree. Sinon on aurait
+    // Cormoran huppé en double (phalacrocorax + gulosus aristotelis), Fauvette grisette
+    // en double (sylvia + curruca communis), etc.
+    if(_isSciAliasSource(sci)) continue;
     const nm = FR_NAMES[sci] || sci;
     if(q && !_mapNorm(nm).includes(q) && !sci.includes(q)) continue;
     const fam = familyOf(sci);
@@ -9239,9 +9253,15 @@ function _pkdxRender(){
     if(ownedF === 'missing' && owned) continue;
     rows.push({ sci, nm, fam, tier, owned });
   }
-  rows.sort((a,b) => a.nm.localeCompare(b.nm, 'fr'));
+  // Tri : par famille (alphabetique), puis dans chaque famille du moins rare au plus rare
+  // (tier ascendant, tier 1 = tres commun). Nom en tie-break pour rester stable.
+  rows.sort((a,b) =>
+    (a.fam || 'zzz').localeCompare(b.fam || 'zzz', 'fr')
+    || a.tier - b.tier
+    || a.nm.localeCompare(b.nm, 'fr')
+  );
   // Compteur : X vues / Y filtrees / Z total FR.
-  const totalFR = Object.keys(FR_NAMES).filter(s => !_isExoticNotCounted(s)).length;
+  const totalFR = Object.keys(FR_NAMES).filter(s => !_isExoticNotCounted(s) && !_isSciAliasSource(s)).length;
   const totalOwned = [...mine].filter(s => FR_NAMES[s] && !_isExoticNotCounted(s)).length;
   if(counter) counter.textContent = `${totalOwned} / ${totalFR}${rows.length !== totalFR ? ` · filtré : ${rows.length}` : ''}`;
   if(!rows.length){ grid.innerHTML = ''; empty.style.display = ''; return; }
