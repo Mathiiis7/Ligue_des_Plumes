@@ -9351,6 +9351,13 @@ function _pkdxRender(){
       // Dedup taxonomique : si `sci` est le vieux nom (source d'un SCI_ALIAS) ET le nom
       // canonique existe aussi dans FR_NAMES, on saute la vieille entree.
       if(_isSciAliasSource(sci)) continue;
+      // Skip especes hors-FR sans calibration de rarete (Pic syriaque, Sittelle de
+      // Neumayer, Alouette de Heine...). Elles sont dans FR_NAMES parce que la taxonomy
+      // eBird est mondiale, mais elles ne sont pas de la faune francaise -> pas leur
+      // place dans l'Ornidex "toutes les especes de France". Sans ce filtre elles
+      // apparaitraient toutes en tier 1 (le default de rarityForFilter) et polluaient
+      // le filtre "commun".
+      if(!hasRarityCalibration(sci)) continue;
       const nm = FR_NAMES[sci] || sci;
       const fam = familyOf(sci);
       const tier = rarityForFilter(sci);
@@ -9388,7 +9395,7 @@ function _pkdxRender(){
   }
   // Compteur : X vues / Y filtrees / Z total FR.
   const totalFR = _pkdxAllSorted.length;
-  const totalOwned = [...mine].filter(s => FR_NAMES[s] && !_isExoticNotCounted(s)).length;
+  const totalOwned = [...mine].filter(s => FR_NAMES[s] && !_isExoticNotCounted(s) && hasRarityCalibration(s)).length;
   if(counter) counter.textContent = `${totalOwned} / ${totalFR}${rows.length !== totalFR ? ` · filtré : ${rows.length}` : ''}`;
   if(!rows.length){ grid.innerHTML = ''; empty.style.display = ''; return; }
   empty.style.display = 'none';
