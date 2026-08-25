@@ -5007,7 +5007,7 @@ async function _loadAbHotspots(sci, code){
   // Cache local : évite le re-fetch si même espèce
   if(_abHotspotsData && _abHotspotsData.sci === sci) return _abHotspotsData;
   try{
-    const url = `https://api.ebird.org/v2/data/obs/FR/recent/${code}?back=30&maxResults=500&locale=fr`;
+    const url = `https://api.ebird.org/v2/data/obs/FR/recent/${code}?back=30&maxResults=10000&locale=fr`;
     const data = await _ebFetch(url);
     _abHotspotsData = { sci, obs: Array.isArray(data) ? data : [] };
   }catch(_){ _abHotspotsData = { sci, obs: [] }; }
@@ -5680,7 +5680,7 @@ async function _showSpeciesDetail(sciName, speciesCode){
     const color = sciColorForCountry(sciName, country);
     let data = [], used = null;
     for(const z of zones){
-      const url = `https://api.ebird.org/v2/data/obs/${z.z}/recent/${speciesCode}?back=${days}&maxResults=100&locale=fr`;
+      const url = `https://api.ebird.org/v2/data/obs/${z.z}/recent/${speciesCode}?back=${days}&maxResults=10000&locale=fr`;
       const r = await _ebFetch(url);
       if(Array.isArray(r) && r.length){ data = r; used = z; break; }
     }
@@ -8646,7 +8646,7 @@ async function _smFetchEbirdRecent(sci, days, zone){
   const d = days || 30;
   const z = zone || 'FR';
   try{
-    const data = await _ebFetch(`https://api.ebird.org/v2/data/obs/${z}/recent/${code}?back=${d}&maxResults=100&locale=fr`);
+    const data = await _ebFetch(`https://api.ebird.org/v2/data/obs/${z}/recent/${code}?back=${d}&maxResults=10000&locale=fr`);
     if(!Array.isArray(data)){ return { points:[], error:'network' }; }
     const points = data.filter(o => typeof o.lat==='number' && typeof o.lng==='number').map(o => ({
       lat:o.lat, lon:o.lng, name:o.locName||'lieu', si:0, loc:o.locName||'', date:(o.obsDt||'').slice(0,10),
