@@ -61,7 +61,14 @@ function parseBarchart(path){
     if(!nm || nums.length < 12 || /sample size/i.test(nm)) continue;
     const clean = nm.replace(/\s*\(.*?\)\s*/g, ' ').trim();
     const canonical = BAR_CHART_ALIAS[clean] || clean;
-    out[norm(canonical)] = { name: canonical, freq: Math.max(...nums) };
+    // 48 quinzaines = 4 par mois. Pic mensuel = max des 4 quinzaines. Format identique
+    // a REAL_FREQ_MONTHLY FR pour cohérence de rendu (12 valeurs [0..1]).
+    const m12 = new Array(12).fill(0);
+    for(let m = 0; m < 12; m++){
+      const start = m * 4;
+      m12[m] = Math.max(nums[start]||0, nums[start+1]||0, nums[start+2]||0, nums[start+3]||0);
+    }
+    out[norm(canonical)] = { name: canonical, freq: Math.max(...nums), monthly: m12 };
   }
   return out;
 }
@@ -77,14 +84,19 @@ const frToSci = {};   // norm(comName FR) -> sciName lowercase
 for(const t of tax) if(t.sciName && t.comName) frToSci[norm(t.comName)] = t.sciName.toLowerCase();
 console.log(`Taxonomy eBird : ${tax.length} especes.`);
 
-// 3) Croise bar chart -> REAL_RARITY_ME_EBIRD.
+// 3) Croise bar chart -> REAL_RARITY_ME_EBIRD + REAL_FREQ_MONTHLY_ME.
 const map = {};
+const monthly = {};
 let matched = 0, unmatched = 0;
 const unmatchedList = [];
-for(const [k, {name, freq}] of Object.entries(bar)){
+for(const [k, {name, freq, monthly:m12}] of Object.entries(bar)){
   const sci = frToSci[k];
-  if(sci){ map[sci] = weightFor(freq); matched++; }
-  else { unmatched++; unmatchedList.push(name); }
+  if(sci){
+    map[sci] = weightFor(freq);
+    // Arrondi 5 decimales pour reduire la taille en cache (comme FR).
+    monthly[sci] = m12.map(v => +v.toFixed(5));
+    matched++;
+  } else { unmatched++; unmatchedList.push(name); }
 }
 console.log(`Matched : ${matched}/${matched+unmatched}. Unmatched sample:`, unmatchedList.slice(0, 10));
 
@@ -96,8 +108,9 @@ for(const [k,v] of Object.entries(distr)) console.log(`  tier ${k} : ${v}`);
 writeFileSync(OUT,
   `// Genere par tools/build-rarity-me-ebird.mjs depuis le bar chart eBird ME.\n` +
   `// Ne pas editer a la main.\n` +
-  `export const REAL_RARITY_ME_EBIRD = ${JSON.stringify(map)};\n`);
-console.log(`✓ Ecrit ${OUT} (${Object.keys(map).length} especes).`);
+  `export const REAL_RARITY_ME_EBIRD = ${JSON.stringify(map)};\n` +
+  `export const REAL_FREQ_MONTHLY_ME = ${JSON.stringify(monthly)};\n`);
+console.log(`✓ Ecrit ${OUT} (${Object.keys(map).length} especes, monthly + rarity).`);
 
 // 4) Compare avec REAL_RARITY_ME (GBIF).
 try{
