@@ -63,6 +63,10 @@ for(const cc of COUNTRIES){
     if(cc === 'FR' && o.exoticCategory === 'X' && REAL_RARITY[k]){
       skipped.push(k); continue;
     }
+    // Pigeon biset : eBird considere la forme ferale urbaine comme "Naturalized" mais
+    // en pratique on veut le traiter comme espece normale (les pigeons de ville sont
+    // les seuls pigeons bisets qu'on voit, pas une distinction utile ici).
+    if(k === 'columba livia'){ skipped.push(k); continue; }
     exotics[k] = o.exoticCategory;
   }
   process.stdout.write(`${obs.length} obs, ${Object.keys(exotics).length} exotiques (skip ${skipped.length} X sur sauvages)\n`);

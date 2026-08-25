@@ -9,4 +9,4 @@
 //
 // LIMITE : exotiques rares non observes sur 30 derniers jours peuvent manquer.
 // index.html merge ce dict avec la liste EXOTIC curatorial en fallback.
-export const EXOTIC_BY_COUNTRY = {"FR":{"columba livia":"N","psittacula krameri":"N","tadorna ferruginea":"N","phasianus colchicus":"N","euodice malabarica":"N","branta canadensis":"N","threskiornis aethiopicus":"N","leiothrix lutea":"N","alopochen aegyptiaca":"N","anser indicus":"N","oxyura jamaicensis":"N","aix galericulata":"N","callipepla californica":"N","geopelia cuneata":"X"},"ME":{"pelecanus rufescens":"X"}};
+export const EXOTIC_BY_COUNTRY = {"FR":{"psittacula krameri":"N","branta canadensis":"N","phasianus colchicus":"N","tadorna ferruginea":"N","threskiornis aethiopicus":"N","euodice malabarica":"N","leiothrix lutea":"N","alopochen aegyptiaca":"N","anser indicus":"N","oxyura jamaicensis":"N","aix galericulata":"N","callipepla californica":"N","geopelia cuneata":"X"},"ME":{"pelecanus rufescens":"X"}};
