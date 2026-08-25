@@ -1577,6 +1577,7 @@
         </select>
         <select id="pkdxTier" class="filt-sel">
           <option value="">Toutes raretés</option>
+          <option value="0">0 · Parcs semi-libres</option>
           <option value="1">1 · Très commun</option><option value="2">2 · Commun</option>
           <option value="3">3 · Assez commun</option><option value="4">4 · Peu commun</option>
           <option value="5">5 · Localisé</option><option value="6">6 · Assez rare</option>
@@ -1981,6 +1982,34 @@ const HIDDEN_EXOTIC = new Set([
   'taeniopygia guttata','serinus canaria','estrilda melpoda',
 ]);
 function isHiddenSpecies(sci){ return HIDDEN_EXOTIC.has((sci||'').trim().toLowerCase()); }
+// Exotiques "parcs/domaines semi-libres" : paons, flamants ornementaux, canards
+// exotiques de collection... Visibles en France mais uniquement en enclos ou parcs
+// semi-captifs. On les affiche (l'utilisateur peut les cocher, ils comptent pour le
+// nombre d'especes vues et le classement entre amis) mais on leur assigne tier 0 =
+// "aucun point de rarete reelle". Badge visuel gris avec un "0" pour bien montrer
+// qu'ils n'entrent pas dans le score rarete.
+const PARK_ONLY_EXOTIC = new Set([
+  'pavo cristatus',                            // Paon bleu
+  'cygnus melancoryphus','cygnus atratus',    // Cygne cou noir, Cygne noir
+  'phoenicopterus chilensis','phoenicopterus ruber',   // Flamants ornementaux
+  'chloephaga picta','oressochen melanopterus',       // Ouettes Magellan, Andes
+  'numida meleagris',                          // Pintade de Numidie
+  'gallus gallus',                             // Coq bankiva domestique
+  'cairina moschata',                          // Canard musqué domestique
+  'anser cygnoides',                           // Oie cygnoide domestique
+  'netta peposaca',                            // Nette de Chili
+  'amazonetta brasiliensis',                   // Sarcelle du Brésil
+  'mareca sibilatrix',                         // Canard du Chili
+  'callonetta leucophrys',                     // Callonette à collier
+  'phasianus versicolor',                      // Faisan versicolore
+  'syrmaticus reevesii',                       // Faisan vénéré (lâcher chasse)
+  'dendrocygna bicolor','dendrocygna viduata','dendrocygna autumnalis',   // Dendrocygnes
+  'tadorna cana',                              // Tadorne à tête grise
+  'anser canagicus',                           // Oie empereur
+  'branta sandvicensis',                       // Bernache néné
+  'anas zonorhyncha',                          // Canard de Chine
+]);
+function isParkOnlyExotic(sci){ return PARK_ONLY_EXOTIC.has((sci||'').trim().toLowerCase()); }
 function isExotic(sci){
   const k = (sci||'').trim().toLowerCase();
   if(HIDDEN_EXOTIC.has(k)) return false;   // masquees partout
@@ -2022,6 +2051,7 @@ function rarityReal(sci){ return REAL_RARITY[(sci||'').trim().toLowerCase()] || 
 // on veut le tier "brut" du catalogue REAL_RARITY sans distinction exotique.
 function rarityForFilter(sci){
   const k = (sci||'').trim().toLowerCase();
+  if(isParkOnlyExotic(sci)) return 0;   // Paons, flamants ornementaux, etc. -> hors rarete
   if(isExotic(sci)){ return _exoticTier(k) || 1; }
   return REAL_RARITY[k] || 1;
 }
@@ -2126,6 +2156,8 @@ function rarityForCountry(sci, country){
   const c = country || 'FR';
   const table = c === 'ME' ? REAL_RARITY_ME_EBIRD : REAL_RARITY;
   const v = table[k];
+  // Parcs semi-libres : tier 0 = pas de score rarete. Visible dans l'app mais 0/9.
+  if(isParkOnlyExotic(sci)) return 0;
   // Exotique : tier selon categorie via _exoticTier (eBird pour N/C, GBIF pour X/P).
   if(isExotic(sci)){
     return _exoticTier(k) || 1;
@@ -2382,8 +2414,9 @@ function tierFor(k, N){
   else label=LEAGUE_LABELS[Math.round((k-1)/(N-1)*(LEAGUE_LABELS.length-1))];
   return { id:String(k), count:k, ord:k, label, color:rarityColor(k,N) };
 }
-const REAL_LABELS={1:'Très commun',2:'Commun',3:'Assez commun',4:'Peu commun',5:'Localisé',6:'Assez rare',7:'Rare',8:'Très rare',9:'Exceptionnel'};
+const REAL_LABELS={0:'Parc semi-libre',1:'Très commun',2:'Commun',3:'Assez commun',4:'Peu commun',5:'Localisé',6:'Assez rare',7:'Rare',8:'Très rare',9:'Exceptionnel'};
 function realColor(w){
+  if(w === 0) return 'hsl(0 0% 55%)';   // tier 0 (parcs semi-libres) -> gris neutre
   const p=Math.min(1,Math.max(0,(w-1)/8));   // 1 = commun (vert) -> 9 = exceptionnel (crimson)
   const hue=Math.round((130 - p*140 + 360) % 360);
   return `hsl(${hue} 60% 47%)`;
@@ -2474,7 +2507,7 @@ const foreignTick = v => v.fr===false && !inRef(v.sci);
 function _isExoticNotCounted(sci){ if(!isExotic(sci)) return false; const c = _exoticCategory((sci||'').trim().toLowerCase()); return c === 'X' || c === 'C'; }
 const countsFR = v => !foreignTick(v);
 // Sous-filtre : exclut aussi les exotiques X/C (utilise pour les stats rarete uniquement).
-const _countsForRarity = v => countsFR(v) && !_isExoticNotCounted(v.sci) && !isHiddenSpecies(v.sci);
+const _countsForRarity = v => countsFR(v) && !_isExoticNotCounted(v.sci) && !isHiddenSpecies(v.sci) && !isParkOnlyExotic(v.sci);
 const seenFR = v => !v.country || v.country==='FR';  // observé EN France (ou pays inconnu) — pour Mike Horn
 const holdersFR = u => u.counts!=null ? u.counts : [...u.seenBy.values()].filter(countsFR).length;
 // Pays (code ISO 2 lettres)
@@ -9440,7 +9473,10 @@ function _pkdxRender(){
         : (!!REAL_RARITY[k] || isExoticInCountry(sci, 'FR'));
       if(!inCatalog) continue;
       const tier = rarityForCountry(sci, country);
-      if(!tier) continue;
+      // Tier peut etre 0 (parcs semi-libres : paons, flamants ornementaux, canards
+      // exotiques de collection). On les garde -> visibles dans l'Ornidex avec badge
+      // gris "0". Tier null ou undefined signifie vraiment "pas dans le catalogue".
+      if(tier == null) continue;
       const nm = FR_NAMES[sci] || sci;
       const fam = familyOf(sci);
       // exo est pays-specifique : une espece exotique en FR peut etre native en ME
@@ -9464,10 +9500,12 @@ function _pkdxRender(){
   const q = _mapNorm(_pkdxFilters.search || '');
   const famF = _pkdxFilters.family || '';
   const habF = _pkdxFilters.habitat || '';
-  // Tier peut etre soit un chiffre 1..9 soit la string "exo" (filtre exotiques seulement).
+  // Tier peut etre soit un chiffre 0..9 soit la string "exo" (filtre exotiques seulement).
+  // tierRaw '' (vide) = pas de filtre. '0' = filtre tier 0 (parcs semi-libres) EXPLICITE.
   const tierRaw = _pkdxFilters.tier || '';
   const tierExoOnly = tierRaw === 'exo';
-  const tierF = (!tierExoOnly && tierRaw) ? +tierRaw : 0;
+  const tierActive = tierRaw !== '' && !tierExoOnly;
+  const tierF = tierActive ? +tierRaw : null;
   const ownedF = _pkdxFilters.owned || '';
   const rows = [];
   for(const r of _pkdxAllSorted){
@@ -9476,7 +9514,7 @@ function _pkdxRender(){
     if(famF && fam !== famF) continue;
     const habs = habitatsOf(sci) || [];
     if(habF && !habs.includes(habF)) continue;
-    if(tierF && tier !== tierF) continue;
+    if(tierActive && tier !== tierF) continue;
     if(tierExoOnly && !exo) continue;
     const owned = _mineHasStrict(mine, sci);
     if(ownedF === 'owned' && !owned) continue;
