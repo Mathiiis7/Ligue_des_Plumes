@@ -907,16 +907,39 @@
 
   <nav class="tabs">
     <button class="tab on" data-view="load">Ma liste</button>
-    <button class="tab" data-view="profil">👤 Profil</button>
     <button class="tab" data-view="ranking">Classement</button>
     <button class="tab" data-view="map">📍 Carte</button>
     <button class="tab" data-view="trophies">🏆 Trophées</button>
-    <button class="tab" data-view="chat">💬 Tchat</button>
-    <button class="tab" data-view="photos">📸 Photos</button>
-    <button class="tab" data-view="feed">🆕 Fil</button>
-    <button class="tab" data-view="requests">💡 Requêtes</button>
     <button class="tab" data-view="quiz">🎵 Quiz</button>
+    <!-- Tabs secondaires dispos via le menu hamburger a droite (Profil/Fil/Requetes) et
+         via les FAB flottants en bas (Chat, Photos). Restent des <button.tab data-view> pour
+         reutiliser toute la logique de switch existante. -->
+    <button class="tab" data-view="profil" hidden>👤 Profil</button>
+    <button class="tab" data-view="chat" hidden>💬 Tchat</button>
+    <button class="tab" data-view="photos" hidden>📸 Photos</button>
+    <button class="tab" data-view="feed" hidden>🆕 Fil</button>
+    <button class="tab" data-view="requests" hidden>💡 Requêtes</button>
+    <div style="margin-left:auto; position:relative;">
+      <button type="button" id="hamburgerBtn" class="tab" aria-label="Menu" style="min-width:auto; padding:9px 12px;" title="Plus">☰</button>
+      <div id="hamburgerMenu" hidden style="position:absolute; right:0; top:calc(100% + 4px); background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.15); min-width:180px; padding:6px; z-index:1000;">
+        <button type="button" class="ham-item" data-view="profil">👤 Profil</button>
+        <button type="button" class="ham-item" data-view="feed">🆕 Fil</button>
+        <button type="button" class="ham-item" data-view="requests">💡 Requêtes</button>
+      </div>
+    </div>
   </nav>
+  <!-- Boutons flottants Tchat + Photos, positionnes en bas a droite -->
+  <div id="fabStack" style="position:fixed; right:20px; bottom:20px; display:flex; flex-direction:column; gap:10px; z-index:900;">
+    <button type="button" id="fabPhotos" title="Photos" style="width:52px; height:52px; border-radius:50%; border:none; background:var(--accent-2); color:#fff; font-size:22px; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.25); display:grid; place-items:center; transition:transform .15s;">📸</button>
+    <button type="button" id="fabChat" title="Tchat" style="width:56px; height:56px; border-radius:50%; border:none; background:var(--accent); color:#fff; font-size:24px; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,.3); display:grid; place-items:center; transition:transform .15s;">💬</button>
+  </div>
+  <style>
+    .ham-item { display:block; width:100%; text-align:left; padding:8px 12px; background:transparent; border:none; border-radius:8px; font:600 13px system-ui; color:var(--ink); cursor:pointer; }
+    .ham-item:hover { background:var(--surface-2); color:var(--accent-ink); }
+    #fabChat:hover, #fabPhotos:hover { transform:scale(1.08); }
+    #fabChat:active, #fabPhotos:active { transform:scale(.96); }
+    @media (max-width:600px){ #fabStack { right:14px; bottom:14px; } #fabChat { width:52px; height:52px; font-size:22px; } #fabPhotos { width:46px; height:46px; font-size:20px; } }
+  </style>
 
   <div id="viewLoad">
   <section class="panel auth-box" id="authBox" style="display:none; padding:18px 20px; margin-bottom:16px;">
@@ -7272,6 +7295,25 @@ $('#manualAddBtn')?.addEventListener('click', async ()=>{
 });
 
 const VIEWS = { load:'#viewLoad', profil:'#viewProfil', ranking:'#viewRanking', map:'#viewMap', trophies:'#viewTrophies', chat:'#viewChat', photos:'#viewPhotos', feed:'#viewFeed', requests:'#viewRequests', quiz:'#viewQuiz' };
+// Hamburger menu + FABs Chat/Photos : delegate vers les tabs caches.
+document.addEventListener('click', e => {
+  const ham = e.target.closest('#hamburgerBtn');
+  if(ham){ const m = document.getElementById('hamburgerMenu'); if(m) m.hidden = !m.hidden; e.stopPropagation(); return; }
+  const item = e.target.closest('.ham-item[data-view]');
+  if(item){
+    const btn = [...document.querySelectorAll('.tab[data-view]')].find(b => b.dataset.view === item.dataset.view);
+    if(btn) btn.click();
+    const m = document.getElementById('hamburgerMenu'); if(m) m.hidden = true;
+    return;
+  }
+  const fabC = e.target.closest('#fabChat');
+  if(fabC){ const btn = [...document.querySelectorAll('.tab[data-view]')].find(b => b.dataset.view === 'chat'); if(btn) btn.click(); return; }
+  const fabP = e.target.closest('#fabPhotos');
+  if(fabP){ const btn = [...document.querySelectorAll('.tab[data-view]')].find(b => b.dataset.view === 'photos'); if(btn) btn.click(); return; }
+  // Click outside : close hamburger.
+  const m = document.getElementById('hamburgerMenu');
+  if(m && !m.hidden && !e.target.closest('#hamburgerMenu')) m.hidden = true;
+});
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
   b.classList.add('on');
@@ -7726,6 +7768,10 @@ function _wireCustomAudioPlayer(playerEl){
   if(audioId) audio.id = audioId;
   playerEl.appendChild(audio);
   audio.style.display = 'none';
+  // Force load immediat : sur les players secondaires (dans le details deplie), le
+  // preload="auto" ne se declenchait qu'au click -> gros delai avant que le playhead
+  // bouge (temps de fetch + parse metadata). audio.load() amorce le fetch en parallele.
+  try{ audio.load(); }catch(_){}
   _xaAudios.add(audio);
   // Mutex direct sur cet audio : au play, pause tous les autres du registre.
   audio.addEventListener('play', () => {
