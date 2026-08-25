@@ -887,6 +887,23 @@
   .miss-toggle input { cursor:pointer; margin:0; }
   tr.missing { opacity:.5; }
   .mcard.missing { opacity:.55; }
+  /* ============ POKEDEX GRID ============ */
+  .pkdx-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:10px; margin-top:6px; }
+  .pkdx-card { position:relative; border:2px solid var(--line-2); background:var(--surface); border-radius:12px; padding:8px 8px 10px; cursor:pointer; transition:transform .1s, box-shadow .1s; overflow:hidden; }
+  .pkdx-card:hover { transform:translateY(-2px); box-shadow:0 6px 14px rgba(0,0,0,.12); border-color:var(--accent); }
+  .pkdx-card .pkdx-num { position:absolute; top:6px; left:8px; font:700 10px ui-monospace, monospace; color:var(--ink-3); background:rgba(255,255,255,.85); padding:1px 6px; border-radius:8px; z-index:2; }
+  .pkdx-card .pkdx-tier { position:absolute; top:6px; right:8px; width:20px; height:20px; border-radius:50%; color:#fff; font:800 10px system-ui; display:grid; place-items:center; box-shadow:0 1px 3px rgba(0,0,0,.3); z-index:2; }
+  .pkdx-card .pkdx-img { width:100%; aspect-ratio:1/1; background:var(--surface-2); border-radius:8px; overflow:hidden; margin-bottom:6px; display:grid; place-items:center; color:var(--ink-3); font-size:28px; }
+  .pkdx-card .pkdx-img img { width:100%; height:100%; object-fit:cover; display:block; }
+  .pkdx-card .pkdx-name { font:600 12.5px system-ui; color:var(--ink); text-align:center; line-height:1.25; word-wrap:break-word; }
+  .pkdx-card .pkdx-sci { font:400 10px system-ui; font-style:italic; color:var(--ink-3); text-align:center; margin-top:1px; }
+  /* Manquantes : silhouette noire (comme Pokedex classique) */
+  .pkdx-card.missing { opacity:.9; background:var(--surface-2); }
+  .pkdx-card.missing .pkdx-img img { filter:brightness(0) contrast(2) opacity(.65); }
+  .pkdx-card.missing .pkdx-name { color:var(--ink-3); font-style:italic; }
+  .pkdx-card.missing .pkdx-sci { visibility:hidden; }
+  .pkdx-card.missing .pkdx-tier { opacity:.4; filter:grayscale(.5); }
+  @media (max-width:600px){ .pkdx-grid { grid-template-columns:repeat(auto-fill, minmax(105px, 1fr)); gap:8px; } .pkdx-card { padding:6px 6px 8px; } }
 </style>
 
 <div class="wrap">
@@ -909,6 +926,7 @@
     <button class="tab on" data-view="load">Ma liste</button>
     <button class="tab" data-view="ranking">Classement</button>
     <button class="tab" data-view="map">📍 Carte</button>
+    <button class="tab" data-view="pokedex">📖 Pokédex</button>
     <button class="tab" data-view="trophies">🏆 Trophées</button>
     <button class="tab" data-view="quiz">🎵 Quiz</button>
     <!-- Tabs secondaires dispos via le menu hamburger a droite (Profil/Fil/Requetes) et
@@ -1482,6 +1500,48 @@
         <button type="submit" class="btn">Proposer</button>
       </form>
       <div class="req-list" id="reqList"><p class="help" style="margin:0;">Chargement…</p></div>
+    </section>
+  </div>
+
+  <div id="viewPokedex" style="display:none;">
+    <section class="panel" style="padding:20px; margin-top:22px;">
+      <div class="section-head">
+        <div><div class="eyebrow">Collection</div><h2>📖 Pokédex</h2>
+          <p class="help" style="margin-top:2px;">Toutes les espèces de France. Les manquantes apparaissent en silhouette — clique pour ouvrir la fiche.</p></div>
+        <div id="pkdxCounter" style="font:700 14px system-ui; color:var(--ink-2);">— / —</div>
+      </div>
+      <div class="pkdx-ctrls" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:10px 0 14px;">
+        <input type="search" id="pkdxSearch" placeholder="Rechercher (nom fr ou sci)…" style="flex:1; min-width:180px; padding:9px 12px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2); color:var(--ink); font:14px system-ui;">
+        <select id="pkdxFamily" class="filt-sel"><option value="">Toutes familles</option></select>
+        <select id="pkdxHabitat" class="filt-sel">
+          <option value="">Tous milieux</option>
+          <option value="forestier">🌲 Forestier</option>
+          <option value="hzhumide">🪺 Zones humides</option>
+          <option value="eaudouce">💧 Eau douce</option>
+          <option value="pelagique">🌊 Pélagique</option>
+          <option value="littoral">🏖️ Littoral</option>
+          <option value="montagne">🏔️ Montagne</option>
+          <option value="steppe">🌾 Steppe</option>
+          <option value="bocage">🌳 Bocage</option>
+          <option value="urbain">🏙️ Urbain</option>
+          <option value="rocher">🪨 Rocher</option>
+        </select>
+        <select id="pkdxTier" class="filt-sel">
+          <option value="">Toutes raretés</option>
+          <option value="1">1 · Très commun</option><option value="2">2 · Commun</option>
+          <option value="3">3 · Assez commun</option><option value="4">4 · Peu commun</option>
+          <option value="5">5 · Localisé</option><option value="6">6 · Assez rare</option>
+          <option value="7">7 · Rare</option><option value="8">8 · Très rare</option>
+          <option value="9">9 · Exceptionnel</option>
+        </select>
+        <select id="pkdxOwned" class="filt-sel">
+          <option value="">Toutes</option>
+          <option value="owned">Vues seulement</option>
+          <option value="missing">Manquantes seulement</option>
+        </select>
+      </div>
+      <div id="pkdxGrid" class="pkdx-grid"></div>
+      <div id="pkdxEmpty" class="help" style="text-align:center; padding:30px; display:none;">Aucune espèce ne correspond à ces filtres.</div>
     </section>
   </div>
 
@@ -7294,7 +7354,7 @@ $('#manualAddBtn')?.addEventListener('click', async ()=>{
   btn.disabled=false;
 });
 
-const VIEWS = { load:'#viewLoad', profil:'#viewProfil', ranking:'#viewRanking', map:'#viewMap', trophies:'#viewTrophies', chat:'#viewChat', photos:'#viewPhotos', feed:'#viewFeed', requests:'#viewRequests', quiz:'#viewQuiz' };
+const VIEWS = { load:'#viewLoad', profil:'#viewProfil', ranking:'#viewRanking', map:'#viewMap', trophies:'#viewTrophies', chat:'#viewChat', photos:'#viewPhotos', feed:'#viewFeed', requests:'#viewRequests', quiz:'#viewQuiz', pokedex:'#viewPokedex' };
 // Hamburger menu + FABs Chat/Photos : delegate vers les tabs caches.
 document.addEventListener('click', e => {
   const ham = e.target.closest('#hamburgerBtn');
@@ -7330,6 +7390,7 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   if(b.dataset.view==='profil'){ const me=realPeople.find(p=>p.id===myUid); fillProfile(me); renderStats(me); }
   if(b.dataset.view==='requests'){ renderRequests(); markSeen('requests'); }
   if(b.dataset.view==='quiz') renderQuizInit();
+  if(b.dataset.view==='pokedex') renderPokedex();
   if(b.dataset.view==='map') renderMap();
   try{ localStorage.setItem('mb-last-tab', b.dataset.view); }catch(_){ }
 }));
@@ -7751,6 +7812,15 @@ function _renderSpeciesAudioBlock(container, label, primaryId, list){
   }
   // Wire les players custom (play + seek + progress update + time counter).
   container.querySelectorAll('.xa-player').forEach(_wireCustomAudioPlayer);
+  // Amorce le fetch des audios secondaires quand l'user deplie le <details>.
+  // Certains browsers deferrent preload="auto" pour les elements dans un ancestor
+  // display:none / <details> collapse -> click play = delai visible.
+  container.querySelectorAll('.xa-more').forEach(d => {
+    d.addEventListener('toggle', () => {
+      if(!d.open) return;
+      d.querySelectorAll('.xa-player audio').forEach(a => { try{ if(a.readyState === 0) a.load(); }catch(_){} });
+    });
+  });
 }
 // Cable un player custom : play/pause, seek clic, progress bar animee, time text.
 // Registre global des audios de fiche espece pour un mutex fiable : quand un audio play,
@@ -7796,10 +7866,17 @@ function _wireCustomAudioPlayer(playerEl){
   const rafLoop = () => { updatePos(); if(!audio.paused && !audio.ended) rafId = requestAnimationFrame(rafLoop); };
   playBtn.addEventListener('click', () => {
     if(audio.paused){
-      // Show spinner tant que le buffer n'est pas pret. audio.play() peut prendre plusieurs
-      // secondes sur reseau lent (fetch xeno-canto qui n'est pas cache).
-      if(audio.readyState < 3){ playBtn.textContent = '⏳'; playBtn.classList.add('loading'); }
-      audio.play().catch(()=>{ playBtn.textContent = '▶'; playBtn.classList.remove('loading'); });
+      // Show spinner immediat + force load si pas encore lance.
+      playBtn.textContent = '⏳'; playBtn.classList.add('loading');
+      // Force le fetch si le browser l'a deferre (typique dans un <details> collapse).
+      if(audio.readyState === 0){ try{ audio.load(); }catch(_){} }
+      // Play + retry si echec initial (autoplay policy, race avec load...).
+      const tryPlay = () => audio.play().then(() => { playBtn.classList.remove('loading'); }).catch(() => {
+        // 2e tentative apres canplay
+        const once = () => { audio.removeEventListener('canplay', once); audio.play().catch(()=>{ playBtn.textContent = '▶'; playBtn.classList.remove('loading'); }); };
+        audio.addEventListener('canplay', once, { once:true });
+      });
+      tryPlay();
     } else { audio.pause(); }
   });
   audio.addEventListener('play', () => { playBtn.textContent = '⏸'; playBtn.classList.add('on'); playBtn.classList.remove('loading'); playerEl.classList.add('playing','has-progress'); if(rafId) cancelAnimationFrame(rafId); rafId = requestAnimationFrame(rafLoop); });
@@ -9041,6 +9118,116 @@ function _quizRefreshStatsUI(){
   if(a) a.textContent = s.score; if(b) b.textContent = s.total; if(c) c.textContent = s.streak;
 }
 function renderQuizInit(){ _quizRefreshStatsUI(); }
+
+/* ---------------- Pokedex : grille de toutes les especes FR ---------------- */
+// Etat local pour les filtres. Persistant en localStorage pour retrouver la meme vue.
+let _pkdxFilters = { search:'', family:'', habitat:'', tier:'', owned:'' };
+try{ _pkdxFilters = JSON.parse(localStorage.getItem('mb-pkdx-filters')||'{}'); }catch(_){}
+let _pkdxInit = false;
+// Photo cache : reutilise _spPhotoCache si defini, sinon Map locale.
+const _pkdxPhotos = new Map();
+function renderPokedex(){
+  const grid = $('#pkdxGrid'); if(!grid) return;
+  if(!_pkdxInit){
+    // Peuple le select Familles depuis les especes existantes.
+    const famSel = $('#pkdxFamily');
+    if(famSel){
+      const fams = new Set();
+      for(const sci in FR_NAMES){ const f = familyOf(sci); if(f) fams.add(f); }
+      famSel.innerHTML = '<option value="">Toutes familles</option>' + [...fams].sort().map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join('');
+    }
+    // Restore filtres persistes.
+    for(const k of ['search','family','habitat','tier','owned']){
+      const el = document.getElementById('pkdx' + k.charAt(0).toUpperCase() + k.slice(1));
+      if(el && _pkdxFilters[k] != null) el.value = _pkdxFilters[k];
+    }
+    // Debounce sur la recherche.
+    let _searchTimer;
+    $('#pkdxSearch')?.addEventListener('input', e => {
+      clearTimeout(_searchTimer);
+      _searchTimer = setTimeout(() => { _pkdxFilters.search = e.target.value; _pkdxSaveFilters(); _pkdxRender(); }, 250);
+    });
+    ['pkdxFamily','pkdxHabitat','pkdxTier','pkdxOwned'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.addEventListener('change', e => { const k = id.replace('pkdx','').toLowerCase(); _pkdxFilters[k] = e.target.value; _pkdxSaveFilters(); _pkdxRender(); });
+    });
+    _pkdxInit = true;
+  }
+  _pkdxRender();
+}
+function _pkdxSaveFilters(){ try{ localStorage.setItem('mb-pkdx-filters', JSON.stringify(_pkdxFilters)); }catch(_){} }
+function _pkdxRender(){
+  const grid = $('#pkdxGrid'); const empty = $('#pkdxEmpty'); const counter = $('#pkdxCounter');
+  if(!grid) return;
+  const me = realPeople.find(p => p.id === myUid);
+  const mine = me ? new Set([...me.species.keys()]) : new Set();
+  // Filtre + tri (alphabetique FR).
+  const q = _mapNorm(_pkdxFilters.search || '');
+  const famF = _pkdxFilters.family || '';
+  const habF = _pkdxFilters.habitat || '';
+  const tierF = _pkdxFilters.tier ? +_pkdxFilters.tier : 0;
+  const ownedF = _pkdxFilters.owned || '';
+  const rows = [];
+  for(const sci in FR_NAMES){
+    if(_isExoticNotCounted(sci)) continue;   // X/C exclus du pokedex (pas de "vrais" oiseaux sauvages)
+    const nm = FR_NAMES[sci] || sci;
+    if(q && !_mapNorm(nm).includes(q) && !sci.includes(q)) continue;
+    const fam = familyOf(sci);
+    if(famF && fam !== famF) continue;
+    const habs = habitatsOf(sci) || [];
+    if(habF && !habs.includes(habF)) continue;
+    const tier = rarityForFilter(sci);
+    if(tierF && tier !== tierF) continue;
+    const owned = _mineHasStrict(mine, sci);
+    if(ownedF === 'owned' && !owned) continue;
+    if(ownedF === 'missing' && owned) continue;
+    rows.push({ sci, nm, fam, tier, owned });
+  }
+  rows.sort((a,b) => a.nm.localeCompare(b.nm, 'fr'));
+  // Compteur : X vues / Y filtrees / Z total FR.
+  const totalFR = Object.keys(FR_NAMES).filter(s => !_isExoticNotCounted(s)).length;
+  const totalOwned = [...mine].filter(s => FR_NAMES[s] && !_isExoticNotCounted(s)).length;
+  if(counter) counter.textContent = `${totalOwned} / ${totalFR}${rows.length !== totalFR ? ` · filtré : ${rows.length}` : ''}`;
+  if(!rows.length){ grid.innerHTML = ''; empty.style.display = ''; return; }
+  empty.style.display = 'none';
+  // Rendu grille : numero + photo lazy + nom + tier.
+  grid.innerHTML = rows.map((r, i) => {
+    const num = String(i+1).padStart(3, '0');
+    const c = sciColor(r.sci);
+    const tierBg = c;
+    return `<div class="pkdx-card${r.owned?'':' missing'}" data-sci="${esc(r.sci)}">
+      <span class="pkdx-num">#${num}</span>
+      <span class="pkdx-tier" style="background:${tierBg};" title="Tier ${r.tier}">${r.tier}</span>
+      <div class="pkdx-img" data-pkdx-lazy="${esc(r.sci)}">🐦</div>
+      <div class="pkdx-name">${esc(r.nm)}</div>
+      <div class="pkdx-sci">${esc(r.sci)}</div>
+    </div>`;
+  }).join('');
+  // Lazy loading photos via IntersectionObserver.
+  _pkdxLazyPhotos();
+}
+function _pkdxLazyPhotos(){
+  const els = document.querySelectorAll('#pkdxGrid .pkdx-img[data-pkdx-lazy]');
+  if(!els.length || !('IntersectionObserver' in window)) return;
+  const io = new IntersectionObserver(entries => {
+    for(const e of entries){
+      if(!e.isIntersecting) continue;
+      const el = e.target;
+      io.unobserve(el);
+      const sci = el.dataset.pkdxLazy;
+      if(!sci) continue;
+      _fetchWikiPhoto(sci).then(p => {
+        if(p && p.url){ el.innerHTML = `<img loading="lazy" src="${esc(p.url)}" alt="${esc(sci)}" onerror="this.parentElement.textContent='🐦'">`; }
+      }).catch(()=>{});
+    }
+  }, { rootMargin:'200px' });
+  els.forEach(el => io.observe(el));
+}
+// Delegation click : ouvre la fiche au clic sur une carte pokedex.
+document.addEventListener('click', e => {
+  const card = e.target.closest('.pkdx-card[data-sci]');
+  if(card){ openSpeciesModal(card.dataset.sci); }
+});
 // Pool d'especes selon niveau + source.
 function _quizPickPool(){
   const lvl = ($('#quizLevel')?.value) || 'easy';
