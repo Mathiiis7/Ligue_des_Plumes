@@ -7440,6 +7440,9 @@ function _closeFabPanel(){
   const bd = document.getElementById('fabBackdrop'); if(bd) bd.hidden = true;
 }
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
+  // Skip les .tab sans data-view (hamburger btn), sinon on masque toutes les views
+  // (le loop VIEWS ne match rien et met tout a display:none, ecran blanc).
+  if(!b.dataset.view) return;
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
   b.classList.add('on');
   Object.entries(VIEWS).forEach(([v,sel])=>{ const el=$(sel); if(el) el.style.display=(b.dataset.view===v)?'':'none'; });
@@ -9191,6 +9194,10 @@ try{ _pkdxFilters = JSON.parse(localStorage.getItem('mb-pkdx-filters')||'{}'); }
 let _pkdxInit = false;
 // Photo cache : reutilise _spPhotoCache si defini, sinon Map locale.
 const _pkdxPhotos = new Map();
+// Liste complete triee (fige les numeros #001..#N) memoisee : ne change jamais avec les
+// filtres pour que chaque oiseau garde son numero comme dans un vrai Pokedex.
+let _pkdxAllSorted = null;
+let _pkdxNumById = null;
 function renderPokedex(){
   const grid = $('#pkdxGrid'); if(!grid) return;
   if(!_pkdxInit){
@@ -9226,49 +9233,59 @@ function _pkdxRender(){
   if(!grid) return;
   const me = realPeople.find(p => p.id === myUid);
   const mine = me ? new Set([...me.species.keys()]) : new Set();
-  // Filtre + tri (alphabetique FR).
+  // Construit d'abord la liste COMPLETE triee (sans filtres) pour figer les numeros
+  // #001..#N. Chaque oiseau garde son numero meme quand on filtre. Memoise dans
+  // _pkdxAllSorted pour eviter de refaire le tri a chaque rendu.
+  if(!_pkdxAllSorted){
+    const all = [];
+    for(const sci in FR_NAMES){
+      if(_isExoticNotCounted(sci)) continue;
+      // Dedup taxonomique : si `sci` est le vieux nom (source d'un SCI_ALIAS) ET le nom
+      // canonique existe aussi dans FR_NAMES, on saute la vieille entree.
+      if(_isSciAliasSource(sci)) continue;
+      const nm = FR_NAMES[sci] || sci;
+      const fam = familyOf(sci);
+      const tier = rarityForFilter(sci);
+      all.push({ sci, nm, fam, tier });
+    }
+    // Tri : par famille (alphabetique), puis dans chaque famille du moins rare au plus
+    // rare (tier ascendant, 1 = tres commun). Nom en tie-break stable.
+    all.sort((a,b) =>
+      (a.fam || 'zzz').localeCompare(b.fam || 'zzz', 'fr')
+      || a.tier - b.tier
+      || a.nm.localeCompare(b.nm, 'fr')
+    );
+    _pkdxAllSorted = all;
+    _pkdxNumById = new Map(all.map((r, i) => [r.sci, i+1]));
+  }
+  // Filtres UI (appliques sur la liste triee, sans jamais recalculer les numeros).
   const q = _mapNorm(_pkdxFilters.search || '');
   const famF = _pkdxFilters.family || '';
   const habF = _pkdxFilters.habitat || '';
   const tierF = _pkdxFilters.tier ? +_pkdxFilters.tier : 0;
   const ownedF = _pkdxFilters.owned || '';
   const rows = [];
-  for(const sci in FR_NAMES){
-    if(_isExoticNotCounted(sci)) continue;   // X/C exclus du pokedex (pas de "vrais" oiseaux sauvages)
-    // Dedup taxonomique : si `sci` est le vieux nom (source d'un SCI_ALIAS) ET le nom
-    // canonique existe aussi dans FR_NAMES, on saute la vieille entree. Sinon on aurait
-    // Cormoran huppé en double (phalacrocorax + gulosus aristotelis), Fauvette grisette
-    // en double (sylvia + curruca communis), etc.
-    if(_isSciAliasSource(sci)) continue;
-    const nm = FR_NAMES[sci] || sci;
+  for(const r of _pkdxAllSorted){
+    const { sci, nm, fam, tier } = r;
     if(q && !_mapNorm(nm).includes(q) && !sci.includes(q)) continue;
-    const fam = familyOf(sci);
     if(famF && fam !== famF) continue;
     const habs = habitatsOf(sci) || [];
     if(habF && !habs.includes(habF)) continue;
-    const tier = rarityForFilter(sci);
     if(tierF && tier !== tierF) continue;
     const owned = _mineHasStrict(mine, sci);
     if(ownedF === 'owned' && !owned) continue;
     if(ownedF === 'missing' && owned) continue;
     rows.push({ sci, nm, fam, tier, owned });
   }
-  // Tri : par famille (alphabetique), puis dans chaque famille du moins rare au plus rare
-  // (tier ascendant, tier 1 = tres commun). Nom en tie-break pour rester stable.
-  rows.sort((a,b) =>
-    (a.fam || 'zzz').localeCompare(b.fam || 'zzz', 'fr')
-    || a.tier - b.tier
-    || a.nm.localeCompare(b.nm, 'fr')
-  );
   // Compteur : X vues / Y filtrees / Z total FR.
-  const totalFR = Object.keys(FR_NAMES).filter(s => !_isExoticNotCounted(s) && !_isSciAliasSource(s)).length;
+  const totalFR = _pkdxAllSorted.length;
   const totalOwned = [...mine].filter(s => FR_NAMES[s] && !_isExoticNotCounted(s)).length;
   if(counter) counter.textContent = `${totalOwned} / ${totalFR}${rows.length !== totalFR ? ` · filtré : ${rows.length}` : ''}`;
   if(!rows.length){ grid.innerHTML = ''; empty.style.display = ''; return; }
   empty.style.display = 'none';
-  // Rendu grille : numero + photo lazy + nom + tier.
-  grid.innerHTML = rows.map((r, i) => {
-    const num = String(i+1).padStart(3, '0');
+  // Rendu grille : numero (fige selon _pkdxNumById) + photo lazy + nom + tier.
+  grid.innerHTML = rows.map(r => {
+    const num = String(_pkdxNumById.get(r.sci) || 0).padStart(3, '0');
     const c = sciColor(r.sci);
     const tierBg = c;
     return `<div class="pkdx-card${r.owned?'':' missing'}" data-sci="${esc(r.sci)}">
