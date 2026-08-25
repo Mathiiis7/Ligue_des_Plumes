@@ -919,6 +919,9 @@
   .pkdx-card .pkdx-sci { font:400 10px system-ui; font-style:italic; color:var(--ink-3); text-align:center; margin-top:1px; }
   /* Manquantes : silhouette noire (comme Pokedex classique) */
   .pkdx-card.missing { opacity:.9; background:var(--surface-2); }
+  /* Badge exotique : petite pastille en bas-gauche avec la lettre categorie N/P/X/C. */
+  .pkdx-card .pkdx-exo { position:absolute; bottom:6px; left:8px; width:18px; height:18px; border-radius:50%; background:#8b5cf6; color:#fff; font:800 10px system-ui; display:grid; place-items:center; box-shadow:0 1px 3px rgba(0,0,0,.3); z-index:2; }
+  .pkdx-card.exo { border-color:#8b5cf6; }
   .pkdx-card.missing .pkdx-img img { filter:brightness(0) contrast(2) opacity(.65); }
   .pkdx-card.missing .pkdx-name { color:var(--ink-3); font-style:italic; }
   .pkdx-card.missing .pkdx-sci { visibility:hidden; }
@@ -1579,6 +1582,7 @@
           <option value="5">5 · Localisé</option><option value="6">6 · Assez rare</option>
           <option value="7">7 · Rare</option><option value="8">8 · Très rare</option>
           <option value="9">9 · Exceptionnel</option>
+          <option value="exo">🦆 Exotiques seulement</option>
         </select>
         <select id="pkdxOwned" class="filt-sel">
           <option value="">Toutes</option>
@@ -9360,14 +9364,13 @@ function _pkdxRender(){
   if(!_pkdxAllSorted){
     const all = [];
     for(const sci in FR_NAMES){
-      if(_isExoticNotCounted(sci)) continue;
       // Dedup taxonomique : si `sci` est le vieux nom (source d'un SCI_ALIAS) ET le nom
       // canonique existe aussi dans FR_NAMES, on saute la vieille entree.
       if(_isSciAliasSource(sci)) continue;
       // Filtre par pays : ne garde que les especes explicitement dans le catalogue du pays.
-      // Pour FR on complete par isExotic (N/P) qui a son propre systeme de tiers.
-      // rarityForCountry renverrait 1 par defaut pour toutes les especes hors catalogue FR,
-      // ce qui polluerait le filtre "commun" -> on check l'existence stricte du catalogue.
+      // Pour FR on complete par isExotic (toutes categories N/P/X/C) qui a son propre systeme
+      // de tiers via _exoticTier. Le filtre "🦆 Exotiques seulement" du dropdown Tier permet
+      // de n'afficher que les exotiques ; sinon ils sont mixes avec les sauvages.
       const k = sci;
       const inCatalog = country === 'ME'
         ? (typeof REAL_RARITY_ME_EBIRD !== 'undefined' && !!REAL_RARITY_ME_EBIRD[k])
@@ -9377,7 +9380,8 @@ function _pkdxRender(){
       if(!tier) continue;
       const nm = FR_NAMES[sci] || sci;
       const fam = familyOf(sci);
-      all.push({ sci, nm, fam, tier });
+      const exo = isExotic(sci);
+      all.push({ sci, nm, fam, tier, exo });
     }
     // Tri : par ordre taxonomique IOC/eBird (FAMILY_ORDER), puis dans chaque famille du
     // moins rare au plus rare (tier ascendant, 1 = tres commun). Nom en tie-break stable.
@@ -9394,26 +9398,31 @@ function _pkdxRender(){
   const q = _mapNorm(_pkdxFilters.search || '');
   const famF = _pkdxFilters.family || '';
   const habF = _pkdxFilters.habitat || '';
-  const tierF = _pkdxFilters.tier ? +_pkdxFilters.tier : 0;
+  // Tier peut etre soit un chiffre 1..9 soit la string "exo" (filtre exotiques seulement).
+  const tierRaw = _pkdxFilters.tier || '';
+  const tierExoOnly = tierRaw === 'exo';
+  const tierF = (!tierExoOnly && tierRaw) ? +tierRaw : 0;
   const ownedF = _pkdxFilters.owned || '';
   const rows = [];
   for(const r of _pkdxAllSorted){
-    const { sci, nm, fam, tier } = r;
+    const { sci, nm, fam, tier, exo } = r;
     if(q && !_mapNorm(nm).includes(q) && !sci.includes(q)) continue;
     if(famF && fam !== famF) continue;
     const habs = habitatsOf(sci) || [];
     if(habF && !habs.includes(habF)) continue;
     if(tierF && tier !== tierF) continue;
+    if(tierExoOnly && !exo) continue;
     const owned = _mineHasStrict(mine, sci);
     if(ownedF === 'owned' && !owned) continue;
     if(ownedF === 'missing' && owned) continue;
-    rows.push({ sci, nm, fam, tier, owned });
+    rows.push({ sci, nm, fam, tier, exo, owned });
   }
   // Compteur : X vues / Y filtrees / Z total FR.
   const totalFR = _pkdxAllSorted.length;
-  // Compte owned dans le catalogue du pays (meme logique que le filtre inCatalog ci-dessus).
+  // Compte owned dans le catalogue du pays (meme logique que le filtre inCatalog ci-dessus,
+  // inclut TOUS les exotiques y compris X/C).
   const totalOwned = [...mine].filter(s => {
-    if(!FR_NAMES[s] || _isExoticNotCounted(s)) return false;
+    if(!FR_NAMES[s]) return false;
     return country === 'ME'
       ? (typeof REAL_RARITY_ME_EBIRD !== 'undefined' && !!REAL_RARITY_ME_EBIRD[s])
       : (!!REAL_RARITY[s] || isExotic(s));
@@ -9426,9 +9435,12 @@ function _pkdxRender(){
     const num = String(_pkdxNumById.get(r.sci) || 0).padStart(3, '0');
     const c = sciColor(r.sci);
     const tierBg = c;
-    return `<div class="pkdx-card${r.owned?'':' missing'}" data-sci="${esc(r.sci)}">
+    const exoCat = r.exo ? _exoticCategory(r.sci) : '';
+    const exoBadge = exoCat ? `<span class="pkdx-exo" title="${esc(EXOTIC_CATEGORY_LABEL[exoCat]||'Exotique')}">${exoCat}</span>` : '';
+    return `<div class="pkdx-card${r.owned?'':' missing'}${r.exo?' exo':''}" data-sci="${esc(r.sci)}">
       <span class="pkdx-num">#${num}</span>
       <span class="pkdx-tier" style="background:${tierBg};" title="Tier ${r.tier}">${r.tier}</span>
+      ${exoBadge}
       <div class="pkdx-img" data-pkdx-lazy="${esc(r.sci)}">🐦</div>
       <div class="pkdx-name">${esc(r.nm)}</div>
       <div class="pkdx-sci">${esc(r.sci)}</div>
