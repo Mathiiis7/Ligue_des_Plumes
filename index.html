@@ -2220,7 +2220,7 @@ function _rarityBadge(w, country, sci){
     // especes se comportent comme des sauvages installees.
     // Pour X (echappes) et C (domestiques) : pastille GRISE car ce ne sont pas de "vrais"
     // oiseaux sauvages (echappes isoles / domestiques evades).
-    if(sci && isExotic(sci)){
+    if(sci && isExoticInCountry(sci, cc)){
       // Exotiques :
       //   N (Naturalized) / P (Provisional) = populations reelles observables en nature
       //     -> vrai tier colore + label rarete + categorie en meta (ex: Perruche a collier
@@ -8225,18 +8225,19 @@ function _renderSpeciesRarityCard(key){
     <div id="smRarityLine"></div>`;
   const renderLine = (cc) => {
     const w = rarityForCountry(k, cc);
-    const isExo = isExotic(k);
-    // Une espece pas dans le catalogue du pays : "Pas de calibration". Pour les exotiques
-    // w vaut 0 mais c'est valide (on affiche "Exotique · categorie").
+    // isExo est PER-PAYS via isExoticInCountry (le Pelican gris est exotique X en ME
+    // via EXOTIC_BY_COUNTRY mais pas dans le dict EXOTIC global centre FR).
+    const isExo = isExoticInCountry(k, cc);
     if(!isInCatalog(cc) && !isExo){
       $('#smRarityLine').innerHTML = '<span class="help">Pas de calibration pour ce pays.</span>'; return;
     }
-    // Categorie exotique via API eBird per-pays (fallback curated).
     const cat = isExo ? (exoticCategoryInCountry(k, cc) || _exoticCategory(k)) : '';
     const catLbl = cat ? (EXOTIC_CATEGORY_LABEL[cat] || '') : '';
     // Etabli N/P : affiche vrai tier + label rarete + categorie. Sinon (X/C, parcs) : "0 · Exotique".
     const isEstab = isExo && !isParkOnlyExotic(k) && (cat === 'N' || cat === 'P');
-    const label = (isExo && !isEstab) ? 'Exotique' : ((typeof REAL_LABELS === 'object' && REAL_LABELS[w]) || ('niveau '+w));
+    const label = isExo
+      ? (isEstab ? ((typeof REAL_LABELS === 'object' && REAL_LABELS[w]) || ('niveau '+w)) : 'Exotique')
+      : ((typeof REAL_LABELS === 'object' && REAL_LABELS[w]) || ('niveau '+w));
     const color = realColor(w);
     const country = avail.find(c => c.code === cc) || avail[0];
     const flgFixed = (country.flag||'').replace('<img ', '<img style="height:14px;width:19px;object-fit:cover;object-position:center;vertical-align:middle;border-radius:2px;margin-right:8px;box-shadow:0 0 0 1px rgba(0,0,0,.08);" ');
