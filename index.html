@@ -926,7 +926,7 @@
     <button class="tab on" data-view="load">Ma liste</button>
     <button class="tab" data-view="ranking">Classement</button>
     <button class="tab" data-view="map">📍 Carte</button>
-    <button class="tab" data-view="pokedex">📖 Plumedex</button>
+    <button class="tab" data-view="pokedex">📖 Ornidex</button>
     <button class="tab" data-view="trophies">🏆 Trophées</button>
     <button class="tab" data-view="quiz">🎵 Quiz</button>
     <!-- Tabs secondaires dispos via le menu hamburger a droite (Profil/Fil/Requetes) et
@@ -937,17 +937,18 @@
     <button class="tab" data-view="photos" hidden>📸 Photos</button>
     <button class="tab" data-view="feed" hidden>🆕 Fil</button>
     <button class="tab" data-view="requests" hidden>💡 Requêtes</button>
-    <div style="margin-left:auto; position:relative;">
+    <div style="margin-left:auto;">
       <button type="button" id="hamburgerBtn" class="tab" aria-label="Menu" style="min-width:auto; padding:9px 12px;" title="Plus">☰</button>
-      <div id="hamburgerMenu" hidden style="position:absolute; right:0; top:calc(100% + 4px); background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.15); min-width:180px; padding:6px; z-index:1000;">
-        <button type="button" class="ham-item" data-view="profil">👤 Profil</button>
-        <button type="button" class="ham-item" data-view="feed">🆕 Fil</button>
-        <button type="button" class="ham-item" data-view="requests">💡 Requêtes</button>
-      </div>
     </div>
   </nav>
-  <!-- Boutons flottants Tchat + Photos, positionnes en bas a droite -->
+  <!-- Menu hamburger : position:fixed (escape le overflow:auto de .tabs qui clippait le dropdown vertical). Position calculee au toggle. -->
+  <div id="hamburgerMenu" hidden style="position:fixed; background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.15); min-width:180px; padding:6px; z-index:1700;">
+    <button type="button" class="ham-item" data-view="profil">👤 Profil</button>
+    <button type="button" class="ham-item" data-view="requests">💡 Requêtes</button>
+  </div>
+  <!-- Boutons flottants Fil + Photos + Tchat, positionnes en bas a droite -->
   <div id="fabStack" style="position:fixed; right:20px; bottom:20px; display:flex; flex-direction:column; gap:10px; z-index:1600;">
+    <button type="button" id="fabFeed" title="Fil" style="width:48px; height:48px; border-radius:50%; border:none; background:var(--warn, #d97a1c); color:#fff; font-size:20px; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.25); display:grid; place-items:center; transition:transform .15s;">📰</button>
     <button type="button" id="fabPhotos" title="Photos" style="width:52px; height:52px; border-radius:50%; border:none; background:var(--accent-2); color:#fff; font-size:22px; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.25); display:grid; place-items:center; transition:transform .15s;">📸</button>
     <button type="button" id="fabChat" title="Tchat" style="width:56px; height:56px; border-radius:50%; border:none; background:var(--accent); color:#fff; font-size:24px; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,.3); display:grid; place-items:center; transition:transform .15s;">💬</button>
   </div>
@@ -960,7 +961,7 @@
     #fabChat:active, #fabPhotos:active { transform:scale(.96); }
     .fab-active { box-shadow:0 0 0 4px color-mix(in srgb, currentColor 30%, transparent), 0 4px 14px rgba(0,0,0,.3) !important; }
     /* View en mode panneau flottant : override display:none, position fixed, slide-up */
-    #viewChat.fab-open, #viewPhotos.fab-open {
+    #viewChat.fab-open, #viewPhotos.fab-open, #viewFeed.fab-open {
       display:block !important; position:fixed;
       right:20px; bottom:92px;
       width:min(440px, calc(100vw - 40px)); max-height:min(680px, calc(100vh - 120px));
@@ -971,12 +972,12 @@
       animation:fab-slide-up .2s ease both;
     }
     /* Section interne du panneau : reduit la marge top+padding (adapte pour l'espace flottant) */
-    #viewChat.fab-open > section, #viewPhotos.fab-open > section { margin-top:0 !important; }
+    #viewChat.fab-open > section, #viewPhotos.fab-open > section, #viewFeed.fab-open > section { margin-top:0 !important; }
     @keyframes fab-slide-up { from { opacity:0; transform:translateY(20px) scale(.96); } to { opacity:1; transform:translateY(0) scale(1); } }
     @keyframes fab-fade-in { from { opacity:0; } to { opacity:1; } }
     @media (max-width:600px){
       #fabStack { right:14px; bottom:14px; } #fabChat { width:52px; height:52px; font-size:22px; } #fabPhotos { width:46px; height:46px; font-size:20px; }
-      #viewChat.fab-open, #viewPhotos.fab-open { right:10px; left:10px; bottom:80px; width:auto; max-height:80vh; }
+      #viewChat.fab-open, #viewPhotos.fab-open, #viewFeed.fab-open { right:10px; left:10px; bottom:80px; width:auto; max-height:80vh; }
     }
   </style>
 
@@ -1527,7 +1528,7 @@
   <div id="viewPokedex" style="display:none;">
     <section class="panel" style="padding:20px; margin-top:22px;">
       <div class="section-head">
-        <div><div class="eyebrow">Collection</div><h2>📖 Plumedex</h2></div>
+        <div><div class="eyebrow">Collection</div><h2>📖 Ornidex</h2></div>
         <div id="pkdxCounter" style="font:700 14px system-ui; color:var(--ink-2);">— / —</div>
       </div>
       <div class="pkdx-ctrls" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:10px 0 14px;">
@@ -7387,7 +7388,21 @@ const VIEWS = { load:'#viewLoad', profil:'#viewProfil', ranking:'#viewRanking', 
 // Hamburger menu + FABs Chat/Photos : delegate vers les tabs caches.
 document.addEventListener('click', e => {
   const ham = e.target.closest('#hamburgerBtn');
-  if(ham){ const m = document.getElementById('hamburgerMenu'); if(m) m.hidden = !m.hidden; e.stopPropagation(); return; }
+  if(ham){
+    const m = document.getElementById('hamburgerMenu');
+    if(m){
+      if(m.hidden){
+        // Position calculee sous le bouton, aligne a droite. position:fixed pour echapper
+        // au overflow:auto de .tabs qui clippait le dropdown en-dessous du nav.
+        const r = ham.getBoundingClientRect();
+        m.style.top = (r.bottom + 4) + 'px';
+        m.style.right = (window.innerWidth - r.right) + 'px';
+        m.hidden = false;
+      } else m.hidden = true;
+    }
+    e.stopPropagation();
+    return;
+  }
   const item = e.target.closest('.ham-item[data-view]');
   if(item){
     const btn = [...document.querySelectorAll('.tab[data-view]')].find(b => b.dataset.view === item.dataset.view);
@@ -7399,18 +7414,22 @@ document.addEventListener('click', e => {
   if(fabC){ _toggleFabPanel('chat', fabC); return; }
   const fabP = e.target.closest('#fabPhotos');
   if(fabP){ _toggleFabPanel('photos', fabP); return; }
+  const fabF = e.target.closest('#fabFeed');
+  if(fabF){ _toggleFabPanel('feed', fabF); return; }
   // Click outside : close hamburger.
   const m = document.getElementById('hamburgerMenu');
   if(m && !m.hidden && !e.target.closest('#hamburgerMenu')) m.hidden = true;
   // Click sur backdrop ou hors panneau : ferme le panneau flottant.
   const bd = document.getElementById('fabBackdrop');
-  if(bd && !bd.hidden && (e.target === bd || (!e.target.closest('#viewChat.fab-open') && !e.target.closest('#viewPhotos.fab-open') && !e.target.closest('#fabStack')))){
+  if(bd && !bd.hidden && (e.target === bd || (!e.target.closest('#viewChat.fab-open') && !e.target.closest('#viewPhotos.fab-open') && !e.target.closest('#viewFeed.fab-open') && !e.target.closest('#fabStack')))){
     _closeFabPanel();
   }
 });
 // Ouvre / ferme un panneau flottant (chat ou photos). Re-clic sur le meme FAB ferme.
 function _toggleFabPanel(view, fabBtn){
-  const target = document.getElementById(view === 'chat' ? 'viewChat' : 'viewPhotos');
+  const targetId = view === 'chat' ? 'viewChat' : view === 'photos' ? 'viewPhotos' : view === 'feed' ? 'viewFeed' : null;
+  if(!targetId) return;
+  const target = document.getElementById(targetId);
   if(!target) return;
   // Deja ouvert -> ferme.
   if(target.classList.contains('fab-open')){ _closeFabPanel(); return; }
@@ -7431,10 +7450,13 @@ function _toggleFabPanel(view, fabBtn){
   } else if(view === 'photos'){
     if(typeof renderPhotos === 'function') renderPhotos();
     if(typeof markSeen === 'function') markSeen('photos');
+  } else if(view === 'feed'){
+    if(typeof renderFeed === 'function') renderFeed();
+    if(typeof markSeen === 'function') markSeen('feed');
   }
 }
 function _closeFabPanel(){
-  document.querySelectorAll('#viewChat, #viewPhotos').forEach(el => el.classList.remove('fab-open'));
+  document.querySelectorAll('#viewChat, #viewPhotos, #viewFeed').forEach(el => el.classList.remove('fab-open'));
   document.querySelectorAll('#fabStack button').forEach(b => b.classList.remove('fab-active'));
   const bd = document.getElementById('fabBackdrop'); if(bd) bd.hidden = true;
 }
