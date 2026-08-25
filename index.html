@@ -948,9 +948,9 @@
   </div>
   <!-- Boutons flottants Fil + Photos + Tchat, positionnes en bas a droite -->
   <div id="fabStack" style="position:fixed; right:20px; bottom:20px; display:flex; flex-direction:column; gap:10px; z-index:1600;">
-    <button type="button" id="fabFeed" title="Fil" style="width:48px; height:48px; border-radius:50%; border:none; background:var(--warn, #d97a1c); color:#fff; font-size:20px; line-height:1; padding:0; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.25); display:grid; place-items:center; transition:transform .15s;">📰</button>
-    <button type="button" id="fabPhotos" title="Photos" style="width:52px; height:52px; border-radius:50%; border:none; background:var(--accent-2); color:#fff; font-size:22px; line-height:1; padding:0; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.25); display:grid; place-items:center; transition:transform .15s;">📸</button>
-    <button type="button" id="fabChat" title="Tchat" style="width:56px; height:56px; border-radius:50%; border:none; background:var(--accent); color:#fff; font-size:24px; line-height:1; padding:0; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,.3); display:grid; place-items:center; transition:transform .15s;">💬</button>
+    <button type="button" id="fabFeed" title="Fil" style="width:54px; height:54px; border-radius:50%; border:none; background:var(--warn, #d97a1c); color:#fff; font-size:22px; line-height:1; padding:0; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.25); display:grid; place-items:center; transition:transform .15s;">📰</button>
+    <button type="button" id="fabPhotos" title="Photos" style="width:54px; height:54px; border-radius:50%; border:none; background:var(--accent-2); color:#fff; font-size:22px; line-height:1; padding:0; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.25); display:grid; place-items:center; transition:transform .15s;">📸</button>
+    <button type="button" id="fabChat" title="Tchat" style="width:54px; height:54px; border-radius:50%; border:none; background:var(--accent); color:#fff; font-size:22px; line-height:1; padding:0; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,.3); display:grid; place-items:center; transition:transform .15s;">💬</button>
   </div>
   <!-- Backdrop pour fermer les panneaux flottants au clic exterieur -->
   <div id="fabBackdrop" hidden style="position:fixed; inset:0; background:rgba(0,0,0,.25); z-index:1400; animation:fab-fade-in .15s ease both;"></div>
@@ -976,7 +976,8 @@
     @keyframes fab-slide-up { from { opacity:0; transform:translateY(20px) scale(.96); } to { opacity:1; transform:translateY(0) scale(1); } }
     @keyframes fab-fade-in { from { opacity:0; } to { opacity:1; } }
     @media (max-width:600px){
-      #fabStack { right:14px; bottom:14px; } #fabChat { width:52px; height:52px; font-size:22px; } #fabPhotos { width:46px; height:46px; font-size:20px; }
+      #fabStack { right:14px; bottom:14px; }
+      #fabChat, #fabPhotos, #fabFeed { width:50px; height:50px; font-size:20px; }
       #viewChat.fab-open, #viewPhotos.fab-open, #viewFeed.fab-open { right:10px; left:10px; bottom:80px; width:auto; max-height:80vh; }
     }
   </style>
