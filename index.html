@@ -1554,6 +1554,10 @@
       </div>
       <div class="pkdx-ctrls" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:10px 0 14px;">
         <input type="search" id="pkdxSearch" placeholder="Rechercher (nom fr ou sci)…" style="flex:1; min-width:180px; padding:9px 12px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2); color:var(--ink); font:14px system-ui;">
+        <select id="pkdxCountry" class="filt-sel">
+          <option value="FR">🇫🇷 France</option>
+          <option value="ME">🇲🇪 Monténégro</option>
+        </select>
         <select id="pkdxFamily" class="filt-sel"><option value="">Toutes familles</option></select>
         <select id="pkdxHabitat" class="filt-sel">
           <option value="">Tous milieux</option>
@@ -9295,8 +9299,9 @@ function renderQuizInit(){ _quizRefreshStatsUI(); }
 
 /* ---------------- Pokedex : grille de toutes les especes FR ---------------- */
 // Etat local pour les filtres. Persistant en localStorage pour retrouver la meme vue.
-let _pkdxFilters = { search:'', family:'', habitat:'', tier:'', owned:'' };
-try{ _pkdxFilters = JSON.parse(localStorage.getItem('mb-pkdx-filters')||'{}'); }catch(_){}
+let _pkdxFilters = { search:'', country:'FR', family:'', habitat:'', tier:'', owned:'' };
+try{ Object.assign(_pkdxFilters, JSON.parse(localStorage.getItem('mb-pkdx-filters')||'{}')); }catch(_){}
+if(!_pkdxFilters.country) _pkdxFilters.country = 'FR';
 let _pkdxInit = false;
 // Photo cache : reutilise _spPhotoCache si defini, sinon Map locale.
 const _pkdxPhotos = new Map();
@@ -9317,7 +9322,7 @@ function renderPokedex(){
       famSel.innerHTML = '<option value="">Toutes familles</option>' + ordered.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join('');
     }
     // Restore filtres persistes.
-    for(const k of ['search','family','habitat','tier','owned']){
+    for(const k of ['search','country','family','habitat','tier','owned']){
       const el = document.getElementById('pkdx' + k.charAt(0).toUpperCase() + k.slice(1));
       if(el && _pkdxFilters[k] != null) el.value = _pkdxFilters[k];
     }
@@ -9327,9 +9332,16 @@ function renderPokedex(){
       clearTimeout(_searchTimer);
       _searchTimer = setTimeout(() => { _pkdxFilters.search = e.target.value; _pkdxSaveFilters(); _pkdxRender(); }, 250);
     });
-    ['pkdxFamily','pkdxHabitat','pkdxTier','pkdxOwned'].forEach(id => {
+    ['pkdxCountry','pkdxFamily','pkdxHabitat','pkdxTier','pkdxOwned'].forEach(id => {
       const el = document.getElementById(id);
-      if(el) el.addEventListener('change', e => { const k = id.replace('pkdx','').toLowerCase(); _pkdxFilters[k] = e.target.value; _pkdxSaveFilters(); _pkdxRender(); });
+      if(el) el.addEventListener('change', e => {
+        const k = id.replace('pkdx','').toLowerCase();
+        _pkdxFilters[k] = e.target.value;
+        _pkdxSaveFilters();
+        // Le pays change la liste totale ET les numeros -> invalide la memoisation.
+        if(k === 'country'){ _pkdxAllSorted = null; _pkdxNumById = null; }
+        _pkdxRender();
+      });
     });
     _pkdxInit = true;
   }
@@ -9344,6 +9356,7 @@ function _pkdxRender(){
   // Construit d'abord la liste COMPLETE triee (sans filtres) pour figer les numeros
   // #001..#N. Chaque oiseau garde son numero meme quand on filtre. Memoise dans
   // _pkdxAllSorted pour eviter de refaire le tri a chaque rendu.
+  const country = _pkdxFilters.country || 'FR';
   if(!_pkdxAllSorted){
     const all = [];
     for(const sci in FR_NAMES){
@@ -9351,16 +9364,19 @@ function _pkdxRender(){
       // Dedup taxonomique : si `sci` est le vieux nom (source d'un SCI_ALIAS) ET le nom
       // canonique existe aussi dans FR_NAMES, on saute la vieille entree.
       if(_isSciAliasSource(sci)) continue;
-      // Skip especes hors-FR sans calibration de rarete (Pic syriaque, Sittelle de
-      // Neumayer, Alouette de Heine...). Elles sont dans FR_NAMES parce que la taxonomy
-      // eBird est mondiale, mais elles ne sont pas de la faune francaise -> pas leur
-      // place dans l'Ornidex "toutes les especes de France". Sans ce filtre elles
-      // apparaitraient toutes en tier 1 (le default de rarityForFilter) et polluaient
-      // le filtre "commun".
-      if(!hasRarityCalibration(sci)) continue;
+      // Filtre par pays : ne garde que les especes explicitement dans le catalogue du pays.
+      // Pour FR on complete par isExotic (N/P) qui a son propre systeme de tiers.
+      // rarityForCountry renverrait 1 par defaut pour toutes les especes hors catalogue FR,
+      // ce qui polluerait le filtre "commun" -> on check l'existence stricte du catalogue.
+      const k = sci;
+      const inCatalog = country === 'ME'
+        ? (typeof REAL_RARITY_ME_EBIRD !== 'undefined' && !!REAL_RARITY_ME_EBIRD[k])
+        : (!!REAL_RARITY[k] || isExotic(sci));
+      if(!inCatalog) continue;
+      const tier = rarityForCountry(sci, country);
+      if(!tier) continue;
       const nm = FR_NAMES[sci] || sci;
       const fam = familyOf(sci);
-      const tier = rarityForFilter(sci);
       all.push({ sci, nm, fam, tier });
     }
     // Tri : par ordre taxonomique IOC/eBird (FAMILY_ORDER), puis dans chaque famille du
@@ -9395,7 +9411,13 @@ function _pkdxRender(){
   }
   // Compteur : X vues / Y filtrees / Z total FR.
   const totalFR = _pkdxAllSorted.length;
-  const totalOwned = [...mine].filter(s => FR_NAMES[s] && !_isExoticNotCounted(s) && hasRarityCalibration(s)).length;
+  // Compte owned dans le catalogue du pays (meme logique que le filtre inCatalog ci-dessus).
+  const totalOwned = [...mine].filter(s => {
+    if(!FR_NAMES[s] || _isExoticNotCounted(s)) return false;
+    return country === 'ME'
+      ? (typeof REAL_RARITY_ME_EBIRD !== 'undefined' && !!REAL_RARITY_ME_EBIRD[s])
+      : (!!REAL_RARITY[s] || isExotic(s));
+  }).length;
   if(counter) counter.textContent = `${totalOwned} / ${totalFR}${rows.length !== totalFR ? ` · filtré : ${rows.length}` : ''}`;
   if(!rows.length){ grid.innerHTML = ''; empty.style.display = ''; return; }
   empty.style.display = 'none';
