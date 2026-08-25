@@ -947,16 +947,37 @@
     </div>
   </nav>
   <!-- Boutons flottants Tchat + Photos, positionnes en bas a droite -->
-  <div id="fabStack" style="position:fixed; right:20px; bottom:20px; display:flex; flex-direction:column; gap:10px; z-index:900;">
+  <div id="fabStack" style="position:fixed; right:20px; bottom:20px; display:flex; flex-direction:column; gap:10px; z-index:1600;">
     <button type="button" id="fabPhotos" title="Photos" style="width:52px; height:52px; border-radius:50%; border:none; background:var(--accent-2); color:#fff; font-size:22px; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.25); display:grid; place-items:center; transition:transform .15s;">📸</button>
     <button type="button" id="fabChat" title="Tchat" style="width:56px; height:56px; border-radius:50%; border:none; background:var(--accent); color:#fff; font-size:24px; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,.3); display:grid; place-items:center; transition:transform .15s;">💬</button>
   </div>
+  <!-- Backdrop pour fermer les panneaux flottants au clic exterieur -->
+  <div id="fabBackdrop" hidden style="position:fixed; inset:0; background:rgba(0,0,0,.25); z-index:1400; animation:fab-fade-in .15s ease both;"></div>
   <style>
     .ham-item { display:block; width:100%; text-align:left; padding:8px 12px; background:transparent; border:none; border-radius:8px; font:600 13px system-ui; color:var(--ink); cursor:pointer; }
     .ham-item:hover { background:var(--surface-2); color:var(--accent-ink); }
     #fabChat:hover, #fabPhotos:hover { transform:scale(1.08); }
     #fabChat:active, #fabPhotos:active { transform:scale(.96); }
-    @media (max-width:600px){ #fabStack { right:14px; bottom:14px; } #fabChat { width:52px; height:52px; font-size:22px; } #fabPhotos { width:46px; height:46px; font-size:20px; } }
+    .fab-active { box-shadow:0 0 0 4px color-mix(in srgb, currentColor 30%, transparent), 0 4px 14px rgba(0,0,0,.3) !important; }
+    /* View en mode panneau flottant : override display:none, position fixed, slide-up */
+    #viewChat.fab-open, #viewPhotos.fab-open {
+      display:block !important; position:fixed;
+      right:20px; bottom:92px;
+      width:min(440px, calc(100vw - 40px)); max-height:min(680px, calc(100vh - 120px));
+      overflow-y:auto; overflow-x:hidden;
+      background:var(--surface); border:1px solid var(--line); border-radius:16px;
+      box-shadow:0 12px 40px rgba(0,0,0,.3);
+      z-index:1500; padding:0; margin:0;
+      animation:fab-slide-up .2s ease both;
+    }
+    /* Section interne du panneau : reduit la marge top+padding (adapte pour l'espace flottant) */
+    #viewChat.fab-open > section, #viewPhotos.fab-open > section { margin-top:0 !important; }
+    @keyframes fab-slide-up { from { opacity:0; transform:translateY(20px) scale(.96); } to { opacity:1; transform:translateY(0) scale(1); } }
+    @keyframes fab-fade-in { from { opacity:0; } to { opacity:1; } }
+    @media (max-width:600px){
+      #fabStack { right:14px; bottom:14px; } #fabChat { width:52px; height:52px; font-size:22px; } #fabPhotos { width:46px; height:46px; font-size:20px; }
+      #viewChat.fab-open, #viewPhotos.fab-open { right:10px; left:10px; bottom:80px; width:auto; max-height:80vh; }
+    }
   </style>
 
   <div id="viewLoad">
@@ -7367,13 +7388,48 @@ document.addEventListener('click', e => {
     return;
   }
   const fabC = e.target.closest('#fabChat');
-  if(fabC){ const btn = [...document.querySelectorAll('.tab[data-view]')].find(b => b.dataset.view === 'chat'); if(btn) btn.click(); return; }
+  if(fabC){ _toggleFabPanel('chat', fabC); return; }
   const fabP = e.target.closest('#fabPhotos');
-  if(fabP){ const btn = [...document.querySelectorAll('.tab[data-view]')].find(b => b.dataset.view === 'photos'); if(btn) btn.click(); return; }
+  if(fabP){ _toggleFabPanel('photos', fabP); return; }
   // Click outside : close hamburger.
   const m = document.getElementById('hamburgerMenu');
   if(m && !m.hidden && !e.target.closest('#hamburgerMenu')) m.hidden = true;
+  // Click sur backdrop ou hors panneau : ferme le panneau flottant.
+  const bd = document.getElementById('fabBackdrop');
+  if(bd && !bd.hidden && (e.target === bd || (!e.target.closest('#viewChat.fab-open') && !e.target.closest('#viewPhotos.fab-open') && !e.target.closest('#fabStack')))){
+    _closeFabPanel();
+  }
 });
+// Ouvre / ferme un panneau flottant (chat ou photos). Re-clic sur le meme FAB ferme.
+function _toggleFabPanel(view, fabBtn){
+  const target = document.getElementById(view === 'chat' ? 'viewChat' : 'viewPhotos');
+  if(!target) return;
+  // Deja ouvert -> ferme.
+  if(target.classList.contains('fab-open')){ _closeFabPanel(); return; }
+  // Ferme l'autre si ouvert.
+  _closeFabPanel();
+  // Marque le tab correspondant "on" pour synchro visuelle (au cas ou tab visible).
+  target.classList.add('fab-open');
+  const bd = document.getElementById('fabBackdrop'); if(bd) bd.hidden = false;
+  document.querySelectorAll('#fabStack button').forEach(b => b.classList.remove('fab-active'));
+  if(fabBtn) fabBtn.classList.add('fab-active');
+  // Trigger la logique attachée au tab switch pour re-render le contenu (renderChat, renderPhotos)
+  // SANS masquer les autres views.
+  if(view === 'chat'){
+    if(typeof updateChatIdentity === 'function') updateChatIdentity();
+    if(typeof renderOnline === 'function') renderOnline();
+    const box = document.getElementById('chatMessages'); if(box) box.scrollTop = box.scrollHeight;
+    if(typeof markSeen === 'function') markSeen('chat');
+  } else if(view === 'photos'){
+    if(typeof renderPhotos === 'function') renderPhotos();
+    if(typeof markSeen === 'function') markSeen('photos');
+  }
+}
+function _closeFabPanel(){
+  document.querySelectorAll('#viewChat, #viewPhotos').forEach(el => el.classList.remove('fab-open'));
+  document.querySelectorAll('#fabStack button').forEach(b => b.classList.remove('fab-active'));
+  const bd = document.getElementById('fabBackdrop'); if(bd) bd.hidden = true;
+}
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
   b.classList.add('on');
