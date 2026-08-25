@@ -1963,7 +1963,29 @@ const HABITAT_TO_SCIS = (() => {
   for(const c of HABITAT_CATS) idx[c].sort((a,b)=>frName(a,a).localeCompare(frName(b,b),'fr'));
   return idx;
 })();
-function isExotic(sci){ return EXOTIC[(sci||'').trim().toLowerCase()]===1; }
+// Especes exotiques "cage/voliere echappee isolee" : perroquets d'appartement,
+// canaris, calopsittes, aras, cacatoes, loriquets, inseparables, diamants...
+// Techniquement observables si l'oiseau du voisin s'echappe, mais aucun interet
+// pour un birder de terrain. On les filtre partout dans l'app (Ornidex, Classement,
+// Trophees Saint-Graal, suggestions cartes, autocomplete, "manquantes")
+// pour ne garder que les exotiques etablis, en cours d'etablissement, ou observables
+// dans les parcs semi-libres.
+const HIDDEN_EXOTIC = new Set([
+  'ara ararauna','ara militaris',
+  'cacatua alba','cacatua galerita','eolophus roseicapilla',
+  'trichoglossus haematodus','trichoglossus moluccanus',
+  'aratinga solstitialis','psittacara erythrogenys','psittacara mitratus','thectocercus acuticaudatus',
+  'agapornis fischeri','agapornis nigrigenis','agapornis personatus','agapornis roseicollis',
+  'platycercus eximius','alisterus scapularis','melopsittacus undulatus','psittacula cyanocephala',
+  'nymphicus hollandicus','poicephalus senegalus','psittacus erithacus',
+  'taeniopygia guttata','serinus canaria','estrilda melpoda',
+]);
+function isHiddenSpecies(sci){ return HIDDEN_EXOTIC.has((sci||'').trim().toLowerCase()); }
+function isExotic(sci){
+  const k = (sci||'').trim().toLowerCase();
+  if(HIDDEN_EXOTIC.has(k)) return false;   // masquees partout
+  return EXOTIC[k]===1;
+}
 // Statut exotique per-pays : source d'autorite = EXOTIC_BY_COUNTRY (eBird API, per-region
 // exoticCategory field). Fallback = liste EXOTIC curatorial globale (couvre les rares
 // exotiques non observes sur les 30 derniers jours qui echappent au fetch eBird).
@@ -2197,9 +2219,9 @@ function realFreq(sci){ if(isExotic(sci)) return 1; const f=REAL_FREQ[(sci||'').
 // exotiques X (echappes isoles) et C (domestiques) : eux ne comptent pas pour le graal.
 const MEGA_CATALOG = (function(){
   const seen = new Map();   // sci -> weight
-  for(const sci in REAL_RARITY){ if(_isExoticNotCounted(sci)) continue; const w = rarityForFilter(sci); if(w >= 8) seen.set(sci, w); }
+  for(const sci in REAL_RARITY){ if(_isExoticNotCounted(sci) || isHiddenSpecies(sci)) continue; const w = rarityForFilter(sci); if(w >= 8) seen.set(sci, w); }
   if(typeof REAL_RARITY_EXO_GBIF === 'object'){
-    for(const sci in REAL_RARITY_EXO_GBIF){ if(_isExoticNotCounted(sci)) continue; const w = rarityForFilter(sci); if(w >= 8 && !seen.has(sci)) seen.set(sci, w); }
+    for(const sci in REAL_RARITY_EXO_GBIF){ if(_isExoticNotCounted(sci) || isHiddenSpecies(sci)) continue; const w = rarityForFilter(sci); if(w >= 8 && !seen.has(sci)) seen.set(sci, w); }
   }
   return [...seen.entries()].map(([sci,w])=>({ sci, name:frName(sci, sci), w })).sort((a,b)=> b.w-a.w || a.name.localeCompare(b.name,'fr'));
 })();
@@ -2452,7 +2474,7 @@ const foreignTick = v => v.fr===false && !inRef(v.sci);
 function _isExoticNotCounted(sci){ if(!isExotic(sci)) return false; const c = _exoticCategory((sci||'').trim().toLowerCase()); return c === 'X' || c === 'C'; }
 const countsFR = v => !foreignTick(v);
 // Sous-filtre : exclut aussi les exotiques X/C (utilise pour les stats rarete uniquement).
-const _countsForRarity = v => countsFR(v) && !_isExoticNotCounted(v.sci);
+const _countsForRarity = v => countsFR(v) && !_isExoticNotCounted(v.sci) && !isHiddenSpecies(v.sci);
 const seenFR = v => !v.country || v.country==='FR';  // observé EN France (ou pays inconnu) — pour Mike Horn
 const holdersFR = u => u.counts!=null ? u.counts : [...u.seenBy.values()].filter(countsFR).length;
 // Pays (code ISO 2 lettres)
@@ -2714,7 +2736,7 @@ function renderMatrix({universe,N}){
   let uni = universe;
   if(state.showMissing){
     const have=new Set(universe.map(u=>(u.sci||'').toLowerCase()));
-    const missing=Object.keys(FR_NAMES).filter(sci=>!have.has(sci) && !_isSciAliasSource(sci))
+    const missing=Object.keys(FR_NAMES).filter(sci=>!have.has(sci) && !_isSciAliasSource(sci) && !isHiddenSpecies(sci))
       .map(sci=>({ key:'miss:'+sci, common:frName(sci,sci), sci, seenBy:new Map(), missing:true }));
     uni = universe.concat(missing);
   }
@@ -3154,7 +3176,7 @@ function statsFor(me, N){
     // Trophee Saint-Graal : aligne sur MEGA_CATALOG (exclut X/C, utilise rarityForFilter
     // pour les N/P sous leur tier GBIF). Sans ces 2 checks, Cacatua alba (X tier 9)
     // debloquait le trophee alors qu'elle n'apparait pas dans le catalogue.
-    if(!_isExoticNotCounted(sci) && rarityForFilter(sci)>=8){ megaList.push(frName(v.sci, v.common)); megaOwnedSet.add(sci); }
+    if(!_isExoticNotCounted(sci) && !isHiddenSpecies(sci) && rarityForFilter(sci)>=8){ megaList.push(frName(v.sci, v.common)); megaOwnedSet.add(sci); }
     if(/teste[- ]?de[- ]?buch|arcachon/i.test(v.loc||'')) locTeste=true;
     const habs = habitatsOf(sci); if(habs) for(const h of habs) if(habOwned[h]) habOwned[h].add(sci);
   }
@@ -3757,6 +3779,7 @@ function renderFeed(){
       }
       // Filtre rareté : 1..9 (rareté réelle) ou 'exo' (exotiques/échappés).
       const sci = (v.sci||'').toLowerCase();
+      if(isHiddenSpecies(sci)) continue;   // perroquets cage etc., jamais dans le fil
       if(feedTier !== 'any'){
         // Chip 'exo' = uniquement les X/C (echappes / domestiques). Les N/P (naturalises,
         // vus en parcs) sont exposes sous leur vrai tier via rarityForFilter.
@@ -4193,6 +4216,7 @@ function _updateMapSuggest(){
     const hasST = new Set(typeof REAL_ABUNDANCE_DEPT === 'object' ? Object.keys(REAL_ABUNDANCE_DEPT) : []);
     for(const sci of Object.keys(FR_NAMES)){
       if(_isSciAliasSource(sci)) continue;
+      if(isHiddenSpecies(sci)) continue;
       const fr = FR_NAMES[sci] || sci;
       if(q && !_mapNorm(fr).includes(q) && !sci.includes(q)) continue;
       items.push({ sci, name:fr, kind:'sp-abundance', hasST:hasST.has(sci) });
@@ -4238,6 +4262,7 @@ function _updateMapSuggest(){
     const seen = new Set();
     for(const sci in FR_NAMES){
       if(_isSciAliasSource(sci)) continue;
+      if(isHiddenSpecies(sci)) continue;
       if(_mineHas(mine, sci)) continue;   // déjà cochée par l'utilisateur
       const fr = FR_NAMES[sci];
       if(q && !_mapNorm(fr).includes(q) && !sci.includes(q)) continue;
@@ -6231,7 +6256,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     if(!w) return true;
     return rars.has(w);
   };
-  const missingSci = Object.keys(FR_NAMES).filter(sci => !_mineHas(mine, sci) && passRar(sci) && !_isSciAliasSource(sci));
+  const missingSci = Object.keys(FR_NAMES).filter(sci => !_mineHas(mine, sci) && passRar(sci) && !_isSciAliasSource(sci) && !isHiddenSpecies(sci));
   const isForeignEarly = ebFilter.country && ebFilter.country !== 'FR';
   // Pour l'etranger on n'utilise pas missingSci (voir fast path), donc pas d'early return sur vide.
   if(!isForeignEarly && !missingSci.length){ return { total:0, points:0, empty:true }; }
@@ -7403,7 +7428,7 @@ $('#pickMapSearch')?.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.pre
 
 // Index de recherche : { key: sci lowercase, fr: nom français, norm: forme normalisée pour matcher }
 const _mnorm = s => s.toLowerCase().replace(/œ/g,'oe').replace(/æ/g,'ae').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,' ').trim();
-const MANUAL_INDEX = Object.keys(FR_NAMES).filter(sci=>!_isSciAliasSource(sci)).map(sci=>({ sci, fr:FR_NAMES[sci], normFr:_mnorm(FR_NAMES[sci]), normSci:_mnorm(sci) }));
+const MANUAL_INDEX = Object.keys(FR_NAMES).filter(sci=>!_isSciAliasSource(sci) && !isHiddenSpecies(sci)).map(sci=>({ sci, fr:FR_NAMES[sci], normFr:_mnorm(FR_NAMES[sci]), normSci:_mnorm(sci) }));
 let manualPickedSci = null;
 function manualSearch(q){
   q = _mnorm(q);
@@ -9404,6 +9429,7 @@ function _pkdxRender(){
       // Dedup taxonomique : si `sci` est le vieux nom (source d'un SCI_ALIAS) ET le nom
       // canonique existe aussi dans FR_NAMES, on saute la vieille entree.
       if(_isSciAliasSource(sci)) continue;
+      if(isHiddenSpecies(sci)) continue;   // perroquets cage etc.
       // Filtre par pays : ne garde que les especes explicitement dans le catalogue du pays.
       // Pour FR on complete par isExotic (toutes categories N/P/X/C) qui a son propre systeme
       // de tiers via _exoticTier. Le filtre "🦆 Exotiques seulement" du dropdown Tier permet
