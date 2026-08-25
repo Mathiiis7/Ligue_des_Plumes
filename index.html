@@ -8215,10 +8215,16 @@ function _renderSpeciesRarityCard(key){
     const catBadge = catLbl ? `<span style="font-size:12px;color:var(--ink-3);margin-left:10px;">· ${esc(catLbl)}</span>` : '';
     $('#smRarityLine').innerHTML = `<div style="display:flex;align-items:center;gap:6px;padding:6px 0;">${flgFixed}${pill}<span style="font-weight:600;color:var(--ink);">${esc(label)}</span>${catBadge}</div>`;
   };
-  renderLine('FR');
-  _renderSpeciesFreqChart(k, 'FR');   // (re)render l'histogramme sur le pays initial
+  // Pays par defaut : reprend le contexte du site (filtre Ornidex ou carte). Sinon FR.
+  // Si le pays courant n'est pas dans avail (l'espece n'y est pas), tombe sur le 1er dispo.
+  const ctxCountry = (typeof _pkdxFilters !== 'undefined' && _pkdxFilters.country)
+    || (typeof ebFilter !== 'undefined' && ebFilter.country)
+    || 'FR';
+  const initCountry = avail.find(c => c.code === ctxCountry) ? ctxCountry : avail[0].code;
+  renderLine(initCountry);
+  _renderSpeciesFreqChart(k, initCountry);   // (re)render l'histogramme sur le pays initial
   const sel = $('#smRarityCountrySel');
-  if(sel){ sel.value = 'FR'; sel.addEventListener('change', e => {
+  if(sel){ sel.value = initCountry; sel.addEventListener('change', e => {
     renderLine(e.target.value);
     // Change aussi la source du histogramme mensuel (FR REAL_FREQ_MONTHLY vs ME).
     _renderSpeciesFreqChart(k, e.target.value);
@@ -9533,7 +9539,9 @@ function _pkdxRender(){
   // exotiques de parcs, et le detail (categorie N/P/X/C) est visible sur la fiche espece.
   grid.innerHTML = rows.map(r => {
     const num = String(_pkdxNumById.get(r.sci) || 0).padStart(3, '0');
-    const c = sciColor(r.sci);
+    // Couleur du badge tier : per-pays (avant sciColor lisait REAL_RARITY FR meme en vue ME,
+    // donc le Pelican frise apparaissait rouge tier 8 alors que sa vraie rarete ME est 1).
+    const c = sciColorForCountry(r.sci, country);
     const tierBg = c;
     return `<div class="pkdx-card${r.owned?'':' missing'}" data-sci="${esc(r.sci)}">
       <span class="pkdx-num">#${num}</span>
