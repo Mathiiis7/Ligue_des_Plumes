@@ -2214,7 +2214,9 @@ function _rarityBadge(w, country, sci){
       // categorie eBird detaillee en meta a droite (Introduit établi / Vu en parcs /
       // Échappé isolé / Origine domestique). Coherent avec le filtre "0 · Exotiques
       // seulement" du dropdown Ornidex : les exotiques sont hors du bareme rarete 1-9.
-      const cat = _exoticCategory(sciKey);
+      // La categorie vient de exoticCategoryInCountry() : priorite eBird API per-pays,
+      // fallback curated pour FR uniquement.
+      const cat = exoticCategoryInCountry(sci, cc) || _exoticCategory(sciKey);
       const catLbl = EXOTIC_CATEGORY_LABEL[cat] || 'Exotique';
       const pill = `<span style="display:inline-block;background:${realColor(0)};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">0</span>`;
       return `${flgSpan}${pill} Exotique <span style="opacity:.7;font-size:11px;">· ${catLbl}</span>`;
