@@ -2047,8 +2047,9 @@ function rarityReal(sci){ return REAL_RARITY[(sci||'').trim().toLowerCase()] || 
 // on veut le tier "brut" du catalogue REAL_RARITY sans distinction exotique.
 function rarityForFilter(sci){
   const k = (sci||'').trim().toLowerCase();
-  if(isParkOnlyExotic(sci)) return 0;   // Paons, flamants ornementaux, etc. -> hors rarete
-  if(isExotic(sci)){ return _exoticTier(k) || 1; }
+  // Tous les exotiques (N/P/X/C, y compris parcs semi-libres) -> tier 0. Hors bareme
+  // rarete 1-9, comptent pour "especes vues" mais pas pour la rarete.
+  if(isExotic(sci)) return 0;
   return REAL_RARITY[k] || 1;
 }
 // Retourne true si l'espece est calibree dans REAL_RARITY (catalogue FR). False = espece
@@ -2152,12 +2153,9 @@ function rarityForCountry(sci, country){
   const c = country || 'FR';
   const table = c === 'ME' ? REAL_RARITY_ME_EBIRD : REAL_RARITY;
   const v = table[k];
-  // Parcs semi-libres : tier 0 = pas de score rarete. Visible dans l'app mais 0/9.
-  if(isParkOnlyExotic(sci)) return 0;
-  // Exotique : tier selon categorie via _exoticTier (eBird pour N/C, GBIF pour X/P).
-  if(isExotic(sci)){
-    return _exoticTier(k) || 1;
-  }
+  // Tous les exotiques (N/P/X/C, y compris parcs semi-libres) -> tier 0. Hors bareme
+  // rarete 1-9, comptent pour "especes vues" mais pas pour la rarete.
+  if(isExotic(sci)) return 0;
   if(v) return v;
   // FR : convention REAL_RARITY exclut les tier 1 (defaut = tres commun). Absent = 1 SAUF
   // si l'espece est presente dans un catalogue etranger (typiquement Balkans/Mediterranee) :
@@ -2212,24 +2210,14 @@ function _rarityBadge(w, country, sci){
     // Pour X (echappes) et C (domestiques) : pastille GRISE car ce ne sont pas de "vrais"
     // oiseaux sauvages (echappes isoles / domestiques evades).
     if(sci && isExotic(sci)){
+      // Tous les exotiques (N/P/X/C) affichent "0 · Exotique" comme rarete unifiee, et la
+      // categorie eBird detaillee en meta a droite (Introduit établi / Vu en parcs /
+      // Échappé isolé / Origine domestique). Coherent avec le filtre "0 · Exotiques
+      // seulement" du dropdown Ornidex : les exotiques sont hors du bareme rarete 1-9.
       const cat = _exoticCategory(sciKey);
       const catLbl = EXOTIC_CATEGORY_LABEL[cat] || 'Exotique';
-      // Parcs semi-libres (Paon, Flamants ornementaux, Ouettes, etc.) : tier 0 avec pill grise
-      // "0" + label "Parc semi-libre". La categorie eBird (souvent X) est ajoutee en meta.
-      if(isParkOnlyExotic(sci)){
-        const pill = `<span style="display:inline-block;background:${realColor(0)};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">0</span>`;
-        return `${flgSpan}${pill} ${REAL_LABELS[0]} <span style="opacity:.7;font-size:11px;">· ${catLbl}</span>`;
-      }
-      const realTier = _exoticTier(sciKey);
-      const useColor = (cat === 'N' || cat === 'P') && realTier;
-      const pillBg = useColor ? realColor(realTier) : '#7e8a99';
-      const pillTxt = useColor ? String(realTier) : cat;
-      const pill = `<span style="display:inline-block;background:${pillBg};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">${pillTxt}</span>`;
-      // Ordre : [pill] <label du tier> · <categorie exotique>. Le pill = numero de tier,
-      // donc son label immediat = "Peu commun" etc, categorie en meta gris a droite.
-      const tierLbl = realTier ? ` ${REAL_LABELS[realTier]||''}` : '';
-      const catTail = ` <span style="opacity:.7;font-size:11px;">· ${catLbl}</span>`;
-      return `${flgSpan}${pill}${tierLbl}${catTail}`;
+      const pill = `<span style="display:inline-block;background:${realColor(0)};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">0</span>`;
+      return `${flgSpan}${pill} Exotique <span style="opacity:.7;font-size:11px;">· ${catLbl}</span>`;
     }
     // Cas special FR : espece hors-aire (jamais observee en France, connue uniquement dans
     // les catalogues etrangers) -> badge gris "Hors aire", pas tier "Exceptionnel" trompeur.
@@ -2509,7 +2497,9 @@ const foreignTick = v => v.fr===false && !inRef(v.sci);
 function _isExoticNotCounted(sci){ if(!isExotic(sci)) return false; const c = _exoticCategory((sci||'').trim().toLowerCase()); return c === 'X' || c === 'C'; }
 const countsFR = v => !foreignTick(v);
 // Sous-filtre : exclut aussi les exotiques X/C (utilise pour les stats rarete uniquement).
-const _countsForRarity = v => countsFR(v) && !_isExoticNotCounted(v.sci) && !isHiddenSpecies(v.sci) && !isParkOnlyExotic(v.sci);
+// Compte pour les trophees rarete : exclut TOUS les exotiques (tous en tier 0 maintenant,
+// donc hors bareme rarete 1-9) et les especes hidden. Reste : les vraies especes sauvages.
+const _countsForRarity = v => countsFR(v) && !isExotic(v.sci) && !isHiddenSpecies(v.sci);
 const seenFR = v => !v.country || v.country==='FR';  // observé EN France (ou pays inconnu) — pour Mike Horn
 const holdersFR = u => u.counts!=null ? u.counts : [...u.seenBy.values()].filter(countsFR).length;
 // Pays (code ISO 2 lettres)
