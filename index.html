@@ -919,9 +919,6 @@
   .pkdx-card .pkdx-sci { font:400 10px system-ui; font-style:italic; color:var(--ink-3); text-align:center; margin-top:1px; }
   /* Manquantes : silhouette noire (comme Pokedex classique) */
   .pkdx-card.missing { opacity:.9; background:var(--surface-2); }
-  /* Badge exotique : petite pastille en bas-gauche avec la lettre categorie N/P/X/C. */
-  .pkdx-card .pkdx-exo { position:absolute; bottom:6px; left:8px; width:18px; height:18px; border-radius:50%; background:#8b5cf6; color:#fff; font:800 10px system-ui; display:grid; place-items:center; box-shadow:0 1px 3px rgba(0,0,0,.3); z-index:2; }
-  .pkdx-card.exo { border-color:#8b5cf6; }
   .pkdx-card.missing .pkdx-img img { filter:brightness(0) contrast(2) opacity(.65); }
   .pkdx-card.missing .pkdx-name { color:var(--ink-3); font-style:italic; }
   .pkdx-card.missing .pkdx-sci { visibility:hidden; }
@@ -2216,9 +2213,15 @@ function _rarityBadge(w, country, sci){
     // Pour X (echappes) et C (domestiques) : pastille GRISE car ce ne sont pas de "vrais"
     // oiseaux sauvages (echappes isoles / domestiques evades).
     if(sci && isExotic(sci)){
-      const realTier = _exoticTier(sciKey);
       const cat = _exoticCategory(sciKey);
       const catLbl = EXOTIC_CATEGORY_LABEL[cat] || 'Exotique';
+      // Parcs semi-libres (Paon, Flamants ornementaux, Ouettes, etc.) : tier 0 avec pill grise
+      // "0" + label "Parc semi-libre". La categorie eBird (souvent X) est ajoutee en meta.
+      if(isParkOnlyExotic(sci)){
+        const pill = `<span style="display:inline-block;background:${realColor(0)};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">0</span>`;
+        return `${flgSpan}${pill} ${REAL_LABELS[0]} <span style="opacity:.7;font-size:11px;">· ${catLbl}</span>`;
+      }
+      const realTier = _exoticTier(sciKey);
       const useColor = (cat === 'N' || cat === 'P') && realTier;
       const pillBg = useColor ? realColor(realTier) : '#7e8a99';
       const pillTxt = useColor ? String(realTier) : cat;
@@ -9534,19 +9537,16 @@ function _pkdxRender(){
   if(counter) counter.textContent = `${totalOwned} / ${totalFR}${rows.length !== totalFR ? ` · filtré : ${rows.length}` : ''}`;
   if(!rows.length){ grid.innerHTML = ''; empty.style.display = ''; return; }
   empty.style.display = 'none';
-  // Rendu grille : numero (fige selon _pkdxNumById) + photo lazy + nom + tier.
+  // Rendu grille : numero + photo lazy + nom + tier. Le statut exotique n'apparait plus
+  // sur la carte (ni badge violet, ni bordure) : c'est le tier "0" gris qui signale les
+  // exotiques de parcs, et le detail (categorie N/P/X/C) est visible sur la fiche espece.
   grid.innerHTML = rows.map(r => {
     const num = String(_pkdxNumById.get(r.sci) || 0).padStart(3, '0');
     const c = sciColor(r.sci);
     const tierBg = c;
-    // Categorie exotique per-pays via eBird API (fallback curated). Coherent avec le
-    // flag r.exo qui est aussi per-pays.
-    const exoCat = r.exo ? (exoticCategoryInCountry(r.sci, country) || 'X') : '';
-    const exoBadge = exoCat ? `<span class="pkdx-exo" title="${esc(EXOTIC_CATEGORY_LABEL[exoCat]||'Exotique')}">${exoCat}</span>` : '';
-    return `<div class="pkdx-card${r.owned?'':' missing'}${r.exo?' exo':''}" data-sci="${esc(r.sci)}">
+    return `<div class="pkdx-card${r.owned?'':' missing'}" data-sci="${esc(r.sci)}">
       <span class="pkdx-num">#${num}</span>
       <span class="pkdx-tier" style="background:${tierBg};" title="Tier ${r.tier}">${r.tier}</span>
-      ${exoBadge}
       <div class="pkdx-img" data-pkdx-lazy="${esc(r.sci)}">🐦</div>
       <div class="pkdx-name">${esc(r.nm)}</div>
       <div class="pkdx-sci">${esc(r.sci)}</div>
