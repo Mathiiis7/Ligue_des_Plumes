@@ -2047,9 +2047,15 @@ function rarityReal(sci){ return REAL_RARITY[(sci||'').trim().toLowerCase()] || 
 // on veut le tier "brut" du catalogue REAL_RARITY sans distinction exotique.
 function rarityForFilter(sci){
   const k = (sci||'').trim().toLowerCase();
-  // Tous les exotiques (N/P/X/C, y compris parcs semi-libres) -> tier 0. Hors bareme
-  // rarete 1-9, comptent pour "especes vues" mais pas pour la rarete.
-  if(isExotic(sci)) return 0;
+  if(isExotic(sci)){
+    // Exotiques : N/P (Naturalized / Provisional) = populations reelles qu'on voit vraiment
+    // en nature (Perruche a collier, Bernache du Canada, Ouette d'Egypte...) -> vrai tier.
+    // X/C (Escapee / Domestic) + parcs semi-libres (Paon, Flamants ornementaux, ...) -> 0.
+    if(isParkOnlyExotic(sci)) return 0;
+    const cat = exoticCategoryInCountry(sci, 'FR') || _exoticCategory(k);
+    if(cat === 'N' || cat === 'P') return _exoticTier(k) || 1;
+    return 0;   // X, C
+  }
   return REAL_RARITY[k] || 1;
 }
 // Retourne true si l'espece est calibree dans REAL_RARITY (catalogue FR). False = espece
@@ -2153,9 +2159,14 @@ function rarityForCountry(sci, country){
   const c = country || 'FR';
   const table = c === 'ME' ? REAL_RARITY_ME_EBIRD : REAL_RARITY;
   const v = table[k];
-  // Tous les exotiques (N/P/X/C, y compris parcs semi-libres) -> tier 0. Hors bareme
-  // rarete 1-9, comptent pour "especes vues" mais pas pour la rarete.
-  if(isExotic(sci)) return 0;
+  // Exotiques : N/P (populations naturalisees/provisoires) -> vrai tier (Perruche a collier,
+  // Bernache du Canada...). X/C (echappes/domestiques) et parcs semi-libres -> tier 0.
+  if(isExotic(sci)){
+    if(isParkOnlyExotic(sci)) return 0;
+    const cat = exoticCategoryInCountry(sci, c) || _exoticCategory(k);
+    if(cat === 'N' || cat === 'P') return _exoticTier(k) || 1;
+    return 0;
+  }
   if(v) return v;
   // FR : convention REAL_RARITY exclut les tier 1 (defaut = tres commun). Absent = 1 SAUF
   // si l'espece est presente dans un catalogue etranger (typiquement Balkans/Mediterranee) :
@@ -2210,14 +2221,19 @@ function _rarityBadge(w, country, sci){
     // Pour X (echappes) et C (domestiques) : pastille GRISE car ce ne sont pas de "vrais"
     // oiseaux sauvages (echappes isoles / domestiques evades).
     if(sci && isExotic(sci)){
-      // Tous les exotiques (N/P/X/C) affichent "0 · Exotique" comme rarete unifiee, et la
-      // categorie eBird detaillee en meta a droite (Introduit établi / Vu en parcs /
-      // Échappé isolé / Origine domestique). Coherent avec le filtre "0 · Exotiques
-      // seulement" du dropdown Ornidex : les exotiques sont hors du bareme rarete 1-9.
-      // La categorie vient de exoticCategoryInCountry() : priorite eBird API per-pays,
-      // fallback curated pour FR uniquement.
+      // Exotiques :
+      //   N (Naturalized) / P (Provisional) = populations reelles observables en nature
+      //     -> vrai tier colore + label rarete + categorie en meta (ex: Perruche a collier
+      //     "3 · Assez commun · Introduit établi")
+      //   X (Escapee) / C (Domestic) + parcs semi-libres = "0 · Exotique · <categorie>"
       const cat = exoticCategoryInCountry(sci, cc) || _exoticCategory(sciKey);
       const catLbl = EXOTIC_CATEGORY_LABEL[cat] || 'Exotique';
+      const isEstab = !isParkOnlyExotic(sci) && (cat === 'N' || cat === 'P');
+      if(isEstab){
+        const t = _exoticTier(sciKey) || 1;
+        const pill = `<span style="display:inline-block;background:${realColor(t)};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">${t}</span>`;
+        return `${flgSpan}${pill} ${REAL_LABELS[t]||''} <span style="opacity:.7;font-size:11px;">· ${catLbl}</span>`;
+      }
       const pill = `<span style="display:inline-block;background:${realColor(0)};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">0</span>`;
       return `${flgSpan}${pill} Exotique <span style="opacity:.7;font-size:11px;">· ${catLbl}</span>`;
     }
@@ -8215,11 +8231,13 @@ function _renderSpeciesRarityCard(key){
     if(!isInCatalog(cc) && !isExo){
       $('#smRarityLine').innerHTML = '<span class="help">Pas de calibration pour ce pays.</span>'; return;
     }
-    const label = isExo ? 'Exotique' : ((typeof REAL_LABELS === 'object' && REAL_LABELS[w]) || ('niveau '+w));
-    const color = realColor(w);
     // Categorie exotique via API eBird per-pays (fallback curated).
     const cat = isExo ? (exoticCategoryInCountry(k, cc) || _exoticCategory(k)) : '';
     const catLbl = cat ? (EXOTIC_CATEGORY_LABEL[cat] || '') : '';
+    // Etabli N/P : affiche vrai tier + label rarete + categorie. Sinon (X/C, parcs) : "0 · Exotique".
+    const isEstab = isExo && !isParkOnlyExotic(k) && (cat === 'N' || cat === 'P');
+    const label = (isExo && !isEstab) ? 'Exotique' : ((typeof REAL_LABELS === 'object' && REAL_LABELS[w]) || ('niveau '+w));
+    const color = realColor(w);
     const country = avail.find(c => c.code === cc) || avail[0];
     const flgFixed = (country.flag||'').replace('<img ', '<img style="height:14px;width:19px;object-fit:cover;object-position:center;vertical-align:middle;border-radius:2px;margin-right:8px;box-shadow:0 0 0 1px rgba(0,0,0,.08);" ');
     const pill = `<span style="display:inline-block;background:${color};color:#fff;padding:3px 12px;border-radius:8px;font-weight:800;font-size:15px;min-width:28px;text-align:center;margin-right:10px;">${w}</span>`;
