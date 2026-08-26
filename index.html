@@ -8390,10 +8390,15 @@ function _renderSpeciesRarityCard(key){
   if(!avail.length){ box.hidden = true; return; }
   box.hidden = false;
   const selectOpts = avail.map(c => `<option value="${esc(c.code)}">${esc(c.name)}</option>`).join('');
+  // Sélecteur région (FR uniquement, affecte le chart 52 bar). "" = national.
+  const regOpts = (typeof FR_REGIONS !== 'undefined')
+    ? '<option value="">France entière</option>' + FR_REGIONS.map(r => `<option value="${esc(r.code)}"${r.code===_speciesRegion?' selected':''}>${esc(r.name)}</option>`).join('')
+    : '';
   box.innerHTML = `
-    <div class="sm-card-title" style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+    <div class="sm-card-title" style="display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
       <span>Rareté</span>
       <select id="smRarityCountrySel" class="filt-sel" style="font-size:11px; padding:2px 6px; font-weight:600; text-transform:none; letter-spacing:0;">${selectOpts}</select>
+      <select id="smRarityRegionSel" class="filt-sel" style="font-size:11px; padding:2px 6px; font-weight:600; text-transform:none; letter-spacing:0; display:none;" title="Histogramme S&T par région">${regOpts}</select>
     </div>
     <div id="smRarityLine"></div>`;
   const renderLine = (cc) => {
@@ -8566,12 +8571,33 @@ function _renderSpeciesRarityCard(key){
     || 'FR';
   const initCountry = avail.find(c => c.code === ctxCountry) ? ctxCountry : avail[0].code;
   renderLine(initCountry);
+  // Le sélecteur région n'est utile que pour FR. Cache si autre pays.
+  const regSel = $('#smRarityRegionSel');
+  const updateRegSelVisibility = (cc) => { if(regSel) regSel.style.display = (cc === 'FR') ? '' : 'none'; };
+  updateRegSelVisibility(initCountry);
+  // Lazy-load la data régionale au premier affichage FR pour que le chart weekly régional
+  // soit prêt (ne bloque pas le rendu initial : rerend seulement quand chargé).
+  if(initCountry === 'FR' && typeof _loadAbundanceRegionData === 'function'){
+    _loadAbundanceRegionData().then(() => {
+      if(_speciesRegion){ _renderSpeciesFreqChart(k, initCountry); }
+    });
+  }
   _renderSpeciesFreqChart(k, initCountry);   // (re)render l'histogramme sur le pays initial
   const sel = $('#smRarityCountrySel');
   if(sel){ sel.value = initCountry; sel.addEventListener('change', e => {
     renderLine(e.target.value);
-    // Change aussi la source du histogramme mensuel (FR REAL_FREQ_MONTHLY vs ME).
+    updateRegSelVisibility(e.target.value);
     _renderSpeciesFreqChart(k, e.target.value);
+  }); }
+  if(regSel){ regSel.addEventListener('change', e => {
+    _speciesRegion = e.target.value || '';
+    try{ localStorage.setItem('mb-species-region', _speciesRegion); }catch(_){}
+    // Si data régionale pas encore chargée, la charger puis rerender.
+    if(_speciesRegion && typeof _loadAbundanceRegionData === 'function'){
+      _loadAbundanceRegionData().then(() => _renderSpeciesFreqChart(k, $('#smRarityCountrySel')?.value || 'FR'));
+    } else {
+      _renderSpeciesFreqChart(k, $('#smRarityCountrySel')?.value || 'FR');
+    }
   }); }
 }
 // Description Wikipedia (extrait 1er paragraphe) via API REST summary. FR puis EN en fallback.
@@ -8622,11 +8648,22 @@ function _renderSpeciesFreqChart(key, country){
   const wrap = $('#smFreqWrap'), card = $('#smFreqCard'), svg = $('#smFreqChart'), srcEl = $('#smFreqSrc');
   if(!svg) return;
   const cc = country || 'FR';
-  // Priorite : si FR ET S&T weekly disponible avec au moins une valeur non-nulle -> 52 barres.
-  // Sinon fallback bar chart mensuel 12 valeurs qu'on ETIRE sur 52 slots pour uniformité
-  // visuelle (chaque mois répété sur ses ~4.33 semaines).
+  // Priorite : (1) S&T weekly REGIONAL si FR + region choisie + data dispo pour l'espece
+  //           (2) S&T weekly NATIONAL si FR
+  //           (3) fallback bar chart mensuel 12 valeurs ETIREES sur 52 slots (FR ou ME)
   let arr = null, isWeekly = false, unitLabel = '%';
-  if(cc === 'FR' && typeof REAL_ABUNDANCE_ST_FR !== 'undefined' && REAL_ABUNDANCE_ST_FR[key]
+  let regionScope = '';   // '' = national, sinon code region (FR-IDF etc.) pour l'affichage
+  // Cas 1 : S&T weekly regional (fine, la meilleure info spatiale-temporelle)
+  if(cc === 'FR' && _speciesRegion
+     && typeof REAL_ABUNDANCE_ST_BY_REGION_FR === 'object'
+     && REAL_ABUNDANCE_ST_BY_REGION_FR[_speciesRegion]){
+    const regEntry = REAL_ABUNDANCE_ST_BY_REGION_FR[_speciesRegion][key];
+    if(regEntry && Array.isArray(regEntry.w) && regEntry.w.length === 52 && regEntry.w.some(v => v > 0)){
+      arr = regEntry.w; isWeekly = true; unitLabel = 'ind/h'; regionScope = _speciesRegion;
+    }
+  }
+  // Cas 2 : S&T weekly national (fallback si pas de region ou data regionale vide)
+  if(!arr && cc === 'FR' && typeof REAL_ABUNDANCE_ST_FR !== 'undefined' && REAL_ABUNDANCE_ST_FR[key]
      && Array.isArray(REAL_ABUNDANCE_ST_FR[key].w) && REAL_ABUNDANCE_ST_FR[key].w.length === 52){
     const wv = REAL_ABUNDANCE_ST_FR[key].w;
     // Requiert au moins une valeur > 0 (autrement l'histogramme est plat a zero, mieux
@@ -8659,7 +8696,13 @@ function _renderSpeciesFreqChart(key, country){
   const curIdx = isWeekly ? Math.min(51, Math.floor(dayOfYear / 7)) : now.getMonth();
   if(wrap) wrap.hidden = false;
   if(card) card.hidden = false;
-  const ccLabel = { FR:'France', ME:'Monténégro' }[cc] || cc;
+  // Scope affiche : "Île-de-France" si regional, "France" ou "Monténégro" sinon.
+  let ccLabel;
+  if(regionScope && typeof FR_REGIONS !== 'undefined'){
+    ccLabel = (FR_REGIONS.find(r => r.code === regionScope) || {}).name || regionScope;
+  } else {
+    ccLabel = { FR:'France', ME:'Monténégro' }[cc] || cc;
+  }
   // Texte d'entete : "France — pic mi-octobre (3.2 ind/h)" ou "France — pic en octobre (30 %)"
   let peakLbl, peakVal;
   if(isWeekly){
@@ -9840,6 +9883,9 @@ let _pkdxNumById = null;
 // S&T weekly national + REAL_FREQ_MONTHLY_BY_REGION pour filtrer par presence regionale.
 let _targetsRegion = null;   // '' = France entiere, sinon code region (FR-BRE, etc.)
 let _targetsRegionInit = false;
+// Region choisie sur les fiches especes (histogramme 52 bar par region). '' = France entiere.
+let _speciesRegion = '';
+try{ _speciesRegion = localStorage.getItem('mb-species-region') || ''; }catch(_){ _speciesRegion = ''; }
 try{ _targetsRegion = localStorage.getItem('mb-targets-region') || ''; }catch(_){ _targetsRegion = ''; }
 function renderTargets(){
   const panel = $('#targetsPanel'), grid = $('#targetsGrid'), hint = $('#targetsHint');
