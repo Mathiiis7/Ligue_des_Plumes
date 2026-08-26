@@ -8688,7 +8688,27 @@ function _renderSpeciesFreqChart(key, country){
       unitLabel = '%';
     }
   }
-  if(!arr || arr.length !== 52){ if(wrap) wrap.hidden = true; if(card) card.hidden = true; return; }
+  if(!arr || arr.length !== 52){
+    // Aucune source (ni S&T weekly non-nul, ni monthly). Pour les exotiques echappes
+    // cage/voliere sans obs eBird acceptee (Sarcelle a collier, Dendrocygne a ventre
+    // noir, autres X/C tres marginaux), on affiche une note explicite au lieu de
+    // cacher : le badge tier 0 sur la card Rarete oriente deja, mais la card "Quand
+    // la trouver" vide etait ambigue.
+    const cc2 = country || 'FR';
+    const cat2 = (typeof exoticCategoryInCountry === 'function') ? (exoticCategoryInCountry(key, cc2) || _exoticCategory(key)) : null;
+    const parkOnly2 = (typeof isParkOnlyExotic === 'function') && isParkOnlyExotic(key);
+    if(parkOnly2 || cat2 === 'X' || cat2 === 'C'){
+      if(card) card.hidden = false;
+      if(srcEl) srcEl.textContent = '';
+      if(svg){
+        svg.setAttribute('viewBox', '0 0 520 130');
+        svg.innerHTML = `<text x="260" y="70" font-size="12" fill="var(--ink-3)" text-anchor="middle">Pas de données eBird FR — échappé cage/volière</text>`;
+      }
+      if(wrap) wrap.hidden = true;
+      return;
+    }
+    if(wrap) wrap.hidden = true; if(card) card.hidden = true; return;
+  }
   const maxV = Math.max(0.0001, ...arr);
   const bestIdx = arr.indexOf(maxV);
   const now = new Date();
