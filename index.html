@@ -8442,13 +8442,17 @@ function _renderSpeciesRarityCard(key){
           : (REAL_RARITY[k] || (_isForeignOnly(k) ? 9 : 1));
         const barSrcLabel = isEstabExo ? 'GBIF exotiques (parcs urbains inclus)' : 'Bar chart eBird FR 2019-2026';
         const barSrcShort = isEstabExo ? 'GBIF' : 'bar chart';
+        // Override manuel prioritaire : quelques exotiques naturalisees localement abondantes
+        // (Ibis sacre, Tadorne casarca, Canard mandarin) qu'on force tier 6 malgre S&T/bar chart
+        // qui les mettent tier 7-8. Cf NATURALISED_LOCAL_BOOST.
+        const override = (typeof NATURALISED_LOCAL_BOOST === 'object') ? NATURALISED_LOCAL_BOOST[k] : null;
         // Si st.a == 0 (S&T dit "pas presente en France", ex : vagrant transatlantique), le merge
         // court-circuite avec la source d'appui. Ne pas afficher "S&T retenu" a tort.
         const stValid = !!st.a;
         const stComp = st.t;
-        // S&T "retenu" seulement s'il a une valeur non-nulle ET l'ecart avec bar chart <= 1.
-        // Sinon (st.a==0 vagrants transatlantiques, ou ecart trop grand) : source d'appui gagne.
-        const stKept = stValid && Math.abs(stComp - barTier) <= 1;
+        // S&T "retenu" seulement s'il a une valeur non-nulle ET l'ecart avec bar chart <= 1
+        // ET pas d'override manuel qui court-circuite le tout.
+        const stKept = !override && stValid && Math.abs(stComp - barTier) <= 1;
         const mkRow = (t, lbl, weight) => {
           const c = realColor(t);
           const lb = (typeof REAL_LABELS === 'object' && REAL_LABELS[t]) || ('niveau '+t);
@@ -8459,7 +8463,30 @@ function _renderSpeciesRarityCard(key){
           </div>`;
         };
         let body;
-        if(stKept){
+        if(override != null){
+          // Override manuel : le tier reel est boost/ecrase parce que le calcul auto
+          // ne reflete pas la realite terrain. On liste les valeurs brutes pour
+          // transparence puis on explique pourquoi on override.
+          const stTierRow = stValid
+            ? `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
+                <span style="display:inline-block;background:${realColor(stComp)};color:#fff;padding:1px 8px;border-radius:6px;font-weight:800;font-size:12px;min-width:22px;text-align:center;">${stComp}</span>
+                <span style="font-size:12px;color:var(--ink-2);flex:1;">Composite S&amp;T (${st.ta}/${st.tn}/${st.tl})</span>
+              </div>`
+            : `<div style="font-size:11.5px;color:var(--ink-3);padding:3px 0;opacity:.85;">S&amp;T Cornell : pas de couverture utilisable en France.</div>`;
+          body = `
+            <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">Override manuel — exotique naturalisée localement abondante</div>
+            ${stTierRow}
+            <div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
+              <span style="display:inline-block;background:${realColor(barTier)};color:#fff;padding:1px 8px;border-radius:6px;font-weight:800;font-size:12px;min-width:22px;text-align:center;">${barTier}</span>
+              <span style="font-size:12px;color:var(--ink-2);flex:1;">${esc(barSrcLabel)}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 0 2px 0;border-top:1px dashed var(--line-2);margin-top:4px;">
+              <span style="color:var(--accent);font-weight:800;font-size:14px;">✓</span>
+              <span style="display:inline-block;background:${realColor(override)};color:#fff;padding:2px 8px;border-radius:6px;font-weight:800;font-size:13px;min-width:22px;text-align:center;">${override}</span>
+              <span style="font-size:12px;color:var(--ink);font-weight:600;">= tier forcé (override)</span>
+            </div>
+            <div style="font-size:10.5px;color:var(--ink-3);margin-top:4px;opacity:.85;line-height:1.4;">Population "N" (naturalisée) très localisée mais abondante sur ses sites de référence (Grand-Lieu, Camargue, Baie de l'Aiguillon, parcs franciliens…). La fréquence eBird nationale est écrasée par les listes hors sites, et Cornell ne modélise pas ces populations européennes échappées. Tier ajusté pour refléter la réalité : rare partout, facile là où elle est.</div>`;
+        } else if(stKept){
           // S&T composite retenu : affiche les 3 sous-scores + composite S&T + bar chart en meta
           body = `
             <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">Composite eBird Status &amp; Trends (Cornell ML)</div>
