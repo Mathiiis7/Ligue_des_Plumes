@@ -32,49 +32,49 @@
     "name": "Épervier d'Europe",
     "freq": 0.08844,
     "source": "ebird",
-    "weight": 4
+    "weight": 3
   },
   {
     "sci": "acridotheres tristis",
     "name": "Martin triste",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "acrocephalus agricola",
     "name": "Rousserolle isabelle",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "acrocephalus arundinaceus",
     "name": "Rousserolle turdoïde",
     "freq": 0.0410628,
     "source": "ebird",
-    "weight": 5
+    "weight": 4
   },
   {
     "sci": "acrocephalus dumetorum",
     "name": "Rousserolle des buissons",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "acrocephalus melanopogon",
     "name": "Lusciniole à moustaches",
     "freq": 0.0079378,
     "source": "ebird",
-    "weight": 7
+    "weight": 6
   },
   {
     "sci": "acrocephalus paludicola",
     "name": "Phragmite aquatique",
     "freq": 0.0028143,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "acrocephalus palustris",
@@ -88,14 +88,14 @@
     "name": "Phragmite des joncs",
     "freq": 0.0440367,
     "source": "ebird",
-    "weight": 5
+    "weight": 4
   },
   {
     "sci": "acrocephalus scirpaceus",
     "name": "Rousserolle effarvatte",
     "freq": 0.0972625,
     "source": "ebird",
-    "weight": 4
+    "weight": 3
   },
   {
     "sci": "actitis hypoleucos",
@@ -109,21 +109,21 @@
     "name": "Chevalier grivelé",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "aegithalos caudatus",
     "name": "Mésange à longue queue",
     "freq": 0.1975758,
     "source": "ebird-alias",
-    "weight": 3
+    "weight": 2
   },
   {
     "sci": "aegolius funereus",
     "name": "Nyctale de Tengmalm",
     "freq": 0.0015451,
     "source": "ebird-alias",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "aegypius monachus",
@@ -137,28 +137,28 @@
     "name": "Inséparable de Fischer",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "agapornis nigrigenis",
     "name": "Inséparable à joues noires",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "agapornis personatus",
     "name": "Inséparable masqué",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "agapornis roseicollis",
     "name": "Inséparable rosegorge",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "aix galericulata",
@@ -179,14 +179,14 @@
     "name": "Alouette des champs",
     "freq": 0.1755152,
     "source": "ebird",
-    "weight": 3
+    "weight": 2
   },
   {
     "sci": "alauda leucoptera",
     "name": "Alouette leucoptère",
     "freq": 0.0009657,
     "source": "ebird",
-    "weight": 9
+    "weight": 8
   },
   {
     "sci": "alaudala heinei",
@@ -214,7 +214,7 @@
     "name": "Martin-pêcheur d'Europe",
     "freq": 0.182278,
     "source": "ebird",
-    "weight": 3
+    "weight": 2
   },
   {
     "sci": "alectoris chukar",
@@ -228,7 +228,7 @@
     "name": "Perdrix bartavelle",
     "freq": 0.0027752,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "alectoris rufa",
@@ -242,14 +242,14 @@
     "name": "Perruche royale",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "alle alle",
     "name": "Mergule nain",
     "freq": 0.0017632,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "alopochen aegyptiaca",
@@ -263,7 +263,7 @@
     "name": "Canard amazonette",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "ammomanes cinctura",
@@ -298,7 +298,7 @@
     "name": "Pluvier de Leschenault",
     "freq": 0.0015,
     "source": "ebird-alias",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "anarhynchus mongolus",
@@ -319,7 +319,7 @@
     "name": "Canard pilet",
     "freq": 0.0443111,
     "source": "ebird",
-    "weight": 5
+    "weight": 4
   },
   {
     "sci": "anas bahamensis",
@@ -354,14 +354,14 @@
     "name": "Sarcelle tachetée",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "anas platyrhynchos",
     "name": "Canard colvert",
     "freq": 0.346023,
     "source": "ebird",
-    "weight": 2
+    "weight": 1
   },
   {
     "sci": "anas poecilorhyncha",
@@ -382,7 +382,7 @@
     "name": "Canard de Chine",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "anser albifrons",
@@ -403,21 +403,21 @@
     "name": "Oie à bec court",
     "freq": 0.0020293,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "anser caerulescens",
     "name": "Oie des neiges",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "anser canagicus",
     "name": "Oie empereur",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "anser cygnoides",
@@ -431,7 +431,7 @@
     "name": "Oie naine",
     "freq": 0,
     "source": "ebird",
-    "weight": 9
+    "weight": 10
   },
   {
     "sci": "anser fabalis",
@@ -480,7 +480,7 @@
     "name": "Pipit de la Petchora",
     "freq": 0.000557,
     "source": "ebird",
-    "weight": 9
+    "weight": 8
   },
   {
     "sci": "anthus hodgsoni",
@@ -494,7 +494,7 @@
     "name": "Pipit de Sibérie",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "anthus petrosus",
@@ -508,7 +508,7 @@
     "name": "Pipit farlouse",
     "freq": 0.2851428,
     "source": "ebird",
-    "weight": 2
+    "weight": 1
   },
   {
     "sci": "anthus richardi",
@@ -536,7 +536,7 @@
     "name": "Pipit des arbres",
     "freq": 0.080992,
     "source": "ebird",
-    "weight": 4
+    "weight": 3
   },
   {
     "sci": "antigone canadensis",
@@ -550,7 +550,7 @@
     "name": "Martinet des maisons",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "apus apus",
@@ -564,7 +564,7 @@
     "name": "Martinet cafre",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "apus pallidus",
@@ -599,7 +599,7 @@
     "name": "Aigle impérial",
     "freq": 0.0021038,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "aquila nipalensis",
@@ -634,14 +634,14 @@
     "name": "Grande Aigrette",
     "freq": 0.1648545,
     "source": "ebird",
-    "weight": 3
+    "weight": 2
   },
   {
     "sci": "ardea cinerea",
     "name": "Héron cendré",
     "freq": 0.2966951,
     "source": "ebird",
-    "weight": 2
+    "weight": 1
   },
   {
     "sci": "ardea herodias",
@@ -655,7 +655,7 @@
     "name": "Héron garde-bœufs",
     "freq": 0.0954125,
     "source": "ebird",
-    "weight": 4
+    "weight": 3
   },
   {
     "sci": "ardea melanocephala",
@@ -669,7 +669,7 @@
     "name": "Héron pourpré",
     "freq": 0.0435553,
     "source": "ebird",
-    "weight": 5
+    "weight": 4
   },
   {
     "sci": "ardenna gravis",
@@ -739,7 +739,7 @@
     "name": "Fuligule à tête noire",
     "freq": 0.0026447,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "aythya collaris",
@@ -753,14 +753,14 @@
     "name": "Fuligule milouin",
     "freq": 0.0875699,
     "source": "ebird",
-    "weight": 4
+    "weight": 3
   },
   {
     "sci": "aythya fuligula",
     "name": "Fuligule morillon",
     "freq": 0.0888709,
     "source": "ebird",
-    "weight": 4
+    "weight": 3
   },
   {
     "sci": "aythya marila",
@@ -781,21 +781,21 @@
     "name": "Grue royale",
     "freq": 0.0003051,
     "source": "ebird",
-    "weight": 9
+    "weight": 8
   },
   {
     "sci": "bartramia longicauda",
     "name": "Maubèche des champs",
     "freq": 0.0015,
     "source": "ebird-alias",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "bombycilla garrulus",
     "name": "Jaseur boréal",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "botaurus minutus",
@@ -837,7 +837,7 @@
     "name": "Bernache de Hutchins",
     "freq": 0,
     "source": "ebird",
-    "weight": 9
+    "weight": 10
   },
   {
     "sci": "branta leucopsis",
@@ -858,14 +858,14 @@
     "name": "Bernache néné",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "bubo bubo",
     "name": "Hibou grand-duc",
     "freq": 0.0029057,
     "source": "ebird-alias",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "bubo scandiacus",
@@ -879,14 +879,14 @@
     "name": "Héron garde-bœufs",
     "freq": 0.0954125,
     "source": "ebird",
-    "weight": 4
+    "weight": 3
   },
   {
     "sci": "bucanetes githagineus",
     "name": "Roselin githagine",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "bucephala albeola",
@@ -935,14 +935,14 @@
     "name": "Buse pattue",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "buteo rufinus",
     "name": "Buse féroce",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "butorides virescens",
@@ -956,14 +956,14 @@
     "name": "Cacatoès blanc",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "cacatua galerita",
     "name": "Cacatoès à huppe jaune",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "cairina moschata",
@@ -984,14 +984,14 @@
     "name": "Bruant lapon",
     "freq": 0.0074559,
     "source": "ebird",
-    "weight": 7
+    "weight": 6
   },
   {
     "sci": "calidris acuminata",
     "name": "Bécasseau à queue pointue",
     "freq": 0.0007508,
     "source": "ebird",
-    "weight": 9
+    "weight": 8
   },
   {
     "sci": "calidris alba",
@@ -1012,7 +1012,7 @@
     "name": "Bécasseau de Baird",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "calidris canutus",
@@ -1026,7 +1026,7 @@
     "name": "Bécasseau falcinelle",
     "freq": 0.0023317,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "calidris ferruginea",
@@ -1047,7 +1047,7 @@
     "name": "Bécasseau à échasses",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "calidris maritima",
@@ -1061,7 +1061,7 @@
     "name": "Bécasseau d'Alaska",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "calidris melanotos",
@@ -1082,7 +1082,7 @@
     "name": "Bécasseau minuscule",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "calidris pugnax",
@@ -1131,7 +1131,7 @@
     "name": "Colin de Californie",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "callonetta leucophrys",
@@ -1166,21 +1166,21 @@
     "name": "Engoulevent à collier roux",
     "freq": 0.0005075,
     "source": "ebird",
-    "weight": 9
+    "weight": 8
   },
   {
     "sci": "carduelis carduelis",
     "name": "Chardonneret élégant",
     "freq": 0.265059,
     "source": "ebird",
-    "weight": 2
+    "weight": 1
   },
   {
     "sci": "carduelis citrinella",
     "name": "Venturon montagnard",
     "freq": 0.0075124,
     "source": "ebird",
-    "weight": 7
+    "weight": 6
   },
   {
     "sci": "carduelis corsicana",
@@ -1194,7 +1194,7 @@
     "name": "Roselin cramoisi",
     "freq": 0.0023641,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "cathartes aura",
@@ -1208,7 +1208,7 @@
     "name": "Grive à joues grises",
     "freq": 0.0005456,
     "source": "ebird",
-    "weight": 9
+    "weight": 8
   },
   {
     "sci": "catharus ustulatus",
@@ -1229,7 +1229,7 @@
     "name": "Guillemot à miroir",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "cercotrichas galactotes",
@@ -1264,7 +1264,7 @@
     "name": "Bouscarle de Cetti",
     "freq": 0.1818464,
     "source": "ebird",
-    "weight": 3
+    "weight": 2
   },
   {
     "sci": "chaetura pelagica",
@@ -1292,21 +1292,21 @@
     "name": "Pluvier grand-gravelot",
     "freq": 0.0868919,
     "source": "ebird-alias",
-    "weight": 4
+    "weight": 3
   },
   {
     "sci": "charadrius semipalmatus",
     "name": "Pluvier semipalmé",
     "freq": 0.0006017,
     "source": "ebird-alias",
-    "weight": 9
+    "weight": 8
   },
   {
     "sci": "charadrius vociferus",
     "name": "Pluvier kildir",
     "freq": 0.0009726,
     "source": "ebird-alias",
-    "weight": 9
+    "weight": 8
   },
   {
     "sci": "chenonetta jubata",
@@ -1355,7 +1355,7 @@
     "name": "Ouette de Magellan",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "chloris chloris",
@@ -1369,7 +1369,7 @@
     "name": "Engoulevent d'Amérique",
     "freq": 0.0004683,
     "source": "ebird",
-    "weight": 9
+    "weight": 8
   },
   {
     "sci": "chroicocephalus genei",
@@ -1383,7 +1383,7 @@
     "name": "Mouette de Bonaparte",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "chroicocephalus ridibundus",
@@ -1397,7 +1397,7 @@
     "name": "Faisan doré",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "ciconia ciconia",
@@ -1432,7 +1432,7 @@
     "name": "Busard des roseaux",
     "freq": 0.0907029,
     "source": "ebird",
-    "weight": 4
+    "weight": 3
   },
   {
     "sci": "circus cyaneus",
@@ -1446,14 +1446,14 @@
     "name": "Busard des marais",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "circus macrourus",
     "name": "Busard pâle",
     "freq": 0.0022384,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "circus pygargus",
@@ -1481,14 +1481,14 @@
     "name": "Aigle criard",
     "freq": 0.0024238,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "clanga pomarina",
     "name": "Aigle pomarin",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "clangula hyemalis",
@@ -1523,7 +1523,7 @@
     "name": "Colin de Virginie",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "coloeus dauuricus",
@@ -1537,7 +1537,7 @@
     "name": "Choucas des tours",
     "freq": 0.1925754,
     "source": "ebird",
-    "weight": 3
+    "weight": 2
   },
   {
     "sci": "columba guinea",
@@ -1579,7 +1579,7 @@
     "name": "Corbeau à nuque blanche",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "corvus corax",
@@ -1621,7 +1621,7 @@
     "name": "Râle des genêts",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "cuculus canorus",
@@ -1719,7 +1719,7 @@
     "name": "Fauvette de Rüppell",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "curruca sarda",
@@ -1747,7 +1747,7 @@
     "name": "Courvite isabelle",
     "freq": 0.0020903,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "cyanistes caeruleus",
@@ -1761,7 +1761,7 @@
     "name": "Mésange azurée",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "cygnus atratus",
@@ -1796,7 +1796,7 @@
     "name": "Cygne tuberculé",
     "freq": 0.188274,
     "source": "ebird",
-    "weight": 3
+    "weight": 2
   },
   {
     "sci": "daption capense",
@@ -1817,7 +1817,7 @@
     "name": "Pic à dos blanc",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "dendrocopos major",
@@ -1852,14 +1852,14 @@
     "name": "Dendrocygne fauve",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "dendrocygna viduata",
     "name": "Dendrocygne veuf",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "dolichonyx oryzivorus",
@@ -1950,7 +1950,7 @@
     "name": "Bruant zizi",
     "freq": 0.0920931,
     "source": "ebird",
-    "weight": 4
+    "weight": 3
   },
   {
     "sci": "emberiza citrinella",
@@ -1971,14 +1971,14 @@
     "name": "Bruant à calotte blanche",
     "freq": 0.0016158,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "emberiza melanocephala",
     "name": "Bruant mélanocéphale",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "emberiza pusilla",
@@ -1992,7 +1992,7 @@
     "name": "Bruant rustique",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "emberiza rutila",
@@ -2006,7 +2006,7 @@
     "name": "Bruant du Sahara",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "emberiza schoeniclus",
@@ -2020,21 +2020,21 @@
     "name": "Bruant masqué",
     "freq": 0.0018185,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "eolophus roseicapilla",
     "name": "Cacatoès rosalbin",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "eremophila alpestris",
     "name": "Alouette hausse-col",
     "freq": 0.0029386,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "erithacus rubecula",
@@ -2062,14 +2062,14 @@
     "name": "Ibis blanc",
     "freq": 0.0003051,
     "source": "ebird",
-    "weight": 9
+    "weight": 8
   },
   {
     "sci": "eudocimus ruber",
     "name": "Ibis rouge",
     "freq": 0.0003713,
     "source": "ebird",
-    "weight": 9
+    "weight": 8
   },
   {
     "sci": "eudromias morinellus",
@@ -2104,7 +2104,7 @@
     "name": "Faucon sacre",
     "freq": 0.0016674,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "falco columbarius",
@@ -2181,7 +2181,7 @@
     "name": "Gobemouche à collier",
     "freq": 0.0015772,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "ficedula hypoleuca",
@@ -2237,7 +2237,7 @@
     "name": "Pinson du Nord",
     "freq": 0.0862553,
     "source": "ebird",
-    "weight": 4
+    "weight": 3
   },
   {
     "sci": "fringilla spodiogenys",
@@ -2272,14 +2272,14 @@
     "name": "Cochevis huppé",
     "freq": 0.0401977,
     "source": "ebird",
-    "weight": 5
+    "weight": 4
   },
   {
     "sci": "galerida theklae",
     "name": "Cochevis de Thékla",
     "freq": 0.0018934,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "gallinago delicata",
@@ -2293,21 +2293,21 @@
     "name": "Bécassine des marais",
     "freq": 0.0931078,
     "source": "ebird",
-    "weight": 4
+    "weight": 3
   },
   {
     "sci": "gallinago media",
     "name": "Bécassine double",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "gallinula chloropus",
     "name": "Gallinule poule-d'eau",
     "freq": 0.1716854,
     "source": "ebird",
-    "weight": 3
+    "weight": 2
   },
   {
     "sci": "gallus gallus",
@@ -2321,14 +2321,14 @@
     "name": "Geai des chênes",
     "freq": 0.2600821,
     "source": "ebird",
-    "weight": 2
+    "weight": 1
   },
   {
     "sci": "gavia adamsii",
     "name": "Plongeon à bec blanc",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "gavia arctica",
@@ -2349,7 +2349,7 @@
     "name": "Plongeon du Pacifique",
     "freq": 0.0020842,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "gavia stellata",
@@ -2377,7 +2377,7 @@
     "name": "Ibis chauve",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "glareola maldivarum",
@@ -2391,14 +2391,14 @@
     "name": "Glaréole à ailes noires",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "glareola pratincola",
     "name": "Glaréole à collier",
     "freq": 0.007971,
     "source": "ebird",
-    "weight": 7
+    "weight": 6
   },
   {
     "sci": "glaucidium passerinum",
@@ -2419,14 +2419,14 @@
     "name": "Grue du Japon",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "grus virgo",
     "name": "Grue demoiselle",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "gulosus aristotelis",
@@ -2454,7 +2454,7 @@
     "name": "Vautour de Rüppell",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "haematopus ostralegus",
@@ -2475,14 +2475,14 @@
     "name": "Pygargue à tête blanche",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "haliastur indus",
     "name": "Milan sacré",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "helopsaltes certhiola",
@@ -2510,7 +2510,7 @@
     "name": "Échasse blanche",
     "freq": 0.0918397,
     "source": "ebird",
-    "weight": 4
+    "weight": 3
   },
   {
     "sci": "hippolais icterina",
@@ -2615,7 +2615,7 @@
     "name": "Oriole de Baltimore",
     "freq": 0.0007805,
     "source": "ebird",
-    "weight": 9
+    "weight": 8
   },
   {
     "sci": "iduna caligata",
@@ -2636,7 +2636,7 @@
     "name": "Hypolaïs pâle",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "iduna rama",
@@ -2671,7 +2671,7 @@
     "name": "Lagopède alpin",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "lanius collurio",
@@ -2685,7 +2685,7 @@
     "name": "Pie-grièche brune",
     "freq": 0.0018185,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "lanius excubitor",
@@ -2699,7 +2699,7 @@
     "name": "Pie-grièche isabelle",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "lanius meridionalis",
@@ -2713,7 +2713,7 @@
     "name": "Pie-grièche à poitrine rose",
     "freq": 0.0021899,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "lanius nubicus",
@@ -2727,7 +2727,7 @@
     "name": "Pie-grièche du Turkestan",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "lanius senator",
@@ -2741,7 +2741,7 @@
     "name": "Goéland argenté",
     "freq": 0.1833061,
     "source": "ebird",
-    "weight": 3
+    "weight": 2
   },
   {
     "sci": "larus cachinnans",
@@ -2755,21 +2755,21 @@
     "name": "Goéland cendré",
     "freq": 0.0412038,
     "source": "ebird",
-    "weight": 5
+    "weight": 4
   },
   {
     "sci": "larus delawarensis",
     "name": "Goéland à bec cerclé",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "larus dominicanus",
     "name": "Goéland dominicain",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "larus fuscus",
@@ -2790,7 +2790,7 @@
     "name": "Goéland bourgmestre",
     "freq": 0.0020144,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "larus marinus",
@@ -2825,7 +2825,7 @@
     "name": "Paruline obscure",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "leiothrix lutea",
@@ -2839,14 +2839,14 @@
     "name": "Mouette atricille",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "leucophaeus pipixcan",
     "name": "Mouette de Franklin",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "limnodromus griseus",
@@ -2860,7 +2860,7 @@
     "name": "Bécassin à long bec",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "limosa lapponica",
@@ -2881,14 +2881,14 @@
     "name": "Linotte mélodieuse",
     "freq": 0.1624922,
     "source": "ebird",
-    "weight": 3
+    "weight": 2
   },
   {
     "sci": "linaria flavirostris",
     "name": "Linotte à bec jaune",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "locustella fluviatilis",
@@ -2923,7 +2923,7 @@
     "name": "Harle couronné",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "lophophanes cristatus",
@@ -2958,7 +2958,7 @@
     "name": "Bec-croisé d'Écosse",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "lullula arborea",
@@ -2979,7 +2979,7 @@
     "name": "Rossignol philomèle",
     "freq": 0.3011641,
     "source": "ebird",
-    "weight": 2
+    "weight": 1
   },
   {
     "sci": "luscinia svecica",
@@ -3035,14 +3035,14 @@
     "name": "Canard de Chiloé",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "mareca strepera",
     "name": "Canard chipeau",
     "freq": 0.0896789,
     "source": "ebird",
-    "weight": 4
+    "weight": 3
   },
   {
     "sci": "marmaronetta angustirostris",
@@ -3063,7 +3063,7 @@
     "name": "Macreuse à bec jaune",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "melanitta deglandi",
@@ -3077,7 +3077,7 @@
     "name": "Macreuse brune",
     "freq": 0.0079334,
     "source": "ebird",
-    "weight": 7
+    "weight": 6
   },
   {
     "sci": "melanitta nigra",
@@ -3091,7 +3091,7 @@
     "name": "Macreuse à front blanc",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "melanitta stejnegeri",
@@ -3112,7 +3112,7 @@
     "name": "Alouette calandre",
     "freq": 0.0023282,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "meleagris gallopavo",
@@ -3126,7 +3126,7 @@
     "name": "Perruche ondulée",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "mergellus albellus",
@@ -3140,7 +3140,7 @@
     "name": "Harle bièvre",
     "freq": 0.0480711,
     "source": "ebird",
-    "weight": 5
+    "weight": 4
   },
   {
     "sci": "mergus serrator",
@@ -3154,7 +3154,7 @@
     "name": "Guêpier d'Europe",
     "freq": 0.0945719,
     "source": "ebird",
-    "weight": 4
+    "weight": 3
   },
   {
     "sci": "merops persicus",
@@ -3175,7 +3175,7 @@
     "name": "Milan noir",
     "freq": 0.1811361,
     "source": "ebird",
-    "weight": 3
+    "weight": 2
   },
   {
     "sci": "milvus milvus",
@@ -3189,7 +3189,7 @@
     "name": "Paruline noir et blanc",
     "freq": 0.0007274,
     "source": "ebird",
-    "weight": 9
+    "weight": 8
   },
   {
     "sci": "molothrus ater",
@@ -3231,21 +3231,21 @@
     "name": "Bergeronnette grise",
     "freq": 0.3020549,
     "source": "ebird",
-    "weight": 2
+    "weight": 1
   },
   {
     "sci": "motacilla cinerea",
     "name": "Bergeronnette des ruisseaux",
     "freq": 0.1631206,
     "source": "ebird",
-    "weight": 3
+    "weight": 2
   },
   {
     "sci": "motacilla citreola",
     "name": "Bergeronnette citrine",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "motacilla flava",
@@ -3266,7 +3266,7 @@
     "name": "Gobemouche gris",
     "freq": 0.0830895,
     "source": "ebird",
-    "weight": 4
+    "weight": 3
   },
   {
     "sci": "muscicapa tyrrhenica",
@@ -3301,7 +3301,7 @@
     "name": "Nette demi-deuil",
     "freq": 0.0003008,
     "source": "ebird",
-    "weight": 9
+    "weight": 8
   },
   {
     "sci": "netta rufina",
@@ -3329,14 +3329,14 @@
     "name": "Courlis hudsonien",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "numenius phaeopus",
     "name": "Courlis corlieu",
     "freq": 0.042884,
     "source": "ebird",
-    "weight": 5
+    "weight": 4
   },
   {
     "sci": "numenius tenuirostris",
@@ -3350,7 +3350,7 @@
     "name": "Pintade de Numidie",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "nycticorax nycticorax",
@@ -3364,7 +3364,7 @@
     "name": "Calopsitte élégante",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "oceanites oceanicus",
@@ -3378,7 +3378,7 @@
     "name": "Traquet du désert",
     "freq": 0.0020144,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "oenanthe hispanica",
@@ -3392,7 +3392,7 @@
     "name": "Traquet isabelle",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "oenanthe leucopyga",
@@ -3413,21 +3413,21 @@
     "name": "Traquet noir et blanc",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "oenanthe oenanthe",
     "name": "Traquet motteux",
     "freq": 0.0868655,
     "source": "ebird",
-    "weight": 4
+    "weight": 3
   },
   {
     "sci": "oenanthe pleschanka",
     "name": "Traquet pie",
     "freq": 0.0003637,
     "source": "ebird",
-    "weight": 9
+    "weight": 8
   },
   {
     "sci": "oenanthe seebohmi",
@@ -3448,14 +3448,14 @@
     "name": "Sterne bridée",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "onychoprion fuscatus",
     "name": "Sterne fuligineuse",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "oressochen melanopterus",
@@ -3476,7 +3476,7 @@
     "name": "Grande Outarde",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "otus scops",
@@ -3490,14 +3490,14 @@
     "name": "Érismature rousse",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "oxyura leucocephala",
     "name": "Érismature à tête blanche",
     "freq": 0.0009099,
     "source": "ebird",
-    "weight": 9
+    "weight": 8
   },
   {
     "sci": "pagophila eburnea",
@@ -3518,21 +3518,21 @@
     "name": "Panure à moustaches",
     "freq": 0.0079189,
     "source": "ebird",
-    "weight": 7
+    "weight": 6
   },
   {
     "sci": "parabuteo unicinctus",
     "name": "Buse de Harris",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "paragallinula angulata",
     "name": "Gallinule africaine",
     "freq": 0.000324,
     "source": "ebird",
-    "weight": 9
+    "weight": 8
   },
   {
     "sci": "parkesia noveboracensis",
@@ -3560,7 +3560,7 @@
     "name": "Moineau espagnol",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "passer italiae",
@@ -3574,7 +3574,7 @@
     "name": "Moineau doré",
     "freq": 0.0024137,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "passer montanus",
@@ -3588,35 +3588,35 @@
     "name": "Étourneau roselin",
     "freq": 0.0024137,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "pavo cristatus",
     "name": "Paon bleu",
     "freq": 0.002057,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "pelecanus crispus",
     "name": "Pélican frisé",
     "freq": 0.000404,
     "source": "ebird",
-    "weight": 9
+    "weight": 8
   },
   {
     "sci": "pelecanus onocrotalus",
     "name": "Pélican blanc",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "pelecanus rufescens",
     "name": "Pélican gris",
     "freq": 0.0015042,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "perdix perdix",
@@ -3686,7 +3686,7 @@
     "name": "Phalarope de Wilson",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "phasianus colchicus",
@@ -3700,7 +3700,7 @@
     "name": "Faisan versicolore",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "pheucticus ludovicianus",
@@ -3714,14 +3714,14 @@
     "name": "Flamant nain",
     "freq": 0.0015284,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "phoenicopterus chilensis",
     "name": "Flamant du Chili",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "phoenicopterus roseus",
@@ -3756,7 +3756,7 @@
     "name": "Rougequeue à front blanc",
     "freq": 0.0961322,
     "source": "ebird",
-    "weight": 4
+    "weight": 3
   },
   {
     "sci": "phylloscopus bonelli",
@@ -3770,7 +3770,7 @@
     "name": "Pouillot boréal",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "phylloscopus collybita",
@@ -3791,14 +3791,14 @@
     "name": "Pouillot brun",
     "freq": 0.0021837,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "phylloscopus humei",
     "name": "Pouillot de Hume",
     "freq": 0.0018178,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "phylloscopus ibericus",
@@ -3826,28 +3826,28 @@
     "name": "Pouillot oriental",
     "freq": 0.000469,
     "source": "ebird",
-    "weight": 9
+    "weight": 8
   },
   {
     "sci": "phylloscopus plumbeitarsus",
     "name": "Pouillot à pattes sombres",
     "freq": 0.0017171,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "phylloscopus proregulus",
     "name": "Pouillot de Pallas",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "phylloscopus schwarzi",
     "name": "Pouillot de Schwarz",
     "freq": 0.0021822,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "phylloscopus sibilatrix",
@@ -3868,7 +3868,7 @@
     "name": "Pouillot verdâtre",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "phylloscopus trochilus",
@@ -3889,7 +3889,7 @@
     "name": "Pic tridactyle",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "picus canus",
@@ -3945,7 +3945,7 @@
     "name": "Perruche omnicolore",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "plectrophenax nivalis",
@@ -3980,21 +3980,21 @@
     "name": "Pluvier bronzé",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "pluvialis fulva",
     "name": "Pluvier fauve",
     "freq": 0.0015699,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "pluvialis squatarola",
     "name": "Pluvier argenté",
     "freq": 0.0487361,
     "source": "ebird",
-    "weight": 5
+    "weight": 4
   },
   {
     "sci": "podiceps auritus",
@@ -4008,7 +4008,7 @@
     "name": "Grèbe huppé",
     "freq": 0.16609,
     "source": "ebird",
-    "weight": 3
+    "weight": 2
   },
   {
     "sci": "podiceps grisegena",
@@ -4029,7 +4029,7 @@
     "name": "Grèbe à bec bigarré",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "poecile lugubris",
@@ -4057,7 +4057,7 @@
     "name": "Perroquet youyou",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "polysticta stelleri",
@@ -4127,28 +4127,28 @@
     "name": "Conure à tête rouge",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "psittacara mitratus",
     "name": "Conure mitrée",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "psittacula cyanocephala",
     "name": "Perruche à tête prune",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "psittacula eupatria",
     "name": "Perruche alexandre",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "psittacula krameri",
@@ -4162,14 +4162,14 @@
     "name": "Perroquet jaco",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "pterocles alchata",
     "name": "Ganga cata",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "pterodroma baraui",
@@ -4197,14 +4197,14 @@
     "name": "Hirondelle de rochers",
     "freq": 0.0475644,
     "source": "ebird",
-    "weight": 5
+    "weight": 4
   },
   {
     "sci": "puffinus baroli",
     "name": "Puffin de Macaronésie",
     "freq": 0.0003518,
     "source": "ebird",
-    "weight": 9
+    "weight": 8
   },
   {
     "sci": "puffinus mauretanicus",
@@ -4253,7 +4253,7 @@
     "name": "Bouvreuil pivoine",
     "freq": 0.0462067,
     "source": "ebird",
-    "weight": 5
+    "weight": 4
   },
   {
     "sci": "quiscalus quiscula",
@@ -4267,7 +4267,7 @@
     "name": "Râle d'eau",
     "freq": 0.0992819,
     "source": "ebird",
-    "weight": 4
+    "weight": 3
   },
   {
     "sci": "recurvirostra avosetta",
@@ -4330,21 +4330,21 @@
     "name": "Tarier de Sibérie",
     "freq": 0.0016367,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "saxicola rubetra",
     "name": "Tarier des prés",
     "freq": 0.0449185,
     "source": "ebird",
-    "weight": 5
+    "weight": 4
   },
   {
     "sci": "saxicola rubicola",
     "name": "Tarier pâtre",
     "freq": 0.1533006,
     "source": "ebird",
-    "weight": 3
+    "weight": 2
   },
   {
     "sci": "scolopax minor",
@@ -4358,35 +4358,35 @@
     "name": "Bécasse des bois",
     "freq": 0.0072727,
     "source": "ebird",
-    "weight": 7
+    "weight": 6
   },
   {
     "sci": "seiurus aurocapilla",
     "name": "Paruline couronnée",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "serinus canaria",
     "name": "Serin des Canaries",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "serinus serinus",
     "name": "Serin cini",
     "freq": 0.1739805,
     "source": "ebird",
-    "weight": 3
+    "weight": 2
   },
   {
     "sci": "setophaga aestiva",
     "name": "Paruline jaune",
     "freq": 0.0017171,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "setophaga americana",
@@ -4428,14 +4428,14 @@
     "name": "Sarcelle élégante",
     "freq": 0.000648,
     "source": "ebird",
-    "weight": 9
+    "weight": 8
   },
   {
     "sci": "sitta europaea",
     "name": "Sittelle torchepot",
     "freq": 0.1607071,
     "source": "ebird",
-    "weight": 3
+    "weight": 2
   },
   {
     "sci": "sitta neumayer",
@@ -4463,14 +4463,14 @@
     "name": "Eider à tête grise",
     "freq": 0.0019453,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "spatula clypeata",
     "name": "Canard souchet",
     "freq": 0.0919777,
     "source": "ebird",
-    "weight": 4
+    "weight": 3
   },
   {
     "sci": "spatula cyanoptera",
@@ -4484,14 +4484,14 @@
     "name": "Sarcelle à ailes bleues",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "spatula hottentota",
     "name": "Sarcelle à bec bleu",
     "freq": 0.0004156,
     "source": "ebird",
-    "weight": 9
+    "weight": 8
   },
   {
     "sci": "spatula querquedula",
@@ -4505,28 +4505,28 @@
     "name": "Sarcelle bariolée",
     "freq": 0.0006034,
     "source": "ebird",
-    "weight": 9
+    "weight": 8
   },
   {
     "sci": "spinus spinus",
     "name": "Tarin des aulnes",
     "freq": 0.1688276,
     "source": "ebird",
-    "weight": 3
+    "weight": 2
   },
   {
     "sci": "stercorarius longicaudus",
     "name": "Labbe à longue queue",
     "freq": 0.0021038,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "stercorarius maccormicki",
     "name": "Labbe de McCormick",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "stercorarius parasiticus",
@@ -4554,21 +4554,21 @@
     "name": "Sterne de Dougall",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "sterna forsteri",
     "name": "Sterne de Forster",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "sterna hirundo",
     "name": "Sterne pierregarin",
     "freq": 0.0990487,
     "source": "ebird",
-    "weight": 4
+    "weight": 3
   },
   {
     "sci": "sterna paradisaea",
@@ -4582,28 +4582,28 @@
     "name": "Sterne naine",
     "freq": 0.0425294,
     "source": "ebird",
-    "weight": 5
+    "weight": 4
   },
   {
     "sci": "streptopelia decaocto",
     "name": "Tourterelle turque",
     "freq": 0.263988,
     "source": "ebird",
-    "weight": 2
+    "weight": 1
   },
   {
     "sci": "streptopelia orientalis",
     "name": "Tourterelle orientale",
     "freq": 0.0021294,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "streptopelia roseogrisea",
     "name": "Tourterelle rieuse",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "streptopelia turtur",
@@ -4652,7 +4652,7 @@
     "name": "Fou brun",
     "freq": 0.00187,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "sula sula",
@@ -4701,7 +4701,7 @@
     "name": "Faisan vénéré",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "syrrhaptes paradoxus",
@@ -4757,28 +4757,28 @@
     "name": "Diamant mandarin",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "tarsiger cyanurus",
     "name": "Rossignol à flancs roux",
     "freq": 0.001597,
     "source": "ebird-alias",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "tetrao urogallus",
     "name": "Grand Tétras",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "tetrastes bonasia",
     "name": "Gélinotte des bois",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "tetrax tetrax",
@@ -4799,28 +4799,28 @@
     "name": "Albatros à sourcils noirs",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "thalasseus albididorsalis",
     "name": "Sterne d'Afrique",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "thalasseus bengalensis",
     "name": "Sterne voyageuse",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "thalasseus elegans",
     "name": "Sterne élégante",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "thalasseus maximus",
@@ -4890,7 +4890,7 @@
     "name": "Chevalier de Sibérie",
     "freq": 0.0018887,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "tringa erythropus",
@@ -4932,7 +4932,7 @@
     "name": "Chevalier cul-blanc",
     "freq": 0.0842391,
     "source": "ebird",
-    "weight": 4
+    "weight": 3
   },
   {
     "sci": "tringa semipalmata",
@@ -4967,7 +4967,7 @@
     "name": "Troglodyte mignon",
     "freq": 0.3069307,
     "source": "ebird",
-    "weight": 2
+    "weight": 1
   },
   {
     "sci": "turdus atrogularis",
@@ -5023,7 +5023,7 @@
     "name": "Grive litorne",
     "freq": 0.0477698,
     "source": "ebird",
-    "weight": 5
+    "weight": 4
   },
   {
     "sci": "turdus ruficollis",
@@ -5044,7 +5044,7 @@
     "name": "Grive draine",
     "freq": 0.0986842,
     "source": "ebird",
-    "weight": 4
+    "weight": 3
   },
   {
     "sci": "turnix sylvaticus",
@@ -5093,21 +5093,21 @@
     "name": "Vanneau sociable",
     "freq": 0.0028979,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "vanellus leucurus",
     "name": "Vanneau à queue blanche",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "vanellus spinosus",
     "name": "Vanneau à éperons",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "vanellus vanellus",
@@ -5121,7 +5121,7 @@
     "name": "Viréo aux yeux rouges",
     "freq": 0.0007274,
     "source": "ebird-alias",
-    "weight": 9
+    "weight": 8
   },
   {
     "sci": "xema sabini",
@@ -5135,28 +5135,28 @@
     "name": "Chevalier bargette",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "zapornia parva",
     "name": "Marouette poussin",
     "freq": 0.0022803,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "zapornia pusilla",
     "name": "Marouette de Baillon",
     "freq": 0.0015,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "zonotrichia albicollis",
     "name": "Bruant à gorge blanche",
     "freq": 0.0016367,
     "source": "ebird",
-    "weight": 8
+    "weight": 7
   },
   {
     "sci": "zonotrichia leucophrys",
@@ -5170,6 +5170,6 @@
     "name": "Grive dorée",
     "freq": 0.0004683,
     "source": "ebird",
-    "weight": 9
+    "weight": 8
   }
 ]

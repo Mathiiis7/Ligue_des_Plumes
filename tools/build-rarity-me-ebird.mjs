@@ -18,11 +18,13 @@ const OUT = join(__dir, 'real-rarity-me-ebird.generated.js');
 const GBIF_ME = join(__dir, 'real-rarity-me.generated.js');
 
 // Mêmes seuils que FR (bar chart eBird = même unité : % listes).
+// Mêmes seuils que FR (Option 1 recalibré 2026-08-27) — voir build-rarity-ebird.mjs.
 const THRESHOLDS = [
-  [0.35, 1], [0.20, 2], [0.10, 3], [0.05, 4],
-  [0.02, 5], [0.008, 6], [0.003, 7], [0.001, 8],
+  [0.25, 1], [0.15, 2], [0.08, 3], [0.04, 4],
+  [0.02, 5], [0.007, 6], [0.0015, 7], [0.0003, 8],
+  [0.00005, 9],
 ];
-function weightFor(freq){ for(const [min, w] of THRESHOLDS) if(freq >= min) return w; return 9; }
+function weightFor(freq){ for(const [min, w] of THRESHOLDS) if(freq >= min) return w; return 10; }
 
 const norm = s => s.toLowerCase()
   .replace(/œ/g, 'oe').replace(/æ/g, 'ae')
