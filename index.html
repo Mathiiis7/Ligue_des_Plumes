@@ -8424,9 +8424,32 @@ function _renderSpeciesRarityCard(key){
   box.hidden = false;
   const selectOpts = avail.map(c => `<option value="${esc(c.code)}">${esc(c.name)}</option>`).join('');
   // Sélecteur région (FR uniquement, affecte le chart 52 bar). "" = national.
-  const regOpts = (typeof FR_REGIONS !== 'undefined')
-    ? '<option value="">France entière</option>' + FR_REGIONS.map(r => `<option value="${esc(r.code)}"${r.code===_speciesRegion?' selected':''}>${esc(r.name)}</option>`).join('')
-    : '';
+  // Trie par presence de l'espece descendante : regions ou l'espece est plus abondante
+  // en tete. Regions absentes marquees "(absente)" en fin de liste. Rerend apres load
+  // des donnees regionales si elles n'etaient pas encore la.
+  const buildRegOpts = () => {
+    if(typeof FR_REGIONS === 'undefined') return '';
+    const stByReg = (typeof REAL_ABUNDANCE_ST_BY_REGION_FR === 'object') ? REAL_ABUNDANCE_ST_BY_REGION_FR : {};
+    const freqByReg = (typeof REAL_FREQ_MONTHLY_BY_REGION === 'object') ? REAL_FREQ_MONTHLY_BY_REGION : {};
+    const scored = FR_REGIONS.map(r => {
+      let score = 0;
+      const stEntry = stByReg[r.code] && stByReg[r.code][k];
+      if(stEntry && Array.isArray(stEntry.w)) score = Math.max(...stEntry.w);
+      // Fallback bar chart monthly (echelle % 0..1 * 0.1 pour rester sous les scores S&T ind/h).
+      if(!score){
+        const monArr = freqByReg[r.code] && freqByReg[r.code][k];
+        if(Array.isArray(monArr)) score = Math.max(...monArr) * 0.1;
+      }
+      return { code: r.code, name: r.name, score };
+    });
+    scored.sort((a, b) => b.score - a.score);
+    return '<option value="">France entière</option>'
+      + scored.map(s => {
+          const absent = s.score === 0 ? ' — absente' : '';
+          return `<option value="${esc(s.code)}"${s.code===_speciesRegion?' selected':''}>${esc(s.name)}${absent}</option>`;
+        }).join('');
+  };
+  const regOpts = buildRegOpts();
   box.innerHTML = `
     <div class="sm-card-title" style="display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
       <span>Rareté</span>
@@ -8667,6 +8690,10 @@ function _renderSpeciesRarityCard(key){
     if(typeof _loadAbundanceRegionData === 'function') promises.push(_loadAbundanceRegionData());
     if(typeof _loadFreqData === 'function') promises.push(_loadFreqData());
     if(promises.length) Promise.all(promises).then(() => {
+      // Rebuild du select region (tri par presence de l'espece) maintenant que les data
+      // regionales sont chargees. On preserve la selection courante.
+      const rs = $('#smRarityRegionSel');
+      if(rs) rs.innerHTML = buildRegOpts();
       if(_speciesRegion) _renderSpeciesFreqChart(k, initCountry);
     });
   }
