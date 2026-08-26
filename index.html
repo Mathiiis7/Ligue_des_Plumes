@@ -8522,7 +8522,30 @@ function _renderSpeciesRarityCard(key){
           } else {
             biasNote = `S&amp;T sous-estime la fréquence de rencontre (biais espèce ultra-localisée : diluée dans la moyenne nationale, mais facile à voir sur son hotspot). Composite S&amp;T disait tier ${stComp} mais écart &gt; 1 → non retenu.`;
           }
+          // Sous-tiers S&T affiches quand meme (grisees) pour la transparence :
+          // Mathis veut voir les 3 sous-scores meme quand S&T est ecarte, comprendre
+          // POURQUOI le composite disait X.
+          const mkRowFaded = (t, lbl, weight) => {
+            const c = realColor(t);
+            const lb = (typeof REAL_LABELS === 'object' && REAL_LABELS[t]) || ('niveau '+t);
+            return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;opacity:.55;">
+              <span style="display:inline-block;background:${c};color:#fff;padding:1px 8px;border-radius:6px;font-weight:800;font-size:12px;min-width:22px;text-align:center;">${t}</span>
+              <span style="font-size:12px;color:var(--ink-2);flex:1;">${esc(lb)} <span style="opacity:.6;">— ${esc(lbl)}</span></span>
+              <span style="font-size:11px;color:var(--ink-3);font-weight:600;">${weight}</span>
+            </div>`;
+          };
+          const stSubsBlock = stValid ? `
+            <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">Composite S&amp;T (non retenu)</div>
+            ${mkRowFaded(st.ta, 'Moyenne annuelle nationale', '40%')}
+            ${mkRowFaded(st.tn, 'Pic saisonnier national', '30%')}
+            ${mkRowFaded(st.tl, 'Densité typique sur hotspot', '30%')}
+            <div style="display:flex;align-items:center;gap:8px;padding:3px 0 6px 0;border-top:1px dashed var(--line-2);margin-top:4px;opacity:.55;">
+              <span style="color:var(--ink-3);font-weight:700;font-size:13px;">×</span>
+              <span style="display:inline-block;background:${realColor(stComp)};color:#fff;padding:2px 8px;border-radius:6px;font-weight:800;font-size:13px;min-width:22px;text-align:center;">${stComp}</span>
+              <span style="font-size:12px;color:var(--ink-2);font-style:italic;">composite 40/30/30 (ecarté)</span>
+            </div>` : '';
           body = `
+            ${stSubsBlock}
             <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">${barSrcLabel} retenu</div>
             <div style="display:flex;align-items:center;gap:8px;padding:5px 0 2px 0;">
               <span style="color:var(--accent);font-weight:800;font-size:14px;">✓</span>
