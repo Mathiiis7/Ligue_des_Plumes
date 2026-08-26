@@ -7,8 +7,9 @@
 #     -> reflete la difficulte d'observation au hasard
 #   - abd_peak_national : pic saisonnier national (max sur 52 semaines de mean(pixels_FR))
 #     -> reflete la difficulte a la meilleure periode
-#   - abd_peak_local : pic local (q95 des pixels x semaines non-nuls)
-#     -> reflete la difficulte au meilleur hotspot en meilleure saison
+#   - abd_peak_local : densite typique sur hotspots actifs (MEDIANE des pixels x semaines
+#     non-nuls) - refletela difficulte au meilleur endroit en meilleure saison. Robuste
+#     aux outliers (Lac du Der etc.) contrairement au q95 top 5%.
 #   - abd_weekly : array de 52 moyennes hebdomadaires (pour histogramme fiche)
 #
 # Cache ebirdst deja peuple par l'ancienne version (rasters cached), le rerun ne
@@ -109,12 +110,14 @@ for (i in seq_len(n_total)) {
     abd_peak_national <- max(weekly_vec, na.rm = TRUE)
     if (is.nan(abd_peak_national) || is.infinite(abd_peak_national)) abd_peak_national <- 0
 
-    # 4f) Metrique 3 : pic local = q95 des pixels x semaines non-nuls
-    #     Extrait TOUS les pixels de la France pour toutes les semaines (memoire OK, ~5k pixels x 52)
+    # 4f) Metrique 3 : "densite typique sur hotspots actifs" = MEDIANE des pixels x semaines
+    #     non-nuls (au lieu du q95 top 5% qui etait ecrase par les hotspots extremes type
+    #     Lac du Der pour Grue - donnait tier 1-2 pour presque tout).
+    #     La mediane est robuste aux outliers et discrimine bien mieux entre especes.
     all_pixels <- terra::extract(r_weekly, vect(fr_prj_cache))
     all_vals <- unlist(all_pixels[, layer_cols, drop = FALSE])
     non_zero <- all_vals[all_vals > 0 & !is.na(all_vals) & !is.nan(all_vals)]
-    abd_peak_local <- if (length(non_zero) >= 5) as.numeric(quantile(non_zero, 0.95, na.rm = TRUE)) else 0
+    abd_peak_local <- if (length(non_zero) >= 5) as.numeric(median(non_zero, na.rm = TRUE)) else 0
     if (is.nan(abd_peak_local) || is.na(abd_peak_local)) abd_peak_local <- 0
 
     # 4g) Trend decennale si dispo (rare pour especes europeennes, presque toujours NA)
@@ -237,7 +240,7 @@ js_content <- c(
   "// Format compact : { sci: {",
   "//   a: abd moyenne annuelle (indiv/heure),",
   "//   an: pic saisonnier national,",
-  "//   al: pic local (q95 pixels non-nuls),",
+  "//   al: densite typique hotspot (MEDIANE pixels non-nuls, robuste aux outliers),",
   "//   t: tier composite 1-10 (celui utilise dans l'app),",
   "//   ta: tier moyenne annuelle | tn: tier pic national | tl: tier pic local (pour fiche detail),",
   "//   w: [52 valeurs hebdo] (pour histogramme fiche),",
