@@ -2813,14 +2813,12 @@ function renderBoard(){
   }
   const dash='<span class="muted">—</span>';
   const cell=v=>v?esc(v):dash;
-  // Colonnes de score : TOUJOURS les 3 (Rareté ligue, Rareté réelle, Espèces) pour que la
-  // largeur des colonnes textuelles (Objectif, Espèce préférée, etc.) reste identique entre
-  // les modes. Seule la colonne active est mise en avant (classe .on-metric).
-  const scoreCols=[
-    {h:'Rareté ligue', v:p=>fmt(p.score), active:mode==='league'},
-    {h:'Rareté réelle', v:p=>fmt(p.scoreReal||0), active:mode==='real'},
-    {h:'Espèces', v:p=>p.total, active:mode==='count'},
-  ];
+  // Une seule colonne score selon le mode (comme le layout du mode count qui a des cellules
+  // moins hautes car les colonnes textuelles ont plus de place). Uniformise les 3 modes.
+  const scoreCols=[];
+  if(mode==='league') scoreCols.push({h:'Rareté ligue', v:p=>fmt(p.score), active:true});
+  else if(mode==='real') scoreCols.push({h:'Rareté réelle', v:p=>fmt(p.scoreReal||0), active:true});
+  else scoreCols.push({h:'Espèces', v:p=>p.total, active:true});
   const scoreTh=scoreCols.map(c=>`<th class="c-num${c.active?' on-metric':''}">${c.h}</th>`).join('');
   const scoreTd=p=>scoreCols.map(c=>`<td class="c-num${c.active?' strong on-metric':''}">${c.v(p)}</td>`).join('');
   $('#boardList').innerHTML = `<div class="sheet-scroll"><table class="board-sheet">
