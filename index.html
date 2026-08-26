@@ -1183,6 +1183,15 @@
       <div id="targetsTierChips" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; padding:8px 10px; background:var(--surface-2); border-radius:8px;">
         <span style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; align-self:center; margin-right:6px;">Rareté :</span>
       </div>
+      <details style="margin-top:10px;">
+        <summary style="cursor:pointer; font-size:12px; color:var(--ink-3); user-select:none; padding:2px 0;">▸ Comment lire les métriques</summary>
+        <div style="padding:8px 12px; margin-top:6px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--ink-2); line-height:1.5;">
+          <p style="margin:0 0 6px 0;"><b>Deux sources complémentaires</b>, croisées pour trier les espèces les plus faciles cette semaine :</p>
+          <p style="margin:0 0 6px 0;"><b>X ind/h cette semaine (région)</b> — Densité modélisée par <b>eBird Status &amp; Trends</b> (Cornell Lab). Rasters 3&nbsp;km × 52 semaines, calibrés par ML sur des milliards d'observations. Répond à : <i>combien d'individus vais-je voir par heure de sortie standard, cette semaine précise, dans ma région</i>. Précision temporelle et spatiale, mais silencieux pour les espèces non modélisées en Europe (fallback vers le national marqué "(national)").</p>
+          <p style="margin:0;"><b>X% listes région (mensuel)</b> — Pic biweekly du mois courant dans le <b>bar chart eBird de ma région</b>. Répond à : <i>quel pourcentage des listes eBird de ma région à ce mois mentionnent cette espèce (à la meilleure quinzaine)</i>. Moyenne long-terme 2019-2026, moins temporel mais utile pour signaler la présence saisonnière régulière.</p>
+          <p style="margin:6px 0 0 0; opacity:.85;">Tri : par la densité S&amp;T régionale (précision de la semaine). Le % listes est complémentaire (pattern saisonnier long-terme).</p>
+        </div>
+      </details>
       <div id="targetsGrid" class="targets-grid" style="margin-top:12px;"></div>
       <div id="targetsHint" class="help" style="margin-top:10px; font-size:11px; color:var(--ink-3);"></div>
     </section>
