@@ -2254,8 +2254,14 @@ function _tierFromSTvsBarChart(k, barTier){
   if(!st || !st.a) return barTier;
   const stTier = st.t;
   if(!stTier) return barTier;
-  if(Math.abs(stTier - barTier) <= 1) return stTier;   // correction fine acceptee
-  return barTier;   // ecart significatif : reste sur le bar chart (plus fiable)
+  const diff = stTier - barTier;
+  if(Math.abs(diff) <= 1) return stTier;                // correction fine acceptee
+  if(diff < 0) return barTier;                          // S&T << bar : biais gregaire, bar wins
+  // S&T >> bar (diff >= 2) : biais recherche active des birders (rapaces en migration,
+  // rallides discrets, oiseaux marins). Le bar chart surrepresente ces especes cherchees.
+  // On moyenne pour approcher la difficulte "birder generaliste" plutot que "birder expert
+  // en migration". Ex : Balbuzard bar=4 + ST=7 -> moyenne 5.5 -> 6.
+  return Math.round((barTier + stTier) / 2);
 }
 function rarityForCountry(sci, country){
   let k = (sci||'').trim().toLowerCase();
@@ -8455,9 +8461,15 @@ function _renderSpeciesRarityCard(key){
         // court-circuite avec la source d'appui. Ne pas afficher "S&T retenu" a tort.
         const stValid = !!st.a;
         const stComp = st.t;
-        // S&T "retenu" seulement s'il a une valeur non-nulle ET l'ecart avec bar chart <= 1
-        // ET pas d'override manuel qui court-circuite le tout.
+        // Merge modes :
+        //   - override manuel : NATURALISED_LOCAL_BOOST court-circuite tout
+        //   - stKept : diff <= 1 -> S&T retenu (correction fine)
+        //   - stAveraged : diff >= 2 ET S&T > bar -> moyenne pondérée (biais recherche
+        //     active des birders, S&T ramene le tier a une realite "generaliste")
+        //   - else (diff >= 2 ET S&T < bar) : bar chart pur (biais gregaire, S&T ecarte)
         const stKept = !override && stValid && Math.abs(stComp - barTier) <= 1;
+        const stAveraged = !override && !stKept && stValid && (stComp - barTier) >= 2;
+        const avgTier = stAveraged ? Math.round((barTier + stComp) / 2) : null;
         const mkRow = (t, lbl, weight) => {
           const c = realColor(t);
           const lb = (typeof REAL_LABELS === 'object' && REAL_LABELS[t]) || ('niveau '+t);
@@ -8491,6 +8503,28 @@ function _renderSpeciesRarityCard(key){
               <span style="font-size:12px;color:var(--ink);font-weight:600;">= tier forcé (override)</span>
             </div>
             <div style="font-size:10.5px;color:var(--ink-3);margin-top:4px;opacity:.85;line-height:1.4;">Population "N" (naturalisée) très localisée mais abondante sur ses sites de référence (Grand-Lieu, Camargue, Baie de l'Aiguillon, parcs franciliens…). La fréquence eBird nationale est écrasée par les listes hors sites, et Cornell ne modélise pas ces populations européennes échappées. Tier ajusté pour refléter la réalité : rare partout, facile là où elle est.</div>`;
+        } else if(stAveraged){
+          // Nouveau mode : biais recherche active. On liste les 3 sous-scores S&T + le
+          // composite S&T + le bar chart, puis la moyenne pondérée retenue.
+          body = `
+            <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">Composite eBird Status &amp; Trends (Cornell ML)</div>
+            ${mkRow(st.ta, 'Moyenne annuelle nationale', '40%')}
+            ${mkRow(st.tn, 'Pic saisonnier national', '30%')}
+            ${mkRow(st.tl, 'Densité typique sur hotspot', '30%')}
+            <div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
+              <span style="display:inline-block;background:${realColor(stComp)};color:#fff;padding:1px 8px;border-radius:6px;font-weight:800;font-size:12px;min-width:22px;text-align:center;">${stComp}</span>
+              <span style="font-size:12px;color:var(--ink-2);flex:1;font-style:italic;">= composite S&amp;T</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
+              <span style="display:inline-block;background:${realColor(barTier)};color:#fff;padding:1px 8px;border-radius:6px;font-weight:800;font-size:12px;min-width:22px;text-align:center;">${barTier}</span>
+              <span style="font-size:12px;color:var(--ink-2);flex:1;">${esc(barSrcLabel)}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 0 2px 0;border-top:1px dashed var(--line-2);margin-top:4px;">
+              <span style="color:var(--accent);font-weight:800;font-size:14px;">✓</span>
+              <span style="display:inline-block;background:${realColor(avgTier)};color:#fff;padding:2px 8px;border-radius:6px;font-weight:800;font-size:13px;min-width:22px;text-align:center;">${avgTier}</span>
+              <span style="font-size:12px;color:var(--ink);font-weight:600;">= moyenne (bar chart + S&amp;T) / 2</span>
+            </div>
+            <div style="font-size:10.5px;color:var(--ink-3);margin-top:4px;opacity:.85;line-height:1.4;">S&amp;T dit tier ${stComp} (biologie), bar chart dit tier ${barTier} (cochages eBird). Cas typique de <b>biais recherche active</b> : les birders cherchent l'espèce en migration (rapaces, sternes) ou sur des sites précis, donc surrepresentée dans les listes. Le S&amp;T ramène le tier vers la difficulté réelle pour un observateur généraliste. Écart ${stComp - barTier} tiers &gt; 1 → moyenne retenue.</div>`;
         } else if(stKept){
           // S&T composite retenu : affiche les 3 sous-scores + composite S&T + bar chart en meta
           body = `
