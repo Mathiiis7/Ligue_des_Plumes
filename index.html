@@ -10256,23 +10256,24 @@ function renderTargets(){
     const tierColor = realColor(c.tier);
     const tierLbl = REAL_LABELS[c.tier] || ('niveau '+c.tier);
     // Affichage uniforme :
-    //   - Mode region : ind/h (regional si dispo, sinon national) + % listes region mensuel
-    //   - Mode France entiere : ind/h national seul
-    // Les 2 metriques sont complementaires : S&T weekly = precision cette semaine,
-    // bar chart mensuel = pattern saisonnier long-terme.
-    let metricStr;
+    //   - Mode region : ind/h (regional si dispo, sinon national) sur une ligne, puis
+    //     % listes region mensuel sur une 2e ligne (visuellement lisible en un coup d'oeil).
+    //   - Mode France entiere : ind/h national seul.
+    let line1, line2;
     if(regionSelected){
       const primary = (c.wReg !== null) ? c.wReg : c.wVal;
       const primaryLbl = (c.wReg !== null) ? 'ind/h cette semaine (région)' : 'ind/h cette semaine (national)';
-      metricStr = `${fmtInd(primary)} ${primaryLbl}`;
+      line1 = `${fmtInd(primary)} ${primaryLbl}`;
       if(c.regionalFreq > 0){
         const pct = c.regionalFreq * 100;
         const pctStr = pct >= 10 ? Math.round(pct) : pct >= 1 ? pct.toFixed(1) : pct.toFixed(2);
-        metricStr += ` · ${pctStr}% listes région (mensuel)`;
+        line2 = `${pctStr}% listes région (mensuel)`;
       }
     } else {
-      metricStr = `${fmtInd(c.wVal)} ind/h cette semaine`;
+      line1 = `${fmtInd(c.wVal)} ind/h cette semaine`;
     }
+    const metricHtml = `<span class="t-freq">${esc(line1)}</span>`
+      + (line2 ? `<span class="t-freq" style="display:block; margin-top:1px;">${esc(line2)}</span>` : '');
     // Manquantes -> classe .missing (silhouette + nom italique, style Dex).
     const missingCls = c.owned ? '' : ' missing';
     const ownedBadge = c.owned ? ' <span style="font-size:11px; color:var(--accent); font-weight:700;">✓ vue</span>' : '';
@@ -10283,8 +10284,8 @@ function renderTargets(){
         <div class="t-meta">
           <span class="t-tier" style="background:${tierColor}">${c.tier}</span>
           <span>${esc(tierLbl)}</span>
-          <span class="t-freq">${metricStr}</span>
         </div>
+        <div style="margin-top:2px;">${metricHtml}</div>
       </div>
     </div>`;
   }).join('');
