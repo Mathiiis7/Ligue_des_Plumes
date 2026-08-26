@@ -8598,11 +8598,15 @@ function _renderSpeciesRarityCard(key){
   const regSel = $('#smRarityRegionSel');
   const updateRegSelVisibility = (cc) => { if(regSel) regSel.style.display = (cc === 'FR') ? '' : 'none'; };
   updateRegSelVisibility(initCountry);
-  // Lazy-load la data régionale au premier affichage FR pour que le chart weekly régional
-  // soit prêt (ne bloque pas le rendu initial : rerend seulement quand chargé).
-  if(initCountry === 'FR' && typeof _loadAbundanceRegionData === 'function'){
-    _loadAbundanceRegionData().then(() => {
-      if(_speciesRegion){ _renderSpeciesFreqChart(k, initCountry); }
+  // Lazy-load les 2 sources régionales en parallele au premier affichage FR :
+  //   - S&T weekly (52 bar exactes si Cornell a l'espece pour cette region)
+  //   - Bar chart monthly regional (12 mois etires en 52, fallback pour espece hors Cornell)
+  if(initCountry === 'FR'){
+    const promises = [];
+    if(typeof _loadAbundanceRegionData === 'function') promises.push(_loadAbundanceRegionData());
+    if(typeof _loadFreqData === 'function') promises.push(_loadFreqData());
+    if(promises.length) Promise.all(promises).then(() => {
+      if(_speciesRegion) _renderSpeciesFreqChart(k, initCountry);
     });
   }
   _renderSpeciesFreqChart(k, initCountry);   // (re)render l'histogramme sur le pays initial
@@ -8615,9 +8619,13 @@ function _renderSpeciesRarityCard(key){
   if(regSel){ regSel.addEventListener('change', e => {
     _speciesRegion = e.target.value || '';
     try{ localStorage.setItem('mb-species-region', _speciesRegion); }catch(_){}
-    // Si data régionale pas encore chargée, la charger puis rerender.
-    if(_speciesRegion && typeof _loadAbundanceRegionData === 'function'){
-      _loadAbundanceRegionData().then(() => _renderSpeciesFreqChart(k, $('#smRarityCountrySel')?.value || 'FR'));
+    // Charger les 2 sources en parallele : S&T weekly + monthly bar chart, toutes deux
+    // peuvent servir en mode regional selon ce que Cornell a modelisé pour l'espece.
+    if(_speciesRegion){
+      const proms = [];
+      if(typeof _loadAbundanceRegionData === 'function') proms.push(_loadAbundanceRegionData());
+      if(typeof _loadFreqData === 'function') proms.push(_loadFreqData());
+      Promise.all(proms).then(() => _renderSpeciesFreqChart(k, $('#smRarityCountrySel')?.value || 'FR'));
     } else {
       _renderSpeciesFreqChart(k, $('#smRarityCountrySel')?.value || 'FR');
     }
@@ -8697,6 +8705,15 @@ function _renderSpeciesFreqChart(key, country){
   let monthlyArr = null;   // source mensuelle si fallback : garde pour tooltips "mois"
   if(!arr){
     if(cc === 'ME' && typeof REAL_FREQ_MONTHLY_ME === 'object'){ monthlyArr = REAL_FREQ_MONTHLY_ME[key] || null; }
+    // Bar chart mensuel REGIONAL (fallback si S&T weekly regional absent mais region choisie).
+    // Cas typique : Tarin des aulnes, Corneille noire, Chardonneret elegant (absents de S&T
+    // Cornell) qui ont neanmoins un pattern mensuel regional utile.
+    if(!monthlyArr && cc === 'FR' && _speciesRegion
+       && typeof REAL_FREQ_MONTHLY_BY_REGION === 'object'
+       && REAL_FREQ_MONTHLY_BY_REGION[_speciesRegion]){
+      const regArr = REAL_FREQ_MONTHLY_BY_REGION[_speciesRegion][key];
+      if(regArr && regArr.length === 12){ monthlyArr = regArr; regionScope = _speciesRegion; }
+    }
     if(!monthlyArr && typeof REAL_FREQ_MONTHLY === 'object'){ monthlyArr = REAL_FREQ_MONTHLY[key] || null; }
     if(monthlyArr && monthlyArr.length === 12){
       // Étire 12 mois -> 52 semaines (repartition proportionnelle des semaines par mois).
