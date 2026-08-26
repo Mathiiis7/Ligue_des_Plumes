@@ -10255,18 +10255,23 @@ function renderTargets(){
     const nm = FR_NAMES[c.sci] || c.sci;
     const tierColor = realColor(c.tier);
     const tierLbl = REAL_LABELS[c.tier] || ('niveau '+c.tier);
+    // Affichage uniforme :
+    //   - Mode region : ind/h (regional si dispo, sinon national) + % listes region mensuel
+    //   - Mode France entiere : ind/h national seul
+    // Les 2 metriques sont complementaires : S&T weekly = precision cette semaine,
+    // bar chart mensuel = pattern saisonnier long-terme.
     let metricStr;
-    if(regionSelected && c.wReg !== null){
-      // Precise regional : une seule metrique, celle qui pilote le tri.
-      metricStr = `${fmtInd(c.wReg)} ind/h cette semaine (région)`;
-    } else {
-      // National ou fallback : ind/h national + eventuellement % listes region.
-      metricStr = `${fmtInd(c.wVal)} ind/h cette semaine`;
-      if(regionSelected && c.regionalFreq > 0){
+    if(regionSelected){
+      const primary = (c.wReg !== null) ? c.wReg : c.wVal;
+      const primaryLbl = (c.wReg !== null) ? 'ind/h cette semaine (région)' : 'ind/h cette semaine (national)';
+      metricStr = `${fmtInd(primary)} ${primaryLbl}`;
+      if(c.regionalFreq > 0){
         const pct = c.regionalFreq * 100;
         const pctStr = pct >= 10 ? Math.round(pct) : pct >= 1 ? pct.toFixed(1) : pct.toFixed(2);
         metricStr += ` · ${pctStr}% listes région (mensuel)`;
       }
+    } else {
+      metricStr = `${fmtInd(c.wVal)} ind/h cette semaine`;
     }
     // Manquantes -> classe .missing (silhouette + nom italique, style Dex).
     const missingCls = c.owned ? '' : ' missing';
