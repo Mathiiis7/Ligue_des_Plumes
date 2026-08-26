@@ -46,13 +46,18 @@ cat("     OK, cache local : ", dl_path, "\n", sep="")
 # 4) Charger abondance seasonnal max + zonal stat sur polygone France
 cat("[4/4] Zonal stats sur France...\n")
 abd <- tryCatch({
-  # Charge le raster "abundance seasonal" version maximum annuel
-  r <- load_raster(sp_code, resolution = "3km", product = "abundance", metric = "seasonal", period = "max")
-  # Reprojeter le polygone dans le CRS du raster
+  # Note API ebirdst 4.x : period doit etre "weekly" | "seasonal" | "full-year".
+  # "full-year" fait crash pour les residents -> on utilise "seasonal" + metric="max"
+  # qui renvoie le max sur toutes les saisons (ou juste la layer "resident" pour les residents).
+  r <- load_raster(sp_code, resolution = "3km", product = "abundance",
+                   period = "seasonal", metric = "max")
+  # Reprojeter le polygone dans le CRS du raster (EPSG:8857 Equal Earth Greenwich)
   fr_prj <- st_transform(fr_metro, crs = crs(r))
-  # Extraire la moyenne
+  # Zonal stat : moyenne des pixels du raster dans le polygone
   vals <- terra::extract(r, vect(fr_prj), fun = mean, na.rm = TRUE)
-  mean(vals[, 2], na.rm = TRUE)
+  # vals est un data.frame [ID, layer1, layer2, ...]. On prend la moyenne des layers non-ID.
+  layer_cols <- setdiff(names(vals), "ID")
+  mean(unlist(vals[, layer_cols, drop = FALSE]), na.rm = TRUE)
 }, error = function(e) {
   cat("[ERREUR] Zonal stat failed:", conditionMessage(e), "\n")
   quit(status = 1)

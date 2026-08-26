@@ -22,6 +22,28 @@ install.packages("ebirdst", repos = "https://cran.r-project.org")
 
 Deps automatiques : `terra`, `sf`, `dplyr`, `stringr`, `httr` (~50 MB).
 
+### Notes API ebirdst 4.x (apprises pendant le setup, 26/08/2026)
+
+- **Format de cle S&T** : 12 chars (ex: `obfvm9uetmhe`), meme famille que la cle
+  eBird API v2 mais token separe. La cle S&T se retrouve sur
+  https://science.ebird.org/en/status-and-trends/download-data (login eBird).
+- **`.Renviron`** : PAS de guillemets autour de la valeur, sinon R garde les
+  apostrophes dans la valeur et ebirdst envoie un token invalide. Bonne forme :
+  ```
+  EBIRDST_KEY=obfvm9uetmhe
+  ```
+- **`load_raster()`** : le param `period` accepte uniquement `"weekly"`,
+  `"seasonal"` ou `"full-year"`. Pour les especes residentes, `"full-year"`
+  fail avec erreur "Full-year products are not available for residents".
+  Solution : utiliser `period = "seasonal", metric = "max"` universellement
+  (renvoie 1 layer "resident" pour les residents, 4 layers saisonnieres pour
+  les migrateurs, prendre le max/moyenne).
+- **Reprojection obligatoire** : les rasters S&T sont en EPSG:8857 (Equal
+  Earth Greenwich), les polygones naturalearth en WGS84 -> `st_transform`
+  avant `terra::extract`.
+- **Volume cache** : ~15-20 MB par espece en 3km. Pour ~500 especes FR :
+  prevoir ~10 GB de cache local dans `~/AppData/Roaming/R/data/R/ebirdst/`.
+
 ### 3. Cle Cornell (tu l'as deja, expire 26/01/2027)
 La cle Status & Trends est differente de la cle eBird API v2.
 Doit etre fournie une fois via variable d'environnement `EBIRDST_KEY`,
