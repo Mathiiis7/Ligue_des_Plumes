@@ -8332,17 +8332,26 @@ function _renderSpeciesRarityCard(key){
     // seulement pour les sauvages calibrées S&T). Rend le calcul transparent : montre les 3
     // sous-scores S&T, le composite S&T, le bar chart, et quelle source est retenue selon
     // la règle ±1 tier du merge.
-    // Sous-section dépliante : détails du calcul de rareté (FR + sauvages seulement).
+    // Sous-section dépliante : détails du calcul de rareté (FR + sauvages ou exotiques N/P).
     // Deux modes selon si S&T est retenu ou écarté par le merge :
-    //   - S&T retenu (écart bar chart ≤ 1) : montre les 3 sous-scores + composite + bar chart
-    //   - S&T écarté (biais grégaire type Grue ou dilution locale type Perruche +2 tiers) :
-    //     cache les sous-scores S&T (jamais parlants dans ce cas), affiche juste bar chart
-    //     retenu + note explicative brève.
+    //   - S&T retenu (écart source_appui ≤ 1 tier) : montre les 3 sous-scores + composite
+    //   - S&T écarté (biais grégaire ou dilution locale ±2 tiers) : cache les sous-scores
+    //     S&T (non parlants), affiche juste source d'appui retenue + note explicative
+    // Source d'appui = bar chart eBird pour sauvages, GBIF pour exotiques N/P.
+    // Non affichée pour tier 0 (parcs semi-libres, X/C échappés) : pas de calcul de tier.
     let detailsHtml = '';
-    if(cc === 'FR' && !isExo && typeof REAL_ABUNDANCE_ST_FR !== 'undefined' && REAL_ABUNDANCE_ST_FR[k]){
+    const isEstabExo = isExo && !isParkOnlyExotic(k) && (cat === 'N' || cat === 'P');
+    const showDetails = cc === 'FR' && (!isExo || isEstabExo)
+      && typeof REAL_ABUNDANCE_ST_FR !== 'undefined' && REAL_ABUNDANCE_ST_FR[k];
+    if(showDetails){
       const st = REAL_ABUNDANCE_ST_FR[k];
       if(st.ta && st.tn && st.tl){
-        const barTier = REAL_RARITY[k] || (_isForeignOnly(k) ? 9 : 1);
+        // Source d'appui : bar chart pour sauvages, GBIF (_exoticTier) pour exotiques N/P
+        const barTier = isEstabExo
+          ? (_exoticTier(k) || 1)
+          : (REAL_RARITY[k] || (_isForeignOnly(k) ? 9 : 1));
+        const barSrcLabel = isEstabExo ? 'GBIF exotiques (parcs urbains inclus)' : 'Bar chart eBird FR 2019-2026';
+        const barSrcShort = isEstabExo ? 'GBIF' : 'bar chart';
         const stComp = st.t;
         const stKept = Math.abs(stComp - barTier) <= 1;
         const mkRow = (t, lbl, weight) => {
@@ -8367,21 +8376,24 @@ function _renderSpeciesRarityCard(key){
               <span style="display:inline-block;background:${realColor(stComp)};color:#fff;padding:2px 8px;border-radius:6px;font-weight:800;font-size:13px;min-width:22px;text-align:center;">${stComp}</span>
               <span style="font-size:12px;color:var(--ink);font-weight:600;">= composite 40/30/30 retenu</span>
             </div>
-            <div style="font-size:10.5px;color:var(--ink-3);margin-top:4px;opacity:.85;">Bar chart eBird FR 2019-2026 : tier ${barTier}. Écart ≤ 1 tier avec S&amp;T → S&amp;T retenu (correction ML fine).</div>`;
+            <div style="font-size:10.5px;color:var(--ink-3);margin-top:4px;opacity:.85;">${barSrcLabel} : tier ${barTier}. Écart ≤ 1 tier avec S&amp;T → S&amp;T retenu (correction ML fine).</div>`;
         } else {
           // S&T écarté par le merge : on ne montre PAS les sous-scores S&T (pas parlants),
-          // juste le bar chart retenu et une note explicative.
+          // juste la source d'appui retenue et une note explicative.
           // Détermine le type de biais pour l'explication : S&T dit plus commun = grégaire ;
           // S&T dit plus rare = dilution localisée.
           const biasNote = stComp < barTier
             ? 'S&amp;T sous-estime la difficulté (biais espèce grégaire ou concentrée : abondance/heure gonflée par les gros troupeaux, mais rare à croiser en sortie type)'
             : 'S&amp;T sous-estime la fréquence de rencontre (biais espèce ultra-localisée : diluée dans la moyenne nationale, mais facile à voir sur son hotspot)';
+          const barMeasure = isEstabExo
+            ? 'Densité GBIF (incl. iNaturalist + parcs urbains)'
+            : 'Fréquence % checklists (pic biweekly)';
           body = `
-            <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">Bar chart eBird FR 2019-2026 retenu</div>
+            <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">${barSrcLabel} retenu</div>
             <div style="display:flex;align-items:center;gap:8px;padding:5px 0 2px 0;">
               <span style="color:var(--accent);font-weight:800;font-size:14px;">✓</span>
               <span style="display:inline-block;background:${realColor(barTier)};color:#fff;padding:2px 8px;border-radius:6px;font-weight:800;font-size:13px;min-width:22px;text-align:center;">${barTier}</span>
-              <span style="font-size:12px;color:var(--ink);font-weight:600;">Fréquence % checklists (pic biweekly)</span>
+              <span style="font-size:12px;color:var(--ink);font-weight:600;">${barMeasure}</span>
             </div>
             <div style="font-size:10.5px;color:var(--ink-3);margin-top:6px;opacity:.85;line-height:1.4;">${biasNote}. Composite S&amp;T Cornell disait tier ${stComp} mais écart &gt; 1 → non retenu.</div>`;
         }
