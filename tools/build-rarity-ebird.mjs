@@ -90,6 +90,7 @@ const EBIRD_ALIAS = {
   'Viréo aux yeux rouges': 'Viréo à œil rouge',
   'Plongeon huard': 'Plongeon imbrin',
   'Canard branchu': 'Canard carolin',            // Aix sponsa : app dit "branchu", eBird dit "carolin"
+  'Flamant rouge': 'Flamant des Caraïbes',       // Phoenicopterus ruber : eBird utilise le nom "Caraïbes"
 };
 
 // --- FR_NAMES de l'app ---

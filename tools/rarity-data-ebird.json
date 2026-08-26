@@ -3733,8 +3733,8 @@
   {
     "sci": "phoenicopterus ruber",
     "name": "Flamant rouge",
-    "freq": null,
-    "source": "gbif-fallback",
+    "freq": 0.0002338,
+    "source": "ebird-alias",
     "weight": 9
   },
   {
