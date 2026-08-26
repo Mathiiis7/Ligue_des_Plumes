@@ -8531,19 +8531,10 @@ function _renderSpeciesFreqChart(key, country){
   if(cc === 'FR' && typeof REAL_ABUNDANCE_ST_FR !== 'undefined' && REAL_ABUNDANCE_ST_FR[key]
      && Array.isArray(REAL_ABUNDANCE_ST_FR[key].w) && REAL_ABUNDANCE_ST_FR[key].w.length === 52){
     const wv = REAL_ABUNDANCE_ST_FR[key].w;
-    // On requiert : au moins une valeur > 0 ET assez de VARIANCE pour un histogramme
-    // interessant. Pour les especes ultra-localisees (Lagopede alpin, endemiques haute
-    // montagne), l'abondance moyennee sur toute la France est si faible que les valeurs
-    // weekly finissent toutes ~0.0001 apres arrondi 5 decimales -> chart plat inutile.
-    // Dans ce cas fallback au bar chart mensuel qui a plus de variation visible.
-    const nonZero = wv.filter(v => v > 0);
-    if(nonZero.length > 0){
-      const maxW = Math.max(...wv), minNZ = Math.min(...nonZero);
-      // "Variance suffisante" = ratio max/min-nonzero > 1.5, ou au moins la moitie des
-      // semaines a zero (donc contraste zero vs présent).
-      const hasVariance = (maxW / minNZ) > 1.5 || (wv.length - nonZero.length) > wv.length * 0.3;
-      if(hasVariance){ arr = wv; isWeekly = true; unitLabel = 'ind/h'; }
-    }
+    // Requiert au moins une valeur > 0 (autrement l'histogramme est plat a zero, mieux
+    // vaut fallback bar chart). La precision 7 decimales dans le R script capte les
+    // vraies variations meme pour especes ultra-localisees (Lagopede etc.).
+    if(wv.some(v => v > 0)){ arr = wv; isWeekly = true; unitLabel = 'ind/h'; }
   }
   let monthlyArr = null;   // source mensuelle si fallback : garde pour tooltips "mois"
   if(!arr){

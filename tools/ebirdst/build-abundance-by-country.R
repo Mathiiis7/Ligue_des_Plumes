@@ -137,7 +137,7 @@ for (i in seq_len(n_total)) {
       abd_annual = round(abd_annual, 5),
       abd_peak_national = round(abd_peak_national, 5),
       abd_peak_local = round(abd_peak_local, 5),
-      weekly = round(weekly_vec, 5),
+      weekly = round(weekly_vec, 7),   # 7 decimales : capte les variations saisonnieres des especes ultra-localisees (Lagopede, endemiques montagnards) qui autrement s'ecrasaient a 0.0001 sur 5 decimales
       trend = if (is.na(trend)) NA_real_ else round(trend, 4),
       species_code = code
     )
