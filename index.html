@@ -8329,28 +8329,56 @@ function _renderSpeciesRarityCard(key){
     const pill = `<span style="display:inline-block;background:${color};color:#fff;padding:3px 12px;border-radius:8px;font-weight:800;font-size:15px;min-width:28px;text-align:center;margin-right:10px;">${w}</span>`;
     const catBadge = catLbl ? `<span style="font-size:12px;color:var(--ink-3);margin-left:10px;">· ${esc(catLbl)}</span>` : '';
     // Sous-section dépliante : composantes du tier composite S&T (seulement FR pour l'instant,
-    // seulement pour les sauvages calibrées S&T). Rend le calcul transparent.
+    // seulement pour les sauvages calibrées S&T). Rend le calcul transparent : montre les 3
+    // sous-scores S&T, le composite S&T, le bar chart, et quelle source est retenue selon
+    // la règle ±1 tier du merge.
     let detailsHtml = '';
     if(cc === 'FR' && !isExo && typeof REAL_ABUNDANCE_ST_FR !== 'undefined' && REAL_ABUNDANCE_ST_FR[k]){
       const st = REAL_ABUNDANCE_ST_FR[k];
       if(st.ta && st.tn && st.tl){
-        const mkRow = (t, lbl, weight) => {
+        const barTier = REAL_RARITY[k] || (_isForeignOnly(k) ? 9 : 1);
+        const stComp = st.t;
+        const kept = (Math.abs(stComp - barTier) <= 1) ? 'st' : 'bar';
+        const mkRow = (t, lbl, weight, muted) => {
           const c = realColor(t);
           const lb = (typeof REAL_LABELS === 'object' && REAL_LABELS[t]) || ('niveau '+t);
-          return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
+          const op = muted ? 0.55 : 1;
+          return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;opacity:${op};">
             <span style="display:inline-block;background:${c};color:#fff;padding:1px 8px;border-radius:6px;font-weight:800;font-size:12px;min-width:22px;text-align:center;">${t}</span>
             <span style="font-size:12px;color:var(--ink-2);flex:1;">${esc(lb)} <span style="opacity:.6;">— ${esc(lbl)}</span></span>
             <span style="font-size:11px;color:var(--ink-3);font-weight:600;">${weight}</span>
           </div>`;
         };
+        // Ligne finale (composite ou bar chart retenu) : mise en avant avec puce ✓
+        const mkRowFinal = (t, lbl, note) => {
+          const c = realColor(t);
+          const lb = (typeof REAL_LABELS === 'object' && REAL_LABELS[t]) || ('niveau '+t);
+          return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;margin-top:4px;border-top:1px dashed var(--line-2);">
+            <span style="color:var(--accent);font-weight:800;font-size:14px;">✓</span>
+            <span style="display:inline-block;background:${c};color:#fff;padding:2px 8px;border-radius:6px;font-weight:800;font-size:13px;min-width:22px;text-align:center;">${t}</span>
+            <span style="font-size:12px;color:var(--ink);font-weight:600;flex:1;">${esc(lb)} <span style="opacity:.7;font-weight:400;">— ${esc(lbl)}</span></span>
+          </div>`;
+        };
+        const compExplain = kept === 'st' ? 'S&amp;T composite retenu (écart ≤ 1 tier avec bar chart)'
+                                          : 'bar chart eBird retenu (S&amp;T diverge de plus d\'1 tier → protection biais)';
         detailsHtml = `
           <details style="margin-top:6px;">
-            <summary style="cursor:pointer;font-size:12px;color:var(--ink-3);user-select:none;padding:2px 0;">▸ Détails du calcul (S&amp;T)</summary>
+            <summary style="cursor:pointer;font-size:12px;color:var(--ink-3);user-select:none;padding:2px 0;">▸ Détails du calcul</summary>
             <div style="padding:6px 0 4px 4px;border-left:2px solid var(--line);margin:4px 0 2px 6px;padding-left:10px;">
-              ${mkRow(st.ta, 'Moyenne annuelle nationale', '40%')}
-              ${mkRow(st.tn, 'Pic saisonnier national', '30%')}
-              ${mkRow(st.tl, 'Pic local (meilleur hotspot)', '30%')}
-              <div style="font-size:10.5px;color:var(--ink-3);margin-top:6px;opacity:.85;">Composite eBird Status &amp; Trends (Cornell). Ajusté ±1 tier max avec bar chart eBird.</div>
+              <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">Sous-scores S&amp;T (Cornell ML)</div>
+              ${mkRow(st.ta, 'Moyenne annuelle nationale', '40%', kept !== 'st')}
+              ${mkRow(st.tn, 'Pic saisonnier national', '30%', kept !== 'st')}
+              ${mkRow(st.tl, 'Pic local (meilleur hotspot)', '30%', kept !== 'st')}
+              <div style="display:flex;align-items:center;gap:8px;padding:4px 0 2px 0;opacity:${kept === 'st' ? 1 : 0.55};">
+                <span style="display:inline-block;background:${realColor(stComp)};color:#fff;padding:1px 8px;border-radius:6px;font-weight:800;font-size:12px;min-width:22px;text-align:center;">${stComp}</span>
+                <span style="font-size:12px;color:var(--ink-2);flex:1;">= <em>composite</em> 40/30/30</span>
+              </div>
+              <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin:8px 0 2px 0;">Bar chart eBird FR 2019-2026</div>
+              <div style="display:flex;align-items:center;gap:8px;padding:3px 0;opacity:${kept === 'bar' ? 1 : 0.55};">
+                <span style="display:inline-block;background:${realColor(barTier)};color:#fff;padding:1px 8px;border-radius:6px;font-weight:800;font-size:12px;min-width:22px;text-align:center;">${barTier}</span>
+                <span style="font-size:12px;color:var(--ink-2);flex:1;">Fréquence % checklists (pic biweekly)</span>
+              </div>
+              ${mkRowFinal(w, compExplain)}
             </div>
           </details>`;
       }
