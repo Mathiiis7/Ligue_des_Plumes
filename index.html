@@ -2813,11 +2813,14 @@ function renderBoard(){
   }
   const dash='<span class="muted">—</span>';
   const cell=v=>v?esc(v):dash;
-  // colonnes de score : la métrique du classement choisi, + toujours « Espèces »
-  const scoreCols=[];
-  if(mode==='league') scoreCols.push({h:'Rareté ligue', v:p=>fmt(p.score), active:true});
-  if(mode==='real') scoreCols.push({h:'Rareté réelle', v:p=>fmt(p.scoreReal||0), active:true});
-  scoreCols.push({h:'Espèces', v:p=>p.total, active:mode==='count'});
+  // Colonnes de score : TOUJOURS les 3 (Rareté ligue, Rareté réelle, Espèces) pour que la
+  // largeur des colonnes textuelles (Objectif, Espèce préférée, etc.) reste identique entre
+  // les modes. Seule la colonne active est mise en avant (classe .on-metric).
+  const scoreCols=[
+    {h:'Rareté ligue', v:p=>fmt(p.score), active:mode==='league'},
+    {h:'Rareté réelle', v:p=>fmt(p.scoreReal||0), active:mode==='real'},
+    {h:'Espèces', v:p=>p.total, active:mode==='count'},
+  ];
   const scoreTh=scoreCols.map(c=>`<th class="c-num${c.active?' on-metric':''}">${c.h}</th>`).join('');
   const scoreTd=p=>scoreCols.map(c=>`<td class="c-num${c.active?' strong on-metric':''}">${c.v(p)}</td>`).join('');
   $('#boardList').innerHTML = `<div class="sheet-scroll"><table class="board-sheet">
@@ -8520,7 +8523,15 @@ function _renderSpeciesFreqChart(key, country){
   let peakLbl, peakVal;
   if(isWeekly){
     peakLbl = _weekToLabel(bestIdx);
-    peakVal = maxV < 1 ? maxV.toFixed(2) : maxV < 10 ? maxV.toFixed(1) : Math.round(maxV);
+    // Format adaptatif (defini plus bas comme fmtAbd, dupliqué ici car scope) : precision
+    // supplementaire pour especes rares (0.0002 ind/h).
+    peakVal = maxV >= 10 ? String(Math.round(maxV))
+            : maxV >= 1 ? maxV.toFixed(1)
+            : maxV >= 0.1 ? maxV.toFixed(2)
+            : maxV >= 0.01 ? maxV.toFixed(3)
+            : maxV >= 0.001 ? maxV.toFixed(4)
+            : maxV >= 0.0001 ? maxV.toFixed(5)
+            : '<0.0001';
     srcEl.textContent = `${ccLabel} — pic ${peakLbl} (${peakVal} ${unitLabel})`;
   } else {
     peakLbl = 'en ' + _MONTH_FR[bestIdx];
@@ -8534,10 +8545,18 @@ function _renderSpeciesFreqChart(key, country){
   const bw = iw / N;
   const yMax = maxV;
   const yFor = v => PT + ih - ih * (v/yMax);
-  // Format des labels y-axis
-  const fmtY = v => isWeekly
-    ? (v < 1 ? v.toFixed(2) : v < 10 ? v.toFixed(1) : Math.round(v))
-    : Math.round(v*100) + '%';
+  // Format des labels y-axis. Precision adaptative pour les especes rares (0.0002 ind/h par ex).
+  const fmtAbd = v => {
+    if(v === 0) return '0';
+    if(v >= 10) return String(Math.round(v));
+    if(v >= 1) return v.toFixed(1);
+    if(v >= 0.1) return v.toFixed(2);
+    if(v >= 0.01) return v.toFixed(3);
+    if(v >= 0.001) return v.toFixed(4);
+    if(v >= 0.0001) return v.toFixed(5);
+    return '<0.0001';
+  };
+  const fmtY = v => isWeekly ? fmtAbd(v) : (Math.round(v*100) + '%');
   const midV = yMax / 2;
   let out = '';
   // Grille horizontale + labels valeur
@@ -8560,7 +8579,7 @@ function _renderSpeciesFreqChart(key, country){
     else { fill = 'var(--ink-3)'; op = 0.4; }
     const titleUnit = isWeekly ? ' ind/h' : ' %';
     const titleVal = isWeekly
-      ? (v < 1 ? v.toFixed(2) : v < 10 ? v.toFixed(1) : Math.round(v))
+      ? fmtAbd(v)
       : (v*100 < 0.1 ? '<0.1' : v*100 < 1 ? (v*100).toFixed(1) : Math.round(v*100));
     const titleLbl = isWeekly ? _weekToLabel(i) : _MONTH_FR[i];
     const title = `${titleLbl} : ${titleVal}${titleUnit}`;
