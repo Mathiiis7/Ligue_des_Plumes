@@ -1180,6 +1180,9 @@
           </div>
         </div>
       </div>
+      <div id="targetsTierChips" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; padding:8px 10px; background:var(--surface-2); border-radius:8px;">
+        <span style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; align-self:center; margin-right:6px;">Rareté :</span>
+      </div>
       <div id="targetsGrid" class="targets-grid" style="margin-top:12px;"></div>
       <div id="targetsHint" class="help" style="margin-top:10px; font-size:11px; color:var(--ink-3);"></div>
     </section>
@@ -10060,6 +10063,9 @@ let _targetsRegion = null;   // '' = France entiere, sinon code region (FR-BRE, 
 let _targetsRegionInit = false;
 let _targetsOwnedFilter = '';   // '' = toutes, 'missing' = manquantes seulement, 'owned' = deja cochees
 try{ _targetsOwnedFilter = localStorage.getItem('mb-targets-owned') || ''; }catch(_){}
+// Set des tiers EXCLUS (comme dans Ma liste : chips off = exclus). Vide = tous inclus.
+let _targetsTierExcl = new Set();
+try{ const s = localStorage.getItem('mb-targets-tier-excl'); if(s) _targetsTierExcl = new Set(JSON.parse(s)); }catch(_){}
 // Region choisie sur les fiches especes (histogramme 52 bar par region). '' = France entiere.
 let _speciesRegion = '';
 try{ _speciesRegion = localStorage.getItem('mb-species-region') || ''; }catch(_){ _speciesRegion = ''; }
@@ -10108,6 +10114,20 @@ function renderTargets(){
       renderTargets();
     });
     ownedSel._init = true;
+  }
+  // Chips rareté (multi) : toggle exclu/inclus, persiste en localStorage.
+  const chipsBox = $('#targetsTierChips');
+  if(chipsBox && !chipsBox._init){
+    // Delegation click sur les chips (recreees a chaque render mais le container reste stable).
+    chipsBox.addEventListener('click', e => {
+      const btn = e.target.closest('button[data-tier]');
+      if(!btn) return;
+      const t = parseInt(btn.dataset.tier, 10);
+      if(_targetsTierExcl.has(t)) _targetsTierExcl.delete(t); else _targetsTierExcl.add(t);
+      try{ localStorage.setItem('mb-targets-tier-excl', JSON.stringify([..._targetsTierExcl])); }catch(_){}
+      renderTargets();
+    });
+    chipsBox._init = true;
   }
   // Si region choisie mais data pas encore chargee, la charger en background.
   const regionData = _targetsRegion ? REAL_FREQ_MONTHLY_BY_REGION[_targetsRegion] : null;
@@ -10198,19 +10218,34 @@ function renderTargets(){
     if(hint) hint.textContent = '';
     return;
   }
-  // Tri : score decroissant. Top 50 pour laisser place aux cochees + manquantes.
+  // Tri : score decroissant.
   candidates.sort((a, b) => b.score - a.score);
-  // Applique le filtre proprietaire APRES le tri.
+  // Rendu des chips rarete : uniquement les tiers presents dans candidates, tries croissant.
+  const tiersPresent = [...new Set(candidates.map(c => c.tier))].filter(t => t != null).sort((a, b) => a - b);
+  if(chipsBox){
+    const chipsHtml = tiersPresent.map(t => {
+      const on = !_targetsTierExcl.has(t);
+      const lbl = (REAL_LABELS && REAL_LABELS[t]) || ('tier '+t);
+      const color = realColor(t);
+      return `<button type="button" class="person-chip rar-chip-m${on?' on':''}" data-tier="${t}" style="--series:${color};" title="${esc(lbl)}"><span class="dot" style="background:${color}"></span>${t}</button>`;
+    }).join('');
+    // Preserve le label "Rareté :" au debut, remplace juste les chips.
+    chipsBox.innerHTML = '<span style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; align-self:center; margin-right:6px;">Rareté :</span>' + chipsHtml;
+  }
+  // Applique les filtres APRES le tri : proprietaire + rarete.
   let display = candidates;
-  if(_targetsOwnedFilter === 'missing') display = candidates.filter(c => !c.owned);
-  else if(_targetsOwnedFilter === 'owned') display = candidates.filter(c => c.owned);
-  const top = display.slice(0, 50);
+  if(_targetsOwnedFilter === 'missing') display = display.filter(c => !c.owned);
+  else if(_targetsOwnedFilter === 'owned') display = display.filter(c => c.owned);
+  if(_targetsTierExcl.size) display = display.filter(c => !_targetsTierExcl.has(c.tier));
+  // 60 = lignes completes pour toutes les largeurs standards (2, 3, 4, 5, 6 colonnes).
+  const top = display.slice(0, 60);
   if(hint){
     const regName = regionSelected ? (FR_REGIONS.find(r => r.code === _targetsRegion)?.name || _targetsRegion) : 'France entière';
     const precisionTag = regionSelected ? (hasRegionalST ? ' · densité régionale S&T' : ' · densité nationale × présence régionale') : '';
     const ownedCount = candidates.filter(c => c.owned).length;
     const missingCount = candidates.length - ownedCount;
-    hint.textContent = `Semaine ${curWeek + 1}/52 · ${regName}${precisionTag} · ${candidates.length} espèces (${ownedCount} cochées · ${missingCount} manquantes).`;
+    const filterInfo = (_targetsTierExcl.size || _targetsOwnedFilter) ? ` · ${display.length} après filtres` : '';
+    hint.textContent = `Semaine ${curWeek + 1}/52 · ${regName}${precisionTag} · ${candidates.length} espèces (${ownedCount} cochées · ${missingCount} manquantes)${filterInfo}.`;
   }
   // Rendu cartes. En mode region avec S&T weekly regional : ind/h regional cette semaine
   // (temporel + spatial precis). En mode region fallback : ind/h national + % listes region.
