@@ -9842,11 +9842,14 @@ function renderTargets(){
       if(regionalFreq < REGION_MIN_FREQ) continue;
     }
     // Score de facilite :
-    // - Region choisie : PUREMENT fréquence régionale ce mois (les vraies communes de la
-    //   région en tête, plus de migrateurs passage type Traquet motteux qui remontent
-    //   parce que S&T national est decent). S&T national juste comme tiebreak.
-    // - France entière : abondance S&T nationale (semaine courante).
-    const score = regionSelected ? regionalFreq + wVal * 0.001 : wVal;
+    // - Region choisie : la region filtre les especes non presentes localement, mais le tri
+    //   utilise S&T weekly (semaine courante) car il est temporellement plus precis que
+    //   la moyenne mensuelle long-terme (Sarcelle d'hiver est moderee en aout-septembre
+    //   sur la moyenne mensuelle historique mais reellement rare en debut aout cette annee).
+    //   La freq regionale mensuelle sert de multiplicateur doux pour renforcer les vraies
+    //   communes locales.
+    // - France entière : abondance S&T nationale semaine courante seule.
+    const score = regionSelected ? wVal * (0.3 + Math.min(1, regionalFreq * 30)) : wVal;
     candidates.push({ sci, wVal, score, regionalFreq, tier: rarityForCountry(sci, 'FR') });
   }
   if(!candidates.length){
@@ -9863,21 +9866,18 @@ function renderTargets(){
     const regName = regionSelected ? (FR_REGIONS.find(r => r.code === _targetsRegion)?.name || _targetsRegion) : 'France entière';
     hint.textContent = `Semaine ${curWeek + 1}/52 · ${regName} · ${candidates.length} espèces disponibles, ${mine.size} déjà cochées.`;
   }
-  // Rendu cartes. Metrique affichee alignee sur le tri :
-  //   - Region choisie : "% listes region ce mois" (frequence eBird locale)
-  //   - France entiere : "ind/h" (abondance S&T nationale hebdo)
+  // Rendu cartes. En mode region, on affiche les 2 metriques : ind/h S&T semaine courante
+  // (temporel, ce qui pilote le tri) + % listes region ce mois (spatial, filtre presence).
   grid.innerHTML = top.map(c => {
     const nm = FR_NAMES[c.sci] || c.sci;
     const tierColor = realColor(c.tier);
     const tierLbl = REAL_LABELS[c.tier] || ('niveau '+c.tier);
-    let metricStr;
-    if(regionSelected){
+    const fmtW = c.wVal >= 1 ? c.wVal.toFixed(1) : c.wVal >= 0.01 ? c.wVal.toFixed(2) : c.wVal >= 0.001 ? c.wVal.toFixed(3) : c.wVal.toFixed(4);
+    let metricStr = `${fmtW} ind/h cette semaine`;
+    if(regionSelected && c.regionalFreq > 0){
       const pct = c.regionalFreq * 100;
       const pctStr = pct >= 10 ? Math.round(pct) : pct >= 1 ? pct.toFixed(1) : pct.toFixed(2);
-      metricStr = `${pctStr}% des listes ce mois`;
-    } else {
-      const fmtW = c.wVal >= 1 ? c.wVal.toFixed(1) : c.wVal >= 0.01 ? c.wVal.toFixed(2) : c.wVal >= 0.001 ? c.wVal.toFixed(3) : c.wVal.toFixed(4);
-      metricStr = `${fmtW} ind/h cette semaine`;
+      metricStr += ` · ${pctStr}% listes région (mensuel)`;
     }
     return `<div class="target-card" data-sci="${esc(c.sci)}">
       <div class="t-img" data-targ-lazy="${esc(c.sci)}">🐦</div>
