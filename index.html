@@ -1147,16 +1147,21 @@
   </section>
 
   <!-- Cibles de la semaine : affiche les especes S&T les plus faciles a voir cette semaine
-       en France que l'utilisateur n'a pas encore cochees. Masque si pas de life list. -->
+       en France (ou region selectionnee) que l'utilisateur n'a pas encore cochees. -->
   <section class="panel" id="targetsPanel" style="padding:20px; margin-top:22px; display:none;">
     <div class="section-head">
       <div>
         <div class="eyebrow">Suggestions</div>
         <h2>🎯 Cibles de la semaine</h2>
-        <p class="help" style="margin-top:2px;">Espèces observables cette semaine en France que tu n'as pas encore cochées, triées par facilité (données <b>eBird Status &amp; Trends</b>).</p>
+        <p class="help" style="margin-top:2px;">Espèces observables cette semaine que tu n'as pas encore cochées, triées par facilité.</p>
+      </div>
+      <div>
+        <label for="targetsRegion" style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; display:block; margin-bottom:4px;">Ma région</label>
+        <select id="targetsRegion" class="filt-sel" style="font-size:13px; padding:6px 10px;"></select>
       </div>
     </div>
     <div id="targetsGrid" class="targets-grid" style="margin-top:12px;"></div>
+    <div id="targetsHint" class="help" style="margin-top:10px; font-size:11px; color:var(--ink-3);"></div>
   </section>
   </div><!-- /viewLoad -->
 
@@ -9763,22 +9768,54 @@ const _pkdxPhotos = new Map();
 let _pkdxAllSorted = null;
 let _pkdxNumById = null;
 /* ---------------- Cibles de la semaine ---------------- */
-// Panel qui affiche les especes les plus faciles a voir CETTE SEMAINE en France que
-// l'utilisateur n'a pas encore cochees. Utilise les rasters S&T hebdomadaires (52 valeurs)
-// pour identifier les meilleures cibles saisonnieres. Photos lazy-loadees depuis Wiki/iNat.
+// Panel qui affiche les especes les plus faciles a voir CETTE SEMAINE dans la region
+// selectionnee (ou France entiere) que l'utilisateur n'a pas encore cochees. Utilise
+// S&T weekly national + REAL_FREQ_MONTHLY_BY_REGION pour filtrer par presence regionale.
+let _targetsRegion = null;   // '' = France entiere, sinon code region (FR-BRE, etc.)
+let _targetsRegionInit = false;
+try{ _targetsRegion = localStorage.getItem('mb-targets-region') || ''; }catch(_){ _targetsRegion = ''; }
 function renderTargets(){
-  const panel = $('#targetsPanel'), grid = $('#targetsGrid');
+  const panel = $('#targetsPanel'), grid = $('#targetsGrid'), hint = $('#targetsHint');
   if(!panel || !grid) return;
   const me = realPeople.find(p => p.id === myUid);
   const mine = me ? new Set([...me.species.keys()]) : new Set();
   if(!mine.size){ panel.style.display = 'none'; return; }
   if(typeof REAL_ABUNDANCE_ST_FR === 'undefined'){ panel.style.display = 'none'; return; }
+  // Init du selector region (une fois).
+  const sel = $('#targetsRegion');
+  if(sel && !_targetsRegionInit){
+    sel.innerHTML = '<option value="">🇫🇷 France entière</option>'
+      + FR_REGIONS.map(r => `<option value="${esc(r.code)}">${esc(r.name)}</option>`).join('');
+    sel.value = _targetsRegion || '';
+    sel.addEventListener('change', () => {
+      _targetsRegion = sel.value || '';
+      try{ localStorage.setItem('mb-targets-region', _targetsRegion); }catch(_){}
+      // Charge lazily les donnees regionales si necessaire (10MB dispo via _loadFreqData).
+      if(_targetsRegion && Object.keys(REAL_FREQ_MONTHLY_BY_REGION).length === 0){
+        _loadFreqData().then(() => renderTargets());
+      } else renderTargets();
+    });
+    _targetsRegionInit = true;
+  }
+  // Si region choisie mais data pas encore chargee, la charger en background.
+  const regionData = _targetsRegion ? REAL_FREQ_MONTHLY_BY_REGION[_targetsRegion] : null;
+  const regionSelected = !!_targetsRegion;
+  if(regionSelected && !regionData){
+    _loadFreqData().then(() => renderTargets());
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--ink-3);">Chargement des données régionales…</div>';
+    if(hint) hint.textContent = '';
+    panel.style.display = '';
+    return;
+  }
   // Semaine courante (0..51). Semaine 0 = 1-7 janvier, semaine 25 = ~24 juin, etc.
   const now = new Date();
   const dayOfYear = Math.floor((now - new Date(now.getFullYear(),0,0)) / 86400000);
   const curWeek = Math.min(51, Math.floor(dayOfYear / 7));
+  const curMonth = now.getMonth();   // 0..11 pour REAL_FREQ_MONTHLY_BY_REGION
   // Candidates : especes S&T avec weekly[curWeek] > 0 que l'utilisateur n'a pas cochees,
-  // pas cachees, pas exotiques cage/volaire, avec calibration FR.
+  // pas cachees, pas exotiques cage/volaire. Si region choisie, filtre par presence regionale
+  // ce mois (REAL_FREQ_MONTHLY_BY_REGION[region][sci][month] > seuil).
+  const REGION_MIN_FREQ = 0.001;   // 0.1% : espèce vue au moins ~1 fois sur 1000 listes ce mois dans la région
   const candidates = [];
   for(const sci in REAL_ABUNDANCE_ST_FR){
     if(_isSciAliasSource(sci)) continue;
@@ -9788,25 +9825,48 @@ function renderTargets(){
     if(!Array.isArray(st.w) || st.w.length !== 52) continue;
     const wVal = st.w[curWeek];
     if(!wVal || wVal <= 0) continue;
-    // Skip especes cage/volaire exotiques et parcs semi-libres (deja gerees par le tri
-    // rareté, pas des vraies cibles ornitho).
+    // Skip cage/voliere et parcs semi-libres (pas des cibles ornitho).
     if(isExotic(sci) && (isParkOnlyExotic(sci) || (() => {
       const cat = _exoticCategory(sci);
       return cat === 'X' || cat === 'C';
     })())) continue;
-    candidates.push({ sci, wVal, tier: rarityForCountry(sci, 'FR') });
+    // Filtre regional : si region choisie, espece doit etre presente >= REGION_MIN_FREQ
+    // ce mois dans cette region. Sinon on la vire (present ailleurs en France mais pas ici).
+    let regionalFreq = 0;
+    if(regionSelected){
+      const arr = regionData && regionData[sci];
+      if(!arr || arr.length !== 12) continue;   // pas de data regionale pour cette espece
+      regionalFreq = arr[curMonth] || 0;
+      if(regionalFreq < REGION_MIN_FREQ) continue;
+    }
+    // Score de facilite : abondance nationale S&T × frequence regionale (si region choisie),
+    // sinon juste S&T national.
+    const score = regionSelected ? wVal * (0.3 + 0.7 * Math.min(1, regionalFreq * 20)) : wVal;
+    candidates.push({ sci, wVal, score, regionalFreq, tier: rarityForCountry(sci, 'FR') });
   }
-  if(!candidates.length){ panel.style.display = 'none'; return; }
-  // Tri : abondance hebdo descendante (plus abondant = plus facile a voir)
-  candidates.sort((a, b) => b.wVal - a.wVal);
+  if(!candidates.length){
+    panel.style.display = '';
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--ink-3);">Aucune espèce cible cette semaine' + (regionSelected ? ' dans cette région' : '') + '.</div>';
+    if(hint) hint.textContent = '';
+    return;
+  }
+  // Tri : score decroissant. Top 12.
+  candidates.sort((a, b) => b.score - a.score);
   const top = candidates.slice(0, 12);
   panel.style.display = '';
+  if(hint){
+    const regName = regionSelected ? (FR_REGIONS.find(r => r.code === _targetsRegion)?.name || _targetsRegion) : 'France entière';
+    hint.textContent = `Semaine ${curWeek + 1}/52 · ${regName} · ${candidates.length} espèces disponibles, ${mine.size} déjà cochées.`;
+  }
   // Rendu cartes
   grid.innerHTML = top.map(c => {
     const nm = FR_NAMES[c.sci] || c.sci;
     const tierColor = realColor(c.tier);
     const tierLbl = REAL_LABELS[c.tier] || ('niveau '+c.tier);
     const fmtW = c.wVal >= 1 ? c.wVal.toFixed(1) : c.wVal >= 0.01 ? c.wVal.toFixed(2) : c.wVal >= 0.001 ? c.wVal.toFixed(3) : c.wVal.toFixed(4);
+    const regionalPart = regionSelected && c.regionalFreq > 0
+      ? ` · <span title="Fréquence sur les listes eBird de la région ce mois">${(c.regionalFreq * 100).toFixed(c.regionalFreq >= 0.1 ? 0 : 1)}% listes région</span>`
+      : '';
     return `<div class="target-card" data-sci="${esc(c.sci)}">
       <div class="t-img" data-targ-lazy="${esc(c.sci)}">🐦</div>
       <div class="t-info">
@@ -9814,7 +9874,7 @@ function renderTargets(){
         <div class="t-meta">
           <span class="t-tier" style="background:${tierColor}">${c.tier}</span>
           <span>${esc(tierLbl)}</span>
-          <span class="t-freq">· ${fmtW} ind/h cette semaine</span>
+          <span class="t-freq">· ${fmtW} ind/h${regionalPart}</span>
         </div>
       </div>
     </div>`;
