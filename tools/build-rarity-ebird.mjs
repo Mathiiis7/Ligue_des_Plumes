@@ -172,9 +172,10 @@ for (const sci in FR) {
 recs.sort((a, b) => a.sci.localeCompare(b.sci));
 writeFileSync(join(__dir, 'rarity-data-ebird.json'), JSON.stringify(recs, null, 2));
 
-// Littéral REAL_RARITY (poids >= 2 ; poids 1 = défaut à l'exécution)
+// Littéral REAL_RARITY : TOUS les tiers >= 1 (auparavant >= 2 avec fallback tier 1 dans le
+// code, mais ça faisait bugger _isForeignOnly qui traitait les tier 1 comme "hors France").
 const obj = {};
-for (const r of recs) if (r.weight >= 2) obj[r.sci] = r.weight;
+for (const r of recs) if (r.weight >= 1) obj[r.sci] = r.weight;
 writeFileSync(join(__dir, 'real-rarity.generated.js'), 'const REAL_RARITY = ' + JSON.stringify(obj) + ';\n');
 
 // Littéral REAL_FREQ_MONTHLY = { sci -> [12 pics mensuels 0..1] } - saisonnalité NATIONALE (fallback).
