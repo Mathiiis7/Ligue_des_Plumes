@@ -9863,15 +9863,22 @@ function renderTargets(){
     const regName = regionSelected ? (FR_REGIONS.find(r => r.code === _targetsRegion)?.name || _targetsRegion) : 'France entière';
     hint.textContent = `Semaine ${curWeek + 1}/52 · ${regName} · ${candidates.length} espèces disponibles, ${mine.size} déjà cochées.`;
   }
-  // Rendu cartes
+  // Rendu cartes. Metrique affichee alignee sur le tri :
+  //   - Region choisie : "% listes region ce mois" (frequence eBird locale)
+  //   - France entiere : "ind/h" (abondance S&T nationale hebdo)
   grid.innerHTML = top.map(c => {
     const nm = FR_NAMES[c.sci] || c.sci;
     const tierColor = realColor(c.tier);
     const tierLbl = REAL_LABELS[c.tier] || ('niveau '+c.tier);
-    const fmtW = c.wVal >= 1 ? c.wVal.toFixed(1) : c.wVal >= 0.01 ? c.wVal.toFixed(2) : c.wVal >= 0.001 ? c.wVal.toFixed(3) : c.wVal.toFixed(4);
-    const regionalPart = regionSelected && c.regionalFreq > 0
-      ? ` · <span title="Fréquence sur les listes eBird de la région ce mois">${(c.regionalFreq * 100).toFixed(c.regionalFreq >= 0.1 ? 0 : 1)}% listes région</span>`
-      : '';
+    let metricStr;
+    if(regionSelected){
+      const pct = c.regionalFreq * 100;
+      const pctStr = pct >= 10 ? Math.round(pct) : pct >= 1 ? pct.toFixed(1) : pct.toFixed(2);
+      metricStr = `${pctStr}% des listes ce mois`;
+    } else {
+      const fmtW = c.wVal >= 1 ? c.wVal.toFixed(1) : c.wVal >= 0.01 ? c.wVal.toFixed(2) : c.wVal >= 0.001 ? c.wVal.toFixed(3) : c.wVal.toFixed(4);
+      metricStr = `${fmtW} ind/h cette semaine`;
+    }
     return `<div class="target-card" data-sci="${esc(c.sci)}">
       <div class="t-img" data-targ-lazy="${esc(c.sci)}">🐦</div>
       <div class="t-info">
@@ -9879,7 +9886,7 @@ function renderTargets(){
         <div class="t-meta">
           <span class="t-tier" style="background:${tierColor}">${c.tier}</span>
           <span>${esc(tierLbl)}</span>
-          <span class="t-freq">· ${fmtW} ind/h${regionalPart}</span>
+          <span class="t-freq">· ${metricStr}</span>
         </div>
       </div>
     </div>`;
