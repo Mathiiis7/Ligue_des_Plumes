@@ -959,6 +959,7 @@
     <button class="tab on" data-view="load">Ma liste</button>
     <button class="tab" data-view="ranking">Classement</button>
     <button class="tab" data-view="map">📍 Carte</button>
+    <button class="tab" data-view="targets">🎯 Cibles</button>
     <button class="tab" data-view="pokedex">📖 Ornidex</button>
     <button class="tab" data-view="trophies">🏆 Trophées</button>
     <button class="tab" data-view="quiz">🎵 Quiz</button>
@@ -1146,24 +1147,28 @@
     <div id="fbError"></div>
   </section>
 
-  <!-- Cibles de la semaine : affiche les especes S&T les plus faciles a voir cette semaine
-       en France (ou region selectionnee) que l'utilisateur n'a pas encore cochees. -->
-  <section class="panel" id="targetsPanel" style="padding:20px; margin-top:22px; display:none;">
-    <div class="section-head">
-      <div>
-        <div class="eyebrow">Suggestions</div>
-        <h2>🎯 Cibles de la semaine</h2>
-        <p class="help" style="margin-top:2px;">Espèces observables cette semaine que tu n'as pas encore cochées, triées par facilité.</p>
-      </div>
-      <div>
-        <label for="targetsRegion" style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; display:block; margin-bottom:4px;">Ma région</label>
-        <select id="targetsRegion" class="filt-sel" style="font-size:13px; padding:6px 10px;"></select>
-      </div>
-    </div>
-    <div id="targetsGrid" class="targets-grid" style="margin-top:12px;"></div>
-    <div id="targetsHint" class="help" style="margin-top:10px; font-size:11px; color:var(--ink-3);"></div>
-  </section>
   </div><!-- /viewLoad -->
+
+  <!-- Cibles de la semaine : especes S&T les plus faciles a voir cette semaine (region ou FR).
+       Deplace de viewLoad vers son propre onglet le 26/08 (l'endroit prevu sur "Ma liste"
+       n'etait pas naturel, et on peut afficher beaucoup plus de cibles). -->
+  <div id="viewTargets" style="display:none;">
+    <section class="panel" id="targetsPanel" style="padding:20px; margin-top:22px;">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Suggestions</div>
+          <h2>🎯 Cibles de la semaine</h2>
+          <p class="help" style="margin-top:2px;">Espèces observables cette semaine que tu n'as pas encore cochées, triées par facilité.</p>
+        </div>
+        <div>
+          <label for="targetsRegion" style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; display:block; margin-bottom:4px;">Ma région</label>
+          <select id="targetsRegion" class="filt-sel" style="font-size:13px; padding:6px 10px;"></select>
+        </div>
+      </div>
+      <div id="targetsGrid" class="targets-grid" style="margin-top:12px;"></div>
+      <div id="targetsHint" class="help" style="margin-top:10px; font-size:11px; color:var(--ink-3);"></div>
+    </section>
+  </div>
 
   <div id="viewProfil" style="display:none;">
     <section class="panel" style="padding:20px; margin-top:22px;">
@@ -2796,7 +2801,11 @@ function renderResults(){
   if(state.people.length===0){ res.classList.remove('show'); renderTrophies({N:0}); return; }
   res.classList.add('show');
   const data = build();
-  renderBoard(); renderMatrix(data); renderTrophies(data); renderTargets();
+  renderBoard(); renderMatrix(data); renderTrophies(data);
+  // Rafraichit les cibles seulement si l'onglet est visible (evite compute inutile
+  // sinon : renderTargets est deja rappele quand on clique le tab).
+  const tv = document.getElementById('viewTargets');
+  if(tv && tv.style.display !== 'none') renderTargets();
 }
 
 function fmt(n){ return Math.round(n).toLocaleString('fr-FR'); }
@@ -7723,7 +7732,7 @@ $('#manualAddBtn')?.addEventListener('click', async ()=>{
   btn.disabled=false;
 });
 
-const VIEWS = { load:'#viewLoad', profil:'#viewProfil', ranking:'#viewRanking', map:'#viewMap', trophies:'#viewTrophies', chat:'#viewChat', photos:'#viewPhotos', feed:'#viewFeed', requests:'#viewRequests', quiz:'#viewQuiz', pokedex:'#viewPokedex' };
+const VIEWS = { load:'#viewLoad', profil:'#viewProfil', ranking:'#viewRanking', map:'#viewMap', targets:'#viewTargets', trophies:'#viewTrophies', chat:'#viewChat', photos:'#viewPhotos', feed:'#viewFeed', requests:'#viewRequests', quiz:'#viewQuiz', pokedex:'#viewPokedex' };
 // Hamburger menu + FABs Chat/Photos : delegate vers les tabs caches.
 document.addEventListener('click', e => {
   const ham = e.target.closest('#hamburgerBtn');
@@ -7820,6 +7829,7 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   if(b.dataset.view==='quiz') renderQuizInit();
   if(b.dataset.view==='pokedex') renderPokedex();
   if(b.dataset.view==='map') renderMap();
+  if(b.dataset.view==='targets') renderTargets();
   try{ localStorage.setItem('mb-last-tab', b.dataset.view); }catch(_){ }
 }));
 // Restaure l'onglet visité la dernière fois (par défaut Ma liste)
@@ -9797,8 +9807,18 @@ function renderTargets(){
   if(!panel || !grid) return;
   const me = realPeople.find(p => p.id === myUid);
   const mine = me ? new Set([...me.species.keys()]) : new Set();
-  if(!mine.size){ panel.style.display = 'none'; return; }
-  if(typeof REAL_ABUNDANCE_ST_FR === 'undefined'){ panel.style.display = 'none'; return; }
+  // Onglet dedie : on affiche le panel meme sans liste chargee (onboarding), et meme sans
+  // S&T (message d'attente). Le style panel:display initial est vide.
+  if(!mine.size){
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:24px; color:var(--ink-3);">Charge d\'abord ta life list eBird sur l\'onglet <b>Ma liste</b> — les cibles seront calculées en excluant les espèces déjà cochées.</div>';
+    if(hint) hint.textContent = '';
+    return;
+  }
+  if(typeof REAL_ABUNDANCE_ST_FR === 'undefined'){
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:24px; color:var(--ink-3);">Données eBird Status & Trends non chargées.</div>';
+    if(hint) hint.textContent = '';
+    return;
+  }
   // Init du selector region (une fois).
   const sel = $('#targetsRegion');
   if(sel && !_targetsRegionInit){
@@ -9823,7 +9843,6 @@ function renderTargets(){
     Promise.all([_loadFreqData(), _loadAbundanceRegionData()]).then(() => renderTargets());
     grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--ink-3);">Chargement des données régionales…</div>';
     if(hint) hint.textContent = '';
-    panel.style.display = '';
     return;
   }
   // S&T weekly regional : disponible si REAL_ABUNDANCE_ST_BY_REGION_FR contient la region.
@@ -9900,15 +9919,13 @@ function renderTargets(){
     candidates.push({ sci, wVal: wDisplay, wReg, score, regionalFreq, tier: rarityForCountry(sci, 'FR') });
   }
   if(!candidates.length){
-    panel.style.display = '';
     grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--ink-3);">Aucune espèce cible cette semaine' + (regionSelected ? ' dans cette région' : '') + '.</div>';
     if(hint) hint.textContent = '';
     return;
   }
-  // Tri : score decroissant. Top 12.
+  // Tri : score decroissant. Top 30 (onglet dedie -> place pour beaucoup de cibles).
   candidates.sort((a, b) => b.score - a.score);
-  const top = candidates.slice(0, 12);
-  panel.style.display = '';
+  const top = candidates.slice(0, 30);
   if(hint){
     const regName = regionSelected ? (FR_REGIONS.find(r => r.code === _targetsRegion)?.name || _targetsRegion) : 'France entière';
     const precisionTag = regionSelected ? (hasRegionalST ? ' · densité régionale S&T' : ' · densité nationale × présence régionale') : '';
