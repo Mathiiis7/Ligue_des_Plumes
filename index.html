@@ -9815,7 +9815,9 @@ function renderTargets(){
   // Candidates : especes S&T avec weekly[curWeek] > 0 que l'utilisateur n'a pas cochees,
   // pas cachees, pas exotiques cage/volaire. Si region choisie, filtre par presence regionale
   // ce mois (REAL_FREQ_MONTHLY_BY_REGION[region][sci][month] > seuil).
-  const REGION_MIN_FREQ = 0.001;   // 0.1% : espèce vue au moins ~1 fois sur 1000 listes ce mois dans la région
+  // Seuil regional durci a 0.5% : evite les migrateurs passage (Traquet motteux qui passe
+  // en IdF mais rare) qui polluent le top des cibles locales.
+  const REGION_MIN_FREQ = 0.005;
   const candidates = [];
   for(const sci in REAL_ABUNDANCE_ST_FR){
     if(_isSciAliasSource(sci)) continue;
@@ -9831,7 +9833,7 @@ function renderTargets(){
       return cat === 'X' || cat === 'C';
     })())) continue;
     // Filtre regional : si region choisie, espece doit etre presente >= REGION_MIN_FREQ
-    // ce mois dans cette region. Sinon on la vire (present ailleurs en France mais pas ici).
+    // ce mois dans cette region.
     let regionalFreq = 0;
     if(regionSelected){
       const arr = regionData && regionData[sci];
@@ -9839,9 +9841,12 @@ function renderTargets(){
       regionalFreq = arr[curMonth] || 0;
       if(regionalFreq < REGION_MIN_FREQ) continue;
     }
-    // Score de facilite : abondance nationale S&T × frequence regionale (si region choisie),
-    // sinon juste S&T national.
-    const score = regionSelected ? wVal * (0.3 + 0.7 * Math.min(1, regionalFreq * 20)) : wVal;
+    // Score de facilite :
+    // - Region choisie : PUREMENT fréquence régionale ce mois (les vraies communes de la
+    //   région en tête, plus de migrateurs passage type Traquet motteux qui remontent
+    //   parce que S&T national est decent). S&T national juste comme tiebreak.
+    // - France entière : abondance S&T nationale (semaine courante).
+    const score = regionSelected ? regionalFreq + wVal * 0.001 : wVal;
     candidates.push({ sci, wVal, score, regionalFreq, tier: rarityForCountry(sci, 'FR') });
   }
   if(!candidates.length){
