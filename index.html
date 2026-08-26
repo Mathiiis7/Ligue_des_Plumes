@@ -8332,53 +8332,64 @@ function _renderSpeciesRarityCard(key){
     // seulement pour les sauvages calibrées S&T). Rend le calcul transparent : montre les 3
     // sous-scores S&T, le composite S&T, le bar chart, et quelle source est retenue selon
     // la règle ±1 tier du merge.
+    // Sous-section dépliante : détails du calcul de rareté (FR + sauvages seulement).
+    // Deux modes selon si S&T est retenu ou écarté par le merge :
+    //   - S&T retenu (écart bar chart ≤ 1) : montre les 3 sous-scores + composite + bar chart
+    //   - S&T écarté (biais grégaire type Grue ou dilution locale type Perruche +2 tiers) :
+    //     cache les sous-scores S&T (jamais parlants dans ce cas), affiche juste bar chart
+    //     retenu + note explicative brève.
     let detailsHtml = '';
     if(cc === 'FR' && !isExo && typeof REAL_ABUNDANCE_ST_FR !== 'undefined' && REAL_ABUNDANCE_ST_FR[k]){
       const st = REAL_ABUNDANCE_ST_FR[k];
       if(st.ta && st.tn && st.tl){
         const barTier = REAL_RARITY[k] || (_isForeignOnly(k) ? 9 : 1);
         const stComp = st.t;
-        const kept = (Math.abs(stComp - barTier) <= 1) ? 'st' : 'bar';
-        const mkRow = (t, lbl, weight, muted) => {
+        const stKept = Math.abs(stComp - barTier) <= 1;
+        const mkRow = (t, lbl, weight) => {
           const c = realColor(t);
           const lb = (typeof REAL_LABELS === 'object' && REAL_LABELS[t]) || ('niveau '+t);
-          const op = muted ? 0.55 : 1;
-          return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;opacity:${op};">
+          return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
             <span style="display:inline-block;background:${c};color:#fff;padding:1px 8px;border-radius:6px;font-weight:800;font-size:12px;min-width:22px;text-align:center;">${t}</span>
             <span style="font-size:12px;color:var(--ink-2);flex:1;">${esc(lb)} <span style="opacity:.6;">— ${esc(lbl)}</span></span>
             <span style="font-size:11px;color:var(--ink-3);font-weight:600;">${weight}</span>
           </div>`;
         };
-        // Ligne finale (composite ou bar chart retenu) : mise en avant avec puce ✓
-        const mkRowFinal = (t, lbl, note) => {
-          const c = realColor(t);
-          const lb = (typeof REAL_LABELS === 'object' && REAL_LABELS[t]) || ('niveau '+t);
-          return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;margin-top:4px;border-top:1px dashed var(--line-2);">
-            <span style="color:var(--accent);font-weight:800;font-size:14px;">✓</span>
-            <span style="display:inline-block;background:${c};color:#fff;padding:2px 8px;border-radius:6px;font-weight:800;font-size:13px;min-width:22px;text-align:center;">${t}</span>
-            <span style="font-size:12px;color:var(--ink);font-weight:600;flex:1;">${esc(lb)} <span style="opacity:.7;font-weight:400;">— ${esc(lbl)}</span></span>
-          </div>`;
-        };
-        const compExplain = kept === 'st' ? 'S&amp;T composite retenu (écart ≤ 1 tier avec bar chart)'
-                                          : 'bar chart eBird retenu (S&amp;T diverge de plus d\'1 tier → protection biais)';
+        let body;
+        if(stKept){
+          // S&T composite retenu : affiche les 3 sous-scores + composite S&T + bar chart en meta
+          body = `
+            <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">Composite eBird Status &amp; Trends (Cornell ML)</div>
+            ${mkRow(st.ta, 'Moyenne annuelle nationale', '40%')}
+            ${mkRow(st.tn, 'Pic saisonnier national', '30%')}
+            ${mkRow(st.tl, 'Pic local (meilleur hotspot)', '30%')}
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 0 2px 0;border-top:1px dashed var(--line-2);margin-top:4px;">
+              <span style="color:var(--accent);font-weight:800;font-size:14px;">✓</span>
+              <span style="display:inline-block;background:${realColor(stComp)};color:#fff;padding:2px 8px;border-radius:6px;font-weight:800;font-size:13px;min-width:22px;text-align:center;">${stComp}</span>
+              <span style="font-size:12px;color:var(--ink);font-weight:600;">= composite 40/30/30 retenu</span>
+            </div>
+            <div style="font-size:10.5px;color:var(--ink-3);margin-top:4px;opacity:.85;">Bar chart eBird FR 2019-2026 : tier ${barTier}. Écart ≤ 1 tier avec S&amp;T → S&amp;T retenu (correction ML fine).</div>`;
+        } else {
+          // S&T écarté par le merge : on ne montre PAS les sous-scores S&T (pas parlants),
+          // juste le bar chart retenu et une note explicative.
+          // Détermine le type de biais pour l'explication : S&T dit plus commun = grégaire ;
+          // S&T dit plus rare = dilution localisée.
+          const biasNote = stComp < barTier
+            ? 'S&amp;T sous-estime la difficulté (biais espèce grégaire ou concentrée : abondance/heure gonflée par les gros troupeaux, mais rare à croiser en sortie type)'
+            : 'S&amp;T sous-estime la fréquence de rencontre (biais espèce ultra-localisée : diluée dans la moyenne nationale, mais facile à voir sur son hotspot)';
+          body = `
+            <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">Bar chart eBird FR 2019-2026 retenu</div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 0 2px 0;">
+              <span style="color:var(--accent);font-weight:800;font-size:14px;">✓</span>
+              <span style="display:inline-block;background:${realColor(barTier)};color:#fff;padding:2px 8px;border-radius:6px;font-weight:800;font-size:13px;min-width:22px;text-align:center;">${barTier}</span>
+              <span style="font-size:12px;color:var(--ink);font-weight:600;">Fréquence % checklists (pic biweekly)</span>
+            </div>
+            <div style="font-size:10.5px;color:var(--ink-3);margin-top:6px;opacity:.85;line-height:1.4;">${biasNote}. Composite S&amp;T Cornell disait tier ${stComp} mais écart &gt; 1 → non retenu.</div>`;
+        }
         detailsHtml = `
           <details style="margin-top:6px;">
             <summary style="cursor:pointer;font-size:12px;color:var(--ink-3);user-select:none;padding:2px 0;">▸ Détails du calcul</summary>
             <div style="padding:6px 0 4px 4px;border-left:2px solid var(--line);margin:4px 0 2px 6px;padding-left:10px;">
-              <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">Sous-scores S&amp;T (Cornell ML)</div>
-              ${mkRow(st.ta, 'Moyenne annuelle nationale', '40%', kept !== 'st')}
-              ${mkRow(st.tn, 'Pic saisonnier national', '30%', kept !== 'st')}
-              ${mkRow(st.tl, 'Pic local (meilleur hotspot)', '30%', kept !== 'st')}
-              <div style="display:flex;align-items:center;gap:8px;padding:4px 0 2px 0;opacity:${kept === 'st' ? 1 : 0.55};">
-                <span style="display:inline-block;background:${realColor(stComp)};color:#fff;padding:1px 8px;border-radius:6px;font-weight:800;font-size:12px;min-width:22px;text-align:center;">${stComp}</span>
-                <span style="font-size:12px;color:var(--ink-2);flex:1;">= <em>composite</em> 40/30/30</span>
-              </div>
-              <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin:8px 0 2px 0;">Bar chart eBird FR 2019-2026</div>
-              <div style="display:flex;align-items:center;gap:8px;padding:3px 0;opacity:${kept === 'bar' ? 1 : 0.55};">
-                <span style="display:inline-block;background:${realColor(barTier)};color:#fff;padding:1px 8px;border-radius:6px;font-weight:800;font-size:12px;min-width:22px;text-align:center;">${barTier}</span>
-                <span style="font-size:12px;color:var(--ink-2);flex:1;">Fréquence % checklists (pic biweekly)</span>
-              </div>
-              ${mkRowFinal(w, compExplain)}
+              ${body}
             </div>
           </details>`;
       }
