@@ -8355,10 +8355,12 @@ function _renderSpeciesRarityCard(key){
     // Non affichée pour tier 0 (parcs semi-libres, X/C échappés) : pas de calcul de tier.
     let detailsHtml = '';
     const isEstabExo = isExo && !isParkOnlyExotic(k) && (cat === 'N' || cat === 'P');
-    const showDetails = cc === 'FR' && (!isExo || isEstabExo)
-      && typeof REAL_ABUNDANCE_ST_FR !== 'undefined' && REAL_ABUNDANCE_ST_FR[k];
-    if(showDetails){
-      const st = REAL_ABUNDANCE_ST_FR[k];
+    const canHaveDetails = cc === 'FR' && (!isExo || isEstabExo);
+    const stEntry = (typeof REAL_ABUNDANCE_ST_FR !== 'undefined') ? REAL_ABUNDANCE_ST_FR[k] : null;
+    const hasStSubs = stEntry && stEntry.ta && stEntry.tn && stEntry.tl;
+    // Cas 1 : S&T dispo avec sous-tiers -> détail complet composite / bar chart
+    if(canHaveDetails && hasStSubs){
+      const st = stEntry;
       if(st.ta && st.tn && st.tl){
         // Source d'appui : bar chart pour sauvages, GBIF (_exoticTier) pour exotiques N/P
         const barTier = isEstabExo
@@ -8431,6 +8433,28 @@ function _renderSpeciesRarityCard(key){
             </div>
           </details>`;
       }
+    } else if(canHaveDetails){
+      // Cas 2 : pas de S&T pour cette espece (Pipit spioncelle, Aigle de Bonelli, endemiques
+      // montagnards, plusieurs vagrants). On n'a que le bar chart -> affiche mini-note
+      // explicative pour que l'utilisateur comprenne l'absence de sous-scores.
+      const barTier = isEstabExo
+        ? (_exoticTier(k) || 1)
+        : (REAL_RARITY[k] || (_isForeignOnly(k) ? 9 : 1));
+      const barSrcLabel = isEstabExo ? 'GBIF exotiques (parcs urbains inclus)' : 'Bar chart eBird FR 2019-2026';
+      const barMeasure = isEstabExo ? 'Densité GBIF' : 'Fréquence % checklists (pic biweekly)';
+      detailsHtml = `
+        <details style="margin-top:6px;">
+          <summary style="cursor:pointer;font-size:12px;color:var(--ink-3);user-select:none;padding:2px 0;">▸ Détails du calcul</summary>
+          <div style="padding:6px 0 4px 4px;border-left:2px solid var(--line);margin:4px 0 2px 6px;padding-left:10px;">
+            <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">${barSrcLabel} (seule source)</div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 0 2px 0;">
+              <span style="color:var(--accent);font-weight:800;font-size:14px;">✓</span>
+              <span style="display:inline-block;background:${realColor(barTier)};color:#fff;padding:2px 8px;border-radius:6px;font-weight:800;font-size:13px;min-width:22px;text-align:center;">${barTier}</span>
+              <span style="font-size:12px;color:var(--ink);font-weight:600;">${barMeasure}</span>
+            </div>
+            <div style="font-size:10.5px;color:var(--ink-3);margin-top:6px;opacity:.85;line-height:1.4;">eBird Status &amp; Trends (Cornell) n'a pas de modèle pour cette espèce (données insuffisantes ou taxa mineur). Tier basé uniquement sur le bar chart eBird.</div>
+          </div>
+        </details>`;
     }
     $('#smRarityLine').innerHTML = `<div style="display:flex;align-items:center;gap:6px;padding:6px 0;">${flgFixed}${pill}<span style="font-weight:600;color:var(--ink);">${esc(label)}</span>${catBadge}</div>${detailsHtml}`;
   };
