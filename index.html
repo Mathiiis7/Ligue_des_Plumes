@@ -924,6 +924,19 @@
   .pkdx-card.missing .pkdx-sci { visibility:hidden; }
   .pkdx-card.missing .pkdx-tier { opacity:.4; filter:grayscale(.5); }
   @media (max-width:600px){ .pkdx-grid { grid-template-columns:repeat(auto-fill, minmax(105px, 1fr)); gap:8px; } .pkdx-card { padding:6px 6px 8px; } }
+
+  /* Cibles de la semaine : cartes horizontales avec photo, nom, tier, abondance semaine. */
+  .targets-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:10px; }
+  .target-card { display:flex; align-items:center; gap:12px; padding:10px; background:var(--surface); border:1px solid var(--line-2); border-radius:12px; cursor:pointer; transition:transform .1s, box-shadow .1s; }
+  .target-card:hover { transform:translateY(-2px); box-shadow:0 6px 14px rgba(0,0,0,.12); border-color:var(--accent); }
+  .target-card .t-img { width:64px; height:64px; border-radius:10px; background:var(--surface-2); flex:0 0 auto; overflow:hidden; display:grid; place-items:center; color:var(--ink-3); font-size:24px; }
+  .target-card .t-img img { width:100%; height:100%; object-fit:cover; display:block; }
+  .target-card .t-info { flex:1; min-width:0; }
+  .target-card .t-name { font:600 14px system-ui; color:var(--ink); line-height:1.2; margin-bottom:3px; }
+  .target-card .t-meta { display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-size:11.5px; color:var(--ink-3); }
+  .target-card .t-tier { display:inline-block; padding:1px 6px; border-radius:4px; color:#fff; font-weight:700; font-size:11px; }
+  .target-card .t-freq { color:var(--ink-2); }
+  @media (max-width:600px){ .targets-grid { grid-template-columns:1fr; } .target-card .t-img { width:56px; height:56px; } }
 </style>
 
 <div class="wrap">
@@ -1131,6 +1144,19 @@
     <div class="people" id="people"></div>
 
     <div id="fbError"></div>
+  </section>
+
+  <!-- Cibles de la semaine : affiche les especes S&T les plus faciles a voir cette semaine
+       en France que l'utilisateur n'a pas encore cochees. Masque si pas de life list. -->
+  <section class="panel" id="targetsPanel" style="padding:20px; margin-top:22px; display:none;">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Suggestions</div>
+        <h2>🎯 Cibles de la semaine</h2>
+        <p class="help" style="margin-top:2px;">Espèces observables cette semaine en France que tu n'as pas encore cochées, triées par facilité (données <b>eBird Status &amp; Trends</b>).</p>
+      </div>
+    </div>
+    <div id="targetsGrid" class="targets-grid" style="margin-top:12px;"></div>
   </section>
   </div><!-- /viewLoad -->
 
@@ -2764,7 +2790,7 @@ function renderResults(){
   if(state.people.length===0){ res.classList.remove('show'); renderTrophies({N:0}); return; }
   res.classList.add('show');
   const data = build();
-  renderBoard(); renderMatrix(data); renderTrophies(data);
+  renderBoard(); renderMatrix(data); renderTrophies(data); renderTargets();
 }
 
 function fmt(n){ return Math.round(n).toLocaleString('fr-FR'); }
@@ -9736,6 +9762,88 @@ const _pkdxPhotos = new Map();
 // filtres pour que chaque oiseau garde son numero comme dans un vrai Pokedex.
 let _pkdxAllSorted = null;
 let _pkdxNumById = null;
+/* ---------------- Cibles de la semaine ---------------- */
+// Panel qui affiche les especes les plus faciles a voir CETTE SEMAINE en France que
+// l'utilisateur n'a pas encore cochees. Utilise les rasters S&T hebdomadaires (52 valeurs)
+// pour identifier les meilleures cibles saisonnieres. Photos lazy-loadees depuis Wiki/iNat.
+function renderTargets(){
+  const panel = $('#targetsPanel'), grid = $('#targetsGrid');
+  if(!panel || !grid) return;
+  const me = realPeople.find(p => p.id === myUid);
+  const mine = me ? new Set([...me.species.keys()]) : new Set();
+  if(!mine.size){ panel.style.display = 'none'; return; }
+  if(typeof REAL_ABUNDANCE_ST_FR === 'undefined'){ panel.style.display = 'none'; return; }
+  // Semaine courante (0..51). Semaine 0 = 1-7 janvier, semaine 25 = ~24 juin, etc.
+  const now = new Date();
+  const dayOfYear = Math.floor((now - new Date(now.getFullYear(),0,0)) / 86400000);
+  const curWeek = Math.min(51, Math.floor(dayOfYear / 7));
+  // Candidates : especes S&T avec weekly[curWeek] > 0 que l'utilisateur n'a pas cochees,
+  // pas cachees, pas exotiques cage/volaire, avec calibration FR.
+  const candidates = [];
+  for(const sci in REAL_ABUNDANCE_ST_FR){
+    if(_isSciAliasSource(sci)) continue;
+    if(isHiddenSpecies(sci)) continue;
+    if(_mineHasStrict(mine, sci)) continue;
+    const st = REAL_ABUNDANCE_ST_FR[sci];
+    if(!Array.isArray(st.w) || st.w.length !== 52) continue;
+    const wVal = st.w[curWeek];
+    if(!wVal || wVal <= 0) continue;
+    // Skip especes cage/volaire exotiques et parcs semi-libres (deja gerees par le tri
+    // rareté, pas des vraies cibles ornitho).
+    if(isExotic(sci) && (isParkOnlyExotic(sci) || (() => {
+      const cat = _exoticCategory(sci);
+      return cat === 'X' || cat === 'C';
+    })())) continue;
+    candidates.push({ sci, wVal, tier: rarityForCountry(sci, 'FR') });
+  }
+  if(!candidates.length){ panel.style.display = 'none'; return; }
+  // Tri : abondance hebdo descendante (plus abondant = plus facile a voir)
+  candidates.sort((a, b) => b.wVal - a.wVal);
+  const top = candidates.slice(0, 12);
+  panel.style.display = '';
+  // Rendu cartes
+  grid.innerHTML = top.map(c => {
+    const nm = FR_NAMES[c.sci] || c.sci;
+    const tierColor = realColor(c.tier);
+    const tierLbl = REAL_LABELS[c.tier] || ('niveau '+c.tier);
+    const fmtW = c.wVal >= 1 ? c.wVal.toFixed(1) : c.wVal >= 0.01 ? c.wVal.toFixed(2) : c.wVal >= 0.001 ? c.wVal.toFixed(3) : c.wVal.toFixed(4);
+    return `<div class="target-card" data-sci="${esc(c.sci)}">
+      <div class="t-img" data-targ-lazy="${esc(c.sci)}">🐦</div>
+      <div class="t-info">
+        <div class="t-name">${esc(nm)}</div>
+        <div class="t-meta">
+          <span class="t-tier" style="background:${tierColor}">${c.tier}</span>
+          <span>${esc(tierLbl)}</span>
+          <span class="t-freq">· ${fmtW} ind/h cette semaine</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  _targetsLazyPhotos();
+}
+function _targetsLazyPhotos(){
+  const els = document.querySelectorAll('#targetsGrid .t-img[data-targ-lazy]');
+  if(!els.length || !('IntersectionObserver' in window)) return;
+  const io = new IntersectionObserver(entries => {
+    for(const e of entries){
+      if(!e.isIntersecting) continue;
+      const el = e.target;
+      io.unobserve(el);
+      const sci = el.dataset.targLazy;
+      if(!sci) continue;
+      _fetchWikiPhoto(sci).then(p => {
+        if(p && p.url){ el.innerHTML = `<img loading="lazy" src="${esc(p.url)}" alt="${esc(sci)}" onerror="this.parentElement.textContent='🐦'">`; }
+      }).catch(()=>{});
+    }
+  }, { rootMargin:'150px' });
+  els.forEach(el => io.observe(el));
+}
+// Delegation click : ouvre la fiche au clic sur une carte cible.
+document.addEventListener('click', e => {
+  const card = e.target.closest('.target-card[data-sci]');
+  if(card){ openSpeciesModal(card.dataset.sci); }
+});
+
 function renderPokedex(){
   const grid = $('#pkdxGrid'); if(!grid) return;
   if(!_pkdxInit){
