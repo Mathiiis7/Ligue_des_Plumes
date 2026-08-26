@@ -89,6 +89,7 @@ const EBIRD_ALIAS = {
   'Rossignol à flancs roux': 'Robin à flancs roux',
   'Viréo aux yeux rouges': 'Viréo à œil rouge',
   'Plongeon huard': 'Plongeon imbrin',
+  'Canard branchu': 'Canard carolin',            // Aix sponsa : app dit "branchu", eBird dit "carolin"
 };
 
 // --- FR_NAMES de l'app ---

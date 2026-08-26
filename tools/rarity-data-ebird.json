@@ -170,9 +170,9 @@
   {
     "sci": "aix sponsa",
     "name": "Canard branchu",
-    "freq": null,
-    "source": "gbif-fallback",
-    "weight": 6
+    "freq": 0.0017632,
+    "source": "ebird-alias",
+    "weight": 7
   },
   {
     "sci": "alauda arvensis",
