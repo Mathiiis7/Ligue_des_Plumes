@@ -8498,19 +8498,32 @@ function _renderSpeciesFreqChart(key, country){
   if(!svg) return;
   const cc = country || 'FR';
   // Priorite : si FR ET S&T weekly disponible avec au moins une valeur non-nulle -> 52 barres.
-  // Sinon fallback bar chart mensuel 12 barres.
+  // Sinon fallback bar chart mensuel 12 valeurs qu'on ETIRE sur 52 slots pour uniformité
+  // visuelle (chaque mois répété sur ses ~4.33 semaines).
   let arr = null, isWeekly = false, unitLabel = '%';
   if(cc === 'FR' && typeof REAL_ABUNDANCE_ST_FR !== 'undefined' && REAL_ABUNDANCE_ST_FR[key]
      && Array.isArray(REAL_ABUNDANCE_ST_FR[key].w) && REAL_ABUNDANCE_ST_FR[key].w.length === 52){
     const wv = REAL_ABUNDANCE_ST_FR[key].w;
     if(wv.some(v => v > 0)){ arr = wv; isWeekly = true; unitLabel = 'ind/h'; }
   }
+  let monthlyArr = null;   // source mensuelle si fallback : garde pour tooltips "mois"
   if(!arr){
-    if(cc === 'ME' && typeof REAL_FREQ_MONTHLY_ME === 'object'){ arr = REAL_FREQ_MONTHLY_ME[key] || null; }
-    if(!arr && typeof REAL_FREQ_MONTHLY === 'object'){ arr = REAL_FREQ_MONTHLY[key] || null; }
+    if(cc === 'ME' && typeof REAL_FREQ_MONTHLY_ME === 'object'){ monthlyArr = REAL_FREQ_MONTHLY_ME[key] || null; }
+    if(!monthlyArr && typeof REAL_FREQ_MONTHLY === 'object'){ monthlyArr = REAL_FREQ_MONTHLY[key] || null; }
+    if(monthlyArr && monthlyArr.length === 12){
+      // Étire 12 mois -> 52 semaines (repartition proportionnelle des semaines par mois).
+      // Chaque semaine w recoit la valeur du mois dont elle occupe le milieu.
+      arr = new Array(52);
+      for(let w=0; w<52; w++){
+        const dayOfYear = w * 7 + 4;   // milieu de la semaine
+        const monthIdx = Math.min(11, Math.floor(dayOfYear / 30.44));   // 365/12
+        arr[w] = monthlyArr[monthIdx] || 0;
+      }
+      isWeekly = false;   // rendu 52 slots mais source mensuelle -> unite %
+      unitLabel = '%';
+    }
   }
-  const expectedLen = isWeekly ? 52 : 12;
-  if(!arr || arr.length !== expectedLen){ if(wrap) wrap.hidden = true; if(card) card.hidden = true; return; }
+  if(!arr || arr.length !== 52){ if(wrap) wrap.hidden = true; if(card) card.hidden = true; return; }
   const maxV = Math.max(0.0001, ...arr);
   const bestIdx = arr.indexOf(maxV);
   const now = new Date();
@@ -8534,11 +8547,15 @@ function _renderSpeciesFreqChart(key, country){
             : '<0.0001';
     srcEl.textContent = `${ccLabel} — pic ${peakLbl} (${peakVal} ${unitLabel})`;
   } else {
-    peakLbl = 'en ' + _MONTH_FR[bestIdx];
+    // Source mensuelle etiree a 52 slots : le pic est au premier slot du mois pic,
+    // on reconvertit vers un label mois-only pour ne pas suggerer une precision fictive.
+    const peakMonth = Math.min(11, Math.floor((bestIdx * 7 + 4) / 30.44));
+    peakLbl = 'en ' + _MONTH_FR[peakMonth];
     srcEl.textContent = `${ccLabel} — pic ${peakLbl} (${Math.round(maxV*100)} %)`;
   }
-  // Layout du chart : plus large en mode weekly (52 barres). Viewbox adaptative.
-  const W = isWeekly ? 520 : 360, H = 130, PT = 12, PB = 26, PL = 32, PR = 8;
+  // Layout du chart : toujours 520x130 (52 slots dans tous les cas, weekly S&T reel ou
+  // monthly bar chart etire).
+  const W = 520, H = 130, PT = 12, PB = 26, PL = 32, PR = 8;
   const iw = W - PL - PR, ih = H - PT - PB;
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   const N = arr.length;
@@ -8565,11 +8582,12 @@ function _renderSpeciesFreqChart(key, country){
     out += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${(W-PR).toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"/>`;
     out += `<text x="${(PL-4).toFixed(1)}" y="${(y+3).toFixed(1)}" font-size="9" fill="var(--ink-3)" text-anchor="end">${fmtY(v)}</text>`;
   }
-  // Barres
+  // Barres : toujours 52 slots. Tooltips + labels s'adaptent selon la source (S&T weekly
+  // ou monthly stretched).
   for(let i=0; i<N; i++){
     const v = arr[i];
     const h = v > 0 ? ih * (v / yMax) : 0;
-    const gap = isWeekly ? 0.5 : 2;
+    const gap = 0.5;
     const x = PL + i * bw + gap;
     const w = bw - gap*2;
     const y = PT + ih - h;
@@ -8581,30 +8599,19 @@ function _renderSpeciesFreqChart(key, country){
     const titleVal = isWeekly
       ? fmtAbd(v)
       : (v*100 < 0.1 ? '<0.1' : v*100 < 1 ? (v*100).toFixed(1) : Math.round(v*100));
-    const titleLbl = isWeekly ? _weekToLabel(i) : _MONTH_FR[i];
+    // Label tooltip : "mi-mai" pour weekly S&T, "mai" pour monthly stretched (l'index i
+    // 0..51 correspond a une semaine dans les deux cas, mais monthly n'a que 12 valeurs
+    // distinctes reparties par mois → tooltip mois-only plus honnete).
+    const titleLbl = isWeekly ? _weekToLabel(i) : _MONTH_FR[Math.min(11, Math.floor((i * 7 + 4) / 30.44))];
     const title = `${titleLbl} : ${titleVal}${titleUnit}`;
-    out += `<rect class="bar" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(0.5,w).toFixed(1)}" height="${Math.max(1.5,h).toFixed(1)}" fill="${fill}" opacity="${op}" rx="${isWeekly?1:2}"><title>${title}</title></rect>`;
-    // Valeur au-dessus du pic
-    if(i === bestIdx && h > 20 && !isWeekly){
-      out += `<text x="${(x+w/2).toFixed(1)}" y="${(y-4).toFixed(1)}" font-size="10" font-weight="700" fill="var(--gold)" text-anchor="middle">${Math.round(v*100)}%</text>`;
-    }
+    out += `<rect class="bar" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(0.5,w).toFixed(1)}" height="${Math.max(1.5,h).toFixed(1)}" fill="${fill}" opacity="${op}" rx="1"><title>${title}</title></rect>`;
   }
-  // Labels axe x : en mode weekly on affiche 12 labels mois (1 par groupe de ~4 semaines)
-  //                en mode monthly on affiche les 12 mois comme avant
-  if(isWeekly){
-    for(let m=0; m<12; m++){
-      // Semaine centrale du mois m : ~(m*4.33 + 2)
-      const centerWeek = m * 4.33 + 2;
-      const x = PL + centerWeek * bw;
-      const isHiMonth = Math.floor(bestIdx / 4.33) === m || Math.floor(curIdx / 4.33) === m;
-      out += `<text x="${x.toFixed(1)}" y="${(H-8).toFixed(1)}" font-size="9" fill="${isHiMonth?'var(--ink)':'var(--ink-3)'}" text-anchor="middle" font-weight="${isHiMonth?700:400}">${_MONTH_ABBR3[m]}</text>`;
-    }
-  } else {
-    for(let i=0; i<12; i++){
-      const x = PL + i * bw + bw/2;
-      const isHi = (i === bestIdx || i === curIdx);
-      out += `<text x="${x.toFixed(1)}" y="${(H-8).toFixed(1)}" font-size="10" fill="${isHi?'var(--ink)':'var(--ink-3)'}" text-anchor="middle" font-weight="${isHi?700:400}">${_MONTH_ABBR3[i]}</text>`;
-    }
+  // Labels axe x : 12 labels mois centres sur leur groupe de ~4.33 semaines.
+  for(let m=0; m<12; m++){
+    const centerWeek = m * 4.33 + 2;
+    const x = PL + centerWeek * bw;
+    const isHiMonth = Math.floor(bestIdx / 4.33) === m || Math.floor(curIdx / 4.33) === m;
+    out += `<text x="${x.toFixed(1)}" y="${(H-8).toFixed(1)}" font-size="9" fill="${isHiMonth?'var(--ink)':'var(--ink-3)'}" text-anchor="middle" font-weight="${isHiMonth?700:400}">${_MONTH_ABBR3[m]}</text>`;
   }
   svg.innerHTML = out;
 }
