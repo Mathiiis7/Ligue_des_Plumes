@@ -1178,8 +1178,8 @@
           <h4>🥇 Rareté (ligue)</h4>
           <p>La rareté <b>au sein de votre groupe</b>. Chaque espèce rapporte <b>100 ÷ (nombre d'amis qui l'ont vue)</b>. Un oiseau que <b>toi seul</b> as coché vaut 100 points ; un oiseau vu par <b>tout le monde</b> n'en vaut presque plus. Ça récompense les listes originales, celles qui sortent du lot.</p>
           <h4>🌍 Rareté réelle</h4>
-          <p>La rareté <b>de l'oiseau en France</b>, indépendamment de la ligue. Chaque espèce reçoit un poids de <b>1 (omniprésent) à 10 (méga)</b>, et ton score est la somme des poids de tes espèces.</p>
-          <p>Le poids vient d'un <b>composite eBird Status &amp; Trends (Cornell Lab) + bar chart eBird 2019-2026</b>. Pour chaque espèce on combine : <b>40 %</b> abondance moyenne annuelle nationale, <b>30 %</b> pic saisonnier (à la meilleure période), <b>30 %</b> densité typique sur hotspot. Puis on ajuste avec le bar chart eBird (± 1 tier max) pour caler sur la fréquence réelle de rencontre. Un oiseau vu à presque chaque sortie → poids 1. Un vagrant accidentel jamais vraiment installé en France → poids 10 « Méga » (pastille noire). <span class="muted">(Le barème détaillé s'affiche sous les onglets quand ce mode est sélectionné. Détail par espèce dans la fiche.)</span></p>
+          <p>La rareté <b>de l'oiseau en France</b>, indépendamment de la ligue. Chaque espèce reçoit un poids de <b>1 (omniprésent) à 10 (exceptionnel)</b>, et ton score est la somme des poids de tes espèces.</p>
+          <p>Le poids vient d'un <b>composite eBird Status &amp; Trends (Cornell Lab) + bar chart eBird 2019-2026</b>. Pour chaque espèce on combine : <b>40 %</b> abondance moyenne annuelle nationale, <b>30 %</b> pic saisonnier (à la meilleure période), <b>30 %</b> densité typique sur hotspot. Puis on ajuste avec le bar chart eBird (± 1 tier max) pour caler sur la fréquence réelle de rencontre. Un oiseau vu à presque chaque sortie → poids 1. Un vagrant accidentel jamais vraiment installé en France → poids 10 « Exceptionnel ». <span class="muted">(Le barème détaillé s'affiche sous les onglets quand ce mode est sélectionné. Détail par espèce dans la fiche.)</span></p>
         </div>
       </details>
       <div class="real-scale" id="realScale" style="display:none;"></div>
@@ -1364,8 +1364,8 @@
           <button type="button" class="rar-chip on" data-rar="6" title="Assez rare">6</button>
           <button type="button" class="rar-chip on" data-rar="7" title="Rare">7</button>
           <button type="button" class="rar-chip on" data-rar="8" title="Très rare">8</button>
-          <button type="button" class="rar-chip on" data-rar="9" title="Exceptionnel">9</button>
-          <button type="button" class="rar-chip on" data-rar="10" title="Méga (vagrant accidentel)" style="background:#0f0f0f; color:#fff;">10</button>
+          <button type="button" class="rar-chip on" data-rar="9" title="Ultra rare">9</button>
+          <button type="button" class="rar-chip on" data-rar="10" title="Exceptionnel (vagrant accidentel)">10</button>
           <button type="button" class="rar-chip rar-exo on" data-rar="exo" title="Exotique / échappé">🚨</button>
           <button type="button" class="rar-chip" data-rar-all title="Cocher toutes les raretés">Tout</button>
           <button type="button" class="rar-chip" data-rar-none title="Décocher toutes les raretés">Vide</button>
@@ -1525,8 +1525,8 @@
           <option value="6">6 · Assez rare</option>
           <option value="7">7 · Rare</option>
           <option value="8">8 · Très rare</option>
-          <option value="9">9 · Exceptionnel</option>
-          <option value="10">10 · Méga</option>
+          <option value="9">9 · Ultra rare</option>
+          <option value="10">10 · Exceptionnel</option>
           <option value="exo">🚨 Exotique / échappé</option>
         </select>
       </div>
@@ -1581,8 +1581,8 @@
           <option value="3">3 · Commun</option><option value="4">4 · Assez commun</option>
           <option value="5">5 · Peu commun</option><option value="6">6 · Assez rare</option>
           <option value="7">7 · Rare</option><option value="8">8 · Très rare</option>
-          <option value="9">9 · Exceptionnel</option>
-          <option value="10">10 · Méga</option>
+          <option value="9">9 · Ultra rare</option>
+          <option value="10">10 · Exceptionnel</option>
         </select>
         <select id="pkdxOwned" class="filt-sel">
           <option value="">Toutes</option>
@@ -2498,13 +2498,16 @@ function tierFor(k, N){
   else label=LEAGUE_LABELS[Math.round((k-1)/(N-1)*(LEAGUE_LABELS.length-1))];
   return { id:String(k), count:k, ord:k, label, color:rarityColor(k,N) };
 }
-const REAL_LABELS={0:'Parc semi-libre',1:'Omniprésent',2:'Très commun',3:'Commun',4:'Assez commun',5:'Peu commun',6:'Assez rare',7:'Rare',8:'Très rare',9:'Exceptionnel',10:'Méga'};
+const REAL_LABELS={0:'Parc semi-libre',1:'Omniprésent',2:'Très commun',3:'Commun',4:'Assez commun',5:'Peu commun',6:'Assez rare',7:'Rare',8:'Très rare',9:'Ultra rare',10:'Exceptionnel'};
 function realColor(w){
   if(w === 0) return 'hsl(0 0% 55%)';    // tier 0 (parcs semi-libres) -> gris neutre
-  if(w === 10) return '#0f0f0f';         // tier 10 (Méga, mégas ultra-rares) -> noir mat
-  const p=Math.min(1,Math.max(0,(w-1)/8));   // 1 = commun (vert) -> 9 = exceptionnel (crimson)
-  const hue=Math.round((130 - p*140 + 360) % 360);
-  return `hsl(${hue} 60% 47%)`;
+  // Palette 10 tiers : vert (1) -> jaune (5) -> rouge (9) -> magenta fonce (10).
+  // Formule etendue : hue va de 130 (vert) a -30 (rose fonce) sur 10 crans. Luminosite
+  // decroit legerement (47 -> 39) pour renforcer le "poids" visuel des tiers rares.
+  const p = Math.min(1, Math.max(0, (w-1)/9));
+  const hue = Math.round((130 - p*160 + 360) % 360);
+  const light = 47 - p*8;
+  return `hsl(${hue} 65% ${light}%)`;
 }
 // Couleur pastille sur la carte : gris pour les exotiques (comme dans le classement), sinon barème rareté.
 function sciColor(sci){
@@ -2806,8 +2809,10 @@ function renderBoard(){
       // avec le bar chart en source d'appui (règle ±1 tier max). Voir fiche espèce
       // pour le détail de chaque composante.
       const RANGES={1:'≥ 25 %',2:'15 – 25 %',3:'8 – 15 %',4:'4 – 8 %',5:'2 – 4 %',6:'0,7 – 2 %',7:'0,15 – 0,7 %',8:'0,03 – 0,15 %',9:'0,005 – 0,03 %',10:'< 0,005 %'};
+      const items = [1,2,3,4,5,6,7,8,9,10].map(w=>`<span class="rs-it" title="${w} · ${REAL_LABELS[w]} — ${RANGES[w]}"><i style="background:${realColor(w)}"></i><b>${w}</b> ${REAL_LABELS[w]} <em>${RANGES[w]}</em></span>`).join('')
+        + `<span class="rs-it" title="Exotique X/C ou parc semi-libre : hors barème rareté"><i style="background:#7e8a99"></i><b>—</b> Exotique <em>parcs, échappés, domestiques</em></span>`;
       rs.innerHTML='<div class="rs-title">Barème de rareté réelle <span>— calibration eBird Status & Trends (Cornell) + bar chart FR 2019-2026. Composite 40% moyenne annuelle · 30% pic saisonnier · 30% densité hotspot.</span></div>'+
-        '<div class="rs-items">'+[1,2,3,4,5,6,7,8,9,10].map(w=>`<span class="rs-it" title="${w} · ${REAL_LABELS[w]} — ${RANGES[w]}"><i style="background:${realColor(w)}"></i><b>${w}</b> ${REAL_LABELS[w]} <em>${RANGES[w]}</em></span>`).join('')+'</div>';
+        '<div class="rs-items">'+items+'</div>';
       rs.style.display='';
     } else rs.style.display='none';
   }
@@ -3086,7 +3091,7 @@ const TROPHIES = [
   { theme:'communaute',  icon:ICONS.mort, name:'Le Nécrophile', desc:'Observer un oiseau décédé #ripstayproud (preuve demandée)', special:'vote', voteId:'necrophile', voteThreshold:3, test:s=>(s.necrophileVotes||0)>=3 },
   { theme:'classement',  icon:ICONS.cup, name:'Mike Horn', desc:'Avoir l’oiseau le plus rare de la ligue', test:s=>s.mikeHorn, info:s=>s.mikeHorn&&s.mikeBird?'🏅 '+s.mikeBird:'', tip:s=>s.mikeHorn&&s.mikeBird?'Oiseau le plus rare : '+s.mikeBird:'' },
   { theme:'localisation',icon:ICONS.avion, name:'Marco Polo', desc:'Avoir observé des oiseaux dans le plus de pays différents de la ligue (2 pays minimum)', test:s=>s.globeTrotter, info:s=>s.globeTrotter?`✈️ ${s.countryCount} pays visités`:'', tip:s=>s.globeTrotter?`Champion des pays : ${s.countryCount}`:`${s.countryCount} pays observés` },
-  { theme:'progression', icon:ICONS.graal, name:'Le Saint-Graal', desc:'Observer un oiseau Méga, Exceptionnel ou Très rare', test:s=>s.megaList.length>0, alwaysList:true, list:s=>MEGA_CATALOG.map(m=>({ name:m.name, section:m.w===10?'Méga':(m.w===9?'Exceptionnel':'Très rare'), owned:s.megaOwnedSet.has(m.sci) })) },
+  { theme:'progression', icon:ICONS.graal, name:'Le Saint-Graal', desc:'Observer un oiseau Exceptionnel, Ultra rare ou Très rare', test:s=>s.megaList.length>0, alwaysList:true, list:s=>MEGA_CATALOG.map(m=>({ name:m.name, section:m.w===10?'Exceptionnel':(m.w===9?'Ultra rare':'Très rare'), owned:s.megaOwnedSet.has(m.sci) })) },
   { theme:'groupe',      icon:ICONS.woodpecker, name:'Pic noir', desc:'Observer le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker },
   { theme:'communaute',  icon:ICONS.singe, name:'Le coup de Ruff', desc:'Ne pas avoir un oiseau qu’Enzo a vu #honteux', test:s=>s.lackEnzoBird },
   { theme:'groupe',      icon:ICONS.aigle, name:'Armée d’aigles royaux', desc:'Voir au moins 5 rapaces diurnes', test:s=>s.raptors>=5, prog:s=>[s.raptors,5], alwaysList:true, list:s=>RAPTOR_CATALOG.map(m=>({ name:m.name, owned:s.raptorOwnedSet.has(m.sci) })) },
