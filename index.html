@@ -2236,7 +2236,19 @@ function _isForeignOnly(k){
 //       Paris, Curruca sarda Corse) dilutees dans la moyenne nationale S&T
 //   S&T absent OU abd = 0 (vagrants/exotiques non-FR) : bar chart
 // Le merge conservateur (+/- 1 tier max) prend le meilleur des 2 sans over-corriger.
+// Exotiques naturalisees "N" ultra-localisees mais tres abondantes sur leurs sites
+// (Grand-Lieu, Camargue, Baie de l'Aiguillon, parcs de la region parisienne...) :
+// le bar chart national ecrase leur presence reelle car les listes du reste de la France
+// dominent, et S&T ne connait pas ces populations europeennes echappees (fallback vers
+// bar chart qui dit 7). En pratique : tres facile a voir a leurs sites de reference.
+// Override cible tier 6 = "Assez rare mais dispo sur sites connus".
+const NATURALISED_LOCAL_BOOST = {
+  'threskiornis aethiopicus': 6,   // Ibis sacre : Grand-Lieu, Camargue, Baie de l'Aiguillon
+  'tadorna ferruginea':      6,    // Tadorne casarca : Alsace, Camargue, Est
+  'aix galericulata':        6,    // Canard mandarin : parcs franciliens, Ain
+};
 function _tierFromSTvsBarChart(k, barTier){
+  if(NATURALISED_LOCAL_BOOST[k] != null) return NATURALISED_LOCAL_BOOST[k];
   if(typeof REAL_ABUNDANCE_ST_FR === 'undefined') return barTier;
   const st = REAL_ABUNDANCE_ST_FR[k];
   if(!st || !st.a) return barTier;
