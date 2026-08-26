@@ -925,6 +925,11 @@
   .pkdx-card.missing .pkdx-tier { opacity:.4; filter:grayscale(.5); }
   @media (max-width:600px){ .pkdx-grid { grid-template-columns:repeat(auto-fill, minmax(105px, 1fr)); gap:8px; } .pkdx-card { padding:6px 6px 8px; } }
 
+  /* Manquantes sur "Cette semaine" : silhouette + nom italique (meme convention que Dex) */
+  .target-card.missing { opacity:.9; background:var(--surface-2); }
+  .target-card.missing .t-img img { filter:brightness(0) contrast(2) opacity(.65); }
+  .target-card.missing .t-name { color:var(--ink-3); font-style:italic; }
+  .target-card.missing .t-tier { opacity:.65; filter:grayscale(.3); }
   /* Cibles de la semaine : cartes horizontales avec photo, nom, tier, abondance semaine. */
   .targets-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:10px; }
   .target-card { display:flex; align-items:center; gap:12px; padding:10px; background:var(--surface); border:1px solid var(--line-2); border-radius:12px; cursor:pointer; transition:transform .1s, box-shadow .1s; }
@@ -959,7 +964,7 @@
     <button class="tab on" data-view="load">Ma liste</button>
     <button class="tab" data-view="ranking">Classement</button>
     <button class="tab" data-view="map">📍 Carte</button>
-    <button class="tab" data-view="targets">🎯 Cibles</button>
+    <button class="tab" data-view="targets">📅 Cette semaine</button>
     <button class="tab" data-view="pokedex">📖 Ornidex</button>
     <button class="tab" data-view="trophies">🏆 Trophées</button>
     <button class="tab" data-view="quiz">🎵 Quiz</button>
@@ -1149,20 +1154,30 @@
 
   </div><!-- /viewLoad -->
 
-  <!-- Cibles de la semaine : especes S&T les plus faciles a voir cette semaine (region ou FR).
-       Deplace de viewLoad vers son propre onglet le 26/08 (l'endroit prevu sur "Ma liste"
-       n'etait pas naturel, et on peut afficher beaucoup plus de cibles). -->
+  <!-- Cette semaine : especes S&T les plus faciles a voir cette semaine (region ou FR).
+       Toutes les especes affichees : celles deja cochees en couleur, les manquantes en
+       silhouette (style Dex). Filtre pour n'afficher que les manquantes. -->
   <div id="viewTargets" style="display:none;">
     <section class="panel" id="targetsPanel" style="padding:20px; margin-top:22px;">
       <div class="section-head">
         <div>
-          <div class="eyebrow">Suggestions</div>
-          <h2>🎯 Cibles de la semaine</h2>
-          <p class="help" style="margin-top:2px;">Espèces observables cette semaine que tu n'as pas encore cochées, triées par facilité.</p>
+          <div class="eyebrow">Semaine ornitho</div>
+          <h2>📅 Cette semaine</h2>
+          <p class="help" style="margin-top:2px;">Espèces les plus faciles à observer cette semaine dans ta région. Les manquantes apparaissent en silhouette.</p>
         </div>
-        <div>
-          <label for="targetsRegion" style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; display:block; margin-bottom:4px;">Ma région</label>
-          <select id="targetsRegion" class="filt-sel" style="font-size:13px; padding:6px 10px;"></select>
+        <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+          <div>
+            <label for="targetsRegion" style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; display:block; margin-bottom:4px;">Ma région</label>
+            <select id="targetsRegion" class="filt-sel" style="font-size:13px; padding:6px 10px;"></select>
+          </div>
+          <div>
+            <label for="targetsOwnedFilt" style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; display:block; margin-bottom:4px;">Affichage</label>
+            <select id="targetsOwnedFilt" class="filt-sel" style="font-size:13px; padding:6px 10px;">
+              <option value="">Toutes</option>
+              <option value="missing">Manquantes seulement</option>
+              <option value="owned">Cochées seulement</option>
+            </select>
+          </div>
         </div>
       </div>
       <div id="targetsGrid" class="targets-grid" style="margin-top:12px;"></div>
@@ -10043,6 +10058,8 @@ let _pkdxNumById = null;
 // S&T weekly national + REAL_FREQ_MONTHLY_BY_REGION pour filtrer par presence regionale.
 let _targetsRegion = null;   // '' = France entiere, sinon code region (FR-BRE, etc.)
 let _targetsRegionInit = false;
+let _targetsOwnedFilter = '';   // '' = toutes, 'missing' = manquantes seulement, 'owned' = deja cochees
+try{ _targetsOwnedFilter = localStorage.getItem('mb-targets-owned') || ''; }catch(_){}
 // Region choisie sur les fiches especes (histogramme 52 bar par region). '' = France entiere.
 let _speciesRegion = '';
 try{ _speciesRegion = localStorage.getItem('mb-species-region') || ''; }catch(_){ _speciesRegion = ''; }
@@ -10055,7 +10072,7 @@ function renderTargets(){
   // Onglet dedie : on affiche le panel meme sans liste chargee (onboarding), et meme sans
   // S&T (message d'attente). Le style panel:display initial est vide.
   if(!mine.size){
-    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:24px; color:var(--ink-3);">Charge d\'abord ta life list eBird sur l\'onglet <b>Ma liste</b> — les cibles seront calculées en excluant les espèces déjà cochées.</div>';
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:24px; color:var(--ink-3);">Charge d\'abord ta life list eBird sur l\'onglet <b>Ma liste</b> — les cochées apparaîtront en photo, les manquantes en silhouette.</div>';
     if(hint) hint.textContent = '';
     return;
   }
@@ -10080,6 +10097,17 @@ function renderTargets(){
       } else renderTargets();
     });
     _targetsRegionInit = true;
+  }
+  // Init du selecteur filtre propriete (toutes/manquantes/cochees). Ecouteur pose une seule fois.
+  const ownedSel = $('#targetsOwnedFilt');
+  if(ownedSel && !ownedSel._init){
+    ownedSel.value = _targetsOwnedFilter || '';
+    ownedSel.addEventListener('change', () => {
+      _targetsOwnedFilter = ownedSel.value || '';
+      try{ localStorage.setItem('mb-targets-owned', _targetsOwnedFilter); }catch(_){}
+      renderTargets();
+    });
+    ownedSel._init = true;
   }
   // Si region choisie mais data pas encore chargee, la charger en background.
   const regionData = _targetsRegion ? REAL_FREQ_MONTHLY_BY_REGION[_targetsRegion] : null;
@@ -10110,7 +10138,9 @@ function renderTargets(){
   for(const sci in REAL_ABUNDANCE_ST_FR){
     if(_isSciAliasSource(sci)) continue;
     if(isHiddenSpecies(sci)) continue;
-    if(_mineHasStrict(mine, sci)) continue;
+    // Ne pas exclure les cochees : toutes les especes affichees, les manquantes en silhouette.
+    // Filtre "owned" applique apres le tri.
+    const owned = _mineHasStrict(mine, sci);
     const st = REAL_ABUNDANCE_ST_FR[sci];
     if(!Array.isArray(st.w) || st.w.length !== 52) continue;
     const wNat = st.w[curWeek];
@@ -10161,20 +10191,26 @@ function renderTargets(){
       score = wNat;
       wDisplay = wNat;
     }
-    candidates.push({ sci, wVal: wDisplay, wReg, score, regionalFreq, tier: rarityForCountry(sci, 'FR') });
+    candidates.push({ sci, wVal: wDisplay, wReg, score, regionalFreq, owned, tier: rarityForCountry(sci, 'FR') });
   }
   if(!candidates.length){
     grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--ink-3);">Aucune espèce cible cette semaine' + (regionSelected ? ' dans cette région' : '') + '.</div>';
     if(hint) hint.textContent = '';
     return;
   }
-  // Tri : score decroissant. Top 30 (onglet dedie -> place pour beaucoup de cibles).
+  // Tri : score decroissant. Top 50 pour laisser place aux cochees + manquantes.
   candidates.sort((a, b) => b.score - a.score);
-  const top = candidates.slice(0, 30);
+  // Applique le filtre proprietaire APRES le tri.
+  let display = candidates;
+  if(_targetsOwnedFilter === 'missing') display = candidates.filter(c => !c.owned);
+  else if(_targetsOwnedFilter === 'owned') display = candidates.filter(c => c.owned);
+  const top = display.slice(0, 50);
   if(hint){
     const regName = regionSelected ? (FR_REGIONS.find(r => r.code === _targetsRegion)?.name || _targetsRegion) : 'France entière';
     const precisionTag = regionSelected ? (hasRegionalST ? ' · densité régionale S&T' : ' · densité nationale × présence régionale') : '';
-    hint.textContent = `Semaine ${curWeek + 1}/52 · ${regName}${precisionTag} · ${candidates.length} espèces disponibles, ${mine.size} déjà cochées.`;
+    const ownedCount = candidates.filter(c => c.owned).length;
+    const missingCount = candidates.length - ownedCount;
+    hint.textContent = `Semaine ${curWeek + 1}/52 · ${regName}${precisionTag} · ${candidates.length} espèces (${ownedCount} cochées · ${missingCount} manquantes).`;
   }
   // Rendu cartes. En mode region avec S&T weekly regional : ind/h regional cette semaine
   // (temporel + spatial precis). En mode region fallback : ind/h national + % listes region.
@@ -10197,10 +10233,13 @@ function renderTargets(){
         metricStr += ` · ${pctStr}% listes région (mensuel)`;
       }
     }
-    return `<div class="target-card" data-sci="${esc(c.sci)}">
+    // Manquantes -> classe .missing (silhouette + nom italique, style Dex).
+    const missingCls = c.owned ? '' : ' missing';
+    const ownedBadge = c.owned ? ' <span style="font-size:11px; color:var(--accent); font-weight:700;">✓ vue</span>' : '';
+    return `<div class="target-card${missingCls}" data-sci="${esc(c.sci)}">
       <div class="t-img" data-targ-lazy="${esc(c.sci)}">🐦</div>
       <div class="t-info">
-        <div class="t-name">${esc(nm)}</div>
+        <div class="t-name">${esc(nm)}${ownedBadge}</div>
         <div class="t-meta">
           <span class="t-tier" style="background:${tierColor}">${c.tier}</span>
           <span>${esc(tierLbl)}</span>
