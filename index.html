@@ -2048,7 +2048,14 @@ function exoticCategoryInCountry(sci, country){
   if(cc === 'FR' && EXOTIC[k]) return EXOTIC_CATEGORY[k] || 'X';
   return '';
 }
-function rarityReal(sci){ return REAL_RARITY[(sci||'').trim().toLowerCase()] || 1; }
+// Depuis migration S&T (26/08/2026) : rarityReal renvoie le tier apres merge S&T+bar chart
+// (via _tierFromSTvsBarChart) pour rester coherent avec le tier affiche sur les fiches.
+// Anciennement : REAL_RARITY[k] || 1 pur bar chart.
+function rarityReal(sci){
+  const k = (sci||'').trim().toLowerCase();
+  const bar = REAL_RARITY[k] || 1;
+  return _tierFromSTvsBarChart(k, bar);
+}
 // Version category-aware pour les filtres et le tri : les exotiques renvoient leur vrai
 // tier (via _exoticTier). Utilisee par le feed, la carte "A cocher", les stats profil,
 // les suggests, MEGA_CATALOG, etc. rarityReal (ci-dessus) reste utilise pour les cas ou
@@ -2555,7 +2562,8 @@ function realTier(sci, abroad){
     const kk = (sci||'').trim().toLowerCase();
     const cat = _exoticCategory(kk);
     if(cat === 'N' || cat === 'P'){
-      const t = _exoticTier(kk);
+      // Utilise rarityForCountry qui applique le merge S&T + GBIF (coherent avec fiche).
+      const t = rarityForCountry(sci, 'FR');
       if(t) return { id:'r'+t, ord:t, label: REAL_LABELS[t]||('niveau '+t), color:realColor(t) };
     }
     return { id:'exo', ord:0, label: EXOTIC_CATEGORY_LABEL[cat] || 'Exotique', color:'#7e8a99' };
@@ -2570,7 +2578,10 @@ function realTier(sci, abroad){
       ? { id:'etr', ord:0, label:'Étranger', color:'#8a7fb3' }
       : { id:'hr', ord:0, label:'Hors référence', color:'#9aa5b1' };
   }
-  const w=rarityReal(sci); return { id:'r'+w, ord:w, label:REAL_LABELS[w]||('niveau '+w), color:realColor(w) };
+  // Utilise rarityForCountry (merge S&T composite + bar chart) au lieu de rarityReal
+  // (bar chart brut). Sinon le classement affiche un tier different de celui de la fiche.
+  const w = rarityForCountry(sci, 'FR');
+  return { id:'r'+w, ord:w, label:REAL_LABELS[w]||('niveau '+w), color:realColor(w) };
 }
 // Cochage hors compétition : visible mais non compté.
 const FOREIGN_TIER = { id:'etr', ord:-1, label:'Étranger', color:'#8a7fb3' };
