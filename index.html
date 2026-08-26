@@ -8824,6 +8824,14 @@ function _renderSpeciesFreqChart(key, country){
   } else {
     ccLabel = { FR:'France', ME:'Monténégro' }[cc] || cc;
   }
+  // Note "fallback national" : si user a choisi une region mais aucune data regionale
+  // dispo pour cette espece (ex : Macareux moine en IdF), le chart tombe sur la moyenne
+  // France entiere -> confusion. On ajoute une note explicite.
+  let fallbackNote = '';
+  if(cc === 'FR' && _speciesRegion && !regionScope && typeof FR_REGIONS !== 'undefined'){
+    const regName = (FR_REGIONS.find(r => r.code === _speciesRegion) || {}).name || _speciesRegion;
+    fallbackNote = ` <em style="color:var(--ink-3); font-weight:400; font-style:italic;">— pas de données pour ${esc(regName)}, affichage France entière</em>`;
+  }
   // Texte d'entete : "France — pic mi-octobre (3.2 ind/h)" ou "France — pic en octobre (30 %)"
   let peakLbl, peakVal;
   if(isWeekly){
@@ -8837,7 +8845,7 @@ function _renderSpeciesFreqChart(key, country){
             : maxV >= 0.001 ? maxV.toFixed(4)
             : maxV >= 0.0001 ? maxV.toFixed(5)
             : '<0.0001';
-    srcEl.textContent = `${ccLabel} — pic ${peakLbl} (${peakVal} ${unitLabel})`;
+    srcEl.innerHTML = `${esc(ccLabel)} — pic ${esc(peakLbl)} (${esc(String(peakVal))} ${esc(unitLabel)})${fallbackNote}`;
   } else {
     // Source mensuelle etiree a 52 slots : le pic est au premier slot du mois pic,
     // on reconvertit vers un label mois-only pour ne pas suggerer une precision fictive.
@@ -8851,7 +8859,7 @@ function _renderSpeciesFreqChart(key, country){
             : maxV >= 0.001 ? (maxV*100).toFixed(2) // 0.1-1%
             : maxV >= 0.0001 ? (maxV*100).toFixed(3)// 0.01-0.1%
             : '<0.01';
-    srcEl.textContent = `${ccLabel} — pic ${peakLbl} (${peakVal} %)`;
+    srcEl.innerHTML = `${esc(ccLabel)} — pic ${esc(peakLbl)} (${esc(String(peakVal))} %)${fallbackNote}`;
   }
   // Layout du chart : toujours 520x130 (52 slots dans tous les cas, weekly S&T reel ou
   // monthly bar chart etire).
