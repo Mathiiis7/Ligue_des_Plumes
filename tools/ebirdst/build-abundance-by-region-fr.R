@@ -23,7 +23,6 @@ suppressPackageStartupMessages({
   library(sf)
   library(terra)
   library(dplyr)
-  library(rnaturalearth)
   library(jsonlite)
 })
 
@@ -51,20 +50,28 @@ sp_to_process <- map[!is.na(map$species_code), ]
 n_total <- nrow(sp_to_process)
 cat("    ", n_total, "/", length(fr_sci), " matchees S&T.\n", sep = "")
 
-# -------- 3) Polygones 13 regions FR (ISO 3166-2) --------
-cat("[3] Polygones 13 regions FR (ne_states)...\n")
-# ne_states retourne les regions administratives niveau 1 (regions FR depuis 2016).
-# Colonne iso_3166_2 = code style "FR-IDF", "FR-PAC" etc. On garde uniquement metropole
-# (13 regions) : les DROM (FR-GUA, FR-MAR, etc) ne sont pas dans notre app.
+# -------- 3) Polygones 13 regions FR (GeoJSON local) --------
+# Fichier : tools/regions-fr.geojson (source gregoiredavid/france-geojson, codes INSEE).
+# On evite rnaturalearthhires (package pas dispo par defaut, install foireuse en 4.6).
+cat("[3] Polygones 13 regions FR (regions-fr.geojson)...\n")
 metro_codes <- c("FR-ARA","FR-BFC","FR-BRE","FR-COR","FR-CVL","FR-GES",
                  "FR-HDF","FR-IDF","FR-NAQ","FR-NOR","FR-OCC","FR-PAC","FR-PDL")
-regions_all <- ne_states(country = "France", returnclass = "sf")
-regions <- regions_all[regions_all$iso_3166_2 %in% metro_codes, ]
-# Ordre stable + verification
-regions <- regions[match(metro_codes, regions$iso_3166_2), ]
-missing_reg <- metro_codes[is.na(regions$iso_3166_2)]
-if (length(missing_reg) > 0) stop("Regions manquantes dans ne_states : ", paste(missing_reg, collapse = ", "))
-cat("    ", nrow(regions), " regions chargees : ", paste(regions$iso_3166_2, collapse = ", "), "\n", sep = "")
+# Table code INSEE -> code ISO 3166-2 (utilise par l'app dans REAL_FREQ_MONTHLY_BY_REGION)
+insee_to_iso <- c(
+  "11" = "FR-IDF", "24" = "FR-CVL", "27" = "FR-BFC", "28" = "FR-NOR",
+  "32" = "FR-HDF", "44" = "FR-GES", "52" = "FR-PDL", "53" = "FR-BRE",
+  "75" = "FR-NAQ", "76" = "FR-OCC", "84" = "FR-ARA", "93" = "FR-PAC",
+  "94" = "FR-COR"
+)
+regions_all <- st_read("C:/Users/mathi/Documents/Ligue_des_Plumes/tools/regions-fr.geojson",
+                       quiet = TRUE)
+regions_all$iso <- insee_to_iso[as.character(regions_all$code)]
+regions_all <- regions_all[!is.na(regions_all$iso), ]
+# Ordre stable
+regions <- regions_all[match(metro_codes, regions_all$iso), ]
+missing_reg <- metro_codes[is.na(regions$iso)]
+if (length(missing_reg) > 0) stop("Regions manquantes : ", paste(missing_reg, collapse = ", "))
+cat("    ", nrow(regions), " regions chargees : ", paste(regions$iso, collapse = ", "), "\n", sep = "")
 
 # -------- 4) Boucle par espece : extraction weekly x 13 regions --------
 cat("[4] Traitement (", n_total, " especes)...\n", sep = "")
