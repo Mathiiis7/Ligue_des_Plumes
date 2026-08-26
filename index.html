@@ -8352,8 +8352,13 @@ function _renderSpeciesRarityCard(key){
           : (REAL_RARITY[k] || (_isForeignOnly(k) ? 9 : 1));
         const barSrcLabel = isEstabExo ? 'GBIF exotiques (parcs urbains inclus)' : 'Bar chart eBird FR 2019-2026';
         const barSrcShort = isEstabExo ? 'GBIF' : 'bar chart';
+        // Si st.a == 0 (S&T dit "pas presente en France", ex : vagrant transatlantique), le merge
+        // court-circuite avec la source d'appui. Ne pas afficher "S&T retenu" a tort.
+        const stValid = !!st.a;
         const stComp = st.t;
-        const stKept = Math.abs(stComp - barTier) <= 1;
+        // S&T "retenu" seulement s'il a une valeur non-nulle ET l'ecart avec bar chart <= 1.
+        // Sinon (st.a==0 vagrants transatlantiques, ou ecart trop grand) : source d'appui gagne.
+        const stKept = stValid && Math.abs(stComp - barTier) <= 1;
         const mkRow = (t, lbl, weight) => {
           const c = realColor(t);
           const lb = (typeof REAL_LABELS === 'object' && REAL_LABELS[t]) || ('niveau '+t);
@@ -8378,16 +8383,23 @@ function _renderSpeciesRarityCard(key){
             </div>
             <div style="font-size:10.5px;color:var(--ink-3);margin-top:4px;opacity:.85;">${barSrcLabel} : tier ${barTier}. Écart ≤ 1 tier avec S&amp;T → S&amp;T retenu (correction ML fine).</div>`;
         } else {
-          // S&T écarté par le merge : on ne montre PAS les sous-scores S&T (pas parlants),
-          // juste la source d'appui retenue et une note explicative.
-          // Détermine le type de biais pour l'explication : S&T dit plus commun = grégaire ;
-          // S&T dit plus rare = dilution localisée.
-          const biasNote = stComp < barTier
-            ? 'S&amp;T sous-estime la difficulté (biais espèce grégaire ou concentrée : abondance/heure gonflée par les gros troupeaux, mais rare à croiser en sortie type)'
-            : 'S&amp;T sous-estime la fréquence de rencontre (biais espèce ultra-localisée : diluée dans la moyenne nationale, mais facile à voir sur son hotspot)';
+          // S&T écarté par le merge. Trois cas distincts :
+          //   1. stValid=false (st.a==0) : S&T n'a pas de modèle utilisable pour la France
+          //      (vagrant transatlantique, espèce jamais observée). Source d'appui prend la
+          //      relève sans qu'on parle de "biais".
+          //   2. stComp < barTier : biais grégaire (S&T dit plus commun que réalité observée)
+          //   3. stComp > barTier : biais dilution localisée (S&T dit plus rare, hotspots dilués)
           const barMeasure = isEstabExo
             ? 'Densité GBIF (incl. iNaturalist + parcs urbains)'
             : 'Fréquence % checklists (pic biweekly)';
+          let biasNote;
+          if(!stValid){
+            biasNote = 'S&amp;T Cornell n\'a pas de modèle utilisable pour la France (espèce sans données suffisantes, généralement vagrant transatlantique ou accidentelle asiatique). Source d\'appui utilisée par défaut.';
+          } else if(stComp < barTier){
+            biasNote = `S&amp;T sous-estime la difficulté (biais espèce grégaire ou concentrée : abondance/heure gonflée par les gros troupeaux, mais rare à croiser en sortie type). Composite S&amp;T disait tier ${stComp} mais écart &gt; 1 → non retenu.`;
+          } else {
+            biasNote = `S&amp;T sous-estime la fréquence de rencontre (biais espèce ultra-localisée : diluée dans la moyenne nationale, mais facile à voir sur son hotspot). Composite S&amp;T disait tier ${stComp} mais écart &gt; 1 → non retenu.`;
+          }
           body = `
             <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">${barSrcLabel} retenu</div>
             <div style="display:flex;align-items:center;gap:8px;padding:5px 0 2px 0;">
@@ -8395,7 +8407,7 @@ function _renderSpeciesRarityCard(key){
               <span style="display:inline-block;background:${realColor(barTier)};color:#fff;padding:2px 8px;border-radius:6px;font-weight:800;font-size:13px;min-width:22px;text-align:center;">${barTier}</span>
               <span style="font-size:12px;color:var(--ink);font-weight:600;">${barMeasure}</span>
             </div>
-            <div style="font-size:10.5px;color:var(--ink-3);margin-top:6px;opacity:.85;line-height:1.4;">${biasNote}. Composite S&amp;T Cornell disait tier ${stComp} mais écart &gt; 1 → non retenu.</div>`;
+            <div style="font-size:10.5px;color:var(--ink-3);margin-top:6px;opacity:.85;line-height:1.4;">${biasNote}</div>`;
         }
         detailsHtml = `
           <details style="margin-top:6px;">
