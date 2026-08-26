@@ -1178,8 +1178,8 @@
           <h4>🥇 Rareté (ligue)</h4>
           <p>La rareté <b>au sein de votre groupe</b>. Chaque espèce rapporte <b>100 ÷ (nombre d'amis qui l'ont vue)</b>. Un oiseau que <b>toi seul</b> as coché vaut 100 points ; un oiseau vu par <b>tout le monde</b> n'en vaut presque plus. Ça récompense les listes originales, celles qui sortent du lot.</p>
           <h4>🌍 Rareté réelle</h4>
-          <p>La rareté <b>de l'oiseau en France</b>, indépendamment de la ligue. Chaque espèce reçoit un poids de <b>1 (très commun) à 9 (exceptionnel)</b>, et ton score est la somme des poids de tes espèces.</p>
-          <p>Le poids vient des <b>listes eBird de France (2015-2026)</b> : on regarde, pour chaque oiseau, <b>sur quelle part des sorties</b> il est noté à sa meilleure période de l'année (son « pic »). Un oiseau vu à presque chaque sortie → poids 1. Un oiseau que les birders ne croisent quasiment jamais → poids 9. C'est un <b>taux de rencontre réel</b>, déjà corrigé du nombre de sorties — pas un simple comptage. <span class="muted">(Le barème détaillé s'affiche sous les onglets quand ce mode est sélectionné.)</span></p>
+          <p>La rareté <b>de l'oiseau en France</b>, indépendamment de la ligue. Chaque espèce reçoit un poids de <b>1 (très commun) à 10 (fantôme)</b>, et ton score est la somme des poids de tes espèces.</p>
+          <p>Le poids vient d'un <b>composite eBird Status &amp; Trends (Cornell Lab) + bar chart eBird 2019-2026</b>. Pour chaque espèce on combine : <b>40 %</b> abondance moyenne annuelle nationale, <b>30 %</b> pic saisonnier (à la meilleure période), <b>30 %</b> pic local (au meilleur hotspot). Puis on ajuste avec le bar chart eBird (± 1 tier max) pour caler sur la fréquence réelle de rencontre. Un oiseau vu à presque chaque sortie → poids 1. Une espèce jamais observée sauf accidentelle unique → poids 10 « Fantôme » (pastille noire). <span class="muted">(Le barème détaillé s'affiche sous les onglets quand ce mode est sélectionné. Détail par espèce dans la fiche.)</span></p>
         </div>
       </details>
       <div class="real-scale" id="realScale" style="display:none;"></div>
@@ -1365,6 +1365,7 @@
           <button type="button" class="rar-chip on" data-rar="7" title="Rare">7</button>
           <button type="button" class="rar-chip on" data-rar="8" title="Très rare">8</button>
           <button type="button" class="rar-chip on" data-rar="9" title="Exceptionnel">9</button>
+          <button type="button" class="rar-chip on" data-rar="10" title="Fantôme (méga ultra-rare)" style="background:#0f0f0f; color:#fff;">10</button>
           <button type="button" class="rar-chip rar-exo on" data-rar="exo" title="Exotique / échappé">🚨</button>
           <button type="button" class="rar-chip" data-rar-all title="Cocher toutes les raretés">Tout</button>
           <button type="button" class="rar-chip" data-rar-none title="Décocher toutes les raretés">Vide</button>
@@ -4014,7 +4015,7 @@ let _loaded = { missing:'', hotspots:'' };   // clé de cache (région+jours)
 let mapFilter = { player:'all', tier:'any', country:'any', showAllObs:false };
 // Filtres propres aux modes eBird
 // `rarities` = Set des niveaux sélectionnés (nombres 1-9 ou chaîne 'exo'). Vide = pas de filtre.
-let ebFilter = { country:'FR', region:'FR', days:14, rarities:new Set([1,2,3,4,5,6,7,8,9,'exo']), month:0, dept:'', minTodo:0, source:'ebird', yearMin:2024, yearMax:2025, polygon:null, showObserved:false };
+let ebFilter = { country:'FR', region:'FR', days:14, rarities:new Set([1,2,3,4,5,6,7,8,9,10,'exo']), month:0, dept:'', minTodo:0, source:'ebird', yearMin:2024, yearMax:2025, polygon:null, showObserved:false };
 // Cache pays -> [{code, name}] pour ne pas re-fetcher a chaque changement de pays.
 const _ebRegionsCache = new Map();  // countryCode -> [{code, name}, ...]
 const _ebSubregionsCache = new Map();   // regionCode -> [{code, name}, ...]
@@ -5967,7 +5968,7 @@ else _refreshRarChips();
 document.addEventListener('click', e=>{
   // Boutons Tout / — (aucun)
   if(e.target.matches('[data-rar-all]')){
-    ebFilter.rarities = new Set([1,2,3,4,5,6,7,8,9,'exo']);
+    ebFilter.rarities = new Set([1,2,3,4,5,6,7,8,9,10,'exo']);
     _refreshRarChips(); _loaded.missing=''; renderMap(); return;
   }
   if(e.target.matches('[data-rar-none]')){
