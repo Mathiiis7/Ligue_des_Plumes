@@ -325,6 +325,21 @@
     font-size:12.5px; padding:7px 10px; border-radius:9px; cursor:pointer; max-width:200px; }
   .filt-sel:hover { border-color:var(--accent); }
   .filt-sel:focus { outline:2px solid var(--accent); }
+  /* Custom region picker (fiches especes) : dropdown riche avec bars d'abondance. */
+  .reg-picker { position:relative; display:inline-block; }
+  .reg-picker-trigger { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line-2); background:var(--surface); color:var(--ink-2); font:inherit; font-size:11px; padding:4px 8px; border-radius:6px; cursor:pointer; font-weight:600; }
+  .reg-picker-trigger:hover { border-color:var(--accent); }
+  .reg-picker-panel { position:absolute; top:calc(100% + 4px); right:0; z-index:20; background:var(--surface); border:1px solid var(--line-2); border-radius:10px; padding:4px; max-height:400px; overflow-y:auto; box-shadow:0 6px 18px rgba(0,0,0,.18); min-width:280px; }
+  .reg-picker-panel[hidden] { display:none; }
+  .reg-picker-item { display:grid; grid-template-columns:10px 1fr 60px auto; gap:8px; align-items:center; padding:6px 10px; cursor:pointer; border-radius:6px; font-size:12px; color:var(--ink); }
+  .reg-picker-item:hover { background:var(--surface-2); }
+  .reg-picker-item.on { background:var(--surface-2); font-weight:700; }
+  .reg-picker-item.absent { opacity:.5; }
+  .reg-picker-item.national { grid-template-columns:1fr; padding:8px 10px; border-bottom:1px solid var(--line-2); margin-bottom:4px; font-weight:600; }
+  .reg-picker-dot { width:10px; height:10px; border-radius:50%; }
+  .reg-picker-bar { height:5px; background:var(--line-2); border-radius:3px; overflow:hidden; }
+  .reg-picker-bar > div { height:100%; border-radius:3px; }
+  .reg-picker-val { font-size:10.5px; color:var(--ink-3); text-align:right; white-space:nowrap; }
   .tbl-scroll { overflow-x:auto; margin-top:10px; border:1px solid var(--line-2); border-radius:10px; }
   table { border-collapse:collapse; width:100%; font-size:13.5px; }
   thead th { position:sticky; top:0; background:var(--surface-2); z-index:2; text-align:left;
@@ -8423,38 +8438,78 @@ function _renderSpeciesRarityCard(key){
   if(!avail.length){ box.hidden = true; return; }
   box.hidden = false;
   const selectOpts = avail.map(c => `<option value="${esc(c.code)}">${esc(c.name)}</option>`).join('');
-  // Sélecteur région (FR uniquement, affecte le chart 52 bar). "" = national.
-  // Trie par presence de l'espece descendante : regions ou l'espece est plus abondante
-  // en tete. Regions absentes marquees "(absente)" en fin de liste. Rerend apres load
-  // des donnees regionales si elles n'etaient pas encore la.
-  const buildRegOpts = () => {
+  // Sélecteur région custom : dropdown riche avec bars d'abondance colorées.
+  // Trie par presence descendante. Regions ou espece absente = tout en bas grisées.
+  // Rerend apres lazy-load des data regionales.
+  const buildRegPanel = () => {
     if(typeof FR_REGIONS === 'undefined') return '';
     const stByReg = (typeof REAL_ABUNDANCE_ST_BY_REGION_FR === 'object') ? REAL_ABUNDANCE_ST_BY_REGION_FR : {};
     const freqByReg = (typeof REAL_FREQ_MONTHLY_BY_REGION === 'object') ? REAL_FREQ_MONTHLY_BY_REGION : {};
+    // Seuils tier S&T weekly (memes que histogramme, pour couleur coherente).
+    const _wThr = [[2.2596,1],[0.8496,2],[0.34178,3],[0.12404,4],[0.04666,5],[0.01880,6],[0.00440,7],[0.00114,8],[0.00009,9]];
+    // Seuils tier bar chart monthly (memes que build-rarity-ebird.mjs).
+    const _mThr = [[0.25,1],[0.15,2],[0.08,3],[0.04,4],[0.02,5],[0.007,6],[0.0015,7],[0.0003,8],[0.00005,9]];
+    const abdToTier = v => { if(!(v>0)) return 10; for(const [t,i] of _wThr) if(v>=t) return i; return 10; };
+    const freqToTier = v => { if(!(v>0)) return 10; for(const [t,i] of _mThr) if(v>=t) return i; return 10; };
+    // Decision : quelle source utiliser pour cette espece ? Si S&T dispo dans au moins
+    // 1 region avec valeur > 0, on utilise S&T partout (les regions sans S&T = absente).
+    // Sinon fallback bar chart pour toutes les regions.
+    let anyST = false;
+    for(const r of FR_REGIONS){
+      const e = stByReg[r.code] && stByReg[r.code][k];
+      if(e && Array.isArray(e.w) && e.w.some(v => v > 0)){ anyST = true; break; }
+    }
+    const useST = anyST;
+    const fmtST = v => v >= 10 ? Math.round(v)+' ind/h' : v >= 1 ? v.toFixed(1)+' ind/h' : v >= 0.01 ? v.toFixed(2)+' ind/h' : v >= 0.001 ? v.toFixed(3)+' ind/h' : v > 0 ? '<0.001 ind/h' : '—';
+    const fmtPct = v => { if(!(v>0)) return '—'; const p = v*100; if(p >= 10) return Math.round(p)+'%'; if(p >= 1) return p.toFixed(1)+'%'; if(p >= 0.1) return p.toFixed(2)+'%'; return '<0.1%'; };
     const scored = FR_REGIONS.map(r => {
       let score = 0;
-      const stEntry = stByReg[r.code] && stByReg[r.code][k];
-      if(stEntry && Array.isArray(stEntry.w)) score = Math.max(...stEntry.w);
-      // Fallback bar chart monthly (echelle % 0..1 * 0.1 pour rester sous les scores S&T ind/h).
-      if(!score){
-        const monArr = freqByReg[r.code] && freqByReg[r.code][k];
-        if(Array.isArray(monArr)) score = Math.max(...monArr) * 0.1;
+      if(useST){
+        const e = stByReg[r.code] && stByReg[r.code][k];
+        if(e && Array.isArray(e.w)) score = Math.max(...e.w);
+      } else {
+        const m = freqByReg[r.code] && freqByReg[r.code][k];
+        if(Array.isArray(m)) score = Math.max(...m);
       }
       return { code: r.code, name: r.name, score };
     });
     scored.sort((a, b) => b.score - a.score);
-    return '<option value="">France entière</option>'
-      + scored.map(s => {
-          const absent = s.score === 0 ? ' — absente' : '';
-          return `<option value="${esc(s.code)}"${s.code===_speciesRegion?' selected':''}>${esc(s.name)}${absent}</option>`;
-        }).join('');
+    const maxScore = scored.length ? scored[0].score : 0;
+    // Ligne France entiere en tete (sans bar, always displayed as "national")
+    const nationalRow = `<div class="reg-picker-item national${_speciesRegion===''?' on':''}" data-code="">🇫🇷 France entière</div>`;
+    const items = scored.map(s => {
+      const absent = s.score === 0;
+      const tier = absent ? 10 : (useST ? abdToTier(s.score) : freqToTier(s.score));
+      const col = realColor(tier);
+      const barW = (maxScore > 0 && s.score > 0) ? Math.max(4, Math.round(100 * s.score / maxScore)) : 0;
+      const val = absent ? 'absente' : (useST ? fmtST(s.score) : fmtPct(s.score));
+      return `<div class="reg-picker-item${absent?' absent':''}${s.code===_speciesRegion?' on':''}" data-code="${esc(s.code)}">
+        <span class="reg-picker-dot" style="background:${col};"></span>
+        <span>${esc(s.name)}</span>
+        <div class="reg-picker-bar"><div style="width:${barW}%; background:${col};"></div></div>
+        <span class="reg-picker-val">${esc(val)}</span>
+      </div>`;
+    }).join('');
+    return nationalRow + items;
   };
-  const regOpts = buildRegOpts();
+  // Trigger label : reflete la selection courante
+  const getTriggerLabel = () => {
+    if(!_speciesRegion) return '🇫🇷 France entière';
+    if(typeof FR_REGIONS === 'undefined') return _speciesRegion;
+    const r = FR_REGIONS.find(x => x.code === _speciesRegion);
+    return r ? '📍 ' + r.name : _speciesRegion;
+  };
   box.innerHTML = `
     <div class="sm-card-title" style="display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
       <span>Rareté</span>
       <select id="smRarityCountrySel" class="filt-sel" style="font-size:11px; padding:2px 6px; font-weight:600; text-transform:none; letter-spacing:0;">${selectOpts}</select>
-      <select id="smRarityRegionSel" class="filt-sel" style="font-size:11px; padding:2px 6px; font-weight:600; text-transform:none; letter-spacing:0; display:none;" title="Histogramme S&T par région">${regOpts}</select>
+      <div class="reg-picker" id="smRegPicker" style="display:none;">
+        <button type="button" class="reg-picker-trigger" id="smRegPickerBtn" title="Histogramme S&T par région">
+          <span id="smRegPickerLabel">${esc(getTriggerLabel())}</span>
+          <span style="opacity:.6;">▾</span>
+        </button>
+        <div class="reg-picker-panel" id="smRegPickerPanel" hidden>${buildRegPanel()}</div>
+      </div>
     </div>
     <div id="smRarityLine"></div>`;
   const renderLine = (cc) => {
@@ -8679,9 +8734,9 @@ function _renderSpeciesRarityCard(key){
   const initCountry = avail.find(c => c.code === ctxCountry) ? ctxCountry : avail[0].code;
   renderLine(initCountry);
   // Le sélecteur région n'est utile que pour FR. Cache si autre pays.
-  const regSel = $('#smRarityRegionSel');
-  const updateRegSelVisibility = (cc) => { if(regSel) regSel.style.display = (cc === 'FR') ? '' : 'none'; };
-  updateRegSelVisibility(initCountry);
+  const regPick = $('#smRegPicker');
+  const updateRegVisibility = (cc) => { if(regPick) regPick.style.display = (cc === 'FR') ? '' : 'none'; };
+  updateRegVisibility(initCountry);
   // Lazy-load les 2 sources régionales en parallele au premier affichage FR :
   //   - S&T weekly (52 bar exactes si Cornell a l'espece pour cette region)
   //   - Bar chart monthly regional (12 mois etires en 52, fallback pour espece hors Cornell)
@@ -8690,10 +8745,9 @@ function _renderSpeciesRarityCard(key){
     if(typeof _loadAbundanceRegionData === 'function') promises.push(_loadAbundanceRegionData());
     if(typeof _loadFreqData === 'function') promises.push(_loadFreqData());
     if(promises.length) Promise.all(promises).then(() => {
-      // Rebuild du select region (tri par presence de l'espece) maintenant que les data
-      // regionales sont chargees. On preserve la selection courante.
-      const rs = $('#smRarityRegionSel');
-      if(rs) rs.innerHTML = buildRegOpts();
+      // Rebuild du panel avec les vraies data + tri par abondance.
+      const p = $('#smRegPickerPanel');
+      if(p) p.innerHTML = buildRegPanel();
       if(_speciesRegion) _renderSpeciesFreqChart(k, initCountry);
     });
   }
@@ -8701,23 +8755,49 @@ function _renderSpeciesRarityCard(key){
   const sel = $('#smRarityCountrySel');
   if(sel){ sel.value = initCountry; sel.addEventListener('change', e => {
     renderLine(e.target.value);
-    updateRegSelVisibility(e.target.value);
+    updateRegVisibility(e.target.value);
     _renderSpeciesFreqChart(k, e.target.value);
   }); }
-  if(regSel){ regSel.addEventListener('change', e => {
-    _speciesRegion = e.target.value || '';
-    try{ localStorage.setItem('mb-species-region', _speciesRegion); }catch(_){}
-    // Charger les 2 sources en parallele : S&T weekly + monthly bar chart, toutes deux
-    // peuvent servir en mode regional selon ce que Cornell a modelisé pour l'espece.
-    if(_speciesRegion){
-      const proms = [];
-      if(typeof _loadAbundanceRegionData === 'function') proms.push(_loadAbundanceRegionData());
-      if(typeof _loadFreqData === 'function') proms.push(_loadFreqData());
-      Promise.all(proms).then(() => _renderSpeciesFreqChart(k, $('#smRarityCountrySel')?.value || 'FR'));
-    } else {
-      _renderSpeciesFreqChart(k, $('#smRarityCountrySel')?.value || 'FR');
-    }
-  }); }
+  // Custom region picker : ouvre/ferme au clic, item click = set region + close + rerender.
+  if(regPick){
+    const btn = regPick.querySelector('.reg-picker-trigger');
+    const panel = regPick.querySelector('.reg-picker-panel');
+    const lbl = regPick.querySelector('#smRegPickerLabel');
+    // Toggle panel
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      panel.hidden = !panel.hidden;
+    });
+    // Click sur un item
+    panel.addEventListener('click', e => {
+      const it = e.target.closest('.reg-picker-item');
+      if(!it) return;
+      _speciesRegion = it.dataset.code || '';
+      try{ localStorage.setItem('mb-species-region', _speciesRegion); }catch(_){}
+      // Update label + close panel + rerender chart (avec eventuel lazy-load).
+      if(lbl) lbl.textContent = getTriggerLabel();
+      panel.querySelectorAll('.reg-picker-item.on').forEach(x => x.classList.remove('on'));
+      it.classList.add('on');
+      panel.hidden = true;
+      const cc2 = $('#smRarityCountrySel')?.value || 'FR';
+      if(_speciesRegion){
+        const proms = [];
+        if(typeof _loadAbundanceRegionData === 'function') proms.push(_loadAbundanceRegionData());
+        if(typeof _loadFreqData === 'function') proms.push(_loadFreqData());
+        Promise.all(proms).then(() => _renderSpeciesFreqChart(k, cc2));
+      } else {
+        _renderSpeciesFreqChart(k, cc2);
+      }
+    });
+    // Click outside : ferme le panel
+    document.addEventListener('click', e => {
+      if(!panel.hidden && !regPick.contains(e.target)) panel.hidden = true;
+    });
+    // Escape ferme aussi
+    document.addEventListener('keydown', e => {
+      if(e.key === 'Escape' && !panel.hidden) panel.hidden = true;
+    });
+  }
 }
 // Description Wikipedia (extrait 1er paragraphe) via API REST summary. FR puis EN en fallback.
 const _spDescCache = new Map();
@@ -8772,8 +8852,12 @@ function _renderSpeciesFreqChart(key, country){
   //           (3) fallback bar chart mensuel 12 valeurs ETIREES sur 52 slots (FR ou ME)
   let arr = null, isWeekly = false, unitLabel = '%';
   let regionScope = '';   // '' = national, sinon code region (FR-IDF etc.) pour l'affichage
+  // MODE STRICT REGIONAL : si l'utilisateur a choisi une region, on utilise UNIQUEMENT
+  // les data regionales (S&T weekly ou bar chart monthly). Si l'espece est absente de
+  // la region, on affiche une note et pas de chart plutot que fallback national trompeur.
+  const strictRegional = (cc === 'FR' && _speciesRegion);
   // Cas 1 : S&T weekly regional (fine, la meilleure info spatiale-temporelle)
-  if(cc === 'FR' && _speciesRegion
+  if(strictRegional
      && typeof REAL_ABUNDANCE_ST_BY_REGION_FR === 'object'
      && REAL_ABUNDANCE_ST_BY_REGION_FR[_speciesRegion]){
     const regEntry = REAL_ABUNDANCE_ST_BY_REGION_FR[_speciesRegion][key];
@@ -8781,28 +8865,26 @@ function _renderSpeciesFreqChart(key, country){
       arr = regEntry.w; isWeekly = true; unitLabel = 'ind/h'; regionScope = _speciesRegion;
     }
   }
-  // Cas 2 : S&T weekly national (fallback si pas de region ou data regionale vide)
-  if(!arr && cc === 'FR' && typeof REAL_ABUNDANCE_ST_FR !== 'undefined' && REAL_ABUNDANCE_ST_FR[key]
+  // Cas 2 : S&T weekly national (SEULEMENT si pas en mode region)
+  if(!arr && !strictRegional && cc === 'FR' && typeof REAL_ABUNDANCE_ST_FR !== 'undefined' && REAL_ABUNDANCE_ST_FR[key]
      && Array.isArray(REAL_ABUNDANCE_ST_FR[key].w) && REAL_ABUNDANCE_ST_FR[key].w.length === 52){
     const wv = REAL_ABUNDANCE_ST_FR[key].w;
-    // Requiert au moins une valeur > 0 (autrement l'histogramme est plat a zero, mieux
-    // vaut fallback bar chart). La precision 7 decimales dans le R script capte les
-    // vraies variations meme pour especes ultra-localisees (Lagopede etc.).
     if(wv.some(v => v > 0)){ arr = wv; isWeekly = true; unitLabel = 'ind/h'; }
   }
   let monthlyArr = null;   // source mensuelle si fallback : garde pour tooltips "mois"
   if(!arr){
     if(cc === 'ME' && typeof REAL_FREQ_MONTHLY_ME === 'object'){ monthlyArr = REAL_FREQ_MONTHLY_ME[key] || null; }
-    // Bar chart mensuel REGIONAL (fallback si S&T weekly regional absent mais region choisie).
-    // Cas typique : Tarin des aulnes, Corneille noire, Chardonneret elegant (absents de S&T
-    // Cornell) qui ont neanmoins un pattern mensuel regional utile.
-    if(!monthlyArr && cc === 'FR' && _speciesRegion
+    // Bar chart mensuel REGIONAL (utilise en mode region si S&T weekly regional absent)
+    if(!monthlyArr && strictRegional
        && typeof REAL_FREQ_MONTHLY_BY_REGION === 'object'
        && REAL_FREQ_MONTHLY_BY_REGION[_speciesRegion]){
       const regArr = REAL_FREQ_MONTHLY_BY_REGION[_speciesRegion][key];
-      if(regArr && regArr.length === 12){ monthlyArr = regArr; regionScope = _speciesRegion; }
+      if(regArr && regArr.length === 12 && regArr.some(v => v > 0)){
+        monthlyArr = regArr; regionScope = _speciesRegion;
+      }
     }
-    if(!monthlyArr && typeof REAL_FREQ_MONTHLY === 'object'){ monthlyArr = REAL_FREQ_MONTHLY[key] || null; }
+    // Bar chart mensuel NATIONAL (SEULEMENT si pas en mode region)
+    if(!monthlyArr && !strictRegional && typeof REAL_FREQ_MONTHLY === 'object'){ monthlyArr = REAL_FREQ_MONTHLY[key] || null; }
     if(monthlyArr && monthlyArr.length === 12){
       // Étire 12 mois -> 52 semaines (repartition proportionnelle des semaines par mois).
       // Chaque semaine w recoit la valeur du mois dont elle occupe le milieu.
@@ -8817,12 +8899,21 @@ function _renderSpeciesFreqChart(key, country){
     }
   }
   if(!arr || arr.length !== 52){
-    // Aucune source (ni S&T weekly non-nul, ni monthly). Pour les exotiques echappes
-    // cage/voliere sans obs eBird acceptee (Sarcelle a collier, Dendrocygne a ventre
-    // noir, autres X/C tres marginaux), on affiche une note explicite au lieu de
-    // cacher : le badge tier 0 sur la card Rarete oriente deja, mais la card "Quand
-    // la trouver" vide etait ambigue.
     const cc2 = country || 'FR';
+    // Cas 1 : espece absente de la region choisie (mode strict). On l'affiche
+    // explicitement pour ne pas confondre avec un fallback national trompeur.
+    if(strictRegional && typeof FR_REGIONS !== 'undefined'){
+      const regName = (FR_REGIONS.find(r => r.code === _speciesRegion) || {}).name || _speciesRegion;
+      if(card) card.hidden = false;
+      if(srcEl) srcEl.textContent = '';
+      if(svg){
+        svg.setAttribute('viewBox', '0 0 520 130');
+        svg.innerHTML = `<text x="260" y="70" font-size="12" fill="var(--ink-3)" text-anchor="middle">Espèce absente de ${esc(regName)}</text>`;
+      }
+      if(wrap) wrap.hidden = true;
+      return;
+    }
+    // Cas 2 : exotique echappe cage/voliere sans obs eBird (Sarcelle a collier, etc.)
     const cat2 = (typeof exoticCategoryInCountry === 'function') ? (exoticCategoryInCountry(key, cc2) || _exoticCategory(key)) : null;
     const parkOnly2 = (typeof isParkOnlyExotic === 'function') && isParkOnlyExotic(key);
     if(parkOnly2 || cat2 === 'X' || cat2 === 'C'){
