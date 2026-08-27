@@ -8981,6 +8981,28 @@ function _renderSpeciesFreqChart(key, country){
     const wv = REAL_ABUNDANCE_ST_FR[key].w;
     if(wv.some(v => v > 0)){ arr = wv; isWeekly = true; unitLabel = 'ind/h'; }
   }
+  // Cas 2 bis : S&T national tout-zero (espece ultra-localisee comme Colin de Californie en
+  // Corse, diluee dans la moyenne France par ratio superficie). On aggrege les regions ayant
+  // de la data en prenant le max hebdomadaire cross-region. Le label du chart signale
+  // "France (via <region>)" quand une seule region contribue.
+  if(!arr && !strictRegional && cc === 'FR' && typeof REAL_ABUNDANCE_ST_BY_REGION_FR === 'object'){
+    const stByReg = REAL_ABUNDANCE_ST_BY_REGION_FR;
+    const contributingRegions = [];
+    for(const rcode in stByReg){
+      const e = stByReg[rcode][key];
+      if(e && Array.isArray(e.w) && e.w.length === 52 && e.w.some(v => v > 0)) contributingRegions.push({ code: rcode, w: e.w });
+    }
+    if(contributingRegions.length === 1){
+      arr = contributingRegions[0].w;
+      isWeekly = true; unitLabel = 'ind/h';
+      regionScope = contributingRegions[0].code;   // note: label = "France (via Corse)"
+    } else if(contributingRegions.length > 1){
+      // Plusieurs regions -> max hebdo cross-region (approximation qui garde le meilleur signal).
+      const merged = new Array(52).fill(0);
+      for(const c of contributingRegions){ for(let i=0; i<52; i++) if(c.w[i] > merged[i]) merged[i] = c.w[i]; }
+      arr = merged; isWeekly = true; unitLabel = 'ind/h';
+    }
+  }
   let monthlyArr = null;   // source mensuelle si fallback : garde pour tooltips "mois"
   if(!arr){
     if(cc === 'ME' && typeof REAL_FREQ_MONTHLY_ME === 'object'){ monthlyArr = REAL_FREQ_MONTHLY_ME[key] || null; }
@@ -9045,10 +9067,14 @@ function _renderSpeciesFreqChart(key, country){
   const curIdx = isWeekly ? Math.min(51, Math.floor(dayOfYear / 7)) : now.getMonth();
   if(wrap) wrap.hidden = false;
   if(card) card.hidden = false;
-  // Scope affiche : "Île-de-France" si regional, "France" ou "Monténégro" sinon.
+  // Scope affiche : "Île-de-France" si mode strict region, "France (via Corse)" si
+  // agregation 1-region pour le national, "France" ou "Monténégro" sinon.
   let ccLabel;
   if(regionScope && typeof FR_REGIONS !== 'undefined'){
-    ccLabel = (FR_REGIONS.find(r => r.code === regionScope) || {}).name || regionScope;
+    const regName = (FR_REGIONS.find(r => r.code === regionScope) || {}).name || regionScope;
+    // Mode strict regional : label = juste le nom de la region.
+    // Mode agregation 1-region (national derivé) : label = "France (via <region>)".
+    ccLabel = strictRegional ? regName : ('France (via ' + regName + ')');
   } else {
     ccLabel = { FR:'France', ME:'Monténégro' }[cc] || cc;
   }
