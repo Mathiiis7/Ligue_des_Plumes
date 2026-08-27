@@ -171,10 +171,14 @@ for (cc in names(COUNTRIES)) {
     tryCatch({
       # Verbose : logge la premiere espece pour debug
       if (i <= 3) cat("      DEBUG species", i, ":", sci, code, "\n")
-      # Download raster si cache absent (Cornell key)
+      # Download raster si cache absent (Cornell key). Pattern precis pour ne
+      # telecharger QUE le abundance_median_3km (17 MB/species) et pas les fichiers
+      # d'incertitude lower/upper ni proportion-population (70 MB au total inutilises).
+      # Gain de ~4x sur volume disque + temps download.
       suppressMessages(
         ebirdst_download_status(species = code, download_abundance = TRUE,
-                                download_ranges = FALSE, pattern = "3km", force = FALSE)
+                                download_ranges = FALSE, pattern = "abundance_median_3km",
+                                force = FALSE)
       )
       # Weekly raster : 52 layers hebdo. Peut echouer si Cornell n'a pas la data 3km
       # (essaie 9km en fallback). Si les 2 echouent -> compte comme erreur.
