@@ -11227,10 +11227,11 @@ function _pkdxRender(){
   // exotiques de parcs, et le detail (categorie N/P/X/C) est visible sur la fiche espece.
   grid.innerHTML = rows.map(r => {
     const num = String(_pkdxNumById.get(r.sci) || 0).padStart(3, '0');
-    // Couleur du badge tier : per-pays (avant sciColor lisait REAL_RARITY FR meme en vue ME,
-    // donc le Pelican frise apparaissait rouge tier 8 alors que sa vraie rarete ME est 1).
-    const c = sciColorForCountry(r.sci, country);
-    const tierBg = c;
+    // Couleur du badge tier : realColor(tier) pour matcher EXACTEMENT le numero affiche.
+    // Avant : sciColorForCountry utilisait le bar chart tier brut, alors que r.tier vient
+    // de rarityForCountry qui merge S&T + overrides NATURALISED_LOCAL_BOOST. Divergence
+    // possible : Ibis sacre affichait '6' sur fond rouge (couleur du tier 7 bar chart brut).
+    const tierBg = realColor(r.tier);
     return `<div class="pkdx-card${r.owned?'':' missing'}" data-sci="${esc(r.sci)}">
       <span class="pkdx-num">#${num}</span>
       <span class="pkdx-tier" style="background:${tierBg};" title="Tier ${r.tier}">${r.tier}</span>
