@@ -263,7 +263,7 @@
   .rar-chip-m .dot { width:12px; height:12px; border:2px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.25); margin-right:2px; }
   /* Chips pays : drapeau seul, sans texte. */
   .flag-chip { padding:3px 5px; min-width:26px; justify-content:center; }
-  .flag-chip img.flag { display:block; height:14px; width:calc(14px * 4 / 3); border-radius:2px; box-shadow:0 0 0 1px rgba(0,0,0,.15); object-fit:cover; object-position:center; }
+  .flag-chip img.flag { display:block; }
   .flag-chip .flag-fallback { font:600 11px/1 system-ui; color:var(--ink-3); }
   .flag-emoji { display:inline-block; font-size:14px; line-height:1; vertical-align:middle; }
   .flag-chip .flag-emoji { font-size:16px; }
@@ -360,9 +360,7 @@
   .cp-item:hover { background:var(--surface-2); }
   .cp-item.on { background:var(--surface-2); font-weight:700; }
   .cp-item-flag { display:inline-flex; align-items:center; justify-content:center; width:28px; }
-  .cp-item-flag img.flag { height:16px; width:auto; border-radius:2px; box-shadow:0 0 0 1px rgba(0,0,0,.1); }
   .cp-btn-flag { display:inline-flex; align-items:center; }
-  .cp-btn-flag img.flag { height:14px; width:auto; border-radius:2px; box-shadow:0 0 0 1px rgba(0,0,0,.1); }
   .cp-item-name { flex:1; }
   .cp-item-meta { font-size:11px; color:var(--ink-3); }
   .cp-item.disabled { opacity:.5; cursor:not-allowed; }
@@ -385,9 +383,9 @@
     color:var(--ink-3); font-size:12px; }
   td.pcol { text-align:center; padding:0; position:relative; }
   .abroad-mark { position:absolute; bottom:1px; right:1px; font-size:8px; line-height:1; pointer-events:none; }
-  .abroad-mark .flag { height:8px; width:calc(8px * 4 / 3); vertical-align:0; border-radius:1px; box-shadow:0 0 0 .5px rgba(0,0,0,.25); object-fit:cover; object-position:center; }
+  .abroad-mark .flag { vertical-align:0; }
   .abroad-mark-inline { margin-left:3px; font-size:9px; }
-  .abroad-mark-inline .flag { height:9px; width:calc(9px * 4 / 3); vertical-align:-1px; box-shadow:0 0 0 .5px rgba(0,0,0,.2); object-fit:cover; object-position:center; }
+  .abroad-mark-inline .flag { vertical-align:-2px; }
   td.pcol.is-seen { background:color-mix(in srgb,var(--accent) 18%,var(--surface)) !important;
     color:var(--accent-ink); font-weight:700; }
   td.pcol.is-foreign { background:color-mix(in srgb,#8a7fb3 16%,var(--surface)) !important; }
@@ -396,9 +394,10 @@
   td.pcol .chk { font-style:normal; font-size:13px; }
   /* Tous les drapeaux ont un aspect-ratio uniforme (4/3) + object-fit cover : plus de
      variation de largeur entre pays (le Nepal ou la Suisse ne rompent plus l'alignement). */
-  .flag { display:inline-block; height:13px; width:calc(13px * 4 / 3); vertical-align:-2px; border-radius:2px; box-shadow:0 0 0 .5px rgba(0,0,0,.18); object-fit:cover; object-position:center; }
+  /* Taille UNIFORME des drapeaux partout dans l'app (fiches, chips, popups, modaux) */
+  .flag { display:inline-block; height:14px; width:calc(14px * 4 / 3); vertical-align:-2px; border-radius:2px; box-shadow:0 0 0 .5px rgba(0,0,0,.18); object-fit:cover; object-position:center; }
   .country-badge { display:inline-flex; align-items:center; gap:8px; padding:5px 12px; border-radius:20px; background:var(--surface-2); border:1px solid var(--line); font-size:13.5px; font-weight:600; color:var(--ink); white-space:nowrap; }
-  .country-badge .flag { height:16px; width:calc(16px * 4 / 3); vertical-align:0; }
+  .country-badge .flag { vertical-align:0; }
   .chip { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:4px;
     white-space:nowrap; background:color-mix(in srgb,var(--tc) 16%,transparent); color:var(--tc);
     border:1px solid color-mix(in srgb,var(--tc) 30%,transparent); }
