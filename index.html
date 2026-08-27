@@ -2699,6 +2699,9 @@ function rarityForCountry(sci, country){
   }
   if(reg.hasBarchart){
     if(barTier) return barTier;
+    // Fallback S&T : evite le label trompeur "Parc semi-libre" (tier 0) quand
+    // l'espece n'a juste pas d'entree bar chart mais existe dans le modele S&T.
+    if(stEntry && stEntry.t) return stEntry.t;
     return 0;
   }
   // Pays S&T-only : utilise directement le tier composite S&T
