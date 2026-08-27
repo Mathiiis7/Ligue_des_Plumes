@@ -2134,6 +2134,7 @@ const COUNTRIES_REG = {
     monthly: () => (typeof REAL_FREQ_MONTHLY !== 'undefined') ? REAL_FREQ_MONTHLY : {},
     // S&T Cornell composite tier + weekly
     st: () => (typeof REAL_ABUNDANCE_ST_FR !== 'undefined') ? REAL_ABUNDANCE_ST_FR : {},
+    monthlyByRegion: () => REAL_FREQ_MONTHLY_BY_REGION_MULTI['FR'] || null,
     hasBarchart: true,
   },
   ME: {
@@ -2141,6 +2142,7 @@ const COUNTRIES_REG = {
     barTier: () => (typeof REAL_RARITY_ME_EBIRD !== 'undefined') ? REAL_RARITY_ME_EBIRD : {},
     monthly: () => (typeof REAL_FREQ_MONTHLY_ME !== 'undefined') ? REAL_FREQ_MONTHLY_ME : {},
     st: () => (typeof REAL_ABUNDANCE_ST_ME !== 'undefined') ? REAL_ABUNDANCE_ST_ME : {},
+    monthlyByRegion: () => null,   // ME : pas de subdivisions
     hasBarchart: true,
   },
   ES: {
@@ -2148,6 +2150,7 @@ const COUNTRIES_REG = {
     barTier: () => (typeof REAL_RARITY_ES_EBIRD !== 'undefined') ? REAL_RARITY_ES_EBIRD : {},
     monthly: () => (typeof REAL_FREQ_MONTHLY_ES !== 'undefined') ? REAL_FREQ_MONTHLY_ES : {},
     st: () => (typeof REAL_ABUNDANCE_ST_ES !== 'undefined') ? REAL_ABUNDANCE_ST_ES : {},
+    monthlyByRegion: () => REAL_FREQ_MONTHLY_BY_REGION_MULTI['ES'] || null,
     hasBarchart: true,
   },
   IT: {
@@ -2155,6 +2158,7 @@ const COUNTRIES_REG = {
     barTier: () => (typeof REAL_RARITY_IT_EBIRD !== 'undefined') ? REAL_RARITY_IT_EBIRD : {},
     monthly: () => (typeof REAL_FREQ_MONTHLY_IT !== 'undefined') ? REAL_FREQ_MONTHLY_IT : {},
     st: () => (typeof REAL_ABUNDANCE_ST_IT !== 'undefined') ? REAL_ABUNDANCE_ST_IT : {},
+    monthlyByRegion: () => REAL_FREQ_MONTHLY_BY_REGION_MULTI['IT'] || null,
     hasBarchart: true,
   },
   GB: {
@@ -2162,6 +2166,7 @@ const COUNTRIES_REG = {
     barTier: () => (typeof REAL_RARITY_GB_EBIRD !== 'undefined') ? REAL_RARITY_GB_EBIRD : {},
     monthly: () => (typeof REAL_FREQ_MONTHLY_GB !== 'undefined') ? REAL_FREQ_MONTHLY_GB : {},
     st: () => (typeof REAL_ABUNDANCE_ST_GB !== 'undefined') ? REAL_ABUNDANCE_ST_GB : {},
+    monthlyByRegion: () => REAL_FREQ_MONTHLY_BY_REGION_MULTI['GB'] || null,
     hasBarchart: true,
   },
   PT: {
@@ -2169,6 +2174,7 @@ const COUNTRIES_REG = {
     barTier: () => (typeof REAL_RARITY_PT_EBIRD !== 'undefined') ? REAL_RARITY_PT_EBIRD : {},
     monthly: () => (typeof REAL_FREQ_MONTHLY_PT !== 'undefined') ? REAL_FREQ_MONTHLY_PT : {},
     st: () => (typeof REAL_ABUNDANCE_ST_PT !== 'undefined') ? REAL_ABUNDANCE_ST_PT : {},
+    monthlyByRegion: () => REAL_FREQ_MONTHLY_BY_REGION_MULTI['PT'] || null,
     hasBarchart: true,
   },
 };
@@ -3453,6 +3459,83 @@ const FR_REGIONS = [
   { code:'FR-PDL', name:'Pays de la Loire' },
   { code:'FR-PAC', name:"Provence-Alpes-Côte d'Azur" },
 ];
+// Regions par pays (admin1 eBird). Sert au region picker de la fiche espece pour
+// afficher les regions pertinentes du pays selectionne + charger la data associee.
+const REGIONS_BY_COUNTRY = {
+  FR: FR_REGIONS,
+  ME: [],   // Monténégro : pas de subdivisions bar chart eBird
+  ES: [
+    { code:'ES-AN', name:'Andalousie' },
+    { code:'ES-AR', name:'Aragon' },
+    { code:'ES-AS', name:'Asturies' },
+    { code:'ES-CB', name:'Cantabrie' },
+    { code:'ES-CE', name:'Ceuta' },
+    { code:'ES-CL', name:'Castille-et-León' },
+    { code:'ES-CM', name:'Castille-La Manche' },
+    { code:'ES-CN', name:'Îles Canaries' },
+    { code:'ES-CT', name:'Catalogne' },
+    { code:'ES-EX', name:'Estrémadure' },
+    { code:'ES-GA', name:'Galice' },
+    { code:'ES-IB', name:'Îles Baléares' },
+    { code:'ES-MC', name:'Murcie' },
+    { code:'ES-MD', name:'Madrid' },
+    { code:'ES-ML', name:'Melilla' },
+    { code:'ES-NC', name:'Navarre' },
+    { code:'ES-PV', name:'Pays basque' },
+    { code:'ES-RI', name:'La Rioja' },
+    { code:'ES-VC', name:'Valence' },
+  ],
+  IT: [
+    { code:'IT-21', name:'Piémont' },
+    { code:'IT-23', name:"Val d'Aoste" },
+    { code:'IT-25', name:'Lombardie' },
+    { code:'IT-32', name:'Trentin-Haut-Adige' },
+    { code:'IT-34', name:'Vénétie' },
+    { code:'IT-36', name:'Frioul-Vénétie Julienne' },
+    { code:'IT-42', name:'Ligurie' },
+    { code:'IT-45', name:'Émilie-Romagne' },
+    { code:'IT-52', name:'Toscane' },
+    { code:'IT-55', name:'Ombrie' },
+    { code:'IT-57', name:'Marches' },
+    { code:'IT-62', name:'Latium' },
+    { code:'IT-65', name:'Abruzzes' },
+    { code:'IT-67', name:'Molise' },
+    { code:'IT-72', name:'Campanie' },
+    { code:'IT-75', name:'Pouilles' },
+    { code:'IT-77', name:'Basilicate' },
+    { code:'IT-78', name:'Calabre' },
+    { code:'IT-82', name:'Sicile' },
+    { code:'IT-88', name:'Sardaigne' },
+  ],
+  GB: [
+    { code:'GB-ENG', name:'Angleterre' },
+    { code:'GB-SCT', name:'Écosse' },
+    { code:'GB-WLS', name:'Pays de Galles' },
+    { code:'GB-NIR', name:'Irlande du Nord' },
+  ],
+  PT: [
+    { code:'PT-01', name:'Aveiro' },
+    { code:'PT-02', name:'Beja' },
+    { code:'PT-03', name:'Braga' },
+    { code:'PT-04', name:'Bragance' },
+    { code:'PT-05', name:'Castelo Branco' },
+    { code:'PT-06', name:'Coimbra' },
+    { code:'PT-07', name:'Évora' },
+    { code:'PT-08', name:'Faro' },
+    { code:'PT-09', name:'Guarda' },
+    { code:'PT-10', name:'Leiria' },
+    { code:'PT-11', name:'Lisbonne' },
+    { code:'PT-12', name:'Portalegre' },
+    { code:'PT-13', name:'Porto' },
+    { code:'PT-14', name:'Santarém' },
+    { code:'PT-15', name:'Setúbal' },
+    { code:'PT-16', name:'Viana do Castelo' },
+    { code:'PT-17', name:'Vila Real' },
+    { code:'PT-18', name:'Viseu' },
+    { code:'PT-20', name:'Açores' },
+    { code:'PT-30', name:'Madère' },
+  ],
+};
 const REDLIST = {"dendrocygna bicolor":{"fr":"NE","global":"LC"},"branta bernicla":{"fr":"LC","global":"LC"},"branta ruficollis":{"fr":"NAb","global":"VU"},"branta canadensis":{"fr":"NAa","global":"LC"},"branta leucopsis":{"fr":"NAc","global":"LC"},"anser indicus":{"fr":"NE","global":"LC"},"anser caerulescens":{"fr":"NAb","global":"LC"},"anser anser":{"fr":"VU","global":"LC"},"anser cygnoides":{"fr":"NE","global":"EN"},"anser fabalis":{"fr":"VU","global":"LC"},"anser brachyrhynchus":{"fr":"NAb","global":"LC"},"anser serrirostris":{"fr":"NE","global":"NE"},"anser albifrons":{"fr":"NAc","global":"LC"},"anser erythropus":{"fr":"NAb","global":"VU"},"cygnus atratus":{"fr":"NE","global":"LC"},"cygnus olor":{"fr":"LC","global":"LC"},"cygnus columbianus":{"fr":"EN","global":"LC"},"cygnus cygnus":{"fr":"NAb","global":"LC"},"alopochen aegyptiaca":{"fr":"NAa","global":"LC"},"tadorna tadorna":{"fr":"LC","global":"LC"},"tadorna ferruginea":{"fr":"NAa","global":"LC"},"cairina moschata":{"fr":"NE","global":"LC"},"aix sponsa":{"fr":"NE","global":"LC"},"aix galericulata":{"fr":"NAa","global":"LC"},"sibirionetta formosa":{"fr":"NAb","global":"LC"},"spatula querquedula":{"fr":"VU","global":"LC"},"spatula discors":{"fr":"NAb","global":"LC"},"spatula clypeata":{"fr":"LC","global":"LC"},"mareca strepera":{"fr":"LC","global":"LC"},"mareca penelope":{"fr":"NAb","global":"LC"},"mareca americana":{"fr":"NAb","global":"LC"},"anas platyrhynchos":{"fr":"LC","global":"LC"},"anas rubripes":{"fr":"NAb","global":"LC"},"anas acuta":{"fr":"NAb","global":"LC"},"anas crecca":{"fr":"VU","global":"LC"},"marmaronetta angustirostris":{"fr":"RE","global":"NT"},"netta rufina":{"fr":"LC","global":"LC"},"aythya ferina":{"fr":"VU","global":"VU"},"aythya nyroca":{"fr":"NAb","global":"NT"},"aythya collaris":{"fr":"NAc","global":"LC"},"aythya fuligula":{"fr":"LC","global":"LC"},"aythya marila":{"fr":"NT","global":"LC"},"aythya affinis":{"fr":"NAb","global":"LC"},"polysticta stelleri":{"fr":"NAb","global":"VU"},"somateria spectabilis":{"fr":"NAb","global":"LC"},"somateria mollissima":{"fr":"CR","global":"NT"},"histrionicus histrionicus":{"fr":"NE","global":"LC"},"melanitta perspicillata":{"fr":"NAb","global":"LC"},"melanitta fusca":{"fr":"EN","global":"VU"},"melanitta deglandi":{"fr":"NAb","global":"LC"},"melanitta stejnegeri":{"fr":"NE","global":"LC"},"melanitta nigra":{"fr":"LC","global":"LC"},"melanitta americana":{"fr":"NAb","global":"NT"},"clangula hyemalis":{"fr":"NAc","global":"VU"},"bucephala albeola":{"fr":"NAb","global":"LC"},"bucephala clangula":{"fr":"NAb","global":"LC"},"bucephala islandica":{"fr":"NAb","global":"LC"},"mergellus albellus":{"fr":"VU","global":"LC"},"mergus merganser":{"fr":"NT","global":"LC"},"mergus serrator":{"fr":"CR","global":"LC"},"oxyura jamaicensis":{"fr":"NAa","global":"LC"},"oxyura leucocephala":{"fr":"RE","global":"EN"},"callipepla californica":{"fr":"NAa","global":"LC"},"colinus virginianus":{"fr":"NAa","global":"NT"},"tetrastes bonasia":{"fr":"NT","global":"LC"},"lagopus lagopus":{"fr":"NE","global":"LC"},"lagopus muta":{"fr":"NT","global":"LC"},"tetrao urogallus":{"fr":"VU","global":"LC"},"lyrurus tetrix":{"fr":"NT","global":"LC"},"perdix perdix":{"fr":"LC","global":"LC"},"syrmaticus reevesii":{"fr":"NAa","global":"VU"},"phasianus colchicus":{"fr":"LC","global":"LC"},"francolinus francolinus":{"fr":"NE","global":"LC"},"coturnix coturnix":{"fr":"LC","global":"LC"},"alectoris rufa":{"fr":"LC","global":"NT"},"alectoris chukar":{"fr":"NE","global":"LC"},"alectoris graeca":{"fr":"NT","global":"NT"},"chordeiles minor":{"fr":"NAb","global":"LC"},"caprimulgus ruficollis":{"fr":"NAb","global":"NT"},"caprimulgus europaeus":{"fr":"LC","global":"LC"},"chaetura pelagica":{"fr":"NAb","global":"VU"},"tachymarptis melba":{"fr":"LC","global":"LC"},"apus apus":{"fr":"NT","global":"LC"},"apus pallidus":{"fr":"LC","global":"LC"},"apus affinis":{"fr":"NAb","global":"LC"},"apus caffer":{"fr":"NE","global":"LC"},"otis tarda":{"fr":"RE","global":"EN"},"chlamydotis macqueenii":{"fr":"NAb","global":"VU"},"tetrax tetrax":{"fr":"EN","global":"NT"},"clamator glandarius":{"fr":"LC","global":"LC"},"coccyzus americanus":{"fr":"NAb","global":"LC"},"coccyzus erythropthalmus":{"fr":"NE","global":"LC"},"cuculus canorus":{"fr":"LC","global":"LC"},"syrrhaptes paradoxus":{"fr":"NAb","global":"LC"},"pterocles alchata":{"fr":"CR","global":"LC"},"columba livia":{"fr":"DD","global":"LC"},"columba oenas":{"fr":"LC","global":"LC"},"columba palumbus":{"fr":"LC","global":"LC"},"streptopelia turtur":{"fr":"VU","global":"VU"},"streptopelia orientalis":{"fr":"NAb","global":"LC"},"streptopelia decaocto":{"fr":"LC","global":"LC"},"rallus aquaticus":{"fr":"NT","global":"LC"},"crex crex":{"fr":"EN","global":"LC"},"porzana carolina":{"fr":"NAb","global":"LC"},"porzana porzana":{"fr":"VU","global":"LC"},"paragallinula angulata":{"fr":"NE","global":"LC"},"gallinula chloropus":{"fr":"LC","global":"LC"},"fulica atra":{"fr":"LC","global":"LC"},"fulica cristata":{"fr":"NAb","global":"LC"},"porphyrio alleni":{"fr":"NAb","global":"LC"},"porphyrio martinica":{"fr":"NE","global":"LC"},"porphyrio porphyrio":{"fr":"VU","global":"LC"},"zapornia pusilla":{"fr":"CR","global":"LC"},"zapornia parva":{"fr":"CR","global":"LC"},"antigone canadensis":{"fr":"NAb","global":"LC"},"grus virgo":{"fr":"NE","global":"LC"},"grus grus":{"fr":"CR","global":"LC"},"tachybaptus ruficollis":{"fr":"LC","global":"LC"},"podilymbus podiceps":{"fr":"NAb","global":"LC"},"podiceps grisegena":{"fr":"CR","global":"LC"},"podiceps cristatus":{"fr":"LC","global":"LC"},"podiceps auritus":{"fr":"VU","global":"VU"},"podiceps nigricollis":{"fr":"LC","global":"LC"},"phoenicopterus roseus":{"fr":"VU","global":"LC"},"phoenicopterus chilensis":{"fr":"NE","global":"NT"},"phoeniconaias minor":{"fr":"NE","global":"NT"},"turnix sylvaticus":{"fr":"NE","global":"LC"},"burhinus oedicnemus":{"fr":"LC","global":"LC"},"haematopus ostralegus":{"fr":"LC","global":"NT"},"himantopus himantopus":{"fr":"LC","global":"LC"},"recurvirostra avosetta":{"fr":"LC","global":"LC"},"pluvialis squatarola":{"fr":"LC","global":"VU"},"pluvialis apricaria":{"fr":"LC","global":"LC"},"pluvialis fulva":{"fr":"NAb","global":"LC"},"pluvialis dominica":{"fr":"NAb","global":"LC"},"eudromias morinellus":{"fr":"RE","global":"LC"},"charadrius vociferus":{"fr":"NAb","global":"NT"},"charadrius hiaticula":{"fr":"VU","global":"LC"},"charadrius semipalmatus":{"fr":"NE","global":"LC"},"charadrius dubius":{"fr":"LC","global":"LC"},"vanellus vanellus":{"fr":"NT","global":"NT"},"vanellus cinereus":{"fr":"NE","global":"LC"},"vanellus gregarius":{"fr":"NAb","global":"CR"},"vanellus leucurus":{"fr":"NAb","global":"LC"},"anarhynchus asiaticus":{"fr":"NAb","global":"LC"},"anarhynchus atrifrons":{"fr":"NE","global":"LC"},"anarhynchus mongolus":{"fr":"NAb","global":"EN"},"anarhynchus leschenaultii":{"fr":"NAb","global":"LC"},"anarhynchus pecuarius":{"fr":"NAb","global":"LC"},"anarhynchus alexandrinus":{"fr":"VU","global":"LC"},"bartramia longicauda":{"fr":"NAb","global":"LC"},"numenius phaeopus":{"fr":"NAc","global":"LC"},"numenius hudsonicus":{"fr":"NE","global":"NE"},"numenius tenuirostris":{"fr":"NAb","global":"EX"},"numenius arquata":{"fr":"VU","global":"NT"},"limosa lapponica":{"fr":"LC","global":"NT"},"limosa limosa":{"fr":"VU","global":"NT"},"limnodromus scolopaceus":{"fr":"NAb","global":"NT"},"limnodromus griseus":{"fr":"NAb","global":"VU"},"lymnocryptes minimus":{"fr":"DD","global":"LC"},"scolopax minor":{"fr":"NAb","global":"LC"},"scolopax rusticola":{"fr":"LC","global":"LC"},"gallinago media":{"fr":"NAb","global":"NT"},"gallinago gallinago":{"fr":"CR","global":"LC"},"gallinago delicata":{"fr":"NAb","global":"LC"},"phalaropus tricolor":{"fr":"NAb","global":"LC"},"phalaropus fulicarius":{"fr":"NAd","global":"LC"},"phalaropus lobatus":{"fr":"NAb","global":"LC"},"xenus cinereus":{"fr":"NAb","global":"LC"},"actitis hypoleucos":{"fr":"NT","global":"LC"},"actitis macularius":{"fr":"NAb","global":"LC"},"tringa ochropus":{"fr":"NAc","global":"LC"},"tringa solitaria":{"fr":"NAb","global":"LC"},"tringa brevipes":{"fr":"NE","global":"LC"},"tringa stagnatilis":{"fr":"NAb","global":"LC"},"tringa glareola":{"fr":"LC","global":"LC"},"tringa totanus":{"fr":"LC","global":"LC"},"tringa flavipes":{"fr":"NAb","global":"VU"},"tringa semipalmata":{"fr":"NAb","global":"LC"},"tringa erythropus":{"fr":"NAc","global":"LC"},"tringa nebularia":{"fr":"NAc","global":"LC"},"tringa melanoleuca":{"fr":"NAb","global":"NT"},"arenaria interpres":{"fr":"LC","global":"NT"},"calidris canutus":{"fr":"NT","global":"NT"},"calidris pugnax":{"fr":"NAb","global":"LC"},"calidris falcinellus":{"fr":"NAb","global":"VU"},"calidris acuminata":{"fr":"NAb","global":"VU"},"calidris himantopus":{"fr":"NAb","global":"NT"},"calidris ferruginea":{"fr":"LC","global":"VU"},"calidris temminckii":{"fr":"NAc","global":"LC"},"calidris subminuta":{"fr":"NE","global":"LC"},"calidris ruficollis":{"fr":"NAb","global":"NT"},"calidris subruficollis":{"fr":"NAb","global":"VU"},"calidris alba":{"fr":"LC","global":"LC"},"calidris alpina":{"fr":"LC","global":"NT"},"calidris maritima":{"fr":"NAc","global":"LC"},"calidris bairdii":{"fr":"NAb","global":"LC"},"calidris minuta":{"fr":"NAc","global":"LC"},"calidris minutilla":{"fr":"NAb","global":"NT"},"calidris fuscicollis":{"fr":"NAb","global":"VU"},"calidris melanotos":{"fr":"NAb","global":"LC"},"calidris mauri":{"fr":"NAb","global":"LC"},"calidris pusilla":{"fr":"NAb","global":"NT"},"cursorius cursor":{"fr":"NAb","global":"LC"},"glareola maldivarum":{"fr":"NE","global":"LC"},"glareola nordmanni":{"fr":"NAb","global":"NT"},"glareola pratincola":{"fr":"EN","global":"LC"},"onychoprion fuscatus":{"fr":"NAb","global":"LC"},"onychoprion anaethetus":{"fr":"NAb","global":"LC"},"sternula albifrons":{"fr":"LC","global":"LC"},"gelochelidon nilotica":{"fr":"VU","global":"LC"},"hydroprogne caspia":{"fr":"NT","global":"LC"},"chlidonias hybrida":{"fr":"VU","global":"LC"},"chlidonias niger":{"fr":"EN","global":"LC"},"chlidonias leucopterus":{"fr":"NAb","global":"LC"},"sterna forsteri":{"fr":"NAb","global":"LC"},"sterna paradisaea":{"fr":"CR","global":"LC"},"sterna hirundo":{"fr":"LC","global":"LC"},"sterna dougallii":{"fr":"CR","global":"LC"},"thalasseus sandvicensis":{"fr":"NT","global":"LC"},"thalasseus elegans":{"fr":"NAb","global":"NT"},"thalasseus bengalensis":{"fr":"NAb","global":"LC"},"thalasseus maximus":{"fr":"NAb","global":"LC"},"hydrocoloeus minutus":{"fr":"NAb","global":"LC"},"rhodostethia rosea":{"fr":"NAb","global":"LC"},"rissa tridactyla":{"fr":"VU","global":"VU"},"pagophila eburnea":{"fr":"NAb","global":"NT"},"xema sabini":{"fr":"NAb","global":"LC"},"chroicocephalus genei":{"fr":"VU","global":"LC"},"chroicocephalus philadelphia":{"fr":"NAb","global":"LC"},"chroicocephalus ridibundus":{"fr":"NT","global":"LC"},"leucophaeus atricilla":{"fr":"NAb","global":"LC"},"leucophaeus pipixcan":{"fr":"NAb","global":"LC"},"ichthyaetus ichthyaetus":{"fr":"NAb","global":"LC"},"ichthyaetus audouinii":{"fr":"EN","global":"VU"},"ichthyaetus melanocephalus":{"fr":"LC","global":"LC"},"larus canus":{"fr":"EN","global":"LC"},"larus delawarensis":{"fr":"NAb","global":"LC"},"larus cachinnans":{"fr":"NAc","global":"LC"},"larus dominicanus":{"fr":"NE","global":"LC"},"larus argentatus":{"fr":"NT","global":"LC"},"larus vegae":{"fr":"NE","global":"NE"},"larus michahellis":{"fr":"LC","global":"LC"},"larus marinus":{"fr":"LC","global":"LC"},"larus hyperboreus":{"fr":"NAc","global":"LC"},"larus fuscus":{"fr":"LC","global":"LC"},"larus smithsonianus":{"fr":"NAb","global":"LC"},"larus glaucoides":{"fr":"NAb","global":"LC"},"stercorarius longicaudus":{"fr":"VU","global":"LC"},"stercorarius parasiticus":{"fr":"NAd","global":"LC"},"stercorarius pomarinus":{"fr":"NAd","global":"LC"},"stercorarius skua":{"fr":"NAd","global":"LC"},"stercorarius maccormicki":{"fr":"NE","global":"LC"},"fratercula arctica":{"fr":"CR","global":"VU"},"cepphus grylle":{"fr":"NAc","global":"LC"},"alca torda":{"fr":"CR","global":"NT"},"pinguinus impennis":{"fr":"NE","global":"EX"},"alle alle":{"fr":"NAc","global":"LC"},"uria lomvia":{"fr":"NAb","global":"LC"},"uria aalge":{"fr":"EN","global":"LC"},"gavia stellata":{"fr":"NAc","global":"LC"},"gavia arctica":{"fr":"NAc","global":"LC"},"gavia pacifica":{"fr":"NE","global":"LC"},"gavia immer":{"fr":"VU","global":"LC"},"gavia adamsii":{"fr":"NAb","global":"NT"},"oceanites oceanicus":{"fr":"NAb","global":"LC"},"thalassarche chlororhynchos":{"fr":"NE","global":"EN"},"thalassarche melanophris":{"fr":"NAb","global":"LC"},"hydrobates pelagicus":{"fr":"VU","global":"LC"},"hydrobates monorhis":{"fr":"NAb","global":"NT"},"hydrobates leucorhous":{"fr":"NAb","global":"VU"},"hydrobates castro":{"fr":"NAb","global":"LC"},"macronectes giganteus":{"fr":"NAb","global":"LC"},"macronectes halli":{"fr":"NAb","global":"LC"},"fulmarus glacialis":{"fr":"NT","global":"LC"},"daption capense":{"fr":"NE","global":"LC"},"pterodroma madeira":{"fr":"NAb","global":"EN"},"pterodroma feae":{"fr":"NAb","global":"NT"},"pterodroma baraui":{"fr":"NE","global":"EN"},"calonectris borealis":{"fr":"NE","global":"LC"},"calonectris diomedea":{"fr":"VU","global":"LC"},"ardenna grisea":{"fr":"NAd","global":"NT"},"ardenna tenuirostris":{"fr":"NE","global":"LC"},"ardenna gravis":{"fr":"NAd","global":"LC"},"puffinus puffinus":{"fr":"EN","global":"LC"},"puffinus yelkouan":{"fr":"EN","global":"VU"},"puffinus baroli":{"fr":"NAb","global":"NE"},"bulweria bulwerii":{"fr":"NAb","global":"LC"},"ciconia nigra":{"fr":"EN","global":"LC"},"ciconia ciconia":{"fr":"LC","global":"LC"},"fregata magnificens":{"fr":"NAb","global":"LC"},"morus bassanus":{"fr":"NT","global":"LC"},"sula sula":{"fr":"NE","global":"LC"},"sula leucogaster":{"fr":"NE","global":"LC"},"sula dactylatra":{"fr":"NAb","global":"LC"},"microcarbo pygmaeus":{"fr":"NAb","global":"LC"},"phalacrocorax carbo":{"fr":"LC","global":"LC"},"gulosus aristotelis":{"fr":"LC","global":"LC"},"nannopterum auritum":{"fr":"NAb","global":"LC"},"threskiornis aethiopicus":{"fr":"NAa","global":"LC"},"geronticus eremita":{"fr":"NE","global":"EN"},"plegadis falcinellus":{"fr":"NT","global":"LC"},"platalea leucorodia":{"fr":"NT","global":"LC"},"botaurus stellaris":{"fr":"VU","global":"LC"},"botaurus sturmii":{"fr":"NE","global":"LC"},"botaurus minutus":{"fr":"EN","global":"LC"},"nycticorax nycticorax":{"fr":"LC","global":"LC"},"egretta garzetta":{"fr":"LC","global":"LC"},"egretta gularis":{"fr":"NAb","global":"LC"},"butorides virescens":{"fr":"NAb","global":"NE"},"ardeola ralloides":{"fr":"LC","global":"LC"},"ardea alba":{"fr":"NT","global":"LC"},"ardea ibis":{"fr":"LC","global":"LC"},"ardea cinerea":{"fr":"LC","global":"LC"},"ardea herodias":{"fr":"NAb","global":"LC"},"ardea purpurea":{"fr":"LC","global":"LC"},"ardea melanocephala":{"fr":"NAb","global":"LC"},"pelecanus onocrotalus":{"fr":"NAb","global":"LC"},"pelecanus rufescens":{"fr":"NE","global":"LC"},"pelecanus crispus":{"fr":"NE","global":"NT"},"pandion haliaetus":{"fr":"VU","global":"LC"},"elanus caeruleus":{"fr":"VU","global":"LC"},"gypaetus barbatus":{"fr":"EN","global":"NT"},"neophron percnopterus":{"fr":"EN","global":"EN"},"pernis apivorus":{"fr":"LC","global":"LC"},"aegypius monachus":{"fr":"EN","global":"NT"},"torgos tracheliotos":{"fr":"NAb","global":"EN"},"gyps rueppelli":{"fr":"NE","global":"CR"},"gyps fulvus":{"fr":"LC","global":"LC"},"circaetus gallicus":{"fr":"LC","global":"LC"},"clanga pomarina":{"fr":"NAb","global":"LC"},"clanga clanga":{"fr":"NAb","global":"VU"},"hieraaetus pennatus":{"fr":"NT","global":"LC"},"aquila nipalensis":{"fr":"NAb","global":"EN"},"aquila adalberti":{"fr":"NAb","global":"VU"},"aquila heliaca":{"fr":"NAb","global":"VU"},"aquila chrysaetos":{"fr":"VU","global":"LC"},"aquila fasciata":{"fr":"EN","global":"LC"},"aquila nipaloides":{"fr":"NE","global":"NE"},"accipiter nisus":{"fr":"LC","global":"LC"},"astur gentilis":{"fr":"LC","global":"LC"},"circus macrourus":{"fr":"NAb","global":"NT"},"circus cyaneus":{"fr":"LC","global":"LC"},"circus hudsonius":{"fr":"NE","global":"LC"},"circus pygargus":{"fr":"NT","global":"LC"},"circus aeruginosus":{"fr":"NT","global":"LC"},"milvus milvus":{"fr":"VU","global":"LC"},"milvus migrans":{"fr":"LC","global":"LC"},"haliaeetus albicilla":{"fr":"CR","global":"LC"},"haliaeetus leucocephalus":{"fr":"NE","global":"LC"},"buteo lagopus":{"fr":"NAc","global":"LC"},"buteo buteo":{"fr":"LC","global":"LC"},"buteo rufinus":{"fr":"NAb","global":"LC"},"tyto alba":{"fr":"LC","global":"LC"},"aegolius funereus":{"fr":"LC","global":"LC"},"athene noctua":{"fr":"LC","global":"LC"},"surnia ulula":{"fr":"NAb","global":"LC"},"glaucidium passerinum":{"fr":"NT","global":"LC"},"otus scops":{"fr":"LC","global":"LC"},"asio otus":{"fr":"LC","global":"LC"},"asio flammeus":{"fr":"VU","global":"LC"},"bubo scandiacus":{"fr":"NAb","global":"VU"},"bubo bubo":{"fr":"LC","global":"LC"},"ketupa zeylonensis":{"fr":"NE","global":"LC"},"strix aluco":{"fr":"LC","global":"LC"},"upupa epops":{"fr":"LC","global":"LC"},"coracias garrulus":{"fr":"NT","global":"LC"},"alcedo atthis":{"fr":"VU","global":"LC"},"megaceryle alcyon":{"fr":"NE","global":"LC"},"ceryle rudis":{"fr":"NE","global":"LC"},"merops persicus":{"fr":"NAb","global":"LC"},"merops apiaster":{"fr":"LC","global":"LC"},"jynx torquilla":{"fr":"LC","global":"LC"},"picoides tridactylus":{"fr":"VU","global":"LC"},"dendrocoptes medius":{"fr":"LC","global":"LC"},"dryobates minor":{"fr":"VU","global":"LC"},"dendrocopos major":{"fr":"LC","global":"LC"},"dendrocopos leucotos":{"fr":"VU","global":"LC"},"dryocopus martius":{"fr":"LC","global":"LC"},"picus viridis":{"fr":"LC","global":"LC"},"picus sharpei":{"fr":"NE","global":"LC"},"picus canus":{"fr":"EN","global":"LC"},"falco naumanni":{"fr":"VU","global":"LC"},"falco tinnunculus":{"fr":"NT","global":"LC"},"falco vespertinus":{"fr":"NAb","global":"VU"},"falco eleonorae":{"fr":"NAb","global":"LC"},"falco concolor":{"fr":"NAb","global":"VU"},"falco columbarius":{"fr":"DD","global":"LC"},"falco subbuteo":{"fr":"LC","global":"LC"},"falco biarmicus":{"fr":"NAb","global":"LC"},"falco cherrug":{"fr":"NAb","global":"EN"},"falco rusticolus":{"fr":"NAb","global":"LC"},"falco peregrinus":{"fr":"LC","global":"LC"},"myiopsitta monachus":{"fr":"NE","global":"LC"},"psittacula eupatria":{"fr":"NE","global":"LC"},"psittacula krameri":{"fr":"NAa","global":"LC"},"agapornis fischeri":{"fr":"NE","global":"NT"},"vireo olivaceus":{"fr":"NAb","global":"LC"},"oriolus oriolus":{"fr":"LC","global":"LC"},"lanius excubitor":{"fr":"EN","global":"LC"},"lanius meridionalis":{"fr":"EN","global":"VU"},"lanius nubicus":{"fr":"NAb","global":"LC"},"lanius minor":{"fr":"CR","global":"LC"},"lanius senator":{"fr":"VU","global":"NT"},"lanius isabellinus":{"fr":"NAb","global":"LC"},"lanius collurio":{"fr":"NT","global":"LC"},"lanius phoenicuroides":{"fr":"NE","global":"LC"},"lanius cristatus":{"fr":"NAb","global":"LC"},"garrulus glandarius":{"fr":"LC","global":"LC"},"pica pica":{"fr":"LC","global":"LC"},"nucifraga caryocatactes":{"fr":"LC","global":"LC"},"pyrrhocorax pyrrhocorax":{"fr":"LC","global":"LC"},"pyrrhocorax graculus":{"fr":"LC","global":"LC"},"coloeus monedula":{"fr":"LC","global":"LC"},"coloeus dauuricus":{"fr":"NAb","global":"LC"},"corvus frugilegus":{"fr":"LC","global":"LC"},"corvus corone":{"fr":"LC","global":"LC"},"corvus corax":{"fr":"LC","global":"LC"},"bombycilla garrulus":{"fr":"NAb","global":"LC"},"periparus ater":{"fr":"LC","global":"LC"},"lophophanes cristatus":{"fr":"LC","global":"LC"},"poecile palustris":{"fr":"LC","global":"LC"},"poecile montanus":{"fr":"VU","global":"LC"},"cyanistes caeruleus":{"fr":"LC","global":"LC"},"cyanistes cyanus":{"fr":"NAb","global":"LC"},"parus major":{"fr":"LC","global":"LC"},"remiz pendulinus":{"fr":"CR","global":"LC"},"panurus biarmicus":{"fr":"LC","global":"LC"},"ammomanes cinctura":{"fr":"NE","global":"LC"},"lullula arborea":{"fr":"LC","global":"LC"},"alauda arvensis":{"fr":"NT","global":"LC"},"alauda leucoptera":{"fr":"NE","global":"LC"},"galerida theklae":{"fr":"EN","global":"LC"},"galerida cristata":{"fr":"LC","global":"LC"},"eremophila alpestris":{"fr":"NAc","global":"LC"},"calandrella brachydactyla":{"fr":"EN","global":"LC"},"melanocorypha bimaculata":{"fr":"NE","global":"LC"},"melanocorypha calandra":{"fr":"EN","global":"LC"},"chersophilus duponti":{"fr":"NAb","global":"VU"},"alaudala rufescens":{"fr":"NAb","global":"LC"},"alaudala heinei":{"fr":"NE","global":"LC"},"riparia paludicola":{"fr":"NAb","global":"LC"},"riparia riparia":{"fr":"LC","global":"LC"},"ptyonoprogne rupestris":{"fr":"LC","global":"LC"},"hirundo rustica":{"fr":"NT","global":"LC"},"delichon urbicum":{"fr":"NT","global":"LC"},"cecropis rufula":{"fr":"VU","global":"NE"},"petrochelidon pyrrhonota":{"fr":"NAb","global":"LC"},"cettia cetti":{"fr":"NT","global":"LC"},"aegithalos caudatus":{"fr":"LC","global":"LC"},"phylloscopus sibilatrix":{"fr":"NT","global":"LC"},"phylloscopus bonelli":{"fr":"LC","global":"LC"},"phylloscopus orientalis":{"fr":"NAb","global":"LC"},"phylloscopus humei":{"fr":"NAb","global":"LC"},"phylloscopus inornatus":{"fr":"NAb","global":"LC"},"phylloscopus proregulus":{"fr":"NAb","global":"LC"},"phylloscopus schwarzi":{"fr":"NAb","global":"LC"},"phylloscopus fuscatus":{"fr":"NAb","global":"LC"},"phylloscopus trochilus":{"fr":"NT","global":"LC"},"phylloscopus collybita":{"fr":"LC","global":"LC"},"phylloscopus ibericus":{"fr":"EN","global":"LC"},"phylloscopus coronatus":{"fr":"NE","global":"LC"},"phylloscopus nitidus":{"fr":"NAb","global":"LC"},"phylloscopus plumbeitarsus":{"fr":"NAb","global":"LC"},"phylloscopus trochiloides":{"fr":"NAb","global":"LC"},"phylloscopus borealis":{"fr":"NAb","global":"LC"},"acrocephalus arundinaceus":{"fr":"VU","global":"LC"},"acrocephalus melanopogon":{"fr":"EN","global":"LC"},"acrocephalus paludicola":{"fr":"VU","global":"VU"},"acrocephalus schoenobaenus":{"fr":"LC","global":"LC"},"acrocephalus agricola":{"fr":"NAb","global":"LC"},"acrocephalus dumetorum":{"fr":"NAb","global":"LC"},"acrocephalus scirpaceus":{"fr":"LC","global":"LC"},"acrocephalus palustris":{"fr":"LC","global":"LC"},"iduna caligata":{"fr":"NAb","global":"LC"},"iduna rama":{"fr":"NAb","global":"LC"},"iduna pallida":{"fr":"NAb","global":"LC"},"iduna opaca":{"fr":"NAb","global":"LC"},"hippolais polyglotta":{"fr":"LC","global":"LC"},"hippolais icterina":{"fr":"VU","global":"LC"},"helopsaltes fasciolatus":{"fr":"NAb","global":"LC"},"helopsaltes certhiola":{"fr":"NAb","global":"LC"},"locustella lanceolata":{"fr":"NAb","global":"LC"},"locustella fluviatilis":{"fr":"NAb","global":"LC"},"locustella luscinioides":{"fr":"EN","global":"LC"},"locustella naevia":{"fr":"NT","global":"LC"},"cisticola juncidis":{"fr":"VU","global":"LC"},"sylvia atricapilla":{"fr":"LC","global":"LC"},"sylvia borin":{"fr":"NT","global":"LC"},"curruca nisoria":{"fr":"NAb","global":"LC"},"curruca curruca":{"fr":"LC","global":"LC"},"curruca hortensis":{"fr":"LC","global":"LC"},"curruca crassirostris":{"fr":"NE","global":"LC"},"curruca deserti":{"fr":"NAb","global":"LC"},"curruca nana":{"fr":"NAb","global":"LC"},"curruca deserticola":{"fr":"NE","global":"LC"},"curruca ruppeli":{"fr":"NAb","global":"LC"},"curruca melanocephala":{"fr":"NT","global":"LC"},"curruca iberiae":{"fr":"NE","global":"NE"},"curruca subalpina":{"fr":"LC","global":"LC"},"curruca cantillans":{"fr":"LC","global":"LC"},"curruca communis":{"fr":"LC","global":"LC"},"curruca conspicillata":{"fr":"EN","global":"LC"},"curruca sarda":{"fr":"LC","global":"LC"},"curruca undata":{"fr":"EN","global":"NT"},"leiothrix lutea":{"fr":"NAa","global":"LC"},"regulus ignicapilla":{"fr":"LC","global":"LC"},"regulus regulus":{"fr":"NT","global":"LC"},"troglodytes troglodytes":{"fr":"LC","global":"LC"},"sitta whiteheadi":{"fr":"VU","global":"VU"},"sitta europaea":{"fr":"LC","global":"LC"},"tichodroma muraria":{"fr":"NT","global":"LC"},"certhia familiaris":{"fr":"LC","global":"LC"},"certhia brachydactyla":{"fr":"LC","global":"LC"},"pastor roseus":{"fr":"NAb","global":"LC"},"sturnus vulgaris":{"fr":"LC","global":"LC"},"sturnus unicolor":{"fr":"LC","global":"LC"},"catharus ustulatus":{"fr":"NAb","global":"LC"},"catharus minimus":{"fr":"NAb","global":"LC"},"zoothera aurea":{"fr":"NAb","global":"LC"},"geokichla sibirica":{"fr":"NAb","global":"LC"},"turdus philomelos":{"fr":"LC","global":"LC"},"turdus viscivorus":{"fr":"LC","global":"LC"},"turdus iliacus":{"fr":"LC","global":"LC"},"turdus merula":{"fr":"LC","global":"LC"},"turdus obscurus":{"fr":"NAb","global":"LC"},"turdus pilaris":{"fr":"LC","global":"LC"},"turdus torquatus":{"fr":"LC","global":"LC"},"turdus atrogularis":{"fr":"NAd","global":"LC"},"turdus ruficollis":{"fr":"NAb","global":"LC"},"turdus eunomus":{"fr":"NAb","global":"LC"},"turdus naumanni":{"fr":"NAb","global":"LC"},"cercotrichas galactotes":{"fr":"NAb","global":"LC"},"muscicapa striata":{"fr":"NT","global":"LC"},"erithacus rubecula":{"fr":"LC","global":"LC"},"luscinia luscinia":{"fr":"NAb","global":"LC"},"luscinia megarhynchos":{"fr":"LC","global":"LC"},"luscinia svecica":{"fr":"LC","global":"LC"},"ficedula parva":{"fr":"NAb","global":"LC"},"ficedula semitorquata":{"fr":"NAb","global":"LC"},"ficedula hypoleuca":{"fr":"VU","global":"LC"},"ficedula albicollis":{"fr":"NT","global":"LC"},"tarsiger cyanurus":{"fr":"NAb","global":"LC"},"phoenicurus ochruros":{"fr":"LC","global":"LC"},"phoenicurus phoenicurus":{"fr":"LC","global":"LC"},"phoenicurus moussieri":{"fr":"NE","global":"LC"},"monticola saxatilis":{"fr":"NT","global":"LC"},"monticola solitarius":{"fr":"LC","global":"LC"},"saxicola rubetra":{"fr":"VU","global":"LC"},"saxicola maurus":{"fr":"NE","global":"NE"},"saxicola rubicola":{"fr":"NT","global":"NE"},"oenanthe oenanthe":{"fr":"NT","global":"LC"},"oenanthe seebohmi":{"fr":"NE","global":"LC"},"oenanthe isabellina":{"fr":"NAb","global":"LC"},"oenanthe deserti":{"fr":"NAb","global":"LC"},"oenanthe hispanica":{"fr":"EN","global":"LC"},"oenanthe pleschanka":{"fr":"NAb","global":"LC"},"oenanthe melanoleuca":{"fr":"NE","global":"NE"},"oenanthe xanthoprymna":{"fr":"NE","global":"LC"},"oenanthe leucopyga":{"fr":"NAb","global":"LC"},"oenanthe leucura":{"fr":"RE","global":"LC"},"cinclus cinclus":{"fr":"LC","global":"LC"},"petronia petronia":{"fr":"LC","global":"LC"},"montifringilla nivalis":{"fr":"LC","global":"LC"},"passer montanus":{"fr":"EN","global":"LC"},"passer hispaniolensis":{"fr":"NAb","global":"LC"},"passer italiae":{"fr":"LC","global":"VU"},"passer domesticus":{"fr":"LC","global":"LC"},"euodice malabarica":{"fr":"NAa","global":"LC"},"prunella collaris":{"fr":"LC","global":"LC"},"prunella atrogularis":{"fr":"NAb","global":"LC"},"prunella modularis":{"fr":"LC","global":"LC"},"motacilla flava":{"fr":"LC","global":"LC"},"motacilla tschutschensis":{"fr":"NE","global":"LC"},"motacilla citreola":{"fr":"NAb","global":"LC"},"motacilla cinerea":{"fr":"LC","global":"LC"},"motacilla alba":{"fr":"LC","global":"LC"},"anthus richardi":{"fr":"NAb","global":"LC"},"anthus godlewskii":{"fr":"NAb","global":"LC"},"anthus campestris":{"fr":"LC","global":"LC"},"anthus pratensis":{"fr":"VU","global":"LC"},"anthus trivialis":{"fr":"LC","global":"LC"},"anthus hodgsoni":{"fr":"NAb","global":"LC"},"anthus gustavi":{"fr":"NAb","global":"LC"},"anthus cervinus":{"fr":"NAd","global":"LC"},"anthus japonicus":{"fr":"NE","global":"NE"},"anthus rubescens":{"fr":"NAb","global":"LC"},"anthus spinoletta":{"fr":"LC","global":"LC"},"anthus petrosus":{"fr":"NT","global":"LC"},"fringilla coelebs":{"fr":"LC","global":"LC"},"fringilla spodiogenys":{"fr":"NE","global":"NE"},"fringilla montifringilla":{"fr":"DD","global":"LC"},"coccothraustes coccothraustes":{"fr":"LC","global":"LC"},"pinicola enucleator":{"fr":"NAb","global":"LC"},"pyrrhula pyrrhula":{"fr":"VU","global":"LC"},"bucanetes githagineus":{"fr":"NAb","global":"LC"},"carpodacus erythrinus":{"fr":"DD","global":"LC"},"chloris chloris":{"fr":"VU","global":"LC"},"linaria flavirostris":{"fr":"NAc","global":"LC"},"linaria cannabina":{"fr":"VU","global":"LC"},"acanthis flammea":{"fr":"VU","global":"LC"},"loxia pytyopsittacus":{"fr":"NAb","global":"LC"},"loxia scotica":{"fr":"NE","global":"LC"},"loxia curvirostra":{"fr":"LC","global":"LC"},"loxia leucoptera":{"fr":"NAb","global":"LC"},"carduelis carduelis":{"fr":"VU","global":"LC"},"carduelis citrinella":{"fr":"NT","global":"LC"},"carduelis corsicana":{"fr":"LC","global":"LC"},"serinus serinus":{"fr":"VU","global":"LC"},"spinus spinus":{"fr":"LC","global":"LC"},"calcarius lapponicus":{"fr":"NAc","global":"LC"},"plectrophenax nivalis":{"fr":"NAc","global":"LC"},"emberiza calandra":{"fr":"LC","global":"LC"},"emberiza citrinella":{"fr":"VU","global":"LC"},"emberiza leucocephalos":{"fr":"NAb","global":"LC"},"emberiza cia":{"fr":"LC","global":"LC"},"emberiza hortulana":{"fr":"EN","global":"LC"},"emberiza caesia":{"fr":"NAb","global":"LC"},"emberiza cirlus":{"fr":"LC","global":"LC"},"emberiza pusilla":{"fr":"NAb","global":"LC"},"emberiza chrysophrys":{"fr":"NAb","global":"LC"},"emberiza rustica":{"fr":"NAb","global":"NT"},"emberiza aureola":{"fr":"NAb","global":"CR"},"emberiza rutila":{"fr":"NAb","global":"LC"},"emberiza melanocephala":{"fr":"NAb","global":"LC"},"emberiza bruniceps":{"fr":"NAb","global":"LC"},"emberiza spodocephala":{"fr":"NAb","global":"LC"},"emberiza schoeniclus":{"fr":"EN","global":"LC"},"zonotrichia leucophrys":{"fr":"NAb","global":"LC"},"zonotrichia albicollis":{"fr":"NAb","global":"LC"},"dolichonyx oryzivorus":{"fr":"NAb","global":"NT"},"icterus galbula":{"fr":"NE","global":"LC"},"molothrus ater":{"fr":"NE","global":"LC"},"seiurus aurocapilla":{"fr":"NE","global":"LC"},"parkesia noveboracensis":{"fr":"NAb","global":"LC"},"mniotilta varia":{"fr":"NE","global":"LC"},"leiothlypis peregrina":{"fr":"NE","global":"LC"},"setophaga ruticilla":{"fr":"NAb","global":"LC"},"setophaga americana":{"fr":"NAb","global":"LC"},"setophaga fusca":{"fr":"NE","global":"LC"},"setophaga aestiva":{"fr":"NE","global":"NE"},"setophaga pensylvanica":{"fr":"NE","global":"LC"},"setophaga striata":{"fr":"NAb","global":"NT"},"piranga olivacea":{"fr":"NAb","global":"LC"},"pheucticus ludovicianus":{"fr":"NAb","global":"LC"}};
 
 // Departements francais avec bbox (INSEE code, nom, region ISO, latMin, latMax, lonMin, lonMax).
@@ -4974,21 +5057,31 @@ function _mapMarker(pt, groupSize){
 // - abundance_dept*.json (~2.4 MB) : requis SEULEMENT pour "Ou trouver" (choropleth).
 //   Chargees a l'ouverture de ce mode uniquement. Economise 2.4 MB si l'user n'y va jamais.
 // Le service worker cache tout ca en stale-while-revalidate -> instant les visites suivantes.
-let _freqDataPromise = null;
-async function _loadFreqData(){
-  if(_freqDataPromise) return _freqDataPromise;
-  _freqDataPromise = (async () => {
+// Cache multi-pays de la data monthly regionale (lazy-loadee HTTP par pays).
+// cc -> { region: { sci: [12] } }
+const REAL_FREQ_MONTHLY_BY_REGION_MULTI = {};
+const _freqDataPromises = {};
+async function _loadFreqDataForCountry(cc){
+  if(_freqDataPromises[cc]) return _freqDataPromises[cc];
+  const filename = (cc === 'FR') ? 'freq_by_region.json' : `freq_by_region_${cc.toLowerCase()}.json`;
+  _freqDataPromises[cc] = (async () => {
     try{
-      // Cache-busting : GitHub Pages sert avec des headers cache faibles, le navigateur
-      // peut garder une vieille version du JSON qui manque des especes ajoutees recemment
-      // (ex : Tringa stagnatilis en PDL, Canard carolin, etc.). Le param ?v change avec
-      // chaque deploiement pour forcer le re-fetch.
-      REAL_FREQ_MONTHLY_BY_REGION = await fetch('data/freq_by_region.json?v=20260827').then(r => r.json());
+      const data = await fetch(`data/${filename}?v=20260827`).then(r => r.ok ? r.json() : null);
+      if(data){
+        REAL_FREQ_MONTHLY_BY_REGION_MULTI[cc] = data;
+        if(cc === 'FR') REAL_FREQ_MONTHLY_BY_REGION = data;   // compat ancien code
+      }
     }catch(err){
-      console.error('Erreur chargement freq_by_region', err);
-      _freqDataPromise = null;
+      console.warn('Erreur load freq_by_region_' + cc + ':', err.message);
+      _freqDataPromises[cc] = null;
     }
   })();
+  return _freqDataPromises[cc];
+}
+// Compat : ancien nom, redirige vers FR (utilise par renderTargets, renderMap etc.).
+let _freqDataPromise = null;
+async function _loadFreqData(){
+  if(!_freqDataPromise) _freqDataPromise = _loadFreqDataForCountry('FR');
   return _freqDataPromise;
 }
 let _abundanceDataPromise = null;
@@ -8658,28 +8751,31 @@ function _renderSpeciesRarityCard(key){
   // Sélecteur région custom : dropdown riche avec bars d'abondance colorées.
   // Trie par presence descendante. Regions ou espece absente = tout en bas grisées.
   // Rerend apres lazy-load des data regionales.
-  const buildRegPanel = () => {
-    if(typeof FR_REGIONS === 'undefined') return '';
-    const stByReg = (typeof REAL_ABUNDANCE_ST_BY_REGION_FR === 'object') ? REAL_ABUNDANCE_ST_BY_REGION_FR : {};
-    const freqByReg = (typeof REAL_FREQ_MONTHLY_BY_REGION === 'object') ? REAL_FREQ_MONTHLY_BY_REGION : {};
-    // Seuils tier S&T weekly (memes que histogramme, pour couleur coherente).
+  // Emojis drapeaux par pays (fallback texte si emoji ne rend pas)
+  const FLAG_EMOJI = { FR:'🇫🇷', ME:'🇲🇪', ES:'🇪🇸', IT:'🇮🇹', GB:'🇬🇧', PT:'🇵🇹' };
+  // buildRegPanel(cc) : construit le panel des regions du pays courant.
+  // Pour FR : utilise S&T weekly regional + freq mensuelle regionale.
+  // Autres pays : uniquement freq mensuelle regionale bar chart (S&T regional non genere).
+  const buildRegPanel = (cc) => {
+    const regList = (typeof REGIONS_BY_COUNTRY === 'object' && REGIONS_BY_COUNTRY[cc]) || [];
+    if(!regList.length) return '';
+    const reg = COUNTRIES_REG[cc];
+    const stByReg = (cc === 'FR' && typeof REAL_ABUNDANCE_ST_BY_REGION_FR === 'object') ? REAL_ABUNDANCE_ST_BY_REGION_FR : {};
+    const freqByReg = (reg && typeof reg.monthlyByRegion === 'function') ? (reg.monthlyByRegion() || {}) : {};
     const _wThr = [[2.2596,1],[0.8496,2],[0.34178,3],[0.12404,4],[0.04666,5],[0.01880,6],[0.00440,7],[0.00114,8],[0.00009,9]];
-    // Seuils tier bar chart monthly (memes que build-rarity-ebird.mjs).
     const _mThr = [[0.25,1],[0.15,2],[0.08,3],[0.04,4],[0.02,5],[0.007,6],[0.0015,7],[0.0003,8],[0.00005,9]];
     const abdToTier = v => { if(!(v>0)) return 10; for(const [t,i] of _wThr) if(v>=t) return i; return 10; };
     const freqToTier = v => { if(!(v>0)) return 10; for(const [t,i] of _mThr) if(v>=t) return i; return 10; };
-    // Decision : quelle source utiliser pour cette espece ? Si S&T dispo dans au moins
-    // 1 region avec valeur > 0, on utilise S&T partout (les regions sans S&T = absente).
-    // Sinon fallback bar chart pour toutes les regions.
+    // Decide source : S&T regional si dispo pour cette espece dans au moins 1 region, sinon bar chart
     let anyST = false;
-    for(const r of FR_REGIONS){
+    for(const r of regList){
       const e = stByReg[r.code] && stByReg[r.code][k];
       if(e && Array.isArray(e.w) && e.w.some(v => v > 0)){ anyST = true; break; }
     }
     const useST = anyST;
     const fmtST = v => v >= 10 ? Math.round(v)+' ind/h' : v >= 1 ? v.toFixed(1)+' ind/h' : v >= 0.01 ? v.toFixed(2)+' ind/h' : v >= 0.001 ? v.toFixed(3)+' ind/h' : v > 0 ? '<0.001 ind/h' : '—';
     const fmtPct = v => { if(!(v>0)) return '—'; const p = v*100; if(p >= 10) return Math.round(p)+'%'; if(p >= 1) return p.toFixed(1)+'%'; if(p >= 0.1) return p.toFixed(2)+'%'; return '<0.1%'; };
-    const scored = FR_REGIONS.map(r => {
+    const scored = regList.map(r => {
       let score = 0;
       if(useST){
         const e = stByReg[r.code] && stByReg[r.code][k];
@@ -8692,8 +8788,9 @@ function _renderSpeciesRarityCard(key){
     });
     scored.sort((a, b) => b.score - a.score);
     const maxScore = scored.length ? scored[0].score : 0;
-    // Ligne France entiere en tete (sans bar, always displayed as "national")
-    const nationalRow = `<div class="reg-picker-item national${_speciesRegion===''?' on':''}" data-code="">🇫🇷 France entière</div>`;
+    const nationalLbl = (COUNTRIES_REG[cc] && COUNTRIES_REG[cc].name) || cc;
+    const flag = FLAG_EMOJI[cc] || '';
+    const nationalRow = `<div class="reg-picker-item national${_speciesRegion===''?' on':''}" data-code="">${flag} ${esc(nationalLbl)} entier</div>`;
     const items = scored.map(s => {
       const absent = s.score === 0;
       const tier = absent ? 10 : (useST ? abdToTier(s.score) : freqToTier(s.score));
@@ -8709,12 +8806,15 @@ function _renderSpeciesRarityCard(key){
     }).join('');
     return nationalRow + items;
   };
-  // Trigger label : reflete la selection courante
-  const getTriggerLabel = () => {
-    if(!_speciesRegion) return '🇫🇷 France entière';
-    if(typeof FR_REGIONS === 'undefined') return _speciesRegion;
-    const r = FR_REGIONS.find(x => x.code === _speciesRegion);
-    return r ? '📍 ' + r.name : _speciesRegion;
+  // Trigger label : reflete la selection courante (utilise cc courant pour le label national)
+  const getTriggerLabel = (cc) => {
+    const flag = FLAG_EMOJI[cc] || '';
+    const nationalLbl = (COUNTRIES_REG[cc] && COUNTRIES_REG[cc].name) || cc;
+    if(!_speciesRegion) return `${flag} ${nationalLbl}`;
+    // Cherche la region dans le pays courant
+    const regList = (typeof REGIONS_BY_COUNTRY === 'object' && REGIONS_BY_COUNTRY[cc]) || [];
+    const r = regList.find(x => x.code === _speciesRegion);
+    return r ? '📍 ' + r.name : `${flag} ${nationalLbl}`;
   };
   box.innerHTML = `
     <div class="sm-card-title" style="display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
@@ -8722,10 +8822,10 @@ function _renderSpeciesRarityCard(key){
       <select id="smRarityCountrySel" class="filt-sel" style="font-size:11px; padding:2px 6px; font-weight:600; text-transform:none; letter-spacing:0;">${selectOpts}</select>
       <div class="reg-picker" id="smRegPicker" style="display:none;">
         <button type="button" class="reg-picker-trigger" id="smRegPickerBtn" title="Histogramme S&T par région">
-          <span id="smRegPickerLabel">${esc(getTriggerLabel())}</span>
+          <span id="smRegPickerLabel">${esc(getTriggerLabel(initCountry))}</span>
           <span style="opacity:.6;">▾</span>
         </button>
-        <div class="reg-picker-panel" id="smRegPickerPanel" hidden>${buildRegPanel()}</div>
+        <div class="reg-picker-panel" id="smRegPickerPanel" hidden>${buildRegPanel(initCountry)}</div>
       </div>
     </div>
     <div id="smRarityLine"></div>`;
@@ -8950,61 +9050,71 @@ function _renderSpeciesRarityCard(key){
     || 'FR';
   const initCountry = avail.find(c => c.code === ctxCountry) ? ctxCountry : avail[0].code;
   renderLine(initCountry);
-  // Le sélecteur région n'est utile que pour FR. Cache si autre pays.
+  // Le sélecteur région s'affiche pour tous les pays qui ont des subdivisions
+  // (via REGIONS_BY_COUNTRY). ME n'a pas de sub -> picker cache.
   const regPick = $('#smRegPicker');
-  const updateRegVisibility = (cc) => { if(regPick) regPick.style.display = (cc === 'FR') ? '' : 'none'; };
+  const updateRegVisibility = (cc) => {
+    if(!regPick) return;
+    const has = REGIONS_BY_COUNTRY[cc] && REGIONS_BY_COUNTRY[cc].length > 0;
+    regPick.style.display = has ? '' : 'none';
+  };
   updateRegVisibility(initCountry);
-  // Lazy-load les 2 sources régionales en parallele au premier affichage FR :
-  //   - S&T weekly (52 bar exactes si Cornell a l'espece pour cette region)
-  //   - Bar chart monthly regional (12 mois etires en 52, fallback pour espece hors Cornell)
-  if(initCountry === 'FR'){
-    const promises = [];
-    if(typeof _loadAbundanceRegionData === 'function') promises.push(_loadAbundanceRegionData());
-    if(typeof _loadFreqData === 'function') promises.push(_loadFreqData());
-    if(promises.length) Promise.all(promises).then(() => {
-      // Rebuild du panel avec les vraies data + tri par abondance.
-      const p = $('#smRegPickerPanel');
-      if(p) p.innerHTML = buildRegPanel();
-      if(_speciesRegion) _renderSpeciesFreqChart(k, initCountry);
-    });
-  }
-  _renderSpeciesFreqChart(k, initCountry);   // (re)render l'histogramme sur le pays initial
+  // Lazy-load la data regionale pour le pays courant (FR/ES/IT/GB/PT) + S&T regional
+  // pour FR (les autres pays n'ont pas encore de S&T par region genere).
+  const loadRegionalDataFor = (cc) => {
+    const proms = [];
+    if(typeof _loadFreqDataForCountry === 'function') proms.push(_loadFreqDataForCountry(cc));
+    if(cc === 'FR' && typeof _loadAbundanceRegionData === 'function') proms.push(_loadAbundanceRegionData());
+    return proms.length ? Promise.all(proms) : Promise.resolve();
+  };
+  loadRegionalDataFor(initCountry).then(() => {
+    // Rebuild du panel avec les vraies data + tri par abondance.
+    const p = $('#smRegPickerPanel');
+    if(p) p.innerHTML = buildRegPanel(initCountry);
+    if(_speciesRegion) _renderSpeciesFreqChart(k, initCountry);
+  });
+  _renderSpeciesFreqChart(k, initCountry);
   const sel = $('#smRarityCountrySel');
   if(sel){ sel.value = initCountry; sel.addEventListener('change', e => {
-    renderLine(e.target.value);
-    updateRegVisibility(e.target.value);
-    _renderSpeciesFreqChart(k, e.target.value);
+    const newCC = e.target.value;
+    renderLine(newCC);
+    updateRegVisibility(newCC);
+    // Reset la region si elle n'appartient pas au nouveau pays (ex: FR-IDF -> ES).
+    if(_speciesRegion){
+      const belongs = (REGIONS_BY_COUNTRY[newCC] || []).some(r => r.code === _speciesRegion);
+      if(!belongs){
+        _speciesRegion = '';
+        try{ localStorage.setItem('mb-species-region', ''); }catch(_){}
+      }
+    }
+    // Lazy-load data regionale du nouveau pays + rebuild picker + rerender chart
+    loadRegionalDataFor(newCC).then(() => {
+      const p = $('#smRegPickerPanel');
+      if(p) p.innerHTML = buildRegPanel(newCC);
+      const lbl = $('#smRegPickerLabel');
+      if(lbl) lbl.textContent = getTriggerLabel(newCC);
+      _renderSpeciesFreqChart(k, newCC);
+    });
   }); }
-  // Custom region picker : ouvre/ferme au clic, item click = set region + close + rerender.
   if(regPick){
     const btn = regPick.querySelector('.reg-picker-trigger');
     const panel = regPick.querySelector('.reg-picker-panel');
     const lbl = regPick.querySelector('#smRegPickerLabel');
-    // Toggle panel
     btn.addEventListener('click', e => {
       e.stopPropagation();
       panel.hidden = !panel.hidden;
     });
-    // Click sur un item
     panel.addEventListener('click', e => {
       const it = e.target.closest('.reg-picker-item');
       if(!it) return;
       _speciesRegion = it.dataset.code || '';
       try{ localStorage.setItem('mb-species-region', _speciesRegion); }catch(_){}
-      // Update label + close panel + rerender chart (avec eventuel lazy-load).
-      if(lbl) lbl.textContent = getTriggerLabel();
+      const cc2 = $('#smRarityCountrySel')?.value || 'FR';
+      if(lbl) lbl.textContent = getTriggerLabel(cc2);
       panel.querySelectorAll('.reg-picker-item.on').forEach(x => x.classList.remove('on'));
       it.classList.add('on');
       panel.hidden = true;
-      const cc2 = $('#smRarityCountrySel')?.value || 'FR';
-      if(_speciesRegion){
-        const proms = [];
-        if(typeof _loadAbundanceRegionData === 'function') proms.push(_loadAbundanceRegionData());
-        if(typeof _loadFreqData === 'function') proms.push(_loadFreqData());
-        Promise.all(proms).then(() => _renderSpeciesFreqChart(k, cc2));
-      } else {
-        _renderSpeciesFreqChart(k, cc2);
-      }
+      loadRegionalDataFor(cc2).then(() => _renderSpeciesFreqChart(k, cc2));
     });
     // Click outside : ferme le panel
     document.addEventListener('click', e => {
@@ -9072,7 +9182,12 @@ function _renderSpeciesFreqChart(key, country){
   // MODE STRICT REGIONAL : si l'utilisateur a choisi une region, on utilise UNIQUEMENT
   // les data regionales (S&T weekly ou bar chart monthly). Si l'espece est absente de
   // la region, on affiche une note et pas de chart plutot que fallback national trompeur.
-  const strictRegional = (cc === 'FR' && _speciesRegion);
+  // Mode region strict : le user a selectionne une region ET le pays a des subdivisions.
+  // Le pays du _speciesRegion doit matcher cc courant sinon la region est stale.
+  const regionBelongsToCC = _speciesRegion &&
+    (typeof REGIONS_BY_COUNTRY === 'object') &&
+    (REGIONS_BY_COUNTRY[cc] || []).some(r => r.code === _speciesRegion);
+  const strictRegional = !!regionBelongsToCC;
   // Cas 1 : S&T weekly regional (fine, la meilleure info spatiale-temporelle)
   if(strictRegional
      && typeof REAL_ABUNDANCE_ST_BY_REGION_FR === 'object'
@@ -9123,11 +9238,12 @@ function _renderSpeciesFreqChart(key, country){
       const reg = COUNTRIES_REG[cc];
       if(reg && reg.monthly) monthlyArr = reg.monthly()[key] || null;
     }
-    // Bar chart mensuel REGIONAL (utilise en mode region si S&T weekly regional absent)
-    if(!monthlyArr && strictRegional
-       && typeof REAL_FREQ_MONTHLY_BY_REGION === 'object'
-       && REAL_FREQ_MONTHLY_BY_REGION[_speciesRegion]){
-      const regArr = REAL_FREQ_MONTHLY_BY_REGION[_speciesRegion][key];
+    // Bar chart mensuel REGIONAL (utilise en mode region si S&T weekly regional absent).
+    // Multi-pays via COUNTRIES_REG.monthlyByRegion() qui expose la data lazy-loadee.
+    if(!monthlyArr && strictRegional){
+      const regCC = COUNTRIES_REG[cc];
+      const byReg = regCC && regCC.monthlyByRegion && regCC.monthlyByRegion();
+      const regArr = byReg && byReg[_speciesRegion] && byReg[_speciesRegion][key];
       if(regArr && regArr.length === 12 && regArr.some(v => v > 0)){
         monthlyArr = regArr; regionScope = _speciesRegion;
       }
