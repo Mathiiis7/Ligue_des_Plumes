@@ -2306,10 +2306,12 @@ function _openCountryPicker(currentCode, opts = {}){
       const scored = focusSci ? scoreCountryForSpecies(cc) : null;
       grouped[cont].push({ cc, score: scored ? scored.score : null, isSt: scored ? scored.isSt : false });
     }
-    // Si focusSci : tri par score DESC dans chaque continent (absent = fin)
+    // Si focusSci : tri par tier ASC (tier 1 = commun en 1er, absent = fin).
+    // Le tier vient de rarityForCountry (merge S&T + bar chart), stable inter-pays.
     if(focusSci){
+      const tierOf = (cc, absent) => absent ? 99 : rarityForCountry(focusSci, cc);
       for(const cont in grouped){
-        grouped[cont].sort((a, b) => b.score - a.score);
+        grouped[cont].sort((a, b) => tierOf(a.cc, a.score === 0) - tierOf(b.cc, b.score === 0));
       }
     }
     const backdrop = document.createElement('div');
@@ -2346,13 +2348,14 @@ function _openCountryPicker(currentCode, opts = {}){
           let meta = '';
           let dotHtml = '';
           if(focusSci){
-            // Indicateur presence de l'espece dans le pays
+            // Utilise le tier de rareté (merge S&T + bar chart via rarityForCountry) plutot
+            // que la valeur brute (evite melange % vs ind/h). Affiche tier + label + couleur.
             const absent = it.score === 0;
-            const tier = absent ? 10 : (it.isSt ? abdToTier(it.score) : freqToTier(it.score));
+            const tier = absent ? 10 : rarityForCountry(focusSci, cc);
             const col = realColor(tier);
-            const val = absent ? 'absente' : (it.isSt ? fmtST(it.score) : fmtPct(it.score));
+            const lbl = absent ? 'absente' : ((typeof REAL_LABELS === 'object' && REAL_LABELS[tier]) || ('tier '+tier));
             dotHtml = `<span class="cp-item-dot" style="background:${col};"></span>`;
-            meta = val;
+            meta = absent ? 'absente' : `tier ${tier} · ${lbl}`;
           } else {
             const nSp = Object.keys(reg.st() || {}).length;
             meta = nSp > 0 ? `${nSp} espèces` : '';
