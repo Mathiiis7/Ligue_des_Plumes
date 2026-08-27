@@ -265,6 +265,9 @@
   .flag-chip { padding:3px 5px; min-width:26px; justify-content:center; }
   .flag-chip img.flag { display:block; height:14px; width:calc(14px * 4 / 3); border-radius:2px; box-shadow:0 0 0 1px rgba(0,0,0,.15); object-fit:cover; object-position:center; }
   .flag-chip .flag-fallback { font:600 11px/1 system-ui; color:var(--ink-3); }
+  .flag-emoji { display:inline-block; font-size:14px; line-height:1; vertical-align:middle; }
+  .flag-chip .flag-emoji { font-size:16px; }
+  .abroad-mark .flag-emoji, .abroad-mark-inline .flag-emoji { font-size:12px; }
   /* Chips famille : plus petites, compactes (il y en a beaucoup). */
   .fam-chip { padding:4px 9px; font-size:11.5px; }
   .fam-toggle { margin-left:8px; padding:2px 8px; font:600 11px/1 system-ui; color:var(--ink-3); background:transparent; border:1px solid var(--line-2); border-radius:9px; cursor:pointer; text-transform:none; letter-spacing:0; }
@@ -2231,11 +2234,13 @@ const CONTINENT_BY_CC = {
 const CONTINENT_ORDER = ['Europe', 'Amérique', 'Afrique', 'Océanie', 'Asie'];
 const CC_FLAGS = {
   FR:'🇫🇷', ME:'🇲🇪', ES:'🇪🇸', IT:'🇮🇹', GB:'🇬🇧', PT:'🇵🇹',
-  DE:'🇩🇪', NL:'🇳🇱', GR:'🇬🇷', CH:'🇨🇭',
-  US:'🇺🇸', CA:'🇨🇦', MX:'🇲🇽', CR:'🇨🇷', EC:'🇪🇨',
-  AU:'🇦🇺', NZ:'🇳🇿',
-  KE:'🇰🇪', ZA:'🇿🇦', MA:'🇲🇦',
-  JP:'🇯🇵', IN:'🇮🇳',
+  DE:'🇩🇪', NL:'🇳🇱', GR:'🇬🇷', CH:'🇨🇭', BE:'🇧🇪', HR:'🇭🇷', AL:'🇦🇱', TR:'🇹🇷', IS:'🇮🇸',
+  US:'🇺🇸', CA:'🇨🇦', MX:'🇲🇽', CR:'🇨🇷', EC:'🇪🇨', BR:'🇧🇷', AR:'🇦🇷', PE:'🇵🇪', CO:'🇨🇴',
+  AU:'🇦🇺', NZ:'🇳🇿', PG:'🇵🇬',
+  KE:'🇰🇪', ZA:'🇿🇦', MA:'🇲🇦', EG:'🇪🇬', TZ:'🇹🇿', UG:'🇺🇬',
+  JP:'🇯🇵', IN:'🇮🇳', TH:'🇹🇭', CN:'🇨🇳', ID:'🇮🇩',
+  RU:'🇷🇺', SE:'🇸🇪', NO:'🇳🇴', FI:'🇫🇮', DK:'🇩🇰', PL:'🇵🇱', CZ:'🇨🇿', AT:'🇦🇹',
+  IE:'🇮🇪', LU:'🇱🇺', HU:'🇭🇺', RO:'🇷🇴', BG:'🇧🇬', RS:'🇷🇸', SK:'🇸🇰', SI:'🇸🇮',
 };
 // Met a jour le label + drapeau d'un bouton pays (data-cc + spans .cp-btn-flag/label).
 function _syncCountryButton(btn, cc){
@@ -2684,10 +2689,8 @@ function sciColorForCountry(sci, country){
 }
 // Drapeau du pays pour afficher dans les popups "Rareté 🇲🇪 : X · Label" (montre que la
 // calibration est celle du pays courant). Retourne '' pour FR (defaut, pas de drapeau).
-const COUNTRY_FLAG = {
-  'FR':'🇫🇷','ME':'🇲🇪','ES':'🇪🇸','PT':'🇵🇹','IT':'🇮🇹','GR':'🇬🇷','HR':'🇭🇷',
-  'AL':'🇦🇱','MA':'🇲🇦','CH':'🇨🇭','BE':'🇧🇪','DE':'🇩🇪','GB':'🇬🇧','TR':'🇹🇷','IS':'🇮🇸',
-};
+// Alias vers CC_FLAGS (source unique de verite pour tous les drapeaux emoji)
+const COUNTRY_FLAG = CC_FLAGS;
 function _rarityBadge(w, country, sci){
   const c = country || 'FR';
   const pillFor = tier => tier ? `<span style="display:inline-block;background:${realColor(tier)};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11.5px;vertical-align:middle;">${tier}</span>` : '<span style="display:inline-block;background:#94a3b8;color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">?</span>';
@@ -3018,7 +3021,16 @@ const holdersFR = u => u.counts!=null ? u.counts : [...u.seenBy.values()].filter
 // Drapeau emoji : marche sur mobile mais s'affiche « US »/« FR » sur Windows desktop.
 function countryFlag(cc){ cc=(cc||'').toUpperCase(); if(!/^[A-Z]{2}$/.test(cc)) return ''; return String.fromCodePoint(...[...cc].map(c=>0x1F1E6+c.charCodeAt(0)-65)); }
 // Vraie image de drapeau (flagcdn) : rendue partout, y compris Windows desktop.
-function flagImg(cc){ cc=(cc||'').toLowerCase(); if(!/^[a-z]{2}$/.test(cc)) return ''; return `<img class="flag" src="https://flagcdn.com/w20/${cc}.png" srcset="https://flagcdn.com/w40/${cc}.png 2x" alt="${esc(cc.toUpperCase())}" loading="lazy">`; }
+function flagImg(cc){
+  if(!cc) return '';
+  const up = cc.toUpperCase();
+  // Prefer emoji si disponible dans CC_FLAGS (plus rapide, pas de fetch CDN)
+  if(typeof CC_FLAGS === 'object' && CC_FLAGS[up]) return `<span class="flag-emoji">${CC_FLAGS[up]}</span>`;
+  // Fallback img flagcdn pour les pays exotiques non listes en emoji
+  const lo = cc.toLowerCase();
+  if(!/^[a-z]{2}$/.test(lo)) return '';
+  return `<img class="flag" src="https://flagcdn.com/w20/${lo}.png" srcset="https://flagcdn.com/w40/${lo}.png 2x" alt="${esc(up)}" loading="lazy">`;
+}
 const COUNTRY_NAMES={FR:'France',ES:'Espagne',PT:'Portugal',IT:'Italie',DE:'Allemagne',GB:'Royaume-Uni',IE:'Irlande',BE:'Belgique',NL:'Pays-Bas',LU:'Luxembourg',CH:'Suisse',AT:'Autriche',GR:'Grèce',HR:'Croatie',NO:'Norvège',SE:'Suède',FI:'Finlande',DK:'Danemark',IS:'Islande',PL:'Pologne',CZ:'Tchéquie',HU:'Hongrie',RO:'Roumanie',BG:'Bulgarie',TR:'Turquie',MA:'Maroc',TN:'Tunisie',DZ:'Algérie',EG:'Égypte',SN:'Sénégal',ZA:'Afrique du Sud',KE:'Kenya',TZ:'Tanzanie',US:'États-Unis',CA:'Canada',MX:'Mexique',CR:'Costa Rica',BR:'Brésil',PE:'Pérou',EC:'Équateur',AR:'Argentine',CL:'Chili',IN:'Inde',TH:'Thaïlande',JP:'Japon',CN:'Chine',AU:'Australie',NZ:'Nouvelle-Zélande'};
 function countryLabel(cc){ cc=(cc||'').toUpperCase(); return COUNTRY_NAMES[cc]||cc; }   // nom seul (pour <option> et tooltips)
 
@@ -8886,8 +8898,8 @@ function _renderSpeciesRarityCard(key){
   // Sélecteur région custom : dropdown riche avec bars d'abondance colorées.
   // Trie par presence descendante. Regions ou espece absente = tout en bas grisées.
   // Rerend apres lazy-load des data regionales.
-  // Emojis drapeaux par pays (fallback texte si emoji ne rend pas)
-  const FLAG_EMOJI = { FR:'🇫🇷', ME:'🇲🇪', ES:'🇪🇸', IT:'🇮🇹', GB:'🇬🇧', PT:'🇵🇹' };
+  // Alias local vers CC_FLAGS (source unique)
+  const FLAG_EMOJI = CC_FLAGS;
   // buildRegPanel(cc) : construit le panel des regions du pays courant.
   // Pour FR : utilise S&T weekly regional + freq mensuelle regionale.
   // Autres pays : uniquement freq mensuelle regionale bar chart (S&T regional non genere).
@@ -10713,7 +10725,7 @@ let _targetsRegion = null;   // '' = pays entier, sinon code region (FR-BRE, ES-
 let _targetsRegionInit = false;
 let _targetsCountry = 'FR';   // pays courant pour "Cette semaine"
 try{ _targetsCountry = localStorage.getItem('mb-targets-country') || 'FR'; }catch(_){}
-const FLAG_EMOJI_TGT = { FR:'🇫🇷', ME:'🇲🇪', ES:'🇪🇸', IT:'🇮🇹', GB:'🇬🇧', PT:'🇵🇹' };
+const FLAG_EMOJI_TGT = CC_FLAGS;   // alias vers la source unique
 let _targetsOwnedFilter = '';   // '' = toutes, 'missing' = manquantes seulement, 'owned' = deja cochees
 try{ _targetsOwnedFilter = localStorage.getItem('mb-targets-owned') || ''; }catch(_){}
 // Set des tiers EXCLUS (comme dans Ma liste : chips off = exclus). Vide = tous inclus.
