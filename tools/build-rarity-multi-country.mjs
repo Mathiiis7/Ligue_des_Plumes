@@ -20,6 +20,21 @@ const __dir = dirname(fileURLToPath(import.meta.url));
 
 const COUNTRIES = ['ES', 'IT', 'GB', 'PT'];
 
+// Regions par pays (admin1 eBird). Ajoute la data monthly par region -> alimente
+// data/freq_by_region_XX.json pour lazy-load runtime (comme FR).
+const REGIONS = {
+  GB: ['GB-ENG', 'GB-SCT', 'GB-WLS', 'GB-NIR'],
+  PT: ['PT-01', 'PT-02', 'PT-03', 'PT-04', 'PT-05', 'PT-06', 'PT-07',
+       'PT-08', 'PT-09', 'PT-10', 'PT-11', 'PT-12', 'PT-13', 'PT-14',
+       'PT-15', 'PT-16', 'PT-17', 'PT-18', 'PT-20', 'PT-30'],
+  ES: ['ES-AN', 'ES-AR', 'ES-AS', 'ES-CB', 'ES-CE', 'ES-CL', 'ES-CM',
+       'ES-CN', 'ES-CT', 'ES-EX', 'ES-GA', 'ES-IB', 'ES-MC', 'ES-MD',
+       'ES-ML', 'ES-NC', 'ES-PV', 'ES-RI', 'ES-VC'],
+  IT: ['IT-21', 'IT-23', 'IT-25', 'IT-32', 'IT-34', 'IT-36', 'IT-42',
+       'IT-45', 'IT-52', 'IT-55', 'IT-57', 'IT-62', 'IT-65', 'IT-67',
+       'IT-72', 'IT-75', 'IT-77', 'IT-78', 'IT-82', 'IT-88'],
+};
+
 // Memes seuils que FR/ME (Option 1 recalibree 2026-08-27, tier 10 seuil 0.00015)
 const THRESHOLDS = [
   [0.25, 1], [0.15, 2], [0.08, 3], [0.04, 4],
@@ -117,6 +132,33 @@ async function processCountry(cc){
                   `export const REAL_FREQ_MONTHLY_${cc} = ${JSON.stringify(monthly)};\n`;
   writeFileSync(outPath, content);
   console.log(`  Ecrit : ${outPath} (${content.length} chars)`);
+
+  // Regional : pour chaque region, parse le bar chart et extract les monthly par sci.
+  // Alimente data/freq_by_region_XX.json (structure : { region: { sci: [12] } }).
+  const regionalData = {};
+  let nRegionsFound = 0;
+  for (const regCode of REGIONS[cc] || []) {
+    const barRegPath = join(__dir, `ebird-barchart-${regCode}-2019-2026.txt`);
+    try {
+      const barReg = parseBarchart(barRegPath);
+      const regMap = {};
+      for (const [k, { monthly: m12 }] of Object.entries(barReg)) {
+        const sci = tax[k];
+        if (sci) regMap[sci] = m12.map(v => +v.toFixed(5));
+      }
+      if (Object.keys(regMap).length > 0) {
+        regionalData[regCode] = regMap;
+        nRegionsFound++;
+      }
+    } catch (err) {
+      console.warn(`  ! ${regCode} : ${err.message}`);
+    }
+  }
+  const regJson = JSON.stringify(regionalData);
+  const dataDir = join(__dir, '..', 'data');
+  const regPath = join(dataDir, `freq_by_region_${cc.toLowerCase()}.json`);
+  writeFileSync(regPath, regJson);
+  console.log(`  Ecrit : ${regPath} (${regJson.length} chars, ${nRegionsFound} regions)`);
 }
 
 for(const cc of COUNTRIES){
