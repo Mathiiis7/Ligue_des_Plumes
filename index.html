@@ -1184,6 +1184,17 @@
         </div>
         <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
           <div>
+            <label for="targetsCountry" style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; display:block; margin-bottom:4px;">Pays</label>
+            <select id="targetsCountry" class="filt-sel" style="font-size:13px; padding:6px 10px;">
+              <option value="FR">🇫🇷 France</option>
+              <option value="ES">🇪🇸 Espagne</option>
+              <option value="IT">🇮🇹 Italie</option>
+              <option value="GB">🇬🇧 Royaume-Uni</option>
+              <option value="PT">🇵🇹 Portugal</option>
+              <option value="ME">🇲🇪 Monténégro</option>
+            </select>
+          </div>
+          <div>
             <label for="targetsRegion" style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; display:block; margin-bottom:4px;">Ma région</label>
             <select id="targetsRegion" class="filt-sel" style="font-size:13px; padding:6px 10px;"></select>
           </div>
@@ -10564,8 +10575,11 @@ let _pkdxNumById = null;
 // Panel qui affiche les especes les plus faciles a voir CETTE SEMAINE dans la region
 // selectionnee (ou France entiere) que l'utilisateur n'a pas encore cochees. Utilise
 // S&T weekly national + REAL_FREQ_MONTHLY_BY_REGION pour filtrer par presence regionale.
-let _targetsRegion = null;   // '' = France entiere, sinon code region (FR-BRE, etc.)
+let _targetsRegion = null;   // '' = pays entier, sinon code region (FR-BRE, ES-AN, etc.)
 let _targetsRegionInit = false;
+let _targetsCountry = 'FR';   // pays courant pour "Cette semaine"
+try{ _targetsCountry = localStorage.getItem('mb-targets-country') || 'FR'; }catch(_){}
+const FLAG_EMOJI_TGT = { FR:'🇫🇷', ME:'🇲🇪', ES:'🇪🇸', IT:'🇮🇹', GB:'🇬🇧', PT:'🇵🇹' };
 let _targetsOwnedFilter = '';   // '' = toutes, 'missing' = manquantes seulement, 'owned' = deja cochees
 try{ _targetsOwnedFilter = localStorage.getItem('mb-targets-owned') || ''; }catch(_){}
 // Set des tiers EXCLUS (comme dans Ma liste : chips off = exclus). Vide = tous inclus.
@@ -10587,26 +10601,53 @@ function renderTargets(){
     if(hint) hint.textContent = '';
     return;
   }
-  if(typeof REAL_ABUNDANCE_ST_FR === 'undefined'){
-    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:24px; color:var(--ink-3);">Données eBird Status & Trends non chargées.</div>';
+  const ccT = _targetsCountry || 'FR';
+  const regT = COUNTRIES_REG[ccT];
+  if(!regT){
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:24px; color:var(--ink-3);">Pays inconnu.</div>';
     if(hint) hint.textContent = '';
     return;
   }
-  // Init du selector region (une fois).
+  const stCountry = regT.st();
+  if(!stCountry || !Object.keys(stCountry).length){
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:24px; color:var(--ink-3);">Données eBird Status & Trends non chargées pour ce pays.</div>';
+    if(hint) hint.textContent = '';
+    return;
+  }
+  // Init du selecteur pays (une fois).
+  const ccSel = $('#targetsCountry');
+  if(ccSel && !ccSel._init){
+    ccSel.value = ccT;
+    ccSel.addEventListener('change', () => {
+      _targetsCountry = ccSel.value || 'FR';
+      try{ localStorage.setItem('mb-targets-country', _targetsCountry); }catch(_){}
+      // Reset la region si elle n'appartient pas au nouveau pays
+      const belongs = (REGIONS_BY_COUNTRY[_targetsCountry] || []).some(r => r.code === _targetsRegion);
+      if(!belongs){ _targetsRegion = ''; try{ localStorage.setItem('mb-targets-region', ''); }catch(_){} }
+      // Rebuild du selecteur region + lazy-load data + re-render
+      _targetsRegionInit = false;   // force rebuild
+      Promise.all([_loadFreqDataForCountry(_targetsCountry)]).then(() => renderTargets());
+    });
+    ccSel._init = true;
+  }
+  // Init/rebuild du selecteur region : liste les regions du pays courant.
   const sel = $('#targetsRegion');
   if(sel && !_targetsRegionInit){
-    sel.innerHTML = '<option value="">🇫🇷 France entière</option>'
-      + FR_REGIONS.map(r => `<option value="${esc(r.code)}">${esc(r.name)}</option>`).join('');
+    const regList = REGIONS_BY_COUNTRY[ccT] || [];
+    const natLbl = (FLAG_EMOJI_TGT[ccT] || '') + ' ' + (regT.name || ccT) + ' entier';
+    sel.innerHTML = `<option value="">${esc(natLbl)}</option>`
+      + regList.map(r => `<option value="${esc(r.code)}">${esc(r.name)}</option>`).join('');
     sel.value = _targetsRegion || '';
-    sel.addEventListener('change', () => {
-      _targetsRegion = sel.value || '';
-      try{ localStorage.setItem('mb-targets-region', _targetsRegion); }catch(_){}
-      // Region choisie -> charge freq mensuelle regionale + S&T weekly regional (2 fetches
-      // en parallele si necessaire). S&T regional peut ne pas exister encore, on tolere.
-      if(_targetsRegion){
-        Promise.all([_loadFreqData(), _loadAbundanceRegionData()]).then(() => renderTargets());
-      } else renderTargets();
-    });
+    if(!sel._init){
+      sel.addEventListener('change', () => {
+        _targetsRegion = sel.value || '';
+        try{ localStorage.setItem('mb-targets-region', _targetsRegion); }catch(_){}
+        const proms = [_loadFreqDataForCountry(_targetsCountry)];
+        if(_targetsCountry === 'FR') proms.push(_loadAbundanceRegionData());
+        Promise.all(proms).then(() => renderTargets());
+      });
+      sel._init = true;
+    }
     _targetsRegionInit = true;
   }
   // Init du selecteur filtre propriete (toutes/manquantes/cochees). Ecouteur pose une seule fois.
@@ -10634,20 +10675,24 @@ function renderTargets(){
     });
     chipsBox._init = true;
   }
-  // Si region choisie mais data pas encore chargee, la charger en background.
-  const regionData = _targetsRegion ? REAL_FREQ_MONTHLY_BY_REGION[_targetsRegion] : null;
+  // Data regionale du pays courant (via registry lazy-loadee) + S&T regional FR-only.
   const regionSelected = !!_targetsRegion;
+  const monthByReg = regT.monthlyByRegion && regT.monthlyByRegion();
+  const regionData = (regionSelected && monthByReg) ? monthByReg[_targetsRegion] : null;
   if(regionSelected && !regionData){
-    Promise.all([_loadFreqData(), _loadAbundanceRegionData()]).then(() => renderTargets());
+    const proms = [_loadFreqDataForCountry(ccT)];
+    if(ccT === 'FR') proms.push(_loadAbundanceRegionData());
+    Promise.all(proms).then(() => renderTargets());
     grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--ink-3);">Chargement des données régionales…</div>';
     if(hint) hint.textContent = '';
     return;
   }
-  // S&T weekly regional : disponible si REAL_ABUNDANCE_ST_BY_REGION_FR contient la region.
-  // Sinon fallback national (S&T weekly national + booster freq mensuelle regionale).
-  const stRegionData = (regionSelected && REAL_ABUNDANCE_ST_BY_REGION_FR
+  // S&T weekly regional : dispo uniquement pour FR pour l'instant.
+  const stRegionData = (regionSelected && ccT === 'FR' && REAL_ABUNDANCE_ST_BY_REGION_FR
                         && REAL_ABUNDANCE_ST_BY_REGION_FR[_targetsRegion]) || null;
   const hasRegionalST = !!stRegionData;
+  // Monthly national du pays courant (via registry) : pour le ratio regional / national.
+  const monthlyNat = regT.monthly ? regT.monthly() : {};
   // Semaine courante (0..51). Semaine 0 = 1-7 janvier, semaine 25 = ~24 juin, etc.
   const now = new Date();
   const dayOfYear = Math.floor((now - new Date(now.getFullYear(),0,0)) / 86400000);
@@ -10660,19 +10705,20 @@ function renderTargets(){
   // en IdF mais rare) qui polluent le top des cibles locales.
   const REGION_MIN_FREQ = 0.005;
   const candidates = [];
-  for(const sci in REAL_ABUNDANCE_ST_FR){
+  for(const sci in stCountry){
     if(_isSciAliasSource(sci)) continue;
     if(isHiddenSpecies(sci)) continue;
     // Ne pas exclure les cochees : toutes les especes affichees, les manquantes en silhouette.
     // Filtre "owned" applique apres le tri.
     const owned = _mineHasStrict(mine, sci);
-    const st = REAL_ABUNDANCE_ST_FR[sci];
+    const st = stCountry[sci];
     if(!Array.isArray(st.w) || st.w.length !== 52) continue;
     const wNat = st.w[curWeek];
     if(!wNat || wNat <= 0) continue;
-    // Skip cage/voliere et parcs semi-libres (pas des cibles ornitho).
+    // Skip cage/voliere et parcs semi-libres (pas des cibles ornitho). Categorie
+    // exotique par pays (une espece exotique en FR peut etre native en ES).
     if(isExotic(sci) && (isParkOnlyExotic(sci) || (() => {
-      const cat = _exoticCategory(sci);
+      const cat = exoticCategoryInCountry(sci, ccT) || _exoticCategory(sci);
       return cat === 'X' || cat === 'C';
     })())) continue;
     // Filtre regional : si region choisie, espece doit etre presente >= REGION_MIN_FREQ
@@ -10713,11 +10759,9 @@ function renderTargets(){
         wDisplay = wReg;
       } else {
         // Ratio bar chart regional / national ce mois pour proxy de densite regionale.
-        const natMonthly = (typeof REAL_FREQ_MONTHLY === 'object') ? REAL_FREQ_MONTHLY[sci] : null;
+        // Utilise monthlyNat du pays courant (via registry) au lieu de REAL_FREQ_MONTHLY FR.
+        const natMonthly = monthlyNat[sci];
         const natFreq = (natMonthly && natMonthly[curMonth]) || 0;
-        // Ratio : cap 2.0 en haut (evite explosion pour especes ultra-rares nationalement),
-        // cap 0.02 en bas (garde un seuil residuel). Si natFreq==0, fallback: ratio = regionalFreq
-        // normalise sur un typique 5% (evite division 0).
         let ratio;
         if(natFreq > 0){
           ratio = Math.min(2, Math.max(0.02, regionalFreq / natFreq));
@@ -10732,7 +10776,7 @@ function renderTargets(){
       score = wNat;
       wDisplay = wNat;
     }
-    candidates.push({ sci, wVal: wDisplay, wReg, wProxy, score, regionalFreq, owned, tier: rarityForCountry(sci, 'FR') });
+    candidates.push({ sci, wVal: wDisplay, wReg, wProxy, score, regionalFreq, owned, tier: rarityForCountry(sci, ccT) });
   }
   if(!candidates.length){
     grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--ink-3);">Aucune espèce cible cette semaine' + (regionSelected ? ' dans cette région' : '') + '.</div>';
@@ -10761,7 +10805,10 @@ function renderTargets(){
   // 60 = lignes completes pour toutes les largeurs standards (2, 3, 4, 5, 6 colonnes).
   const top = display.slice(0, 60);
   if(hint){
-    const regName = regionSelected ? (FR_REGIONS.find(r => r.code === _targetsRegion)?.name || _targetsRegion) : 'France entière';
+    const regList = REGIONS_BY_COUNTRY[ccT] || [];
+    const regName = regionSelected
+      ? (regList.find(r => r.code === _targetsRegion)?.name || _targetsRegion)
+      : ((FLAG_EMOJI_TGT[ccT] || '') + ' ' + (regT.name || ccT) + ' entier');
     const precisionTag = regionSelected ? (hasRegionalST ? ' · densité régionale S&T' : ' · densité nationale × présence régionale') : '';
     const ownedCount = candidates.filter(c => c.owned).length;
     const missingCount = candidates.length - ownedCount;
