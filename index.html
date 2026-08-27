@@ -1640,6 +1640,10 @@
         <select id="pkdxCountry" class="filt-sel">
           <option value="FR">🇫🇷 France</option>
           <option value="ME">🇲🇪 Monténégro</option>
+          <option value="ES">🇪🇸 Espagne</option>
+          <option value="IT">🇮🇹 Italie</option>
+          <option value="GB">🇬🇧 Royaume-Uni</option>
+          <option value="PT">🇵🇹 Portugal</option>
         </select>
         <select id="pkdxFamily" class="filt-sel"><option value="">Toutes familles</option></select>
         <select id="pkdxHabitat" class="filt-sel">
@@ -10765,9 +10769,9 @@ function _pkdxRender(){
       // de tiers via _exoticTier. Le filtre "🦆 Exotiques seulement" du dropdown Tier permet
       // de n'afficher que les exotiques ; sinon ils sont mixes avec les sauvages.
       const k = sci;
-      const inCatalog = country === 'ME'
-        ? ((typeof REAL_RARITY_ME_EBIRD !== 'undefined' && !!REAL_RARITY_ME_EBIRD[k]) || isExoticInCountry(sci, 'ME'))
-        : (!!REAL_RARITY[k] || isExoticInCountry(sci, 'FR'));
+      // Espece dans le catalogue du pays : via registry COUNTRIES_REG (bar chart OU S&T
+      // non-nul) OU exotique dans ce pays. Support FR, ME, ES, IT, GB, PT + futurs.
+      const inCatalog = _countryHasSpecies(country, k) || isExoticInCountry(sci, country);
       if(!inCatalog) continue;
       const tier = rarityForCountry(sci, country);
       // Tier peut etre 0 (parcs semi-libres : paons, flamants ornementaux, canards
