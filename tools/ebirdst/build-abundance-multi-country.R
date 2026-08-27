@@ -32,6 +32,12 @@ suppressPackageStartupMessages({
   library(httr)
 })
 
+# Force le flush stdout apres chaque cat -> progression visible en direct quand
+# la sortie est pipee (Tee-Object) ou redirigee. Sans ca, PowerShell buffere
+# et on ne voit rien pendant des heures.
+.cat_orig <- cat
+cat <- function(...) { .cat_orig(...); flush.console() }
+
 # eBird API key (Mathis, meme que dans index.html - non secret, quota 10k requetes/jour)
 EBIRD_API_KEY <- "dbflh4atmsom"
 
