@@ -4882,7 +4882,11 @@ async function _loadFreqData(){
   if(_freqDataPromise) return _freqDataPromise;
   _freqDataPromise = (async () => {
     try{
-      REAL_FREQ_MONTHLY_BY_REGION = await fetch('data/freq_by_region.json').then(r => r.json());
+      // Cache-busting : GitHub Pages sert avec des headers cache faibles, le navigateur
+      // peut garder une vieille version du JSON qui manque des especes ajoutees recemment
+      // (ex : Tringa stagnatilis en PDL, Canard carolin, etc.). Le param ?v change avec
+      // chaque deploiement pour forcer le re-fetch.
+      REAL_FREQ_MONTHLY_BY_REGION = await fetch('data/freq_by_region.json?v=20260827').then(r => r.json());
     }catch(err){
       console.error('Erreur chargement freq_by_region', err);
       _freqDataPromise = null;
