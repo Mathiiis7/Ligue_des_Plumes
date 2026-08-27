@@ -8827,6 +8827,12 @@ function _renderSpeciesRarityCard(key){
     const r = regList.find(x => x.code === _speciesRegion);
     return r ? '📍 ' + r.name : `${flag} ${nationalLbl}`;
   };
+  // Pays initial : contexte (Ornidex, carte) ou 1er dispo. Doit etre calcule AVANT
+  // le innerHTML car les templates referencent initCountry via getTriggerLabel/buildRegPanel.
+  const ctxCountry = (typeof _pkdxFilters !== 'undefined' && _pkdxFilters.country)
+    || (typeof ebFilter !== 'undefined' && ebFilter.country)
+    || 'FR';
+  const initCountry = avail.find(c => c.code === ctxCountry) ? ctxCountry : avail[0].code;
   box.innerHTML = `
     <div class="sm-card-title" style="display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
       <span>Rareté</span>
@@ -9055,11 +9061,7 @@ function _renderSpeciesRarityCard(key){
     $('#smRarityLine').innerHTML = `<div style="display:flex;align-items:center;gap:6px;padding:6px 0;">${flgFixed}${pill}<span style="font-weight:600;color:var(--ink);">${esc(label)}</span>${catBadge}</div>${detailsHtml}`;
   };
   // Pays par defaut : reprend le contexte du site (filtre Birdydex ou carte). Sinon FR.
-  // Si le pays courant n'est pas dans avail (l'espece n'y est pas), tombe sur le 1er dispo.
-  const ctxCountry = (typeof _pkdxFilters !== 'undefined' && _pkdxFilters.country)
-    || (typeof ebFilter !== 'undefined' && ebFilter.country)
-    || 'FR';
-  const initCountry = avail.find(c => c.code === ctxCountry) ? ctxCountry : avail[0].code;
+  // (initCountry deja calcule plus haut avant box.innerHTML)
   renderLine(initCountry);
   // Le sélecteur région s'affiche pour tous les pays qui ont des subdivisions
   // (via REGIONS_BY_COUNTRY). ME n'a pas de sub -> picker cache.
