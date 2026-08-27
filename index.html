@@ -991,6 +991,7 @@
     <button class="tab" data-view="photos" hidden>📸 Photos</button>
     <button class="tab" data-view="feed" hidden>🆕 Fil</button>
     <button class="tab" data-view="requests" hidden>💡 Requêtes</button>
+    <button class="tab" data-view="about" hidden>ℹ️ À propos</button>
     <div style="margin-left:auto;">
       <button type="button" id="hamburgerBtn" class="tab" aria-label="Menu" style="min-width:auto; padding:9px 12px;" title="Plus">☰</button>
     </div>
@@ -999,6 +1000,7 @@
   <div id="hamburgerMenu" hidden style="position:fixed; background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.15); min-width:180px; padding:6px; z-index:1700;">
     <button type="button" class="ham-item" data-view="profil">👤 Profil</button>
     <button type="button" class="ham-item" data-view="requests">💡 Requêtes</button>
+    <button type="button" class="ham-item" data-view="about">ℹ️ À propos</button>
   </div>
   <!-- Boutons flottants Fil + Photos + Tchat, positionnes en bas a droite -->
   <div id="fabStack" style="position:fixed; right:20px; bottom:20px; display:flex; flex-direction:column; gap:10px; z-index:1600;">
@@ -1205,6 +1207,7 @@
           <p style="margin:0 0 6px 0;"><b>X ind/h cette semaine</b> — combien d'individus tu croiserais en moyenne <b>par heure de balade</b> dans ta région, cette semaine précise. Basé sur les données Cornell (le labo ornitho mondial qui gère eBird). Ex : 2 ind/h = 1 oiseau vu toutes les 30 min ; 0.001 ind/h = quasi introuvable.</p>
           <p style="margin:0;"><b>X% listes région (mensuel)</b> — sur toutes les sorties eBird faites dans ta région à ce mois, <b>quel pourcentage mentionne l'espèce</b>. Moyenne des 6 dernières années. Ex : 30% = 1 sortie sur 3 en voit ; 1% = 1 sortie sur 100.</p>
           <p style="margin:6px 0 0 0; opacity:.85;">Le classement se base sur "ind/h" (la mesure de la semaine en cours). Le "% listes" complète en montrant si l'espèce est régulière en général à cette saison.</p>
+          <p style="margin:6px 0 0 0; opacity:.85;">Détails complets sur la page <a href="#" onclick="document.querySelector('.tab[data-view=about]')?.click(); return false;" style="color:var(--accent); text-decoration:underline;">ℹ️ À propos</a> (menu ☰).</p>
         </div>
       </details>
       <div id="targetsGrid" class="targets-grid" style="margin-top:12px;"></div>
@@ -1670,6 +1673,73 @@
       </div>
       <div id="pkdxGrid" class="pkdx-grid"></div>
       <div id="pkdxEmpty" class="help" style="text-align:center; padding:30px; display:none;">Aucune espèce ne correspond à ces filtres.</div>
+    </section>
+  </div>
+
+  <!-- À propos : page centralisee expliquant les concepts du site (rarete, metriques,
+       sources, versions). Accessible via le menu hamburger. -->
+  <div id="viewAbout" style="display:none;">
+    <section class="panel" style="padding:24px; margin-top:22px; max-width:900px;">
+      <div class="section-head">
+        <div><div class="eyebrow">Documentation</div><h2>ℹ️ À propos de la Ligue des Plumes</h2>
+          <p class="help" style="margin-top:2px;">Comment ça marche, d'où viennent les données, comment lire les indicateurs.</p></div>
+      </div>
+      <div class="about-body" style="font-size:14px; line-height:1.6; color:var(--ink); margin-top:16px;">
+
+        <h3 style="margin:16px 0 8px; font-size:16px; color:var(--ink);">🎯 À quoi sert cette app</h3>
+        <p style="margin:0 0 10px;">Comparer les life lists eBird d'un groupe d'amis birders. Charge ta liste eBird sur "Ma liste", et retrouve toutes les espèces vues (partagées ou uniques), avec des filtres, un classement, un Birdydex par famille, et des suggestions personnalisées d'espèces à ajouter.</p>
+
+        <h3 style="margin:20px 0 8px; font-size:16px; color:var(--ink);">🌈 Les 11 niveaux de rareté</h3>
+        <p style="margin:0 0 10px;">Chaque espèce a un niveau de <b>0 à 10</b> (couleur vert → magenta), qui reflète la difficulté à l'observer en France :</p>
+        <ul style="margin:0 0 10px 0; padding-left:22px;">
+          <li><b>0</b> Parc semi-libre / échappé cage (Paon, Cygne noir…)</li>
+          <li><b>1</b> Omniprésent (Merle noir, Pigeon ramier)</li>
+          <li><b>2</b> Très commun · <b>3</b> Commun · <b>4</b> Assez commun · <b>5</b> Peu commun</li>
+          <li><b>6</b> Assez rare · <b>7</b> Rare · <b>8</b> Très rare · <b>9</b> Ultra rare · <b>10</b> Exceptionnel</li>
+        </ul>
+        <p style="margin:0 0 10px;">Le niveau est calculé en combinant 2 sources :</p>
+        <ul style="margin:0 0 10px 0; padding-left:22px;">
+          <li><b>eBird Status &amp; Trends</b> (Cornell Lab) — modèle Machine Learning qui donne la <i>densité biologique</i> d'ind/h par km²</li>
+          <li><b>Bar chart eBird FR 2019-2026</b> — le % de listes qui mentionnent l'espèce (réalité birding)</li>
+        </ul>
+        <p style="margin:0 0 10px;">Les 2 sources sont fusionnées avec des règles qui corrigent les biais :</p>
+        <ul style="margin:0 0 10px 0; padding-left:22px;">
+          <li>Espèces <b>grégaires</b> (Grue au Lac du Der) : S&amp;T surestime, on garde le bar chart</li>
+          <li>Espèces <b>recherchées activement</b> (Balbuzard en migration) : bar chart surestime, on moyenne</li>
+          <li>Espèces <b>localisées et abondantes</b> (Ibis sacré, Tadorne casarca) : override manuel</li>
+        </ul>
+
+        <h3 style="margin:20px 0 8px; font-size:16px; color:var(--ink);">📅 Les 2 indicateurs de l'onglet "Cette semaine"</h3>
+        <p style="margin:0 0 8px;">Chaque espèce est classée avec 2 métriques complémentaires :</p>
+        <p style="margin:6px 0;"><b>X ind/h cette semaine</b> — combien d'individus tu croiserais en moyenne par heure de balade, cette semaine précise, dans ta région. Ex : <i>2 ind/h = 1 oiseau vu toutes les 30 min ; 0.001 ind/h = quasi introuvable</i>. Source Cornell S&amp;T (rasters 3 km × 52 semaines).</p>
+        <p style="margin:6px 0;"><b>X% listes région (mensuel)</b> — quel pourcentage des sorties eBird de ta région à ce mois mentionnent l'espèce. Ex : <i>30% = 1 sortie sur 3 en voit ; 1% = 1 sortie sur 100</i>. Moyenne des 6 dernières années.</p>
+        <p style="margin:6px 0;">Le <b>classement</b> se fait sur "ind/h" (précision de la semaine). Le "% listes" complète pour montrer si l'espèce est régulière en général à cette saison.</p>
+
+        <h3 style="margin:20px 0 8px; font-size:16px; color:var(--ink);">📍 Sélecteur région (fiche espèce)</h3>
+        <p style="margin:0 0 8px;">Sur chaque fiche espèce, tu peux choisir une région française. L'histogramme "52 barres" se met à jour pour montrer où et quand l'espèce est présente <b>dans cette région</b>. Les régions sont triées par abondance décroissante (les meilleures en tête, les absentes en bas).</p>
+        <p style="margin:0 0 8px;">Si l'espèce est absente de la région choisie (ex : Macareux moine hors Bretagne), un message explicite le dit au lieu d'afficher un fallback national trompeur.</p>
+
+        <h3 style="margin:20px 0 8px; font-size:16px; color:var(--ink);">📚 Sources des données</h3>
+        <ul style="margin:0 0 10px 0; padding-left:22px;">
+          <li><b>eBird</b> (Cornell Lab of Ornithology) — la life list, le bar chart FR/région/département, la taxonomie</li>
+          <li><b>eBird Status &amp; Trends 2023</b> — modèle ML d'abondance (rasters hebdo par pixel 3 km)</li>
+          <li><b>GBIF</b> — fallback pour les exotiques rares non couverts par eBird bar chart</li>
+          <li><b>xeno-canto</b> — chants et cris (onglet Quiz)</li>
+          <li><b>Wikipedia</b> — descriptions et photos</li>
+          <li><b>IUCN Red List</b> — statut de conservation (icônes sur les fiches)</li>
+        </ul>
+
+        <h3 style="margin:20px 0 8px; font-size:16px; color:var(--ink);">📅 Versions des données</h3>
+        <ul style="margin:0 0 10px 0; padding-left:22px;">
+          <li>Bar chart eBird : <b>2019-2026</b> (7 ans glissants)</li>
+          <li>S&amp;T Cornell : version <b>2023</b> (publiée en 2025, pondère surtout ~2018-2023)</li>
+          <li>Génération data locale : <b>26 août 2026</b></li>
+        </ul>
+        <p style="margin:0 0 10px; opacity:.85; font-size:12.5px;">Les données Cornell sont mises à jour tous les 1-2 ans. Le bar chart peut être re-téléchargé annuellement.</p>
+
+        <h3 style="margin:20px 0 8px; font-size:16px; color:var(--ink);">🐛 Feedback</h3>
+        <p style="margin:0;">Une aberration de tier, un chart bizarre, une idée de feature ? Utilise l'onglet <b>💡 Requêtes</b> (dans le menu ☰) pour signaler.</p>
+      </div>
     </section>
   </div>
 
@@ -7792,7 +7862,7 @@ $('#manualAddBtn')?.addEventListener('click', async ()=>{
   btn.disabled=false;
 });
 
-const VIEWS = { load:'#viewLoad', profil:'#viewProfil', ranking:'#viewRanking', map:'#viewMap', targets:'#viewTargets', trophies:'#viewTrophies', chat:'#viewChat', photos:'#viewPhotos', feed:'#viewFeed', requests:'#viewRequests', quiz:'#viewQuiz', pokedex:'#viewPokedex' };
+const VIEWS = { load:'#viewLoad', profil:'#viewProfil', ranking:'#viewRanking', map:'#viewMap', targets:'#viewTargets', trophies:'#viewTrophies', chat:'#viewChat', photos:'#viewPhotos', feed:'#viewFeed', requests:'#viewRequests', quiz:'#viewQuiz', pokedex:'#viewPokedex', about:'#viewAbout' };
 // Hamburger menu + FABs Chat/Photos : delegate vers les tabs caches.
 document.addEventListener('click', e => {
   const ham = e.target.closest('#hamburgerBtn');
