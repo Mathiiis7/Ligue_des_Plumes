@@ -2279,17 +2279,20 @@ function _openCountryPicker(currentCode, opts = {}){
     const _mThr = [[0.25,1],[0.15,2],[0.08,3],[0.04,4],[0.02,5],[0.007,6],[0.0015,7],[0.0003,8],[0.00005,9]];
     const abdToTier = v => { if(!(v>0)) return 10; for(const [t,i] of _wThr) if(v>=t) return i; return 10; };
     const freqToTier = v => { if(!(v>0)) return 10; for(const [t,i] of _mThr) if(v>=t) return i; return 10; };
+    // Utilise TOUJOURS le bar chart mensuel (unite % listes) pour cohérence inter-pays.
+    // Tous les pays ont un bar chart national (FR/ME/ES/IT/GB/PT), donc pas de melange
+    // d'unites % vs ind/h dans le picker. Fallback S&T uniquement si aucun bar chart.
     const scoreCountryForSpecies = (cc) => {
       const reg = COUNTRIES_REG[cc];
-      const stEntry = reg.st()[focusSci];
-      if(stEntry && Array.isArray(stEntry.w)){
-        const m = Math.max(...stEntry.w);
-        if(m > 0) return { score: m, isSt: true };
-      }
       const monArr = reg.monthly()[focusSci];
       if(Array.isArray(monArr)){
         const m = Math.max(...monArr);
         if(m > 0) return { score: m, isSt: false };
+      }
+      const stEntry = reg.st()[focusSci];
+      if(stEntry && Array.isArray(stEntry.w)){
+        const m = Math.max(...stEntry.w);
+        if(m > 0) return { score: m, isSt: true };
       }
       return { score: 0, isSt: false };
     };
