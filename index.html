@@ -9098,11 +9098,21 @@ function _renderSpeciesRarityCard(key){
     // Non affichée pour tier 0 (parcs semi-libres, X/C échappés) : pas de calcul de tier.
     let detailsHtml = '';
     const isEstabExo = isExo && !isParkOnlyExotic(k) && (cat === 'N' || cat === 'P');
-    const canHaveDetails = cc === 'FR' && (!isExo || isEstabExo);
-    const stEntry = (typeof REAL_ABUNDANCE_ST_FR !== 'undefined') ? REAL_ABUNDANCE_ST_FR[k] : null;
+    const canHaveDetails = (!isExo || isEstabExo);
+    // Data S&T + bar chart du pays courant (via registry pour multi-pays).
+    const regCC = COUNTRIES_REG[cc];
+    const stEntry = (regCC && regCC.st) ? (regCC.st()[k] || null) : null;
     const hasStSubs = stEntry && stEntry.ta && stEntry.tn && stEntry.tl;
-    // Cas 1 : S&T dispo avec sous-tiers -> détail complet composite / bar chart
-    if(canHaveDetails && hasStSubs){
+    const ccBarTier = (regCC && regCC.barTier) ? (regCC.barTier()[k] || null) : null;
+    const ccName = (regCC && regCC.name) || cc;
+    // Label source d'appui : varie selon pays (FR = bar chart eBird FR + fallback GBIF exotiques,
+    // autres = bar chart XX si dispo, sinon rien).
+    const barSrcLabelCC = isEstabExo
+      ? 'GBIF exotiques (parcs urbains inclus)'
+      : (cc === 'FR' ? 'Bar chart eBird FR 2019-2026' : ('Bar chart eBird ' + cc + ' 2019-2026'));
+    const barSrcShortCC = isEstabExo ? 'GBIF' : 'bar chart';
+    // Cas 1 (FR uniquement) : S&T dispo avec sous-tiers -> détail complet composite / bar chart / merge
+    if(canHaveDetails && hasStSubs && cc === 'FR'){
       const st = stEntry;
       if(st.ta && st.tn && st.tl){
         // Source d'appui : bar chart pour sauvages, GBIF (_exoticTier) pour exotiques N/P
@@ -9254,20 +9264,79 @@ function _renderSpeciesRarityCard(key){
             </div>
           </details>`;
       }
+    } else if(canHaveDetails && hasStSubs){
+      // Cas 1bis : non-FR + S&T dispo. Pas de merge/override (specifique FR).
+      // Pays avec bar chart (ME) : bar chart pur si dispo, sinon fallback S&T composite.
+      // Pays S&T-only (ES/IT/GB/PT) : composite S&T 40/30/30 direct.
+      const stComp = stEntry.t;
+      const usesBar = (regCC && regCC.hasBarchart) && ccBarTier;
+      const mkRowB = (t, lbl, weight) => {
+        const c = realColor(t);
+        const lb = (typeof REAL_LABELS === 'object' && REAL_LABELS[t]) || ('niveau '+t);
+        return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
+          <span style="display:inline-block;background:${c};color:#fff;padding:1px 8px;border-radius:6px;font-weight:800;font-size:12px;min-width:22px;text-align:center;">${t}</span>
+          <span style="font-size:12px;color:var(--ink-2);flex:1;">${esc(lb)} <span style="opacity:.6;">— ${esc(lbl)}</span></span>
+          <span style="font-size:11px;color:var(--ink-3);font-weight:600;">${weight}</span>
+        </div>`;
+      };
+      let body;
+      if(usesBar){
+        // Bar chart retenu comme source primaire, S&T composite en info (grisé)
+        const mkRowFadedB = (t, lbl, weight) => {
+          const c = realColor(t);
+          const lb = (typeof REAL_LABELS === 'object' && REAL_LABELS[t]) || ('niveau '+t);
+          return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;opacity:.55;">
+            <span style="display:inline-block;background:${c};color:#fff;padding:1px 8px;border-radius:6px;font-weight:800;font-size:12px;min-width:22px;text-align:center;">${t}</span>
+            <span style="font-size:12px;color:var(--ink-2);flex:1;">${esc(lb)} <span style="opacity:.6;">— ${esc(lbl)}</span></span>
+            <span style="font-size:11px;color:var(--ink-3);font-weight:600;">${weight}</span>
+          </div>`;
+        };
+        body = `
+          <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">Composite S&amp;T (info, non retenu pour ${esc(ccName)})</div>
+          ${mkRowFadedB(stEntry.ta, 'Moyenne annuelle nationale', '40%')}
+          ${mkRowFadedB(stEntry.tn, 'Pic saisonnier national', '30%')}
+          ${mkRowFadedB(stEntry.tl, 'Densité typique sur hotspot', '30%')}
+          <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;margin-top:6px;">${esc(barSrcLabelCC)} retenu</div>
+          <div style="display:flex;align-items:center;gap:8px;padding:5px 0 2px 0;">
+            <span style="color:var(--accent);font-weight:800;font-size:14px;">✓</span>
+            <span style="display:inline-block;background:${realColor(ccBarTier)};color:#fff;padding:2px 8px;border-radius:6px;font-weight:800;font-size:13px;min-width:22px;text-align:center;">${ccBarTier}</span>
+            <span style="font-size:12px;color:var(--ink);font-weight:600;">Fréquence % checklists (pic biweekly)</span>
+          </div>
+          <div style="font-size:10.5px;color:var(--ink-3);margin-top:6px;opacity:.85;line-height:1.4;">Pour ${esc(ccName)}, le tier vient directement du bar chart eBird ${cc} (pas de merge S&amp;T comme en FR, qui est plus finement calibrée).</div>`;
+      } else {
+        // Pays S&T-only : composite 40/30/30 direct
+        body = `
+          <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">Composite eBird Status &amp; Trends (Cornell ML) — ${esc(ccName)}</div>
+          ${mkRowB(stEntry.ta, 'Moyenne annuelle nationale', '40%')}
+          ${mkRowB(stEntry.tn, 'Pic saisonnier national', '30%')}
+          ${mkRowB(stEntry.tl, 'Densité typique sur hotspot', '30%')}
+          <div style="display:flex;align-items:center;gap:8px;padding:5px 0 2px 0;border-top:1px dashed var(--line-2);margin-top:4px;">
+            <span style="color:var(--accent);font-weight:800;font-size:14px;">✓</span>
+            <span style="display:inline-block;background:${realColor(stComp)};color:#fff;padding:2px 8px;border-radius:6px;font-weight:800;font-size:13px;min-width:22px;text-align:center;">${stComp}</span>
+            <span style="font-size:12px;color:var(--ink);font-weight:600;">= composite 40/30/30 retenu</span>
+          </div>
+          <div style="font-size:10.5px;color:var(--ink-3);margin-top:6px;opacity:.85;line-height:1.4;">Pas de bar chart eBird pour ${esc(ccName)} (données de cochage trop éparses). Tier basé uniquement sur la modélisation S&amp;T Cornell.</div>`;
+      }
+      detailsHtml = `
+        <details style="margin-top:6px;">
+          <summary style="cursor:pointer;font-size:12px;color:var(--ink-3);user-select:none;padding:2px 0;">▸ Détails du calcul</summary>
+          <div style="padding:6px 0 4px 4px;border-left:2px solid var(--line);margin:4px 0 2px 6px;padding-left:10px;">
+            ${body}
+          </div>
+        </details>`;
     } else if(canHaveDetails){
       // Cas 2 : pas de S&T pour cette espece (Pipit spioncelle, Aigle de Bonelli, endemiques
       // montagnards, plusieurs vagrants). On n'a que le bar chart -> affiche mini-note
       // explicative pour que l'utilisateur comprenne l'absence de sous-scores.
       const barTier = isEstabExo
         ? (_exoticTier(k) || 1)
-        : (REAL_RARITY[k] || (_isForeignOnly(k) ? 9 : 1));
-      const barSrcLabel = isEstabExo ? 'GBIF exotiques (parcs urbains inclus)' : 'Bar chart eBird FR 2019-2026';
+        : (ccBarTier || (_isForeignOnly(k) ? 9 : 1));
       const barMeasure = isEstabExo ? 'Densité GBIF' : 'Fréquence % checklists (pic biweekly)';
       detailsHtml = `
         <details style="margin-top:6px;">
           <summary style="cursor:pointer;font-size:12px;color:var(--ink-3);user-select:none;padding:2px 0;">▸ Détails du calcul</summary>
           <div style="padding:6px 0 4px 4px;border-left:2px solid var(--line);margin:4px 0 2px 6px;padding-left:10px;">
-            <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">${barSrcLabel} (seule source)</div>
+            <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">${esc(barSrcLabelCC)} (seule source)</div>
             <div style="display:flex;align-items:center;gap:8px;padding:5px 0 2px 0;">
               <span style="color:var(--accent);font-weight:800;font-size:14px;">✓</span>
               <span style="display:inline-block;background:${realColor(barTier)};color:#fff;padding:2px 8px;border-radius:6px;font-weight:800;font-size:13px;min-width:22px;text-align:center;">${barTier}</span>
