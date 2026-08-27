@@ -359,7 +359,10 @@
   .cp-item { display:flex; align-items:center; gap:10px; padding:8px 10px; cursor:pointer; border-radius:8px; color:var(--ink); font-size:14px; }
   .cp-item:hover { background:var(--surface-2); }
   .cp-item.on { background:var(--surface-2); font-weight:700; }
-  .cp-item-flag { font-size:20px; line-height:1; }
+  .cp-item-flag { display:inline-flex; align-items:center; justify-content:center; width:28px; }
+  .cp-item-flag img.flag { height:16px; width:auto; border-radius:2px; box-shadow:0 0 0 1px rgba(0,0,0,.1); }
+  .cp-btn-flag { display:inline-flex; align-items:center; }
+  .cp-btn-flag img.flag { height:14px; width:auto; border-radius:2px; box-shadow:0 0 0 1px rgba(0,0,0,.1); }
   .cp-item-name { flex:1; }
   .cp-item-meta { font-size:11px; color:var(--ink-3); }
   .cp-item.disabled { opacity:.5; cursor:not-allowed; }
@@ -2243,15 +2246,15 @@ const CC_FLAGS = {
   IE:'🇮🇪', LU:'🇱🇺', HU:'🇭🇺', RO:'🇷🇴', BG:'🇧🇬', RS:'🇷🇸', SK:'🇸🇰', SI:'🇸🇮',
 };
 // Met a jour le label + drapeau d'un bouton pays (data-cc + spans .cp-btn-flag/label).
+// Utilise flagImg (<img flagcdn>) pour rendu cross-platform (Windows n'affiche pas les emoji).
 function _syncCountryButton(btn, cc){
   if(!btn) return;
   const reg = COUNTRIES_REG[cc];
-  const flag = CC_FLAGS[cc] || '';
   const name = (reg && reg.name) || cc;
   btn.dataset.cc = cc;
   const fEl = btn.querySelector('.cp-btn-flag');
   const lEl = btn.querySelector('.cp-btn-label');
-  if(fEl) fEl.textContent = flag;
+  if(fEl) fEl.innerHTML = flagImg(cc);
   if(lEl) lEl.textContent = name;
 }
 // Ouvre le modal, retourne une promesse resolue avec le code pays choisi (ou null si ferme).
@@ -2295,7 +2298,7 @@ function _openCountryPicker(currentCode, opts = {}){
         html += `<div class="cp-group-title">${esc(cont)}</div>`;
         for(const cc of codes){
           const reg = COUNTRIES_REG[cc];
-          const flag = CC_FLAGS[cc] || '';
+          const flag = flagImg(cc);
           const nSp = Object.keys(reg.st() || {}).length;
           const meta = nSp > 0 ? `${nSp} espèces` : '';
           html += `<div class="cp-item${cc === currentCode ? ' on' : ''}" data-cc="${esc(cc)}">
@@ -3022,14 +3025,12 @@ const holdersFR = u => u.counts!=null ? u.counts : [...u.seenBy.values()].filter
 function countryFlag(cc){ cc=(cc||'').toUpperCase(); if(!/^[A-Z]{2}$/.test(cc)) return ''; return String.fromCodePoint(...[...cc].map(c=>0x1F1E6+c.charCodeAt(0)-65)); }
 // Vraie image de drapeau (flagcdn) : rendue partout, y compris Windows desktop.
 function flagImg(cc){
-  if(!cc) return '';
-  const up = cc.toUpperCase();
-  // Prefer emoji si disponible dans CC_FLAGS (plus rapide, pas de fetch CDN)
-  if(typeof CC_FLAGS === 'object' && CC_FLAGS[up]) return `<span class="flag-emoji">${CC_FLAGS[up]}</span>`;
-  // Fallback img flagcdn pour les pays exotiques non listes en emoji
-  const lo = cc.toLowerCase();
-  if(!/^[a-z]{2}$/.test(lo)) return '';
-  return `<img class="flag" src="https://flagcdn.com/w20/${lo}.png" srcset="https://flagcdn.com/w40/${lo}.png 2x" alt="${esc(up)}" loading="lazy">`;
+  // NB: on utilise <img flagcdn> car Windows desktop n'affiche pas les emoji drapeaux
+  // (rendus en texte "FR"/"ME"...). Sur mobile/Mac les emoji marcheraient mais on veut
+  // un rendu uniforme cross-platform.
+  cc=(cc||'').toLowerCase();
+  if(!/^[a-z]{2}$/.test(cc)) return '';
+  return `<img class="flag" src="https://flagcdn.com/w20/${cc}.png" srcset="https://flagcdn.com/w40/${cc}.png 2x" alt="${esc(cc.toUpperCase())}" loading="lazy">`;
 }
 const COUNTRY_NAMES={FR:'France',ES:'Espagne',PT:'Portugal',IT:'Italie',DE:'Allemagne',GB:'Royaume-Uni',IE:'Irlande',BE:'Belgique',NL:'Pays-Bas',LU:'Luxembourg',CH:'Suisse',AT:'Autriche',GR:'Grèce',HR:'Croatie',NO:'Norvège',SE:'Suède',FI:'Finlande',DK:'Danemark',IS:'Islande',PL:'Pologne',CZ:'Tchéquie',HU:'Hongrie',RO:'Roumanie',BG:'Bulgarie',TR:'Turquie',MA:'Maroc',TN:'Tunisie',DZ:'Algérie',EG:'Égypte',SN:'Sénégal',ZA:'Afrique du Sud',KE:'Kenya',TZ:'Tanzanie',US:'États-Unis',CA:'Canada',MX:'Mexique',CR:'Costa Rica',BR:'Brésil',PE:'Pérou',EC:'Équateur',AR:'Argentine',CL:'Chili',IN:'Inde',TH:'Thaïlande',JP:'Japon',CN:'Chine',AU:'Australie',NZ:'Nouvelle-Zélande'};
 function countryLabel(cc){ cc=(cc||'').toUpperCase(); return COUNTRY_NAMES[cc]||cc; }   // nom seul (pour <option> et tooltips)
@@ -8973,7 +8974,7 @@ function _renderSpeciesRarityCard(key){
     <div class="sm-card-title" style="display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
       <span>Rareté</span>
       <button type="button" id="smRarityCountrySel" class="cp-btn" data-cc="${esc(initCountry)}" style="font-size:12px; padding:3px 8px;">
-        <span class="cp-btn-flag">${CC_FLAGS[initCountry] || ''}</span>
+        <span class="cp-btn-flag">${flagImg(initCountry)}</span>
         <span class="cp-btn-label">${esc((COUNTRIES_REG[initCountry] && COUNTRIES_REG[initCountry].name) || initCountry)}</span>
         <span class="cp-btn-arrow">▾</span>
       </button>
