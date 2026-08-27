@@ -9822,8 +9822,9 @@ function openSpeciesModal(sci){
   _renderSpeciesRarityCard(key);
   // Description Wikipedia (async)
   _renderSpeciesDesc(sci);
-  // Barre chart de fréquence mensuelle (national ou régional)
-  _renderSpeciesFreqChart(key);
+  // Note : le freq chart est deja rendu par _renderSpeciesRarityCard avec le
+  // pays courant. Ne PAS rappeler _renderSpeciesFreqChart(key) ici : ca
+  // ecraserait avec country='FR' par defaut et casserait l'affichage ME/ES/...
   // Photo : card 16/9 en haut de l'onglet Info. Ratio fixe, cover.
   const hero = $('#smHeroImg'), photoCard = $('#smPhotoCard'), photoCap = $('#smPhotoCaption'), cred = $('#smPhotoCredit');
   if(hero) hero.src = '';
