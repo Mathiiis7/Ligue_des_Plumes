@@ -55,18 +55,16 @@ fetch_country_species <- function(cc) {
 # -------- Config --------
 COUNTRIES <- list(
   # code = c(ISO3 pour ne_countries, nom francais)
-  ME = c("MNE", "Montenegro"),
-  ES = c("ESP", "Espagne"),
-  IT = c("ITA", "Italie"),
-  GB = c("GBR", "Royaume-Uni"),
-  PT = c("PRT", "Portugal"),
+  # Skip : ME, ES, IT, GB, PT deja generes le 2026-08-27 (fichiers real-abundance-st-XX.generated.js).
+  # Le 1er run overnight a plante sur US (std::bad_alloc, RAM saturee). Ce run 2 reprend
+  # avec gc() explicite apres chaque espece pour eviter la saturation.
   US = c("USA", "Etats-Unis"),
   CR = c("CRI", "Costa Rica"),
   AU = c("AUS", "Australie"),
   KE = c("KEN", "Kenya")
 )
-# FR skip (deja fait avec le script build-abundance-by-country.R)
-# Si tu veux le refaire quand meme : ajouter "FR" = c("FRA", "France") en tete.
+# Pour re-tourner ME/ES/IT/GB/PT/FR, ajouter au dict ou passer en argument :
+#   Rscript ... ES
 
 # Argument optionnel : un seul pays
 args <- commandArgs(trailingOnly = TRUE)
@@ -233,6 +231,16 @@ for (cc in names(COUNTRIES)) {
       n_err <<- n_err + 1
       if (n_err <= 5) cat("      ERR:", msg, "\n")
     })
+
+    # Liberer explicitement la RAM apres chaque espece. Sans ca, les rasters
+    # s'accumulent et saturent : le 1er run a plante sur US avec std::bad_alloc.
+    # rm() sur les variables locales + gc() force le garbage collector.
+    if (exists("r_weekly")) rm(r_weekly)
+    if (exists("weekly_means")) rm(weekly_means)
+    if (exists("all_pixels")) rm(all_pixels)
+    if (exists("all_vals")) rm(all_vals)
+    if (exists("non_zero")) rm(non_zero)
+    invisible(gc(verbose = FALSE))
   }
 
   cat("\n[3] Termine. OK :", n_ok, "  Zero (absente du pays) :", n_zero, "  Erreurs :", n_err, "\n")
