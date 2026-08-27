@@ -2475,6 +2475,10 @@ function isExoticInCountry(sci, country){
   const k = (sci||'').trim().toLowerCase();
   const cc = country || 'FR';
   if(EXOTIC_BY_COUNTRY[cc] && EXOTIC_BY_COUNTRY[cc][k]) return true;
+  // Park-only exotics (Canard musque, Paon, Cygne noir...) : echappes cage/parc
+  // dans tous les pays par definition. Coherent avec rarityForCountry qui applique
+  // isParkOnlyExotic() -> tier 0 globalement.
+  if(isParkOnlyExotic(k)) return true;
   // Fallback curated : uniquement pour FR (le dict EXOTIC reflete la situation FR/Europe
   // de l'ouest, il serait faux de l'appliquer aveuglement a d'autres pays).
   if(cc === 'FR' && EXOTIC[k]) return true;
@@ -2485,6 +2489,8 @@ function exoticCategoryInCountry(sci, country){
   const k = (sci||'').trim().toLowerCase();
   const cc = country || 'FR';
   if(EXOTIC_BY_COUNTRY[cc] && EXOTIC_BY_COUNTRY[cc][k]) return EXOTIC_BY_COUNTRY[cc][k];
+  // Park-only : echappe / captif => categorie X globale.
+  if(isParkOnlyExotic(k)) return 'X';
   if(cc === 'FR' && EXOTIC[k]) return EXOTIC_CATEGORY[k] || 'X';
   return '';
 }
