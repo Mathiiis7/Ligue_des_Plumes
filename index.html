@@ -2660,10 +2660,17 @@ const NATURALISED_LOCAL_BOOST = {
   'tadorna ferruginea':      6,    // Tadorne casarca : Alsace, Camargue, Est
   'aix galericulata':        6,    // Canard mandarin : parcs franciliens, Ain
 };
-function _tierFromSTvsBarChart(k, barTier){
-  if(NATURALISED_LOCAL_BOOST[k] != null) return NATURALISED_LOCAL_BOOST[k];
-  if(typeof REAL_ABUNDANCE_ST_FR === 'undefined') return barTier;
-  const st = REAL_ABUNDANCE_ST_FR[k];
+// Merge S&T composite + source d'appui (bar chart ou GBIF exotiques). Applique la regle
+// +/-1 tier + moyenne ponderee si S&T >> bar (biais recherche active).
+// Multi-pays : depuis 2026-08 applique aussi aux pays autres que FR quand la data S&T
+// est dispo. Le NATURALISED_LOCAL_BOOST reste FR-only (dict cible sites francais).
+function _tierFromSTvsBarChart(k, barTier, country){
+  const cc = country || 'FR';
+  if(cc === 'FR' && NATURALISED_LOCAL_BOOST[k] != null) return NATURALISED_LOCAL_BOOST[k];
+  const reg = COUNTRIES_REG[cc];
+  const stDict = (reg && reg.st) ? reg.st() : null;
+  if(!stDict) return barTier;
+  const st = stDict[k];
   if(!st || !st.a) return barTier;
   const stTier = st.t;
   if(!stTier) return barTier;
@@ -2691,31 +2698,25 @@ function rarityForCountry(sci, country){
     const cat = exoticCategoryInCountry(sci, c) || _exoticCategory(k);
     if(cat === 'N' || cat === 'P'){
       const gbifTier = _exoticTier(k) || 1;
-      // FR seul : merge S&T + bar chart pour ajustement fin (regle +/-1 tier).
-      // Autres pays avec bar chart : bar chart pur. Pays S&T-only : composite S&T ou GBIF.
-      if(c === 'FR') return _tierFromSTvsBarChart(k, gbifTier);
-      return gbifTier;
+      // Merge S&T + GBIF exotiques pour tous les pays (regle +/-1 tier).
+      return _tierFromSTvsBarChart(k, gbifTier, c);
     }
     return 0;
   }
-  // Sauvages :
-  // - Pays FR : merge S&T + bar chart via _tierFromSTvsBarChart (regle +/-1 tier).
-  // - Pays avec bar chart (ME) : bar chart pur (pas de merge fin sans S&T calibre).
-  // - Pays S&T-only (ES, IT, GB, PT) : composite S&T direct. Fallback tier 9 si pas
-  //   de data S&T (vagrant / hors modele).
-  if(c === 'FR'){
-    const bt = barTier || (_isForeignOnly(k) ? 9 : 1);
-    return _tierFromSTvsBarChart(k, bt);
+  // Sauvages : merge S&T + bar chart via _tierFromSTvsBarChart quand on a REELLEMENT un bar chart
+  // pour ce pays et cette espece. Sinon on prend le S&T composite direct (pas de merge avec un
+  // fallback bidon qui ecraserait les tiers vers la source d'appui).
+  //
+  // Regles :
+  //   - Bar chart + S&T dispo : merge (regle +/-1 tier, moyenne si S&T >> bar)
+  //   - Bar chart seul : bar chart pur
+  //   - S&T seul : S&T composite pur
+  //   - Rien : fallback tier 9 en FR pour _isForeignOnly (vagrants americains), sinon tier 0
+  if(barTier){
+    return _tierFromSTvsBarChart(k, barTier, c);
   }
-  if(reg.hasBarchart){
-    if(barTier) return barTier;
-    // Fallback S&T : evite le label trompeur "Parc semi-libre" (tier 0) quand
-    // l'espece n'a juste pas d'entree bar chart mais existe dans le modele S&T.
-    if(stEntry && stEntry.t) return stEntry.t;
-    return 0;
-  }
-  // Pays S&T-only : utilise directement le tier composite S&T
   if(stEntry && stEntry.t) return stEntry.t;
+  if(c === 'FR' && _isForeignOnly(k)) return 9;
   return 0;
 }
 // Placeholder pour future feature : tendance decennale par espece par pays.
@@ -9111,16 +9112,48 @@ function _renderSpeciesRarityCard(key){
       ? 'GBIF exotiques (parcs urbains inclus)'
       : (cc === 'FR' ? 'Bar chart eBird FR 2019-2026' : ('Bar chart eBird ' + cc + ' 2019-2026'));
     const barSrcShortCC = isEstabExo ? 'GBIF' : 'bar chart';
-    // Cas 1 (FR uniquement) : S&T dispo avec sous-tiers -> détail complet composite / bar chart / merge
-    if(canHaveDetails && hasStSubs && cc === 'FR'){
+    // Cas 1 : S&T dispo avec sous-tiers -> détail complet composite / bar chart / merge
+    // Applique a TOUS les pays (meme regle +/-1 tier + moyenne ponderee). NATURALISED_LOCAL_BOOST
+    // reste FR-only (dict specifique aux sites francais) et ne fire pas pour les autres pays.
+    if(canHaveDetails && hasStSubs){
       const st = stEntry;
-      if(st.ta && st.tn && st.tl){
-        // Source d'appui : bar chart pour sauvages, GBIF (_exoticTier) pour exotiques N/P
-        const barTier = isEstabExo
-          ? (_exoticTier(k) || 1)
-          : (REAL_RARITY[k] || (_isForeignOnly(k) ? 9 : 1));
-        const barSrcLabel = isEstabExo ? 'GBIF exotiques (parcs urbains inclus)' : 'Bar chart eBird FR 2019-2026';
-        const barSrcShort = isEstabExo ? 'GBIF' : 'bar chart';
+      // Source d'appui : bar chart pays si dispo, sinon GBIF pour exotiques N/P.
+      // Si ni bar chart ni GBIF (pays S&T-only pour sauvages), on affiche composite S&T direct.
+      const hasAppui = isEstabExo || !!ccBarTier;
+      if(st.ta && st.tn && st.tl && !hasAppui){
+        // Composite S&T direct (pas de merge avec bar chart absent).
+        const mkRowS = (t, lbl, weight) => {
+          const c = realColor(t);
+          const lb = (typeof REAL_LABELS === 'object' && REAL_LABELS[t]) || ('niveau '+t);
+          return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
+            <span style="display:inline-block;background:${c};color:#fff;padding:1px 8px;border-radius:6px;font-weight:800;font-size:12px;min-width:22px;text-align:center;">${t}</span>
+            <span style="font-size:12px;color:var(--ink-2);flex:1;">${esc(lb)} <span style="opacity:.6;">— ${esc(lbl)}</span></span>
+            <span style="font-size:11px;color:var(--ink-3);font-weight:600;">${weight}</span>
+          </div>`;
+        };
+        const body = `
+          <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">Composite eBird Status &amp; Trends (Cornell ML) — ${esc(ccName)}</div>
+          ${mkRowS(st.ta, 'Moyenne annuelle nationale', '40%')}
+          ${mkRowS(st.tn, 'Pic saisonnier national', '30%')}
+          ${mkRowS(st.tl, 'Densité typique sur hotspot', '30%')}
+          <div style="display:flex;align-items:center;gap:8px;padding:5px 0 2px 0;border-top:1px dashed var(--line-2);margin-top:4px;">
+            <span style="color:var(--accent);font-weight:800;font-size:14px;">✓</span>
+            <span style="display:inline-block;background:${realColor(st.t)};color:#fff;padding:2px 8px;border-radius:6px;font-weight:800;font-size:13px;min-width:22px;text-align:center;">${st.t}</span>
+            <span style="font-size:12px;color:var(--ink);font-weight:600;">= composite 40/30/30 retenu</span>
+          </div>
+          <div style="font-size:10.5px;color:var(--ink-3);margin-top:6px;opacity:.85;line-height:1.4;">Pas de bar chart eBird pour ${esc(ccName)} sur cette espèce. Tier basé uniquement sur la modélisation S&amp;T Cornell.</div>`;
+        detailsHtml = `
+          <details style="margin-top:6px;">
+            <summary style="cursor:pointer;font-size:12px;color:var(--ink-3);user-select:none;padding:2px 0;">▸ Détails du calcul</summary>
+            <div style="padding:6px 0 4px 4px;border-left:2px solid var(--line);margin:4px 0 2px 6px;padding-left:10px;">
+              ${body}
+            </div>
+          </details>`;
+      } else if(st.ta && st.tn && st.tl){
+        // Source d'appui presente : bar chart ou GBIF -> merge complet.
+        const barTier = isEstabExo ? (_exoticTier(k) || 1) : ccBarTier;
+        const barSrcLabel = barSrcLabelCC;
+        const barSrcShort = barSrcShortCC;
         // Override manuel prioritaire : quelques exotiques naturalisees localement abondantes
         // (Ibis sacre, Tadorne casarca, Canard mandarin) qu'on force tier 6 malgre S&T/bar chart
         // qui les mettent tier 7-8. Cf NATURALISED_LOCAL_BOOST.
@@ -9218,11 +9251,11 @@ function _renderSpeciesRarityCard(key){
             : 'Fréquence % checklists (pic biweekly)';
           let biasNote;
           if(!stValid){
-            biasNote = 'S&amp;T Cornell n\'a pas de modèle utilisable pour la France (espèce sans données suffisantes, généralement vagrant transatlantique ou accidentelle asiatique). Source d\'appui utilisée par défaut.';
+            biasNote = `S&amp;T Cornell n\'a pas de modèle utilisable pour ${esc(ccName)} (espèce sans données suffisantes, généralement vagrant transatlantique ou accidentelle asiatique). Source d\'appui utilisée par défaut.`;
           } else if(stComp < barTier){
             biasNote = `S&amp;T sous-estime la difficulté (biais espèce grégaire ou concentrée : abondance/heure gonflée par les gros troupeaux, mais rare à croiser en sortie type). Composite S&amp;T disait tier ${stComp} mais écart &gt; 1 → non retenu.`;
           } else {
-            biasNote = `S&amp;T sous-estime la fréquence de rencontre (biais espèce ultra-localisée : diluée dans la moyenne nationale, mais facile à voir sur son hotspot). Composite S&amp;T disait tier ${stComp} mais écart &gt; 1 → non retenu.`;
+            biasNote = `S&amp;T sous-estime la fréquence de rencontre (biais espèce ultra-localisée : diluée dans la moyenne nationale ${esc(ccName)}, mais facile à voir sur son hotspot). Composite S&amp;T disait tier ${stComp} mais écart &gt; 1 → non retenu.`;
           }
           // Sous-tiers S&T affiches quand meme (grisees) pour la transparence :
           // Mathis veut voir les 3 sous-scores meme quand S&T est ecarte, comprendre
@@ -9264,66 +9297,6 @@ function _renderSpeciesRarityCard(key){
             </div>
           </details>`;
       }
-    } else if(canHaveDetails && hasStSubs){
-      // Cas 1bis : non-FR + S&T dispo. Pas de merge/override (specifique FR).
-      // Pays avec bar chart (ME) : bar chart pur si dispo, sinon fallback S&T composite.
-      // Pays S&T-only (ES/IT/GB/PT) : composite S&T 40/30/30 direct.
-      const stComp = stEntry.t;
-      const usesBar = (regCC && regCC.hasBarchart) && ccBarTier;
-      const mkRowB = (t, lbl, weight) => {
-        const c = realColor(t);
-        const lb = (typeof REAL_LABELS === 'object' && REAL_LABELS[t]) || ('niveau '+t);
-        return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
-          <span style="display:inline-block;background:${c};color:#fff;padding:1px 8px;border-radius:6px;font-weight:800;font-size:12px;min-width:22px;text-align:center;">${t}</span>
-          <span style="font-size:12px;color:var(--ink-2);flex:1;">${esc(lb)} <span style="opacity:.6;">— ${esc(lbl)}</span></span>
-          <span style="font-size:11px;color:var(--ink-3);font-weight:600;">${weight}</span>
-        </div>`;
-      };
-      let body;
-      if(usesBar){
-        // Bar chart retenu comme source primaire, S&T composite en info (grisé)
-        const mkRowFadedB = (t, lbl, weight) => {
-          const c = realColor(t);
-          const lb = (typeof REAL_LABELS === 'object' && REAL_LABELS[t]) || ('niveau '+t);
-          return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;opacity:.55;">
-            <span style="display:inline-block;background:${c};color:#fff;padding:1px 8px;border-radius:6px;font-weight:800;font-size:12px;min-width:22px;text-align:center;">${t}</span>
-            <span style="font-size:12px;color:var(--ink-2);flex:1;">${esc(lb)} <span style="opacity:.6;">— ${esc(lbl)}</span></span>
-            <span style="font-size:11px;color:var(--ink-3);font-weight:600;">${weight}</span>
-          </div>`;
-        };
-        body = `
-          <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">Composite S&amp;T (info, non retenu pour ${esc(ccName)})</div>
-          ${mkRowFadedB(stEntry.ta, 'Moyenne annuelle nationale', '40%')}
-          ${mkRowFadedB(stEntry.tn, 'Pic saisonnier national', '30%')}
-          ${mkRowFadedB(stEntry.tl, 'Densité typique sur hotspot', '30%')}
-          <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;margin-top:6px;">${esc(barSrcLabelCC)} retenu</div>
-          <div style="display:flex;align-items:center;gap:8px;padding:5px 0 2px 0;">
-            <span style="color:var(--accent);font-weight:800;font-size:14px;">✓</span>
-            <span style="display:inline-block;background:${realColor(ccBarTier)};color:#fff;padding:2px 8px;border-radius:6px;font-weight:800;font-size:13px;min-width:22px;text-align:center;">${ccBarTier}</span>
-            <span style="font-size:12px;color:var(--ink);font-weight:600;">Fréquence % checklists (pic biweekly)</span>
-          </div>
-          <div style="font-size:10.5px;color:var(--ink-3);margin-top:6px;opacity:.85;line-height:1.4;">Pour ${esc(ccName)}, le tier vient directement du bar chart eBird ${cc} (pas de merge S&amp;T comme en FR, qui est plus finement calibrée).</div>`;
-      } else {
-        // Pays S&T-only : composite 40/30/30 direct
-        body = `
-          <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">Composite eBird Status &amp; Trends (Cornell ML) — ${esc(ccName)}</div>
-          ${mkRowB(stEntry.ta, 'Moyenne annuelle nationale', '40%')}
-          ${mkRowB(stEntry.tn, 'Pic saisonnier national', '30%')}
-          ${mkRowB(stEntry.tl, 'Densité typique sur hotspot', '30%')}
-          <div style="display:flex;align-items:center;gap:8px;padding:5px 0 2px 0;border-top:1px dashed var(--line-2);margin-top:4px;">
-            <span style="color:var(--accent);font-weight:800;font-size:14px;">✓</span>
-            <span style="display:inline-block;background:${realColor(stComp)};color:#fff;padding:2px 8px;border-radius:6px;font-weight:800;font-size:13px;min-width:22px;text-align:center;">${stComp}</span>
-            <span style="font-size:12px;color:var(--ink);font-weight:600;">= composite 40/30/30 retenu</span>
-          </div>
-          <div style="font-size:10.5px;color:var(--ink-3);margin-top:6px;opacity:.85;line-height:1.4;">Pas de bar chart eBird pour ${esc(ccName)} (données de cochage trop éparses). Tier basé uniquement sur la modélisation S&amp;T Cornell.</div>`;
-      }
-      detailsHtml = `
-        <details style="margin-top:6px;">
-          <summary style="cursor:pointer;font-size:12px;color:var(--ink-3);user-select:none;padding:2px 0;">▸ Détails du calcul</summary>
-          <div style="padding:6px 0 4px 4px;border-left:2px solid var(--line);margin:4px 0 2px 6px;padding-left:10px;">
-            ${body}
-          </div>
-        </details>`;
     } else if(canHaveDetails){
       // Cas 2 : pas de S&T pour cette espece (Pipit spioncelle, Aigle de Bonelli, endemiques
       // montagnards, plusieurs vagrants). On n'a que le bar chart -> affiche mini-note
