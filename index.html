@@ -340,6 +340,27 @@
   .reg-picker-bar { height:5px; background:var(--line-2); border-radius:3px; overflow:hidden; }
   .reg-picker-bar > div { height:100%; border-radius:3px; }
   .reg-picker-val { font-size:10.5px; color:var(--ink-3); text-align:right; white-space:nowrap; }
+  /* Country picker modal (reutilise dans fiches, Birdydex, Cette semaine).
+     Future-proof pour 15-100 pays : search + grouped by continent. */
+  .cp-btn { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line-2); background:var(--surface); color:var(--ink); font:inherit; font-size:13px; padding:5px 10px; border-radius:8px; cursor:pointer; font-weight:600; }
+  .cp-btn:hover { border-color:var(--accent); }
+  .cp-btn .cp-btn-arrow { opacity:.6; margin-left:2px; }
+  .cp-modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .cp-modal-inner { background:var(--surface); border-radius:14px; padding:14px; max-width:520px; width:100%; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 12px 40px rgba(0,0,0,.28); }
+  .cp-modal-title { font:700 15px system-ui; color:var(--ink); margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; }
+  .cp-modal-close { background:none; border:none; font-size:20px; cursor:pointer; color:var(--ink-3); padding:0 4px; }
+  .cp-modal-close:hover { color:var(--ink); }
+  .cp-search { width:100%; padding:9px 12px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2); color:var(--ink); font:14px system-ui; margin-bottom:8px; box-sizing:border-box; }
+  .cp-list { overflow-y:auto; flex:1; }
+  .cp-group-title { font:700 10.5px system-ui; text-transform:uppercase; letter-spacing:.5px; color:var(--ink-3); padding:8px 10px 4px; }
+  .cp-item { display:flex; align-items:center; gap:10px; padding:8px 10px; cursor:pointer; border-radius:8px; color:var(--ink); font-size:14px; }
+  .cp-item:hover { background:var(--surface-2); }
+  .cp-item.on { background:var(--surface-2); font-weight:700; }
+  .cp-item-flag { font-size:20px; line-height:1; }
+  .cp-item-name { flex:1; }
+  .cp-item-meta { font-size:11px; color:var(--ink-3); }
+  .cp-item.disabled { opacity:.5; cursor:not-allowed; }
+  .cp-item.disabled:hover { background:transparent; }
   .tbl-scroll { overflow-x:auto; margin-top:10px; border:1px solid var(--line-2); border-radius:10px; }
   table { border-collapse:collapse; width:100%; font-size:13.5px; }
   thead th { position:sticky; top:0; background:var(--surface-2); z-index:2; text-align:left;
@@ -1184,15 +1205,12 @@
         </div>
         <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
           <div>
-            <label for="targetsCountry" style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; display:block; margin-bottom:4px;">Pays</label>
-            <select id="targetsCountry" class="filt-sel" style="font-size:13px; padding:6px 10px;">
-              <option value="FR">🇫🇷 France</option>
-              <option value="ES">🇪🇸 Espagne</option>
-              <option value="IT">🇮🇹 Italie</option>
-              <option value="GB">🇬🇧 Royaume-Uni</option>
-              <option value="PT">🇵🇹 Portugal</option>
-              <option value="ME">🇲🇪 Monténégro</option>
-            </select>
+            <label style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; display:block; margin-bottom:4px;">Pays</label>
+            <button type="button" id="targetsCountry" class="cp-btn" data-cc="FR">
+              <span class="cp-btn-flag">🇫🇷</span>
+              <span class="cp-btn-label">France</span>
+              <span class="cp-btn-arrow">▾</span>
+            </button>
           </div>
           <div>
             <label for="targetsRegion" style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; display:block; margin-bottom:4px;">Ma région</label>
@@ -1648,14 +1666,11 @@
       </div>
       <div class="pkdx-ctrls" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:10px 0 14px;">
         <input type="search" id="pkdxSearch" placeholder="Rechercher (nom fr ou sci)…" style="flex:1; min-width:180px; padding:9px 12px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2); color:var(--ink); font:14px system-ui;">
-        <select id="pkdxCountry" class="filt-sel">
-          <option value="FR">🇫🇷 France</option>
-          <option value="ME">🇲🇪 Monténégro</option>
-          <option value="ES">🇪🇸 Espagne</option>
-          <option value="IT">🇮🇹 Italie</option>
-          <option value="GB">🇬🇧 Royaume-Uni</option>
-          <option value="PT">🇵🇹 Portugal</option>
-        </select>
+        <button type="button" id="pkdxCountry" class="cp-btn" data-cc="FR">
+          <span class="cp-btn-flag">🇫🇷</span>
+          <span class="cp-btn-label">France</span>
+          <span class="cp-btn-arrow">▾</span>
+        </button>
         <select id="pkdxFamily" class="filt-sel"><option value="">Toutes familles</option></select>
         <select id="pkdxHabitat" class="filt-sel">
           <option value="">Tous milieux</option>
@@ -2201,6 +2216,115 @@ function _countryHasSpecies(cc, sci){
   if(e.barTier()[k]) return true;
   if(stEntry && Array.isArray(stEntry.w) && stEntry.w.some(v => v > 0)) return true;
   return false;
+}
+
+// Country picker modal reutilisable : appele depuis les 3 endroits (fiche espece,
+// Birdydex, Cette semaine). Pave la scaling vers 15-100 pays avec search + grouping.
+const CONTINENT_BY_CC = {
+  FR:'Europe', ME:'Europe', ES:'Europe', IT:'Europe', GB:'Europe', PT:'Europe',
+  DE:'Europe', NL:'Europe', GR:'Europe', CH:'Europe',
+  US:'Amérique', CA:'Amérique', MX:'Amérique', CR:'Amérique', EC:'Amérique',
+  AU:'Océanie', NZ:'Océanie',
+  KE:'Afrique', ZA:'Afrique', MA:'Afrique',
+  JP:'Asie', IN:'Asie',
+};
+const CONTINENT_ORDER = ['Europe', 'Amérique', 'Afrique', 'Océanie', 'Asie'];
+const CC_FLAGS = {
+  FR:'🇫🇷', ME:'🇲🇪', ES:'🇪🇸', IT:'🇮🇹', GB:'🇬🇧', PT:'🇵🇹',
+  DE:'🇩🇪', NL:'🇳🇱', GR:'🇬🇷', CH:'🇨🇭',
+  US:'🇺🇸', CA:'🇨🇦', MX:'🇲🇽', CR:'🇨🇷', EC:'🇪🇨',
+  AU:'🇦🇺', NZ:'🇳🇿',
+  KE:'🇰🇪', ZA:'🇿🇦', MA:'🇲🇦',
+  JP:'🇯🇵', IN:'🇮🇳',
+};
+// Met a jour le label + drapeau d'un bouton pays (data-cc + spans .cp-btn-flag/label).
+function _syncCountryButton(btn, cc){
+  if(!btn) return;
+  const reg = COUNTRIES_REG[cc];
+  const flag = CC_FLAGS[cc] || '';
+  const name = (reg && reg.name) || cc;
+  btn.dataset.cc = cc;
+  const fEl = btn.querySelector('.cp-btn-flag');
+  const lEl = btn.querySelector('.cp-btn-label');
+  if(fEl) fEl.textContent = flag;
+  if(lEl) lEl.textContent = name;
+}
+// Ouvre le modal, retourne une promesse resolue avec le code pays choisi (ou null si ferme).
+// availableFilter : optionnel, fonction (cc) => bool pour disable certains pays.
+function _openCountryPicker(currentCode, opts = {}){
+  return new Promise((resolve) => {
+    const availableCodes = opts.availableCodes || Object.keys(COUNTRIES_REG);
+    const allCodes = availableCodes.filter(cc => COUNTRIES_REG[cc]);
+    // Grouper par continent
+    const grouped = {};
+    for(const cc of allCodes){
+      const cont = CONTINENT_BY_CC[cc] || 'Autres';
+      if(!grouped[cont]) grouped[cont] = [];
+      grouped[cont].push(cc);
+    }
+    const backdrop = document.createElement('div');
+    backdrop.className = 'cp-modal-backdrop';
+    backdrop.innerHTML = `
+      <div class="cp-modal-inner">
+        <div class="cp-modal-title">
+          <span>Choisir un pays</span>
+          <button type="button" class="cp-modal-close" aria-label="Fermer">×</button>
+        </div>
+        <input type="search" class="cp-search" placeholder="Rechercher (nom fr)…" autofocus>
+        <div class="cp-list"></div>
+      </div>`;
+    const listEl = backdrop.querySelector('.cp-list');
+    const searchEl = backdrop.querySelector('.cp-search');
+    const closeBtn = backdrop.querySelector('.cp-modal-close');
+
+    const render = (filter = '') => {
+      const fLC = filter.toLowerCase().trim();
+      let html = '';
+      for(const cont of CONTINENT_ORDER){
+        const codes = (grouped[cont] || []).filter(cc => {
+          if(!fLC) return true;
+          const name = (COUNTRIES_REG[cc].name || '').toLowerCase();
+          return name.includes(fLC) || cc.toLowerCase().includes(fLC);
+        });
+        if(!codes.length) continue;
+        html += `<div class="cp-group-title">${esc(cont)}</div>`;
+        for(const cc of codes){
+          const reg = COUNTRIES_REG[cc];
+          const flag = CC_FLAGS[cc] || '';
+          const nSp = Object.keys(reg.st() || {}).length;
+          const meta = nSp > 0 ? `${nSp} espèces` : '';
+          html += `<div class="cp-item${cc === currentCode ? ' on' : ''}" data-cc="${esc(cc)}">
+            <span class="cp-item-flag">${flag}</span>
+            <span class="cp-item-name">${esc(reg.name || cc)}</span>
+            ${meta ? `<span class="cp-item-meta">${esc(meta)}</span>` : ''}
+          </div>`;
+        }
+      }
+      listEl.innerHTML = html || '<div style="padding:16px; text-align:center; color:var(--ink-3);">Aucun pays trouvé.</div>';
+    };
+    render();
+    // Events
+    const cleanup = () => {
+      backdrop.remove();
+      document.removeEventListener('keydown', escHandler);
+    };
+    const escHandler = e => { if(e.key === 'Escape'){ cleanup(); resolve(null); } };
+    document.addEventListener('keydown', escHandler);
+    backdrop.addEventListener('click', e => {
+      if(e.target === backdrop){ cleanup(); resolve(null); }
+    });
+    closeBtn.addEventListener('click', () => { cleanup(); resolve(null); });
+    searchEl.addEventListener('input', () => render(searchEl.value));
+    listEl.addEventListener('click', e => {
+      const it = e.target.closest('.cp-item');
+      if(!it || it.classList.contains('disabled')) return;
+      const cc = it.dataset.cc;
+      cleanup();
+      resolve(cc);
+    });
+    document.body.appendChild(backdrop);
+    setTimeout(() => searchEl.focus(), 50);
+  });
 }
 // EXOTIC = liste globale exotiques (curatorial, ~68 especes probables en Europe de l'ouest).
 // Sert de FALLBACK quand EXOTIC_BY_COUNTRY (source eBird API) ne connait pas une espece
@@ -8836,7 +8960,11 @@ function _renderSpeciesRarityCard(key){
   box.innerHTML = `
     <div class="sm-card-title" style="display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
       <span>Rareté</span>
-      <select id="smRarityCountrySel" class="filt-sel" style="font-size:11px; padding:2px 6px; font-weight:600; text-transform:none; letter-spacing:0;">${selectOpts}</select>
+      <button type="button" id="smRarityCountrySel" class="cp-btn" data-cc="${esc(initCountry)}" style="font-size:12px; padding:3px 8px;">
+        <span class="cp-btn-flag">${CC_FLAGS[initCountry] || ''}</span>
+        <span class="cp-btn-label">${esc((COUNTRIES_REG[initCountry] && COUNTRIES_REG[initCountry].name) || initCountry)}</span>
+        <span class="cp-btn-arrow">▾</span>
+      </button>
       <div class="reg-picker" id="smRegPicker" style="display:none;">
         <button type="button" class="reg-picker-trigger" id="smRegPickerBtn" title="Histogramme S&T par région">
           <span id="smRegPickerLabel">${esc(getTriggerLabel(initCountry))}</span>
@@ -9088,27 +9216,31 @@ function _renderSpeciesRarityCard(key){
   });
   _renderSpeciesFreqChart(k, initCountry);
   const sel = $('#smRarityCountrySel');
-  if(sel){ sel.value = initCountry; sel.addEventListener('change', e => {
-    const newCC = e.target.value;
-    renderLine(newCC);
-    updateRegVisibility(newCC);
-    // Reset la region si elle n'appartient pas au nouveau pays (ex: FR-IDF -> ES).
-    if(_speciesRegion){
-      const belongs = (REGIONS_BY_COUNTRY[newCC] || []).some(r => r.code === _speciesRegion);
-      if(!belongs){
-        _speciesRegion = '';
-        try{ localStorage.setItem('mb-species-region', ''); }catch(_){}
+  if(sel){
+    // Handler bouton -> modal country picker (filtre aux pays qui ont cette espece)
+    sel.addEventListener('click', async () => {
+      const availableCodes = avail.map(a => a.code);
+      const chosen = await _openCountryPicker(sel.dataset.cc, { availableCodes });
+      if(!chosen || chosen === sel.dataset.cc) return;
+      _syncCountryButton(sel, chosen);
+      renderLine(chosen);
+      updateRegVisibility(chosen);
+      if(_speciesRegion){
+        const belongs = (REGIONS_BY_COUNTRY[chosen] || []).some(r => r.code === _speciesRegion);
+        if(!belongs){
+          _speciesRegion = '';
+          try{ localStorage.setItem('mb-species-region', ''); }catch(_){}
+        }
       }
-    }
-    // Lazy-load data regionale du nouveau pays + rebuild picker + rerender chart
-    loadRegionalDataFor(newCC).then(() => {
-      const p = $('#smRegPickerPanel');
-      if(p) p.innerHTML = buildRegPanel(newCC);
-      const lbl = $('#smRegPickerLabel');
-      if(lbl) lbl.textContent = getTriggerLabel(newCC);
-      _renderSpeciesFreqChart(k, newCC);
+      loadRegionalDataFor(chosen).then(() => {
+        const p = $('#smRegPickerPanel');
+        if(p) p.innerHTML = buildRegPanel(chosen);
+        const lbl = $('#smRegPickerLabel');
+        if(lbl) lbl.textContent = getTriggerLabel(chosen);
+        _renderSpeciesFreqChart(k, chosen);
+      });
     });
-  }); }
+  }
   if(regPick){
     const btn = regPick.querySelector('.reg-picker-trigger');
     const panel = regPick.querySelector('.reg-picker-panel');
@@ -9122,7 +9254,7 @@ function _renderSpeciesRarityCard(key){
       if(!it) return;
       _speciesRegion = it.dataset.code || '';
       try{ localStorage.setItem('mb-species-region', _speciesRegion); }catch(_){}
-      const cc2 = $('#smRarityCountrySel')?.value || 'FR';
+      const cc2 = $('#smRarityCountrySel')?.dataset.cc || 'FR';
       if(lbl) lbl.textContent = getTriggerLabel(cc2);
       panel.querySelectorAll('.reg-picker-item.on').forEach(x => x.classList.remove('on'));
       it.classList.add('on');
@@ -10616,21 +10748,24 @@ function renderTargets(){
     if(hint) hint.textContent = '';
     return;
   }
-  // Init du selecteur pays (une fois).
-  const ccSel = $('#targetsCountry');
-  if(ccSel && !ccSel._init){
-    ccSel.value = ccT;
-    ccSel.addEventListener('change', () => {
-      _targetsCountry = ccSel.value || 'FR';
-      try{ localStorage.setItem('mb-targets-country', _targetsCountry); }catch(_){}
-      // Reset la region si elle n'appartient pas au nouveau pays
-      const belongs = (REGIONS_BY_COUNTRY[_targetsCountry] || []).some(r => r.code === _targetsRegion);
-      if(!belongs){ _targetsRegion = ''; try{ localStorage.setItem('mb-targets-region', ''); }catch(_){} }
-      // Rebuild du selecteur region + lazy-load data + re-render
-      _targetsRegionInit = false;   // force rebuild
-      Promise.all([_loadFreqDataForCountry(_targetsCountry)]).then(() => renderTargets());
+  // Init du bouton pays (modal). Une seule fois.
+  const ccBtn = $('#targetsCountry');
+  if(ccBtn && !ccBtn._init){
+    _syncCountryButton(ccBtn, ccT);
+    ccBtn.addEventListener('click', async () => {
+      const chosen = await _openCountryPicker(_targetsCountry || 'FR');
+      if(chosen && chosen !== _targetsCountry){
+        _targetsCountry = chosen;
+        try{ localStorage.setItem('mb-targets-country', _targetsCountry); }catch(_){}
+        // Reset region si stale, rebuild du selecteur region
+        const belongs = (REGIONS_BY_COUNTRY[_targetsCountry] || []).some(r => r.code === _targetsRegion);
+        if(!belongs){ _targetsRegion = ''; try{ localStorage.setItem('mb-targets-region', ''); }catch(_){} }
+        _targetsRegionInit = false;
+        _syncCountryButton(ccBtn, chosen);
+        Promise.all([_loadFreqDataForCountry(_targetsCountry)]).then(() => renderTargets());
+      }
     });
-    ccSel._init = true;
+    ccBtn._init = true;
   }
   // Init/rebuild du selecteur region : liste les regions du pays courant.
   const sel = $('#targetsRegion');
@@ -10898,28 +11033,44 @@ function renderPokedex(){
       const ordered = [...fams].sort((a,b) => (FAMILY_ORDER[a] ?? 9999) - (FAMILY_ORDER[b] ?? 9999) || a.localeCompare(b, 'fr'));
       famSel.innerHTML = '<option value="">Toutes familles</option>' + ordered.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join('');
     }
-    // Restore filtres persistes.
-    for(const k of ['search','country','family','habitat','tier','owned']){
+    // Restore filtres persistes. Country n'est plus un select (bouton modal) : sync via helper.
+    for(const k of ['search','family','habitat','tier','owned']){
       const el = document.getElementById('pkdx' + k.charAt(0).toUpperCase() + k.slice(1));
       if(el && _pkdxFilters[k] != null) el.value = _pkdxFilters[k];
     }
+    const ccBtn = document.getElementById('pkdxCountry');
+    if(ccBtn && _pkdxFilters.country) _syncCountryButton(ccBtn, _pkdxFilters.country);
     // Debounce sur la recherche.
     let _searchTimer;
     $('#pkdxSearch')?.addEventListener('input', e => {
       clearTimeout(_searchTimer);
       _searchTimer = setTimeout(() => { _pkdxFilters.search = e.target.value; _pkdxSaveFilters(); _pkdxRender(); }, 250);
     });
-    ['pkdxCountry','pkdxFamily','pkdxHabitat','pkdxTier','pkdxOwned'].forEach(id => {
+    ['pkdxFamily','pkdxHabitat','pkdxTier','pkdxOwned'].forEach(id => {
       const el = document.getElementById(id);
       if(el) el.addEventListener('change', e => {
         const k = id.replace('pkdx','').toLowerCase();
         _pkdxFilters[k] = e.target.value;
         _pkdxSaveFilters();
-        // Le pays change la liste totale ET les numeros -> invalide la memoisation.
-        if(k === 'country'){ _pkdxAllSorted = null; _pkdxNumById = null; }
         _pkdxRender();
       });
     });
+    // Country picker : bouton qui ouvre le modal reutilisable
+    const ccBtn = document.getElementById('pkdxCountry');
+    if(ccBtn){
+      // Sync le label initial depuis le state
+      _syncCountryButton(ccBtn, _pkdxFilters.country || 'FR');
+      ccBtn.addEventListener('click', async () => {
+        const chosen = await _openCountryPicker(_pkdxFilters.country || 'FR');
+        if(chosen && chosen !== _pkdxFilters.country){
+          _pkdxFilters.country = chosen;
+          _pkdxSaveFilters();
+          _pkdxAllSorted = null; _pkdxNumById = null;   // le pays change la liste + numeros
+          _syncCountryButton(ccBtn, chosen);
+          _pkdxRender();
+        }
+      });
+    }
     _pkdxInit = true;
   }
   _pkdxRender();
