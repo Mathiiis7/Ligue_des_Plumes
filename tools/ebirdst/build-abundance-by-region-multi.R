@@ -94,27 +94,69 @@ for (cc in names(COUNTRIES)) {
   cat("[", cc, "] ", cc_name, " (", length(region_codes), " regions)\n", sep="")
   cat("========================================================================\n")
 
-  # 1) Polygones regions via ne_states (rnaturalearth)
-  cat("[1] Charge polygones regions via ne_states(country=", cc_name, ")...\n", sep="")
-  all_states <- tryCatch(
-    ne_states(country = cc_name, returnclass = "sf"),
-    error = function(e) NULL
-  )
-  if (is.null(all_states)) {
-    # Fallback via ISO3
-    all_states <- ne_states(iso_a2 = substr(iso3, 1, 2), returnclass = "sf")
-  }
-  cat("    Total admin-1 charges :", nrow(all_states), "\n")
-  # Filter aux codes qu'on veut. ne_states colonne = iso_3166_2
+  # 1) Polygones regions : approche differente selon pays car ne_states donne des
+  #    granularites variables selon l'implementation naturalearth :
+  #      GB : counties (232) -> utilise ne_countries(type='map_units') = 4 nations
+  #      PT : districts (20) = matche directement notre iso_3166_2
+  #      ES : provinces (52) -> agrege par 'region' (nom comunidad) via st_union
+  #      IT : provincie (110) -> agrege par 'region' (nom regione) via st_union
+  cat("[1] Charge polygones regions...\n")
   found_regions <- list()
-  for (rc in region_codes) {
-    row <- all_states[all_states$iso_3166_2 == rc, ]
-    if (nrow(row) == 0) {
-      cat("    ! Region", rc, "introuvable dans ne_states, skip\n")
-      next
+
+  if (cc == "GB") {
+    mu <- ne_countries(type = "map_units", country = "United Kingdom", returnclass = "sf")
+    gb_map <- list("GB-ENG" = "England", "GB-SCT" = "Scotland",
+                   "GB-WLS" = "Wales", "GB-NIR" = "N. Ireland")
+    for (rc in names(gb_map)) {
+      row <- mu[mu$name == gb_map[[rc]], ]
+      if (nrow(row) > 0) found_regions[[rc]] <- row
     }
-    found_regions[[rc]] <- row
+  } else if (cc == "PT") {
+    all_states <- ne_states(country = "Portugal", returnclass = "sf")
+    for (rc in region_codes) {
+      row <- all_states[all_states$iso_3166_2 == rc, ]
+      if (nrow(row) > 0) found_regions[[rc]] <- row
+    }
+  } else if (cc == "ES") {
+    es <- ne_states(country = "Spain", returnclass = "sf")
+    es_map <- list(
+      "ES-AN" = "Andalucía", "ES-AR" = "Aragón", "ES-AS" = "Asturias",
+      "ES-CB" = "Cantabria", "ES-CE" = "Ceuta", "ES-CL" = "Castilla y León",
+      "ES-CM" = "Castilla-La Mancha", "ES-CN" = "Canary Is.",
+      "ES-CT" = "Cataluña", "ES-EX" = "Extremadura", "ES-GA" = "Galicia",
+      "ES-IB" = "Islas Baleares", "ES-MC" = "Murcia", "ES-MD" = "Madrid",
+      "ES-ML" = "Melilla", "ES-NC" = "Foral de Navarra", "ES-PV" = "País Vasco",
+      "ES-RI" = "La Rioja", "ES-VC" = "Valenciana"
+    )
+    for (rc in names(es_map)) {
+      sub <- es[es$region == es_map[[rc]], ]
+      if (nrow(sub) > 0) {
+        # Dissolve provinces to comunidad (st_union)
+        merged <- st_sf(iso_3166_2 = rc, geometry = st_union(sub))
+        found_regions[[rc]] <- merged
+      }
+    }
+  } else if (cc == "IT") {
+    it <- ne_states(country = "Italy", returnclass = "sf")
+    it_map <- list(
+      "IT-21" = "Piemonte", "IT-23" = "Valle d'Aosta", "IT-25" = "Lombardia",
+      "IT-32" = "Trentino-Alto Adige", "IT-34" = "Veneto",
+      "IT-36" = "Friuli-Venezia Giulia", "IT-42" = "Liguria",
+      "IT-45" = "Emilia-Romagna", "IT-52" = "Toscana", "IT-55" = "Umbria",
+      "IT-57" = "Marche", "IT-62" = "Lazio", "IT-65" = "Abruzzo",
+      "IT-67" = "Molise", "IT-72" = "Campania", "IT-75" = "Apulia",
+      "IT-77" = "Basilicata", "IT-78" = "Calabria", "IT-82" = "Sicily",
+      "IT-88" = "Sardegna"
+    )
+    for (rc in names(it_map)) {
+      sub <- it[it$region == it_map[[rc]], ]
+      if (nrow(sub) > 0) {
+        merged <- st_sf(iso_3166_2 = rc, geometry = st_union(sub))
+        found_regions[[rc]] <- merged
+      }
+    }
   }
+
   if (length(found_regions) == 0) { cat("    ERREUR : aucune region trouvee, skip pays\n"); next }
   cat("    Regions matched :", length(found_regions), "/", length(region_codes), "\n")
 
