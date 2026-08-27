@@ -2154,6 +2154,10 @@ let REAL_FREQ_MONTHLY_BY_REGION = {};   // stub, chargé par _loadMapData() (laz
 let REAL_ABUNDANCE_DEPT = {};   // stub, chargé par _loadMapData() (lazy, ~5 MB de data)
 let REAL_ABUNDANCE_DEPT_MEAN = {};   // stub, chargé par _loadMapData() (lazy, ~5 MB de data)
 let REAL_ABUNDANCE_ST_BY_REGION_FR = {};   // stub, chargé par _loadAbundanceRegionData() (lazy, ~3 MB) — S&T weekly par région FR
+// Dict multi-pays des S&T weekly par region : { FR: {...}, ME: {...}, ES: {...}, ... }
+// Charge lazy par _loadAbundanceRegionData(cc). Coexiste avec REAL_ABUNDANCE_ST_BY_REGION_FR
+// (qui reste peuplee pour compat) mais REAL_ABUNDANCE_ST_BY_REGION.FR pointe sur le meme dict.
+let REAL_ABUNDANCE_ST_BY_REGION = {};
 
 // -------- COUNTRIES_REG : registry central multi-pays (Phase 0 refactor) --------
 // Chaque entree pointe vers les sources de donnees pour un pays. Ajouter un nouveau pays :
@@ -3671,7 +3675,14 @@ const FR_REGIONS = [
 // afficher les regions pertinentes du pays selectionne + charger la data associee.
 const REGIONS_BY_COUNTRY = {
   FR: FR_REGIONS,
-  ME: [],   // Monténégro : pas de subdivisions bar chart eBird
+  // Monténégro : pas de subdivisions bar chart eBird (opstine trop petites), mais on
+  // definit les 3 regions statistiques officielles MONSTAT pour le S&T regional.
+  // Chaque region agrege les municipalites correspondantes cote R (build script).
+  ME: [
+    { code:'ME-N', name:'Nord (montagnes)' },
+    { code:'ME-C', name:'Centre (Podgorica)' },
+    { code:'ME-P', name:'Côte adriatique' },
+  ],
   ES: [
     { code:'ES-AN', name:'Andalousie' },
     { code:'ES-AR', name:'Aragon' },
@@ -5312,22 +5323,29 @@ async function _loadAbundanceData(){
 }
 // Compat : ancien nom, redirige vers freq (le seul requis pour tous les modes non-abondance).
 async function _loadMapData(){ return _loadFreqData(); }
-let _abundanceRegionPromise = null;
-async function _loadAbundanceRegionData(){
-  if(_abundanceRegionPromise) return _abundanceRegionPromise;
-  _abundanceRegionPromise = (async () => {
+// Fetch cache par pays pour eviter double-fetch (chaque pays lazy-loade sa data S&T regionale).
+const _abundanceRegionPromises = {};
+async function _loadAbundanceRegionData(cc){
+  const country = cc || 'FR';
+  if(_abundanceRegionPromises[country]) return _abundanceRegionPromises[country];
+  _abundanceRegionPromises[country] = (async () => {
+    const filename = 'data/abundance_st_by_region_' + country.toLowerCase() + '.json?v=20260827';
     try{
-      REAL_ABUNDANCE_ST_BY_REGION_FR = await fetch('data/abundance_st_by_region_fr.json?v=20260827').then(r => {
+      const data = await fetch(filename).then(r => {
         if(!r.ok) throw new Error('HTTP '+r.status);
         return r.json();
       });
+      REAL_ABUNDANCE_ST_BY_REGION[country] = data;
+      // Compat : REAL_ABUNDANCE_ST_BY_REGION_FR reste peuplee pour code existant.
+      if(country === 'FR') REAL_ABUNDANCE_ST_BY_REGION_FR = data;
     }catch(err){
-      console.warn('abundance_st_by_region_fr.json indisponible (fallback national) :', err.message);
-      REAL_ABUNDANCE_ST_BY_REGION_FR = {};   // reste vide -> renderTargets fallback national
-      _abundanceRegionPromise = null;
+      console.warn(filename + ' indisponible (fallback national) :', err.message);
+      REAL_ABUNDANCE_ST_BY_REGION[country] = {};
+      if(country === 'FR') REAL_ABUNDANCE_ST_BY_REGION_FR = {};
+      _abundanceRegionPromises[country] = null;   // permet retry
     }
   })();
-  return _abundanceRegionPromise;
+  return _abundanceRegionPromises[country];
 }
 async function renderMap(){
   const el = document.getElementById('mapEl'); if(!el || !window.L) return;
@@ -8962,13 +8980,13 @@ function _renderSpeciesRarityCard(key){
   // Alias local vers CC_FLAGS (source unique)
   const FLAG_EMOJI = CC_FLAGS;
   // buildRegPanel(cc) : construit le panel des regions du pays courant.
-  // Pour FR : utilise S&T weekly regional + freq mensuelle regionale.
-  // Autres pays : uniquement freq mensuelle regionale bar chart (S&T regional non genere).
+  // S&T weekly regional dispo par pays (dict multi-country lazy-loade).
+  // Freq mensuelle regionale bar chart via monthlyByRegion() du registry.
   const buildRegPanel = (cc) => {
     const regList = (typeof REGIONS_BY_COUNTRY === 'object' && REGIONS_BY_COUNTRY[cc]) || [];
     if(!regList.length) return '';
     const reg = COUNTRIES_REG[cc];
-    const stByReg = (cc === 'FR' && typeof REAL_ABUNDANCE_ST_BY_REGION_FR === 'object') ? REAL_ABUNDANCE_ST_BY_REGION_FR : {};
+    const stByReg = (typeof REAL_ABUNDANCE_ST_BY_REGION === 'object' && REAL_ABUNDANCE_ST_BY_REGION[cc]) || {};
     const freqByReg = (reg && typeof reg.monthlyByRegion === 'function') ? (reg.monthlyByRegion() || {}) : {};
     const _wThr = [[2.2596,1],[0.8496,2],[0.34178,3],[0.12404,4],[0.04666,5],[0.01880,6],[0.00440,7],[0.00114,8],[0.00009,9]];
     const _mThr = [[0.25,1],[0.15,2],[0.08,3],[0.04,4],[0.02,5],[0.007,6],[0.0015,7],[0.0003,8],[0.00005,9]];
@@ -9278,7 +9296,8 @@ function _renderSpeciesRarityCard(key){
   const loadRegionalDataFor = (cc) => {
     const proms = [];
     if(typeof _loadFreqDataForCountry === 'function') proms.push(_loadFreqDataForCountry(cc));
-    if(cc === 'FR' && typeof _loadAbundanceRegionData === 'function') proms.push(_loadAbundanceRegionData());
+    // S&T regional dispo pour FR/ES/IT/GB/PT/ME (fichier par pays, chargement lazy).
+    if(typeof _loadAbundanceRegionData === 'function') proms.push(_loadAbundanceRegionData(cc));
     return proms.length ? Promise.all(proms) : Promise.resolve();
   };
   loadRegionalDataFor(initCountry).then(() => {
@@ -9407,10 +9426,9 @@ function _renderSpeciesFreqChart(key, country){
     (REGIONS_BY_COUNTRY[cc] || []).some(r => r.code === _speciesRegion);
   const strictRegional = !!regionBelongsToCC;
   // Cas 1 : S&T weekly regional (fine, la meilleure info spatiale-temporelle)
-  if(strictRegional
-     && typeof REAL_ABUNDANCE_ST_BY_REGION_FR === 'object'
-     && REAL_ABUNDANCE_ST_BY_REGION_FR[_speciesRegion]){
-    const regEntry = REAL_ABUNDANCE_ST_BY_REGION_FR[_speciesRegion][key];
+  const stByReg = REAL_ABUNDANCE_ST_BY_REGION[cc];
+  if(strictRegional && stByReg && stByReg[_speciesRegion]){
+    const regEntry = stByReg[_speciesRegion][key];
     if(regEntry && Array.isArray(regEntry.w) && regEntry.w.length === 52 && regEntry.w.some(v => v > 0)){
       arr = regEntry.w; isWeekly = true; unitLabel = 'ind/h'; regionScope = _speciesRegion;
     }
@@ -9429,8 +9447,7 @@ function _renderSpeciesFreqChart(key, country){
   // Corse, diluee dans la moyenne France par ratio superficie). On aggrege les regions ayant
   // de la data en prenant le max hebdomadaire cross-region. Le label du chart signale
   // "France (via <region>)" quand une seule region contribue.
-  if(!arr && !strictRegional && cc === 'FR' && typeof REAL_ABUNDANCE_ST_BY_REGION_FR === 'object'){
-    const stByReg = REAL_ABUNDANCE_ST_BY_REGION_FR;
+  if(!arr && !strictRegional && stByReg){
     const contributingRegions = [];
     for(const rcode in stByReg){
       const e = stByReg[rcode][key];
@@ -9485,8 +9502,9 @@ function _renderSpeciesFreqChart(key, country){
     const cc2 = country || 'FR';
     // Cas 1 : espece absente de la region choisie (mode strict). On l'affiche
     // explicitement pour ne pas confondre avec un fallback national trompeur.
-    if(strictRegional && typeof FR_REGIONS !== 'undefined'){
-      const regName = (FR_REGIONS.find(r => r.code === _speciesRegion) || {}).name || _speciesRegion;
+    if(strictRegional){
+      const regList = (typeof REGIONS_BY_COUNTRY === 'object' && REGIONS_BY_COUNTRY[cc]) || [];
+      const regName = (regList.find(r => r.code === _speciesRegion) || {}).name || _speciesRegion;
       if(card) card.hidden = false;
       if(srcEl) srcEl.textContent = '';
       if(svg){
@@ -9520,23 +9538,27 @@ function _renderSpeciesFreqChart(key, country){
   if(card) card.hidden = false;
   // Scope affiche : "Île-de-France" si mode strict region, "France (via Corse)" si
   // agregation 1-region pour le national, "France" ou "Monténégro" sinon.
+  // Helper : nom d'une region via REGIONS_BY_COUNTRY (multi-pays).
+  const _regNameFor = (rcode) => {
+    const list = (typeof REGIONS_BY_COUNTRY === 'object' && REGIONS_BY_COUNTRY[cc]) || [];
+    return (list.find(r => r.code === rcode) || {}).name || rcode;
+  };
+  const countryName = (COUNTRIES_REG[cc] && COUNTRIES_REG[cc].name) || cc;
   let ccLabel;
-  if(regionScope && typeof FR_REGIONS !== 'undefined'){
-    const regName = (FR_REGIONS.find(r => r.code === regionScope) || {}).name || regionScope;
+  if(regionScope){
+    const regName = _regNameFor(regionScope);
     // Mode strict regional : label = juste le nom de la region.
-    // Mode agregation 1-region (national derivé) : label = "France (via <region>)".
-    ccLabel = strictRegional ? regName : ('France (via ' + regName + ')');
+    // Mode agregation 1-region (national derive) : label = "<Pays> (via <region>)".
+    ccLabel = strictRegional ? regName : (countryName + ' (via ' + regName + ')');
   } else {
-    // Nom via registry (FR, ME, ES, IT, GB, PT + futurs pays)
-    ccLabel = (COUNTRIES_REG[cc] && COUNTRIES_REG[cc].name) || cc;
+    ccLabel = countryName;
   }
   // Note "fallback national" : si user a choisi une region mais aucune data regionale
-  // dispo pour cette espece (ex : Macareux moine en IdF), le chart tombe sur la moyenne
-  // France entiere -> confusion. On ajoute une note explicite.
+  // dispo pour cette espece, le chart tombe sur la moyenne nationale -> confusion.
   let fallbackNote = '';
-  if(cc === 'FR' && _speciesRegion && !regionScope && typeof FR_REGIONS !== 'undefined'){
-    const regName = (FR_REGIONS.find(r => r.code === _speciesRegion) || {}).name || _speciesRegion;
-    fallbackNote = ` <em style="color:var(--ink-3); font-weight:400; font-style:italic;">— pas de données pour ${esc(regName)}, affichage France entière</em>`;
+  if(_speciesRegion && !regionScope){
+    const regName = _regNameFor(_speciesRegion);
+    fallbackNote = ` <em style="color:var(--ink-3); font-weight:400; font-style:italic;">— pas de données pour ${esc(regName)}, affichage ${esc(countryName)} entier</em>`;
   }
   // Texte d'entete : "France — pic mi-octobre (3.2 ind/h)" ou "France — pic en octobre (30 %)"
   let peakLbl, peakVal;
@@ -10853,8 +10875,7 @@ function renderTargets(){
       sel.addEventListener('change', () => {
         _targetsRegion = sel.value || '';
         try{ localStorage.setItem('mb-targets-region', _targetsRegion); }catch(_){}
-        const proms = [_loadFreqDataForCountry(_targetsCountry)];
-        if(_targetsCountry === 'FR') proms.push(_loadAbundanceRegionData());
+        const proms = [_loadFreqDataForCountry(_targetsCountry), _loadAbundanceRegionData(_targetsCountry)];
         Promise.all(proms).then(() => renderTargets());
       });
       sel._init = true;
@@ -10891,16 +10912,15 @@ function renderTargets(){
   const monthByReg = regT.monthlyByRegion && regT.monthlyByRegion();
   const regionData = (regionSelected && monthByReg) ? monthByReg[_targetsRegion] : null;
   if(regionSelected && !regionData){
-    const proms = [_loadFreqDataForCountry(ccT)];
-    if(ccT === 'FR') proms.push(_loadAbundanceRegionData());
+    const proms = [_loadFreqDataForCountry(ccT), _loadAbundanceRegionData(ccT)];
     Promise.all(proms).then(() => renderTargets());
     grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--ink-3);">Chargement des données régionales…</div>';
     if(hint) hint.textContent = '';
     return;
   }
-  // S&T weekly regional : dispo uniquement pour FR pour l'instant.
-  const stRegionData = (regionSelected && ccT === 'FR' && REAL_ABUNDANCE_ST_BY_REGION_FR
-                        && REAL_ABUNDANCE_ST_BY_REGION_FR[_targetsRegion]) || null;
+  // S&T weekly regional : dispo par pays (dict multi-country).
+  const stByRegCC = REAL_ABUNDANCE_ST_BY_REGION[ccT];
+  const stRegionData = (regionSelected && stByRegCC && stByRegCC[_targetsRegion]) || null;
   const hasRegionalST = !!stRegionData;
   // Monthly national du pays courant (via registry) : pour le ratio regional / national.
   const monthlyNat = regT.monthly ? regT.monthly() : {};

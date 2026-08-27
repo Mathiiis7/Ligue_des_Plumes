@@ -1,6 +1,6 @@
 # build-abundance-by-region-multi.R
 #
-# Genere le S&T weekly par region pour les 4 pays non-FR : ES/IT/GB/PT.
+# Genere le S&T weekly par region pour les pays non-FR : ES/IT/GB/PT/ME.
 # Structure identique au build-abundance-by-region-fr.R mais parametrise par pays.
 #
 # Utilise l'optimisation Opt#1 : chaque raster charge UNE fois, extract multi-region
@@ -60,6 +60,12 @@ COUNTRIES <- list(
     regions = c("PT-01","PT-02","PT-03","PT-04","PT-05","PT-06","PT-07",
                 "PT-08","PT-09","PT-10","PT-11","PT-12","PT-13","PT-14",
                 "PT-15","PT-16","PT-17","PT-18","PT-20","PT-30")
+  ),
+  ME = list(
+    iso3 = "MNE", name = "Montenegro",
+    # 3 regions statistiques officielles MONSTAT (agregat de municipalites) :
+    # ME-N Sjeverni (Nord), ME-C Sredisnji (Central), ME-P Primorski (Cote)
+    regions = c("ME-N","ME-C","ME-P")
   )
 )
 
@@ -134,6 +140,53 @@ for (cc in names(COUNTRIES)) {
         # Dissolve provinces to comunidad (st_union)
         merged <- st_sf(iso_3166_2 = rc, geometry = st_union(sub))
         found_regions[[rc]] <- merged
+      }
+    }
+  } else if (cc == "ME") {
+    # Montenegro : ne_states retourne les municipalites (opstine). On agrege
+    # selon le decoupage officiel MONSTAT en 3 regions statistiques.
+    me <- ne_states(country = "Montenegro", returnclass = "sf")
+    cat("    ne_states Montenegro :", nrow(me), " municipalites trouvees\n")
+    if (nrow(me) > 0) cat("    Field name :", paste(head(me$name, 30), collapse=", "), "\n")
+    me_map <- list(
+      "ME-N" = c("Andrijevica","Berane","Bijelo Polje","Gusinje","Kolašin","Kolasin",
+                 "Mojkovac","Petnjica","Plav","Pljevlja","Plužine","Pluzine","Rožaje","Rozaje",
+                 "Šavnik","Savnik","Žabljak","Zabljak"),
+      "ME-C" = c("Cetinje","Danilovgrad","Nikšić","Niksic","Podgorica","Tuzi"),
+      "ME-P" = c("Bar","Budva","Herceg Novi","Herceg-Novi","Kotor","Tivat","Ulcinj")
+    )
+    for (rc in names(me_map)) {
+      sub <- me[me$name %in% me_map[[rc]], ]
+      if (nrow(sub) > 0) {
+        merged <- st_sf(iso_3166_2 = rc, geometry = st_union(sub))
+        found_regions[[rc]] <- merged
+        cat("    ", rc, ":", nrow(sub), " municipalites agregees\n")
+      } else {
+        cat("    ", rc, ": AUCUNE municipalite matchee !\n")
+      }
+    }
+    # Fallback : si ne_states ne donne rien d'utile, utilise le polygone national
+    # entier decoupe par latitude (approximatif mais fonctionnel).
+    if (length(found_regions) == 0) {
+      cat("    Fallback : split par latitude\n")
+      me_ctry <- ne_countries(country = "Montenegro", returnclass = "sf", scale = "large")
+      bbox <- st_bbox(me_ctry)
+      # 3 bandes horizontales (Nord/Centre/Cote de haut en bas approx)
+      y_mid1 <- bbox$ymin + (bbox$ymax - bbox$ymin) * 0.66
+      y_mid2 <- bbox$ymin + (bbox$ymax - bbox$ymin) * 0.33
+      strips <- list(
+        "ME-N" = st_as_sfc(st_bbox(c(xmin=bbox$xmin, ymin=y_mid1, xmax=bbox$xmax, ymax=bbox$ymax),
+                                    crs = st_crs(me_ctry))),
+        "ME-C" = st_as_sfc(st_bbox(c(xmin=bbox$xmin, ymin=y_mid2, xmax=bbox$xmax, ymax=y_mid1),
+                                    crs = st_crs(me_ctry))),
+        "ME-P" = st_as_sfc(st_bbox(c(xmin=bbox$xmin, ymin=bbox$ymin, xmax=bbox$xmax, ymax=y_mid2),
+                                    crs = st_crs(me_ctry)))
+      )
+      for (rc in names(strips)) {
+        inter <- st_intersection(me_ctry, strips[[rc]])
+        if (nrow(inter) > 0) {
+          found_regions[[rc]] <- st_sf(iso_3166_2 = rc, geometry = st_union(inter))
+        }
       }
     }
   } else if (cc == "IT") {

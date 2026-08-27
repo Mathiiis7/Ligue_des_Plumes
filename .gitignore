@@ -21,3 +21,5 @@ Thumbs.db
 tools/real-abundance-dept-mean.generated.js
 tools/habitats.generated.js
 tools/habitats-audit.json
+tools/.iucn-key
+tools/iucn-habitats-cache.json
