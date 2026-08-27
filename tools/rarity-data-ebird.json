@@ -620,14 +620,14 @@
     "name": "Ara militaire",
     "freq": 0.0001385,
     "source": "ebird",
-    "weight": 9
+    "weight": 10
   },
   {
     "sci": "aratinga solstitialis",
     "name": "Conure soleil",
     "freq": 0.0001352,
     "source": "ebird",
-    "weight": 9
+    "weight": 10
   },
   {
     "sci": "ardea alba",
@@ -690,7 +690,7 @@
     "name": "Puffin à bec grêle",
     "freq": 0.0001212,
     "source": "ebird",
-    "weight": 9
+    "weight": 10
   },
   {
     "sci": "ardeola ralloides",
@@ -1201,7 +1201,7 @@
     "name": "Urubu à tête rouge",
     "freq": 0.000095,
     "source": "ebird",
-    "weight": 9
+    "weight": 10
   },
   {
     "sci": "catharus minimus",
@@ -1313,7 +1313,7 @@
     "name": "Canard à crinière",
     "freq": 0.0001153,
     "source": "ebird",
-    "weight": 9
+    "weight": 10
   },
   {
     "sci": "chersophilus duponti",
@@ -1544,7 +1544,7 @@
     "name": "Pigeon roussard",
     "freq": 0.0000966,
     "source": "ebird",
-    "weight": 9
+    "weight": 10
   },
   {
     "sci": "columba livia",
@@ -2048,14 +2048,14 @@
     "name": "Astrild ondulé",
     "freq": 0.0001173,
     "source": "ebird",
-    "weight": 9
+    "weight": 10
   },
   {
     "sci": "estrilda melpoda",
     "name": "Astrild à joues orange",
     "freq": 0.000123,
     "source": "ebird",
-    "weight": 9
+    "weight": 10
   },
   {
     "sci": "eudocimus albus",
@@ -2090,7 +2090,7 @@
     "name": "Euplecte vorabé",
     "freq": 0.0001212,
     "source": "ebird",
-    "weight": 9
+    "weight": 10
   },
   {
     "sci": "falco biarmicus",
@@ -2314,7 +2314,7 @@
     "name": "Coq bankiva",
     "freq": 0.000095,
     "source": "ebird",
-    "weight": 9
+    "weight": 10
   },
   {
     "sci": "garrulus glandarius",
@@ -2552,7 +2552,7 @@
     "name": "Océanite de Castro",
     "freq": 0.0001365,
     "source": "ebird",
-    "weight": 9
+    "weight": 10
   },
   {
     "sci": "hydrobates leucorhous",
@@ -2629,7 +2629,7 @@
     "name": "Hypolaïs obscure",
     "freq": 0.0000933,
     "source": "ebird",
-    "weight": 9
+    "weight": 10
   },
   {
     "sci": "iduna pallida",
@@ -3707,7 +3707,7 @@
     "name": "Cardinal à poitrine rose",
     "freq": 0.0001365,
     "source": "ebird",
-    "weight": 9
+    "weight": 10
   },
   {
     "sci": "phoeniconaias minor",
@@ -3966,7 +3966,7 @@
     "name": "Tisserin à tête noire",
     "freq": 0.0001137,
     "source": "ebird",
-    "weight": 9
+    "weight": 10
   },
   {
     "sci": "pluvialis apricaria",
@@ -4659,7 +4659,7 @@
     "name": "Fou à pieds rouges",
     "freq": 0.0001365,
     "source": "ebird",
-    "weight": 9
+    "weight": 10
   },
   {
     "sci": "surnia ulula",
@@ -4883,7 +4883,7 @@
     "name": "Loriquet arc-en-ciel",
     "freq": 0.0001207,
     "source": "ebird",
-    "weight": 9
+    "weight": 10
   },
   {
     "sci": "tringa brevipes",

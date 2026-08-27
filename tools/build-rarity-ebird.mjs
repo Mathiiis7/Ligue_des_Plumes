@@ -59,7 +59,7 @@ const BARCHART = join(__dir, 'ebird-barchart-FR-2019-2026.txt');
 const THRESHOLDS = [
   [0.25, 1], [0.15, 2], [0.08, 3], [0.04, 4],
   [0.02, 5], [0.007, 6], [0.0015, 7], [0.0003, 8],
-  [0.00005, 9],
+  [0.00015, 9],
 ];
 function weightFor(freq) {
   for (const [min, w] of THRESHOLDS) if (freq >= min) return w;
