@@ -18,6 +18,14 @@ tools/ebirdst-target-codes.txt
 *.log
 Thumbs.db
 .DS_Store
+
+# Fichiers persos hors app (docs stage, images de tests)
+Stage/
+bébé.png
+bebe.png
+clown.png
+tente.png
+étoile.png
 tools/real-abundance-dept-mean.generated.js
 tools/habitats.generated.js
 tools/habitats-audit.json
