@@ -367,6 +367,8 @@
   .cp-item-meta { font-size:11px; color:var(--ink-3); }
   .cp-item.disabled { opacity:.5; cursor:not-allowed; }
   .cp-item.disabled:hover { background:transparent; }
+  .cp-item.absent { opacity:.55; }
+  .cp-item-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
   .tbl-scroll { overflow-x:auto; margin-top:10px; border:1px solid var(--line-2); border-radius:10px; }
   table { border-collapse:collapse; width:100%; font-size:13.5px; }
   thead th { position:sticky; top:0; background:var(--surface-2); z-index:2; text-align:left;
@@ -2263,12 +2265,42 @@ function _openCountryPicker(currentCode, opts = {}){
   return new Promise((resolve) => {
     const availableCodes = opts.availableCodes || Object.keys(COUNTRIES_REG);
     const allCodes = availableCodes.filter(cc => COUNTRIES_REG[cc]);
-    // Grouper par continent
+    // Si opts.sci est passe (appel depuis fiche espece), on trie par abondance pour
+    // cette espece et on affiche un indicateur (max weekly S&T ou % pic monthly).
+    const focusSci = opts.sci ? opts.sci.toLowerCase() : null;
+    const _wThr = [[2.2596,1],[0.8496,2],[0.34178,3],[0.12404,4],[0.04666,5],[0.01880,6],[0.00440,7],[0.00114,8],[0.00009,9]];
+    const _mThr = [[0.25,1],[0.15,2],[0.08,3],[0.04,4],[0.02,5],[0.007,6],[0.0015,7],[0.0003,8],[0.00005,9]];
+    const abdToTier = v => { if(!(v>0)) return 10; for(const [t,i] of _wThr) if(v>=t) return i; return 10; };
+    const freqToTier = v => { if(!(v>0)) return 10; for(const [t,i] of _mThr) if(v>=t) return i; return 10; };
+    const scoreCountryForSpecies = (cc) => {
+      const reg = COUNTRIES_REG[cc];
+      const stEntry = reg.st()[focusSci];
+      if(stEntry && Array.isArray(stEntry.w)){
+        const m = Math.max(...stEntry.w);
+        if(m > 0) return { score: m, isSt: true };
+      }
+      const monArr = reg.monthly()[focusSci];
+      if(Array.isArray(monArr)){
+        const m = Math.max(...monArr);
+        if(m > 0) return { score: m, isSt: false };
+      }
+      return { score: 0, isSt: false };
+    };
+    const fmtST = v => v >= 10 ? Math.round(v)+' ind/h' : v >= 1 ? v.toFixed(1)+' ind/h' : v >= 0.01 ? v.toFixed(2)+' ind/h' : v >= 0.001 ? v.toFixed(3)+' ind/h' : v > 0 ? '<0.001 ind/h' : '—';
+    const fmtPct = v => { if(!(v>0)) return '—'; const p = v*100; if(p >= 10) return Math.round(p)+'%'; if(p >= 1) return p.toFixed(1)+'%'; if(p >= 0.1) return p.toFixed(2)+'%'; return '<0.1%'; };
+    // Grouper par continent (avec optionnel score espece)
     const grouped = {};
     for(const cc of allCodes){
       const cont = CONTINENT_BY_CC[cc] || 'Autres';
       if(!grouped[cont]) grouped[cont] = [];
-      grouped[cont].push(cc);
+      const scored = focusSci ? scoreCountryForSpecies(cc) : null;
+      grouped[cont].push({ cc, score: scored ? scored.score : null, isSt: scored ? scored.isSt : false });
+    }
+    // Si focusSci : tri par score DESC dans chaque continent (absent = fin)
+    if(focusSci){
+      for(const cont in grouped){
+        grouped[cont].sort((a, b) => b.score - a.score);
+      }
     }
     const backdrop = document.createElement('div');
     backdrop.className = 'cp-modal-backdrop';
@@ -2289,19 +2321,35 @@ function _openCountryPicker(currentCode, opts = {}){
       const fLC = filter.toLowerCase().trim();
       let html = '';
       for(const cont of CONTINENT_ORDER){
-        const codes = (grouped[cont] || []).filter(cc => {
+        const items = (grouped[cont] || []).filter(x => {
+          const cc = x.cc;
           if(!fLC) return true;
           const name = (COUNTRIES_REG[cc].name || '').toLowerCase();
           return name.includes(fLC) || cc.toLowerCase().includes(fLC);
         });
-        if(!codes.length) continue;
+        if(!items.length) continue;
         html += `<div class="cp-group-title">${esc(cont)}</div>`;
-        for(const cc of codes){
+        for(const it of items){
+          const cc = it.cc;
           const reg = COUNTRIES_REG[cc];
           const flag = flagImg(cc);
-          const nSp = Object.keys(reg.st() || {}).length;
-          const meta = nSp > 0 ? `${nSp} espèces` : '';
-          html += `<div class="cp-item${cc === currentCode ? ' on' : ''}" data-cc="${esc(cc)}">
+          let meta = '';
+          let dotHtml = '';
+          if(focusSci){
+            // Indicateur presence de l'espece dans le pays
+            const absent = it.score === 0;
+            const tier = absent ? 10 : (it.isSt ? abdToTier(it.score) : freqToTier(it.score));
+            const col = realColor(tier);
+            const val = absent ? 'absente' : (it.isSt ? fmtST(it.score) : fmtPct(it.score));
+            dotHtml = `<span class="cp-item-dot" style="background:${col};"></span>`;
+            meta = val;
+          } else {
+            const nSp = Object.keys(reg.st() || {}).length;
+            meta = nSp > 0 ? `${nSp} espèces` : '';
+          }
+          const absentCls = (focusSci && it.score === 0) ? ' absent' : '';
+          html += `<div class="cp-item${cc === currentCode ? ' on' : ''}${absentCls}" data-cc="${esc(cc)}">
+            ${dotHtml}
             <span class="cp-item-flag">${flag}</span>
             <span class="cp-item-name">${esc(reg.name || cc)}</span>
             ${meta ? `<span class="cp-item-meta">${esc(meta)}</span>` : ''}
@@ -9233,7 +9281,7 @@ function _renderSpeciesRarityCard(key){
     // Handler bouton -> modal country picker (filtre aux pays qui ont cette espece)
     sel.addEventListener('click', async () => {
       const availableCodes = avail.map(a => a.code);
-      const chosen = await _openCountryPicker(sel.dataset.cc, { availableCodes });
+      const chosen = await _openCountryPicker(sel.dataset.cc, { availableCodes, sci: k });
       if(!chosen || chosen === sel.dataset.cc) return;
       _syncCountryButton(sel, chosen);
       renderLine(chosen);
