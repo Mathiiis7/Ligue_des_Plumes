@@ -11050,8 +11050,7 @@ function renderPokedex(){
       const el = document.getElementById('pkdx' + k.charAt(0).toUpperCase() + k.slice(1));
       if(el && _pkdxFilters[k] != null) el.value = _pkdxFilters[k];
     }
-    const ccBtn = document.getElementById('pkdxCountry');
-    if(ccBtn && _pkdxFilters.country) _syncCountryButton(ccBtn, _pkdxFilters.country);
+    // (Le sync du bouton pays + le click handler sont attaches plus bas dans le meme init.)
     // Debounce sur la recherche.
     let _searchTimer;
     $('#pkdxSearch')?.addEventListener('input', e => {
