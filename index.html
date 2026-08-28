@@ -9021,6 +9021,13 @@ function _renderSpeciesAudioBlock(container, label, primaryId, list){
     if(r.length) bits.push(esc(r.length));
     return bits.join(' · ');
   };
+  // Cap l'affichage de la duree a 0:20 (aligne avec MAX_PLAYBACK_SEC cote player).
+  const capDurStr = s => {
+    if(!s) return '';
+    const [m, ss] = String(s).split(':').map(Number);
+    const total = (m||0)*60 + (ss||0);
+    return total > 20 ? '0:20' : s;
+  };
   const playerHtml = (r, audioId) => {
     const sono = r.sono ? `<img class="xa-bar-sono" src="${esc(r.sono)}" alt="Spectrogramme" onerror="this.remove()">` : `<div class="xa-bar-fallback">Pas de spectrogramme</div>`;
     return `<div class="xa-player" data-xa-src="${esc(r.file)}"${audioId?` data-xa-id="${esc(audioId)}"`:''}>
@@ -9032,7 +9039,7 @@ function _renderSpeciesAudioBlock(container, label, primaryId, list){
           <div class="xa-bar-playhead"></div>
           <div class="xa-bar-cursor" data-xa-cursor></div>
         </div>
-        <div class="xa-time"><span data-xa-cur>0:00</span><span data-xa-dur>${esc(r.length||'--:--')}</span></div>
+        <div class="xa-time"><span data-xa-cur>0:00</span><span data-xa-dur>${esc(capDurStr(r.length)||'--:--')}</span></div>
       </div>
     </div>`;
   };
@@ -9161,22 +9168,16 @@ function _wireCustomAudioPlayer(playerEl){
   audio.addEventListener('canplay', () => { if(hasDur() && audio.paused) clearLoading(); });
   // Duree parfois connue seulement apres 'durationchange' (post playing sur MP3 sans header).
   // Des qu'on l'a, on retire le spinner et updatePos commencera a bouger le curseur.
-  audio.addEventListener('durationchange', () => {
-    if(hasDur()){
-      if(durEl) durEl.textContent = fmt(effDur());
-      if(!audio.paused){ playBtn.textContent = '⏸'; playBtn.classList.remove('loading'); }
-      updatePos();
-    }
-  });
-  audio.addEventListener('pause', () => { if(!playBtn.classList.contains('loading')) playBtn.textContent = '▶'; playBtn.classList.remove('on'); if(rafId){ cancelAnimationFrame(rafId); rafId = null; } });
-  audio.addEventListener('ended', () => { playBtn.textContent = '▶'; playBtn.classList.remove('on','loading'); playerEl.classList.remove('playing','has-progress'); if(progress) progress.style.width = '0%'; if(playhead) playhead.style.left = '0%'; if(rafId){ cancelAnimationFrame(rafId); rafId = null; } });
-  audio.addEventListener('timeupdate', updatePos);
-  audio.addEventListener('loadedmetadata', () => {
-    if(durEl && hasDur()) durEl.textContent = fmt(effDur());
-    // Aligne le sono avec la fenetre de lecture 0-20s : si l'audio complet dure 60s,
-    // le sono (qui represente les 60s) est etire pour que ses 20 premieres secondes
-    // remplissent la barre. object-fit passe de fill a cover left pour clipper la suite.
-    if(hasDur() && audio.duration > MAX_PLAYBACK_SEC){
+  // Handler duree connue : mise a jour affichage duree + resize sono aligne sur cap 20s.
+  // Encapsule pour pouvoir etre appele soit depuis event soit manuellement au wire time
+  // (le cas ou l'audio est deja loade depuis le cache et l'event ne refire pas).
+  const onDurationReady = () => {
+    if(!hasDur()) return;
+    if(durEl) durEl.textContent = fmt(effDur());
+    if(!audio.paused){ playBtn.textContent = '⏸'; playBtn.classList.remove('loading'); }
+    updatePos();
+    // Aligne le sono avec la fenetre de lecture 0-20s
+    if(audio.duration > MAX_PLAYBACK_SEC){
       const sonoImg = playerEl.querySelector('.xa-bar-sono');
       if(sonoImg){
         const scale = audio.duration / MAX_PLAYBACK_SEC;
@@ -9185,7 +9186,15 @@ function _wireCustomAudioPlayer(playerEl){
         sonoImg.style.objectPosition = 'left';
       }
     }
-  });
+  };
+  audio.addEventListener('durationchange', onDurationReady);
+  audio.addEventListener('pause', () => { if(!playBtn.classList.contains('loading')) playBtn.textContent = '▶'; playBtn.classList.remove('on'); if(rafId){ cancelAnimationFrame(rafId); rafId = null; } });
+  audio.addEventListener('ended', () => { playBtn.textContent = '▶'; playBtn.classList.remove('on','loading'); playerEl.classList.remove('playing','has-progress'); if(progress) progress.style.width = '0%'; if(playhead) playhead.style.left = '0%'; if(rafId){ cancelAnimationFrame(rafId); rafId = null; } });
+  audio.addEventListener('timeupdate', updatePos);
+  audio.addEventListener('loadedmetadata', onDurationReady);
+  // Si l'audio est deja loade au moment du wire (cache browser, details ouvert avant wire...),
+  // les events loadedmetadata / durationchange n'ont pas refire. On appelle manuellement.
+  if(audio.readyState >= 1) onDurationReady();
   if(seekEl){
     seekEl.addEventListener('click', e => {
       if(!audio.duration){ audio.load(); return; }
