@@ -9146,12 +9146,12 @@ function _initMerlinSpectrogram(playerEl, audio){
     const maxBin = Math.min(analyser.frequencyBinCount, Math.max(64, Math.floor(10000 / binHz)));
     const freqData = new Uint8Array(analyser.frequencyBinCount);
     const centerX = Math.floor(w / 2);
-    // Efface la zone du passe avec bg color
+    // Zone gauche du curseur = passe audible. Peinte avec bg color opaque pour donner
+    // un fond propre aux traces FFT. Zone droite (futur) : laissee transparente pour
+    // que le sono backdrop (image xeno-canto sous le canvas) reste visible.
+    cctx.clearRect(0, 0, w, h);
     cctx.fillStyle = `rgba(${bgCss})`;
     cctx.fillRect(0, 0, centerX, h);
-    // Zone du futur : legerement plus sombre pour marquer visuellement la difference
-    cctx.fillStyle = `rgba(${bgCss.split(',').slice(0,3).map(v=>Math.round(parseFloat(v)*0.55)).join(',')},1)`;
-    cctx.fillRect(centerX, 0, w - centerX, h);
     playerEl._xaMerlin = { canvas, cctx, w, h, analyser, freqData, maxBin, centerX, bgCss, inkCss };
     playerEl.classList.add('xa-merlin');
     return true;
@@ -9168,8 +9168,9 @@ function _drawMerlinFrame(playerEl){
   if(!m) return;
   const { cctx, canvas, h, analyser, freqData, maxBin, centerX, bgCss, inkCss } = m;
   analyser.getByteFrequencyData(freqData);
-  // 1. Scroll la zone [0, centerX] d'1 px vers la gauche.
-  cctx.drawImage(canvas, 1, 0, centerX, h, 0, 0, centerX, h);
+  // 1. Scroll la zone [0, centerX-1] d'1 px vers la gauche. Source width = centerX-1 pour ne pas
+  // aspirer le pixel de bordure du curseur (centerX) dans la zone passe.
+  cctx.drawImage(canvas, 1, 0, centerX - 1, h, 0, 0, centerX - 1, h);
   // 2. Efface la colonne juste avant le curseur (centerX-1) puis dessine la nouvelle colonne FFT.
   cctx.fillStyle = `rgba(${bgCss})`;
   cctx.fillRect(centerX - 1, 0, 1, h);
@@ -9197,10 +9198,13 @@ function _wireCustomAudioPlayer(playerEl){
   if(!src) return;
   // crossOrigin AVANT src : indispensable pour que createMediaElementSource() puisse lire les
   // frames via AnalyserNode (sinon frame silencieuses / SecurityError). CDN xeno-canto autorise CORS.
+  // Cache-buster (?xarel=merlin1) : force le browser a refetch avec CORS headers cette fois.
+  // Sans ca, si l'utilisateur a deja visite le site avant cette version, le MP3 est cache en
+  // reponse OPAQUE (sans CORS) et Web Audio silence l'audio (tainted).
   const audio = new Audio();
   audio.crossOrigin = 'anonymous';
   audio.preload = 'auto';
-  audio.src = src;
+  audio.src = src + (src.includes('?') ? '&' : '?') + 'xarel=merlin1';
   if(audioId) audio.id = audioId;
   playerEl.appendChild(audio);
   audio.style.display = 'none';
