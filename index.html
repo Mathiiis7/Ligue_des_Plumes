@@ -3568,11 +3568,16 @@ function renderMatrix({universe,N}){
   }
   const box=$('#tierChips');
   if(box){
-    box.innerHTML = tiersPresent.map(t=>{
+    // Style unifie avec le filtre rareté carte / Birdydex / Cette semaine (.rar-chip compact).
+    // En mode 'real' : chips avec le tier number (0-10). En mode 'league' : label court (Titan...).
+    const chipsHtml = tiersPresent.map(t=>{
       const on = !state.tierExcl.has(t.id);
-      // Chip = pastille + label court (fait aussi office de légende).
-      return `<button type="button" class="person-chip rar-chip-m${on?' on':''}" data-tier="${esc(t.id)}" style="--series:${t.color};"><span class="dot" style="background:${t.color}"></span>${esc(t.label)}</button>`;
+      const bgStyle = on ? `background:${t.color};` : '';
+      return `<button type="button" class="rar-chip${on?' on':''}" data-tier="${esc(t.id)}" style="${bgStyle}" title="${esc(t.label)}">${esc(t.label)}</button>`;
     }).join('');
+    box.innerHTML = chipsHtml
+      + '<button type="button" class="rar-chip" data-tier-all title="Cocher toutes les raretés">Tout</button>'
+      + '<button type="button" class="rar-chip" data-tier-none title="Décocher toutes les raretés">Vide</button>';
   }
 
   // Ré-écriture différée (après le calcul de displayPeople plus bas), stockée pour évaluation.
@@ -10930,6 +10935,16 @@ $('#feedPersonSel')?.addEventListener('change', e=>{ feedPerson = e.target.value
 $('#feedTierSel')?.addEventListener('change', e=>{ feedTier = e.target.value; renderFeed(); });
 // Chips rareté (multi) : toggle du Set state.tierExcl (masquées), re-render.
 $('#tierChips')?.addEventListener('click', e=>{
+  if(e.target.matches('[data-tier-all]')){
+    state.tierExcl = new Set();
+    renderResults(); return;
+  }
+  if(e.target.matches('[data-tier-none]')){
+    // Recupere les ids de tiers presentement affiches et les exclut tous
+    const btns = e.currentTarget.querySelectorAll('button[data-tier]');
+    state.tierExcl = new Set([...btns].map(b => b.dataset.tier));
+    renderResults(); return;
+  }
   const b = e.target.closest('button[data-tier]'); if(!b) return;
   const id = b.dataset.tier;
   if(state.tierExcl.has(id)) state.tierExcl.delete(id); else state.tierExcl.add(id);
