@@ -53,6 +53,10 @@
     --t-all:#6b7f7a; --t-common:#2f9e6f; --t-uncommon:#c0891f;
     --t-rare:#df6b34; --t-unique:#c93f66;
 
+    /* spectrogramme live style Merlin : fond gris clair + traces noires. rgba/rgb en composantes. */
+    --spectro-bg: 232,236,235,1;
+    --spectro-ink: 15,25,22;
+
     --serif: "Palatino Linotype","Iowan Old Style","Hoefler Text",Georgia,"Times New Roman",serif;
     --sans: "Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
     --mono: "Cascadia Code",Consolas,"SF Mono",ui-monospace,Menlo,monospace;
@@ -68,6 +72,8 @@
       --s4:#9085e9; --s5:#e66767; --s6:#d55181; --s7:#d95926;
       --t-all:#8fa39e; --t-common:#37b784; --t-uncommon:#e4b352;
       --t-rare:#ef8a54; --t-unique:#e86a92;
+      --spectro-bg: 22,32,30,1;
+      --spectro-ink: 220,232,228;
     }
   }
   :root[data-theme="dark"] {
@@ -80,6 +86,8 @@
     --s4:#9085e9; --s5:#e66767; --s6:#d55181; --s7:#d95926;
     --t-all:#8fa39e; --t-common:#37b784; --t-uncommon:#e4b352;
     --t-rare:#ef8a54; --t-unique:#e86a92;
+    --spectro-bg: 22,32,30,1;
+    --spectro-ink: 220,232,228;
   }
   :root[data-theme="light"] {
     --bg:#eef2f1; --surface:#ffffff; --surface-2:#e7eceb; --surface-3:#dde4e2;
@@ -90,6 +98,8 @@
     --s4:#4a3aa7; --s5:#e34948; --s6:#e87ba4; --s7:#eb6834;
     --t-all:#6b7f7a; --t-common:#2f9e6f; --t-uncommon:#c0891f;
     --t-rare:#df6b34; --t-unique:#c93f66;
+    --spectro-bg: 232,236,235,1;
+    --spectro-ink: 15,25,22;
   }
 
   * { box-sizing: border-box; }
@@ -570,14 +580,21 @@
   @keyframes xa-spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
   .xa-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
   .xa-bar { position:relative; height:114px; border-radius:6px; overflow:hidden; background:var(--surface-3); cursor:pointer; }
+  /* Canvas live spectrogramme style Merlin. Hidden par defaut, revele quand player.xa-merlin. */
+  .xa-bar-canvas { position:absolute; inset:0; width:100%; height:100%; display:block; opacity:0; pointer-events:none; z-index:2; transition:opacity .25s; }
+  .xa-player.xa-merlin .xa-bar-canvas { opacity:1; }
+  /* En mode Merlin : sono statique passe en backdrop faible (contexte visuel de la forme complete). */
+  .xa-player.xa-merlin .xa-bar-sono { opacity:.14; }
   /* Sono : image entiere de xeno-canto etiree pour remplir toute la bar (pleine hauteur
      114px, pleine largeur). object-fit:fill stretch pour ne rien couper. */
   .xa-bar-sono { position:absolute; inset:0; width:100%; height:100%; object-fit:fill; opacity:1; pointer-events:none; }
   .xa-bar-progress { position:absolute; top:0; bottom:0; left:0; width:0; background:linear-gradient(90deg, rgba(255,255,255,0), color-mix(in srgb, var(--accent) 20%, transparent)); pointer-events:none; z-index:1; }
   .xa-bar-fallback { position:absolute; inset:0; display:grid; place-items:center; color:var(--ink-3); font-size:11px; font-style:italic; }
-  /* Curseur rouge qui avance de gauche a droite pendant la lecture, sur le spectrogramme. */
+  /* Curseur rouge qui avance de gauche a droite pendant la lecture (mode fallback sans live spectro). */
   .xa-bar-cursor { position:absolute; top:0; bottom:0; left:0; margin-left:-1.5px; width:3px; background:#e63535; box-shadow:0 0 6px rgba(230,53,53,.8), 0 0 2px #fff; pointer-events:none; z-index:3; opacity:0; transition:opacity .2s, left .06s linear; }
   .xa-player.has-progress .xa-bar-cursor { opacity:1; }
+  /* En mode Merlin : curseur fige au centre, le spectrogramme scrolle sous lui. Pas de transition sur left. */
+  .xa-player.xa-merlin .xa-bar-cursor { left:50% !important; transition:opacity .2s; }
   /* Playhead classique retire pour n'avoir qu'un seul indicateur */
   .xa-bar-playhead { display:none; }
   .xa-time { font:600 10.5px/1 var(--mono, ui-monospace); color:var(--ink-3); display:flex; justify-content:space-between; padding:0 2px; }
@@ -9028,6 +9045,7 @@ function _renderSpeciesAudioBlock(container, label, primaryId, list){
       <div class="xa-body">
         <div class="xa-bar" data-xa-seek>
           ${sono}
+          <canvas class="xa-bar-canvas" data-xa-canvas></canvas>
           <div class="xa-bar-progress"></div>
           <div class="xa-bar-playhead"></div>
           <div class="xa-bar-cursor" data-xa-cursor></div>
@@ -9073,18 +9091,116 @@ function _renderSpeciesAudioBlock(container, label, primaryId, list){
   });
 }
 // Cable un player custom : play/pause, seek clic, progress bar animee, time text.
+// Live spectrogramme style Merlin (Web Audio API) via _initMerlinSpectrogram / _drawMerlinFrame.
 // Registre global des audios de fiche espece pour un mutex fiable : quand un audio play,
 // on pause tous les autres. Wrapper-level listener n'attrappait pas les audios crees via
 // new Audio() correctement (events media ne bubblent pas).
 if(typeof _xaAudios === 'undefined') var _xaAudios = new Set();
+
+// AudioContext global partage : Chrome/Safari limitent le nombre de contextes ouverts par tab.
+// Un seul context pour tous les players.
+function _xaGetAudioCtx(){
+  if(window._xaAudioCtx) return window._xaAudioCtx;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if(!AC) return null;
+  try{ window._xaAudioCtx = new AC(); return window._xaAudioCtx; }catch(_){ return null; }
+}
+
+// Setup live spectro pour un player. Idempotent. Retourne true si OK, false si fallback statique.
+// Doit etre appele APRES que l'audio ait ete play() une fois (gesture utilisateur = permet resume()).
+function _initMerlinSpectrogram(playerEl, audio){
+  if(playerEl._xaMerlin) return true;
+  if(playerEl._xaMerlinFailed) return false;
+  try{
+    const bar = playerEl.querySelector('.xa-bar');
+    const canvas = playerEl.querySelector('[data-xa-canvas]');
+    if(!bar || !canvas) throw new Error('no bar/canvas');
+    const w = Math.floor(bar.clientWidth), h = Math.floor(bar.clientHeight);
+    if(w < 40 || h < 40) throw new Error('bar not sized');
+    const actx = _xaGetAudioCtx();
+    if(!actx) throw new Error('no AudioContext');
+    if(actx.state === 'suspended'){ actx.resume().catch(()=>{}); }
+    // MediaElementSource : un seul par audio, sinon throw InvalidStateError.
+    if(!audio._xaMediaSrc){
+      audio._xaMediaSrc = actx.createMediaElementSource(audio);
+      audio._xaAnalyser = actx.createAnalyser();
+      audio._xaAnalyser.fftSize = 2048;
+      audio._xaAnalyser.smoothingTimeConstant = 0.32;
+      audio._xaAnalyser.minDecibels = -85;
+      audio._xaAnalyser.maxDecibels = -18;
+      audio._xaMediaSrc.connect(audio._xaAnalyser);
+      audio._xaAnalyser.connect(actx.destination);
+    }
+    const analyser = audio._xaAnalyser;
+    canvas.width = w;
+    canvas.height = h;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    const cctx = canvas.getContext('2d', { alpha: true, desynchronized: true });
+    // Palette : lit les vars CSS pour matcher le theme actif
+    const cs = getComputedStyle(document.documentElement);
+    const bgCss = (cs.getPropertyValue('--spectro-bg').trim() || '232,236,235,1');
+    const inkCss = (cs.getPropertyValue('--spectro-ink').trim() || '15,25,22');
+    // Fenetre de frequence affichee : 0-10 kHz (au dessus = surtout du silence pour les oiseaux)
+    const binHz = actx.sampleRate / analyser.fftSize;
+    const maxBin = Math.min(analyser.frequencyBinCount, Math.max(64, Math.floor(10000 / binHz)));
+    const freqData = new Uint8Array(analyser.frequencyBinCount);
+    const centerX = Math.floor(w / 2);
+    // Efface la zone du passe avec bg color
+    cctx.fillStyle = `rgba(${bgCss})`;
+    cctx.fillRect(0, 0, centerX, h);
+    // Zone du futur : legerement plus sombre pour marquer visuellement la difference
+    cctx.fillStyle = `rgba(${bgCss.split(',').slice(0,3).map(v=>Math.round(parseFloat(v)*0.55)).join(',')},1)`;
+    cctx.fillRect(centerX, 0, w - centerX, h);
+    playerEl._xaMerlin = { canvas, cctx, w, h, analyser, freqData, maxBin, centerX, bgCss, inkCss };
+    playerEl.classList.add('xa-merlin');
+    return true;
+  }catch(e){
+    playerEl._xaMerlinFailed = true;
+    console.warn('[Merlin spectro] init failed, fallback to static sono:', e.message);
+    return false;
+  }
+}
+
+// Dessine une frame : shift le passe d'1 px vers la gauche, dessine la colonne courante juste avant le curseur.
+function _drawMerlinFrame(playerEl){
+  const m = playerEl._xaMerlin;
+  if(!m) return;
+  const { cctx, canvas, h, analyser, freqData, maxBin, centerX, bgCss, inkCss } = m;
+  analyser.getByteFrequencyData(freqData);
+  // 1. Scroll la zone [0, centerX] d'1 px vers la gauche.
+  cctx.drawImage(canvas, 1, 0, centerX, h, 0, 0, centerX, h);
+  // 2. Efface la colonne juste avant le curseur (centerX-1) puis dessine la nouvelle colonne FFT.
+  cctx.fillStyle = `rgba(${bgCss})`;
+  cctx.fillRect(centerX - 1, 0, 1, h);
+  // Mapping log-freq : concentre visuellement les basses/mid-freq utiles pour les oiseaux
+  // (600 Hz - 8 kHz ou la plupart des chants concentrent leur energie).
+  const inkRgb = inkCss;
+  for(let py = 0; py < h; py++){
+    // py=0 en haut de canvas correspond a la plus haute freq (maxBin), py=h en bas a bin 0.
+    // Interpolation lineaire simple bin = (1 - py/h) * maxBin
+    const bin = Math.floor((1 - py / h) * maxBin);
+    const v = freqData[bin] || 0;
+    if(v < 6) continue;   // seuil bruit de fond
+    // Amplitude -> alpha (opacite noire sur fond gris). Boost non-lineaire pour lisibilite.
+    const a = Math.min(1, (v / 255) * 1.35);
+    cctx.fillStyle = `rgba(${inkRgb},${a.toFixed(3)})`;
+    cctx.fillRect(centerX - 1, py, 1, 1);
+  }
+}
+
 function _wireCustomAudioPlayer(playerEl){
   if(playerEl.dataset.xaWired) return;
   playerEl.dataset.xaWired = '1';
   const src = playerEl.dataset.xaSrc;
   const audioId = playerEl.dataset.xaId;
   if(!src) return;
-  const audio = new Audio(src);
+  // crossOrigin AVANT src : indispensable pour que createMediaElementSource() puisse lire les
+  // frames via AnalyserNode (sinon frame silencieuses / SecurityError). CDN xeno-canto autorise CORS.
+  const audio = new Audio();
+  audio.crossOrigin = 'anonymous';
   audio.preload = 'auto';
+  audio.src = src;
   if(audioId) audio.id = audioId;
   playerEl.appendChild(audio);
   audio.style.display = 'none';
@@ -9107,11 +9223,16 @@ function _wireCustomAudioPlayer(playerEl){
     if(!audio.duration) return;
     const pct = (audio.currentTime / audio.duration);
     if(progress) progress.style.width = (pct * 100) + '%';
-    if(cursor) cursor.style.left = (pct * 100) + '%';
+    // En mode Merlin, le curseur reste fige au centre (via CSS). Ne l'anime que en fallback.
+    if(cursor && !playerEl._xaMerlin) cursor.style.left = (pct * 100) + '%';
     if(curEl) curEl.textContent = fmt(audio.currentTime);
   };
   let rafId = null;
-  const rafLoop = () => { updatePos(); if(!audio.paused && !audio.ended) rafId = requestAnimationFrame(rafLoop); };
+  const rafLoop = () => {
+    updatePos();
+    if(playerEl._xaMerlin) _drawMerlinFrame(playerEl);
+    if(!audio.paused && !audio.ended) rafId = requestAnimationFrame(rafLoop);
+  };
   playBtn.addEventListener('click', () => {
     if(audio.paused){
       // Show spinner immediat + force load si pas encore lance.
@@ -9127,7 +9248,14 @@ function _wireCustomAudioPlayer(playerEl){
       tryPlay();
     } else { audio.pause(); }
   });
-  audio.addEventListener('play', () => { playBtn.textContent = '⏸'; playBtn.classList.add('on'); playBtn.classList.remove('loading'); playerEl.classList.add('playing','has-progress'); if(rafId) cancelAnimationFrame(rafId); rafId = requestAnimationFrame(rafLoop); });
+  audio.addEventListener('play', () => {
+    playBtn.textContent = '⏸'; playBtn.classList.add('on'); playBtn.classList.remove('loading');
+    playerEl.classList.add('playing','has-progress');
+    // Init Merlin spectro au 1er play (gesture user = permet resume() de l'AudioContext).
+    _initMerlinSpectrogram(playerEl, audio);
+    if(rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(rafLoop);
+  });
   audio.addEventListener('waiting', () => { playBtn.textContent = '⏳'; playBtn.classList.add('loading'); });
   audio.addEventListener('playing', () => { playBtn.textContent = '⏸'; playBtn.classList.remove('loading'); });
   audio.addEventListener('canplay', () => { if(playBtn.classList.contains('loading') && audio.paused){ playBtn.textContent = '▶'; playBtn.classList.remove('loading'); } });
@@ -9135,6 +9263,17 @@ function _wireCustomAudioPlayer(playerEl){
   audio.addEventListener('ended', () => { playBtn.textContent = '▶'; playBtn.classList.remove('on','loading'); playerEl.classList.remove('playing','has-progress'); if(progress) progress.style.width = '0%'; if(playhead) playhead.style.left = '0%'; if(rafId){ cancelAnimationFrame(rafId); rafId = null; } });
   audio.addEventListener('timeupdate', updatePos);
   audio.addEventListener('loadedmetadata', () => { if(durEl && isFinite(audio.duration)) durEl.textContent = fmt(audio.duration); });
+  // Si le CORS foire (audio ne charge pas), on retire crossOrigin et on retente : perte du live spectro
+  // mais le player audio classique refonctionne.
+  audio.addEventListener('error', () => {
+    if(audio.crossOrigin && !audio._xaCorsRetry){
+      audio._xaCorsRetry = true;
+      audio.removeAttribute('crossorigin');
+      audio.crossOrigin = null;
+      try{ audio.load(); }catch(_){}
+      playerEl._xaMerlinFailed = true;
+    }
+  });
   if(seekEl){
     seekEl.addEventListener('click', e => {
       if(!audio.duration){ audio.load(); return; }
