@@ -9190,21 +9190,28 @@ function _drawMerlinFrame(playerEl){
   }
 }
 
+// Fetch le MP3 en explicite mode:cors et le monte en blob URL. Rend l'audio same-origin
+// (blob:) donc INFAILLIBLEMENT non-tainted pour Web Audio. Elimine tous les cas ou le
+// browser sert une reponse cachee opaque ou strippe le CORS lors d'un redirect.
+async function _xaFetchAsBlob(url){
+  const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
+  if(!res.ok) throw new Error('HTTP ' + res.status);
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}
+
 function _wireCustomAudioPlayer(playerEl){
   if(playerEl.dataset.xaWired) return;
   playerEl.dataset.xaWired = '1';
   const src = playerEl.dataset.xaSrc;
   const audioId = playerEl.dataset.xaId;
   if(!src) return;
-  // crossOrigin AVANT src : indispensable pour que createMediaElementSource() puisse lire les
-  // frames via AnalyserNode (sinon frame silencieuses / SecurityError). CDN xeno-canto autorise CORS.
-  // Cache-buster (?xarel=merlin1) : force le browser a refetch avec CORS headers cette fois.
-  // Sans ca, si l'utilisateur a deja visite le site avant cette version, le MP3 est cache en
-  // reponse OPAQUE (sans CORS) et Web Audio silence l'audio (tainted).
+  // Setup audio initial avec URL directe. On swappera pour un blob URL au 1er play
+  // (blob = same-origin garanti, indispensable pour que Web Audio soit non-tainted).
   const audio = new Audio();
   audio.crossOrigin = 'anonymous';
-  audio.preload = 'auto';
-  audio.src = src + (src.includes('?') ? '&' : '?') + 'xarel=merlin1';
+  audio.preload = 'metadata';   // charge juste la duree, pas le fichier complet
+  audio.src = src;
   if(audioId) audio.id = audioId;
   playerEl.appendChild(audio);
   audio.style.display = 'none';
@@ -9237,24 +9244,38 @@ function _wireCustomAudioPlayer(playerEl){
     if(playerEl._xaMerlin) _drawMerlinFrame(playerEl);
     if(!audio.paused && !audio.ended) rafId = requestAnimationFrame(rafLoop);
   };
-  playBtn.addEventListener('click', () => {
-    if(audio.paused){
-      // Show spinner immediat + force load si pas encore lance.
-      playBtn.textContent = '⏳'; playBtn.classList.add('loading');
-      // Force le fetch si le browser l'a deferre (typique dans un <details> collapse).
-      if(audio.readyState === 0){ try{ audio.load(); }catch(_){} }
-      // Init Merlin AVANT audio.play() : le graph Web Audio doit etre setup avant
-      // que la lecture commence, sinon l'audio streamera par l'output HTML par defaut
-      // et l'analyser recevra du silence meme si createMediaElementSource() reussit.
-      _initMerlinSpectrogram(playerEl, audio);
-      // Play + retry si echec initial (autoplay policy, race avec load...).
-      const tryPlay = () => audio.play().then(() => { playBtn.classList.remove('loading'); }).catch(() => {
-        // 2e tentative apres canplay
-        const once = () => { audio.removeEventListener('canplay', once); audio.play().catch(()=>{ playBtn.textContent = '▶'; playBtn.classList.remove('loading'); }); };
-        audio.addEventListener('canplay', once, { once:true });
-      });
-      tryPlay();
-    } else { audio.pause(); }
+  playBtn.addEventListener('click', async () => {
+    if(!audio.paused){ audio.pause(); return; }
+    playBtn.textContent = '⏳'; playBtn.classList.add('loading');
+    // Au 1er play : swap l'URL directe pour un blob URL (fetch + createObjectURL).
+    // Rend l'audio same-origin, garantit que Web Audio recevra le signal proprement.
+    if(!audio._xaBlobReady && !audio._xaBlobFailed){
+      try{
+        const blobUrl = await _xaFetchAsBlob(src);
+        audio.src = blobUrl;
+        audio._xaBlobReady = true;
+        // Attend canplay avant de creer la MediaElementSource pour eviter la race
+        await new Promise((res, rej) => {
+          audio.addEventListener('canplay', res, { once: true });
+          audio.addEventListener('error', () => rej('canplay error'), { once: true });
+          setTimeout(() => rej('canplay timeout'), 10000);
+        });
+      }catch(e){
+        console.warn('[Merlin] blob fetch failed, playback direct sans live spectro:', e.message||e);
+        audio._xaBlobFailed = true;
+        playerEl._xaMerlinFailed = true;
+      }
+    }
+    // Force fetch si defere
+    if(audio.readyState === 0){ try{ audio.load(); }catch(_){} }
+    // Setup Merlin AVANT audio.play() : graph Web Audio doit etre cable avant que le flux commence
+    if(!audio._xaBlobFailed) _initMerlinSpectrogram(playerEl, audio);
+    // Play avec retry si echec initial
+    const tryPlay = () => audio.play().then(() => { playBtn.classList.remove('loading'); }).catch(() => {
+      const once = () => { audio.removeEventListener('canplay', once); audio.play().catch(()=>{ playBtn.textContent = '▶'; playBtn.classList.remove('loading'); }); };
+      audio.addEventListener('canplay', once, { once:true });
+    });
+    tryPlay();
   });
   audio.addEventListener('play', () => {
     playBtn.textContent = '⏸'; playBtn.classList.add('on'); playBtn.classList.remove('loading');
