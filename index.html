@@ -2464,6 +2464,26 @@ const HABITAT_TO_SCIS = (() => {
   for(const c of HABITAT_CATS) idx[c].sort();
   return idx;
 })();
+// Version restreinte aux especes presentes en France : intersecte HABITATS avec
+// REAL_RARITY (bar chart eBird FR, ~739 sp regulieres) + REAL_ABUNDANCE_ST_FR (S&T FR).
+// Sert de base pour les seuils des trophees Saint-Graal : 5 % de "vraiment observable
+// en FR" est plus juste que 5 % du catalogue mondial. Ex : Forest 6052 sp mondial ->
+// ~200 sp FR (bien plus atteignable). Getter lazy : REAL_RARITY est declare plus bas,
+// donc on differe le calcul au 1er acces.
+let _HABITAT_TO_SCIS_FR = null;
+function HABITAT_TO_SCIS_FR(cat){
+  if(_HABITAT_TO_SCIS_FR) return _HABITAT_TO_SCIS_FR[cat] || [];
+  const idx = Object.fromEntries(HABITAT_CATS.map(c=>[c, []]));
+  const inFR = sci => (typeof REAL_RARITY === 'object' && REAL_RARITY[sci])
+                    || (typeof REAL_ABUNDANCE_ST_FR === 'object' && REAL_ABUNDANCE_ST_FR[sci]);
+  for(const sci in HABITATS){
+    if(!inFR(sci)) continue;
+    const cats = HABITATS[sci];
+    for(const c of cats) if(idx[c]) idx[c].push(sci);
+  }
+  _HABITAT_TO_SCIS_FR = idx;
+  return idx[cat] || [];
+}
 // Especes exotiques "cage/voliere echappee isolee" : perroquets d'appartement,
 // canaris, calopsittes, aras, cacatoes, loriquets, inseparables, diamants...
 // Techniquement observables si l'oiseau du voisin s'echappe, mais aucun interet
@@ -3652,20 +3672,21 @@ const TROPHIES = [
   { theme:'communaute',  icon:ICONS.bebe, name:'Gros Bébé', desc:'Observer des oiseaux avec Samuel Fillion (preuve demandée)', special:'vote', voteId:'grosBebe', voteThreshold:3, voteSelfCheck:()=>/sam/i.test(myMemberName()||''), test:s=>(s.grosBebeVotes||0)>=3 },
   // Badge "Naturaliste polyvalent" — cocher au moins 5 espèces dans N milieux différents.
   // Milieux : forestier, zone humide, eau douce, océan, littoral, montagne, steppe, bocage, urbain, rocher.
-  { theme:'groupe',      icon:ICONS.bearGrylls, name:'Bear Grylls', desc:'Cocher 5 % des espèces dans 8 milieux différents (sur 10)', test:s=>s.habCovered>=8, prog:s=>[s.habCovered,8], alwaysList:true, list:s=>{
-      // Une section par milieu, chaque section liste TOUTES les espèces possibles
-      // avec l'état owned. Le compteur "(n/m)" apparaît automatiquement dans le header.
-      const habMin = c => Math.max(1, Math.ceil((HABITAT_TO_SCIS[c]||[]).length * 0.05));
+  { theme:'groupe',      icon:ICONS.bearGrylls, name:'Bear Grylls', desc:'Cocher 5 % des espèces francaises dans 8 milieux différents (sur 12)', test:s=>s.habCovered>=8, prog:s=>[s.habCovered,8], alwaysList:true, list:s=>{
+      // Une section par milieu, chaque section liste les espèces PRESENTES EN FRANCE
+      // pour ce milieu (base : HABITAT_TO_SCIS_FR). Le compteur (n/m) apparait auto.
+      // Seuil : 5 % des especes FR de ce milieu.
+      const habMin = c => Math.max(1, Math.ceil((HABITAT_TO_SCIS_FR(c)||[]).length * 0.05));
       const out = [];
       for(const c of HABITAT_CATS){
-        const scis = HABITAT_TO_SCIS[c] || [];
+        const scis = HABITAT_TO_SCIS_FR(c) || [];
         const seuil = habMin(c);
         const ok = s.habOwned[c].size >= seuil;
-        const sec = `${HABITAT_LABELS[c]} — ${s.habOwned[c].size}/${scis.length} vues · seuil ${seuil} (5 %) · ${ok?'✅ validé':'⏳ à valider'}`;
+        const sec = `${HABITAT_LABELS[c]} : ${s.habOwned[c].size}/${scis.length} vues (seuil ${seuil}, 5 % des sp francaises) ${ok?'✅ validé':'⏳ à valider'}`;
         for(const sci of scis) out.push({ name: frName(sci, sci), section: sec, owned: s.habOwned[c].has(sci) });
       }
       return out;
-    }, note:s=>`${s.habCovered} milieu${s.habCovered>1?'x':''} validé${s.habCovered>1?'s':''} sur ${HABITAT_CATS.length} (seuil : 5 % des espèces par milieu)` },
+    }, note:s=>`${s.habCovered} milieu${s.habCovered>1?'x':''} validé${s.habCovered>1?'s':''} sur ${HABITAT_CATS.length} (seuil : 5 % des espèces francaises par milieu)` },
   { theme:'classement', icon:ICONS.crown, name:'Écologue originel', desc:'Être 1ᵉʳ du classement', test:s=>s.groupN>1 && s.rank===1 },
   { theme:'classement', icon:ICONS.podium, name:'Écologue en chef', desc:'Dans le top 2', test:s=>s.groupN>1 && s.rank<=2 },
   { theme:'classement', icon:ICONS.bronze, name:'Écologue chevronné', desc:'Dans le top 3', test:s=>s.groupN>1 && s.rank<=3 },
@@ -3956,8 +3977,10 @@ function statsFor(me, N){
   const seasonCount=SEASON_ORDER.filter(s=>seasonHit[s]).length;
   const regionsOwnedSet = me.regionsFR || new Set();
   const regionsCount = [...regionsOwnedSet].filter(c=>FR_REGIONS.some(r=>r.code===c)).length;
-  // Seuil dynamique par milieu = 5 % du catalogue de ce milieu (arrondi supérieur, min 1).
-  const habMin = c => Math.max(1, Math.ceil((HABITAT_TO_SCIS[c]||[]).length * 0.05));
+  // Seuil dynamique par milieu = 5 % des especes FRANCAISES de ce milieu (arrondi
+  // superieur, min 1). Utilise HABITAT_TO_SCIS_FR (intersection HABITATS x REAL_RARITY FR)
+  // au lieu du catalogue mondial : bien plus atteignable (Forest 6052 sp mondial -> ~200 FR).
+  const habMin = c => Math.max(1, Math.ceil((HABITAT_TO_SCIS_FR(c)||[]).length * 0.05));
   const habCovered = HABITAT_CATS.filter(c => habOwned[c].size >= habMin(c)).length;
   // Compte les photos de cette personne ayant ≥3 COEURS (bouton dédié type Instagram).
   // On ignore les autres emojis libres (seul le ❤️ compte) et le cœur que l'auteur
