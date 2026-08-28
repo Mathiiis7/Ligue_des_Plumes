@@ -1480,6 +1480,7 @@
         </select>
         <label class="explorer-lbl" id="mapEbRarityLbl" style="display:none;" title="Clique un ou plusieurs niveaux — sinon toutes les raretés">Rareté</label>
         <div id="mapEbRarityChips" class="rar-chips" style="display:none;">
+          <button type="button" class="rar-chip rar-exo on" data-rar="exo" title="Parc semi-libre / échappé (tier 0)">0</button>
           <button type="button" class="rar-chip on" data-rar="1" title="Omniprésent">1</button>
           <button type="button" class="rar-chip on" data-rar="2" title="Très commun">2</button>
           <button type="button" class="rar-chip on" data-rar="3" title="Commun">3</button>
@@ -1490,7 +1491,6 @@
           <button type="button" class="rar-chip on" data-rar="8" title="Très rare">8</button>
           <button type="button" class="rar-chip on" data-rar="9" title="Ultra rare">9</button>
           <button type="button" class="rar-chip on" data-rar="10" title="Exceptionnel (vagrant accidentel)">10</button>
-          <button type="button" class="rar-chip rar-exo on" data-rar="exo" title="Exotique / échappé">🚨</button>
           <button type="button" class="rar-chip" data-rar-all title="Cocher toutes les raretés">Tout</button>
           <button type="button" class="rar-chip" data-rar-none title="Décocher toutes les raretés">Vide</button>
         </div>
@@ -11237,8 +11237,18 @@ function renderTargets(){
   // Chips rareté (multi) : toggle exclu/inclus, persiste en localStorage.
   const chipsBox = $('#targetsTierChips');
   if(chipsBox && !chipsBox._init){
-    // Delegation click sur les chips (recreees a chaque render mais le container reste stable).
     chipsBox.addEventListener('click', e => {
+      // Boutons Tout / Vide : reset l'exclusion.
+      if(e.target.matches('[data-tier-all]')){
+        _targetsTierExcl = new Set();
+        try{ localStorage.setItem('mb-targets-tier-excl', '[]'); }catch(_){}
+        renderTargets(); return;
+      }
+      if(e.target.matches('[data-tier-none]')){
+        _targetsTierExcl = new Set([0,1,2,3,4,5,6,7,8,9,10]);
+        try{ localStorage.setItem('mb-targets-tier-excl', JSON.stringify([..._targetsTierExcl])); }catch(_){}
+        renderTargets(); return;
+      }
       const btn = e.target.closest('button[data-tier]');
       if(!btn) return;
       const t = parseInt(btn.dataset.tier, 10);
@@ -11364,14 +11374,19 @@ function renderTargets(){
   // Rendu des chips rarete : uniquement les tiers presents dans candidates, tries croissant.
   const tiersPresent = [...new Set(candidates.map(c => c.tier))].filter(t => t != null).sort((a, b) => a - b);
   if(chipsBox){
+    // Style unifie avec le filtre rareté de la carte (.rar-chip compact).
+    // Chaque chip = numero, couleur du tier quand active. Boutons Tout/Vide en fin.
     const chipsHtml = tiersPresent.map(t => {
       const on = !_targetsTierExcl.has(t);
       const lbl = (REAL_LABELS && REAL_LABELS[t]) || ('tier '+t);
       const color = realColor(t);
-      return `<button type="button" class="person-chip rar-chip-m${on?' on':''}" data-tier="${t}" style="--series:${color};" title="${esc(lbl)}"><span class="dot" style="background:${color}"></span>${t}</button>`;
+      const bgStyle = on ? `background:${color};` : '';
+      return `<button type="button" class="rar-chip${on?' on':''}" data-tier="${t}" style="${bgStyle}" title="${esc(lbl)}">${t}</button>`;
     }).join('');
-    // Preserve le label "Rareté :" au debut, remplace juste les chips.
-    chipsBox.innerHTML = '<span style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; align-self:center; margin-right:6px;">Rareté :</span>' + chipsHtml;
+    chipsBox.innerHTML = '<span style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; align-self:center; margin-right:6px;">Rareté</span>'
+      + chipsHtml
+      + '<button type="button" class="rar-chip" data-tier-all title="Cocher toutes les raretés">Tout</button>'
+      + '<button type="button" class="rar-chip" data-tier-none title="Décocher toutes les raretés">Vide</button>';
   }
   // Applique les filtres APRES le tri : proprietaire + rarete.
   let display = candidates;
@@ -11470,6 +11485,16 @@ function renderPokedex(){
     const tierChipsBox = document.getElementById('pkdxTierChips');
     if(tierChipsBox && !tierChipsBox._init){
       tierChipsBox.addEventListener('click', e => {
+        if(e.target.matches('[data-tier-all]')){
+          _pkdxTierExcl = new Set();
+          try{ localStorage.setItem('mb-pkdx-tier-excl', '[]'); }catch(_){}
+          _pkdxRender(); return;
+        }
+        if(e.target.matches('[data-tier-none]')){
+          _pkdxTierExcl = new Set([0,1,2,3,4,5,6,7,8,9,10]);
+          try{ localStorage.setItem('mb-pkdx-tier-excl', JSON.stringify([..._pkdxTierExcl])); }catch(_){}
+          _pkdxRender(); return;
+        }
         const btn = e.target.closest('button[data-tier]');
         if(!btn) return;
         const t = parseInt(btn.dataset.tier, 10);
@@ -11694,7 +11719,7 @@ function _pkdxRender(){
     if(ownedF === 'missing' && owned) continue;
     rows.push({ sci, nm, fam, tier, exo, owned });
   }
-  // Rendu des chips rareté : uniquement les tiers presents dans _pkdxAllSorted, tries.
+  // Rendu des chips rareté : style unifie avec le filtre carte (.rar-chip compact).
   const chipsBox = document.getElementById('pkdxTierChips');
   if(chipsBox){
     const tiersPresent = [...new Set(_pkdxAllSorted.map(r => r.tier))].filter(t => t != null).sort((a, b) => a - b);
@@ -11702,9 +11727,13 @@ function _pkdxRender(){
       const on = !_pkdxTierExcl.has(t);
       const lbl = (typeof REAL_LABELS === 'object' && REAL_LABELS[t]) || ('tier '+t);
       const color = realColor(t);
-      return `<button type="button" class="person-chip rar-chip-m${on?' on':''}" data-tier="${t}" style="--series:${color};" title="${esc(lbl)}"><span class="dot" style="background:${color}"></span>${t}</button>`;
+      const bgStyle = on ? `background:${color};` : '';
+      return `<button type="button" class="rar-chip${on?' on':''}" data-tier="${t}" style="${bgStyle}" title="${esc(lbl)}">${t}</button>`;
     }).join('');
-    chipsBox.innerHTML = '<span style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; align-self:center; margin-right:6px;">Rareté :</span>' + chipsHtml;
+    chipsBox.innerHTML = '<span style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; align-self:center; margin-right:6px;">Rareté</span>'
+      + chipsHtml
+      + '<button type="button" class="rar-chip" data-tier-all title="Cocher toutes les raretés">Tout</button>'
+      + '<button type="button" class="rar-chip" data-tier-none title="Décocher toutes les raretés">Vide</button>';
   }
   // Compteur : X vues / Y filtrees / Z total FR.
   const totalFR = _pkdxAllSorted.length;
