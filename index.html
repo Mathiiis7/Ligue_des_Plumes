@@ -570,17 +570,16 @@
   @keyframes xa-spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
   .xa-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
   .xa-bar { position:relative; height:114px; border-radius:6px; overflow:hidden; background:var(--surface-3); cursor:pointer; }
-  /* Sono : image entiere de xeno-canto etiree x2 en largeur (stretch, pas cover) pour
-     que la translation CSS translateX() deplace visuellement l'image sous le curseur. */
-  .xa-bar-sono { position:absolute; top:0; bottom:0; left:0; width:200%; height:100%; object-fit:fill; opacity:.9; pointer-events:none; transition:transform .06s linear; will-change:transform; }
+  /* Sono : image entiere de xeno-canto etiree pour remplir toute la bar (pleine hauteur
+     114px, pleine largeur). object-fit:fill stretch pour ne rien couper. */
+  .xa-bar-sono { position:absolute; inset:0; width:100%; height:100%; object-fit:fill; opacity:1; pointer-events:none; }
   .xa-bar-progress { position:absolute; top:0; bottom:0; left:0; width:0; background:linear-gradient(90deg, rgba(255,255,255,0), color-mix(in srgb, var(--accent) 20%, transparent)); pointer-events:none; z-index:1; }
   .xa-bar-fallback { position:absolute; inset:0; display:grid; place-items:center; color:var(--ink-3); font-size:11px; font-style:italic; }
-  /* Curseur central rouge, style Merlin. Visible pendant la lecture. */
-  .xa-bar-cursor { position:absolute; top:0; bottom:0; left:50%; margin-left:-1px; width:2px; background:#e63535; box-shadow:0 0 6px rgba(230,53,53,.7); pointer-events:none; z-index:3; opacity:0; transition:opacity .2s; }
-  .xa-player.playing .xa-bar-cursor { opacity:1; }
-  /* Playhead classique en dehors de la lecture (pause + progress bar traditionnelle). */
-  .xa-bar-playhead { position:absolute; top:-2px; bottom:-2px; width:3px; margin-left:-1.5px; background:var(--accent-2); box-shadow:0 0 6px color-mix(in srgb, var(--accent-2) 90%, transparent), 0 0 2px #fff; left:0; pointer-events:none; transition:left .06s linear; opacity:0; z-index:2; }
-  .xa-player.has-progress:not(.playing) .xa-bar-playhead { opacity:1; }
+  /* Curseur rouge qui avance de gauche a droite pendant la lecture, sur le spectrogramme. */
+  .xa-bar-cursor { position:absolute; top:0; bottom:0; left:0; margin-left:-1.5px; width:3px; background:#e63535; box-shadow:0 0 6px rgba(230,53,53,.8), 0 0 2px #fff; pointer-events:none; z-index:3; opacity:0; transition:opacity .2s, left .06s linear; }
+  .xa-player.has-progress .xa-bar-cursor { opacity:1; }
+  /* Playhead classique retire pour n'avoir qu'un seul indicateur */
+  .xa-bar-playhead { display:none; }
   .xa-time { font:600 10.5px/1 var(--mono, ui-monospace); color:var(--ink-3); display:flex; justify-content:space-between; padding:0 2px; }
   /* Section "autres enregistrements" : plus compact + separateur clair pour eviter la
      confusion avec le block suivant (chant vs cri). Le details a un border-bottom pour
@@ -9103,26 +9102,14 @@ function _wireCustomAudioPlayer(playerEl){
   const durEl = playerEl.querySelector('[data-xa-dur]');
   if(!playBtn) return;
   const fmt = s => { if(!isFinite(s) || s < 0) return '0:00'; const m = Math.floor(s/60), r = Math.floor(s%60); return m+':'+String(r).padStart(2,'0'); };
-  const sonoImg = playerEl.querySelector('.xa-bar-sono');
+  const cursor = playerEl.querySelector('[data-xa-cursor]');
   const updatePos = () => {
     if(!audio.duration) return;
     const pct = (audio.currentTime / audio.duration);
     if(progress) progress.style.width = (pct * 100) + '%';
-    if(playhead) playhead.style.left = (pct * 100) + '%';
+    if(cursor) cursor.style.left = (pct * 100) + '%';
     if(curEl) curEl.textContent = fmt(audio.currentTime);
-    // Pendant la lecture : translate le sono horizontalement pour que la position
-    // temporelle courante s'aligne sur le curseur central (fixe au milieu). Style Merlin.
-    // Sono est scale x2 en CSS (width:200%). Container = W. Sono = 2W.
-    // Position 'now' sur le sono = pct * 2W. On veut cette position au centre = W/2.
-    // Donc translateX = W/2 - pct * 2W = W * (0.5 - 2*pct).
-    if(sonoImg && !audio.paused){
-      const barW = playerEl.querySelector('.xa-bar')?.clientWidth || 0;
-      const tx = barW * (0.5 - 2 * pct);
-      sonoImg.style.transform = `translateX(${tx}px)`;
-    }
   };
-  audio.addEventListener('pause', () => { if(sonoImg) sonoImg.style.transform = ''; });
-  audio.addEventListener('ended', () => { if(sonoImg) sonoImg.style.transform = ''; });
   let rafId = null;
   const rafLoop = () => { updatePos(); if(!audio.paused && !audio.ended) rafId = requestAnimationFrame(rafLoop); };
   playBtn.addEventListener('click', () => {
