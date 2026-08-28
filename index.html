@@ -9981,10 +9981,22 @@ function openSpeciesModal(sci){
   const hdr = modal.querySelector('.sm-header');
   if(hdr){
     const habs = habitatsOf(sci) || [];
+    // Palette adaptee aux 12 categories Avonet (migration 2026-08).
+    // Chaque couleur choisie pour rester lisible en fond header (contraste texte auto via
+    // luminance sur .sm-header-dark-text).
     const HAB_COLORS = {
-      forestier:'#2d7a3f', hzhumide:'#1e6f6a', eaudouce:'#1e6091', pelagique:'#1a3d75',
-      littoral:'#3a92c4', montagne:'#5c6a7a', steppe:'#c99a3f', bocage:'#7ba236',
-      urbain:'#6b6f75', rocher:'#8b6b47'
+      forest:    '#2d7a3f',   // vert forêt
+      woodland:  '#5ba85f',   // vert bois clair
+      shrubland: '#8a9a3f',   // olive/kaki
+      grassland: '#c99a3f',   // ocre/prairie
+      wetland:   '#1e6f6a',   // bleu-vert (roselières)
+      riverine:  '#1e6091',   // bleu eau douce
+      marine:    '#1a3d75',   // bleu marine
+      coastal:   '#3a92c4',   // bleu clair côte
+      rock:      '#8b6b47',   // brun rocher
+      desert:    '#d19a5b',   // sable
+      humanmod:  '#6b6f75',   // gris urbain
+      aerial:    '#6ab4d8',   // bleu ciel
     };
     const c = (habs.length && HAB_COLORS[habs[0]]) || sciColor(sci);
     hdr.style.background = `linear-gradient(135deg, ${c} 0%, color-mix(in srgb, ${c} 55%, #000) 100%)`;
