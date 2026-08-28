@@ -586,14 +586,17 @@
   .xa-zoom button:disabled { opacity:.4; cursor:not-allowed; }
   /* Canvas spectro live : superpose sur le sono, semi-transparent, dessine en temps reel.
      Uniquement visible quand la piste joue et que le Web Audio API a bien pu setup. */
-  /* Canvas spectro live style Merlin : sons dessines en noir sur fond gris clair.
-     Cache le sono statique quand actif pour ne pas melanger. */
-  .xa-spectro { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; opacity:0; transition:opacity .2s; z-index:2; background:#dfe1e5; }
-  .xa-player.playing .xa-spectro.ready { opacity:1; }
-  /* Playhead et progress bar : caches quand le spectro live tourne (leur logique
-     'position globale' contredit le waterfall qui defile en temps reel). */
-  .xa-player.playing .xa-spectro.ready ~ .xa-bar-progress,
-  .xa-player.playing .xa-spectro.ready ~ .xa-bar-playhead { display:none; }
+  /* Canvas spectro live : desactive au profit du sono statique scrolled sous un curseur fixe. */
+  .xa-spectro { display:none; }
+  /* Curseur fixe au milieu (style Merlin) quand ca joue : ligne verticale au centre du bar.
+     Le sono lui-meme scroll (via transform) sous ce curseur. */
+  .xa-player.playing .xa-bar-cursor { opacity:1; }
+  .xa-bar-cursor { position:absolute; top:0; bottom:0; left:50%; margin-left:-1px; width:2px; background:#e63535; box-shadow:0 0 4px rgba(230,53,53,.6); pointer-events:none; opacity:0; transition:opacity .2s; z-index:3; }
+  /* Le sono statique se translate horizontalement pour que la position temporelle courante
+     s'aligne sur le curseur central. En playing, cache l'ancienne progress qui n'a plus de sens. */
+  .xa-player.playing .xa-bar-progress,
+  .xa-player.playing .xa-bar-playhead { display:none; }
+  .xa-player.playing .xa-bar-sono { transition:transform .06s linear; }
   .xa-time { font:600 10.5px/1 var(--mono, ui-monospace); color:var(--ink-3); display:flex; justify-content:space-between; padding:0 2px; }
   /* Section "autres enregistrements" : plus compact + separateur clair pour eviter la
      confusion avec le block suivant (chant vs cri). Le details a un border-bottom pour
@@ -9028,11 +9031,11 @@ function _renderSpeciesAudioBlock(container, label, primaryId, list){
           <div class="xa-bar-scroll" data-xa-scroll>
             <div class="xa-bar-inner" data-xa-inner>
               ${sono}
-              <canvas class="xa-spectro" data-xa-spectro></canvas>
               <div class="xa-bar-progress"></div>
               <div class="xa-bar-playhead"></div>
             </div>
           </div>
+          <div class="xa-bar-cursor" data-xa-cursor></div>
         </div>
         <div class="xa-time"><span data-xa-cur>0:00</span><span data-xa-dur>${esc(r.length||'--:--')}</span></div>
       </div>
@@ -9113,12 +9116,21 @@ function _wireCustomAudioPlayer(playerEl){
   const durEl = playerEl.querySelector('[data-xa-dur]');
   if(!playBtn) return;
   const fmt = s => { if(!isFinite(s) || s < 0) return '0:00'; const m = Math.floor(s/60), r = Math.floor(s%60); return m+':'+String(r).padStart(2,'0'); };
+  const scrollWrapEarly = playerEl.querySelector('[data-xa-scroll]');
+  const innerEarly = playerEl.querySelector('[data-xa-inner]');
   const updatePos = () => {
     if(!audio.duration) return;
     const pct = (audio.currentTime / audio.duration) * 100;
     if(progress) progress.style.width = pct + '%';
     if(playhead) playhead.style.left = pct + '%';
     if(curEl) curEl.textContent = fmt(audio.currentTime);
+    // Style Merlin : pendant la lecture, scroll le sono pour que la position temporelle
+    // courante s'aligne sur le curseur central (fixe au milieu du bar visible).
+    if(!audio.paused && scrollWrapEarly && innerEarly){
+      const centerX = scrollWrapEarly.clientWidth / 2;
+      const currentX = (audio.currentTime / audio.duration) * innerEarly.clientWidth;
+      scrollWrapEarly.scrollLeft = Math.max(0, currentX - centerX);
+    }
   };
   let rafId = null;
   const rafLoop = () => { updatePos(); if(!audio.paused && !audio.ended) rafId = requestAnimationFrame(rafLoop); };
@@ -9162,7 +9174,7 @@ function _wireCustomAudioPlayer(playerEl){
   const scrollWrap = playerEl.querySelector('[data-xa-scroll]');
   const zoomIn = playerEl.querySelector('[data-xa-zoom-in]');
   const zoomOut = playerEl.querySelector('[data-xa-zoom-out]');
-  let zoomLevel = 1;   // 1x, 2x, 4x, 8x
+  let zoomLevel = 4;   // 1x, 2x, 4x, 8x. Defaut 4x pour style Merlin (curseur central, scroll)
   const applyZoom = () => {
     if(!inner) return;
     inner.style.width = (100 * zoomLevel) + '%';
@@ -9177,6 +9189,8 @@ function _wireCustomAudioPlayer(playerEl){
   };
   if(zoomIn) zoomIn.addEventListener('click', e => { e.stopPropagation(); zoomLevel = Math.min(8, zoomLevel * 2); applyZoom(); });
   if(zoomOut) zoomOut.addEventListener('click', e => { e.stopPropagation(); zoomLevel = Math.max(1, zoomLevel / 2); applyZoom(); });
+  // Init : applique le zoom par defaut (4x) au chargement du player
+  applyZoom();
 
   // SPECTROGRAMME LIVE : Web Audio API + Canvas. Setup au 1er play (autoplay policy).
   // Silencieux si CORS bloque : le spectro reste cache, l'audio joue quand meme.
