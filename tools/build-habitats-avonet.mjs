@@ -50,7 +50,8 @@ const AVONET_TO_ID = {
   'Desert': 'desert',
   'Human Modified': 'humanmod',
 };
-const CAT_ORDER = ['forest','woodland','shrubland','grassland','wetland','riverine','marine','coastal','rock','desert','humanmod'];
+// Categories : 11 Avonet + 1 additionnel 'aerial' (Primary.Lifestyle = Aerial)
+const CAT_ORDER = ['forest','woodland','shrubland','grassland','wetland','riverine','marine','coastal','rock','desert','humanmod','aerial'];
 const LABELS_FR = {
   forest:    '🌲 Forêt',
   woodland:  '🌳 Bois / savane arborée',
@@ -63,6 +64,7 @@ const LABELS_FR = {
   rock:      '🪨 Rocher / falaises',
   desert:    '🏜️ Désert',
   humanmod:  '🏙️ Modifié par l\'homme',
+  aerial:    '🌬️ Aériens (martinets, hirondelles)',
 };
 
 console.log('[1] Lecture Avonet xlsx (AVONET2_eBird)...');
@@ -72,20 +74,40 @@ if (!ws) { console.error('Sheet AVONET2_eBird introuvable'); process.exit(1); }
 const rows = XLSX.utils.sheet_to_json(ws);
 console.log(`    ${rows.length} lignes.`);
 
-console.log('\n[2] Construction du dict HABITATS (sci -> [catId])...');
+console.log('\n[2] Construction du dict HABITATS (sci -> [catId, ...])...');
+// Regles multi-tags :
+//   - primary = Habitat (Avonet)
+//   - +aerial si Primary.Lifestyle = 'Aerial' (martinets, hirondelles, engoulevents)
+//   - +woodland si Habitat = 'Forest' AND Density = 3 (foret claire)
+//   - +forest si Habitat = 'Woodland' AND Density = 1 (bois dense)
 const HABITATS = {};
 const skipped = { na: 0, unknown: 0 };
+let aerialAdded = 0, wdAdded = 0, fdAdded = 0;
 for (const r of rows) {
   const sci = String(r.Species2 || '').trim().toLowerCase();
   const hab = String(r.Habitat || '').trim();
+  const lifestyle = String(r['Primary.Lifestyle'] || '').trim();
+  const density = Number(r['Habitat.Density']);
   if (!sci) continue;
   if (hab === 'NA' || !hab) { skipped.na++; continue; }
   const id = AVONET_TO_ID[hab];
   if (!id) { skipped.unknown++; console.warn('  Habitat inconnu :', hab); continue; }
-  HABITATS[sci] = [id];   // 1 cat par espece (garde le format Array pour compat)
+  const tags = new Set([id]);
+  if (lifestyle === 'Aerial') { tags.add('aerial'); aerialAdded++; }
+  if (id === 'forest' && density === 3) { tags.add('woodland'); wdAdded++; }
+  if (id === 'woodland' && density === 1) { tags.add('forest'); fdAdded++; }
+  HABITATS[sci] = [...tags];
 }
 console.log(`    HABITATS : ${Object.keys(HABITATS).length} especes couvertes.`);
 console.log(`    Skipped NA : ${skipped.na}, unknown : ${skipped.unknown}`);
+console.log(`    Tags secondaires ajoutes :`);
+console.log(`      +aerial (Aerial lifestyle)     : ${aerialAdded}`);
+console.log(`      +woodland (Forest + Density 3) : ${wdAdded}`);
+console.log(`      +forest (Woodland + Density 1) : ${fdAdded}`);
+// Distribution nb de tags par espece
+const nbTags = {};
+for (const arr of Object.values(HABITATS)) nbTags[arr.length] = (nbTags[arr.length] || 0) + 1;
+console.log(`    Repartition tags/espece :`, nbTags);
 
 // Distribution
 const dist = {};
