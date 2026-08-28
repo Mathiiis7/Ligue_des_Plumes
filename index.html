@@ -11055,27 +11055,28 @@ function renderTargets(){
       const cat = exoticCategoryInCountry(sci, ccT) || _exoticCategory(sci);
       return cat === 'X' || cat === 'C';
     })())) continue;
-    // Filtre regional : si region choisie, espece doit etre presente >= REGION_MIN_FREQ
-    // ce mois dans cette region (via bar chart eBird mensuel regional, tjr dispo).
+    // Filtre regional : si region choisie, espece doit etre presente dans cette region.
+    // 2 sources possibles (par ordre de preference) :
+    //   1. Bar chart regional mensuel (FR/ES/IT/GB/PT) : freq >= REGION_MIN_FREQ
+    //   2. S&T weekly regional (ME et fallback) : wReg > 0 la semaine courante
+    // Un pays comme ME n'a que la source #2, il faut donc que ce filtre accepte les 2.
     let regionalFreq = 0;
-    if(regionSelected){
-      const arr = regionData && regionData[sci];
-      if(!arr || arr.length !== 12) continue;   // pas de data regionale pour cette espece
-      regionalFreq = arr[curMonth] || 0;
-      if(regionalFreq < REGION_MIN_FREQ) continue;
-    }
-    // S&T weekly regional pour cette espece (si disponible dans stRegionData).
-    // Si non trouvee -> pas presente dans cette region ce mois (deja filtre au dessus
-    // mais data S&T peut manquer meme si bar chart mensuel indique presente rarement).
     let wReg = null;
-    if(hasRegionalST){
-      const entry = stRegionData[sci];
-      if(entry && Array.isArray(entry.w) && entry.w.length === 52){
-        wReg = entry.w[curWeek] || 0;
-        // Si S&T regional dit 0 cette semaine, on skip meme si mensuel bar chart dit
-        // present (le regional weekly est plus precis temporellement).
+    if(regionSelected){
+      const hasBarReg = regionData && regionData[sci] && regionData[sci].length === 12;
+      const hasStReg = hasRegionalST && stRegionData[sci] && Array.isArray(stRegionData[sci].w) && stRegionData[sci].w.length === 52;
+      // Applique filtre bar chart si dispo
+      if(hasBarReg){
+        regionalFreq = regionData[sci][curMonth] || 0;
+        if(regionalFreq < REGION_MIN_FREQ) continue;
+      }
+      // Applique filtre S&T weekly si dispo
+      if(hasStReg){
+        wReg = stRegionData[sci].w[curWeek] || 0;
         if(wReg <= 0) continue;
       }
+      // Si aucune source regionale dispo pour cette espece, elle est absente de cette region -> skip
+      if(!hasBarReg && !hasStReg) continue;
     }
     // Score de facilite :
     // - Region avec S&T weekly regional dispo : tri direct par densite regionale de la
