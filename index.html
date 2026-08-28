@@ -1692,22 +1692,13 @@
           <option value="urbain">🏙️ Urbain</option>
           <option value="rocher">🪨 Rocher</option>
         </select>
-        <select id="pkdxTier" class="filt-sel">
-          <option value="">Toutes raretés</option>
-          <option value="exo">0 · Exotiques seulement</option>
-          <option value="1">1 · Omniprésent</option><option value="2">2 · Très commun</option>
-          <option value="3">3 · Commun</option><option value="4">4 · Assez commun</option>
-          <option value="5">5 · Peu commun</option><option value="6">6 · Assez rare</option>
-          <option value="7">7 · Rare</option><option value="8">8 · Très rare</option>
-          <option value="9">9 · Ultra rare</option>
-          <option value="10">10 · Exceptionnel</option>
-        </select>
         <select id="pkdxOwned" class="filt-sel">
           <option value="">Toutes</option>
           <option value="owned">Vues seulement</option>
           <option value="missing">Manquantes seulement</option>
         </select>
       </div>
+      <div id="pkdxTierChips" style="display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 4px; padding:8px 10px; background:var(--surface-2); border-radius:8px;"></div>
       <div id="pkdxGrid" class="pkdx-grid"></div>
       <div id="pkdxEmpty" class="help" style="text-align:center; padding:30px; display:none;">Aucune espèce ne correspond à ces filtres.</div>
     </section>
@@ -10835,9 +10826,12 @@ function renderQuizInit(){ _quizRefreshStatsUI(); }
 
 /* ---------------- Pokedex : grille de toutes les especes FR ---------------- */
 // Etat local pour les filtres. Persistant en localStorage pour retrouver la meme vue.
-let _pkdxFilters = { search:'', country:'FR', family:'', habitat:'', tier:'', owned:'' };
+let _pkdxFilters = { search:'', country:'FR', family:'', habitat:'', owned:'' };
 try{ Object.assign(_pkdxFilters, JSON.parse(localStorage.getItem('mb-pkdx-filters')||'{}')); }catch(_){}
 if(!_pkdxFilters.country) _pkdxFilters.country = 'FR';
+// Rarete filtree via chips (Set des tiers EXCLUS). Coche = affiche, decoche = cache.
+let _pkdxTierExcl = new Set();
+try{ const s = localStorage.getItem('mb-pkdx-tier-excl'); if(s) _pkdxTierExcl = new Set(JSON.parse(s)); }catch(_){}
 let _pkdxInit = false;
 // Photo cache : reutilise _spPhotoCache si defini, sinon Map locale.
 const _pkdxPhotos = new Map();
@@ -11172,9 +11166,22 @@ function renderPokedex(){
       famSel.innerHTML = '<option value="">Toutes familles</option>' + ordered.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join('');
     }
     // Restore filtres persistes. Country n'est plus un select (bouton modal) : sync via helper.
-    for(const k of ['search','family','habitat','tier','owned']){
+    for(const k of ['search','family','habitat','owned']){
       const el = document.getElementById('pkdx' + k.charAt(0).toUpperCase() + k.slice(1));
       if(el && _pkdxFilters[k] != null) el.value = _pkdxFilters[k];
+    }
+    // Chips rareté : delegation click sur le container. Toggle exclude/include.
+    const tierChipsBox = document.getElementById('pkdxTierChips');
+    if(tierChipsBox && !tierChipsBox._init){
+      tierChipsBox.addEventListener('click', e => {
+        const btn = e.target.closest('button[data-tier]');
+        if(!btn) return;
+        const t = parseInt(btn.dataset.tier, 10);
+        if(_pkdxTierExcl.has(t)) _pkdxTierExcl.delete(t); else _pkdxTierExcl.add(t);
+        try{ localStorage.setItem('mb-pkdx-tier-excl', JSON.stringify([..._pkdxTierExcl])); }catch(_){}
+        _pkdxRender();
+      });
+      tierChipsBox._init = true;
     }
     // (Le sync du bouton pays + le click handler sont attaches plus bas dans le meme init.)
     // Debounce sur la recherche.
@@ -11183,7 +11190,7 @@ function renderPokedex(){
       clearTimeout(_searchTimer);
       _searchTimer = setTimeout(() => { _pkdxFilters.search = e.target.value; _pkdxSaveFilters(); _pkdxRender(); }, 250);
     });
-    ['pkdxFamily','pkdxHabitat','pkdxTier','pkdxOwned'].forEach(id => {
+    ['pkdxFamily','pkdxHabitat','pkdxOwned'].forEach(id => {
       const el = document.getElementById(id);
       if(el) el.addEventListener('change', e => {
         const k = id.replace('pkdx','').toLowerCase();
@@ -11266,12 +11273,6 @@ function _pkdxRender(){
   const q = _mapNorm(_pkdxFilters.search || '');
   const famF = _pkdxFilters.family || '';
   const habF = _pkdxFilters.habitat || '';
-  // Tier peut etre soit un chiffre 0..9 soit la string "exo" (filtre exotiques seulement).
-  // tierRaw '' (vide) = pas de filtre. '0' = filtre tier 0 (parcs semi-libres) EXPLICITE.
-  const tierRaw = _pkdxFilters.tier || '';
-  const tierExoOnly = tierRaw === 'exo';
-  const tierActive = tierRaw !== '' && !tierExoOnly;
-  const tierF = tierActive ? +tierRaw : null;
   const ownedF = _pkdxFilters.owned || '';
   const rows = [];
   for(const r of _pkdxAllSorted){
@@ -11280,12 +11281,23 @@ function _pkdxRender(){
     if(famF && fam !== famF) continue;
     const habs = habitatsOf(sci) || [];
     if(habF && !habs.includes(habF)) continue;
-    if(tierActive && tier !== tierF) continue;
-    if(tierExoOnly && !exo) continue;
+    if(_pkdxTierExcl.has(tier)) continue;
     const owned = _mineHasStrict(mine, sci);
     if(ownedF === 'owned' && !owned) continue;
     if(ownedF === 'missing' && owned) continue;
     rows.push({ sci, nm, fam, tier, exo, owned });
+  }
+  // Rendu des chips rareté : uniquement les tiers presents dans _pkdxAllSorted, tries.
+  const chipsBox = document.getElementById('pkdxTierChips');
+  if(chipsBox){
+    const tiersPresent = [...new Set(_pkdxAllSorted.map(r => r.tier))].filter(t => t != null).sort((a, b) => a - b);
+    const chipsHtml = tiersPresent.map(t => {
+      const on = !_pkdxTierExcl.has(t);
+      const lbl = (typeof REAL_LABELS === 'object' && REAL_LABELS[t]) || ('tier '+t);
+      const color = realColor(t);
+      return `<button type="button" class="person-chip rar-chip-m${on?' on':''}" data-tier="${t}" style="--series:${color};" title="${esc(lbl)}"><span class="dot" style="background:${color}"></span>${t}</button>`;
+    }).join('');
+    chipsBox.innerHTML = '<span style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; align-self:center; margin-right:6px;">Rareté :</span>' + chipsHtml;
   }
   // Compteur : X vues / Y filtrees / Z total FR.
   const totalFR = _pkdxAllSorted.length;
