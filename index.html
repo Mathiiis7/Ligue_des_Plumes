@@ -9102,6 +9102,7 @@ function _wireCustomAudioPlayer(playerEl){
   // quel autre player via le mutex.
   audio._xaCancel = () => {
     audio._xaLoadPending = false;
+    if(audio._xaPlayTimeout){ clearTimeout(audio._xaPlayTimeout); audio._xaPlayTimeout = null; }
     try{ audio.pause(); }catch(_){}
     try{ audio.currentTime = 0; }catch(_){}
     const btn = playerEl.querySelector('[data-xa-play]');
@@ -9173,13 +9174,24 @@ function _wireCustomAudioPlayer(playerEl){
   });
   const hasDur = () => isFinite(audio.duration) && audio.duration > 0;
   audio.addEventListener('play', () => {
-    playBtn.textContent = '⏸'; playBtn.classList.add('on'); playBtn.classList.remove('loading');
+    // audio.play() vient de resoudre mais pas encore de son produit. Garde spinner
+    // jusqu'a 'playing' (frames reellement decodees/jouees). Timeout 6s de safety.
+    playBtn.textContent = '⏳'; playBtn.classList.add('on','loading');
     playerEl.classList.add('playing','has-progress');
     if(rafId) cancelAnimationFrame(rafId);
     rafId = requestAnimationFrame(rafLoop);
+    if(audio._xaPlayTimeout) clearTimeout(audio._xaPlayTimeout);
+    audio._xaPlayTimeout = setTimeout(() => {
+      // Toujours pas de playback reel apres 6s : probable bug reseau/codec, cancel.
+      if(playBtn.classList.contains('loading')) audio._xaCancel();
+    }, 6000);
   });
   audio.addEventListener('waiting', () => { playBtn.textContent = '⏳'; playBtn.classList.add('loading'); });
-  audio.addEventListener('playing', () => { playBtn.textContent = '⏸'; playBtn.classList.remove('loading'); });
+  audio.addEventListener('playing', () => {
+    // Playback reel demarre : bascule enfin sur ⏸.
+    playBtn.textContent = '⏸'; playBtn.classList.remove('loading');
+    if(audio._xaPlayTimeout){ clearTimeout(audio._xaPlayTimeout); audio._xaPlayTimeout = null; }
+  });
   audio.addEventListener('canplay', () => { if(audio.paused){ playBtn.textContent = '▶'; playBtn.classList.remove('loading'); } });
   // Duree parfois connue seulement apres 'durationchange' (post playing sur MP3 sans header).
   // Des qu'on l'a, on retire le spinner et updatePos commencera a bouger le curseur.
