@@ -27,7 +27,7 @@ import { dirname, join } from 'node:path';
 const __dir = dirname(fileURLToPath(import.meta.url));
 const OUT = join(__dir, 'exotic-per-country.generated.js');
 const KEY = 'dbflh4atmsom';
-const COUNTRIES = ['FR', 'ME'];
+const COUNTRIES = ['FR', 'ME', 'ES', 'IT', 'GB', 'PT'];
 
 // Charge REAL_RARITY (bar chart eBird FR) pour discriminer les vrais exotiques des
 // especes sauvages courantes qui apparaissent une fois marquees X (override individuel
