@@ -570,11 +570,23 @@
   @keyframes xa-spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
   .xa-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
   .xa-bar { position:relative; height:38px; border-radius:6px; overflow:hidden; background:var(--surface-3); cursor:pointer; }
+  /* Zoom sono : conteneur scrollable qui contient sono + progress + playhead. Le zoom
+     etire la width de l'image sono pour voir les details fins. Scroll horizontal. */
+  .xa-bar-scroll { position:absolute; inset:0; overflow-x:auto; overflow-y:hidden; scrollbar-width:thin; }
+  .xa-bar-inner { position:relative; height:100%; width:100%; min-width:100%; }
   .xa-bar-sono { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.85; pointer-events:none; }
   .xa-bar-progress { position:absolute; top:0; bottom:0; left:0; width:0; background:linear-gradient(90deg, rgba(255,255,255,0), color-mix(in srgb, var(--accent) 30%, transparent)); pointer-events:none; transition:width .05s linear; }
   .xa-bar-playhead { position:absolute; top:-2px; bottom:-2px; width:3px; margin-left:-1.5px; background:var(--accent-2); box-shadow:0 0 6px color-mix(in srgb, var(--accent-2) 90%, transparent), 0 0 2px #fff; left:0; pointer-events:none; transition:left .06s linear; opacity:0; z-index:2; }
   .xa-player.has-progress .xa-bar-playhead { opacity:1; }
   .xa-bar-fallback { position:absolute; inset:0; display:grid; place-items:center; color:var(--ink-3); font-size:11px; font-style:italic; }
+  /* Boutons zoom pour le sono. Compacts, a droite du bar. */
+  .xa-zoom { display:inline-flex; gap:2px; margin-left:6px; }
+  .xa-zoom button { flex:none; width:24px; height:24px; padding:0; border:1px solid var(--line); background:var(--surface); color:var(--ink-2); border-radius:4px; cursor:pointer; font:600 12px system-ui; display:grid; place-items:center; }
+  .xa-zoom button:hover { background:var(--surface-2); }
+  .xa-zoom button:disabled { opacity:.4; cursor:not-allowed; }
+  /* Canvas spectro live : superpose sur le sono, semi-transparent, dessine en temps reel */
+  .xa-spectro { position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .2s; z-index:1; }
+  .xa-player.playing .xa-spectro { opacity:0.75; }
   .xa-time { font:600 10.5px/1 var(--mono, ui-monospace); color:var(--ink-3); display:flex; justify-content:space-between; padding:0 2px; }
   /* Section "autres enregistrements" : plus compact + separateur clair pour eviter la
      confusion avec le block suivant (chant vs cri). Le details a un border-bottom pour
@@ -8999,17 +9011,27 @@ function _renderSpeciesAudioBlock(container, label, primaryId, list){
   };
   const playerHtml = (r, audioId) => {
     const sono = r.sono ? `<img class="xa-bar-sono" src="${esc(r.sono)}" alt="Spectrogramme" onerror="this.remove()">` : `<div class="xa-bar-fallback">Pas de spectrogramme</div>`;
-    // Pas d'element audio dans le HTML : cree via new Audio() dans _wireCustomAudioPlayer
-    // (evite les problemes de events qui ne firent pas sur des audio hidden).
+    // Pas d'element audio dans le HTML : cree via new Audio() dans _wireCustomAudioPlayer.
+    // Nouvelle structure : .xa-bar contient un scrollable .xa-bar-scroll -> .xa-bar-inner
+    // (largeur = 100% * zoomLevel) qui contient sono img + canvas spectro live + progress + playhead.
     return `<div class="xa-player" data-xa-src="${esc(r.file)}"${audioId?` data-xa-id="${esc(audioId)}"`:''}>
       <button type="button" class="xa-play" data-xa-play aria-label="Lire / pause">▶</button>
       <div class="xa-body">
         <div class="xa-bar" data-xa-seek>
-          ${sono}
-          <div class="xa-bar-progress"></div>
-          <div class="xa-bar-playhead"></div>
+          <div class="xa-bar-scroll" data-xa-scroll>
+            <div class="xa-bar-inner" data-xa-inner>
+              ${sono}
+              <canvas class="xa-spectro" data-xa-spectro></canvas>
+              <div class="xa-bar-progress"></div>
+              <div class="xa-bar-playhead"></div>
+            </div>
+          </div>
         </div>
         <div class="xa-time"><span data-xa-cur>0:00</span><span data-xa-dur>${esc(r.length||'--:--')}</span></div>
+      </div>
+      <div class="xa-zoom">
+        <button type="button" data-xa-zoom-out title="Zoom -">−</button>
+        <button type="button" data-xa-zoom-in title="Zoom +">+</button>
       </div>
     </div>`;
   };
@@ -9117,12 +9139,87 @@ function _wireCustomAudioPlayer(playerEl){
   if(seekEl){
     seekEl.addEventListener('click', e => {
       if(!audio.duration){ audio.load(); return; }   // load si pas encore de metadata
-      const r = seekEl.getBoundingClientRect();
-      const p = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+      // Seek relatif a inner (qui peut etre zoome), pas au bar visible
+      const inner = playerEl.querySelector('[data-xa-inner]');
+      const target = inner || seekEl;
+      const rct = target.getBoundingClientRect();
+      const p = Math.max(0, Math.min(1, (e.clientX - rct.left) / rct.width));
       audio.currentTime = p * audio.duration;
       updatePos();
     });
   }
+  // ZOOM : boutons +/- multiplient la width de xa-bar-inner
+  const inner = playerEl.querySelector('[data-xa-inner]');
+  const scrollWrap = playerEl.querySelector('[data-xa-scroll]');
+  const zoomIn = playerEl.querySelector('[data-xa-zoom-in]');
+  const zoomOut = playerEl.querySelector('[data-xa-zoom-out]');
+  let zoomLevel = 1;   // 1x, 2x, 4x, 8x
+  const applyZoom = () => {
+    if(!inner) return;
+    inner.style.width = (100 * zoomLevel) + '%';
+    if(zoomOut) zoomOut.disabled = zoomLevel <= 1;
+    if(zoomIn) zoomIn.disabled = zoomLevel >= 8;
+    // Auto-scroll pour garder le playhead visible
+    if(scrollWrap && audio.duration){
+      const pct = audio.currentTime / audio.duration;
+      const targetLeft = pct * scrollWrap.scrollWidth - scrollWrap.clientWidth / 2;
+      scrollWrap.scrollLeft = Math.max(0, targetLeft);
+    }
+  };
+  if(zoomIn) zoomIn.addEventListener('click', e => { e.stopPropagation(); zoomLevel = Math.min(8, zoomLevel * 2); applyZoom(); });
+  if(zoomOut) zoomOut.addEventListener('click', e => { e.stopPropagation(); zoomLevel = Math.max(1, zoomLevel / 2); applyZoom(); });
+
+  // SPECTROGRAMME LIVE : Web Audio API + Canvas. Setup lazy au 1er play (autoplay policy).
+  const canvas = playerEl.querySelector('[data-xa-spectro]');
+  let audioCtx = null, analyser = null, sourceNode = null, spectroRaf = null;
+  const setupSpectro = () => {
+    if(audioCtx || !canvas) return;
+    try{
+      audio.crossOrigin = 'anonymous';   // requis pour MediaElementSource
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return;
+      audioCtx = new AC();
+      sourceNode = audioCtx.createMediaElementSource(audio);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 512;
+      sourceNode.connect(analyser);
+      analyser.connect(audioCtx.destination);
+    }catch(e){ audioCtx = null; }
+  };
+  const drawSpectro = () => {
+    if(!canvas || !analyser) return;
+    const w = canvas.clientWidth || canvas.width;
+    const h = canvas.clientHeight || canvas.height;
+    if(canvas.width !== w) canvas.width = w;
+    if(canvas.height !== h) canvas.height = h;
+    const ctx2 = canvas.getContext('2d');
+    const bins = analyser.frequencyBinCount;   // = fftSize/2 = 256
+    const data = new Uint8Array(bins);
+    analyser.getByteFrequencyData(data);
+    ctx2.clearRect(0, 0, w, h);
+    const barW = w / bins;
+    // Gradient bleu -> vert -> jaune -> rouge selon amplitude, style Merlin
+    for(let i = 0; i < bins; i++){
+      const v = data[i] / 255;   // 0..1
+      if(v < 0.03) continue;
+      const barH = v * h;
+      // HSL : bleu (240) faible amplitude -> rouge (0) forte
+      const hue = 240 - v * 240;
+      ctx2.fillStyle = `hsl(${hue}, 90%, 55%)`;
+      ctx2.fillRect(i * barW, h - barH, Math.max(1, barW - 0.5), barH);
+    }
+    if(!audio.paused && !audio.ended) spectroRaf = requestAnimationFrame(drawSpectro);
+  };
+  audio.addEventListener('play', () => {
+    setupSpectro();
+    if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
+    if(analyser){
+      if(spectroRaf) cancelAnimationFrame(spectroRaf);
+      spectroRaf = requestAnimationFrame(drawSpectro);
+    }
+  });
+  audio.addEventListener('pause', () => { if(spectroRaf){ cancelAnimationFrame(spectroRaf); spectroRaf = null; } });
+  audio.addEventListener('ended', () => { if(spectroRaf){ cancelAnimationFrame(spectroRaf); spectroRaf = null; } });
 }
 // Chips info (rareté + famille + habitats + IUCN) sous le titre de la fiche.
 // Palette et labels IUCN standard, cohérents avec eBird / IUCN Red List. Applique
