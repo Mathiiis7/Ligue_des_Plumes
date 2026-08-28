@@ -570,8 +570,9 @@
   @keyframes xa-spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
   .xa-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
   .xa-bar { position:relative; height:114px; border-radius:6px; overflow:hidden; background:var(--surface-3); cursor:pointer; }
-  /* Sono : scale x2 en largeur pour permettre le defilement sous un curseur central. */
-  .xa-bar-sono { position:absolute; top:0; bottom:0; left:0; width:200%; height:100%; object-fit:cover; opacity:.9; pointer-events:none; transition:transform .06s linear; will-change:transform; }
+  /* Sono : image entiere de xeno-canto etiree x2 en largeur (stretch, pas cover) pour
+     que la translation CSS translateX() deplace visuellement l'image sous le curseur. */
+  .xa-bar-sono { position:absolute; top:0; bottom:0; left:0; width:200%; height:100%; object-fit:fill; opacity:.9; pointer-events:none; transition:transform .06s linear; will-change:transform; }
   .xa-bar-progress { position:absolute; top:0; bottom:0; left:0; width:0; background:linear-gradient(90deg, rgba(255,255,255,0), color-mix(in srgb, var(--accent) 20%, transparent)); pointer-events:none; z-index:1; }
   .xa-bar-fallback { position:absolute; inset:0; display:grid; place-items:center; color:var(--ink-3); font-size:11px; font-style:italic; }
   /* Curseur central rouge, style Merlin. Visible pendant la lecture. */
