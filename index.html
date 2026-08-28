@@ -11194,7 +11194,7 @@ function renderTargets(){
   const sel = $('#targetsRegion');
   if(sel && !_targetsRegionInit){
     const regList = REGIONS_BY_COUNTRY[ccT] || [];
-    const natLbl = (FLAG_EMOJI_TGT[ccT] || '') + ' ' + (regT.name || ccT) + ' entier';
+    const natLbl = 'Toutes';
     sel.innerHTML = `<option value="">${esc(natLbl)}</option>`
       + regList.map(r => `<option value="${esc(r.code)}">${esc(r.name)}</option>`).join('');
     sel.value = _targetsRegion || '';
