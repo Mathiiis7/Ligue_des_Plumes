@@ -3820,11 +3820,22 @@ const REGIONS_BY_COUNTRY = {
     { code:'IT-82', name:'Sicile' },
     { code:'IT-88', name:'Sardaigne' },
   ],
+  // GB : 12 subdivisions = 3 nations (Écosse, Pays de Galles, Irlande du Nord)
+  // + 9 régions statistiques ONS de l'Angleterre (agrégat de 49 counties admin2 eBird).
+  // Voir tools/download-bar-charts-uk-counties.mjs pour le mapping county -> ONS region.
   GB: [
-    { code:'GB-ENG', name:'Angleterre' },
-    { code:'GB-SCT', name:'Écosse' },
-    { code:'GB-WLS', name:'Pays de Galles' },
-    { code:'GB-NIR', name:'Irlande du Nord' },
+    { code:'GB-SCT',  name:'Écosse' },
+    { code:'GB-WLS',  name:'Pays de Galles' },
+    { code:'GB-NIR',  name:'Irlande du Nord' },
+    { code:'GB-LON',  name:'Grand Londres' },
+    { code:'GB-SE',   name:'Sud-Est Angleterre' },
+    { code:'GB-SW',   name:'Sud-Ouest Angleterre' },
+    { code:'GB-EE',   name:"Est de l'Angleterre" },
+    { code:'GB-EM',   name:'East Midlands' },
+    { code:'GB-WM',   name:'West Midlands' },
+    { code:'GB-YH',   name:'Yorkshire and the Humber' },
+    { code:'GB-NW',   name:'Nord-Ouest Angleterre' },
+    { code:'GB-NE',   name:'Nord-Est Angleterre' },
   ],
   PT: [
     { code:'PT-01', name:'Aveiro' },
