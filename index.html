@@ -9243,6 +9243,10 @@ function _wireCustomAudioPlayer(playerEl){
       playBtn.textContent = '⏳'; playBtn.classList.add('loading');
       // Force le fetch si le browser l'a deferre (typique dans un <details> collapse).
       if(audio.readyState === 0){ try{ audio.load(); }catch(_){} }
+      // Init Merlin AVANT audio.play() : le graph Web Audio doit etre setup avant
+      // que la lecture commence, sinon l'audio streamera par l'output HTML par defaut
+      // et l'analyser recevra du silence meme si createMediaElementSource() reussit.
+      _initMerlinSpectrogram(playerEl, audio);
       // Play + retry si echec initial (autoplay policy, race avec load...).
       const tryPlay = () => audio.play().then(() => { playBtn.classList.remove('loading'); }).catch(() => {
         // 2e tentative apres canplay
@@ -9255,8 +9259,6 @@ function _wireCustomAudioPlayer(playerEl){
   audio.addEventListener('play', () => {
     playBtn.textContent = '⏸'; playBtn.classList.add('on'); playBtn.classList.remove('loading');
     playerEl.classList.add('playing','has-progress');
-    // Init Merlin spectro au 1er play (gesture user = permet resume() de l'AudioContext).
-    _initMerlinSpectrogram(playerEl, audio);
     if(rafId) cancelAnimationFrame(rafId);
     rafId = requestAnimationFrame(rafLoop);
   });
