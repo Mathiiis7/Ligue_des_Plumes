@@ -9128,7 +9128,7 @@ function _wireCustomAudioPlayer(playerEl){
   // Offset forward pour compenser la latence audio output (buffer OS ~50-150ms).
   // Sans ca, audio.currentTime avance mais l'utilisateur entend le son avec un
   // decalage : cursor apparait en retard par rapport au son entendu.
-  const CURSOR_LEAD_SEC = 0.10;
+  const CURSOR_LEAD_SEC = 0.50;
   const effDur = () => Math.min(audio.duration || 0, MAX_PLAYBACK_SEC);
   const updatePos = () => {
     const ed = effDur();
