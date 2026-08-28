@@ -2857,6 +2857,18 @@ function rarityForCountry(sci, country){
   const c = country || 'FR';
   const reg = _countryEntry(c);
   if(!reg) return 0;
+  // Especes eteintes : force tier 10 (Exceptionnel) prioritaire.
+  //   - REDLIST.fr = 'RE' (Regionalement Eteinte) : eteinte comme reproducteur en France.
+  //     Ne concerne que le pays FR (les autres pays ont leur propre liste rouge non chargee).
+  //   - REDLIST.global = 'EX' (Eteinte mondiale) : partout.
+  //   - REDLIST.global = 'EW' (Eteinte a l'etat sauvage) : partout.
+  // Sans ce check, le tier auto renvoyait 7 pour Otis tarda (bar chart 7 base sur vagrants
+  // occasionnels) alors qu'en pratique impossible a voir en France sauf coup de chance ultime.
+  const rl = (typeof REDLIST === 'object') ? REDLIST[k] : null;
+  if(rl){
+    if(rl.global === 'EX' || rl.global === 'EW') return 10;
+    if(c === 'FR' && (rl.fr === 'RE' || rl.fr === 'EX')) return 10;
+  }
   const stEntry = reg.st()[k];
   const barTier = reg.barTier()[k];   // undefined si pas de bar chart pour ce pays
   // Exotiques : N/P (populations naturalisees/provisoires) -> vrai tier (Perruche a collier,
