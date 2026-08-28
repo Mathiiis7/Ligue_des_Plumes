@@ -8925,7 +8925,7 @@ async function _fetchXenoSound(sci){
   // Slim : garde les champs utiles pour l'UI (audio, sonogramme, qualite, lieu, date, duree, enregistreur).
   const slim = r => ({
     id: r.id, file: norm(r.file),
-    sono: norm(r.sono?.med || r.sono?.large || r.sono?.small),
+    sono: norm(r.sono?.full || r.sono?.large || r.sono?.med || r.sono?.small),
     q: r.q || '', loc: r.loc || '', cnt: r.cnt || '',
     date: r.date || '', length: r.length || '',
     rec: r.rec || '', url: norm(r.url), type: r.type || ''
