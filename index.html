@@ -576,7 +576,7 @@
   .xa-bar-progress { position:absolute; top:0; bottom:0; left:0; width:0; background:linear-gradient(90deg, rgba(255,255,255,0), color-mix(in srgb, var(--accent) 20%, transparent)); pointer-events:none; z-index:1; }
   .xa-bar-fallback { position:absolute; inset:0; display:grid; place-items:center; color:var(--ink-3); font-size:11px; font-style:italic; }
   /* Curseur rouge qui avance de gauche a droite pendant la lecture, sur le spectrogramme. */
-  .xa-bar-cursor { position:absolute; top:0; bottom:0; left:0; margin-left:-1.5px; width:3px; background:#e63535; box-shadow:0 0 6px rgba(230,53,53,.8), 0 0 2px #fff; pointer-events:none; z-index:3; opacity:0; transition:opacity .2s, left .06s linear; }
+  .xa-bar-cursor { position:absolute; top:0; bottom:0; left:0; margin-left:-1.5px; width:3px; background:#e63535; box-shadow:0 0 6px rgba(230,53,53,.8), 0 0 2px #fff; pointer-events:none; z-index:3; opacity:0; transition:opacity .2s; }
   .xa-player.has-progress .xa-bar-cursor { opacity:1; }
   /* Playhead classique retire pour n'avoir qu'un seul indicateur */
   .xa-bar-playhead { display:none; }
@@ -9129,7 +9129,7 @@ function _wireCustomAudioPlayer(playerEl){
   // Offset forward pour compenser la latence audio output (buffer OS ~50-150ms).
   // Sans ca, audio.currentTime avance mais l'utilisateur entend le son avec un
   // decalage : cursor apparait en retard par rapport au son entendu.
-  const CURSOR_LEAD_SEC = 0.50;
+  const CURSOR_LEAD_SEC = 0.10;
   const effDur = () => Math.min(audio.duration || 0, MAX_PLAYBACK_SEC);
   const updatePos = () => {
     const ed = effDur();
