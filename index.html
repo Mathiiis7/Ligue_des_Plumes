@@ -10901,6 +10901,10 @@ let _pkdxNumById = null;
 let _targetsRegion = null;   // '' = pays entier, sinon code region (FR-BRE, ES-AN, etc.)
 let _targetsRegionInit = false;
 let _targetsCountry = 'FR';   // pays courant pour "Cette semaine"
+// Anti-boucle infinite : marque quels pays ont deja tente le fetch data regionale.
+// Sans ca, pour un pays comme Monténégro (monthlyByRegion() = null permanent), on
+// re-tentait a chaque renderTargets → boucle qui bloque la page.
+const _targetsLoadAttempted = {};
 try{ _targetsCountry = localStorage.getItem('mb-targets-country') || 'FR'; }catch(_){}
 const FLAG_EMOJI_TGT = CC_FLAGS;   // alias vers la source unique
 let _targetsOwnedFilter = '';   // '' = toutes, 'missing' = manquantes seulement, 'owned' = deja cochees
@@ -11000,21 +11004,24 @@ function renderTargets(){
     });
     chipsBox._init = true;
   }
-  // Data regionale du pays courant (via registry lazy-loadee) + S&T regional FR-only.
+  // Data regionale du pays courant (via registry lazy-loadee) + S&T regional multi-pays.
   const regionSelected = !!_targetsRegion;
   const monthByReg = regT.monthlyByRegion && regT.monthlyByRegion();
   const regionData = (regionSelected && monthByReg) ? monthByReg[_targetsRegion] : null;
-  if(regionSelected && !regionData){
+  const stByRegCC = REAL_ABUNDANCE_ST_BY_REGION[ccT];
+  const stRegionData = (regionSelected && stByRegCC && stByRegCC[_targetsRegion]) || null;
+  const hasRegionalST = !!stRegionData;
+  // Chargement lazy : uniquement si (region choisie) ET (aucune data regionale dispo)
+  // ET (pas encore essaye). Sans le flag on boucle infiniment pour les pays sans bar
+  // chart regional (ex : Montenegro, monthlyByRegion = null en permanence).
+  if(regionSelected && !regionData && !hasRegionalST && !_targetsLoadAttempted[ccT]){
+    _targetsLoadAttempted[ccT] = true;
     const proms = [_loadFreqDataForCountry(ccT), _loadAbundanceRegionData(ccT)];
     Promise.all(proms).then(() => renderTargets());
     grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--ink-3);">Chargement des données régionales…</div>';
     if(hint) hint.textContent = '';
     return;
   }
-  // S&T weekly regional : dispo par pays (dict multi-country).
-  const stByRegCC = REAL_ABUNDANCE_ST_BY_REGION[ccT];
-  const stRegionData = (regionSelected && stByRegCC && stByRegCC[_targetsRegion]) || null;
-  const hasRegionalST = !!stRegionData;
   // Monthly national du pays courant (via registry) : pour le ratio regional / national.
   const monthlyNat = regT.monthly ? regT.monthly() : {};
   // Semaine courante (0..51). Semaine 0 = 1-7 janvier, semaine 25 = ~24 juin, etc.
