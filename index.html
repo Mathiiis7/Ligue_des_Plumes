@@ -9125,6 +9125,10 @@ function _wireCustomAudioPlayer(playerEl){
   // On plafonne la lecture a 20s pour un preview rapide. Cursor + bar + affichage duree
   // se referent tous a effDur (min(reel, 20)). Auto-pause a 20s.
   const MAX_PLAYBACK_SEC = 20;
+  // Offset forward pour compenser la latence audio output (buffer OS ~50-150ms).
+  // Sans ca, audio.currentTime avance mais l'utilisateur entend le son avec un
+  // decalage : cursor apparait en retard par rapport au son entendu.
+  const CURSOR_LEAD_SEC = 0.10;
   const effDur = () => Math.min(audio.duration || 0, MAX_PLAYBACK_SEC);
   const updatePos = () => {
     const ed = effDur();
@@ -9138,7 +9142,8 @@ function _wireCustomAudioPlayer(playerEl){
       if(curEl) curEl.textContent = '0:00';
       return;
     }
-    const pct = audio.currentTime / ed;
+    const displayT = Math.min(audio.currentTime + CURSOR_LEAD_SEC, ed);
+    const pct = displayT / ed;
     if(progress) progress.style.width = (pct * 100) + '%';
     if(cursor) cursor.style.left = (pct * 100) + '%';
     if(curEl) curEl.textContent = fmt(audio.currentTime);
