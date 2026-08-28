@@ -11480,17 +11480,44 @@ function renderPokedex(){
       const lbl = b.querySelector('.cp-btn-label');
       if(lbl) lbl.textContent = label;
     };
-    // Compute species count par option pour un filtre (compte sur _pkdxAllSorted, pays courant).
-    const _countPkdxByField = (fn) => {
+    // Applique tous les filtres Birdydex actifs (search, family, habitat, owned, tier)
+    // sauf le champ 'exclude' pour que le modal montre "combien il resterait si j'active X".
+    // Renvoie l'array _pkdxAllSorted filtré.
+    const _filteredPkdxRows = (exclude) => {
+      if(!_pkdxAllSorted) return [];
+      const q = _mapNorm(_pkdxFilters.search || '');
+      const famF = (exclude === 'family') ? '' : (_pkdxFilters.family || '');
+      const habF = (exclude === 'habitat') ? '' : (_pkdxFilters.habitat || '');
+      const ownedF = (exclude === 'owned') ? '' : (_pkdxFilters.owned || '');
+      const me = realPeople.find(p => p.id === myUid);
+      const mine = me ? new Set([...me.species.keys()]) : new Set();
+      return _pkdxAllSorted.filter(r => {
+        if(q && !_mapNorm(r.nm).includes(q) && !r.sci.includes(q)) return false;
+        if(famF && r.fam !== famF) return false;
+        const habs = habitatsOf(r.sci) || [];
+        if(habF && !habs.includes(habF)) return false;
+        if(_pkdxTierExcl && _pkdxTierExcl.has(r.tier)) return false;
+        if(ownedF){
+          const owned = _mineHasStrict(mine, r.sci);
+          if(ownedF === 'owned' && !owned) return false;
+          if(ownedF === 'missing' && owned) return false;
+        }
+        return true;
+      });
+    };
+    // Compte les especes par option d'un filtre, base sur les rows filtres par tous les
+    // autres filtres actifs.
+    const _countPkdxByField = (fieldName, fn) => {
+      const rows = _filteredPkdxRows(fieldName);
       const counts = {};
-      if(!_pkdxAllSorted) return counts;
-      for(const r of _pkdxAllSorted){
+      for(const r of rows){
         const vals = fn(r);
         if(!vals) continue;
         for(const v of (Array.isArray(vals) ? vals : [vals])){
           counts[v] = (counts[v] || 0) + 1;
         }
       }
+      counts.__total = rows.length;
       return counts;
     };
     // Famille : modal picker avec search + count par famille.
@@ -11502,9 +11529,8 @@ function renderPokedex(){
         const fams = new Set();
         for(const sci in FR_NAMES){ const f = familyOf(sci); if(f) fams.add(f); }
         const ordered = [...fams].sort((a,b) => (FAMILY_ORDER[a] ?? 9999) - (FAMILY_ORDER[b] ?? 9999) || a.localeCompare(b, 'fr'));
-        const counts = _countPkdxByField(r => familyOf(r.sci));
-        const totalCount = _pkdxAllSorted ? _pkdxAllSorted.length : 0;
-        const opts = [{ value:'', label:'Toutes familles', count: totalCount }].concat(
+        const counts = _countPkdxByField('family', r => familyOf(r.sci));
+        const opts = [{ value:'', label:'Toutes familles', count: counts.__total }].concat(
           ordered.map(f => ({ value:f, label:f, count: counts[f] || 0 }))
         );
         const chosen = await _openFilterPicker(_pkdxFilters.family || '', {
@@ -11525,9 +11551,8 @@ function renderPokedex(){
         : 'Tous milieux';
       _syncPkdxFilterBtn('pkdxHabitat', initLabel);
       habBtn.addEventListener('click', async () => {
-        const counts = _countPkdxByField(r => habitatsOf(r.sci));
-        const totalCount = _pkdxAllSorted ? _pkdxAllSorted.length : 0;
-        const opts = [{ value:'', label:'Tous milieux', count: totalCount }].concat(
+        const counts = _countPkdxByField('habitat', r => habitatsOf(r.sci));
+        const opts = [{ value:'', label:'Tous milieux', count: counts.__total }].concat(
           HABITAT_CATS.map(h => ({ value:h, label:(HABITAT_LABELS[h] || h), count: counts[h] || 0 }))
         );
         const chosen = await _openFilterPicker(_pkdxFilters.habitat || '', {
@@ -11548,16 +11573,14 @@ function renderPokedex(){
       ownedBtn.addEventListener('click', async () => {
         const me = realPeople.find(p => p.id === myUid);
         const mine = me ? new Set([...me.species.keys()]) : new Set();
-        let ownedCnt = 0, missCnt = 0, totalCnt = 0;
-        if(_pkdxAllSorted){
-          for(const r of _pkdxAllSorted){
-            totalCnt++;
-            if(_mineHasStrict(mine, r.sci)) ownedCnt++;
-            else missCnt++;
-          }
+        const rows = _filteredPkdxRows('owned');
+        let ownedCnt = 0, missCnt = 0;
+        for(const r of rows){
+          if(_mineHasStrict(mine, r.sci)) ownedCnt++;
+          else missCnt++;
         }
         const opts = [
-          { value:'',        label:'Toutes',              count: totalCnt },
+          { value:'',        label:'Toutes',              count: rows.length },
           { value:'owned',   label:'Vues seulement',      count: ownedCnt },
           { value:'missing', label:'Manquantes seulement', count: missCnt },
         ];
