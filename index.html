@@ -346,6 +346,8 @@
   /* Country picker modal (reutilise dans fiches, Birdydex, Cette semaine).
      Future-proof pour 15-100 pays : search + grouped by continent. */
   .cp-btn { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line-2); background:var(--surface); color:var(--ink); font:inherit; font-size:13px; padding:5px 10px; border-radius:8px; cursor:pointer; font-weight:600; }
+  /* Native HTML5 hidden attribute : force display:none pour override tout autre display: */
+  [hidden] { display: none !important; }
   .cp-btn:hover { border-color:var(--accent); }
   .cp-btn .cp-btn-arrow { opacity:.6; margin-left:2px; }
   .cp-modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:2147483647; display:flex; align-items:center; justify-content:center; padding:20px; }
