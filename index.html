@@ -2452,13 +2452,16 @@ const HABITAT_CATS = ["forest","woodland","shrubland","grassland","wetland","riv
 function habitatsOf(sci){ return HABITATS[(sci||"").trim().toLowerCase()] || null; }
 const HABITAT_LABELS = {"forest":"🌲 Forêt","woodland":"🌳 Bois / savane arborée","shrubland":"🌿 Arbustif / matorral","grassland":"🌾 Prairies / steppe","wetland":"🪺 Zones humides","riverine":"💧 Rivières / eau douce","marine":"🌊 Marin (pélagique)","coastal":"🏖️ Littoral / côte","rock":"🪨 Rocher / falaises","desert":"🏜️ Désert","humanmod":"🏙️ Modifié par l'homme","aerial":"🌬️ Aériens (martinets, hirondelles)"};
 // Reverse index : catégorie → tableau [sci] trié par nom FR. Construit une seule fois.
+// Reverse index habitat -> [sci]. Tri par nom sci (Latin) car SCI_ALIAS n'est pas
+// encore initialise ici (TDZ) et donc frName() throw si on essaie de trier par nom FR.
+// Un consommateur peut re-trier par nom FR apres init si besoin.
 const HABITAT_TO_SCIS = (() => {
   const idx = Object.fromEntries(HABITAT_CATS.map(c=>[c, []]));
   for(const sci in HABITATS){
     const cats = HABITATS[sci];
     for(const c of cats) if(idx[c]) idx[c].push(sci);
   }
-  for(const c of HABITAT_CATS) idx[c].sort((a,b)=>frName(a,a).localeCompare(frName(b,b),'fr'));
+  for(const c of HABITAT_CATS) idx[c].sort();
   return idx;
 })();
 // Especes exotiques "cage/voliere echappee isolee" : perroquets d'appartement,
