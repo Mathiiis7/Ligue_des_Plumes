@@ -9195,6 +9195,9 @@ function _wireCustomAudioPlayer(playerEl){
       audioCtx = null; analyser = null; sourceNode = null;
     }
   }
+  // Waterfall spectrogramme style Merlin : le temps defile de droite a gauche.
+  // A chaque frame : shift le canvas de 2px vers la gauche, puis dessine une nouvelle
+  // colonne a droite avec la freq courante (Y = frequence, couleur = amplitude).
   function drawSpectro(){
     if(!spectroOk || !canvas || !analyser){ spectroRaf = null; return; }
     const w = canvas.clientWidth || 300;
@@ -9202,22 +9205,41 @@ function _wireCustomAudioPlayer(playerEl){
     if(canvas.width !== w) canvas.width = w;
     if(canvas.height !== h) canvas.height = h;
     const ctx2 = canvas.getContext('2d');
-    const bins = analyser.frequencyBinCount;
+    const bins = analyser.frequencyBinCount;   // 256
     const data = new Uint8Array(bins);
     analyser.getByteFrequencyData(data);
-    ctx2.clearRect(0, 0, w, h);
-    const barW = w / bins;
-    for(let i = 0; i < bins; i++){
+    // Shift : deplace le contenu existant de 2px vers la gauche via drawImage.
+    // Efface la colonne de droite (les 2 derniers px) puis y dessine la freq courante.
+    const shiftPx = 2;
+    ctx2.globalCompositeOperation = 'copy';
+    ctx2.drawImage(canvas, -shiftPx, 0);
+    ctx2.globalCompositeOperation = 'source-over';
+    // Efface la colonne droite (2px)
+    ctx2.clearRect(w - shiftPx, 0, shiftPx, h);
+    // On dessine seulement la moitie basse des bins (freq utiles pour oiseaux : 0-11kHz).
+    // Chaque bin = ~86 Hz (sampleRate 44100 / fftSize 512). On garde les 128 premiers = 0-11 kHz.
+    const useBins = Math.floor(bins / 2);
+    const rowH = h / useBins;
+    for(let i = 0; i < useBins; i++){
       const v = data[i] / 255;
-      if(v < 0.05) continue;
-      const barH = v * h;
-      const hue = 240 - v * 240;
-      ctx2.fillStyle = `hsl(${hue}, 90%, 55%)`;
-      ctx2.fillRect(i * barW, h - barH, Math.max(1, barW - 0.5), barH);
+      if(v < 0.08) continue;
+      // Y = frequence : bin 0 en bas (basses freq), bin haut en haut
+      const y = h - (i + 1) * rowH;
+      const hue = 240 - v * 240;   // bleu (240) faible -> rouge (0) forte
+      const alpha = 0.4 + v * 0.6;
+      ctx2.fillStyle = `hsla(${hue}, 95%, 55%, ${alpha})`;
+      ctx2.fillRect(w - shiftPx, y, shiftPx, Math.max(1, rowH));
     }
     if(!audio.paused && !audio.ended) spectroRaf = requestAnimationFrame(drawSpectro);
     else spectroRaf = null;
   }
+  // Reset le canvas quand on relance : evite de garder le waterfall de la lecture precedente
+  audio.addEventListener('play', () => {
+    if(canvas){
+      const ctx2 = canvas.getContext('2d');
+      if(ctx2) ctx2.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  });
   audio.addEventListener('play', () => {
     setupSpectro();
     if(audioCtx && audioCtx.state === 'suspended'){ try{ audioCtx.resume(); }catch(_){} }
