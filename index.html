@@ -8956,9 +8956,10 @@ async function _fetchXenoSound(sci){
     score += (qOrder[r.q] || 0) * 1000;                        // qualite : facteur dominant
     score += EU_COUNTRIES.has(r.cnt) ? 100 : 0;                 // Europe : bonus
     const len = lengthSec(r.length);
-    if(len >= 10 && len <= 90) score += 50;                     // duree sweet spot
-    else if(len >= 5 && len <= 180) score += 20;                // acceptable
-    score += Math.min(15, len / 10);                            // legere preference pour + long (max 15)
+    // Playback cap 20s : preference forte pour <= 25s (peu de "gachis" au dessus du cap).
+    if(len >= 5 && len <= 25) score += 60;
+    else if(len <= 60) score += 30;
+    else if(len <= 180) score += 10;                             // long = penalty implicite (DL lent)
     // Preference tres legere pour uploads recents (materiel moderne)
     score += Math.log10((parseInt(r.id, 10) || 100000) / 100000);
     return score;
@@ -9103,9 +9104,24 @@ function _wireCustomAudioPlayer(playerEl){
   if(!playBtn) return;
   const fmt = s => { if(!isFinite(s) || s < 0) return '0:00'; const m = Math.floor(s/60), r = Math.floor(s%60); return m+':'+String(r).padStart(2,'0'); };
   const cursor = playerEl.querySelector('[data-xa-cursor]');
+  // Cap dur : les enregistrements xeno-canto peuvent depasser plusieurs minutes.
+  // On plafonne la lecture a 20s pour un preview rapide. Cursor + bar + affichage duree
+  // se referent tous a effDur (min(reel, 20)). Auto-pause a 20s.
+  const MAX_PLAYBACK_SEC = 20;
+  const effDur = () => Math.min(audio.duration || 0, MAX_PLAYBACK_SEC);
   const updatePos = () => {
-    if(!audio.duration) return;
-    const pct = (audio.currentTime / audio.duration);
+    const ed = effDur();
+    if(!ed) return;
+    // Cap : force pause + reset a 0 quand on atteint la limite.
+    if(audio.currentTime >= MAX_PLAYBACK_SEC){
+      audio.pause();
+      audio.currentTime = 0;
+      if(progress) progress.style.width = '0%';
+      if(cursor) cursor.style.left = '0%';
+      if(curEl) curEl.textContent = '0:00';
+      return;
+    }
+    const pct = audio.currentTime / ed;
     if(progress) progress.style.width = (pct * 100) + '%';
     if(cursor) cursor.style.left = (pct * 100) + '%';
     if(curEl) curEl.textContent = fmt(audio.currentTime);
@@ -9148,7 +9164,7 @@ function _wireCustomAudioPlayer(playerEl){
   // Des qu'on l'a, on retire le spinner et updatePos commencera a bouger le curseur.
   audio.addEventListener('durationchange', () => {
     if(hasDur()){
-      if(durEl) durEl.textContent = fmt(audio.duration);
+      if(durEl) durEl.textContent = fmt(effDur());
       if(!audio.paused){ playBtn.textContent = '⏸'; playBtn.classList.remove('loading'); }
       updatePos();
     }
@@ -9156,13 +9172,27 @@ function _wireCustomAudioPlayer(playerEl){
   audio.addEventListener('pause', () => { if(!playBtn.classList.contains('loading')) playBtn.textContent = '▶'; playBtn.classList.remove('on'); if(rafId){ cancelAnimationFrame(rafId); rafId = null; } });
   audio.addEventListener('ended', () => { playBtn.textContent = '▶'; playBtn.classList.remove('on','loading'); playerEl.classList.remove('playing','has-progress'); if(progress) progress.style.width = '0%'; if(playhead) playhead.style.left = '0%'; if(rafId){ cancelAnimationFrame(rafId); rafId = null; } });
   audio.addEventListener('timeupdate', updatePos);
-  audio.addEventListener('loadedmetadata', () => { if(durEl && hasDur()) durEl.textContent = fmt(audio.duration); });
+  audio.addEventListener('loadedmetadata', () => {
+    if(durEl && hasDur()) durEl.textContent = fmt(effDur());
+    // Aligne le sono avec la fenetre de lecture 0-20s : si l'audio complet dure 60s,
+    // le sono (qui represente les 60s) est etire pour que ses 20 premieres secondes
+    // remplissent la barre. object-fit passe de fill a cover left pour clipper la suite.
+    if(hasDur() && audio.duration > MAX_PLAYBACK_SEC){
+      const sonoImg = playerEl.querySelector('.xa-bar-sono');
+      if(sonoImg){
+        const scale = audio.duration / MAX_PLAYBACK_SEC;
+        sonoImg.style.width = (scale * 100) + '%';
+        sonoImg.style.objectFit = 'cover';
+        sonoImg.style.objectPosition = 'left';
+      }
+    }
+  });
   if(seekEl){
     seekEl.addEventListener('click', e => {
       if(!audio.duration){ audio.load(); return; }
       const r = seekEl.getBoundingClientRect();
       const p = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-      audio.currentTime = p * audio.duration;
+      audio.currentTime = p * effDur();
       updatePos();
     });
   }
