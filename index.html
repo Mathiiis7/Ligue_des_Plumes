@@ -584,9 +584,6 @@
   .xa-zoom button { flex:none; width:24px; height:24px; padding:0; border:1px solid var(--line); background:var(--surface); color:var(--ink-2); border-radius:4px; cursor:pointer; font:600 12px system-ui; display:grid; place-items:center; }
   .xa-zoom button:hover { background:var(--surface-2); }
   .xa-zoom button:disabled { opacity:.4; cursor:not-allowed; }
-  /* Canvas spectro live : superpose sur le sono, semi-transparent, dessine en temps reel */
-  .xa-spectro { position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .2s; z-index:1; }
-  .xa-player.playing .xa-spectro { opacity:0.75; }
   .xa-time { font:600 10.5px/1 var(--mono, ui-monospace); color:var(--ink-3); display:flex; justify-content:space-between; padding:0 2px; }
   /* Section "autres enregistrements" : plus compact + separateur clair pour eviter la
      confusion avec le block suivant (chant vs cri). Le details a un border-bottom pour
@@ -9021,7 +9018,6 @@ function _renderSpeciesAudioBlock(container, label, primaryId, list){
           <div class="xa-bar-scroll" data-xa-scroll>
             <div class="xa-bar-inner" data-xa-inner>
               ${sono}
-              <canvas class="xa-spectro" data-xa-spectro></canvas>
               <div class="xa-bar-progress"></div>
               <div class="xa-bar-playhead"></div>
             </div>
@@ -9169,57 +9165,6 @@ function _wireCustomAudioPlayer(playerEl){
   if(zoomIn) zoomIn.addEventListener('click', e => { e.stopPropagation(); zoomLevel = Math.min(8, zoomLevel * 2); applyZoom(); });
   if(zoomOut) zoomOut.addEventListener('click', e => { e.stopPropagation(); zoomLevel = Math.max(1, zoomLevel / 2); applyZoom(); });
 
-  // SPECTROGRAMME LIVE : Web Audio API + Canvas. Setup lazy au 1er play (autoplay policy).
-  const canvas = playerEl.querySelector('[data-xa-spectro]');
-  let audioCtx = null, analyser = null, sourceNode = null, spectroRaf = null;
-  const setupSpectro = () => {
-    if(audioCtx || !canvas) return;
-    try{
-      audio.crossOrigin = 'anonymous';   // requis pour MediaElementSource
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if(!AC) return;
-      audioCtx = new AC();
-      sourceNode = audioCtx.createMediaElementSource(audio);
-      analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 512;
-      sourceNode.connect(analyser);
-      analyser.connect(audioCtx.destination);
-    }catch(e){ audioCtx = null; }
-  };
-  const drawSpectro = () => {
-    if(!canvas || !analyser) return;
-    const w = canvas.clientWidth || canvas.width;
-    const h = canvas.clientHeight || canvas.height;
-    if(canvas.width !== w) canvas.width = w;
-    if(canvas.height !== h) canvas.height = h;
-    const ctx2 = canvas.getContext('2d');
-    const bins = analyser.frequencyBinCount;   // = fftSize/2 = 256
-    const data = new Uint8Array(bins);
-    analyser.getByteFrequencyData(data);
-    ctx2.clearRect(0, 0, w, h);
-    const barW = w / bins;
-    // Gradient bleu -> vert -> jaune -> rouge selon amplitude, style Merlin
-    for(let i = 0; i < bins; i++){
-      const v = data[i] / 255;   // 0..1
-      if(v < 0.03) continue;
-      const barH = v * h;
-      // HSL : bleu (240) faible amplitude -> rouge (0) forte
-      const hue = 240 - v * 240;
-      ctx2.fillStyle = `hsl(${hue}, 90%, 55%)`;
-      ctx2.fillRect(i * barW, h - barH, Math.max(1, barW - 0.5), barH);
-    }
-    if(!audio.paused && !audio.ended) spectroRaf = requestAnimationFrame(drawSpectro);
-  };
-  audio.addEventListener('play', () => {
-    setupSpectro();
-    if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
-    if(analyser){
-      if(spectroRaf) cancelAnimationFrame(spectroRaf);
-      spectroRaf = requestAnimationFrame(drawSpectro);
-    }
-  });
-  audio.addEventListener('pause', () => { if(spectroRaf){ cancelAnimationFrame(spectroRaf); spectroRaf = null; } });
-  audio.addEventListener('ended', () => { if(spectroRaf){ cancelAnimationFrame(spectroRaf); spectroRaf = null; } });
 }
 // Chips info (rareté + famille + habitats + IUCN) sous le titre de la fiche.
 // Palette et labels IUCN standard, cohérents avec eBird / IUCN Red List. Applique
