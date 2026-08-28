@@ -9149,23 +9149,16 @@ function _wireCustomAudioPlayer(playerEl){
       tryPlay();
     } else { audio.pause(); }
   });
-  // Certains MP3 xeno-canto n'ont pas la duree dans le header : audio.duration reste
-  // NaN/Infinity tant que le fichier n'est pas entierement bufferise. Dans ce cas la
-  // barre de progression et le curseur restent bloques a 0. On garde le spinner tant
-  // que la duree n'est pas valide, et on rattrape des qu'elle arrive.
   const hasDur = () => isFinite(audio.duration) && audio.duration > 0;
-  const clearLoading = () => { if(playBtn.classList.contains('loading')){ playBtn.textContent = audio.paused ? '▶' : '⏸'; playBtn.classList.remove('loading'); } };
   audio.addEventListener('play', () => {
-    playBtn.textContent = hasDur() ? '⏸' : '⏳';
-    playBtn.classList.add('on');
-    if(hasDur()) playBtn.classList.remove('loading'); else playBtn.classList.add('loading');
+    playBtn.textContent = '⏸'; playBtn.classList.add('on'); playBtn.classList.remove('loading');
     playerEl.classList.add('playing','has-progress');
     if(rafId) cancelAnimationFrame(rafId);
     rafId = requestAnimationFrame(rafLoop);
   });
   audio.addEventListener('waiting', () => { playBtn.textContent = '⏳'; playBtn.classList.add('loading'); });
-  audio.addEventListener('playing', () => { if(hasDur()) { playBtn.textContent = '⏸'; playBtn.classList.remove('loading'); } });
-  audio.addEventListener('canplay', () => { if(hasDur() && audio.paused) clearLoading(); });
+  audio.addEventListener('playing', () => { playBtn.textContent = '⏸'; playBtn.classList.remove('loading'); });
+  audio.addEventListener('canplay', () => { if(audio.paused){ playBtn.textContent = '▶'; playBtn.classList.remove('loading'); } });
   // Duree parfois connue seulement apres 'durationchange' (post playing sur MP3 sans header).
   // Des qu'on l'a, on retire le spinner et updatePos commencera a bouger le curseur.
   // Handler duree connue : mise a jour affichage duree + resize sono aligne sur cap 20s.
