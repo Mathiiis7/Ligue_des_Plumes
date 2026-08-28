@@ -133,7 +133,7 @@ writeFileSync(OUT,
   `//\n` +
   `// index.html merge ce dict avec la liste EXOTIC curatorial en fallback pour les\n` +
   `// exotiques historiquement connus non observes sur les 12 derniers mois.\n` +
-  `export const EXOTIC_BY_COUNTRY = ${JSON.stringify(result)};\n`
+  `export const EXOTIQUES_EBIRD_PAR_PAYS = ${JSON.stringify(result)};\n`
 );
 console.log(`\n✓ Ecrit ${OUT}`);
 console.log('\nRecap categories :');
