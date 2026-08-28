@@ -569,7 +569,7 @@
   .xa-play.loading { animation:xa-spin 1.2s linear infinite; background:var(--ink-3); }
   @keyframes xa-spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
   .xa-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
-  .xa-bar { position:relative; height:38px; border-radius:6px; overflow:hidden; background:var(--surface-3); cursor:pointer; }
+  .xa-bar { position:relative; height:114px; border-radius:6px; overflow:hidden; background:var(--surface-3); cursor:pointer; }
   .xa-bar-sono { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.85; pointer-events:none; }
   .xa-bar-progress { position:absolute; top:0; bottom:0; left:0; width:0; background:linear-gradient(90deg, rgba(255,255,255,0), color-mix(in srgb, var(--accent) 30%, transparent)); pointer-events:none; transition:width .05s linear; }
   .xa-bar-playhead { position:absolute; top:-2px; bottom:-2px; width:3px; margin-left:-1.5px; background:var(--accent-2); box-shadow:0 0 6px color-mix(in srgb, var(--accent-2) 90%, transparent), 0 0 2px #fff; left:0; pointer-events:none; transition:left .06s linear; opacity:0; z-index:2; }
@@ -586,7 +586,7 @@
   .xa-more-list { margin-top:6px; display:flex; flex-direction:column; gap:8px; }
   .xa-more .xa-player { padding:6px 8px; }
   .xa-more .xa-play { width:36px; height:36px; font-size:13px; }
-  .xa-more .xa-bar { height:32px; }
+  .xa-more .xa-bar { height:96px; }
   /* Espace visuel entre les blocs Chant et Cri (par-dessus la marge existante) */
   .xa-block { padding-bottom:14px; border-bottom:2px solid var(--line-2); }
   .xa-block:last-child { border-bottom:none; padding-bottom:0; }
@@ -8920,7 +8920,7 @@ async function _fetchXenoSound(sci){
   // Slim : garde les champs utiles pour l'UI (audio, sonogramme, qualite, lieu, date, duree, enregistreur).
   const slim = r => ({
     id: r.id, file: norm(r.file),
-    sono: norm(r.sono?.med || r.sono?.large || r.sono?.small),
+    sono: norm(r.sono?.large || r.sono?.med || r.sono?.small),
     q: r.q || '', loc: r.loc || '', cnt: r.cnt || '',
     date: r.date || '', length: r.length || '',
     rec: r.rec || '', url: norm(r.url), type: r.type || ''
