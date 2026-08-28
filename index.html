@@ -9097,9 +9097,20 @@ function _wireCustomAudioPlayer(playerEl){
   audio.style.display = 'none';
   try{ audio.load(); }catch(_){}
   _xaAudios.add(audio);
-  // Mutex direct sur cet audio : au play, pause tous les autres du registre.
+  // Fonction globale de cancel pour un audio + son bouton : reset l'etat visuel et
+  // annule tout pending play. Stockee sur l'audio pour etre appelable depuis n'importe
+  // quel autre player via le mutex.
+  audio._xaCancel = () => {
+    audio._xaLoadPending = false;
+    try{ audio.pause(); }catch(_){}
+    try{ audio.currentTime = 0; }catch(_){}
+    const btn = playerEl.querySelector('[data-xa-play]');
+    if(btn){ btn.textContent = '▶'; btn.classList.remove('loading','on'); }
+    playerEl.classList.remove('playing','has-progress');
+  };
+  // Mutex : au play, cancel tous les autres (playing ET loading).
   audio.addEventListener('play', () => {
-    for(const other of _xaAudios){ if(other !== audio && !other.paused){ try{ other.pause(); other.currentTime = 0; }catch(_){} } }
+    for(const other of _xaAudios){ if(other !== audio && (other._xaLoadPending || !other.paused)){ try{ other._xaCancel && other._xaCancel(); }catch(_){} } }
   });
   const playBtn = playerEl.querySelector('[data-xa-play]');
   const seekEl = playerEl.querySelector('[data-xa-seek]');
@@ -9135,19 +9146,25 @@ function _wireCustomAudioPlayer(playerEl){
   let rafId = null;
   const rafLoop = () => { updatePos(); if(!audio.paused && !audio.ended) rafId = requestAnimationFrame(rafLoop); };
   playBtn.addEventListener('click', () => {
-    if(audio.paused){
-      // Show spinner immediat + force load si pas encore lance.
-      playBtn.textContent = '⏳'; playBtn.classList.add('loading');
-      // Force le fetch si le browser l'a deferre (typique dans un <details> collapse).
-      if(audio.readyState === 0){ try{ audio.load(); }catch(_){} }
-      // Play + retry si echec initial (autoplay policy, race avec load...).
-      const tryPlay = () => audio.play().then(() => { playBtn.classList.remove('loading'); }).catch(() => {
-        // 2e tentative apres canplay
-        const once = () => { audio.removeEventListener('canplay', once); audio.play().catch(()=>{ playBtn.textContent = '▶'; playBtn.classList.remove('loading'); }); };
-        audio.addEventListener('canplay', once, { once:true });
-      });
-      tryPlay();
-    } else { audio.pause(); }
+    // Case 1 : en lecture -> pause
+    if(!audio.paused){ audio.pause(); return; }
+    // Case 2 : en train de charger (click precedent, pas encore parti) -> cancel
+    if(audio._xaLoadPending){ audio._xaCancel(); return; }
+    // Case 3 : pause + pas de load pending -> demarre. D'abord cancel les autres
+    // qui chargent, pour eviter que 2 audios s'affichent en spinner en meme temps.
+    for(const other of _xaAudios){ if(other !== audio && (other._xaLoadPending || !other.paused)){ try{ other._xaCancel && other._xaCancel(); }catch(_){} } }
+    audio._xaLoadPending = true;
+    playBtn.textContent = '⏳'; playBtn.classList.add('loading');
+    if(audio.readyState === 0){ try{ audio.load(); }catch(_){} }
+    const tryPlay = () => audio.play().then(() => {
+      audio._xaLoadPending = false;
+      playBtn.classList.remove('loading');
+    }).catch(() => {
+      // 2e tentative apres canplay
+      const once = () => { audio.removeEventListener('canplay', once); audio.play().then(() => { audio._xaLoadPending = false; }).catch(()=>{ audio._xaLoadPending = false; playBtn.textContent = '▶'; playBtn.classList.remove('loading'); }); };
+      audio.addEventListener('canplay', once, { once:true });
+    });
+    tryPlay();
   });
   const hasDur = () => isFinite(audio.duration) && audio.duration > 0;
   audio.addEventListener('play', () => {
