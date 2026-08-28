@@ -9127,26 +9127,43 @@ function _wireCustomAudioPlayer(playerEl){
   // se referent tous a effDur (min(reel, 20)). Auto-pause a 20s.
   const MAX_PLAYBACK_SEC = 20;
   // Offset forward pour compenser la latence audio output (buffer OS ~50-150ms).
-  // Sans ca, audio.currentTime avance mais l'utilisateur entend le son avec un
-  // decalage : cursor apparait en retard par rapport au son entendu.
   const CURSOR_LEAD_SEC = 0.10;
   const effDur = () => Math.min(audio.duration || 0, MAX_PLAYBACK_SEC);
+  // Tracking RAF-based : au lieu de lire audio.currentTime (throttle possible par
+  // le browser), on suit l'ecoulement de performance.now() depuis le dernier resync.
+  // Resync sur play/seek/timeupdate. Curseur avance en continu meme si currentTime
+  // fait des sauts par bloc.
+  let refWallMs = 0, refAudioT = 0;
+  const resyncClock = () => { refWallMs = performance.now(); refAudioT = audio.currentTime; };
+  const virtualT = () => {
+    if(audio.paused || audio.ended) return audio.currentTime;
+    const elapsed = (performance.now() - refWallMs) / 1000;
+    return refAudioT + elapsed;
+  };
   const updatePos = () => {
     const ed = effDur();
     if(!ed) return;
-    // Cap : force pause + reset a 0 quand on atteint la limite.
-    if(audio.currentTime >= MAX_PLAYBACK_SEC){
+    let t = virtualT();
+    // Cap : force pause + reset quand on atteint la limite.
+    if(t >= MAX_PLAYBACK_SEC){
       audio.pause();
       audio.currentTime = 0;
+      resyncClock();
       if(progress) progress.style.width = '0%';
-      if(cursor) cursor.style.left = '0%';
+      if(cursor){ cursor.style.transform = 'translateX(0px)'; cursor.style.left = '0'; }
       if(curEl) curEl.textContent = '0:00';
       return;
     }
-    const displayT = Math.min(audio.currentTime + CURSOR_LEAD_SEC, ed);
+    const displayT = Math.min(t + CURSOR_LEAD_SEC, ed);
     const pct = displayT / ed;
+    const barW = seekEl ? seekEl.clientWidth : 0;
     if(progress) progress.style.width = (pct * 100) + '%';
-    if(cursor) cursor.style.left = (pct * 100) + '%';
+    if(cursor){
+      // Transform GPU-accelere : evite le lag de left en % qui peut etre throttle
+      // par le rendering pipeline. left:0 fixe pour que translateX parte de 0.
+      cursor.style.left = '0';
+      cursor.style.transform = `translateX(${pct * barW}px)`;
+    }
     if(curEl) curEl.textContent = fmt(audio.currentTime);
   };
   let rafId = null;
@@ -9178,6 +9195,7 @@ function _wireCustomAudioPlayer(playerEl){
     // jusqu'a 'playing' (frames reellement decodees/jouees). Timeout 6s de safety.
     playBtn.textContent = '⏳'; playBtn.classList.add('on','loading');
     playerEl.classList.add('playing','has-progress');
+    resyncClock();
     if(rafId) cancelAnimationFrame(rafId);
     rafId = requestAnimationFrame(rafLoop);
     if(audio._xaPlayTimeout) clearTimeout(audio._xaPlayTimeout);
@@ -9191,6 +9209,7 @@ function _wireCustomAudioPlayer(playerEl){
     // Playback reel demarre : bascule enfin sur ⏸.
     playBtn.textContent = '⏸'; playBtn.classList.remove('loading');
     if(audio._xaPlayTimeout){ clearTimeout(audio._xaPlayTimeout); audio._xaPlayTimeout = null; }
+    resyncClock();   // resync apres le buffer initial
   });
   audio.addEventListener('canplay', () => { if(audio.paused){ playBtn.textContent = '▶'; playBtn.classList.remove('loading'); } });
   // Duree parfois connue seulement apres 'durationchange' (post playing sur MP3 sans header).
@@ -9217,7 +9236,7 @@ function _wireCustomAudioPlayer(playerEl){
   audio.addEventListener('durationchange', onDurationReady);
   audio.addEventListener('pause', () => { if(!playBtn.classList.contains('loading')) playBtn.textContent = '▶'; playBtn.classList.remove('on'); if(rafId){ cancelAnimationFrame(rafId); rafId = null; } });
   audio.addEventListener('ended', () => { playBtn.textContent = '▶'; playBtn.classList.remove('on','loading'); playerEl.classList.remove('playing','has-progress'); if(progress) progress.style.width = '0%'; if(playhead) playhead.style.left = '0%'; if(rafId){ cancelAnimationFrame(rafId); rafId = null; } });
-  audio.addEventListener('timeupdate', updatePos);
+  audio.addEventListener('timeupdate', () => { resyncClock(); updatePos(); });
   audio.addEventListener('loadedmetadata', onDurationReady);
   // Si l'audio est deja loade au moment du wire (cache browser, details ouvert avant wire...),
   // les events loadedmetadata / durationchange n'ont pas refire. On appelle manuellement.
@@ -9228,6 +9247,7 @@ function _wireCustomAudioPlayer(playerEl){
       const r = seekEl.getBoundingClientRect();
       const p = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
       audio.currentTime = p * effDur();
+      resyncClock();
       updatePos();
     });
   }
