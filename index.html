@@ -2747,18 +2747,41 @@ function _isForeignOnly(k){
 // dominent, et S&T ne connait pas ces populations europeennes echappees (fallback vers
 // bar chart qui dit 7). En pratique : tres facile a voir a leurs sites de reference.
 // Override cible tier 6 = "Assez rare mais dispo sur sites connus".
-const EXOTIQUES_TIER_FORCE_FR = {
-  'threskiornis aethiopicus': 6,   // Ibis sacre : Grand-Lieu, Camargue, Baie de l'Aiguillon
-  'tadorna ferruginea':      6,    // Tadorne casarca : Alsace, Camargue, Est
-  'aix galericulata':        6,    // Canard mandarin : parcs franciliens, Ain
+// Override manuel de tier par pays pour les exotiques localement abondantes dont le
+// bar chart national ecrase la presence reelle sur leurs sites de reference.
+// Format : { CC: { sci: tier_force } }. Le tier force est prioritaire sur le merge.
+// Reste ouvert : ajouter des especes au fil de l'eau si le tier auto ne colle pas au
+// terrain (cf debat coherence inter-pays, ex Ibis sacre IT concentre en Venetie).
+const EXOTIQUES_TIER_FORCE = {
+  FR: {
+    'threskiornis aethiopicus': 6,   // Ibis sacre : Grand-Lieu, Camargue, Baie de l'Aiguillon
+    'tadorna ferruginea':      6,    // Tadorne casarca : Alsace, Camargue, Est
+    'aix galericulata':        6,    // Canard mandarin : parcs franciliens, Ain
+  },
+  IT: {
+    // Ibis sacre : concentre Padoue-Venetie, S&T composite dit 2 (tres commun) mais
+    // pour un birder generaliste non-venete c'est plus tier 4. Coherent avec FR (6)
+    // qui refletait la meme logique "commun sur ses sites, absent ailleurs".
+    'threskiornis aethiopicus': 4,
+  },
+  ES: {
+    // Perruche a collier : tier auto 6 mais tres facile a Madrid/Barcelone/Seville.
+    'psittacula krameri':       5,
+  },
+  PT: {
+    // Perruche a collier : idem Lisbonne, tier auto 6 -> reel tier 5.
+    'psittacula krameri':       5,
+  },
 };
+// Alias FR-only historique, pointe vers la sous-dict FR (compat code existant).
+const EXOTIQUES_TIER_FORCE_FR = EXOTIQUES_TIER_FORCE.FR;
 // Merge S&T composite + source d'appui (bar chart ou GBIF exotiques). Applique la regle
 // +/-1 tier + moyenne ponderee si S&T >> bar (biais recherche active).
 // Multi-pays : depuis 2026-08 applique aussi aux pays autres que FR quand la data S&T
-// est dispo. Le EXOTIQUES_TIER_FORCE_FR reste FR-only (dict cible sites francais).
+// est dispo. EXOTIQUES_TIER_FORCE court-circuite le merge par pays si l'espece est listee.
 function _tierFromSTvsBarChart(k, barTier, country){
   const cc = country || 'FR';
-  if(cc === 'FR' && EXOTIQUES_TIER_FORCE_FR[k] != null) return EXOTIQUES_TIER_FORCE_FR[k];
+  if(EXOTIQUES_TIER_FORCE[cc] && EXOTIQUES_TIER_FORCE[cc][k] != null) return EXOTIQUES_TIER_FORCE[cc][k];
   const reg = COUNTRIES_REG[cc];
   const stDict = (reg && reg.st) ? reg.st() : null;
   if(!stDict) return barTier;
@@ -9334,7 +9357,7 @@ function _renderSpeciesRarityCard(key){
         // Override manuel prioritaire : quelques exotiques naturalisees localement abondantes
         // (Ibis sacre, Tadorne casarca, Canard mandarin) qu'on force tier 6 malgre S&T/bar chart
         // qui les mettent tier 7-8. Cf EXOTIQUES_TIER_FORCE_FR.
-        const override = (typeof EXOTIQUES_TIER_FORCE_FR === 'object') ? EXOTIQUES_TIER_FORCE_FR[k] : null;
+        const override = (typeof EXOTIQUES_TIER_FORCE === 'object' && EXOTIQUES_TIER_FORCE[cc]) ? EXOTIQUES_TIER_FORCE[cc][k] : null;
         // Si st.a == 0 (S&T dit "pas presente en France", ex : vagrant transatlantique), le merge
         // court-circuite avec la source d'appui. Ne pas afficher "S&T retenu" a tort.
         const stValid = !!st.a;
