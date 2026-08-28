@@ -584,6 +584,10 @@
   .xa-zoom button { flex:none; width:24px; height:24px; padding:0; border:1px solid var(--line); background:var(--surface); color:var(--ink-2); border-radius:4px; cursor:pointer; font:600 12px system-ui; display:grid; place-items:center; }
   .xa-zoom button:hover { background:var(--surface-2); }
   .xa-zoom button:disabled { opacity:.4; cursor:not-allowed; }
+  /* Canvas spectro live : superpose sur le sono, semi-transparent, dessine en temps reel.
+     Uniquement visible quand la piste joue et que le Web Audio API a bien pu setup. */
+  .xa-spectro { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; opacity:0; transition:opacity .2s; z-index:1; }
+  .xa-player.playing .xa-spectro.ready { opacity:0.7; }
   .xa-time { font:600 10.5px/1 var(--mono, ui-monospace); color:var(--ink-3); display:flex; justify-content:space-between; padding:0 2px; }
   /* Section "autres enregistrements" : plus compact + separateur clair pour eviter la
      confusion avec le block suivant (chant vs cri). Le details a un border-bottom pour
@@ -9018,6 +9022,7 @@ function _renderSpeciesAudioBlock(container, label, primaryId, list){
           <div class="xa-bar-scroll" data-xa-scroll>
             <div class="xa-bar-inner" data-xa-inner>
               ${sono}
+              <canvas class="xa-spectro" data-xa-spectro></canvas>
               <div class="xa-bar-progress"></div>
               <div class="xa-bar-playhead"></div>
             </div>
@@ -9078,14 +9083,16 @@ function _wireCustomAudioPlayer(playerEl){
   const src = playerEl.dataset.xaSrc;
   const audioId = playerEl.dataset.xaId;
   if(!src) return;
-  const audio = new Audio(src);
+  // IMPORTANT : crossOrigin defini AVANT le set du src, sinon la Web Audio API ne pourra
+  // pas creer de MediaElementSource (CORS bloque tainted audio). Xeno-canto sert avec
+  // Access-Control-Allow-Origin *, donc l'audio charge normalement en mode anonymous.
+  const audio = new Audio();
+  audio.crossOrigin = 'anonymous';
   audio.preload = 'auto';
+  audio.src = src;
   if(audioId) audio.id = audioId;
   playerEl.appendChild(audio);
   audio.style.display = 'none';
-  // Force load immediat : sur les players secondaires (dans le details deplie), le
-  // preload="auto" ne se declenchait qu'au click -> gros delai avant que le playhead
-  // bouge (temps de fetch + parse metadata). audio.load() amorce le fetch en parallele.
   try{ audio.load(); }catch(_){}
   _xaAudios.add(audio);
   // Mutex direct sur cet audio : au play, pause tous les autres du registre.
@@ -9165,6 +9172,62 @@ function _wireCustomAudioPlayer(playerEl){
   if(zoomIn) zoomIn.addEventListener('click', e => { e.stopPropagation(); zoomLevel = Math.min(8, zoomLevel * 2); applyZoom(); });
   if(zoomOut) zoomOut.addEventListener('click', e => { e.stopPropagation(); zoomLevel = Math.max(1, zoomLevel / 2); applyZoom(); });
 
+  // SPECTROGRAMME LIVE : Web Audio API + Canvas. Setup au 1er play (autoplay policy).
+  // Silencieux si CORS bloque : le spectro reste cache, l'audio joue quand meme.
+  const canvas = playerEl.querySelector('[data-xa-spectro]');
+  let audioCtx = null, analyser = null, sourceNode = null, spectroRaf = null, spectroOk = false;
+  function setupSpectro(){
+    if(audioCtx || !canvas) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return;
+    try{
+      audioCtx = new AC();
+      sourceNode = audioCtx.createMediaElementSource(audio);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 512;
+      analyser.smoothingTimeConstant = 0.7;
+      sourceNode.connect(analyser);
+      analyser.connect(audioCtx.destination);
+      spectroOk = true;
+      if(canvas) canvas.classList.add('ready');
+    }catch(e){
+      console.warn('Spectro live desactive (CORS ou audio deja tainted) :', e.message);
+      audioCtx = null; analyser = null; sourceNode = null;
+    }
+  }
+  function drawSpectro(){
+    if(!spectroOk || !canvas || !analyser){ spectroRaf = null; return; }
+    const w = canvas.clientWidth || 300;
+    const h = canvas.clientHeight || 38;
+    if(canvas.width !== w) canvas.width = w;
+    if(canvas.height !== h) canvas.height = h;
+    const ctx2 = canvas.getContext('2d');
+    const bins = analyser.frequencyBinCount;
+    const data = new Uint8Array(bins);
+    analyser.getByteFrequencyData(data);
+    ctx2.clearRect(0, 0, w, h);
+    const barW = w / bins;
+    for(let i = 0; i < bins; i++){
+      const v = data[i] / 255;
+      if(v < 0.05) continue;
+      const barH = v * h;
+      const hue = 240 - v * 240;
+      ctx2.fillStyle = `hsl(${hue}, 90%, 55%)`;
+      ctx2.fillRect(i * barW, h - barH, Math.max(1, barW - 0.5), barH);
+    }
+    if(!audio.paused && !audio.ended) spectroRaf = requestAnimationFrame(drawSpectro);
+    else spectroRaf = null;
+  }
+  audio.addEventListener('play', () => {
+    setupSpectro();
+    if(audioCtx && audioCtx.state === 'suspended'){ try{ audioCtx.resume(); }catch(_){} }
+    if(spectroOk){
+      if(spectroRaf) cancelAnimationFrame(spectroRaf);
+      spectroRaf = requestAnimationFrame(drawSpectro);
+    }
+  });
+  audio.addEventListener('pause', () => { if(spectroRaf){ cancelAnimationFrame(spectroRaf); spectroRaf = null; } });
+  audio.addEventListener('ended', () => { if(spectroRaf){ cancelAnimationFrame(spectroRaf); spectroRaf = null; } });
 }
 // Chips info (rareté + famille + habitats + IUCN) sous le titre de la fiche.
 // Palette et labels IUCN standard, cohérents avec eBird / IUCN Red List. Applique
