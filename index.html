@@ -1000,7 +1000,14 @@
         <h1>Ligue Merlin Bird</h1>
       </div>
     </div>
-    <button class="theme-btn" id="themeBtn">◐ Thème</button>
+    <div style="display:flex; align-items:center; gap:8px; margin-left:auto;">
+      <button type="button" id="globalCountryBtn" class="cp-btn" data-cc="FR" title="Pays actif : filtre appliqué à toutes les pages (Birdydex, Cette semaine, Carte, ...)">
+        <span class="cp-btn-flag">🇫🇷</span>
+        <span class="cp-btn-label">France</span>
+        <span class="cp-btn-arrow">▾</span>
+      </button>
+      <button class="theme-btn" id="themeBtn">◐ Thème</button>
+    </div>
   </header>
 
   <nav class="tabs">
@@ -1211,14 +1218,12 @@
           <p class="help" style="margin-top:2px;">Espèces les plus faciles à observer cette semaine dans ta région. Les manquantes apparaissent en silhouette.</p>
         </div>
         <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
-          <div>
-            <label style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; display:block; margin-bottom:4px;">Pays</label>
-            <button type="button" id="targetsCountry" class="cp-btn" data-cc="FR">
-              <span class="cp-btn-flag">🇫🇷</span>
-              <span class="cp-btn-label">France</span>
-              <span class="cp-btn-arrow">▾</span>
-            </button>
-          </div>
+          <!-- Pays global via bouton en haut a droite (header). Le selecteur local est cache. -->
+          <button type="button" id="targetsCountry" class="cp-btn" data-cc="FR" hidden>
+            <span class="cp-btn-flag">🇫🇷</span>
+            <span class="cp-btn-label">France</span>
+            <span class="cp-btn-arrow">▾</span>
+          </button>
           <div>
             <label for="targetsRegion" style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; display:block; margin-bottom:4px;">Ma région</label>
             <select id="targetsRegion" class="filt-sel" style="font-size:13px; padding:6px 10px;"></select>
@@ -1402,8 +1407,8 @@
         </label>
       </div>
       <div class="map-controls" id="mapCtrlsEbird" style="display:none;">
-        <label class="explorer-lbl" for="mapEbCountry">Pays</label>
-        <select class="filt-sel" id="mapEbCountry" title="Pays d'exploration. Défaut France. Change pour explorer des hotspots à l'étranger (voyages).">
+        <!-- Pays global via header. Select local cache mais garde pour compat listener. -->
+        <select class="filt-sel" id="mapEbCountry" hidden>
           <option value="FR" selected>France</option>
           <option value="ME">Monténégro</option>
           <option value="ES">Espagne</option>
@@ -1673,7 +1678,8 @@
       </div>
       <div class="pkdx-ctrls" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:10px 0 14px;">
         <input type="search" id="pkdxSearch" placeholder="Rechercher (nom fr ou sci)…" style="flex:1; min-width:180px; padding:9px 12px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2); color:var(--ink); font:14px system-ui;">
-        <button type="button" id="pkdxCountry" class="cp-btn" data-cc="FR">
+        <!-- Pays global via header. Bouton local cache mais conserve pour init interne. -->
+        <button type="button" id="pkdxCountry" class="cp-btn" data-cc="FR" hidden>
           <span class="cp-btn-flag">🇫🇷</span>
           <span class="cp-btn-label">France</span>
           <span class="cp-btn-arrow">▾</span>
@@ -2237,6 +2243,51 @@ const CC_FLAGS = {
 };
 // Met a jour le label + drapeau d'un bouton pays (data-cc + spans .cp-btn-flag/label).
 // Utilise flagImg (<img flagcdn>) pour rendu cross-platform (Windows n'affiche pas les emoji).
+// GLOBAL COUNTRY : filtre pays applique a tout le site (Birdydex, Cette semaine, Carte).
+// La fiche espece garde son picker local pour comparer avec le pays global.
+// Persiste dans localStorage sous 'mb-global-country'.
+let _globalCountry = 'FR';
+try{ _globalCountry = localStorage.getItem('mb-global-country') || 'FR'; }catch(_){}
+function _setGlobalCountry(cc){
+  if(!cc || cc === _globalCountry) return;
+  _globalCountry = cc;
+  try{ localStorage.setItem('mb-global-country', cc); }catch(_){}
+  // Sync tous les states de pages
+  if(typeof _pkdxFilters === 'object'){
+    _pkdxFilters.country = cc;
+    try{ localStorage.setItem('mb-pkdx-filters', JSON.stringify(_pkdxFilters)); }catch(_){}
+    if(typeof _pkdxAllSorted !== 'undefined') _pkdxAllSorted = null;
+    if(typeof _pkdxNumById !== 'undefined') _pkdxNumById = null;
+  }
+  if(typeof _targetsCountry !== 'undefined'){
+    _targetsCountry = cc;
+    try{ localStorage.setItem('mb-targets-country', cc); }catch(_){}
+    // Reset region si stale
+    if(typeof _targetsRegion !== 'undefined' && typeof REGIONS_BY_COUNTRY === 'object'){
+      const belongs = (REGIONS_BY_COUNTRY[cc] || []).some(r => r.code === _targetsRegion);
+      if(!belongs){ _targetsRegion = ''; try{ localStorage.setItem('mb-targets-region', ''); }catch(_){} }
+    }
+    if(typeof _targetsRegionInit !== 'undefined') _targetsRegionInit = false;
+  }
+  if(typeof ebFilter === 'object'){
+    ebFilter.country = cc;
+    ebFilter.region = cc;
+    ebFilter.dept = '';
+    // Sync le select mapEbCountry (cache mais actif pour compat)
+    const mec = document.getElementById('mapEbCountry');
+    if(mec) mec.value = cc;
+  }
+  // Sync le bouton global visuel
+  const gb = document.getElementById('globalCountryBtn');
+  if(gb) _syncCountryButton(gb, cc);
+  // Re-render la vue active
+  try{
+    const activeView = [...document.querySelectorAll('.tab.on')][0]?.dataset?.view;
+    if(activeView === 'pokedex' && typeof _pkdxRender === 'function') _pkdxRender();
+    else if(activeView === 'targets' && typeof renderTargets === 'function') renderTargets();
+    else if(activeView === 'map' && typeof renderMap === 'function') renderMap();
+  }catch(e){ console.warn('sync view after country change :', e.message); }
+}
 function _syncCountryButton(btn, cc){
   if(!btn) return;
   const reg = COUNTRIES_REG[cc];
@@ -4738,7 +4789,7 @@ let _loaded = { missing:'', hotspots:'' };   // clé de cache (région+jours)
 let mapFilter = { player:'all', tier:'any', country:'any', showAllObs:false };
 // Filtres propres aux modes eBird
 // `rarities` = Set des niveaux sélectionnés (nombres 1-9 ou chaîne 'exo'). Vide = pas de filtre.
-let ebFilter = { country:'FR', region:'FR', days:14, rarities:new Set([1,2,3,4,5,6,7,8,9,10,'exo']), month:0, dept:'', minTodo:0, source:'ebird', yearMin:2024, yearMax:2025, polygon:null, showObserved:false };
+let ebFilter = { country:(typeof _globalCountry !== 'undefined' ? _globalCountry : 'FR'), region:(typeof _globalCountry !== 'undefined' ? _globalCountry : 'FR'), days:14, rarities:new Set([1,2,3,4,5,6,7,8,9,10,'exo']), month:0, dept:'', minTodo:0, source:'ebird', yearMin:2024, yearMax:2025, polygon:null, showObserved:false };
 // Cache pays -> [{code, name}] pour ne pas re-fetcher a chaque changement de pays.
 const _ebRegionsCache = new Map();  // countryCode -> [{code, name}, ...]
 const _ebSubregionsCache = new Map();   // regionCode -> [{code, name}, ...]
@@ -10978,6 +11029,16 @@ $('#themeBtn').addEventListener('click',()=>{
   root.setAttribute('data-theme', isDark?'light':'dark');
 });
 
+// Global country button : sync + click ouvre le picker modal
+const _globalCcBtn = document.getElementById('globalCountryBtn');
+if(_globalCcBtn){
+  _syncCountryButton(_globalCcBtn, _globalCountry);
+  _globalCcBtn.addEventListener('click', async () => {
+    const chosen = await _openCountryPicker(_globalCountry);
+    if(chosen) _setGlobalCountry(chosen);
+  });
+}
+
 /* ---------------- go ---------------- */
 showLeague();   // affiche la page tout de suite, sans attendre la connexion
 /* ---------------- connexion email ---------------- */
@@ -11047,9 +11108,10 @@ function renderQuizInit(){ _quizRefreshStatsUI(); }
 
 /* ---------------- Pokedex : grille de toutes les especes FR ---------------- */
 // Etat local pour les filtres. Persistant en localStorage pour retrouver la meme vue.
-let _pkdxFilters = { search:'', country:'FR', family:'', habitat:'', owned:'' };
+let _pkdxFilters = { search:'', country:(_globalCountry||'FR'), family:'', habitat:'', owned:'' };
 try{ Object.assign(_pkdxFilters, JSON.parse(localStorage.getItem('mb-pkdx-filters')||'{}')); }catch(_){}
-if(!_pkdxFilters.country) _pkdxFilters.country = 'FR';
+// Le pays global override le pays local Birdydex (le global est la source de verite).
+_pkdxFilters.country = _globalCountry || _pkdxFilters.country || 'FR';
 // Purge les vieilles valeurs habitat (mapping famille) qui ne correspondent plus aux
 // nouvelles categories Avonet (migration 2026-08). Reset si non valide.
 if(_pkdxFilters.habitat && typeof HABITAT_CATS !== 'undefined' && !HABITAT_CATS.includes(_pkdxFilters.habitat)) _pkdxFilters.habitat = '';
@@ -11069,12 +11131,11 @@ let _pkdxNumById = null;
 // S&T weekly national + REAL_FREQ_MONTHLY_BY_REGION pour filtrer par presence regionale.
 let _targetsRegion = null;   // '' = pays entier, sinon code region (FR-BRE, ES-AN, etc.)
 let _targetsRegionInit = false;
-let _targetsCountry = 'FR';   // pays courant pour "Cette semaine"
+let _targetsCountry = (typeof _globalCountry !== 'undefined') ? _globalCountry : 'FR';   // pays courant pour "Cette semaine" (hérite du global)
 // Anti-boucle infinite : marque quels pays ont deja tente le fetch data regionale.
 // Sans ca, pour un pays comme Monténégro (monthlyByRegion() = null permanent), on
 // re-tentait a chaque renderTargets → boucle qui bloque la page.
 const _targetsLoadAttempted = {};
-try{ _targetsCountry = localStorage.getItem('mb-targets-country') || 'FR'; }catch(_){}
 const FLAG_EMOJI_TGT = CC_FLAGS;   // alias vers la source unique
 let _targetsOwnedFilter = '';   // '' = toutes, 'missing' = manquantes seulement, 'owned' = deja cochees
 try{ _targetsOwnedFilter = localStorage.getItem('mb-targets-owned') || ''; }catch(_){}
