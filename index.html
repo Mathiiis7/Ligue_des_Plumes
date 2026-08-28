@@ -1678,25 +1678,18 @@
           <span class="cp-btn-label">France</span>
           <span class="cp-btn-arrow">▾</span>
         </button>
-        <select id="pkdxFamily" class="filt-sel"><option value="">Toutes familles</option></select>
-        <select id="pkdxHabitat" class="filt-sel">
-          <option value="">Tous milieux</option>
-          <option value="forestier">🌲 Forestier</option>
-          <option value="hzhumide">🪺 Zones humides</option>
-          <option value="eaudouce">💧 Eau douce</option>
-          <option value="pelagique">🌊 Pélagique</option>
-          <option value="littoral">🏖️ Littoral</option>
-          <option value="montagne">🏔️ Montagne</option>
-          <option value="steppe">🌾 Steppe</option>
-          <option value="bocage">🌳 Bocage</option>
-          <option value="urbain">🏙️ Urbain</option>
-          <option value="rocher">🪨 Rocher</option>
-        </select>
-        <select id="pkdxOwned" class="filt-sel">
-          <option value="">Toutes</option>
-          <option value="owned">Vues seulement</option>
-          <option value="missing">Manquantes seulement</option>
-        </select>
+        <button type="button" id="pkdxFamily" class="cp-btn" data-value="">
+          <span class="cp-btn-label">Toutes familles</span>
+          <span class="cp-btn-arrow">▾</span>
+        </button>
+        <button type="button" id="pkdxHabitat" class="cp-btn" data-value="">
+          <span class="cp-btn-label">Tous milieux</span>
+          <span class="cp-btn-arrow">▾</span>
+        </button>
+        <button type="button" id="pkdxOwned" class="cp-btn" data-value="">
+          <span class="cp-btn-label">Toutes</span>
+          <span class="cp-btn-arrow">▾</span>
+        </button>
       </div>
       <div id="pkdxTierChips" style="display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 4px; padding:8px 10px; background:var(--surface-2); border-radius:8px;"></div>
       <div id="pkdxGrid" class="pkdx-grid"></div>
@@ -2380,6 +2373,68 @@ function _openCountryPicker(currentCode, opts = {}){
     });
     document.body.appendChild(backdrop);
     setTimeout(() => searchEl.focus(), 50);
+  });
+}
+// Modal picker generique (meme style que _openCountryPicker) pour les filtres de type
+// select (famille, habitat, statut coche). Retourne la value choisie (peut etre '' pour
+// 'Toutes / Tous'), ou null si annule.
+//
+//   opts = { title, options: [{value, label, count?, color?}], searchable }
+//
+// options[0] est generalement l'option "Tous / Toutes" (value = '').
+function _openFilterPicker(currentValue, opts){
+  return new Promise(resolve => {
+    const { title = 'Choisir', options = [], searchable = true } = opts || {};
+    const backdrop = document.createElement('div');
+    backdrop.className = 'cp-modal-backdrop';
+    backdrop.innerHTML = `
+      <div class="cp-modal-inner">
+        <div class="cp-modal-title">
+          <span>${esc(title)}</span>
+          <button type="button" class="cp-modal-close" aria-label="Fermer">×</button>
+        </div>
+        ${searchable ? `<input type="search" class="cp-search" placeholder="Rechercher…" autofocus>` : ''}
+        <div class="cp-list"></div>
+      </div>`;
+    const listEl = backdrop.querySelector('.cp-list');
+    const searchEl = backdrop.querySelector('.cp-search');
+    const closeBtn = backdrop.querySelector('.cp-modal-close');
+    const render = (filter = '') => {
+      const fLC = filter.toLowerCase().trim();
+      const items = options.filter(o => !fLC || (o.label || '').toLowerCase().includes(fLC));
+      if(!items.length){
+        listEl.innerHTML = '<div style="padding:16px; text-align:center; color:var(--ink-3);">Aucune option trouvée.</div>';
+        return;
+      }
+      listEl.innerHTML = items.map(o => {
+        const on = (o.value === currentValue) ? ' on' : '';
+        const dot = o.color ? `<span class="cp-item-dot" style="background:${o.color};"></span>` : '';
+        const cnt = (o.count != null) ? `<span class="cp-item-meta">${o.count} esp.</span>` : '';
+        return `<div class="cp-item${on}" data-value="${esc(String(o.value))}">
+          ${dot}
+          <span class="cp-item-name">${esc(o.label)}</span>
+          ${cnt}
+        </div>`;
+      }).join('');
+    };
+    render();
+    const cleanup = () => {
+      backdrop.remove();
+      document.removeEventListener('keydown', escHandler);
+    };
+    const escHandler = e => { if(e.key === 'Escape'){ cleanup(); resolve(null); } };
+    document.addEventListener('keydown', escHandler);
+    backdrop.addEventListener('click', e => { if(e.target === backdrop){ cleanup(); resolve(null); } });
+    closeBtn.addEventListener('click', () => { cleanup(); resolve(null); });
+    if(searchEl) searchEl.addEventListener('input', () => render(searchEl.value));
+    listEl.addEventListener('click', e => {
+      const it = e.target.closest('.cp-item');
+      if(!it) return;
+      cleanup();
+      resolve(it.dataset.value);
+    });
+    document.body.appendChild(backdrop);
+    if(searchEl) setTimeout(() => searchEl.focus(), 50);
   });
 }
 // EXOTIC = liste globale exotiques (curatorial, ~68 especes probables en Europe de l'ouest).
@@ -11156,20 +11211,9 @@ document.addEventListener('click', e => {
 function renderPokedex(){
   const grid = $('#pkdxGrid'); if(!grid) return;
   if(!_pkdxInit){
-    // Peuple le select Familles depuis les especes existantes.
-    const famSel = $('#pkdxFamily');
-    if(famSel){
-      const fams = new Set();
-      for(const sci in FR_NAMES){ const f = familyOf(sci); if(f) fams.add(f); }
-      // Ordre taxonomique dans le dropdown (canards en haut, bruants en bas) au lieu d'alphabetique.
-      const ordered = [...fams].sort((a,b) => (FAMILY_ORDER[a] ?? 9999) - (FAMILY_ORDER[b] ?? 9999) || a.localeCompare(b, 'fr'));
-      famSel.innerHTML = '<option value="">Toutes familles</option>' + ordered.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join('');
-    }
-    // Restore filtres persistes. Country n'est plus un select (bouton modal) : sync via helper.
-    for(const k of ['search','family','habitat','owned']){
-      const el = document.getElementById('pkdx' + k.charAt(0).toUpperCase() + k.slice(1));
-      if(el && _pkdxFilters[k] != null) el.value = _pkdxFilters[k];
-    }
+    // Restore search input value (les autres filtres sont des boutons -> sync via label plus bas).
+    const searchEl = document.getElementById('pkdxSearch');
+    if(searchEl && _pkdxFilters.search) searchEl.value = _pkdxFilters.search;
     // Chips rareté : delegation click sur le container. Toggle exclude/include.
     const tierChipsBox = document.getElementById('pkdxTierChips');
     if(tierChipsBox && !tierChipsBox._init){
@@ -11183,22 +11227,110 @@ function renderPokedex(){
       });
       tierChipsBox._init = true;
     }
-    // (Le sync du bouton pays + le click handler sont attaches plus bas dans le meme init.)
     // Debounce sur la recherche.
     let _searchTimer;
     $('#pkdxSearch')?.addEventListener('input', e => {
       clearTimeout(_searchTimer);
       _searchTimer = setTimeout(() => { _pkdxFilters.search = e.target.value; _pkdxSaveFilters(); _pkdxRender(); }, 250);
     });
-    ['pkdxFamily','pkdxHabitat','pkdxOwned'].forEach(id => {
-      const el = document.getElementById(id);
-      if(el) el.addEventListener('change', e => {
-        const k = id.replace('pkdx','').toLowerCase();
-        _pkdxFilters[k] = e.target.value;
+    // Helper : sync le label d'un bouton filtre (famille/habitat/owned)
+    const _syncPkdxFilterBtn = (btnId, label) => {
+      const b = document.getElementById(btnId);
+      if(!b) return;
+      const lbl = b.querySelector('.cp-btn-label');
+      if(lbl) lbl.textContent = label;
+    };
+    // Compute species count par option pour un filtre (compte sur _pkdxAllSorted, pays courant).
+    const _countPkdxByField = (fn) => {
+      const counts = {};
+      if(!_pkdxAllSorted) return counts;
+      for(const r of _pkdxAllSorted){
+        const vals = fn(r);
+        if(!vals) continue;
+        for(const v of (Array.isArray(vals) ? vals : [vals])){
+          counts[v] = (counts[v] || 0) + 1;
+        }
+      }
+      return counts;
+    };
+    // Famille : modal picker avec search + count par famille.
+    const famBtn = document.getElementById('pkdxFamily');
+    if(famBtn){
+      const initLabel = _pkdxFilters.family || 'Toutes familles';
+      _syncPkdxFilterBtn('pkdxFamily', initLabel);
+      famBtn.addEventListener('click', async () => {
+        const fams = new Set();
+        for(const sci in FR_NAMES){ const f = familyOf(sci); if(f) fams.add(f); }
+        const ordered = [...fams].sort((a,b) => (FAMILY_ORDER[a] ?? 9999) - (FAMILY_ORDER[b] ?? 9999) || a.localeCompare(b, 'fr'));
+        const counts = _countPkdxByField(r => familyOf(r.sci));
+        const totalCount = _pkdxAllSorted ? _pkdxAllSorted.length : 0;
+        const opts = [{ value:'', label:'Toutes familles', count: totalCount }].concat(
+          ordered.map(f => ({ value:f, label:f, count: counts[f] || 0 }))
+        );
+        const chosen = await _openFilterPicker(_pkdxFilters.family || '', {
+          title: 'Choisir une famille', options: opts, searchable: true
+        });
+        if(chosen == null) return;
+        _pkdxFilters.family = chosen;
         _pkdxSaveFilters();
+        _syncPkdxFilterBtn('pkdxFamily', chosen || 'Toutes familles');
         _pkdxRender();
       });
-    });
+    }
+    // Habitat : modal picker.
+    const habBtn = document.getElementById('pkdxHabitat');
+    if(habBtn){
+      const initLabel = _pkdxFilters.habitat
+        ? (HABITAT_LABELS[_pkdxFilters.habitat] || _pkdxFilters.habitat)
+        : 'Tous milieux';
+      _syncPkdxFilterBtn('pkdxHabitat', initLabel);
+      habBtn.addEventListener('click', async () => {
+        const counts = _countPkdxByField(r => habitatsOf(r.sci));
+        const totalCount = _pkdxAllSorted ? _pkdxAllSorted.length : 0;
+        const opts = [{ value:'', label:'Tous milieux', count: totalCount }].concat(
+          HABITAT_CATS.map(h => ({ value:h, label:(HABITAT_LABELS[h] || h), count: counts[h] || 0 }))
+        );
+        const chosen = await _openFilterPicker(_pkdxFilters.habitat || '', {
+          title: 'Choisir un milieu', options: opts, searchable: false
+        });
+        if(chosen == null) return;
+        _pkdxFilters.habitat = chosen;
+        _pkdxSaveFilters();
+        _syncPkdxFilterBtn('pkdxHabitat', chosen ? (HABITAT_LABELS[chosen] || chosen) : 'Tous milieux');
+        _pkdxRender();
+      });
+    }
+    // Owned (Vues / Manquantes / Toutes) : modal picker simple.
+    const ownedBtn = document.getElementById('pkdxOwned');
+    if(ownedBtn){
+      const OWNED_LABEL = { '':'Toutes', 'owned':'Vues seulement', 'missing':'Manquantes seulement' };
+      _syncPkdxFilterBtn('pkdxOwned', OWNED_LABEL[_pkdxFilters.owned || ''] || 'Toutes');
+      ownedBtn.addEventListener('click', async () => {
+        const me = realPeople.find(p => p.id === myUid);
+        const mine = me ? new Set([...me.species.keys()]) : new Set();
+        let ownedCnt = 0, missCnt = 0, totalCnt = 0;
+        if(_pkdxAllSorted){
+          for(const r of _pkdxAllSorted){
+            totalCnt++;
+            if(_mineHasStrict(mine, r.sci)) ownedCnt++;
+            else missCnt++;
+          }
+        }
+        const opts = [
+          { value:'',        label:'Toutes',              count: totalCnt },
+          { value:'owned',   label:'Vues seulement',      count: ownedCnt },
+          { value:'missing', label:'Manquantes seulement', count: missCnt },
+        ];
+        const chosen = await _openFilterPicker(_pkdxFilters.owned || '', {
+          title: 'Filtrer par statut', options: opts, searchable: false
+        });
+        if(chosen == null) return;
+        _pkdxFilters.owned = chosen;
+        _pkdxSaveFilters();
+        _syncPkdxFilterBtn('pkdxOwned', OWNED_LABEL[chosen || ''] || 'Toutes');
+        _pkdxRender();
+      });
+    }
     // Country picker : bouton qui ouvre le modal reutilisable
     const ccBtn = document.getElementById('pkdxCountry');
     if(ccBtn){
