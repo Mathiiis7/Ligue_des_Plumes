@@ -2547,17 +2547,35 @@ function isExotic(sci){
 // Consequence : la Perdrix choukar (alectoris chukar) est marquee exotique en FR via le
 // fallback curated, mais NON exotique en ME car absente de EXOTIC_BY_COUNTRY.ME. C'est
 // coherent : eBird ne l'a pas flaggee exotique en ME (elle y est native aux Balkans).
+// Helper : espece "native ou reguliere" dans le pays cc = presente dans son bar chart
+// eBird SANS statut exotique explicite (donc pas dans EXOTIC_BY_COUNTRY). Sert a eviter
+// d'appliquer le fallback EXOTIC curated a une espece qui est en fait sauvage dans ce pays
+// (ex : Alectoris chukar exotique en FR mais native aux Balkans, donc reguliere en ME).
+function _isNativeInCountry(k, cc){
+  const reg = COUNTRIES_REG[cc];
+  if(!reg || !reg.barTier) return false;
+  const bar = reg.barTier();
+  if(!bar[k]) return false;
+  // Si EXOTIC_BY_COUNTRY explicite l'a marquee exotique, on considere qu'elle n'est pas native.
+  if(EXOTIC_BY_COUNTRY[cc] && EXOTIC_BY_COUNTRY[cc][k]) return false;
+  return true;
+}
 function isExoticInCountry(sci, country){
   const k = (sci||'').trim().toLowerCase();
   const cc = country || 'FR';
   if(EXOTIC_BY_COUNTRY[cc] && EXOTIC_BY_COUNTRY[cc][k]) return true;
   // Park-only exotics (Canard musque, Paon, Cygne noir...) : echappes cage/parc
-  // dans tous les pays par definition. Coherent avec rarityForCountry qui applique
-  // isParkOnlyExotic() -> tier 0 globalement.
+  // dans tous les pays par definition.
   if(isParkOnlyExotic(k)) return true;
-  // Fallback curated : uniquement pour FR (le dict EXOTIC reflete la situation FR/Europe
-  // de l'ouest, il serait faux de l'appliquer aveuglement a d'autres pays).
-  if(cc === 'FR' && EXOTIC[k]) return true;
+  // Fallback curated EXOTIC : dict des exotiques historiquement observes en Europe de l'ouest.
+  //   - FR : applique blindly (dict cure pour FR, meme si l'espece est dans REAL_RARITY parce
+  //     que reguliere en tant qu'exotique etablie type Perruche a collier).
+  //   - Autres pays : applique uniquement si l'espece n'est PAS dans le bar chart local, sinon
+  //     risque de mal classer une espece native aux Balkans (Alectoris chukar en ME) comme exotique.
+  if(EXOTIC[k]){
+    if(cc === 'FR') return true;
+    if(!_isNativeInCountry(k, cc)) return true;
+  }
   return false;
 }
 // Categorie exotique per-pays (N/P/X/C). Meme logique de fallback que isExoticInCountry.
@@ -2565,9 +2583,11 @@ function exoticCategoryInCountry(sci, country){
   const k = (sci||'').trim().toLowerCase();
   const cc = country || 'FR';
   if(EXOTIC_BY_COUNTRY[cc] && EXOTIC_BY_COUNTRY[cc][k]) return EXOTIC_BY_COUNTRY[cc][k];
-  // Park-only : echappe / captif => categorie X globale.
   if(isParkOnlyExotic(k)) return 'X';
-  if(cc === 'FR' && EXOTIC[k]) return EXOTIC_CATEGORY[k] || 'X';
+  if(EXOTIC[k]){
+    if(cc === 'FR') return EXOTIC_CATEGORY[k] || 'X';
+    if(!_isNativeInCountry(k, cc)) return EXOTIC_CATEGORY[k] || 'X';
+  }
   return '';
 }
 // Depuis migration S&T (26/08/2026) : rarityReal renvoie le tier apres merge S&T+bar chart
