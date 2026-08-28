@@ -1891,6 +1891,7 @@
             <div class="sm-desc" id="smDesc"></div>
           </div>
           <div class="sm-card" id="smRarityCard" hidden></div>
+          <div class="sm-card" id="smTraitsCard" hidden></div>
           <div class="sm-card" id="smFreqCard" hidden>
             <div class="sm-card-title">Quand la trouver <span class="sm-freq-src" id="smFreqSrc"></span></div>
             <div class="sm-freq-chart-wrap">
@@ -5395,6 +5396,29 @@ async function _loadAbundanceRegionData(cc){
     }
   })();
   return _abundanceRegionPromises[country];
+}
+// Traits Avonet (ecologie + morphologie), lazy load 1.4 MB au 1er open de fiche.
+let AVONET_TRAITS = null;
+let _avonetTraitsPromise = null;
+async function _loadAvonetTraits(){
+  if(AVONET_TRAITS) return AVONET_TRAITS;
+  if(_avonetTraitsPromise) return _avonetTraitsPromise;
+  _avonetTraitsPromise = (async () => {
+    try{
+      const d = await fetch('data/avonet_traits.json?v=20260828').then(r => {
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        return r.json();
+      });
+      AVONET_TRAITS = d;
+      return d;
+    }catch(err){
+      console.warn('avonet_traits.json indisponible :', err.message);
+      AVONET_TRAITS = {};
+      _avonetTraitsPromise = null;
+      return {};
+    }
+  })();
+  return _avonetTraitsPromise;
 }
 async function renderMap(){
   const el = document.getElementById('mapEl'); if(!el || !window.L) return;
@@ -8988,6 +9012,54 @@ function _iucnBadge(sci, scope){
   const scopeLbl = scope === 'fr' ? 'France' : 'Monde';
   return `<span class="chip" title="${esc(scopeLbl)} : ${esc(lbl)} (IUCN ${esc(code)})" style="background:${col}; color:${textColor}; font-weight:800; letter-spacing:.3px; ${border}">${esc(code)}<span style="opacity:.75; margin-left:4px; font-weight:600; font-size:9px; text-transform:uppercase;">${scope==='fr'?'FR':'⊕'}</span></span>`;
 }
+// Rendu de la card Traits (Avonet) : ecologie + morphologie de l'espece.
+// Lazy fetch au 1er open (1.4 MB de data), puis affichage compact.
+async function _renderSpeciesTraitsCard(key){
+  const box = $('#smTraitsCard'); if(!box) return;
+  box.hidden = true;
+  box.innerHTML = '';
+  const k = (key||'').toLowerCase().trim();
+  if(!k) return;
+  const traits = await _loadAvonetTraits();
+  const t = traits[k];
+  if(!t){ return; }   // pas de traits pour cette espece (rare)
+  // Labels courts pour les axes categoriels
+  const MIG = { 1:'🏃 Sédentaire', 2:'🚶 Migration partielle', 3:'✈️ Migrateur total' };
+  const TL  = { C:'🥩 Carnivore', H:'🌿 Herbivore', O:'🍽️ Omnivore', S:'🦴 Charognard' };
+  const PL  = { Aer:'🌬️ Aérien', Aqu:'🌊 Aquatique', Ins:'🌳 Percheur', Ter:'🦶 Terrestre', Gen:'🎯 Généraliste' };
+  const HD  = { 1:'🌲 Milieu dense', 2:'🌾 Semi-ouvert', 3:'🏞️ Très ouvert' };
+  // Section Écologie
+  const ecoLines = [];
+  if(t.mi && MIG[t.mi])   ecoLines.push({ k:'Migration',      v: MIG[t.mi] });
+  if(t.tl && TL[t.tl])    ecoLines.push({ k:'Régime',         v: TL[t.tl] + (t.tn ? ` · ${esc(t.tn)}` : '') });
+  if(t.pl && PL[t.pl])    ecoLines.push({ k:'Style de vie',   v: PL[t.pl] });
+  if(t.hd && HD[t.hd])    ecoLines.push({ k:'Densité habitat', v: HD[t.hd] });
+  // Section Morphologie (masse + longueurs + HWI)
+  const morphLines = [];
+  const fmt = v => v == null ? '' : String(v);
+  if(t.ma != null)   morphLines.push({ k:'Masse',        v: `${fmt(t.ma)} g` });
+  if(t.wi != null)   morphLines.push({ k:'Aile',         v: `${fmt(t.wi)} mm` });
+  if(t.bl != null)   morphLines.push({ k:'Bec (culmen)', v: `${fmt(t.bl)} mm` });
+  if(t.ta != null)   morphLines.push({ k:'Tarse',        v: `${fmt(t.ta)} mm` });
+  if(t.tail != null) morphLines.push({ k:'Queue',        v: `${fmt(t.tail)} mm` });
+  if(t.hwi != null)  morphLines.push({ k:'HWI',          v: `${fmt(t.hwi)}`, hint:'Hand-Wing Index : indicateur de capacité de dispersion (>25 = grand voyageur)' });
+  if(!ecoLines.length && !morphLines.length) return;
+  const renderLine = ({k, v, hint}) => `<div style="display:flex; justify-content:space-between; gap:12px; padding:3px 0; font-size:13px;"><span style="color:var(--ink-3);${hint?' cursor:help;':''}"${hint?` title="${esc(hint)}"`:''}>${esc(k)}</span><span style="color:var(--ink); font-weight:600; text-align:right;">${v}</span></div>`;
+  box.innerHTML = `
+    <div class="sm-card-title" style="display:flex; align-items:center; gap:8px;">Traits <span style="font-size:10.5px; color:var(--ink-3); text-transform:none; font-weight:400; letter-spacing:0;">— Avonet (Tobias et al. 2022)</span></div>
+    ${ecoLines.length ? `
+      <div style="margin-top:4px;">
+        <div style="font-size:10.5px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; margin-bottom:4px;">Écologie</div>
+        ${ecoLines.map(renderLine).join('')}
+      </div>` : ''}
+    ${morphLines.length ? `
+      <div style="margin-top:${ecoLines.length ? '10px':'4px'};">
+        <div style="font-size:10.5px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; margin-bottom:4px;">Morphologie</div>
+        ${morphLines.map(renderLine).join('')}
+      </div>` : ''}
+  `;
+  box.hidden = false;
+}
 function _renderSpeciesInfoChips(key){
   const box = $('#smInfoChips'); if(!box) return;
   const chips = [];
@@ -9932,6 +10004,8 @@ function openSpeciesModal(sci){
   // Chips info : famille + habitats (rarete deplacee dans card dediee).
   _renderSpeciesInfoChips(key);
   _renderSpeciesRarityCard(key);
+  // Traits Avonet (ecologie + morphologie), lazy fetch au 1er open
+  _renderSpeciesTraitsCard(key);
   // Description Wikipedia (async)
   _renderSpeciesDesc(sci);
   // Note : le freq chart est deja rendu par _renderSpeciesRarityCard avec le
