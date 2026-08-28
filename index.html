@@ -569,34 +569,12 @@
   .xa-play.loading { animation:xa-spin 1.2s linear infinite; background:var(--ink-3); }
   @keyframes xa-spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
   .xa-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
-  .xa-bar { position:relative; height:110px; border-radius:6px; overflow:hidden; background:#dfe1e5; cursor:pointer; }
-  /* Zoom sono : conteneur scrollable qui contient sono + progress + playhead. Le zoom
-     etire la width de l'image sono pour voir les details fins. Scroll horizontal. */
-  .xa-bar-scroll { position:absolute; inset:0; overflow-x:auto; overflow-y:hidden; scrollbar-width:thin; }
-  .xa-bar-inner { position:relative; height:100%; width:100%; min-width:100%; }
+  .xa-bar { position:relative; height:38px; border-radius:6px; overflow:hidden; background:var(--surface-3); cursor:pointer; }
   .xa-bar-sono { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.85; pointer-events:none; }
   .xa-bar-progress { position:absolute; top:0; bottom:0; left:0; width:0; background:linear-gradient(90deg, rgba(255,255,255,0), color-mix(in srgb, var(--accent) 30%, transparent)); pointer-events:none; transition:width .05s linear; }
   .xa-bar-playhead { position:absolute; top:-2px; bottom:-2px; width:3px; margin-left:-1.5px; background:var(--accent-2); box-shadow:0 0 6px color-mix(in srgb, var(--accent-2) 90%, transparent), 0 0 2px #fff; left:0; pointer-events:none; transition:left .06s linear; opacity:0; z-index:2; }
   .xa-player.has-progress .xa-bar-playhead { opacity:1; }
   .xa-bar-fallback { position:absolute; inset:0; display:grid; place-items:center; color:var(--ink-3); font-size:11px; font-style:italic; }
-  /* Boutons zoom pour le sono. Compacts, a droite du bar. */
-  .xa-zoom { display:inline-flex; gap:2px; margin-left:6px; }
-  .xa-zoom button { flex:none; width:24px; height:24px; padding:0; border:1px solid var(--line); background:var(--surface); color:var(--ink-2); border-radius:4px; cursor:pointer; font:600 12px system-ui; display:grid; place-items:center; }
-  .xa-zoom button:hover { background:var(--surface-2); }
-  .xa-zoom button:disabled { opacity:.4; cursor:not-allowed; }
-  /* Canvas spectro live : superpose sur le sono, semi-transparent, dessine en temps reel.
-     Uniquement visible quand la piste joue et que le Web Audio API a bien pu setup. */
-  /* Canvas spectro live : desactive au profit du sono statique scrolled sous un curseur fixe. */
-  .xa-spectro { display:none; }
-  /* Curseur fixe au milieu (style Merlin) quand ca joue : ligne verticale au centre du bar.
-     Le sono lui-meme scroll (via transform) sous ce curseur. */
-  .xa-player.playing .xa-bar-cursor { opacity:1; }
-  .xa-bar-cursor { position:absolute; top:0; bottom:0; left:50%; margin-left:-1px; width:2px; background:#e63535; box-shadow:0 0 4px rgba(230,53,53,.6); pointer-events:none; opacity:0; transition:opacity .2s; z-index:3; }
-  /* Le sono statique se translate horizontalement pour que la position temporelle courante
-     s'aligne sur le curseur central. En playing, cache l'ancienne progress qui n'a plus de sens. */
-  .xa-player.playing .xa-bar-progress,
-  .xa-player.playing .xa-bar-playhead { display:none; }
-  .xa-player.playing .xa-bar-sono { transition:transform .06s linear; }
   .xa-time { font:600 10.5px/1 var(--mono, ui-monospace); color:var(--ink-3); display:flex; justify-content:space-between; padding:0 2px; }
   /* Section "autres enregistrements" : plus compact + separateur clair pour eviter la
      confusion avec le block suivant (chant vs cri). Le details a un border-bottom pour
@@ -9021,27 +8999,15 @@ function _renderSpeciesAudioBlock(container, label, primaryId, list){
   };
   const playerHtml = (r, audioId) => {
     const sono = r.sono ? `<img class="xa-bar-sono" src="${esc(r.sono)}" alt="Spectrogramme" onerror="this.remove()">` : `<div class="xa-bar-fallback">Pas de spectrogramme</div>`;
-    // Pas d'element audio dans le HTML : cree via new Audio() dans _wireCustomAudioPlayer.
-    // Nouvelle structure : .xa-bar contient un scrollable .xa-bar-scroll -> .xa-bar-inner
-    // (largeur = 100% * zoomLevel) qui contient sono img + canvas spectro live + progress + playhead.
     return `<div class="xa-player" data-xa-src="${esc(r.file)}"${audioId?` data-xa-id="${esc(audioId)}"`:''}>
       <button type="button" class="xa-play" data-xa-play aria-label="Lire / pause">▶</button>
       <div class="xa-body">
         <div class="xa-bar" data-xa-seek>
-          <div class="xa-bar-scroll" data-xa-scroll>
-            <div class="xa-bar-inner" data-xa-inner>
-              ${sono}
-              <div class="xa-bar-progress"></div>
-              <div class="xa-bar-playhead"></div>
-            </div>
-          </div>
-          <div class="xa-bar-cursor" data-xa-cursor></div>
+          ${sono}
+          <div class="xa-bar-progress"></div>
+          <div class="xa-bar-playhead"></div>
         </div>
         <div class="xa-time"><span data-xa-cur>0:00</span><span data-xa-dur>${esc(r.length||'--:--')}</span></div>
-      </div>
-      <div class="xa-zoom">
-        <button type="button" data-xa-zoom-out title="Zoom -">−</button>
-        <button type="button" data-xa-zoom-in title="Zoom +">+</button>
       </div>
     </div>`;
   };
@@ -9092,13 +9058,8 @@ function _wireCustomAudioPlayer(playerEl){
   const src = playerEl.dataset.xaSrc;
   const audioId = playerEl.dataset.xaId;
   if(!src) return;
-  // IMPORTANT : crossOrigin defini AVANT le set du src, sinon la Web Audio API ne pourra
-  // pas creer de MediaElementSource (CORS bloque tainted audio). Xeno-canto sert avec
-  // Access-Control-Allow-Origin *, donc l'audio charge normalement en mode anonymous.
-  const audio = new Audio();
-  audio.crossOrigin = 'anonymous';
+  const audio = new Audio(src);
   audio.preload = 'auto';
-  audio.src = src;
   if(audioId) audio.id = audioId;
   playerEl.appendChild(audio);
   audio.style.display = 'none';
@@ -9116,21 +9077,12 @@ function _wireCustomAudioPlayer(playerEl){
   const durEl = playerEl.querySelector('[data-xa-dur]');
   if(!playBtn) return;
   const fmt = s => { if(!isFinite(s) || s < 0) return '0:00'; const m = Math.floor(s/60), r = Math.floor(s%60); return m+':'+String(r).padStart(2,'0'); };
-  const scrollWrapEarly = playerEl.querySelector('[data-xa-scroll]');
-  const innerEarly = playerEl.querySelector('[data-xa-inner]');
   const updatePos = () => {
     if(!audio.duration) return;
     const pct = (audio.currentTime / audio.duration) * 100;
     if(progress) progress.style.width = pct + '%';
     if(playhead) playhead.style.left = pct + '%';
     if(curEl) curEl.textContent = fmt(audio.currentTime);
-    // Style Merlin : pendant la lecture, scroll le sono pour que la position temporelle
-    // courante s'aligne sur le curseur central (fixe au milieu du bar visible).
-    if(!audio.paused && scrollWrapEarly && innerEarly){
-      const centerX = scrollWrapEarly.clientWidth / 2;
-      const currentX = (audio.currentTime / audio.duration) * innerEarly.clientWidth;
-      scrollWrapEarly.scrollLeft = Math.max(0, currentX - centerX);
-    }
   };
   let rafId = null;
   const rafLoop = () => { updatePos(); if(!audio.paused && !audio.ended) rafId = requestAnimationFrame(rafLoop); };
@@ -9159,130 +9111,13 @@ function _wireCustomAudioPlayer(playerEl){
   audio.addEventListener('loadedmetadata', () => { if(durEl && isFinite(audio.duration)) durEl.textContent = fmt(audio.duration); });
   if(seekEl){
     seekEl.addEventListener('click', e => {
-      if(!audio.duration){ audio.load(); return; }   // load si pas encore de metadata
-      // Seek relatif a inner (qui peut etre zoome), pas au bar visible
-      const inner = playerEl.querySelector('[data-xa-inner]');
-      const target = inner || seekEl;
-      const rct = target.getBoundingClientRect();
-      const p = Math.max(0, Math.min(1, (e.clientX - rct.left) / rct.width));
+      if(!audio.duration){ audio.load(); return; }
+      const r = seekEl.getBoundingClientRect();
+      const p = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
       audio.currentTime = p * audio.duration;
       updatePos();
     });
   }
-  // ZOOM : boutons +/- multiplient la width de xa-bar-inner
-  const inner = playerEl.querySelector('[data-xa-inner]');
-  const scrollWrap = playerEl.querySelector('[data-xa-scroll]');
-  const zoomIn = playerEl.querySelector('[data-xa-zoom-in]');
-  const zoomOut = playerEl.querySelector('[data-xa-zoom-out]');
-  let zoomLevel = 4;   // 1x, 2x, 4x, 8x. Defaut 4x pour style Merlin (curseur central, scroll)
-  const applyZoom = () => {
-    if(!inner) return;
-    inner.style.width = (100 * zoomLevel) + '%';
-    if(zoomOut) zoomOut.disabled = zoomLevel <= 1;
-    if(zoomIn) zoomIn.disabled = zoomLevel >= 8;
-    // Auto-scroll pour garder le playhead visible
-    if(scrollWrap && audio.duration){
-      const pct = audio.currentTime / audio.duration;
-      const targetLeft = pct * scrollWrap.scrollWidth - scrollWrap.clientWidth / 2;
-      scrollWrap.scrollLeft = Math.max(0, targetLeft);
-    }
-  };
-  if(zoomIn) zoomIn.addEventListener('click', e => { e.stopPropagation(); zoomLevel = Math.min(8, zoomLevel * 2); applyZoom(); });
-  if(zoomOut) zoomOut.addEventListener('click', e => { e.stopPropagation(); zoomLevel = Math.max(1, zoomLevel / 2); applyZoom(); });
-  // Init : applique le zoom par defaut (4x) au chargement du player
-  applyZoom();
-
-  // SPECTROGRAMME LIVE : Web Audio API + Canvas. Setup au 1er play (autoplay policy).
-  // Silencieux si CORS bloque : le spectro reste cache, l'audio joue quand meme.
-  const canvas = playerEl.querySelector('[data-xa-spectro]');
-  let audioCtx = null, analyser = null, sourceNode = null, spectroRaf = null, spectroOk = false;
-  function setupSpectro(){
-    if(audioCtx || !canvas) return;
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if(!AC) return;
-    try{
-      audioCtx = new AC();
-      sourceNode = audioCtx.createMediaElementSource(audio);
-      analyser = audioCtx.createAnalyser();
-      // FFT plus grande = meilleure resolution frequentielle (~5 Hz par bin).
-      analyser.fftSize = 4096;
-      analyser.smoothingTimeConstant = 0.5;
-      analyser.minDecibels = -95;
-      analyser.maxDecibels = -20;
-      sourceNode.connect(analyser);
-      analyser.connect(audioCtx.destination);
-      spectroOk = true;
-      if(canvas) canvas.classList.add('ready');
-    }catch(e){
-      console.warn('Spectro live desactive (CORS ou audio deja tainted) :', e.message);
-      audioCtx = null; analyser = null; sourceNode = null;
-    }
-  }
-  // Waterfall spectrogramme style Merlin : le temps defile de droite a gauche.
-  // A chaque frame : shift le canvas de 2px vers la gauche, puis dessine une nouvelle
-  // colonne a droite avec la freq courante (Y = frequence, couleur = amplitude).
-  // Waterfall style Merlin : temps X (defile droite -> gauche), frequence Y, couleur = amplitude.
-  // Zoom fixe sur 0-10 kHz (bande vocale principale des oiseaux, sauf ultra-aigus type Regulus).
-  // Palette viridis-inspired : noir -> violet -> bleu -> vert -> jaune (contraste eleve).
-  function drawSpectro(){
-    if(!spectroOk || !canvas || !analyser){ spectroRaf = null; return; }
-    const w = canvas.clientWidth || 300;
-    const h = canvas.clientHeight || 80;
-    if(canvas.width !== w) canvas.width = w;
-    if(canvas.height !== h) canvas.height = h;
-    const ctx2 = canvas.getContext('2d');
-    const bins = analyser.frequencyBinCount;   // 2048 (fftSize 4096 / 2)
-    const data = new Uint8Array(bins);
-    analyser.getByteFrequencyData(data);
-    // Sample rate typique 44100 Hz. Chaque bin = sampleRate / fftSize = ~10.77 Hz.
-    // Fenetre utile : 0-10 kHz = premiers ~928 bins. On les remappe sur toute la hauteur.
-    const sampleRate = audioCtx.sampleRate || 44100;
-    const binHz = sampleRate / analyser.fftSize;
-    const maxHz = 10000;
-    const useBins = Math.min(bins, Math.ceil(maxHz / binHz));
-    // Shift 1px pour un defilement plus lent (plus de temps visible).
-    const shiftPx = 1;
-    ctx2.globalCompositeOperation = 'copy';
-    ctx2.drawImage(canvas, -shiftPx, 0);
-    ctx2.globalCompositeOperation = 'source-over';
-    ctx2.clearRect(w - shiftPx, 0, shiftPx, h);
-    // Chaque pixel Y correspond a une plage de freq. On loop en Y (h pixels)
-    // pour agreger les bins couvrant chaque pixel = spectrogramme HD.
-    for(let y = 0; y < h; y++){
-      // freq_hz du pixel y (y=h-1 en bas = 0 Hz, y=0 en haut = maxHz)
-      const freqHz = (1 - y / h) * maxHz;
-      const binF = freqHz / binHz;
-      const binIdx = Math.min(useBins - 1, Math.max(0, Math.floor(binF)));
-      const v = data[binIdx] / 255;
-      if(v < 0.03) continue;
-      // Palette xeno-canto / Merlin : sons dessines en noir sur fond gris clair.
-      // Boost non lineaire de l'amplitude pour rendre les sons faibles plus visibles
-      // (courbe log-like : petit v deja bien visible, transition douce vers noir).
-      const boost = Math.pow(v, 0.6);
-      const alpha = Math.min(1, boost * 1.3);
-      ctx2.fillStyle = `rgba(20, 20, 25, ${alpha})`;
-      ctx2.fillRect(w - shiftPx, y, shiftPx, 1);
-    }
-    if(!audio.paused && !audio.ended) spectroRaf = requestAnimationFrame(drawSpectro);
-    else spectroRaf = null;
-  }
-  // Reset le canvas quand on relance : evite de garder le waterfall de la lecture precedente
-  audio.addEventListener('play', () => {
-    if(canvas){
-      const ctx2 = canvas.getContext('2d');
-      if(ctx2) ctx2.clearRect(0, 0, canvas.width, canvas.height);
-    }
-  });
-  audio.addEventListener('play', () => {
-    setupSpectro();
-    if(audioCtx && audioCtx.state === 'suspended'){ try{ audioCtx.resume(); }catch(_){} }
-    if(spectroOk){
-      if(spectroRaf) cancelAnimationFrame(spectroRaf);
-      spectroRaf = requestAnimationFrame(drawSpectro);
-    }
-  });
-  audio.addEventListener('pause', () => { if(spectroRaf){ cancelAnimationFrame(spectroRaf); spectroRaf = null; } });
-  audio.addEventListener('ended', () => { if(spectroRaf){ cancelAnimationFrame(spectroRaf); spectroRaf = null; } });
 }
 // Chips info (rareté + famille + habitats + IUCN) sous le titre de la fiche.
 // Palette et labels IUCN standard, cohérents avec eBird / IUCN Red List. Applique
