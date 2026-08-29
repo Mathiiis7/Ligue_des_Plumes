@@ -7493,6 +7493,30 @@ async function _renderSpeciesRangeCard(sci){
     }, 200);
   });
 }
+// Card 'A ne pas confondre avec' : liste les especes acoustiquement / visuellement
+// proches, dérivées de la table CONFUSION_GROUPS (deja utilisee pour les mauvaises
+// reponses du quiz). Chaque nom est cliquable pour ouvrir sa fiche.
+function _renderSpeciesConfuseCard(sci){
+  const box = $('#smConfuseCard'); if(!box) return;
+  box.hidden = true;
+  box.innerHTML = '';
+  const key = (sci || '').toLowerCase().trim();
+  if(typeof _confusionIndex !== 'object') return;
+  const groups = _confusionIndex[key] || [];
+  if(!groups.length) return;
+  // Union des especes confondables (pool restreint aux espece que l'app connait)
+  const confused = new Set();
+  for(const g of groups) for(const s of CONFUSION_GROUPS[g]) if(s !== key) confused.add(s);
+  const list = [...confused].filter(s => FR_NAMES[s]).slice(0, 8);
+  if(!list.length) return;
+  box.innerHTML = `
+    <div class="sm-card-title" style="display:flex; align-items:center; gap:8px;">À ne pas confondre <span style="font-size:10.5px; color:var(--ink-3); text-transform:none; font-weight:400; letter-spacing:0;">— espèces classiquement confondues</span></div>
+    <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:6px;">
+      ${list.map(s => `<button type="button" class="sp-link" data-sci="${esc(s)}" style="background:var(--surface-2); border:1px solid var(--line-2); color:var(--ink); font:inherit; font-size:12.5px; padding:4px 10px; border-radius:16px; cursor:pointer;">${esc(FR_NAMES[s]||s)}</button>`).join('')}
+    </div>
+  `;
+  box.hidden = false;
+}
 function _renderSpeciesInfoChips(key){
   const box = $('#smInfoChips'); if(!box) return;
   const chips = [];
@@ -8413,8 +8437,27 @@ function _smPanToFriend(uid){
     _smMapInstance.fitBounds(L.latLngBounds(latlngs), { padding:[40,40], maxZoom:13 });
   }
 }
+// Pool de navigation entre fiches especes : liste ordonnee des sci names.
+// Mise a jour au clic sur une espece dans Birdydex/Classement/Carte. Les boutons
+// ‹ › naviguent dans ce pool. Fallback : pool = juste l'espece courante.
+if(typeof _speciesNavPool === 'undefined') var _speciesNavPool = [];
+if(typeof _speciesNavIdx === 'undefined') var _speciesNavIdx = -1;
+function setSpeciesNavPool(list, currentSci){
+  _speciesNavPool = Array.isArray(list) ? list.filter(Boolean) : [];
+  _speciesNavIdx = _speciesNavPool.findIndex(s => s === currentSci || s?.toLowerCase() === currentSci?.toLowerCase());
+}
 function openSpeciesModal(sci){
   if(!sci) return;
+  // Si l'espece est dans le pool courant, met a jour l'index (navigation depuis ← →)
+  if(_speciesNavPool.length){
+    const i = _speciesNavPool.findIndex(s => s === sci || s?.toLowerCase() === sci.toLowerCase());
+    if(i >= 0) _speciesNavIdx = i;
+  }
+  // Update boutons prev/next : disable si en dehors du pool ou aux extremites
+  const prev = $('#smNavPrev'), next = $('#smNavNext');
+  const canNav = _speciesNavPool.length && _speciesNavIdx >= 0;
+  if(prev){ prev.disabled = !canNav || _speciesNavIdx <= 0; prev.style.opacity = prev.disabled ? '.35' : '1'; }
+  if(next){ next.disabled = !canNav || _speciesNavIdx >= _speciesNavPool.length - 1; next.style.opacity = next.disabled ? '.35' : '1'; }
   const key = sci.toLowerCase();
   const modal = $('#speciesModal'); if(!modal) return;
   const nm = FR_NAMES[key] || sci;
@@ -8467,6 +8510,7 @@ function openSpeciesModal(sci){
   _renderSpeciesTraitsCard(key);
   // Carte de repartition Cornell S&T (lazy)
   _renderSpeciesRangeCard(sci);
+  _renderSpeciesConfuseCard(sci);
   // Description Wikipedia (async)
   _renderSpeciesDesc(sci);
   // Note : le freq chart est deja rendu par _renderSpeciesRarityCard avec le
@@ -9116,10 +9160,38 @@ function closeSpeciesModal(){
 document.addEventListener('click', e=>{
   const cl = e.target.closest('[data-sm-close]');
   if(cl){ closeSpeciesModal(); return; }
+  // Navigation prev/next dans la fiche (‹ ›)
+  const navBtn = e.target.closest('#smNavPrev, #smNavNext');
+  if(navBtn && !navBtn.disabled){
+    const delta = navBtn.id === 'smNavPrev' ? -1 : 1;
+    const newIdx = _speciesNavIdx + delta;
+    if(newIdx >= 0 && newIdx < _speciesNavPool.length){
+      openSpeciesModal(_speciesNavPool[newIdx]);
+    }
+    return;
+  }
   const sp = e.target.closest('.sp-link[data-sci]');
-  if(sp){ e.preventDefault(); openSpeciesModal(sp.dataset.sci); }
+  if(sp){
+    e.preventDefault();
+    // Snapshot le pool : liste des sp-link visibles dans le meme conteneur parent
+    // (Birdydex, Classement, Cette semaine, resultats de recherche, etc.)
+    const container = sp.closest('.pkdx, table, .list, #birdydex, #viewList, main, body');
+    if(container){
+      const siblings = Array.from(container.querySelectorAll('.sp-link[data-sci]')).map(el => el.dataset.sci);
+      setSpeciesNavPool([...new Set(siblings)], sp.dataset.sci);
+    }
+    openSpeciesModal(sp.dataset.sci);
+  }
 });
-document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ const m=$('#speciesModal'); if(m && !m.hidden) closeSpeciesModal(); } });
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape'){ const m=$('#speciesModal'); if(m && !m.hidden) closeSpeciesModal(); return; }
+  // Navigation clavier dans la fiche : ← / → passent a l'espece precedente / suivante
+  const modal = $('#speciesModal');
+  if(modal && !modal.hidden){
+    if(e.key === 'ArrowLeft'){ const b = $('#smNavPrev'); if(b && !b.disabled) b.click(); }
+    else if(e.key === 'ArrowRight'){ const b = $('#smNavNext'); if(b && !b.disabled) b.click(); }
+  }
+});
 
 $('#trophyWho').addEventListener('click',e=>{
   const b=e.target.closest('.whochip'); if(!b) return;
