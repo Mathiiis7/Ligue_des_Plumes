@@ -7935,6 +7935,20 @@ function _renderSpeciesRarityCard(key){
     btn.addEventListener('click', e => {
       e.stopPropagation();
       panel.hidden = !panel.hidden;
+      // Reposition auto : par defaut le panel est ancre a droite du trigger (right:0),
+      // s'etend donc vers la gauche. Si le trigger est trop a gauche du modal fiche,
+      // le panel deborde a gauche et est tronque. Detecte ce cas et swap sur left:0.
+      if(!panel.hidden){
+        panel.style.right = '0'; panel.style.left = 'auto';   // reset defaut
+        requestAnimationFrame(() => {
+          const rect = panel.getBoundingClientRect();
+          const parent = panel.closest('.sm-scroll, .sm-box, body') || document.body;
+          const parentRect = parent.getBoundingClientRect();
+          if(rect.left < parentRect.left + 8){
+            panel.style.right = 'auto'; panel.style.left = '0';
+          }
+        });
+      }
     });
     panel.addEventListener('click', e => {
       const it = e.target.closest('.reg-picker-item');
