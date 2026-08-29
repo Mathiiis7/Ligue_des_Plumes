@@ -83,16 +83,14 @@ cat("Extent:", paste(BBOX, collapse=","), "\n")
 cat("Output:", OUT_DIR, "\n\n")
 
 # ---------- Palette heatmap style Merlin / eBird ----------
-# Retire les tons tres pales : commence direct au vert franc. Ainsi les zones ou
-# l'espece est presente en abondance faible (ex Passer montanus en FR vs Russie)
-# restent nettement visibles sur les tuiles OSM.
+# Anchors espaces uniformement pour un degrade lisible sur tous les percentiles.
+# 5 couleurs bien distinctes : vert -> vert-jaune -> jaune -> orange -> rouge fonce.
 pal <- colorRampPalette(c(
-  "#8ec872",   # vert medium (plancher visible)
-  "#c6d94a",
-  "#f5c518",
-  "#f39a3d",
-  "#e04a20",
-  "#7c1d0d"   # tres fonce (tres abondant)
+  "#3ea86b",   # vert franc (percentile 0-20)
+  "#a8d155",   # vert-jaune (percentile 20-40)
+  "#f5c518",   # jaune (percentile 40-60)
+  "#f0733a",   # orange (percentile 60-80)
+  "#a11408"    # rouge fonce (percentile 80-100)
 ))(100)
 
 # ---------- Liste especes disponibles ----------
@@ -164,12 +162,17 @@ for (i in seq_len(nrow(todo))) {
     vals[is.na(vals) | vals <= 0] <- NA
     if (all(is.na(vals))) stop("no data in bbox")
 
-    # Normalisation sqrt : compression modere (moins agressive que log). Preserve
-    # les differences moyennes / faibles au lieu de tout ecraser en bas. Rend le
-    # degrade continu visuellement au lieu de bandes.
-    vmax <- max(vals, na.rm = TRUE)
-    vals_norm <- sqrt(vals) / sqrt(vmax)
-    vals_norm[is.na(vals_norm)] <- NA
+    # Normalisation par rangs percentiles : chaque cellule non-nulle est coloree
+    # selon sa position dans la distribution de la donnee (0 = plus faible, 1 = plus
+    # forte). Garantit une repartition uniforme des couleurs quelle que soit la
+    # forme de la distribution (les especes tres piquees et les tres etalees ont
+    # le meme rendu visuel).
+    vals_norm <- rep(NA_real_, length(vals))
+    valid_i <- which(!is.na(vals))
+    if (length(valid_i) > 0) {
+      ranks <- rank(vals[valid_i], ties.method = "average")
+      vals_norm[valid_i] <- (ranks - 1) / max(1, length(ranks) - 1)
+    }
 
     # Cree un vecteur de couleurs
     color_idx <- pmax(1, pmin(100, round(vals_norm * 99) + 1))
