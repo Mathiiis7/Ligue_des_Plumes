@@ -8225,39 +8225,21 @@ async function _generatePortrait(sci){
 function _renderSpeciesDesc(sci){
   const el = $('#smDesc'); if(!el) return;
   el.innerHTML = ''; el.classList.remove('sm-desc');
-  Promise.all([_fetchWikiDesc(sci), _generatePortrait(sci)]).then(([d, portrait]) => {
-    if(!d && !portrait) return;
+  _fetchWikiDesc(sci).then(d => {
+    if(!d) return;
+    // Priorite : section Description (physique + identification) ; fallback : Comportement ;
+    // dernier recours : lead paragraph du resume Wikipedia. On ne montre PAS Habitat /
+    // Alimentation / Reproduction (deja couverts par Avonet, freq chart, carte de repartition).
+    let text = null;
+    if(d.description?.text) text = d.description.text;
+    else if(d.comportement?.text) text = d.comportement.text;
+    else if(d.lead) text = d.lead;
+    if(!text) return;
+    // Tronque court : ~80 mots pour rester scannable dans la fiche.
+    const words = text.split(/\s+/);
+    if(words.length > 80) text = words.slice(0, 80).join(' ').replace(/[,;:]?\s*\S*$/,'') + '...';
     el.classList.add('sm-desc');
-    const parts = [];
-    // Portrait synthetique en tete (nos donnees combinees). Toujours present si donnees dispos.
-    if(portrait){
-      parts.push(`<div class="sm-desc-portrait"><div class="sm-desc-portrait-title">📋 Portrait</div><p>${esc(portrait)}</p></div>`);
-    }
-    // Sections Wikipedia en accordeon (utilisation de <details> native pour accessibilite)
-    if(d){
-      const catOrder = ['description','habitat','alimentation','reproduction','comportement'];
-      // Fallback : si pas de section 'Description' matchee mais qu'on a un lead paragraph,
-      // utilise le lead comme description (evite les fiches sans premiere section).
-      if(!d.description && d.lead){
-        d.description = { title: 'Description', text: d.lead };
-      }
-      const hasAnySection = catOrder.some(k => d[k]);
-      if(hasAnySection){
-        for(const cat of catOrder){
-          const s = d[cat];
-          if(!s) continue;
-          const icon = WIKI_SECTION_MAP[cat].icon;
-          const catLabel = cat.charAt(0).toUpperCase() + cat.slice(1);
-          const isFirst = cat === catOrder.find(k => d[k]);
-          parts.push(`<details class="sm-desc-section"${isFirst ? ' open' : ''}><summary><span class="sm-desc-icon">${icon}</span> ${esc(catLabel)}</summary><p>${esc(s.text)}</p></details>`);
-        }
-      } else if(d.lead){
-        // Fallback : pas de sections trouvees, affiche le lead paragraph
-        parts.push(`<p>${esc(d.lead)}</p>`);
-      }
-      if(d.wikiUrl) parts.push(`<a class="sm-desc-more" href="${esc(d.wikiUrl)}" target="_blank" rel="noopener">Lire plus sur Wikipédia ↗</a>`);
-    }
-    el.innerHTML = parts.join('');
+    el.innerHTML = `<div class="sm-desc-title">📝 Description</div><p style="margin:4px 0 6px;">${esc(text)}</p>${d.wikiUrl ? `<a class="sm-desc-more" href="${esc(d.wikiUrl)}" target="_blank" rel="noopener">Lire sur Wikipedia ↗</a>` : ''}`;
   });
 }
 // Histogramme temporel de la fiche. 2 modes :
@@ -8802,9 +8784,7 @@ function openSpeciesModal(sci){
     _renderSpeciesRangeCard(sci);
   }
   // Description Wikipedia (async)
-  // Description (Portrait + sections Wikipedia) retirees a la demande utilisateur.
-  // La card Traits Avonet + freq chart + carte de repartition suffisent.
-  const smDesc = $('#smDesc'); if(smDesc) smDesc.innerHTML = '';
+  _renderSpeciesDesc(sci);
   // Note : le freq chart est deja rendu par _renderSpeciesRarityCard avec le
   // pays courant. Ne PAS rappeler _renderSpeciesFreqChart(key) ici : ca
   // ecraserait avec country='FR' par defaut et casserait l'affichage ME/ES/...
