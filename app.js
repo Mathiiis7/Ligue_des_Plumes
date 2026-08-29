@@ -8051,8 +8051,8 @@ async function _fetchWikiDesc(sci){
   const stripHtml = html => {
     const tmp = document.createElement('div');
     tmp.innerHTML = html;
-    // Retire les refs [1], [2], etc. + les 'edit section' liens
-    tmp.querySelectorAll('sup.reference, .mw-editsection, .noprint').forEach(el => el.remove());
+    // Retire refs [1], edit liens, ET bandeaux/hatnotes/infobox (bruit Wikipedia).
+    tmp.querySelectorAll('sup.reference, sup.cite, .mw-editsection, .noprint, .hatnote, .dablink, .homonymie, .bandeau-article, .bandeau-section, [class*="bandeau-"], .infobox, .thumb, .navbox, .sistersitebox').forEach(el => el.remove());
     let text = tmp.textContent || tmp.innerText || '';
     return text.replace(/\s+/g, ' ').trim();
   };
@@ -8072,10 +8072,13 @@ async function _fetchWikiDesc(sci){
       const doc = new DOMParser().parseFromString(html, 'text/html');
       // Wikipedia REST html emet des <section data-mw-section-id="N"> avec un <h2> en premier enfant
       const out = { lead: '', wikiUrl: `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(sci.replace(/ /g,'_'))}` };
-      // Lead : premier paragraph non vide de la section 0
+      // Lead : premier paragraph non vide de la section 0. Clone puis retire bandeaux/hatnotes
+      // AVANT de chercher les <p> pour eviter que le bandeau homonymie ne sorte comme lead.
       const lead0 = doc.querySelector('section[data-mw-section-id="0"]');
       if(lead0){
-        const p = Array.from(lead0.querySelectorAll('p')).find(el => (el.textContent || '').trim().length > 30);
+        const clone = lead0.cloneNode(true);
+        clone.querySelectorAll('.hatnote, .dablink, .homonymie, .bandeau-article, .bandeau-section, [class*="bandeau-"], .infobox, .thumb, .navbox').forEach(el => el.remove());
+        const p = Array.from(clone.querySelectorAll('p')).find(el => (el.textContent || '').trim().length > 30);
         if(p) out.lead = truncate(stripHtml(p.innerHTML), 80);
       }
       // Sections nommees
