@@ -18,9 +18,19 @@ tools/ebirdst-target-codes.txt
 *.log
 Thumbs.db
 .DS_Store
+node_modules/
 
-# Fichiers persos hors app (docs stage, images de tests)
-Stage/
+# Caches et fichiers intermediaires jamais lus par le site
+tools/logs/
+tools/ebird-barcharts-raw/
+tools/*-cache.json
+tools/*-progress.json
+tools/rarity-data.json
+tools/rarity-data-ebird.json
+tools/redlist.json
+tools/avonet.xlsx
+
+# Fichiers persos hors app (images de tests)
 clown.png
 tente.png
 étoile.png

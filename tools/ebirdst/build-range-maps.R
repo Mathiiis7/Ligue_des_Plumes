@@ -99,8 +99,9 @@ if (mode == "demo") {
   runs <- runs[runs$species_code %in% DEMO_SPECIES, ]
   cat("Mode DEMO :", nrow(runs), "especes selectionnees\n")
 } else {
-  # Filtre : especes avec fit relative_abundance
-  runs <- runs[!is.na(runs$has_seasonal_definition), ]
+  # Toutes les especes disponibles chez Cornell S&T. Les echecs par espece
+  # (raster manquant, download bloque, etc.) sont comptes en 'failed' et n'arretent
+  # pas le run.
   cat("Especes totales Cornell :", nrow(runs), "\n")
 }
 
