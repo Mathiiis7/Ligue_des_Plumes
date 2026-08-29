@@ -1783,6 +1783,11 @@
         <div><div class="eyebrow">Reconnaissance auditive</div><h2>🎵 Quiz des chants</h2>
           <p class="help" style="margin-top:2px;">Écoute et devine l'espèce. Les sons viennent de xeno-canto.</p></div>
       </div>
+      <!-- Mode selecteur : Quiz (competitif, score+streak) vs Entrainement (adaptatif Leitner) -->
+      <div class="quiz-mode-tabs" style="display:flex; gap:6px; margin:0 0 12px; border-bottom:1px solid var(--line);">
+        <button type="button" id="quizModeCompete" class="btn" data-quiz-mode="compete" style="border-radius:8px 8px 0 0; border-bottom:none;">🏆 Quiz</button>
+        <button type="button" id="quizModeTrain" class="btn" data-quiz-mode="train" style="border-radius:8px 8px 0 0; border-bottom:none; background:transparent; color:var(--ink-2);">🎯 Entraînement</button>
+      </div>
       <div class="quiz-ctrls" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:10px 0 14px;">
         <label class="explorer-lbl">Niveau
           <select id="quizLevel" class="filt-sel">
@@ -1805,7 +1810,8 @@
           </select>
         </label>
         <div style="margin-left:auto; font-size:13px; color:var(--ink-2);">
-          Score : <b id="quizScore">0</b> / <b id="quizTotal">0</b> · Streak <b id="quizStreak">0</b>
+          <span id="quizStatsCompete">Score : <b id="quizScore">0</b> / <b id="quizTotal">0</b> · Streak <b id="quizStreak">0</b></span>
+          <span id="quizStatsTrain" hidden>Travaillées : <b id="quizTrainSeen">0</b> · Maîtrisées : <b id="quizTrainMastered">0</b></span>
         </div>
       </div>
       <div id="quizStage" style="border:1px solid var(--line); border-radius:12px; padding:16px; background:var(--surface-2); min-height:220px;">
@@ -8923,12 +8929,15 @@ async function _fetchXenoSound(sci){
   if(!gen || !sp){ const empty = {song:null, call:null, songList:[], callList:[]}; _spSoundCache.set(key, empty); return empty; }
   const norm = u => { if(!u) return null; if(u.startsWith('//')) return 'https:' + u; if(u.startsWith('http://')) return 'https://' + u.slice(7); return u; };
   // Slim : garde les champs utiles pour l'UI (audio, sonogramme, qualite, lieu, date, duree, enregistreur).
+  // also : liste des especes d'arriere-plan detectees dans l'enregistrement (utilise
+  // pour boost 'solo' dans le ranking, cf. scoreRec).
   const slim = r => ({
     id: r.id, file: norm(r.file),
     sono: norm(r.sono?.full || r.sono?.large || r.sono?.med || r.sono?.small),
     q: r.q || '', loc: r.loc || '', cnt: r.cnt || '',
     date: r.date || '', length: r.length || '',
-    rec: r.rec || '', url: norm(r.url), type: r.type || ''
+    rec: r.rec || '', url: norm(r.url), type: r.type || '',
+    also: Array.isArray(r.also) ? r.also.filter(x => x && x.trim()) : []
   });
   async function queryXC(typeStr, qA){
     const bits = ['gen:' + gen, 'sp:' + sp];
@@ -8955,6 +8964,12 @@ async function _fetchXenoSound(sci){
     let score = 0;
     score += (qOrder[r.q] || 0) * 1000;                        // qualite : facteur dominant
     score += EU_COUNTRIES.has(r.cnt) ? 100 : 0;                 // Europe : bonus
+    // Solo (aucune espece d'arriere-plan) : bonus fort. Enregistrement pur =
+    // moins d'ambiguite en quiz + fiche plus lisible.
+    const alsoN = (r.also || []).length;
+    if(alsoN === 0) score += 80;
+    else if(alsoN <= 2) score += 20;                            // 1-2 autres especes = tolerable
+    // (au dela : penalite implicite, pas de bonus)
     const len = lengthSec(r.length);
     if(len >= 10 && len <= 90) score += 50;                     // duree sweet spot
     else if(len >= 5 && len <= 180) score += 20;                // acceptable
@@ -11259,17 +11274,61 @@ onAuthStateChanged(auth, user=>{
   else { myUid=null; signInAnonymously(auth).catch(err=>{ showError(err); }); }
 });
 /* ---------------- Quiz chants (xeno-canto v3) ---------------- */
-// Quiz MVP : 1 audio d'espece + 4 choix (dont 3 distracteurs de la meme famille).
-// Score/streak sauve dans localStorage. Audio via xeno-canto v3 (voir _fetchXenoSound).
-let _quizCurrent = null;   // { sci, correctIdx, choices:[sci...] }
+// Deux modes distincts (basculables par les tabs "🏆 Quiz" / "🎯 Entrainement") :
+// - Quiz competitif : selection aleatoire du pool, score/streak sauve en localStorage.
+//   Sert pour la comparaison entre amis (score/streak visibles).
+// - Entrainement Leitner : selection ponderee vers les especes ratees / peu vues.
+//   Stats per-species en localStorage. Aucune impact sur le score du quiz competitif.
+// Audio via xeno-canto v3 (voir _fetchXenoSound). Spectrogramme revele apres reponse.
+let _quizCurrent = null;   // { sci, correctIdx, choices:[sci...], audioUrl, sonoUrl }
+let _quizMode = 'compete';   // 'compete' | 'train'
+try{ const m = localStorage.getItem('mb-quiz-mode'); if(m === 'compete' || m === 'train') _quizMode = m; }catch(_){}
 function _quizStats(){ try{ return JSON.parse(localStorage.getItem('mb-quiz-stats')||'{"score":0,"total":0,"streak":0}'); }catch(_){ return {score:0,total:0,streak:0}; } }
 function _quizSaveStats(s){ try{ localStorage.setItem('mb-quiz-stats', JSON.stringify(s)); }catch(_){} }
+// Stats per-species pour Leitner : { "sci lower": { succ, fail, lastSeen: ts } }
+function _quizTrainStats(){ try{ return JSON.parse(localStorage.getItem('mb-quiz-train')||'{}'); }catch(_){ return {}; } }
+function _quizTrainSave(s){ try{ localStorage.setItem('mb-quiz-train', JSON.stringify(s)); }catch(_){} }
+// Rate un tour d'entrainement : incremente succ/fail, met a jour lastSeen. Ne touche
+// pas au score competitif.
+function _quizTrainRecord(sci, correct){
+  const st = _quizTrainStats();
+  const k = (sci || '').toLowerCase().trim();
+  if(!k) return;
+  const cur = st[k] || { succ: 0, fail: 0, lastSeen: 0 };
+  if(correct) cur.succ = (cur.succ || 0) + 1; else cur.fail = (cur.fail || 0) + 1;
+  cur.lastSeen = Date.now();
+  st[k] = cur;
+  _quizTrainSave(st);
+  _quizRefreshStatsUI();
+}
+// Rafraichit l'affichage stats selon le mode courant.
 function _quizRefreshStatsUI(){
   const s = _quizStats();
   const a=$('#quizScore'), b=$('#quizTotal'), c=$('#quizStreak');
   if(a) a.textContent = s.score; if(b) b.textContent = s.total; if(c) c.textContent = s.streak;
+  // Stats entrainement : nombre d'especes travaillees + maitrisees (>= 3 succ, 0 fail recent)
+  const st = _quizTrainStats();
+  const entries = Object.entries(st);
+  const seen = entries.length;
+  const mastered = entries.filter(([, v]) => (v.succ || 0) >= 3 && (v.fail || 0) === 0).length;
+  const seenEl = $('#quizTrainSeen'); if(seenEl) seenEl.textContent = seen;
+  const masEl = $('#quizTrainMastered'); if(masEl) masEl.textContent = mastered;
+  // Toggle visibilite des blocs stats selon le mode
+  const compBlock = $('#quizStatsCompete'), trainBlock = $('#quizStatsTrain');
+  if(compBlock) compBlock.hidden = (_quizMode !== 'compete');
+  if(trainBlock) trainBlock.hidden = (_quizMode !== 'train');
 }
-function renderQuizInit(){ _quizRefreshStatsUI(); }
+// Bascule mode compete <-> train. Met a jour les tabs visuellement + les stats affichees.
+function _quizSetMode(m){
+  if(m !== 'compete' && m !== 'train') return;
+  _quizMode = m;
+  try{ localStorage.setItem('mb-quiz-mode', m); }catch(_){}
+  const compBtn = $('#quizModeCompete'), trainBtn = $('#quizModeTrain');
+  if(compBtn){ compBtn.style.background = (m === 'compete') ? '' : 'transparent'; compBtn.style.color = (m === 'compete') ? '' : 'var(--ink-2)'; }
+  if(trainBtn){ trainBtn.style.background = (m === 'train') ? '' : 'transparent'; trainBtn.style.color = (m === 'train') ? '' : 'var(--ink-2)'; }
+  _quizRefreshStatsUI();
+}
+function renderQuizInit(){ _quizSetMode(_quizMode); _quizRefreshStatsUI(); }
 
 /* ---------------- Pokedex : grille de toutes les especes FR ---------------- */
 // Etat local pour les filtres. Persistant en localStorage pour retrouver la meme vue.
@@ -11978,18 +12037,111 @@ const CRI_DISTINCTIVE_FAMILIES = new Set([
   'Pics', 'Corvidés (corneilles, pies…)',
 ]);
 
-// Distracteurs : meme famille (approche taxonomique simple). En attendant l'ajout d'une
-// table de "confusion groups" curee acoustiquement (paires classiquement confondues :
-// pouillots entre eux, grives entre elles, bruants jaunes vs zizi, etc.) qui sera
-// pedagogiquement plus utile qu'un filtre taxonomique.
+// Confusion groups : especes acoustiquement proches, classiquement confondues sur le
+// terrain. Curation basee sur guides FR (LPO, ornithomedia, atlas nicheurs) et
+// experience methodologique Larkwire (grouping par similarite percue, pas taxonomie).
+// Chaque groupe : especes qui sonnent similaire -> pedagogiquement utile de les
+// discriminer en quiz. Format : { key: [sci noms latins bas de casse] }.
+const CONFUSION_GROUPS = {
+  // Pouillots (Phylloscopus) : tres proches, discrimination fine indispensable
+  pouillots: ['phylloscopus collybita','phylloscopus trochilus','phylloscopus sibilatrix','phylloscopus bonelli','phylloscopus ibericus'],
+  // Grives et merles (Turdidae) : chants melodieux tous proches
+  grives: ['turdus merula','turdus philomelos','turdus viscivorus','turdus pilaris','turdus iliacus','turdus torquatus'],
+  // Fauvettes (Sylviidae + Curruca) : chants tres proches
+  fauvettes: ['sylvia atricapilla','sylvia borin','curruca communis','curruca curruca','curruca hortensis','curruca cantillans','curruca melanocephala','curruca undata','curruca conspicillata'],
+  // Bruants (Emberiza) : chants stereotypes tres similaires
+  bruants: ['emberiza citrinella','emberiza cirlus','emberiza cia','emberiza hortulana','emberiza calandra','emberiza schoeniclus'],
+  // Pipits (Anthus) : cris et chants proches, confusions frequentes
+  pipits: ['anthus trivialis','anthus pratensis','anthus campestris','anthus spinoletta','anthus petrosus','anthus cervinus'],
+  // Bergeronnettes (Motacilla) : cris de vol tres similaires
+  bergeronnettes: ['motacilla alba','motacilla flava','motacilla cinerea','motacilla citreola'],
+  // Mesanges (Paridae) : cris de contact proches, discrimination utile
+  mesanges: ['parus major','cyanistes caeruleus','periparus ater','lophophanes cristatus','poecile palustris','poecile montanus'],
+  // Rousserolles (Acrocephalidae) : chants tres proches, roselieres
+  rousserolles: ['acrocephalus scirpaceus','acrocephalus arundinaceus','acrocephalus schoenobaenus','acrocephalus palustris','acrocephalus paludicola','hippolais icterina','hippolais polyglotta','iduna pallida','iduna caligata'],
+  // Locustelles (Locustella) : chants stridulants tres similaires
+  locustelles: ['locustella naevia','locustella luscinioides','locustella fluviatilis','helopsaltes certhiola'],
+  // Rougegorges/rossignols/rougequeues (Muscicapidae) : chants melodieux distincts mais proches
+  muscicapides: ['erithacus rubecula','luscinia megarhynchos','luscinia luscinia','luscinia svecica','phoenicurus phoenicurus','phoenicurus ochruros'],
+  // Traquets et cul-blanc (Oenanthe/Saxicola) : cris et chants proches
+  traquets: ['oenanthe oenanthe','oenanthe hispanica','oenanthe deserti','oenanthe leucura','saxicola rubicola','saxicola rubetra'],
+  // Pinsons et bec-croises (Fringillidae) : cris de vol proches
+  fringillides: ['fringilla coelebs','fringilla montifringilla','carduelis carduelis','chloris chloris','spinus spinus','linaria cannabina','pyrrhula pyrrhula','coccothraustes coccothraustes'],
+  // Alouettes (Alaudidae) : chants aeriens similaires
+  alouettes: ['alauda arvensis','lullula arborea','galerida cristata','calandrella brachydactyla','melanocorypha calandra','eremophila alpestris'],
+  // Hirondelles (Hirundinidae) : cris de vol proches
+  hirondelles: ['hirundo rustica','delichon urbicum','riparia riparia','ptyonoprogne rupestris','cecropis daurica'],
+  // Pics (Picidae) : cris et tambourinages distincts mais confusables
+  pics: ['picus viridis','picus canus','dryocopus martius','dendrocopos major','dendrocopos medius','dendrocoptes minor','dendrocoptes leucotos','jynx torquilla'],
+  // Rapaces diurnes (Accipitridae + Falconidae) : cris de vol souvent confondus
+  rapaces_diurnes: ['buteo buteo','pernis apivorus','accipiter nisus','astur gentilis','milvus milvus','milvus migrans','circus aeruginosus','circus cyaneus','circus pygargus','aquila chrysaetos','falco tinnunculus','falco subbuteo','falco peregrinus'],
+  // Chouettes et hiboux nocturnes : hululements distincts mais confusables
+  strigides: ['strix aluco','tyto alba','asio otus','asio flammeus','bubo bubo','athene noctua','otus scops','glaucidium passerinum','aegolius funereus','surnia ulula'],
+  // Corvides (Corvidae) : croassements distincts mais proches
+  corvides: ['corvus corone','corvus cornix','corvus corax','corvus frugilegus','corvus monedula','coloeus monedula','pica pica','garrulus glandarius','nucifraga caryocatactes','pyrrhocorax pyrrhocorax','pyrrhocorax graculus'],
+  // Canards de surface (Anatidae dabblers) : cris divers
+  canards_surface: ['anas platyrhynchos','mareca strepera','mareca penelope','spatula clypeata','spatula querquedula','anas crecca','anas acuta'],
+  // Canards plongeurs (Aythya) : cris proches
+  canards_plongeurs: ['aythya ferina','aythya fuligula','aythya marila','aythya nyroca','netta rufina','bucephala clangula'],
+  // Grebes (Podicipedidae) : trilles et cris proches
+  grebes: ['podiceps cristatus','podiceps grisegena','podiceps nigricollis','podiceps auritus','tachybaptus ruficollis'],
+  // Herons/aigrettes (Ardeidae) : cris rauques proches
+  herons: ['ardea cinerea','ardea purpurea','ardea alba','egretta garzetta','ardeola ralloides','nycticorax nycticorax','botaurus stellaris','ixobrychus minutus','bubulcus ibis'],
+  // Rales et gallinules (Rallidae) : cris nocturnes proches
+  rales: ['rallus aquaticus','crex crex','gallinula chloropus','fulica atra','porzana porzana','zapornia parva'],
+  // Limicoles - becasseaux/chevaliers (Scolopacidae) : cris de vol similaires
+  limicoles_scolo: ['tringa totanus','tringa nebularia','tringa ochropus','tringa glareola','tringa erythropus','actitis hypoleucos','calidris alpina','calidris minuta','calidris ferruginea','numenius arquata','limosa limosa','gallinago gallinago','scolopax rusticola'],
+  // Pluviers/vanneaux (Charadriidae) : cris distinctifs mais proches
+  pluviers: ['vanellus vanellus','pluvialis apricaria','pluvialis squatarola','charadrius dubius','charadrius hiaticula','charadrius alexandrinus'],
+  // Goelands et mouettes (Laridae grands) : cris caracteristiques a discriminer
+  laridae_grands: ['larus argentatus','larus michahellis','larus fuscus','larus marinus','larus canus','larus cachinnans'],
+  // Mouettes et sternes (Laridae petits) : cris aigus proches
+  laridae_petits: ['chroicocephalus ridibundus','hydrocoloeus minutus','rissa tridactyla','xema sabini','sterna hirundo','sterna paradisaea','sternula albifrons','thalasseus sandvicensis','chlidonias niger','chlidonias hybrida'],
+  // Pigeons et tourterelles (Columbidae) : roucoulements proches
+  pigeons: ['columba palumbus','columba livia','columba oenas','streptopelia turtur','streptopelia decaocto'],
+  // Cincle et troglodyte + roitelets/accenteurs (petits chanteurs volubiles)
+  volubiles: ['troglodytes troglodytes','regulus regulus','regulus ignicapilla','prunella modularis','prunella collaris','cinclus cinclus','certhia familiaris','certhia brachydactyla','sitta europaea','sitta neumayer','tichodroma muraria'],
+  // Grimpereaux (Certhia) : chants tres proches
+  grimpereaux: ['certhia familiaris','certhia brachydactyla'],
+  // Coucou et autres (cris caracteristiques longs)
+  coucous_engoulevents: ['cuculus canorus','caprimulgus europaeus','apus apus','apus melba','tachymarptis melba'],
+  // Etourneaux et loriots (chanteurs melodiques)
+  chanteurs_forestiers: ['sturnus vulgaris','pastor roseus','oriolus oriolus'],
+  // Faisans, perdrix, cailles (Phasianidae) : cris de contact/reproduction
+  galliformes: ['phasianus colchicus','perdix perdix','alectoris rufa','coturnix coturnix','lyrurus tetrix','tetrao urogallus','lagopus muta','tetrastes bonasia'],
+};
+// Index inverse : sci -> liste de groupes auxquels appartient l'espece
+const _confusionIndex = (() => {
+  const idx = {};
+  for(const [k, list] of Object.entries(CONFUSION_GROUPS)){
+    for(const sci of list){
+      if(!idx[sci]) idx[sci] = [];
+      idx[sci].push(k);
+    }
+  }
+  return idx;
+})();
+
+// Distracteurs : priorite aux especes du meme "confusion group" (paires classiquement
+// confondues acoustiquement). Fallback : meme famille (taxonomie), puis famille
+// differente. Filtre : distracteurs doivent aussi etre dans le pool (rarete/tier).
 function _quizPickDistracters(sci, pool, n){
-  const fam = familyOf(sci);
-  const sameFam = pool.filter(s => s !== sci && familyOf(s) === fam);
-  const others = pool.filter(s => s !== sci && familyOf(s) !== fam);
+  const key = (sci || '').toLowerCase().trim();
+  const groups = _confusionIndex[key] || [];
   const shuffle = arr => arr.map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).map(v=>v[1]);
-  const picked = shuffle(sameFam).slice(0, n);
+  // Union des groupes de confusion pour cette espece
+  const confused = new Set();
+  for(const g of groups) for(const s of CONFUSION_GROUPS[g]) if(s !== key) confused.add(s);
+  // Ne garde que celles presentes dans le pool
+  const poolSet = new Set(pool.map(s => s.toLowerCase()));
+  const confusable = [...confused].filter(s => poolSet.has(s) && s !== key);
+  const fam = familyOf(sci);
+  const sameFam = pool.filter(s => s.toLowerCase() !== key && familyOf(s) === fam && !confusable.includes(s.toLowerCase()));
+  const others = pool.filter(s => s.toLowerCase() !== key && familyOf(s) !== fam && !confusable.includes(s.toLowerCase()));
+  const picked = shuffle(confusable).slice(0, n);
+  if(picked.length < n) picked.push(...shuffle(sameFam).slice(0, n - picked.length));
   if(picked.length < n) picked.push(...shuffle(others).slice(0, n - picked.length));
-  return picked;
+  return picked.slice(0, n);
 }
 async function _quizStart(){
   const stage = $('#quizStage'); if(!stage) return;
@@ -12007,20 +12159,57 @@ async function _quizStart(){
     pool = pool.filter(sci => CRI_DISTINCTIVE_FAMILIES.has(familyOf(sci)));
     if(!pool.length){ stage.innerHTML = '<p class="help" style="margin:0;">Pas d\'espèces avec cri distinctif dans ce pool. Change de niveau ou passe en mode Chant.</p>'; return; }
   }
+  // Selection selon le mode :
+  // - compete : uniforme (Math.random)
+  // - train : pondere Leitner-inspired = poids inv. proportionnel au taux de reussite,
+  //   + boost si jamais vue, + boost si non revue depuis longtemps.
+  const pickWeighted = () => {
+    if(_quizMode !== 'train') return pool[Math.floor(Math.random() * pool.length)];
+    const st = _quizTrainStats();
+    const now = Date.now();
+    const dayMs = 86400000;
+    const weights = pool.map(sci => {
+      const k = sci.toLowerCase();
+      const s = st[k];
+      if(!s) return 5;   // jamais vue : prio forte
+      const total = (s.succ || 0) + (s.fail || 0);
+      if(total === 0) return 5;
+      // Failure rate + boost sur les non-revues
+      const failRate = (s.fail || 0) / total;
+      const daysSince = (now - (s.lastSeen || now)) / dayMs;
+      // Base = 1 + failRate*4 (0->1, 1->5). Boost non-revue : *2 apres 7j, *3 apres 30j.
+      let w = 1 + failRate * 4;
+      if(daysSince > 30) w *= 3;
+      else if(daysSince > 7) w *= 2;
+      // Deprio si maitrisee (>=3 succ, 0 fail) : /4
+      if((s.succ || 0) >= 3 && (s.fail || 0) === 0) w /= 4;
+      return w;
+    });
+    const total = weights.reduce((a,b) => a + b, 0);
+    let r = Math.random() * total;
+    for(let i = 0; i < pool.length; i++){
+      r -= weights[i];
+      if(r <= 0) return pool[i];
+    }
+    return pool[pool.length - 1];
+  };
   for(let attempt = 0; attempt < 5; attempt++){
-    const sci = pool[Math.floor(Math.random() * pool.length)];
+    const sci = pickWeighted();
     stage.innerHTML = `<p class="help" style="margin:0;">🎧 Chargement du son (${attempt+1}/5)…</p>`;
     const sounds = await _fetchXenoSound(sci);
-    let audioUrl = null;
-    if(typeOpt === 'song') audioUrl = sounds.song;
-    else if(typeOpt === 'call') audioUrl = sounds.call;
-    else audioUrl = sounds.song || sounds.call;
+    // Selectionne le meilleur record disponible (songList[0] deja trie par scoreRec).
+    let rec = null;
+    if(typeOpt === 'song') rec = sounds.songList?.[0];
+    else if(typeOpt === 'call') rec = sounds.callList?.[0];
+    else rec = sounds.songList?.[0] || sounds.callList?.[0];
+    const audioUrl = rec?.file;
+    const sonoUrl = rec?.sono;   // pour reveal apres reponse (spectro pedagogique)
     if(!audioUrl) continue;   // espece sans son -> reessaie
     const distracters = _quizPickDistracters(sci, pool, 3);
     if(distracters.length < 3) continue;
     const choices = [sci, ...distracters].map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).map(v=>v[1]);
     const correctIdx = choices.indexOf(sci);
-    _quizCurrent = { sci, correctIdx, choices, audioUrl };
+    _quizCurrent = { sci, correctIdx, choices, audioUrl, sonoUrl };
     stage.innerHTML = `
       <div style="text-align:center;">
         <audio id="quizAudio" controls autoplay style="width:100%; max-width:520px;"><source src="${esc(audioUrl)}"></audio>
@@ -12037,10 +12226,18 @@ async function _quizStart(){
 function _quizAnswer(idx){
   if(!_quizCurrent) return;
   const correct = idx === _quizCurrent.correctIdx;
-  const s = _quizStats();
-  s.total += 1;
-  if(correct){ s.score += 1; s.streak += 1; } else { s.streak = 0; }
-  _quizSaveStats(s); _quizRefreshStatsUI();
+  // Enregistre selon le mode : compete = score/streak global, train = stats per-espece.
+  // Aucun mode n'ecrit dans l'autre bucket -> comparaison entre amis reste basee
+  // uniquement sur les parties competitives.
+  if(_quizMode === 'compete'){
+    const s = _quizStats();
+    s.total += 1;
+    if(correct){ s.score += 1; s.streak += 1; } else { s.streak = 0; }
+    _quizSaveStats(s);
+  } else {
+    _quizTrainRecord(_quizCurrent.sci, correct);
+  }
+  _quizRefreshStatsUI();
   const box = $('#quizChoices'); if(box){
     box.querySelectorAll('button').forEach((b, i) => {
       b.disabled = true;
@@ -12051,7 +12248,10 @@ function _quizAnswer(idx){
   const stage = $('#quizStage'); if(stage){
     const nm = FR_NAMES[_quizCurrent.sci] || _quizCurrent.sci;
     const verdict = correct ? '<span style="color:#16a34a; font-weight:700;">✓ Bravo !</span>' : '<span style="color:#dc2626; font-weight:700;">✗ Raté</span>';
-    stage.insertAdjacentHTML('beforeend', `<p style="text-align:center; margin:14px 0 0;">${verdict} — c'était <b class="sp-link" data-sci="${esc(_quizCurrent.sci)}" style="cursor:pointer; text-decoration:underline dotted;">${esc(nm)}</b> <span class="p-sci">${esc(_quizCurrent.sci)}</span></p>`);
+    // Bloc feedback : verdict + espece + spectrogramme du son entendu (mnemotechnique
+    // visuelle : la forme du chant reste en memoire mieux que l'audio seul, cf. Merlin).
+    const sonoHtml = _quizCurrent.sonoUrl ? `<div style="margin-top:12px; max-width:520px; margin-left:auto; margin-right:auto;"><img src="${esc(_quizCurrent.sonoUrl)}" alt="Spectrogramme du chant" style="width:100%; height:auto; border-radius:6px; display:block;" onerror="this.remove()"><p class="help" style="margin:6px 0 0; text-align:center; font-size:11px;">Spectrogramme du son entendu</p></div>` : '';
+    stage.insertAdjacentHTML('beforeend', `<p style="text-align:center; margin:14px 0 0;">${verdict} — c'était <b class="sp-link" data-sci="${esc(_quizCurrent.sci)}" style="cursor:pointer; text-decoration:underline dotted;">${esc(nm)}</b> <span class="p-sci">${esc(_quizCurrent.sci)}</span></p>${sonoHtml}`);
   }
   $('#quizNext').hidden = false;
   $('#quizSkip').hidden = true;
@@ -12061,6 +12261,7 @@ document.addEventListener('click', e => {
   const next = e.target.closest('#quizNext'); if(next){ _quizStart(); return; }
   const skip = e.target.closest('#quizSkip'); if(skip){ _quizStart(); return; }
   const choice = e.target.closest('[data-quiz-choice]'); if(choice){ _quizAnswer(+choice.dataset.quizChoice); return; }
+  const modeBtn = e.target.closest('[data-quiz-mode]'); if(modeBtn){ _quizSetMode(modeBtn.dataset.quizMode); return; }
 });
 // PWA : installation sur l'écran d'accueil
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
