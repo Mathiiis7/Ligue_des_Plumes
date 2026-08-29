@@ -1919,6 +1919,7 @@
           </div>
           <div class="sm-freq" id="smFreqWrap" hidden></div>
           <div class="sm-card" id="smTraitsCard" hidden></div>
+          <div class="sm-card" id="smRangeCard" hidden></div>
           <div class="sm-card">
             <div class="sm-card-title">Liens</div>
             <div class="sm-links" id="smLinks"></div>
@@ -9361,6 +9362,81 @@ async function _renderSpeciesTraitsCard(key){
   `;
   box.hidden = false;
 }
+// Carte de repartition Cornell S&T (heatmap annuelle 9km). Lazy load du manifest global
+// puis affichage PNG statique cliquable qui ouvre une modal Leaflet interactive.
+let _rangeIndexCache = null;
+async function _loadRangeIndex(){
+  if(_rangeIndexCache) return _rangeIndexCache;
+  try{
+    const res = await fetch('data/range-index.json?v=20260829');
+    if(!res.ok) return (_rangeIndexCache = {});
+    _rangeIndexCache = await res.json();
+  }catch(_){ _rangeIndexCache = {}; }
+  return _rangeIndexCache;
+}
+async function _renderSpeciesRangeCard(sci){
+  const box = $('#smRangeCard'); if(!box) return;
+  box.hidden = true;
+  box.innerHTML = '';
+  const idx = await _loadRangeIndex();
+  const entry = idx[sci] || idx[sci?.toLowerCase()];
+  if(!entry || !entry.code) return;
+  const pngPath = `data/range/${entry.code}.png?v=20260829`;
+  // Bbox pour le modal Leaflet. Format : [w, s, e, n] -> [[s,w], [n,e]] pour Leaflet imageBounds.
+  const bboxAttr = entry.bbox ? entry.bbox.join(',') : '';
+  box.innerHTML = `
+    <div class="sm-card-title" style="display:flex; align-items:center; gap:8px;">Répartition <span style="font-size:10.5px; color:var(--ink-3); text-transform:none; font-weight:400; letter-spacing:0;">— Cornell Status & Trends (moyenne annuelle 9 km)</span></div>
+    <div style="position:relative; margin-top:6px; cursor:pointer; border-radius:8px; overflow:hidden; background:var(--surface-3); aspect-ratio:${entry.w||800}/${entry.h||600};" data-range-open data-range-sci="${esc(sci)}" data-range-code="${esc(entry.code)}" data-range-bbox="${esc(bboxAttr)}" title="Cliquer pour ouvrir la carte interactive">
+      <img src="${esc(pngPath)}" alt="Carte de répartition ${esc(sci)}" style="display:block; width:100%; height:100%; object-fit:contain;" onerror="this.parentElement.parentElement.remove()">
+      <div style="position:absolute; bottom:6px; right:8px; background:rgba(0,0,0,.6); color:#fff; font-size:11px; padding:3px 8px; border-radius:4px; pointer-events:none;">🔍 Cliquer pour zoomer</div>
+    </div>
+    <div style="margin-top:6px; font-size:11px; color:var(--ink-3);">Vert clair = présence rare · Rouge foncé = abondance élevée</div>
+  `;
+  box.hidden = false;
+}
+// Modal Leaflet plein ecran pour la carte interactive avec OSM en base + PNG en overlay.
+function _openRangeMapModal(sci, code, bbox){
+  // Cree modal si pas deja present
+  let modal = document.getElementById('rangeMapModal');
+  if(!modal){
+    modal = document.createElement('div');
+    modal.id = 'rangeMapModal';
+    modal.style.cssText = 'position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,.85); display:flex; flex-direction:column;';
+    modal.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 20px; background:var(--surface); color:var(--ink); border-bottom:1px solid var(--line);">
+        <div id="rangeMapTitle" style="font-weight:600;"></div>
+        <button id="rangeMapClose" type="button" style="background:transparent; border:1px solid var(--line-2); border-radius:6px; padding:6px 12px; cursor:pointer; color:var(--ink);">✕ Fermer</button>
+      </div>
+      <div id="rangeMapEl" style="flex:1; background:#dde5e0;"></div>
+    `;
+    document.body.appendChild(modal);
+    modal.querySelector('#rangeMapClose').addEventListener('click', () => { modal.style.display = 'none'; });
+    modal.addEventListener('click', e => { if(e.target === modal) modal.style.display = 'none'; });
+  }
+  modal.style.display = 'flex';
+  const titleEl = modal.querySelector('#rangeMapTitle');
+  if(titleEl) titleEl.textContent = `${FR_NAMES[sci] || sci} — répartition annuelle Cornell S&T`;
+  // Reset la carte a chaque ouverture (evite les leftovers de la precedente espece)
+  const mapEl = modal.querySelector('#rangeMapEl');
+  mapEl.innerHTML = '';
+  const bboxArr = bbox.split(',').map(Number);
+  const [w, s, e, n] = bboxArr;
+  const map = L.map(mapEl, { zoomControl:true, minZoom:2, worldCopyJump:false }).fitBounds([[s, w], [n, e]]);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:'© OpenStreetMap', maxZoom:12
+  }).addTo(map);
+  // Overlay image avec transparence pour laisser voir les tuiles
+  const imgOverlay = L.imageOverlay(`data/range/${code}.png?v=20260829`, [[s, w], [n, e]], { opacity:0.75, interactive:false });
+  imgOverlay.addTo(map);
+  // Force resize (Leaflet a besoin de connaitre sa taille apres apparition)
+  setTimeout(() => map.invalidateSize(), 100);
+}
+document.addEventListener('click', e => {
+  const openBtn = e.target.closest('[data-range-open]');
+  if(openBtn){
+    _openRangeMapModal(openBtn.dataset.rangeSci, openBtn.dataset.rangeCode, openBtn.dataset.rangeBbox);
+  }
+});
 function _renderSpeciesInfoChips(key){
   const box = $('#smInfoChips'); if(!box) return;
   const chips = [];
@@ -10319,6 +10395,8 @@ function openSpeciesModal(sci){
   _renderSpeciesRarityCard(key);
   // Traits Avonet (ecologie + morphologie), lazy fetch au 1er open
   _renderSpeciesTraitsCard(key);
+  // Carte de repartition Cornell S&T (lazy)
+  _renderSpeciesRangeCard(sci);
   // Description Wikipedia (async)
   _renderSpeciesDesc(sci);
   // Note : le freq chart est deja rendu par _renderSpeciesRarityCard avec le
