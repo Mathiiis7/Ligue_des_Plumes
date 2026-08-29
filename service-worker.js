@@ -3,7 +3,7 @@
 //   puis rafraichit en background. Prochain reload = nouvelle version.
 // - Requetes cross-origin (Firestore, iNaturalist, xeno-canto, Wikipedia, etc.) : reseau seul.
 // - Bump CACHE_VERSION quand on veut invalider volontairement.
-const CACHE_VERSION = 'v4-2026-08-03-datasplit';
+const CACHE_VERSION = 'v5-2026-08-31-fixresp';
 const CACHE_NAME = 'lmb-' + CACHE_VERSION;
 
 self.addEventListener('install', (e) => {
@@ -39,6 +39,9 @@ self.addEventListener('fetch', (event) => {
       return res;
     }).catch(() => null);
     // Renvoie immediatement le cache s'il existe (rapidite), sinon attend le reseau.
-    return cached || fetchAndCache || new Response('', { status: 504 });
+    // Await explicite pour eviter que fetchAndCache resolve a null cassant respondWith.
+    if (cached) return cached;
+    const netRes = await fetchAndCache;
+    return netRes || new Response('', { status: 504, statusText: 'No cache and network failed' });
   })());
 });
