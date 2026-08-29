@@ -156,13 +156,13 @@
     </div>
     <details class="import-guide">
       <summary>📥 Comment récupérer ma liste eBird ?</summary>
-      <p style="margin:8px 0 0;"><b>Le plus simple — sans email :</b></p>
+      <p style="margin:8px 0 0;"><b>Le plus simple - sans email :</b></p>
       <ol>
         <li>Connectez-vous sur eBird (le compte lié à Merlin), puis ouvrez votre liste mondiale : <a href="https://ebird.org/lifelist?r=world&time=life" target="_blank" rel="noopener">ebird.org/lifelist</a> (région <b>« World / Monde »</b>).</li>
         <li>En haut à droite, cliquez sur <b>☁ Download (csv)</b> : le fichier se télécharge <b>directement, sans email</b>.</li>
         <li>Déposez ce fichier ci-dessous. 🎉</li>
       </ol>
-      <p style="margin:8px 0 0; color:var(--ink-3); font-size:12px;">Ce fichier contient le <b>lieu de chaque espèce</b> (colonne <code>S/P</code>), donc la ligue reconnaît vos oiseaux <b>vus en France</b> et met à part ceux vus <b>à l'étranger</b> — le tout sans email.</p>
+      <p style="margin:8px 0 0; color:var(--ink-3); font-size:12px;">Ce fichier contient le <b>lieu de chaque espèce</b> (colonne <code>S/P</code>), donc la ligue reconnaît vos oiseaux <b>vus en France</b> et met à part ceux vus <b>à l'étranger</b> - le tout sans email.</p>
       <p style="margin:6px 0 0; color:var(--ink-3); font-size:12px;">Variante complète (par email, avec les coordonnées GPS de chaque obs, nécessaire pour la carte 📍) : <a href="https://ebird.org/downloadMyData" target="_blank" rel="noopener">ebird.org/downloadMyData</a> → « Submit » → <code>MyEBirdData.csv</code>.</p>
     </details>
 
@@ -182,7 +182,7 @@
       </div>
       <div class="drop" id="drop">
         <div class="big" id="dropBig">Déposez votre fichier eBird <code>.csv</code> ici</div>
-        <div class="small" id="dropSmall">ou cliquez pour parcourir — votre liste à vous</div>
+        <div class="small" id="dropSmall">ou cliquez pour parcourir - votre liste à vous</div>
       </div>
       <input type="file" id="file" accept=".csv,text/csv" hidden>
       <div class="intake-actions">
@@ -211,7 +211,7 @@
         <div id="manualPicked" class="manual-picked" style="display:none;"></div>
         <div id="manualCountryPickWrap" style="display:none; margin-top:8px;">
           <select id="manualCountryPick" title="Choisir le pays">
-            <option value="">— Choisir un pays —</option>
+            <option value="">- Choisir un pays -</option>
           </select>
         </div>
         <div class="manual-row" style="margin-top:8px;">
@@ -288,8 +288,8 @@
         <summary style="cursor:pointer; font-size:12px; color:var(--ink-3); user-select:none; padding:2px 0;">▸ Comment lire les métriques</summary>
         <div style="padding:8px 12px; margin-top:6px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--ink-2); line-height:1.5;">
           <p style="margin:0 0 6px 0;">Chaque espèce a deux indicateurs :</p>
-          <p style="margin:0 0 6px 0;"><b>X ind/h cette semaine</b> — combien d'individus tu croiserais en moyenne <b>par heure de balade</b> dans ta région, cette semaine précise. Basé sur les données Cornell (le labo ornitho mondial qui gère eBird). Ex : 2 ind/h = 1 oiseau vu toutes les 30 min ; 0.001 ind/h = quasi introuvable.</p>
-          <p style="margin:0;"><b>X% listes région (mensuel)</b> — sur toutes les sorties eBird faites dans ta région à ce mois, <b>quel pourcentage mentionne l'espèce</b>. Moyenne des 6 dernières années. Ex : 30% = 1 sortie sur 3 en voit ; 1% = 1 sortie sur 100.</p>
+          <p style="margin:0 0 6px 0;"><b>X ind/h cette semaine</b> - combien d'individus tu croiserais en moyenne <b>par heure de balade</b> dans ta région, cette semaine précise. Basé sur les données Cornell (le labo ornitho mondial qui gère eBird). Ex : 2 ind/h = 1 oiseau vu toutes les 30 min ; 0.001 ind/h = quasi introuvable.</p>
+          <p style="margin:0;"><b>X% listes région (mensuel)</b> - sur toutes les sorties eBird faites dans ta région à ce mois, <b>quel pourcentage mentionne l'espèce</b>. Moyenne des 6 dernières années. Ex : 30% = 1 sortie sur 3 en voit ; 1% = 1 sortie sur 100.</p>
           <p style="margin:6px 0 0 0; opacity:.85;">Le classement se base sur "ind/h" (la mesure de la semaine en cours). Le "% listes" complète en montrant si l'espèce est régulière en général à cette saison.</p>
           <p style="margin:6px 0 0 0; opacity:.85;">Détails complets sur la page <a href="#" onclick="document.querySelector('.tab[data-view=about]')?.click(); return false;" style="color:var(--accent); text-decoration:underline;">ℹ️ À propos</a> (menu ☰).</p>
         </div>
@@ -311,10 +311,10 @@
         </ol>
       </div>
       <div class="profile" id="profile" style="display:none;">
-        <div class="eyebrow" style="margin-bottom:10px;">Votre fiche <span style="text-transform:none;font-weight:400;color:var(--ink-3);">— visible dans le classement par tout le groupe</span></div>
+        <div class="eyebrow" style="margin-bottom:10px;">Votre fiche <span style="text-transform:none;font-weight:400;color:var(--ink-3);">- visible dans le classement par tout le groupe</span></div>
         <div class="prof-grid">
           <label>Objectif (nombre d'espèces)<input type="number" id="profGoal" min="1" max="2000" placeholder="ex. 100"></label>
-          <label>Espèce préférée<select id="profFav"><option value="">— aucune —</option></select></label>
+          <label>Espèce préférée<select id="profFav"><option value="">- aucune -</option></select></label>
           <label>Votre espèce la plus rare<input type="text" id="profRare" maxlength="40" placeholder="au choix (sinon calculée)"></label>
           <label>Espèce de rêve<input type="text" id="profDream" maxlength="40" placeholder="ex. Gypaète barbu"></label>
         </div>
@@ -376,7 +376,7 @@
             <div class="person-chips rar-chips-matrix" id="tierChips" aria-label="Filtrer par rareté (multi)"></div>
           </div>
           <div class="fp-section">
-            <div class="fp-title">Liste principale <span class="fp-hint">(1 personne — sa liste devient la référence)</span></div>
+            <div class="fp-title">Liste principale <span class="fp-hint">(1 personne - sa liste devient la référence)</span></div>
             <div class="person-chips" id="playerMainChips" aria-label="Choisir la personne principale (0 ou 1)"></div>
           </div>
           <div class="fp-section">
@@ -509,7 +509,7 @@
           <option value="todo" selected>Espèces à cocher pour moi</option>
           <option value="recent">Activité 30 jours</option>
         </select>
-        <label class="explorer-lbl" id="mapEbMonthLbl" style="display:none;" title="Filtre les espèces à celles actives ce mois-là en France (bar chart eBird nationaux). Ne re-charge PAS l'API — filtre client-side.">Mois</label>
+        <label class="explorer-lbl" id="mapEbMonthLbl" style="display:none;" title="Filtre les espèces à celles actives ce mois-là en France (bar chart eBird nationaux). Ne re-charge PAS l'API - filtre client-side.">Mois</label>
         <select class="filt-sel" id="mapEbMonth" style="display:none;">
           <option value="0" selected>Tous</option>
           <option value="1">janvier</option><option value="2">février</option>
@@ -519,7 +519,7 @@
           <option value="9">septembre</option><option value="10">octobre</option>
           <option value="11">novembre</option><option value="12">décembre</option>
         </select>
-        <label class="explorer-lbl" id="mapEbRarityLbl" style="display:none;" title="Clique un ou plusieurs niveaux — sinon toutes les raretés">Rareté</label>
+        <label class="explorer-lbl" id="mapEbRarityLbl" style="display:none;" title="Clique un ou plusieurs niveaux - sinon toutes les raretés">Rareté</label>
         <div id="mapEbRarityChips" class="rar-chips" style="display:none;">
           <button type="button" class="rar-chip rar-exo on" data-rar="exo" title="Parc semi-libre / échappé (tier 0)">0</button>
           <button type="button" class="rar-chip on" data-rar="1" title="Omniprésent">1</button>
@@ -556,12 +556,12 @@
       <div id="mapCountryHint" class="help" style="display:none; font-size:11.5px; margin:-4px 0 6px; color:var(--ink-3);"></div>
       <div class="map-controls" id="mapCtrlsAbundance" style="display:none;">
         <div class="seg" id="mapAbView" style="margin-right:8px;">
-          <button type="button" data-view="abs" class="on" title="Couleur = abondance réelle (même échelle pour toutes espèces). Un oiseau rare reste pâle même dans son meilleur dept — signal honnête.">📍 Absolu</button>
-          <button type="button" data-view="rank" title="Couleur = position (rang) du dept parmi les autres pour CETTE espèce. Le meilleur dept est toujours rouge, même si l'espèce est rare partout — utile pour repérer où tenter.">🎯 Top des dept</button>
+          <button type="button" data-view="abs" class="on" title="Couleur = abondance réelle (même échelle pour toutes espèces). Un oiseau rare reste pâle même dans son meilleur dept - signal honnête.">📍 Absolu</button>
+          <button type="button" data-view="rank" title="Couleur = position (rang) du dept parmi les autres pour CETTE espèce. Le meilleur dept est toujours rouge, même si l'espèce est rare partout - utile pour repérer où tenter.">🎯 Top des dept</button>
         </div>
         <div class="seg" id="mapAbMetric" style="margin-right:8px;">
-          <button type="button" data-metric="max" class="on" title="Meilleur pixel du dept — capte les hotspots (côtes, marais, etc.)">🔥 Peak</button>
-          <button type="button" data-metric="mean" title="Moyenne des pixels du dept — densité globale (dilue le signal côtier)">📊 Moyenne</button>
+          <button type="button" data-metric="max" class="on" title="Meilleur pixel du dept - capte les hotspots (côtes, marais, etc.)">🔥 Peak</button>
+          <button type="button" data-metric="mean" title="Moyenne des pixels du dept - densité globale (dilue le signal côtier)">📊 Moyenne</button>
         </div>
         <label class="explorer-lbl" for="mapAbMonth">Mois</label>
         <select class="filt-sel" id="mapAbMonth">
@@ -590,7 +590,7 @@
           <label class="tl-lbl">au</label>
           <input type="range" id="mapTlEnd" min="0" max="0" value="0" step="1">
         </div>
-        <span class="tl-label" id="mapTlLabel">—</span>
+        <span class="tl-label" id="mapTlLabel">-</span>
         <select id="mapTlSpeed" class="filt-sel" title="Vitesse d'animation">
           <option value="0.5">Lent</option>
           <option value="1" selected>Normal</option>
@@ -717,7 +717,7 @@
     <section class="panel" style="padding:20px; margin-top:22px;">
       <div class="section-head">
         <div><div class="eyebrow">Collection</div><h2>📖 Birdydex</h2></div>
-        <div id="pkdxCounter" style="font:700 14px system-ui; color:var(--ink-2);">— / —</div>
+        <div id="pkdxCounter" style="font:700 14px system-ui; color:var(--ink-2);">- / -</div>
       </div>
       <div class="pkdx-ctrls" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:10px 0 14px;">
         <input type="search" id="pkdxSearch" placeholder="Rechercher (nom fr ou sci)…" style="flex:1; min-width:180px; padding:9px 12px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2); color:var(--ink); font:14px system-ui;">
@@ -769,8 +769,8 @@
         </ul>
         <p style="margin:0 0 10px;">Le niveau est calculé en combinant 2 sources :</p>
         <ul style="margin:0 0 10px 0; padding-left:22px;">
-          <li><b>eBird Status &amp; Trends</b> (Cornell Lab) — modèle Machine Learning qui donne la <i>densité biologique</i> d'ind/h par km²</li>
-          <li><b>Bar chart eBird FR 2019-2026</b> — le % de listes qui mentionnent l'espèce (réalité birding)</li>
+          <li><b>eBird Status &amp; Trends</b> (Cornell Lab) - modèle Machine Learning qui donne la <i>densité biologique</i> d'ind/h par km²</li>
+          <li><b>Bar chart eBird FR 2019-2026</b> - le % de listes qui mentionnent l'espèce (réalité birding)</li>
         </ul>
         <p style="margin:0 0 10px;">Les 2 sources sont fusionnées avec des règles qui corrigent les biais :</p>
         <ul style="margin:0 0 10px 0; padding-left:22px;">
@@ -781,8 +781,8 @@
 
         <h3 style="margin:20px 0 8px; font-size:16px; color:var(--ink);">📅 Les 2 indicateurs de l'onglet "Cette semaine"</h3>
         <p style="margin:0 0 8px;">Chaque espèce est classée avec 2 métriques complémentaires :</p>
-        <p style="margin:6px 0;"><b>X ind/h cette semaine</b> — combien d'individus tu croiserais en moyenne par heure de balade, cette semaine précise, dans ta région. Ex : <i>2 ind/h = 1 oiseau vu toutes les 30 min ; 0.001 ind/h = quasi introuvable</i>. Source Cornell S&amp;T (rasters 3 km × 52 semaines).</p>
-        <p style="margin:6px 0;"><b>X% listes région (mensuel)</b> — quel pourcentage des sorties eBird de ta région à ce mois mentionnent l'espèce. Ex : <i>30% = 1 sortie sur 3 en voit ; 1% = 1 sortie sur 100</i>. Moyenne des 6 dernières années.</p>
+        <p style="margin:6px 0;"><b>X ind/h cette semaine</b> - combien d'individus tu croiserais en moyenne par heure de balade, cette semaine précise, dans ta région. Ex : <i>2 ind/h = 1 oiseau vu toutes les 30 min ; 0.001 ind/h = quasi introuvable</i>. Source Cornell S&amp;T (rasters 3 km × 52 semaines).</p>
+        <p style="margin:6px 0;"><b>X% listes région (mensuel)</b> - quel pourcentage des sorties eBird de ta région à ce mois mentionnent l'espèce. Ex : <i>30% = 1 sortie sur 3 en voit ; 1% = 1 sortie sur 100</i>. Moyenne des 6 dernières années.</p>
         <p style="margin:6px 0;">Le <b>classement</b> se fait sur "ind/h" (précision de la semaine). Le "% listes" complète pour montrer si l'espèce est régulière en général à cette saison.</p>
 
         <h3 style="margin:20px 0 8px; font-size:16px; color:var(--ink);">📍 Sélecteur région (fiche espèce)</h3>
@@ -791,12 +791,12 @@
 
         <h3 style="margin:20px 0 8px; font-size:16px; color:var(--ink);">📚 Sources des données</h3>
         <ul style="margin:0 0 10px 0; padding-left:22px;">
-          <li><b>eBird</b> (Cornell Lab of Ornithology) — la life list, le bar chart FR/région/département, la taxonomie</li>
-          <li><b>eBird Status &amp; Trends 2023</b> — modèle ML d'abondance (rasters hebdo par pixel 3 km)</li>
-          <li><b>GBIF</b> — fallback pour les exotiques rares non couverts par eBird bar chart</li>
-          <li><b>xeno-canto</b> — chants et cris (onglet Quiz)</li>
-          <li><b>Wikipedia</b> — descriptions et photos</li>
-          <li><b>IUCN Red List</b> — statut de conservation (icônes sur les fiches)</li>
+          <li><b>eBird</b> (Cornell Lab of Ornithology) - la life list, le bar chart FR/région/département, la taxonomie</li>
+          <li><b>eBird Status &amp; Trends 2023</b> - modèle ML d'abondance (rasters hebdo par pixel 3 km)</li>
+          <li><b>GBIF</b> - fallback pour les exotiques rares non couverts par eBird bar chart</li>
+          <li><b>xeno-canto</b> - chants et cris (onglet Quiz)</li>
+          <li><b>Wikipedia</b> - descriptions et photos</li>
+          <li><b>IUCN Red List</b> - statut de conservation (icônes sur les fiches)</li>
         </ul>
 
         <h3 style="margin:20px 0 8px; font-size:16px; color:var(--ink);">📅 Versions des données</h3>

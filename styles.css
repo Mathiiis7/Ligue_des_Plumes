@@ -245,7 +245,7 @@
   .person-chip.on { color:var(--ink); border-color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,var(--surface)); }
   .person-chip.main { border-color:var(--gold); background:color-mix(in srgb,var(--gold) 18%,var(--surface)); color:var(--ink); font-weight:700; }
   /* Chips rareté quand cochée : réaffirme la couleur de rareté sur la bordure gauche.
-     DOIT venir APRÈS .person-chip.on (même spécificité, la déclaration la plus tardive gagne) —
+     DOIT venir APRÈS .person-chip.on (même spécificité, la déclaration la plus tardive gagne) -
      sinon le border-color:var(--accent) de .person-chip.on écrase la bordure gauche colorée. */
   .rar-chip-m.on { border-left-color:var(--series) !important; }
   .person-filter-group { display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; padding:4px 8px 4px 4px; border:1px dashed var(--line-2); border-radius:12px; }
@@ -374,7 +374,7 @@
     border:1px solid color-mix(in srgb,var(--tc) 30%,transparent); }
   .cnt { font-variant-numeric:tabular-nums; color:var(--ink-2); text-align:center; }
 
-  /* matrix — mobile card variant (shown < 640px) */
+  /* matrix - mobile card variant (shown < 640px) */
   .matrix-cards { display:none; }
   .mcard { border:1px solid var(--line); border-left:3px solid var(--line-2); border-radius:11px;
     padding:12px 13px; background:var(--surface-2); }

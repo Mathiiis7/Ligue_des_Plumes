@@ -34,7 +34,7 @@ let unsubComments = null, commentsMap = new Map();   // Map<target, Array<{id,ui
 let unsubTrophyEvents = null, trophyEventsList = [], _trophyEventsLoaded = false;   // events synchronises via Firestore (partages entre appareils)
 let unsubRequests = null, requests = [], unsubReqVotes = null, reqVotesMap = new Map();
 // Admin(s) : uid autorisé à changer le statut d'une requête (À faire / En cours / Fait).
-// Mathis (compte email) — ajouter d'autres uid si besoin.
+// Mathis (compte email) - ajouter d'autres uid si besoin.
 const ADMIN_UIDS = new Set(['pCf1HuUeIkNJTXC0wujsX04UsFs2']);
 const isAdmin = () => myUid && ADMIN_UIDS.has(myUid);
 const EMOJIS = [
@@ -214,7 +214,7 @@ const REAL_FREQ_MONTHLY = {"acanthis flammea":[0.00424,0.00218,0.00197,0.00135,0
 let REAL_FREQ_MONTHLY_BY_REGION = {};   // stub, chargé par _loadMapData() (lazy, ~5 MB de data)
 let REAL_ABUNDANCE_DEPT = {};   // stub, chargé par _loadMapData() (lazy, ~5 MB de data)
 let REAL_ABUNDANCE_DEPT_MEAN = {};   // stub, chargé par _loadMapData() (lazy, ~5 MB de data)
-let REAL_ABUNDANCE_ST_BY_REGION_FR = {};   // stub, chargé par _loadAbundanceRegionData() (lazy, ~3 MB) — S&T weekly par région FR
+let REAL_ABUNDANCE_ST_BY_REGION_FR = {};   // stub, chargé par _loadAbundanceRegionData() (lazy, ~3 MB) - S&T weekly par région FR
 // Dict multi-pays des S&T weekly par region : { FR: {...}, ME: {...}, ES: {...}, ... }
 // Charge lazy par _loadAbundanceRegionData(cc). Coexiste avec REAL_ABUNDANCE_ST_BY_REGION_FR
 // (qui reste peuplee pour compat) mais REAL_ABUNDANCE_ST_BY_REGION.FR pointe sur le meme dict.
@@ -402,8 +402,8 @@ function _openCountryPicker(currentCode, opts = {}){
       }
       return { score: 0, isSt: false };
     };
-    const fmtST = v => v >= 10 ? Math.round(v)+' ind/h' : v >= 1 ? v.toFixed(1)+' ind/h' : v >= 0.01 ? v.toFixed(2)+' ind/h' : v >= 0.001 ? v.toFixed(3)+' ind/h' : v > 0 ? '<0.001 ind/h' : '—';
-    const fmtPct = v => { if(!(v>0)) return '—'; const p = v*100; if(p >= 10) return Math.round(p)+'%'; if(p >= 1) return p.toFixed(1)+'%'; if(p >= 0.1) return p.toFixed(2)+'%'; return '<0.1%'; };
+    const fmtST = v => v >= 10 ? Math.round(v)+' ind/h' : v >= 1 ? v.toFixed(1)+' ind/h' : v >= 0.01 ? v.toFixed(2)+' ind/h' : v >= 0.001 ? v.toFixed(3)+' ind/h' : v > 0 ? '<0.001 ind/h' : '-';
+    const fmtPct = v => { if(!(v>0)) return '-'; const p = v*100; if(p >= 10) return Math.round(p)+'%'; if(p >= 1) return p.toFixed(1)+'%'; if(p >= 0.1) return p.toFixed(2)+'%'; return '<0.1%'; };
     // Grouper par continent (avec optionnel score espece)
     const grouped = {};
     for(const cc of allCodes){
@@ -1048,7 +1048,7 @@ function _rarityBadge(w, country, sci){
     // Cas special FR : espece hors-aire (jamais observee en France, connue uniquement dans
     // les catalogues etrangers) -> badge gris "Hors aire", pas tier "Exceptionnel" trompeur.
     if(cc === 'FR' && sciKey && _isForeignOnly(sciKey)){
-      const pill = `<span style="display:inline-block;background:#7e8a99;color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">—</span>`;
+      const pill = `<span style="display:inline-block;background:#7e8a99;color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">-</span>`;
       return `${flgSpan}${pill} Hors aire`;
     }
     if(tier) return `${flgSpan}${pillFor(tier)} ${REAL_LABELS[tier]||''}`;
@@ -1059,7 +1059,7 @@ function _rarityBadge(w, country, sci){
   // Ligne 1 rarete du pays visite, ligne 2 rarete FR. Petit espace vertical entre les deux.
   return `<div>${lineFor(c, w)}</div><div style="margin-top:3px;">${lineFor('FR', wFR)}</div>`;
 }
-// Fréquence eBird fine (part des listes) — pour départager les oiseaux d'un même poids.
+// Fréquence eBird fine (part des listes) - pour départager les oiseaux d'un même poids.
 // Absente (espèce hors bar chart eBird = encore plus rare) -> -1 (classée la plus rare).
 function realFreq(sci){ if(isExotic(sci)) return 1; const f=REAL_FREQ[(sci||'').trim().toLowerCase()]; return f==null ? -1 : f; }
 // Catalogue de tous les oiseaux "graal" possibles en France (poids >= 8 : Très rare ou Exceptionnel)
@@ -1183,7 +1183,7 @@ function ingest(filename, text){
     } else {
       const entry = { common:common||sci, sci, date, loc, obs:1,
         fr: hasGeo ? inFR : undefined,             // undefined = pays inconnu (pas de colonne)
-        country: cc,                               // pays de la 1re obs (code ISO) — pour le filtre
+        country: cc,                               // pays de la 1re obs (code ISO) - pour le filtre
         lat: hasCoords?lat:null, lon: hasCoords?lon:null,  // coords de la 1re obs (pour la carte)
         locId: locId||null,                        // eBird LocID (pour lien vers hotspot)
         nonSpecies:isNonSpecies(common,sci) };
@@ -1203,7 +1203,7 @@ function ingest(filename, text){
 function cleanName(base, n){
   let s = (base||'').replace(/[_\-]+/g,' ').replace(/\s+/g,' ').trim();
   // Fallback très visible pour repérer un compte sans nom (l'utilisateur oubliera moins de se renommer).
-  if(!s) return '⚠️ Sans nom — modifiez « Ma liste » → nom';
+  if(!s) return '⚠️ Sans nom - modifiez « Ma liste » → nom';
   return s.charAt(0).toUpperCase()+s.slice(1);
 }
 
@@ -1224,7 +1224,7 @@ function rarityColor(k, N){
 const LEAGUE_LABELS=['Unique','Très rare','Rare','Peu commun','Assez commun','Commun','Très commun','Vu par tous'];
 function tierFor(k, N){
   let label;
-  if(N<=1) label='—';
+  if(N<=1) label='-';
   else if(k===1) label='Unique';
   else if(k>=N) label='Vu par tous';
   else label=LEAGUE_LABELS[Math.round((k-1)/(N-1)*(LEAGUE_LABELS.length-1))];
@@ -1261,9 +1261,9 @@ function sciColor(sci){
   return realColor(rarityReal(sci));
 }
 // Fréquence eBird au mois M (1-12) pour une espèce. Retourne 0 si l'espèce n'est pas dans le bar chart.
-// Seuil 0.01 = présente sur ≥ 1 % des sorties ce mois-là (≈ 10 obs / 1000 listes) — assez pour être
+// Seuil 0.01 = présente sur ≥ 1 % des sorties ce mois-là (≈ 10 obs / 1000 listes) - assez pour être
 // une cible saisonnière crédible, filtre les vagrants et queues de migration.
-// Cas rare : espèces globalement très rares (pic annuel < 0.01) — on utilise 30 % de leur pic pour
+// Cas rare : espèces globalement très rares (pic annuel < 0.01) - on utilise 30 % de leur pic pour
 // qu'elles restent visibles dans leurs meilleurs mois, sinon elles seraient toujours écartées.
 function freqAtMonth(sci, m){ const arr = REAL_FREQ_MONTHLY[(sci||'').trim().toLowerCase()]; return arr ? (arr[m-1]||0) : 0; }
 function activeInMonth(sci, m, region, subregion){
@@ -1271,7 +1271,7 @@ function activeInMonth(sci, m, region, subregion){
   if(isExotic(sci)) return true;
   const k = (sci||'').trim().toLowerCase();
   // Priorité : département > région > national. Si le hotspot est dans un département qu'on a chargé
-  // et que l'espèce n'y a jamais été vue en 10 ans, on filtre — même si elle existe dans la région.
+  // et que l'espèce n'y a jamais été vue en 10 ans, on filtre - même si elle existe dans la région.
   let arr = null;
   if(subregion){
     const dmap = REAL_FREQ_MONTHLY_BY_REGION[subregion];
@@ -1323,7 +1323,7 @@ const FOREIGN_TIER = { id:'etr', ord:-1, label:'Étranger', color:'#8a7fb3' };
 // Espèce faisant partie de l'avifaune française (observable en France) ?
 const inRef = sci => { const k=(sci||'').trim().toLowerCase(); return (k in REAL_RARITY) || (k in FR_NAMES) || isExotic(k); };
 // Vrai cochage étranger = vu SEULEMENT à l'étranger ET pas une espèce de France.
-// (Un oiseau français vu d'abord à l'étranger — ex. Pinson — reste compté : la life list
+// (Un oiseau français vu d'abord à l'étranger - ex. Pinson - reste compté : la life list
 //  eBird ne garde que la 1re obs, donc son lieu n'est pas fiable pour l'exclure.)
 const foreignTick = v => v.fr===false && !inRef(v.sci);
 // X (Echappe isole) et C (Origine domestique) : classes "exotique meme cochee" -> comptent
@@ -1335,7 +1335,7 @@ const countsFR = v => !foreignTick(v);
 // Compte pour les trophees rarete : exclut TOUS les exotiques (tous en tier 0 maintenant,
 // donc hors bareme rarete 1-9) et les especes hidden. Reste : les vraies especes sauvages.
 const _countsForRarity = v => countsFR(v) && !isExotic(v.sci) && !isHiddenSpecies(v.sci);
-const seenFR = v => !v.country || v.country==='FR';  // observé EN France (ou pays inconnu) — pour Mike Horn
+const seenFR = v => !v.country || v.country==='FR';  // observé EN France (ou pays inconnu) - pour Mike Horn
 const holdersFR = u => u.counts!=null ? u.counts : [...u.seenBy.values()].filter(countsFR).length;
 // Pays (code ISO 2 lettres)
 // Drapeau emoji : marche sur mobile mais s'affiche « US »/« FR » sur Windows desktop.
@@ -1378,7 +1378,7 @@ function build(){
         if(k===1) p.unique++;
       } }
   }
-  // l'espèce la plus rare (rareté réelle) présente dans la ligue — France seule
+  // l'espèce la plus rare (rareté réelle) présente dans la ligue - France seule
   // Exclut les exotiques X/C : un Ara ararauna echappe ne peut pas devenir "la plus rare".
   let maxRW=1;
   for(const u of universe.values()){ if(u.counts===0) continue; if(_isExoticNotCounted(u.sci)) continue; const w=rarityReal(u.sci); if(w>maxRW) maxRW=w; }
@@ -1537,7 +1537,7 @@ function renderBoard(){
   const explain = mode==='count'
     ? "Classement par nombre d'espèces observées."
     : mode==='real'
-    ? "Points = rareté réelle en France, d'après la fréquence des espèces sur les listes eBird (un oiseau vu à chaque sortie vaut 1, un oiseau rarement rencontré bien plus) — indépendant de la ligue."
+    ? "Points = rareté réelle en France, d'après la fréquence des espèces sur les listes eBird (un oiseau vu à chaque sortie vaut 1, un oiseau rarement rencontré bien plus) - indépendant de la ligue."
     : "Points = somme de 100 ÷ (nombre d'amis ayant vu l'espèce). Vue par vous seul = 100 ; vue par tous = peu.";
   const eb=$('#boardExplain'); if(eb) eb.textContent=explain;
   document.querySelectorAll('#boardModes button').forEach(b=>b.classList.toggle('on', b.dataset.mode===mode));
@@ -1552,14 +1552,14 @@ function renderBoard(){
       // avec le bar chart en source d'appui (règle ±1 tier max). Voir fiche espèce
       // pour le détail de chaque composante.
       const RANGES={1:'≥ 25 %',2:'15 – 25 %',3:'8 – 15 %',4:'4 – 8 %',5:'2 – 4 %',6:'0,7 – 2 %',7:'0,15 – 0,7 %',8:'0,03 – 0,15 %',9:'0,005 – 0,03 %',10:'< 0,005 %'};
-      const items = [1,2,3,4,5,6,7,8,9,10].map(w=>`<span class="rs-it" title="${w} · ${REAL_LABELS[w]} — ${RANGES[w]}"><i style="background:${realColor(w)}"></i><b>${w}</b> ${REAL_LABELS[w]} <em>${RANGES[w]}</em></span>`).join('')
+      const items = [1,2,3,4,5,6,7,8,9,10].map(w=>`<span class="rs-it" title="${w} · ${REAL_LABELS[w]} - ${RANGES[w]}"><i style="background:${realColor(w)}"></i><b>${w}</b> ${REAL_LABELS[w]} <em>${RANGES[w]}</em></span>`).join('')
         + `<span class="rs-it" title="Exotique X/C ou parc semi-libre : hors barème rareté (tier 0)"><i style="background:#7e8a99"></i><b>0</b> Exotique <em>parcs, échappés, domestiques</em></span>`;
-      rs.innerHTML='<div class="rs-title">Barème de rareté réelle <span>— calibration eBird Status & Trends (Cornell) + bar chart FR 2019-2026. Composite 40% moyenne annuelle · 30% pic saisonnier · 30% densité hotspot.</span></div>'+
+      rs.innerHTML='<div class="rs-title">Barème de rareté réelle <span>- calibration eBird Status & Trends (Cornell) + bar chart FR 2019-2026. Composite 40% moyenne annuelle · 30% pic saisonnier · 30% densité hotspot.</span></div>'+
         '<div class="rs-items">'+items+'</div>';
       rs.style.display='';
     } else rs.style.display='none';
   }
-  const dash='<span class="muted">—</span>';
+  const dash='<span class="muted">-</span>';
   const cell=v=>v?esc(v):dash;
   // Une seule colonne score selon le mode (comme le layout du mode count qui a des cellules
   // moins hautes car les colonnes textuelles ont plus de place). Uniformise les 3 modes.
@@ -1587,7 +1587,7 @@ function renderBoard(){
       <td class="c-txt">${cell(p.dream)}</td>
     </tr>`).join('')}</tbody></table></div>`;
   // Uniformise la hauteur des lignes du board sur celle du plus grand (contenus texte
-  // très inégaux — objectif, dream, dernière obs — sinon effet peigne).
+  // très inégaux - objectif, dream, dernière obs - sinon effet peigne).
   requestAnimationFrame(()=>{
     const rows = document.querySelectorAll('#boardList .board-sheet tbody tr');
     if(!rows.length) return;
@@ -1634,7 +1634,7 @@ function renderMatrix({universe,N}){
   const tierKey=rMode+':'+tiersPresent.map(t=>t.id).join(',');
   if(tierKey!==lastTierKey){
     // Sur changement du mode de rareté (ligue↔réelle) ou de la liste des tiers présents :
-    // on remet tout coché (tierExcl vide) — évite d'exclure par erreur un ancien id d'un autre mode.
+    // on remet tout coché (tierExcl vide) - évite d'exclure par erreur un ancien id d'un autre mode.
     state.tierExcl = new Set();
     lastTierKey=tierKey;
   }
@@ -1715,7 +1715,7 @@ function renderMatrix({universe,N}){
   if(state.family && state.family !== 'any') list=list.filter(u=>familyOf(u.sci) === state.family);
   // Filtre lignes :
   //  - liste principale choisie  → seules les espèces qu'ELLE a vues (peu importe si
-  //    les autres à comparer les ont vues ou pas — la référence, c'est la principale).
+  //    les autres à comparer les ont vues ou pas - la référence, c'est la principale).
   //  - sinon si à-comparer coché → au moins 1 des personnes cochées doit l'avoir vue.
   //  - sinon                    → toutes les espèces du groupe.
   if(state.playerMain){
@@ -1767,7 +1767,7 @@ function renderMatrix({universe,N}){
         return `<td class="pcol${isMain?' is-main':''}"></td>`;
       }
       const foreign=foreignTick(v); const cc=v.country; const abroad=cc&&cc!=='FR';
-      const ttl = abroad ? `Vu en ${countryLabel(cc)}${foreign?' — hors compétition':''}` : (foreign?"Vu à l'étranger — hors compétition":'');
+      const ttl = abroad ? `Vu en ${countryLabel(cc)}${foreign?' - hors compétition':''}` : (foreign?"Vu à l'étranger - hors compétition":'');
       return `<td class="pcol is-seen${foreign?' is-foreign':''}${isMain?' is-main':''}"${ttl?` title="${esc(ttl)}"`:''}><i class="chk">✓</i>${abroad?'<span class="abroad-mark">'+(flagImg(cc)||'🌍')+'</span>':''}</td>`;
     }).join('');
     return `<tr class="${u.missing?'missing':''}">
@@ -1782,7 +1782,7 @@ function renderMatrix({universe,N}){
     // Cartes : n'affiche que les cochons de displayPeople (cohérent avec la table).
     const seers = displayPeople.filter(p=>u.seenBy.has(p.id))
       .map(p=>{ const v=u.seenBy.get(p.id); const foreign=foreignTick(v); const cc=v.country; const abroad=cc&&cc!=='FR';
-        const ttl = abroad?`Vu en ${countryLabel(cc)}${foreign?' — hors compétition':''}`:'';
+        const ttl = abroad?`Vu en ${countryLabel(cc)}${foreign?' - hors compétition':''}`:'';
         return `<span class="mc-person${foreign?' is-foreign':''}" style="--series:var(--s${p.si})"${ttl?` title="${esc(ttl)}"`:''}><span class="dot"></span>${esc(p.name)}${abroad?'<span class="abroad-mark-inline">'+(flagImg(cc)||'🌍')+'</span>':''}</span>`; }).join('');
     return `<div class="mcard ${u.missing?'missing':''}" style="border-left-color:${t.color}">
       <div class="mc-head">
@@ -1855,7 +1855,7 @@ const TROPHIES = [
   { theme:'groupe',      icon:ICONS.saisons, name:'Les 4 Saisons', desc:'Chope un oiseau spécifique à chaque saison tah Vivaldi', test:s=>s.seasonCount>=4, prog:s=>[s.seasonCount,4], alwaysList:true, list:s=>SEASON_CATALOG.map(m=>({ name:m.name, section:m.section, owned:s.seasonOwnedSet.has(m.sci) })), note:s=>`${s.seasonCount} saison${s.seasonCount>1?'s':''} validée${s.seasonCount>1?'s':''} sur 4` },
   { theme:'localisation',icon:ICONS.regions, name:'Ma France, mes régions !', desc:'Faire un tour de France des birds (observer un oiseau dans 10 régions)', test:s=>s.regionsCount>=10, prog:s=>[s.regionsCount,10], alwaysList:true, list:s=>FR_REGIONS.map(r=>({ name:r.name, owned:s.regionsOwnedSet.has(r.code) })), note:s=>`${s.regionsCount} région${s.regionsCount>1?'s':''} visitée${s.regionsCount>1?'s':''} sur ${FR_REGIONS.length}` },
   { theme:'communaute',  icon:ICONS.bebe, name:'Gros Bébé', desc:'Observer des oiseaux avec Samuel Fillion (preuve demandée)', special:'vote', voteId:'grosBebe', voteThreshold:3, voteSelfCheck:()=>/sam/i.test(myMemberName()||''), test:s=>(s.grosBebeVotes||0)>=3 },
-  // Badge "Naturaliste polyvalent" — cocher au moins 5 espèces dans N milieux différents.
+  // Badge "Naturaliste polyvalent" - cocher au moins 5 espèces dans N milieux différents.
   // Milieux : forestier, zone humide, eau douce, océan, littoral, montagne, steppe, bocage, urbain, rocher.
   { theme:'groupe',      icon:ICONS.bearGrylls, name:'Bear Grylls', desc:'Cocher 5 % des espèces francaises dans 8 milieux différents (sur 12)', test:s=>s.habCovered>=8, prog:s=>[s.habCovered,8], alwaysList:true, list:s=>{
       // Une section par milieu, chaque section liste les espèces PRESENTES EN FRANCE
@@ -1914,7 +1914,7 @@ const ALCID_CATALOG = [
 const ALCID_SET = new Set(ALCID_CATALOG.map(m=>m.sci));
 const RAPTOR_CATALOG = groupCatalog(RAPTOR_G);
 const WATER_CATALOG = groupCatalog(WATER_G);
-// 13 régions métropolitaines FR — codes ISO 3166-2:FR utilisés par eBird
+// 13 régions métropolitaines FR - codes ISO 3166-2:FR utilisés par eBird
 const FR_REGIONS = [
   { code:'FR-ARA', name:'Auvergne-Rhône-Alpes' },
   { code:'FR-BFC', name:'Bourgogne-Franche-Comté' },
@@ -2128,7 +2128,7 @@ const FR_DEPTS = [
   ['94',"Val-de-Marne",'FR-IDF',48.688,48.861,2.31,2.614],
   ['95',"Val-d'Oise",'FR-IDF',48.909,49.232,1.609,2.591],
 ];
-// Vrais manchots (hémisphère sud) — clin d'œil "Happy feet". Absents de la liste FR, on les code à part.
+// Vrais manchots (hémisphère sud) - clin d'œil "Happy feet". Absents de la liste FR, on les code à part.
 const MANCHOT_CATALOG = [
   ['aptenodytes forsteri','Manchot empereur'],['aptenodytes patagonicus','Manchot royal'],
   ['pygoscelis papua','Manchot papou'],['pygoscelis adeliae','Manchot d\'Adélie'],['pygoscelis antarcticus','Manchot à jugulaire'],
@@ -2232,7 +2232,7 @@ function renderTrophies(data){
       if(sel.id===myUid && !canSelfVote){ extra = `<div class="vote-note">🗳️ Les autres votent pour vous (partagez la preuve dans le tchat)</div>`; }
       else if(myMemberName()){
         const iVoted = voterUids?.has(myUid);
-        extra = `<button class="vote-btn${iVoted?' voted':''}" data-vote-target="${esc(sel.id)}" data-vote-trophy="${esc(voteId)}">${iVoted?'✓ Voté — retirer':'Valider ✅'}</button>`;
+        extra = `<button class="vote-btn${iVoted?' voted':''}" data-vote-target="${esc(sel.id)}" data-vote-trophy="${esc(voteId)}">${iVoted?'✓ Voté - retirer':'Valider ✅'}</button>`;
       } else { extra = `<div class="vote-note">Connecte-toi pour pouvoir voter</div>`; }
       // Liste des votants (petit texte sous le bouton). Toujours visible, meme sans etre logge.
       if(voterUids && voterUids.size){
@@ -2357,7 +2357,7 @@ function subscribe(){
   if(unsub){ unsub(); unsub=null; }
   unsub = onSnapshot(collection(db,'leagues',leagueId,'members'), applySnapshot,
     err=>{ console.error(err); showError(err); });
-  // Favoris hotspots personnels — stockés sur le doc membre (champ favHotspots)
+  // Favoris hotspots personnels - stockés sur le doc membre (champ favHotspots)
   // pour bénéficier des règles Firebase existantes autorisant l'update de son propre membre.
   if(unsubFavs){ unsubFavs(); unsubFavs=null; }
   if(myUid){
@@ -2386,7 +2386,7 @@ function subscribe(){
   if(unsubVotes){ unsubVotes(); unsubVotes=null; }
   unsubVotes = onSnapshot(collection(db,'leagues',leagueId,'votes'), snap=>{
     // Nouvelle structure : votesMap = Map<trophyId, Map<targetUid, Set<voterUid>>>
-    // (avant : Map<targetUid, Set<voterUid>> hardcodé Gros Bébé — maintenant supporte
+    // (avant : Map<targetUid, Set<voterUid>> hardcodé Gros Bébé - maintenant supporte
     // plusieurs trophées à vote, ex. Kimono).
     const outer=new Map();
     snap.forEach(d=>{
@@ -2934,7 +2934,7 @@ async function _repopulateEbDeptsForRegion(regionCode){
     subs.map(r=>`<option value="${esc(r.code)}">${esc(r.name)} (${esc(r.code.slice(-2))})</option>`).join('');
   if(!subs.length){ sel.style.display='none'; if(lbl) lbl.style.display='none'; }
 }
-let userPos = null;   // { lat, lon } — position utilisateur pour Haversine
+let userPos = null;   // { lat, lon } - position utilisateur pour Haversine
 let myFavHotspots = new Set();   // Set des locId favoris de l'utilisateur (synchronisé Firestore)
 // Distance à vol d'oiseau entre 2 points (km).
 function _haversine(lat1, lon1, lat2, lon2){
@@ -2967,7 +2967,7 @@ for(const code in DEPT_NAMES){ const reg = code.slice(0, code.lastIndexOf('-'));
 for(const reg in REGION_TO_DEPTS) REGION_TO_DEPTS[reg].sort((a,b)=>DEPT_NAMES[a].localeCompare(DEPT_NAMES[b],'fr'));
 // Nom lisible d'une région à partir de son code ISO (utilisé dans les compteurs de la carte).
 const REGION_NAMES = Object.fromEntries(FR_REGIONS.map(r=>[r.code, r.name]));
-// Label zone pour compteurs : jamais affiché — la région/dept sélectionnée est déjà
+// Label zone pour compteurs : jamais affiché - la région/dept sélectionnée est déjà
 // visible dans les sélecteurs juste au-dessus, pas besoin de la répéter.
 function _zoneLabel(){
   // Renvoie " · <dept>" ou " · <region>" ou " · <pays>", precede d'un separateur.
@@ -3004,16 +3004,16 @@ function _refreshDeptSel(){
   sel.style.display=''; if(lbl) lbl.style.display='';
 }
 let hotspotSort = 'todo';   // 'todo' (à cocher) | 'recent' (activité 30j)
-let _taxMap = null;           // { speciesCode -> sciName lowercase } — cache localStorage
-let _taxInv = null;           // { sciName lowercase -> speciesCode } — inverse construit à la volée
-let mapSearch = '';          // recherche par nom (espèce/lieu) — filtre client-side
+let _taxMap = null;           // { speciesCode -> sciName lowercase } - cache localStorage
+let _taxInv = null;           // { sciName lowercase -> speciesCode } - inverse construit à la volée
+let mapSearch = '';          // recherche par nom (espèce/lieu) - filtre client-side
 let _lyrDetail = null;        // couche "détails d'une espèce" (obs sur toute la période)
 let _lyrAbundance = null;     // couche choroplèthe (mode "Où trouver")
 let _lyrAbHotspots = null;    // couche des hotspots récents (30j) affichée au zoom
 let _abHotspotsData = null;   // { sci, obs:[...] } cache de la dernière fetch
 let _deptGeoJSON = null;      // GeoJSON des 96 départements (lazy fetch)
 let abFilter = { sci:'', month:0, metric:'max', view:'abs', showHotspots:false };   // metric: max|mean · view: abs|rank
-let _legendDiv = null;        // <div> de la légende Leaflet (bottomright) — contenu adapté au mode
+let _legendDiv = null;        // <div> de la légende Leaflet (bottomright) - contenu adapté au mode
 // Légende adaptative : rareté (couleur) pour mine/missing, taille (nb d'espèces) pour hotspots.
 function _updateLegend(){
   if(!_legendDiv) return;
@@ -3366,7 +3366,7 @@ $('#mapSearchSuggest')?.addEventListener('mousedown', e=>{
       _loaded.missing = '';
     }
     if(m.code){ _showSpeciesDetail(m.sci, m.code); }
-    else { showError(new Error('Pas de code eBird trouvé pour cette espèce — impossible de charger ses obs.')); }
+    else { showError(new Error('Pas de code eBird trouvé pour cette espèce - impossible de charger ses obs.')); }
     return;
   }
   // Cas suggestion espèce en mode "Où trouver" : on injecte le nom fr dans la barre,
@@ -3454,7 +3454,7 @@ function _mapCollectPoints(){
 }
 // Un marqueur par espèce. Quand plusieurs obs partagent la position exacte,
 // on éparpille en spirale (Fibonacci "sunflower") pour éviter la superposition.
-// Le popup indique le vrai lieu (loc) — le décalage est purement visuel.
+// Le popup indique le vrai lieu (loc) - le décalage est purement visuel.
 // Spread pixel-based sur les marqueurs de la couche missing (uniquement ceux ayant _baseLat
 // stocke, i.e. les points GBIF). Recalcule a chaque zoom : au-dela d'un certain zoom, les
 // points ne se chevauchent plus visuellement, donc ils reviennent a leur position exacte.
@@ -3528,7 +3528,7 @@ function _mapMarker(pt, groupSize){
   const cc = pt.cc ? ` · ${esc(countryLabel(pt.cc))}` : '';
   const loc = pt.loc ? esc(pt.loc) : '';
   const groupNote = groupSize>1 ? `<span class="p-meta">Vu ici avec ${groupSize-1} autre${groupSize-1>1?'s':''} espèce${groupSize-1>1?'s':''}</span>` : '';
-  // Lien Google Maps : toujours fiable (basé sur lat/lon) — remplace le lien eBird qui échoue pour les lieux perso.
+  // Lien Google Maps : toujours fiable (basé sur lat/lon) - remplace le lien eBird qui échoue pour les lieux perso.
   const gmLink = `<span class="p-meta"><a href="https://www.google.com/maps?q=${pt.lat},${pt.lon}" target="_blank" rel="noopener" class="p-link">🗺️ Voir sur Google Maps</a></span>`;
   // Badge multi-obs : "xN" si l'user a coche l'espece dans plus d'un checklist eBird.
   const multi = pt.obs > 1 ? ` <span class="chip" style="background:var(--surface-2); font-size:11px; padding:1px 6px; margin-left:3px;">×${pt.obs}</span>` : '';
@@ -3666,7 +3666,7 @@ async function renderMap(){
   $('#mapNote').style.display = 'none';
   // Cache toutes les couches ; le mode courant remet la sienne.
   // _lyrDetail (obs d'une espèce spécifique via clic dropdown) NE se vide QUE sur changement
-  // de mode — sinon un simple toggle chip rareté effacerait l'obs qu'on vient de consulter.
+  // de mode - sinon un simple toggle chip rareté effacerait l'obs qu'on vient de consulter.
   const modeChanged = renderMap._prev !== mapMode;
   renderMap._prev = mapMode;
   if(_mapLayer){ _mapLayer.remove(); }
@@ -3687,7 +3687,7 @@ function _ensureMapInit(el){
   const planLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution:'© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom:19 });
   const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    attribution:'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics', maxZoom:19 });
+    attribution:'Tiles © Esri - Source: Esri, Maxar, Earthstar Geographics', maxZoom:19 });
   planLayer.addTo(_map);
   _lyrMissing = L.layerGroup();
   _lyrHotspots = L.layerGroup();
@@ -3823,7 +3823,7 @@ async function _renderModeMissing(){
   // Toutes les raretés décochées → l'utilisateur ne veut rien voir. Carte vide + hint.
   if(rars.size === 0){
     if(_lyrMissing){ _lyrMissing.clearLayers(); }
-    if(cnt) cnt.textContent = 'Aucune rareté cochée — coche au moins un niveau pour voir les obs';
+    if(cnt) cnt.textContent = 'Aucune rareté cochée - coche au moins un niveau pour voir les obs';
     setTimeout(()=>{ try{ _map.invalidateSize(); }catch(_){} }, 60);
     return;
   }
@@ -3834,14 +3834,14 @@ async function _renderModeMissing(){
   _lyrMissing.addTo(_map);
   const nObs = _lyrMissing.getLayers().length;
   const nSp = new Set(); _lyrMissing.eachLayer(m=>{ if(m._sciName) nSp.add(m._sciName.toLowerCase()); });
-  // Label rareté : jamais affiché — les chips colorées en haut le disent déjà.
+  // Label rareté : jamais affiché - les chips colorées en haut le disent déjà.
   const rarLbl = '';
   const zoneLbl = esc(_zoneLabel());
   const srcLbl = ` · eBird ${days}j`;
   if(cnt) cnt.textContent = nObs
     ? (heavy ? `${nObs} obs · ${nSp.size} espèce${nSp.size>1?'s':''}${rarLbl?' '+rarLbl:''}${zoneLbl}${srcLbl}`
              : `${nSp.size} espèce${nSp.size>1?'s':''} à cocher${rarLbl?' ('+rarLbl+')':''}${zoneLbl}${srcLbl}`)
-    : (rarLbl ? `Aucune espèce ${rarLbl} à cocher${zoneLbl}${srcLbl}` : `Rien à cocher${zoneLbl}${srcLbl} — vous les avez toutes ! 🎯`);
+    : (rarLbl ? `Aucune espèce ${rarLbl} à cocher${zoneLbl}${srcLbl}` : `Rien à cocher${zoneLbl}${srcLbl} - vous les avez toutes ! 🎯`);
   _fitLayer(_lyrMissing);
   _mapApplyFilter();
   _populateMissingResultsPanel();
@@ -3952,7 +3952,7 @@ async function _renderModeMissingGbif(){
   _fitLayer(_lyrMissing);
   _mapApplyFilter();
   // Panneau resultats : liste espece+count depuis les marqueurs de _lyrMissing (uniquement
-  // si polygone actif, sinon inutile — les markers sur la carte suffisent).
+  // si polygone actif, sinon inutile - les markers sur la carte suffisent).
   _populateMissingResultsPanel();
   // Spread pixel-based apres fit : les marqueurs colles s'ecartent, les solitaires
   // restent a leur position exacte. Re-run automatique a chaque zoom via zoomend.
@@ -4294,7 +4294,7 @@ async function _renderModeAbundance(){
     _map._abHsHook = true;
     _map.on('zoomend moveend', () => { if(mapMode==='abundance') _renderAbHotspots(); });
   }
-  // Le champ espèce = la barre de recherche principale (#mapSearch) — pas de doublon.
+  // Le champ espèce = la barre de recherche principale (#mapSearch) - pas de doublon.
   const inputVal = (mapSearch || '').trim();
   // Source data selon toggle Peak/Moyenne
   const SRC = abFilter.metric === 'mean'
@@ -4403,7 +4403,7 @@ async function _renderModeAbundance(){
       const scope = m ? `en ${MONTHS[m]}` : 'toute l\'année';
       const rankLbl = rank ? `<b>${rank}<sup>e</sup></b> sur ${totalRanked} depts français` : 'non classé (0 obs)';
       let popup = `<b>${esc(nm)}</b> <span class="p-sci">${esc(sci)}</span><br>`+
-        `<span class="p-meta"><b>${esc(f.properties.nom)}</b> (${esc(insee)}) — ${rankLbl}</span><br>`+
+        `<span class="p-meta"><b>${esc(f.properties.nom)}</b> (${esc(insee)}) - ${rankLbl}</span><br>`+
         `<span class="p-meta">Abondance ${metricLbl} · ${scope} : <b>${v.toFixed(3)}</b> (${_abLabel(v)})</span>`;
       if(m && bestMonth !== m){
         popup += `<br><span class="p-meta">Meilleur mois ici : <b>${MONTHS[bestMonth]}</b> (${bestV.toFixed(3)})</span>`;
@@ -4492,7 +4492,7 @@ async function _renderAbundanceOverlayFor(sci){
       const rank = rankByApp[app];
       const rankLbl = rank ? `<b>${rank}<sup>e</sup></b> sur ${totalRanked} depts` : 'non classé (0 obs)';
       layer.bindPopup(`<b>${esc(nm)}</b> <span class="p-sci">${esc(sci)}</span>`+
-        `<span class="p-meta"><b>${esc(f.properties.nom)}</b> (${esc(insee)}) — ${rankLbl}</span>`+
+        `<span class="p-meta"><b>${esc(f.properties.nom)}</b> (${esc(insee)}) - ${rankLbl}</span>`+
         `<span class="p-meta">Abondance ${metricLbl} · ${scope} : <b>${v.toFixed(3)}</b> (${_abLabel(v)})</span>`+
         (m && bestMonth !== m ? `<span class="p-meta">Meilleur mois ici : <b>${MONTHS[bestMonth]}</b> (${bestV.toFixed(3)})</span>` : ''));
     }
@@ -4607,7 +4607,7 @@ async function _showSpeciesDetailGbif(sciName){
         return { results:[], _err:true };
       };
       const j0 = await safeGbif(mkUrl(0));
-      if(j0._err){ if(cnt) cnt.textContent = `Erreur reseau — reessaie dans un instant`; return 0; }
+      if(j0._err){ if(cnt) cnt.textContent = `Erreur reseau - reessaie dans un instant`; return 0; }
       totalCount = j0.count || 0;
       obs = applyFilter(j0.results || []);
       if(!j0.endOfRecords && (j0.results||[]).length === 300 && totalCount > 300){
@@ -4747,9 +4747,9 @@ async function _showSpeciesDetail(sciName, speciesCode){
     if(cnt){
       const requested = ebFilter.dept ? deptLbl : (ebFilter.region && ebFilter.region!=='FR' ? 'la région' : '');
       if(requested && used.level === 'region' && ebFilter.dept){
-        cnt.textContent = `${count} obs de ${nm} — rien dans ${deptLbl}, élargi à la région`;
+        cnt.textContent = `${count} obs de ${nm} - rien dans ${deptLbl}, élargi à la région`;
       } else if(requested && used.level === 'fr'){
-        cnt.textContent = `${count} obs de ${nm} — rien dans ${requested}, élargi à toute la France`;
+        cnt.textContent = `${count} obs de ${nm} - rien dans ${requested}, élargi à toute la France`;
       } else {
         cnt.textContent = `${count} obs de ${nm} (${days} j)${_zoneLabel()}`;
       }
@@ -4830,12 +4830,12 @@ document.addEventListener('change', e=>{
   // mapAbMonth handled above (nouveau : cover fusion overlay + legacy abundance mode).
   else if(e.target.id==='mapAbShowHs'){ abFilter.showHotspots = !!e.target.checked; if(mapMode==='abundance') _renderAbHotspots(); }
 });
-// Hint visible sous les toggles du mode "Où trouver" — explique ce que fait l'option active
+// Hint visible sous les toggles du mode "Où trouver" - explique ce que fait l'option active
 function _updateAbHint(){
   const el = $('#mapAbHint'); if(!el) return;
   if(mapMode!=='abundance'){ el.style.display='none'; return; }
   const viewTxt = abFilter.view==='rank'
-    ? '<b>🎯 Top des dept</b> : le meilleur dept ressort rouge même si l\'espèce est rare partout — utile pour savoir OÙ tenter.'
+    ? '<b>🎯 Top des dept</b> : le meilleur dept ressort rouge même si l\'espèce est rare partout - utile pour savoir OÙ tenter.'
     : '<b>📍 Absolu</b> : même couleur = même abondance réelle (échelle universelle). Un oiseau rare reste pâle même dans son meilleur coin.';
   const metricTxt = abFilter.metric==='mean'
     ? '<b>📊 Moyenne</b> : moyenne des pixels du dept (densité globale, dilue les côtes).'
@@ -4892,7 +4892,7 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
 else _refreshRarChips();
 // Chips rareté (mode À cocher) : toggle Set, background = couleur rareté quand actif.
 document.addEventListener('click', e=>{
-  // Boutons Tout / — (aucun)
+  // Boutons Tout / - (aucun)
   if(e.target.matches('[data-rar-all]')){
     ebFilter.rarities = new Set([1,2,3,4,5,6,7,8,9,10,'exo']);
     _refreshRarChips(); _loaded.missing=''; renderMap(); return;
@@ -4951,7 +4951,7 @@ document.addEventListener('click', e=>{
 });
 // Change handler pour les inputs annee GBIF (mode "A cocher"). Debounce 400ms pour eviter
 // de lancer un fetch a chaque tick des fleches haut/bas de l'input number.
-// mapEbMonth : PAS de handler ici — le change handler general (id==='mapEbMonth') declenche
+// mapEbMonth : PAS de handler ici - le change handler general (id==='mapEbMonth') declenche
 // deja renderMap(), qui dispatche vers _renderModeMissingGbif en source GBIF. Sans ce filtre,
 // on aurait 2 renders concurrents a chaque changement de mois.
 let _gbifYearDebounce = 0;
@@ -5029,7 +5029,7 @@ document.addEventListener('change', e=>{
     const monLbl=$('#mapEbMonthLbl'), monSel=$('#mapEbMonth');
     if(monLbl) monLbl.style.display = showMon ? '' : 'none';
     if(monSel) monSel.style.display = showMon ? '' : 'none';
-    // Min-to-do et filtre espèce n'ont de sens qu'en mode enrichi (todo/recent) — on les cache en "total".
+    // Min-to-do et filtre espèce n'ont de sens qu'en mode enrichi (todo/recent) - on les cache en "total".
     ['mapEbMinTodoLbl','mapEbMinTodoBox','mapEbMinTodoSuffix'].forEach(id=>{
       const el = document.getElementById(id); if(el) el.style.display = (hotspotSort!=='total') ? '' : 'none';
     });
@@ -5095,7 +5095,7 @@ async function _loadMissingLayer(zone, days=14, rarities=new Set(), onProgress){
   if(_loaded.missing===key && _lyrMissing.getLayers().length) return;
   _lyrMissing.clearLayers();
   try{
-    // 1) Liste des espèces manquantes (endpoint dédupliqué par eBird — 1 obs/espèce).
+    // 1) Liste des espèces manquantes (endpoint dédupliqué par eBird - 1 obs/espèce).
     const url = `https://api.ebird.org/v2/data/obs/${zone}/recent?back=${days}&maxResults=10000&locale=fr`;
     const data = await _ebFetch(url);
     const me = realPeople.find(p=>p.id===myUid);
@@ -5113,7 +5113,7 @@ async function _loadMissingLayer(zone, days=14, rarities=new Set(), onProgress){
     let allObs;
     if(!heavy){
       // Mode léger : 1 marqueur par espèce (l'obs déjà retournée par l'endpoint /recent).
-      // Filtre rareté (Set 1-9 + 'exo' opt) appliqué côté client — pas de fan-out.
+      // Filtre rareté (Set 1-9 + 'exo' opt) appliqué côté client - pas de fan-out.
       allObs = missingSp
         .filter(passRar)
         .map(sp => ({ ...sp.first, sciName:sp.sciName, comName:sp.comName, speciesCode:sp.speciesCode }))
@@ -5184,7 +5184,7 @@ async function _loadMissingLayer(zone, days=14, rarities=new Set(), onProgress){
 let _gbifRunSeq = 0;
 // Cache localStorage 6h par (uid, dept, mois, annees). On stocke la liste allObs *raw*
 // (tous les obs GBIF avant filtrage rarete/life-list actuel). Sur lecture, on re-filtre
-// contre le missing set courant et les chips rarete — donc cocher une espece ou changer
+// contre le missing set courant et les chips rarete - donc cocher une espece ou changer
 // les chips ne casse pas le cache, ca applique juste le nouveau filtre.
 const _GBIF_CACHE_TTL_MS = 6 * 3600 * 1000;
 function _gbifCacheKey(dept, month, yMin, yMax){
@@ -5667,7 +5667,7 @@ async function _batch(items, n, fn){
     out.push(...r);
   } return out;
 }
-// Enrichit chaque hotspot avec { allSp, mySp, toDo } — via spplist (all-time) OU obs récentes (30j)
+// Enrichit chaque hotspot avec { allSp, mySp, toDo } - via spplist (all-time) OU obs récentes (30j)
 async function _enrichHotspots(hotspots, region, kind){
   const tax = await _loadTaxonomy();
   const me = realPeople.find(p=>p.id===myUid);
@@ -5838,7 +5838,7 @@ async function _loadHotspotsLayer(region){
           const monthUsed = monthFilter || (hotspotSort==='recent' ? (new Date().getMonth()+1) : 0);
           return monthUsed ? (arr[monthUsed-1]||0) : Math.max(...arr);
         };
-        const fmtPct = v => v===null ? '—' : v>=0.01 ? Math.round(v*100)+' %' : v>=0.0005 ? (v*100).toFixed(1)+' %' : '<0.1 %';
+        const fmtPct = v => v===null ? '-' : v>=0.01 ? Math.round(v*100)+' %' : v>=0.0005 ? (v*100).toFixed(1)+' %' : '<0.1 %';
         const items = filteredMiss
           .map(sci => ({ sci, name:FR_NAMES[sci]||sci, w:rarityReal(sci), freq:freqFor(sci) }))
           // Tri : plus grandes chances en 1er (utile pour choisir sa cible), rareté DESC pour départager.
@@ -5852,7 +5852,7 @@ async function _loadHotspotsLayer(region){
           // -> le % reste à sa position fixe, le count grandit à sa gauche sans le pousser.
           return `<li data-sc="${esc(sc)}"><span class="p-dot" style="background:${sciColor(it.sci)}"></span><span>${esc(it.name)}</span><span class="hs-cnt loading" data-cnt>…</span><span class="hs-pct">${esc(fmtPct(it.freq))}</span></li>`;
         }).join('');
-        // Source réellement utilisée (département si dispo, sinon région, sinon national) — affichée dans le hint.
+        // Source réellement utilisée (département si dispo, sinon région, sinon national) - affichée dans le hint.
         const scope = (dept && REAL_FREQ_MONTHLY_BY_REGION[dept]) ? dept
                      : (region && region!=='FR' && REAL_FREQ_MONTHLY_BY_REGION[region]) ? region
                      : 'national';
@@ -5898,14 +5898,14 @@ async function _ebFetch(url){
   // 1) Mémoire (5 min)
   const memHit = _ebCache.get(url);
   if(memHit && (Date.now()-memHit.ts) < 5*60*1000) return memHit.data;
-  // 2) localStorage (6h — évite les refetch en cas de reload)
+  // 2) localStorage (6h - évite les refetch en cas de reload)
   try{
     const ls = localStorage.getItem('ebc:'+url);
     if(ls){ const {ts,data}=JSON.parse(ls);
       if(Date.now()-ts < EBIRD_TTL_MS){ _ebCache.set(url,{ts,data}); return data; }
     }
   }catch(_){ }
-  // 3) Firestore partagé (6h — le 1er ami qui charge remplit pour les autres)
+  // 3) Firestore partagé (6h - le 1er ami qui charge remplit pour les autres)
   try{
     if(leagueId){
       const snap = await getDoc(doc(db,'leagues',leagueId,'ebirdCache',_ebDocId(url)));
@@ -6068,7 +6068,7 @@ function renderStats(me){
   if(!me || !me._active){ box.style.display='none'; box.innerHTML=''; return; }
   box.style.display='';
   const active=me._active;
-  let total=0, rareName='—', rareTier=null, maxW=0, maxFreq=Infinity; const famCount={};
+  let total=0, rareName='-', rareTier=null, maxW=0, maxFreq=Infinity; const famCount={};
   for(const v of active.values()){
     if(!countsFR(v)) continue;
     total++;
@@ -6093,8 +6093,8 @@ function renderStats(me){
 
   // Statistiques temporelles + comparaison avec les amis
   const ts = _timeStatsFor(active);
-  const bestMonthLabel = ts.bestMonthCount>0 ? _MONTH_FR[ts.bestMonthIdx] : '—';
-  const bestYearLabel = ts.bestYear ? String(ts.bestYear[0]) : '—';
+  const bestMonthLabel = ts.bestMonthCount>0 ? _MONTH_FR[ts.bestMonthIdx] : '-';
+  const bestYearLabel = ts.bestYear ? String(ts.bestYear[0]) : '-';
   const bestYearCount = ts.bestYear ? ts.bestYear[1] : 0;
   // Rangs vs la ligue
   const rankBestMonth = state.people.length>1 ? _rankInLeague(me, p => { const s=p._active?_timeStatsFor(p._active):null; return s?s.bestMonthCount:0; }) : null;
@@ -6104,7 +6104,7 @@ function renderStats(me){
   box.innerHTML=`<div class="eyebrow" style="margin-bottom:10px;">Vos statistiques</div>
     <div class="stat-tiles">
       <div class="stat-tile"><div class="stat-num">${total}</div><div class="stat-lbl">espèces</div></div>
-      <div class="stat-tile"><div class="stat-num">${state.people.length>1?('#'+rank):'—'}</div><div class="stat-lbl">au classement</div></div>
+      <div class="stat-tile"><div class="stat-num">${state.people.length>1?('#'+rank):'-'}</div><div class="stat-lbl">au classement</div></div>
       <div class="stat-tile"><div class="stat-num small"><span class="sp-link" data-sci="${esc(_nameToSci(rareName)||'')}">${esc(rareName)}</span></div><div class="stat-lbl">votre plus rare${rareTier?' · '+esc(rareTier.label):''}</div></div>
     </div>`+
     goalHtml+
@@ -6185,7 +6185,7 @@ function updateTabDots(){
 function markSeen(v){ try{ localStorage.setItem('mb-seen-'+v, String(Date.now())); }catch(_){ } updateTabDots(); }
 // ---- Inviter ----
 async function doInvite(){
-  const url=shareUrl(); const text='Rejoins notre Ligue Merlin Bird 🐦 — compare tes listes d\'oiseaux avec nous !';
+  const url=shareUrl(); const text='Rejoins notre Ligue Merlin Bird 🐦 - compare tes listes d\'oiseaux avec nous !';
   if(navigator.share){ try{ await navigator.share({title:'Ligue Merlin Bird', text, url}); return; }catch(_){ return; } }
   try{ await navigator.clipboard.writeText(text+' '+url); const b=$('#inviteBtn'); if(b){ const t=b.textContent; b.textContent='✓ Copié !'; setTimeout(()=>b.textContent=t,1600); } }catch(_){ }
 }
@@ -6207,7 +6207,7 @@ function fillProfile(me){
   if(document.activeElement!==fav){
     const names=[...me.species.values()].filter(v=>!isNonSpecies(v.common,v.sci))
       .map(v=>frName(v.sci,v.common)).sort((a,b)=>a.localeCompare(b,'fr'));
-    fav.innerHTML='<option value="">— aucune —</option>'+names.map(n=>`<option${n===me.fav?' selected':''}>${esc(n)}</option>`).join('');
+    fav.innerHTML='<option value="">- aucune -</option>'+names.map(n=>`<option${n===me.fav?' selected':''}>${esc(n)}</option>`).join('');
     fav.value=me.fav||'';
   }
 }
@@ -6227,7 +6227,7 @@ async function saveMyList(name, speciesMap, regions){
     return e; });
   const ref=doc(db,'leagues',leagueId,'members',myUid);
   const payload={ name, species:arr, updatedAt: serverTimestamp() };
-  if(Array.isArray(regions)) payload.regions = regions;   // codes FR-XX visités (issus du CSV) — omis si absent (merge conserve l'ancien)
+  if(Array.isArray(regions)) payload.regions = regions;   // codes FR-XX visités (issus du CSV) - omis si absent (merge conserve l'ancien)
   if(!iAmInLeague) payload.joinedAt = serverTimestamp();
   await setDoc(ref, payload, {merge:true});
 }
@@ -6369,7 +6369,7 @@ function _lockMyNameIfSet(){
     inp.readOnly = true; inp.classList.add('locked'); inp.title = 'Verrouillé (fenêtre de grâce de 24 h dépassée). Admin uniquement.';
   } else {
     inp.readOnly = false; inp.classList.remove('locked');
-    inp.title = hasName ? 'Modifiable pendant 24 h après inscription — corrigez si besoin.' : '';
+    inp.title = hasName ? 'Modifiable pendant 24 h après inscription - corrigez si besoin.' : '';
   }
 }
 // H : désactive visuellement écriture chat + upload photo pour les non-membres.
@@ -6454,7 +6454,7 @@ function _setPickPoint(lat, lon, name, moveView=true){
 }
 function _updatePickLbl(){
   const el=$('#pickMapCoords'); if(!el) return;
-  el.textContent = (_pickName?_pickName+' — ':'') + `${_pickLat.toFixed(5)}, ${_pickLon.toFixed(5)}`;
+  el.textContent = (_pickName?_pickName+' - ':'') + `${_pickLat.toFixed(5)}, ${_pickLon.toFixed(5)}`;
 }
 $('#manualPlaceBtn')?.addEventListener('click', e=>{ e.preventDefault(); _openPickMap(); });
 $('#pickMapClose')?.addEventListener('click', _closePickMap);
@@ -6463,7 +6463,7 @@ $('#pickMapModal')?.addEventListener('click', e=>{ if(e.target && e.target.id===
 $('#pickMapConfirm')?.addEventListener('click', ()=>{
   if(_pickLat==null||_pickLon==null) return;
   _manualPickedLat=_pickLat; _manualPickedLon=_pickLon; _manualPickedName=_pickName||'';
-  const st=$('#manualPlaceStatus'); if(st){ st.className='manual-msg ok'; st.textContent = `📍 ${_manualPickedName?_manualPickedName+' — ':''}${_pickLat.toFixed(4)}, ${_pickLon.toFixed(4)}`; }
+  const st=$('#manualPlaceStatus'); if(st){ st.className='manual-msg ok'; st.textContent = `📍 ${_manualPickedName?_manualPickedName+' - ':''}${_pickLat.toFixed(4)}, ${_pickLon.toFixed(4)}`; }
   _closePickMap();
 });
 // Recherche dans la modal (Nominatim)
@@ -6535,7 +6535,7 @@ $('#manualCountry')?.addEventListener('change', e=>{
   if(e.target.value==='OTHER'){
     if(sel.options.length<=1){
       const codes=Object.keys(COUNTRY_NAMES).filter(c=>c!=='FR').sort((a,b)=>COUNTRY_NAMES[a].localeCompare(COUNTRY_NAMES[b],'fr'));
-      sel.innerHTML = '<option value="">— Choisir un pays —</option>' + codes.map(c=>`<option value="${c}">${esc(COUNTRY_NAMES[c])}</option>`).join('');
+      sel.innerHTML = '<option value="">- Choisir un pays -</option>' + codes.map(c=>`<option value="${c}">${esc(COUNTRY_NAMES[c])}</option>`).join('');
     }
     wrap.style.display='';
   } else { wrap.style.display='none'; sel.value=''; }
@@ -7431,7 +7431,7 @@ async function _renderSpeciesTraitsCard(key){
   if(!ecoLines.length && !morphLines.length) return;
   const renderLine = ({k, v, hint}) => `<div style="display:flex; justify-content:space-between; gap:12px; padding:3px 0; font-size:13px;"><span style="color:var(--ink-3);${hint?' cursor:help;':''}"${hint?` title="${esc(hint)}"`:''}>${esc(k)}</span><span style="color:var(--ink); font-weight:600; text-align:right;">${v}</span></div>`;
   box.innerHTML = `
-    <div class="sm-card-title" style="display:flex; align-items:center; gap:8px;">Traits <span style="font-size:10.5px; color:var(--ink-3); text-transform:none; font-weight:400; letter-spacing:0;">— Avonet (Tobias et al. 2022)</span></div>
+    <div class="sm-card-title" style="display:flex; align-items:center; gap:8px;">Traits <span style="font-size:10.5px; color:var(--ink-3); text-transform:none; font-weight:400; letter-spacing:0;">- Avonet (Tobias et al. 2022)</span></div>
     ${ecoLines.length ? `
       <div style="margin-top:4px;">
         <div style="font-size:10.5px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; margin-bottom:4px;">Écologie</div>
@@ -7477,14 +7477,14 @@ async function _renderSpeciesRangeCard(sci){
   const [w, s, e, n] = (entry.bbox || [-180, -60, 180, 85]);
   const mapId = 'smRangeMap';
   box.innerHTML = `
-    <div class="sm-card-title" style="display:flex; align-items:center; gap:8px;">Répartition <span style="font-size:10.5px; color:var(--ink-3); text-transform:none; font-weight:400; letter-spacing:0;">— Cornell Status & Trends (moyenne annuelle 9 km)</span></div>
+    <div class="sm-card-title" style="display:flex; align-items:center; gap:8px;">Répartition <span style="font-size:10.5px; color:var(--ink-3); text-transform:none; font-weight:400; letter-spacing:0;">- Cornell Status & Trends (moyenne annuelle 9 km)</span></div>
     <div id="${mapId}" class="sm-range-map" style="margin-top:6px; height:440px; border-radius:8px; overflow:hidden; background:var(--surface-3);"></div>
     <div style="margin-top:8px; display:flex; align-items:center; gap:10px; font-size:11px; color:var(--ink-2);">
       <span>Rare</span>
       <div style="flex:1; height:12px; border-radius:3px; background:linear-gradient(to right, #3ea86b, #a8d155, #f5c518, #f0733a, #a11408);"></div>
       <span>Abondant</span>
     </div>
-    <div style="margin-top:4px; font-size:10.5px; color:var(--ink-3); text-align:center;">Échelle relative à l'espèce (percentiles) — pan et zoom pour explorer</div>
+    <div style="margin-top:4px; font-size:10.5px; color:var(--ink-3); text-align:center;">Échelle relative à l'espèce (percentiles) - pan et zoom pour explorer</div>
   `;
   box.hidden = false;
   const mapEl = box.querySelector('#' + mapId);
@@ -7533,7 +7533,7 @@ function _renderSpeciesConfuseCard(sci){
   const list = [...confused].filter(s => FR_NAMES[s]).slice(0, 8);
   if(!list.length) return;
   box.innerHTML = `
-    <div class="sm-card-title" style="display:flex; align-items:center; gap:8px;">🎵 À l'oreille <span style="font-size:10.5px; color:var(--ink-3); text-transform:none; font-weight:400; letter-spacing:0;">— chants et cris acoustiquement proches</span></div>
+    <div class="sm-card-title" style="display:flex; align-items:center; gap:8px;">🎵 À l'oreille <span style="font-size:10.5px; color:var(--ink-3); text-transform:none; font-weight:400; letter-spacing:0;">- chants et cris acoustiquement proches</span></div>
     <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:6px;">
       ${list.map(s => `<button type="button" class="sp-link" data-sci="${esc(s)}" style="background:var(--surface-2); border:1px solid var(--line-2); color:var(--ink); font:inherit; font-size:12.5px; padding:4px 10px; border-radius:16px; cursor:pointer;">${esc(FR_NAMES[s]||s)}</button>`).join('')}
     </div>
@@ -7600,8 +7600,8 @@ function _renderSpeciesRarityCard(key){
       if(e && Array.isArray(e.w) && e.w.some(v => v > 0)){ anyST = true; break; }
     }
     const useST = anyST;
-    const fmtST = v => v >= 10 ? Math.round(v)+' ind/h' : v >= 1 ? v.toFixed(1)+' ind/h' : v >= 0.01 ? v.toFixed(2)+' ind/h' : v >= 0.001 ? v.toFixed(3)+' ind/h' : v > 0 ? '<0.001 ind/h' : '—';
-    const fmtPct = v => { if(!(v>0)) return '—'; const p = v*100; if(p >= 10) return Math.round(p)+'%'; if(p >= 1) return p.toFixed(1)+'%'; if(p >= 0.1) return p.toFixed(2)+'%'; return '<0.1%'; };
+    const fmtST = v => v >= 10 ? Math.round(v)+' ind/h' : v >= 1 ? v.toFixed(1)+' ind/h' : v >= 0.01 ? v.toFixed(2)+' ind/h' : v >= 0.001 ? v.toFixed(3)+' ind/h' : v > 0 ? '<0.001 ind/h' : '-';
+    const fmtPct = v => { if(!(v>0)) return '-'; const p = v*100; if(p >= 10) return Math.round(p)+'%'; if(p >= 1) return p.toFixed(1)+'%'; if(p >= 0.1) return p.toFixed(2)+'%'; return '<0.1%'; };
     const scored = regList.map(r => {
       let score = 0;
       if(useST){
@@ -7727,12 +7727,12 @@ function _renderSpeciesRarityCard(key){
           const lb = (typeof REAL_LABELS === 'object' && REAL_LABELS[t]) || ('niveau '+t);
           return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
             <span style="display:inline-block;background:${c};color:#fff;padding:1px 8px;border-radius:6px;font-weight:800;font-size:12px;min-width:22px;text-align:center;">${t}</span>
-            <span style="font-size:12px;color:var(--ink-2);flex:1;">${esc(lb)} <span style="opacity:.6;">— ${esc(lbl)}</span></span>
+            <span style="font-size:12px;color:var(--ink-2);flex:1;">${esc(lb)} <span style="opacity:.6;">- ${esc(lbl)}</span></span>
             <span style="font-size:11px;color:var(--ink-3);font-weight:600;">${weight}</span>
           </div>`;
         };
         const body = `
-          <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">Composite eBird Status &amp; Trends (Cornell ML) — ${esc(ccName)}</div>
+          <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">Composite eBird Status &amp; Trends (Cornell ML) - ${esc(ccName)}</div>
           ${mkRowS(st.ta, 'Moyenne annuelle nationale', '40%')}
           ${mkRowS(st.tn, 'Pic saisonnier national', '30%')}
           ${mkRowS(st.tl, 'Densité typique sur hotspot', '30%')}
@@ -7776,7 +7776,7 @@ function _renderSpeciesRarityCard(key){
           const lb = (typeof REAL_LABELS === 'object' && REAL_LABELS[t]) || ('niveau '+t);
           return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
             <span style="display:inline-block;background:${c};color:#fff;padding:1px 8px;border-radius:6px;font-weight:800;font-size:12px;min-width:22px;text-align:center;">${t}</span>
-            <span style="font-size:12px;color:var(--ink-2);flex:1;">${esc(lb)} <span style="opacity:.6;">— ${esc(lbl)}</span></span>
+            <span style="font-size:12px;color:var(--ink-2);flex:1;">${esc(lb)} <span style="opacity:.6;">- ${esc(lbl)}</span></span>
             <span style="font-size:11px;color:var(--ink-3);font-weight:600;">${weight}</span>
           </div>`;
         };
@@ -7792,7 +7792,7 @@ function _renderSpeciesRarityCard(key){
               </div>`
             : `<div style="font-size:11.5px;color:var(--ink-3);padding:3px 0;opacity:.85;">S&amp;T Cornell : pas de couverture utilisable en France.</div>`;
           body = `
-            <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">Override manuel — exotique naturalisée localement abondante</div>
+            <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">Override manuel - exotique naturalisée localement abondante</div>
             ${stTierRow}
             <div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
               <span style="display:inline-block;background:${realColor(barTier)};color:#fff;padding:1px 8px;border-radius:6px;font-weight:800;font-size:12px;min-width:22px;text-align:center;">${barTier}</span>
@@ -7865,7 +7865,7 @@ function _renderSpeciesRarityCard(key){
             const lb = (typeof REAL_LABELS === 'object' && REAL_LABELS[t]) || ('niveau '+t);
             return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;opacity:.55;">
               <span style="display:inline-block;background:${c};color:#fff;padding:1px 8px;border-radius:6px;font-weight:800;font-size:12px;min-width:22px;text-align:center;">${t}</span>
-              <span style="font-size:12px;color:var(--ink-2);flex:1;">${esc(lb)} <span style="opacity:.6;">— ${esc(lbl)}</span></span>
+              <span style="font-size:12px;color:var(--ink-2);flex:1;">${esc(lb)} <span style="opacity:.6;">- ${esc(lbl)}</span></span>
               <span style="font-size:11px;color:var(--ink-3);font-weight:600;">${weight}</span>
             </div>`;
           };
@@ -8384,7 +8384,7 @@ function _renderSpeciesFreqChart(key, country){
       if(srcEl) srcEl.textContent = '';
       if(svg){
         svg.setAttribute('viewBox', '0 0 520 130');
-        svg.innerHTML = `<text x="260" y="70" font-size="12" fill="var(--ink-3)" text-anchor="middle">Pas de données eBird FR — échappé cage/volière</text>`;
+        svg.innerHTML = `<text x="260" y="70" font-size="12" fill="var(--ink-3)" text-anchor="middle">Pas de données eBird FR - échappé cage/volière</text>`;
       }
       if(wrap) wrap.hidden = true;
       return;
@@ -8420,9 +8420,9 @@ function _renderSpeciesFreqChart(key, country){
   let fallbackNote = '';
   if(_speciesRegion && !regionScope){
     const regName = _regNameFor(_speciesRegion);
-    fallbackNote = ` <em style="color:var(--ink-3); font-weight:400; font-style:italic;">— pas de données pour ${esc(regName)}, affichage ${esc(countryName)} entier</em>`;
+    fallbackNote = ` <em style="color:var(--ink-3); font-weight:400; font-style:italic;">- pas de données pour ${esc(regName)}, affichage ${esc(countryName)} entier</em>`;
   }
-  // Texte d'entete : "France — pic mi-octobre (3.2 ind/h)" ou "France — pic en octobre (30 %)"
+  // Texte d'entete : "France - pic mi-octobre (3.2 ind/h)" ou "France - pic en octobre (30 %)"
   let peakLbl, peakVal;
   if(isWeekly){
     peakLbl = _weekToLabel(bestIdx);
@@ -8435,7 +8435,7 @@ function _renderSpeciesFreqChart(key, country){
             : maxV >= 0.001 ? maxV.toFixed(4)
             : maxV >= 0.0001 ? maxV.toFixed(5)
             : '<0.0001';
-    srcEl.innerHTML = `${esc(ccLabel)} — pic ${esc(peakLbl)} (${esc(String(peakVal))} ${esc(unitLabel)})${fallbackNote}`;
+    srcEl.innerHTML = `${esc(ccLabel)} - pic ${esc(peakLbl)} (${esc(String(peakVal))} ${esc(unitLabel)})${fallbackNote}`;
   } else {
     // Source mensuelle etiree a 52 slots : le pic est au premier slot du mois pic,
     // on reconvertit vers un label mois-only pour ne pas suggerer une precision fictive.
@@ -8449,7 +8449,7 @@ function _renderSpeciesFreqChart(key, country){
             : maxV >= 0.001 ? (maxV*100).toFixed(2) // 0.1-1%
             : maxV >= 0.0001 ? (maxV*100).toFixed(3)// 0.01-0.1%
             : '<0.01';
-    srcEl.innerHTML = `${esc(ccLabel)} — pic ${esc(peakLbl)} (${esc(String(peakVal))} %)${fallbackNote}`;
+    srcEl.innerHTML = `${esc(ccLabel)} - pic ${esc(peakLbl)} (${esc(String(peakVal))} %)${fallbackNote}`;
   }
   // Layout du chart : toujours 520x130 (52 slots dans tous les cas, weekly S&T reel ou
   // monthly bar chart etire).
@@ -9749,8 +9749,8 @@ function authErr(e){
   const c=(e&&e.code)||'';
   if(c==='auth/invalid-email') return 'Email invalide.';
   if(c==='auth/weak-password') return 'Mot de passe trop court (6 caractères minimum).';
-  if(c==='auth/email-already-in-use') return 'Cet email a déjà un compte — clique sur « J\'ai déjà un compte ».';
-  if(c==='auth/credential-already-in-use') return 'Ce compte existe déjà — connecte-toi avec « J\'ai déjà un compte ».';
+  if(c==='auth/email-already-in-use') return 'Cet email a déjà un compte - clique sur « J\'ai déjà un compte ».';
+  if(c==='auth/credential-already-in-use') return 'Ce compte existe déjà - connecte-toi avec « J\'ai déjà un compte ».';
   if(c==='auth/invalid-credential'||c==='auth/wrong-password'||c==='auth/user-not-found') return 'Email ou mot de passe incorrect.';
   if(c==='auth/missing-password') return 'Entre ton mot de passe.';
   if(c==='auth/too-many-requests') return 'Trop de tentatives, réessaie dans un moment.';
@@ -9772,7 +9772,7 @@ $('#authSignup')?.addEventListener('click', async ()=>{
   authMsg('…', true);
   const cur=auth.currentUser;
   try{
-    if(cur && cur.isAnonymous){ await linkWithCredential(cur, EmailAuthProvider.credential(email, pass)); authMsg('Compte créé — ta liste est conservée ✓', true); }
+    if(cur && cur.isAnonymous){ await linkWithCredential(cur, EmailAuthProvider.credential(email, pass)); authMsg('Compte créé - ta liste est conservée ✓', true); }
     else { await createUserWithEmailAndPassword(auth, email, pass); authMsg('Compte créé ✓', true); }
     $('#authPass').value=''; updateAuthUI(auth.currentUser);
   }catch(e){ authMsg(authErr(e)); }
@@ -9900,7 +9900,7 @@ function renderTargets(){
   // Onglet dedie : on affiche le panel meme sans liste chargee (onboarding), et meme sans
   // S&T (message d'attente). Le style panel:display initial est vide.
   if(!mine.size){
-    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:24px; color:var(--ink-3);">Charge d\'abord ta life list eBird sur l\'onglet <b>Ma liste</b> — les cochées apparaîtront en photo, les manquantes en silhouette.</div>';
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:24px; color:var(--ink-3);">Charge d\'abord ta life list eBird sur l\'onglet <b>Ma liste</b> - les cochées apparaîtront en photo, les manquantes en silhouette.</div>';
     if(hint) hint.textContent = '';
     return;
   }
@@ -10773,7 +10773,7 @@ function _quizAnswer(idx){
     // Bloc feedback : verdict + espece + spectrogramme du son entendu (mnemotechnique
     // visuelle : la forme du chant reste en memoire mieux que l'audio seul, cf. Merlin).
     const sonoHtml = _quizCurrent.sonoUrl ? `<div style="margin-top:12px; max-width:520px; margin-left:auto; margin-right:auto;"><img src="${esc(_quizCurrent.sonoUrl)}" alt="Spectrogramme du chant" style="width:100%; height:auto; border-radius:6px; display:block;" onerror="this.remove()"><p class="help" style="margin:6px 0 0; text-align:center; font-size:11px;">Spectrogramme du son entendu</p></div>` : '';
-    stage.insertAdjacentHTML('beforeend', `<p style="text-align:center; margin:14px 0 0;">${verdict} — c'était <b class="sp-link" data-sci="${esc(_quizCurrent.sci)}" style="cursor:pointer; text-decoration:underline dotted;">${esc(nm)}</b> <span class="p-sci">${esc(_quizCurrent.sci)}</span></p>${sonoHtml}`);
+    stage.insertAdjacentHTML('beforeend', `<p style="text-align:center; margin:14px 0 0;">${verdict} - c'était <b class="sp-link" data-sci="${esc(_quizCurrent.sci)}" style="cursor:pointer; text-decoration:underline dotted;">${esc(nm)}</b> <span class="p-sci">${esc(_quizCurrent.sci)}</span></p>${sonoHtml}`);
   }
   $('#quizNext').hidden = false;
   $('#quizSkip').hidden = true;
