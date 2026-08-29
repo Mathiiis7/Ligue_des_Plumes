@@ -9408,14 +9408,19 @@ async function _renderSpeciesRangeCard(sci){
   // Attend que le DOM ait fini de se rendre (clientHeight non-zero) avant d'init Leaflet.
   requestAnimationFrame(() => {
     if(!mapEl.clientHeight) { setTimeout(() => _renderSpeciesRangeCard(sci), 100); return; }
-    _rangeMapInstance = L.map(mapEl, { zoomControl:true, minZoom:1, worldCopyJump:false, attributionControl:true });
-    // ESRI Light Gray Canvas : fond gris clair neutre, gratuit sans cle, deja utilise
-    // dans l'app pour la carte satellite. Ideal pour overlays de donnees.
+    // maxBounds = limites de la donnee (PNG overlay) : l'user ne peut pas paner
+    // dans le vide au-dela. viscosity 1.0 = mur dur.
+    const dataBounds = L.latLngBounds([[s, w], [n, e]]);
+    _rangeMapInstance = L.map(mapEl, {
+      zoomControl:true, minZoom:1, maxBounds:dataBounds, maxBoundsViscosity:1.0,
+      worldCopyJump:false, attributionControl:true
+    });
+    // ESRI Light Gray Canvas : fond gris clair neutre, gratuit sans cle.
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-      attribution:'© Esri', maxZoom:12
+      attribution:'© Esri', maxZoom:12, noWrap:true
     }).addTo(_rangeMapInstance);
-    L.imageOverlay(pngPath, [[s, w], [n, e]], { opacity:0.75, interactive:false }).addTo(_rangeMapInstance);
-    _rangeMapInstance.fitBounds([[s, w], [n, e]]);
+    L.imageOverlay(pngPath, dataBounds, { opacity:0.75, interactive:false }).addTo(_rangeMapInstance);
+    _rangeMapInstance.fitBounds(dataBounds);
     setTimeout(() => _rangeMapInstance && _rangeMapInstance.invalidateSize(), 200);
   });
 }
