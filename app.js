@@ -8016,7 +8016,7 @@ function _renderSpeciesRarityCard(key){
 const _spDescCache = new Map();
 // Mots-cles pour matcher les titres de section Wikipedia (variations FR courantes).
 const WIKI_SECTION_MAP = {
-  description: { icon:'🪶', patterns:[/^description$/i, /^morphologie$/i, /^caract[eè]res? physiques?/i, /^description physique/i, /^apparence$/i] },
+  description: { icon:'🪶', patterns:[/^description/i, /^morphologie/i, /^caract[eè]res? physiques?/i, /^apparence/i, /^aspect/i, /^physique/i, /^plumage/i, /^identification/i] },
   habitat: { icon:'🏞️', patterns:[/^habitat$/i, /^r[eé]partition et habitat/i, /^habitat et r[eé]partition/i, /^r[eé]partition g[eé]ographique/i, /^r[eé]partition$/i] },
   alimentation: { icon:'🍂', patterns:[/^alimentation$/i, /^r[eé]gime alimentaire/i, /^nourriture$/i] },
   reproduction: { icon:'🥚', patterns:[/^reproduction$/i, /^nidification$/i, /^cycle de vie/i] },
@@ -8114,6 +8114,11 @@ function _renderSpeciesDesc(sci){
     // Sections Wikipedia en accordeon (utilisation de <details> native pour accessibilite)
     if(d){
       const catOrder = ['description','habitat','alimentation','reproduction','comportement'];
+      // Fallback : si pas de section 'Description' matchee mais qu'on a un lead paragraph,
+      // utilise le lead comme description (evite les fiches sans premiere section).
+      if(!d.description && d.lead){
+        d.description = { title: 'Description', text: d.lead };
+      }
       const hasAnySection = catOrder.some(k => d[k]);
       if(hasAnySection){
         for(const cat of catOrder){
