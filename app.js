@@ -7383,8 +7383,14 @@ async function _renderSpeciesTraitsCard(key){
   const k = (key||'').toLowerCase().trim();
   if(!k) return;
   const traits = await _loadAvonetTraits();
-  const t = traits[k];
-  if(!t){ return; }   // pas de traits pour cette espece (rare)
+  // Fallback via alias si nom scientifique split apres compilation Avonet 2022
+  // (ex Cecropis rufula = Cecropis daurica pre-split).
+  let t = traits[k];
+  if(!t){
+    const alt = (typeof SCI_ALIAS === 'object' && SCI_ALIAS[k]) || (typeof GBIF_SCI_ALIAS === 'object' && GBIF_SCI_ALIAS[k]) || null;
+    if(alt) t = traits[alt.toLowerCase()];
+  }
+  if(!t){ return; }
   // Labels courts pour les axes categoriels
   const MIG = { 1:'🏃 Sédentaire', 2:'🚶 Migration partielle', 3:'✈️ Migrateur total' };
   const TL  = { C:'🥩 Carnivore', H:'🌿 Herbivore', O:'🍽️ Omnivore', S:'🦴 Charognard' };
