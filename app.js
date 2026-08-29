@@ -8508,9 +8508,30 @@ function openSpeciesModal(sci){
   _renderSpeciesRarityCard(key);
   // Traits Avonet (ecologie + morphologie), lazy fetch au 1er open
   _renderSpeciesTraitsCard(key);
-  // Carte de repartition Cornell S&T (lazy)
-  _renderSpeciesRangeCard(sci);
+  // Card 'A ne pas confondre' : legere, calcul local instantane depuis
+  // CONFUSION_GROUPS. Rendue direct.
   _renderSpeciesConfuseCard(sci);
+  // Carte de repartition Cornell S&T (LAZY : declenchee seulement quand la card
+  // scroll dans le viewport). Init Leaflet coute cher (~50-100ms), fetch png
+  // 200-500 KB : on evite ca si l'user reste dans l'onglet Info et ne scroll pas.
+  const rangeBox = $('#smRangeCard');
+  if(rangeBox && 'IntersectionObserver' in window){
+    if(rangeBox._rangeObserver){ try{ rangeBox._rangeObserver.disconnect(); }catch(_){}; }
+    rangeBox._pendingSci = sci;
+    rangeBox._rangeObserver = new IntersectionObserver((entries) => {
+      for(const en of entries){
+        if(en.isIntersecting && rangeBox._pendingSci){
+          _renderSpeciesRangeCard(rangeBox._pendingSci);
+          rangeBox._pendingSci = null;
+          rangeBox._rangeObserver.disconnect();
+          break;
+        }
+      }
+    }, { root: modal.querySelector('.sm-scroll') || null, rootMargin: '200px 0px' });
+    rangeBox._rangeObserver.observe(rangeBox);
+  } else {
+    _renderSpeciesRangeCard(sci);
+  }
   // Description Wikipedia (async)
   _renderSpeciesDesc(sci);
   // Note : le freq chart est deja rendu par _renderSpeciesRarityCard avec le
@@ -9191,6 +9212,23 @@ document.addEventListener('keydown', e=>{
     if(e.key === 'ArrowLeft'){ const b = $('#smNavPrev'); if(b && !b.disabled) b.click(); }
     else if(e.key === 'ArrowRight'){ const b = $('#smNavNext'); if(b && !b.disabled) b.click(); }
   }
+});
+// Prefetch au hover : quand l'user passe la souris sur une row d'espece, lance en
+// tache de fond les fetches lourds (photo Wikipedia + sons xeno-canto). Vont dans
+// les caches _spPhotoCache / _spSoundCache. Au click, tout est deja pret : ouverture
+// quasi instantanee.
+let _hoverPrefetchTimer = null;
+document.addEventListener('mouseover', e => {
+  const sp = e.target.closest('.sp-link[data-sci]');
+  if(!sp) return;
+  const sci = sp.dataset.sci;
+  if(!sci) return;
+  // Debounce 150ms : evite de spam si l'user survole plein de rows en scrollant
+  clearTimeout(_hoverPrefetchTimer);
+  _hoverPrefetchTimer = setTimeout(() => {
+    if(typeof _fetchWikiPhoto === 'function') _fetchWikiPhoto(sci).catch(()=>{});
+    if(typeof _fetchXenoSound === 'function') _fetchXenoSound(sci).catch(()=>{});
+  }, 150);
 });
 
 $('#trophyWho').addEventListener('click',e=>{
