@@ -8123,8 +8123,21 @@ async function _fetchWikiDesc(sci){
     }catch(_){}
     return null;
   };
-  let d = await tryHtmlSections('fr');
-  if(!d || !d.lead) d = await tryHtmlSections('en');
+  // Fetch FR et EN en parallele, merge : FR prioritaire, EN en fallback par categorie.
+  // Marque les sections tirees de EN avec un drapeau visible pour transparence.
+  const [fr, en] = await Promise.all([tryHtmlSections('fr'), tryHtmlSections('en')]);
+  let d = null;
+  if(fr || en){
+    d = { lead: fr?.lead || en?.lead || '', wikiUrl: fr?.wikiUrl || en?.wikiUrl };
+    const cats = ['description','habitat','alimentation','reproduction','comportement'];
+    for(const cat of cats){
+      if(fr?.[cat]){
+        d[cat] = fr[cat];
+      } else if(en?.[cat]){
+        d[cat] = { ...en[cat], _isEn: true };
+      }
+    }
+  }
   if(!d || !d.lead) d = await trySummary('fr');
   if(!d || !d.lead) d = await trySummary('en');
   _spDescCache.set(key, d);
@@ -8153,7 +8166,8 @@ function _renderSpeciesDesc(sci){
           const icon = WIKI_SECTION_MAP[cat].icon;
           const catLabel = cat.charAt(0).toUpperCase() + cat.slice(1);
           const isFirst = cat === catOrder.find(k => d[k]);
-          parts.push(`<details class="sm-desc-section"${isFirst ? ' open' : ''}><summary><span class="sm-desc-icon">${icon}</span> ${esc(catLabel)}</summary><p>${esc(s.text)}</p></details>`);
+          const enFlag = s._isEn ? ' <span title="Traduit de Wikipedia EN — le contenu FR etait indisponible" style="font-size:10px; opacity:.6;">🇬🇧</span>' : '';
+          parts.push(`<details class="sm-desc-section"${isFirst ? ' open' : ''}><summary><span class="sm-desc-icon">${icon}</span> ${esc(catLabel)}${enFlag}</summary><p>${esc(s.text)}</p></details>`);
         }
       } else if(d.lead){
         // Fallback : pas de sections trouvees, affiche le lead paragraph
