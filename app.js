@@ -8080,7 +8080,7 @@ async function _fetchWikiDesc(sci){
         for(const [cat, cfg] of Object.entries(WIKI_SECTION_MAP)){
           if(out[cat]) continue;
           if(cfg.patterns.some(p => p.test(title))){
-            out[cat] = { title, text: truncate(combined, 200) };
+            out[cat] = { title, text: truncate(combined, 100) };
             break;
           }
         }
