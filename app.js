@@ -6930,7 +6930,7 @@ async function _fetchWikiPhoto(sci){
       const u = `https://api.inaturalist.org/v1/taxa/autocomplete?q=${encodeURIComponent(q)}&rank=species&per_page=1`;
       const r = await fetch(u); const j = await r.json();
       const p = j?.results?.[0]?.default_photo;
-      const url = p?.medium_url || p?.square_url || null;
+      const url = p?.large_url || p?.original_url || p?.medium_url || p?.square_url || null;
       if(url) return { url, credit:'iNaturalist' };
     }catch(_){ }
     return null;
@@ -6939,7 +6939,7 @@ async function _fetchWikiPhoto(sci){
   const tryWiki = async (lang, q)=>{
     if(!q) return null;
     try{
-      const u = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&pithumbsize=600&titles=${encodeURIComponent(q)}&origin=*`;
+      const u = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&pithumbsize=1200&titles=${encodeURIComponent(q)}&origin=*`;
       const r = await fetch(u); const j = await r.json();
       const pages = j?.query?.pages || {};
       const p = Object.values(pages)[0];
@@ -6955,7 +6955,7 @@ async function _fetchWikiPhoto(sci){
       const su = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch=${encodeURIComponent(q)}&srlimit=1&origin=*`;
       const sr = await fetch(su); const sj = await sr.json();
       const title = sj?.query?.search?.[0]?.title; if(!title) return null;
-      const iu = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&pithumbsize=600&titles=${encodeURIComponent(title)}&origin=*`;
+      const iu = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&pithumbsize=1200&titles=${encodeURIComponent(title)}&origin=*`;
       const ir = await fetch(iu); const ij = await ir.json();
       const pages = ij?.query?.pages || {};
       const p = Object.values(pages)[0];
