@@ -9378,74 +9378,40 @@ async function _loadRangeIndex(){
   }catch(_){ _rangeIndexCache = {}; }
   return _rangeIndexCache;
 }
+// Carte interactive Leaflet embarquee directement dans la fiche espece (pas de modal).
+// Instance globale, destroy propre avant chaque nouvelle fiche pour eviter les leaks.
+let _rangeMapInstance = null;
 async function _renderSpeciesRangeCard(sci){
   const box = $('#smRangeCard'); if(!box) return;
+  // Cleanup instance precedente (autre espece deja ouverte, ou re-render de la meme).
+  if(_rangeMapInstance){ try{ _rangeMapInstance.remove(); }catch(_){}; _rangeMapInstance = null; }
   box.hidden = true;
   box.innerHTML = '';
   const idx = await _loadRangeIndex();
   const entry = idx[(sci || '').toLowerCase().trim()];
   if(!entry || !entry.code) return;
   const pngPath = `data/range/${entry.code}.png?v=20260829`;
-  // Bbox pour le modal Leaflet. Format : [w, s, e, n] -> [[s,w], [n,e]] pour Leaflet imageBounds.
-  const bboxAttr = entry.bbox ? entry.bbox.join(',') : '';
+  const [w, s, e, n] = (entry.bbox || [-180, -60, 180, 85]);
+  const mapId = 'smRangeMap';
   box.innerHTML = `
     <div class="sm-card-title" style="display:flex; align-items:center; gap:8px;">Répartition <span style="font-size:10.5px; color:var(--ink-3); text-transform:none; font-weight:400; letter-spacing:0;">— Cornell Status & Trends (moyenne annuelle 9 km)</span></div>
-    <div style="position:relative; margin-top:6px; cursor:pointer; border-radius:8px; overflow:hidden; background:var(--surface-3); aspect-ratio:${entry.w||800}/${entry.h||600};" data-range-open data-range-sci="${esc(sci)}" data-range-code="${esc(entry.code)}" data-range-bbox="${esc(bboxAttr)}" title="Cliquer pour ouvrir la carte interactive">
-      <img src="${esc(pngPath)}" alt="Carte de répartition ${esc(sci)}" style="display:block; width:100%; height:100%; object-fit:contain;" onerror="this.parentElement.parentElement.remove()">
-      <div style="position:absolute; bottom:6px; right:8px; background:rgba(0,0,0,.6); color:#fff; font-size:11px; padding:3px 8px; border-radius:4px; pointer-events:none;">🔍 Cliquer pour zoomer</div>
-    </div>
-    <div style="margin-top:6px; font-size:11px; color:var(--ink-3);">Vert clair = présence rare · Rouge foncé = abondance élevée</div>
+    <div id="${mapId}" style="margin-top:6px; height:360px; border-radius:8px; overflow:hidden; background:var(--surface-3);"></div>
+    <div style="margin-top:6px; font-size:11px; color:var(--ink-3);">Vert clair = présence rare · Rouge foncé = abondance élevée · Pan et zoom pour explorer</div>
   `;
   box.hidden = false;
-}
-// Modal Leaflet plein ecran pour la carte interactive avec OSM en base + PNG en overlay.
-let _rangeMapInstance = null;
-function _openRangeMapModal(sci, code, bbox){
-  let modal = document.getElementById('rangeMapModal');
-  if(!modal){
-    modal = document.createElement('div');
-    modal.id = 'rangeMapModal';
-    modal.style.cssText = 'position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,.85); display:flex; flex-direction:column;';
-    modal.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 20px; background:var(--surface); color:var(--ink); border-bottom:1px solid var(--line); flex:0 0 auto;">
-        <div id="rangeMapTitle" style="font-weight:600;"></div>
-        <button id="rangeMapClose" type="button" style="background:transparent; border:1px solid var(--line-2); border-radius:6px; padding:6px 12px; cursor:pointer; color:var(--ink);">✕ Fermer</button>
-      </div>
-      <div id="rangeMapEl" style="flex:1 1 auto; min-height:0; background:#dde5e0;"></div>
-    `;
-    document.body.appendChild(modal);
-    const close = () => {
-      modal.style.display = 'none';
-      if(_rangeMapInstance){ try{ _rangeMapInstance.remove(); }catch(_){}; _rangeMapInstance = null; }
-    };
-    modal.querySelector('#rangeMapClose').addEventListener('click', close);
-    modal.addEventListener('click', e => { if(e.target === modal) close(); });
-  }
-  modal.style.display = 'flex';
-  const titleEl = modal.querySelector('#rangeMapTitle');
-  if(titleEl) titleEl.textContent = `${FR_NAMES[sci] || sci} — répartition annuelle Cornell S&T`;
-  // Destroy proprement l'instance precedente (Leaflet garde des refs internes)
-  if(_rangeMapInstance){ try{ _rangeMapInstance.remove(); }catch(_){}; _rangeMapInstance = null; }
-  const mapEl = modal.querySelector('#rangeMapEl');
-  mapEl.innerHTML = '';
-  const [w, s, e, n] = bbox.split(',').map(Number);
-  // Attend que le modal soit rendu avant d'init Leaflet (sinon clientHeight=0)
+  const mapEl = box.querySelector('#' + mapId);
+  // Attend que le DOM ait fini de se rendre (clientHeight non-zero) avant d'init Leaflet.
   requestAnimationFrame(() => {
-    _rangeMapInstance = L.map(mapEl, { zoomControl:true, minZoom:2, worldCopyJump:false });
+    if(!mapEl.clientHeight) { setTimeout(() => _renderSpeciesRangeCard(sci), 100); return; }
+    _rangeMapInstance = L.map(mapEl, { zoomControl:true, minZoom:1, worldCopyJump:false, attributionControl:true });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution:'© OpenStreetMap', maxZoom:12
     }).addTo(_rangeMapInstance);
-    L.imageOverlay(`data/range/${code}.png?v=20260829`, [[s, w], [n, e]], { opacity:0.75, interactive:false }).addTo(_rangeMapInstance);
+    L.imageOverlay(pngPath, [[s, w], [n, e]], { opacity:0.75, interactive:false }).addTo(_rangeMapInstance);
     _rangeMapInstance.fitBounds([[s, w], [n, e]]);
     setTimeout(() => _rangeMapInstance && _rangeMapInstance.invalidateSize(), 200);
   });
 }
-document.addEventListener('click', e => {
-  const openBtn = e.target.closest('[data-range-open]');
-  if(openBtn){
-    _openRangeMapModal(openBtn.dataset.rangeSci, openBtn.dataset.rangeCode, openBtn.dataset.rangeBbox);
-  }
-});
 function _renderSpeciesInfoChips(key){
   const box = $('#smInfoChips'); if(!box) return;
   const chips = [];
