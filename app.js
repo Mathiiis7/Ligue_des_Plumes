@@ -9874,7 +9874,7 @@ if(_pkdxFilters.habitat && typeof HABITAT_CATS !== 'undefined' && !HABITAT_CATS.
 // Rarete filtree via chips (Set des tiers EXCLUS). Coche = affiche, decoche = cache.
 let _pkdxTierExcl = new Set();
 try{ const s = localStorage.getItem('mb-pkdx-tier-excl'); if(s) _pkdxTierExcl = new Set(JSON.parse(s)); }catch(_){}
-let _pkdxInit = false;
+var _pkdxInit = false;   // var hoisted : evite TDZ quand restore last tab (btn.click) declenche renderPokedex avant que la declaration soit atteinte
 // Photo cache : reutilise _spPhotoCache si defini, sinon Map locale.
 const _pkdxPhotos = new Map();
 // Liste complete triee (fige les numeros #001..#N) memoisee : ne change jamais avec les
