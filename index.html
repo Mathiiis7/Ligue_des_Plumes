@@ -11978,20 +11978,17 @@ const CRI_DISTINCTIVE_FAMILIES = new Set([
   'Pics', 'Corvidés (corneilles, pies…)',
 ]);
 
-// Distracteurs : meme famille MAIS pas meme genre (le meme genre a des chants trop
-// proches acoustiquement, quiz devient injuste). Fallback : meme famille meme genre,
-// puis famille differente, si pas assez de candidats.
+// Distracteurs : meme famille (approche taxonomique simple). En attendant l'ajout d'une
+// table de "confusion groups" curee acoustiquement (paires classiquement confondues :
+// pouillots entre eux, grives entre elles, bruants jaunes vs zizi, etc.) qui sera
+// pedagogiquement plus utile qu'un filtre taxonomique.
 function _quizPickDistracters(sci, pool, n){
   const fam = familyOf(sci);
-  const genusOf = s => (s || '').trim().split(' ')[0].toLowerCase();
-  const gen = genusOf(sci);
-  const sameFamDiffGen = pool.filter(s => s !== sci && familyOf(s) === fam && genusOf(s) !== gen);
-  const sameFamSameGen = pool.filter(s => s !== sci && familyOf(s) === fam && genusOf(s) === gen);
-  const diffFam = pool.filter(s => s !== sci && familyOf(s) !== fam);
+  const sameFam = pool.filter(s => s !== sci && familyOf(s) === fam);
+  const others = pool.filter(s => s !== sci && familyOf(s) !== fam);
   const shuffle = arr => arr.map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).map(v=>v[1]);
-  const picked = shuffle(sameFamDiffGen).slice(0, n);
-  if(picked.length < n) picked.push(...shuffle(diffFam).slice(0, n - picked.length));
-  if(picked.length < n) picked.push(...shuffle(sameFamSameGen).slice(0, n - picked.length));
+  const picked = shuffle(sameFam).slice(0, n);
+  if(picked.length < n) picked.push(...shuffle(others).slice(0, n - picked.length));
   return picked;
 }
 async function _quizStart(){
