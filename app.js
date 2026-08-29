@@ -8409,6 +8409,39 @@ document.addEventListener('click', e => {
   const b = e.target.closest('.sm-tab[data-sm-tab]'); if(!b) return;
   _smSetTab(b.dataset.smTab);
 });
+// Swipe gauche/droite sur le body du modal pour naviguer entre onglets (mobile).
+// Ordre des tabs : info -> map -> sound.
+(function(){
+  const SM_TAB_ORDER = ['info', 'map', 'sound'];
+  let touchStartX = 0, touchStartY = 0, touchStartT = 0;
+  const isModalOpen = () => { const m = document.getElementById('speciesModal'); return m && !m.hidden; };
+  document.addEventListener('touchstart', e => {
+    if(!isModalOpen() || !e.touches[0]) return;
+    // Ignore les swipes qui commencent sur des elements scrollables horizontalement (map Leaflet, chart, tabs)
+    const target = e.target;
+    if(target.closest('.leaflet-container, .sm-tabs, .sm-freq, canvas, .xa-bar')) return;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchStartT = Date.now();
+  }, { passive: true });
+  document.addEventListener('touchend', e => {
+    if(!isModalOpen() || !e.changedTouches[0] || !touchStartX) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    const dt = Date.now() - touchStartT;
+    touchStartX = 0;
+    // Swipe valide : deplacement horizontal >= 80px, vertical < 60px, moins de 500ms
+    if(Math.abs(dx) < 80 || Math.abs(dy) > 60 || dt > 500) return;
+    const currentTab = localStorage.getItem('mb-sm-tab') || 'info';
+    const currentIdx = SM_TAB_ORDER.indexOf(currentTab);
+    if(currentIdx < 0) return;
+    const dir = dx < 0 ? 1 : -1;   // swipe gauche = onglet suivant
+    const nextIdx = currentIdx + dir;
+    if(nextIdx >= 0 && nextIdx < SM_TAB_ORDER.length){
+      _smSetTab(SM_TAB_ORDER[nextIdx]);
+    }
+  }, { passive: true });
+})();
 // Clic sur un ami dans la liste sous la carte : bascule sur mode "Mes amis" si necessaire,
 // pan+zoom sur ses marker(s), et ouvre le popup s'il n'y en a qu'un.
 document.addEventListener('click', e => {
