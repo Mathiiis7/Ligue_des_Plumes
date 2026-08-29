@@ -3554,10 +3554,10 @@ const REAL_FREQ_MONTHLY_BY_REGION_MULTI = {};
 const _freqDataPromises = {};
 async function _loadFreqDataForCountry(cc){
   if(_freqDataPromises[cc]) return _freqDataPromises[cc];
-  const filename = (cc === 'FR') ? 'freq_by_region.json' : `freq_by_region_${cc.toLowerCase()}.json`;
+  const filename = 'data/countries/' + cc.toLowerCase() + '/freq_by_region.json?v=20260829';
   _freqDataPromises[cc] = (async () => {
     try{
-      const data = await fetch(`data/${filename}?v=20260827`).then(r => r.ok ? r.json() : null);
+      const data = await fetch(filename).then(r => r.ok ? r.json() : null);
       if(data){
         REAL_FREQ_MONTHLY_BY_REGION_MULTI[cc] = data;
         if(cc === 'FR') REAL_FREQ_MONTHLY_BY_REGION = data;   // compat ancien code
@@ -3581,8 +3581,8 @@ async function _loadAbundanceData(){
   _abundanceDataPromise = (async () => {
     try{
       const [dept, deptMean] = await Promise.all([
-        fetch('data/abundance_dept.json?v=20260827').then(r => r.json()),
-        fetch('data/abundance_dept_mean.json?v=20260827').then(r => r.json()),
+        fetch('data/countries/fr/abundance_dept.json?v=20260829').then(r => r.json()),
+        fetch('data/countries/fr/abundance_dept_mean.json?v=20260829').then(r => r.json()),
       ]);
       REAL_ABUNDANCE_DEPT = dept;
       REAL_ABUNDANCE_DEPT_MEAN = deptMean;
@@ -3601,7 +3601,7 @@ async function _loadAbundanceRegionData(cc){
   const country = cc || 'FR';
   if(_abundanceRegionPromises[country]) return _abundanceRegionPromises[country];
   _abundanceRegionPromises[country] = (async () => {
-    const filename = 'data/abundance_st_by_region_' + country.toLowerCase() + '.json?v=20260827';
+    const filename = 'data/countries/' + country.toLowerCase() + '/abundance_st_by_region.json?v=20260829';
     try{
       const data = await fetch(filename).then(r => {
         if(!r.ok) throw new Error('HTTP '+r.status);
@@ -10398,4 +10398,4 @@ document.addEventListener('click', e => {
   const modeBtn = e.target.closest('[data-quiz-mode]'); if(modeBtn){ _quizSetMode(modeBtn.dataset.quizMode); return; }
 });
 // PWA : installation sur l'écran d'accueil
-if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('service-worker.js').catch(()=>{}); }
