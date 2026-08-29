@@ -9370,7 +9370,11 @@ async function _loadRangeIndex(){
   try{
     const res = await fetch('data/range-index.json?v=20260829');
     if(!res.ok) return (_rangeIndexCache = {});
-    _rangeIndexCache = await res.json();
+    const raw = await res.json();
+    // Normalise en index case-insensitive (les cles R sont 'Pica pica' Title case,
+    // les sci passes par le modal peuvent etre 'pica pica' minuscules).
+    _rangeIndexCache = {};
+    for(const [k, v] of Object.entries(raw)) _rangeIndexCache[k.toLowerCase()] = v;
   }catch(_){ _rangeIndexCache = {}; }
   return _rangeIndexCache;
 }
@@ -9379,7 +9383,7 @@ async function _renderSpeciesRangeCard(sci){
   box.hidden = true;
   box.innerHTML = '';
   const idx = await _loadRangeIndex();
-  const entry = idx[sci] || idx[sci?.toLowerCase()];
+  const entry = idx[(sci || '').toLowerCase().trim()];
   if(!entry || !entry.code) return;
   const pngPath = `data/range/${entry.code}.png?v=20260829`;
   // Bbox pour le modal Leaflet. Format : [w, s, e, n] -> [[s,w], [n,e]] pour Leaflet imageBounds.
