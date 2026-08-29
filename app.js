@@ -7996,33 +7996,145 @@ function _renderSpeciesRarityCard(key){
     });
   }
 }
-// Description Wikipedia (extrait 1er paragraphe) via API REST summary. FR puis EN en fallback.
+// Description Wikipedia : fetch les sections nommees (Description, Habitat, Reproduction,
+// Alimentation, Comportement) au lieu du 1er paragraphe seul. Rendu en accordeon.
+// Fallback : page/summary si mobile-sections indispo.
 const _spDescCache = new Map();
+// Mots-cles pour matcher les titres de section Wikipedia (variations FR courantes).
+const WIKI_SECTION_MAP = {
+  description: { icon:'🪶', patterns:[/^description$/i, /^morphologie$/i, /^caract[eè]res? physiques?/i, /^description physique/i, /^apparence$/i] },
+  habitat: { icon:'🏞️', patterns:[/^habitat$/i, /^r[eé]partition et habitat/i, /^habitat et r[eé]partition/i, /^r[eé]partition g[eé]ographique/i, /^r[eé]partition$/i] },
+  alimentation: { icon:'🍂', patterns:[/^alimentation$/i, /^r[eé]gime alimentaire/i, /^nourriture$/i] },
+  reproduction: { icon:'🥚', patterns:[/^reproduction$/i, /^nidification$/i, /^cycle de vie/i] },
+  comportement: { icon:'✈️', patterns:[/^comportement$/i, /^m[oœ]urs$/i, /^vol$/i, /^migration$/i] },
+};
 async function _fetchWikiDesc(sci){
   const key = sci.toLowerCase();
   if(_spDescCache.has(key)) return _spDescCache.get(key);
+  const stripHtml = html => {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    // Retire les refs [1], [2], etc. + les 'edit section' liens
+    tmp.querySelectorAll('sup.reference, .mw-editsection, .noprint').forEach(el => el.remove());
+    let text = tmp.textContent || tmp.innerText || '';
+    return text.replace(/\s+/g, ' ').trim();
+  };
+  const truncate = (text, maxWords=200) => {
+    const words = text.split(/\s+/);
+    if(words.length <= maxWords) return text;
+    return words.slice(0, maxWords).join(' ').replace(/[,;:]?\s*\S*$/,'') + '…';
+  };
+  const tryMobileSections = async (lang) => {
+    try{
+      const url = `https://${lang}.wikipedia.org/api/rest_v1/page/mobile-sections/${encodeURIComponent(sci.replace(/ /g,'_'))}`;
+      const r = await fetch(url);
+      if(!r.ok) return null;
+      const j = await r.json();
+      const sections = j?.remaining?.sections || [];
+      const lead = stripHtml(j?.lead?.sections?.[0]?.text || '');
+      const out = { lead: truncate(lead, 80), wikiUrl: j?.lead?.displaytitle ? `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(sci.replace(/ /g,'_'))}` : null };
+      // Match chaque section aux categories connues (premier match gagne)
+      for(const sec of sections){
+        const title = (sec.line || '').trim();
+        if(!title) continue;
+        for(const [cat, cfg] of Object.entries(WIKI_SECTION_MAP)){
+          if(out[cat]) continue;   // deja rempli
+          if(cfg.patterns.some(p => p.test(title))){
+            const txt = stripHtml(sec.text || '');
+            if(txt.length > 30) out[cat] = { title, text: truncate(txt, 200) };
+            break;
+          }
+        }
+      }
+      return out;
+    }catch(_){ return null; }
+  };
   const trySummary = async (lang) => {
     try{
       const r = await fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(sci.replace(/ /g,'_'))}`);
       if(!r.ok) return null;
       const j = await r.json();
-      if(j?.extract && j.extract.length > 30) return j.extract;
+      if(j?.extract && j.extract.length > 30) return { lead: j.extract, wikiUrl: j?.content_urls?.desktop?.page || null };
     }catch(_){}
     return null;
   };
-  let d = await trySummary('fr'); if(!d) d = await trySummary('en');
+  let d = await tryMobileSections('fr');
+  if(!d || !d.lead) d = await tryMobileSections('en');
+  if(!d || !d.lead) d = await trySummary('fr');
+  if(!d || !d.lead) d = await trySummary('en');
   _spDescCache.set(key, d);
   return d;
 }
+// Compose une phrase intro auto a partir des donnees deja fetchees (Avonet + freq monthly).
+// Ex : "Passereau de 26 g. Presence en France : toute l'annee. Migration partielle."
+async function _generateAutoSummary(sci){
+  const key = (sci || '').toLowerCase().trim();
+  const bits = [];
+  // Traits Avonet
+  try{
+    const traits = await _loadAvonetTraits();
+    const t = traits?.[key];
+    if(t){
+      const parts = [];
+      if(t.ma != null) parts.push(`~${Math.round(t.ma)} g`);
+      if(t.wi != null) parts.push(`aile ${Math.round(t.wi)} mm`);
+      const trans = { C:'carnivore', H:'herbivore', O:'omnivore', S:'charognard' };
+      if(parts.length){
+        let phrase = parts.join(', ');
+        if(t.tl && trans[t.tl]) phrase += `, régime ${trans[t.tl]}`;
+        bits.push(phrase.charAt(0).toUpperCase() + phrase.slice(1) + '.');
+      }
+      const mig = { 1:'Sédentaire', 2:'Migration partielle', 3:'Migrateur au long cours' };
+      if(t.mi && mig[t.mi]) bits.push(mig[t.mi] + '.');
+    }
+  }catch(_){}
+  // Presence en France via freq monthly (0 = absent, >0.05 = present)
+  try{
+    const freq = (typeof REAL_FREQ_MONTHLY_BY_REGION_MULTI === 'object') ? REAL_FREQ_MONTHLY_BY_REGION_MULTI['FR']?.FR : null;
+    const monthly = freq?.[key];
+    if(Array.isArray(monthly) && monthly.length === 12){
+      const activeMonths = monthly.map((v,i) => v > 0.005 ? i : -1).filter(i => i >= 0);
+      if(activeMonths.length === 12) bits.push("Présent en France toute l'année.");
+      else if(activeMonths.length >= 8) bits.push('Présent en France presque toute l\'année.');
+      else if(activeMonths.length > 0){
+        const months = ['jan','fév','mars','avr','mai','juin','juil','août','sept','oct','nov','déc'];
+        bits.push(`Présent en France de ${months[activeMonths[0]]} à ${months[activeMonths[activeMonths.length-1]]}.`);
+      }
+    }
+  }catch(_){}
+  return bits.length ? bits.join(' ') : null;
+}
 function _renderSpeciesDesc(sci){
   const el = $('#smDesc'); if(!el) return;
-  el.textContent = ''; el.classList.remove('sm-desc');
-  _fetchWikiDesc(sci).then(txt => {
-    if(!txt) return;
-    // Limite à ~450 chars pour ne pas noyer la fiche.
-    const short = txt.length > 450 ? txt.slice(0,447).replace(/\s+\S*$/,'') + '…' : txt;
-    el.textContent = short;
+  el.innerHTML = ''; el.classList.remove('sm-desc');
+  Promise.all([_fetchWikiDesc(sci), _generateAutoSummary(sci)]).then(([d, autoSum]) => {
+    if(!d && !autoSum) return;
     el.classList.add('sm-desc');
+    const parts = [];
+    // Intro auto : badge subtil pour signaler que c'est genere depuis les donnees
+    if(autoSum){
+      parts.push(`<div class="sm-desc-auto"><span class="sm-desc-auto-badge" title="Genere depuis les donnees Avonet + Cornell + eBird">📊 En bref</span> ${esc(autoSum)}</div>`);
+    }
+    // Sections Wikipedia en accordeon (utilisation de <details> native pour accessibilite)
+    if(d){
+      const catOrder = ['description','habitat','alimentation','reproduction','comportement'];
+      const hasAnySection = catOrder.some(k => d[k]);
+      if(hasAnySection){
+        for(const cat of catOrder){
+          const s = d[cat];
+          if(!s) continue;
+          const icon = WIKI_SECTION_MAP[cat].icon;
+          const catLabel = cat.charAt(0).toUpperCase() + cat.slice(1);
+          const isFirst = cat === catOrder.find(k => d[k]);
+          parts.push(`<details class="sm-desc-section"${isFirst ? ' open' : ''}><summary><span class="sm-desc-icon">${icon}</span> ${esc(catLabel)}</summary><p>${esc(s.text)}</p></details>`);
+        }
+      } else if(d.lead){
+        // Fallback : pas de sections trouvees, affiche le lead paragraph
+        parts.push(`<p>${esc(d.lead)}</p>`);
+      }
+      if(d.wikiUrl) parts.push(`<a class="sm-desc-more" href="${esc(d.wikiUrl)}" target="_blank" rel="noopener">Lire plus sur Wikipédia ↗</a>`);
+    }
+    el.innerHTML = parts.join('');
   });
 }
 // Histogramme temporel de la fiche. 2 modes :

@@ -580,8 +580,23 @@
   .species-modal .sm-info-chips .chip { font-size:11.5px; font-weight:700; padding:2px 8px; border-radius:9px; background:var(--surface-2); color:var(--ink-2); border:1px solid var(--line); display:inline-flex; align-items:center; gap:5px; }
   .species-modal .sm-info-chips .chip .dot { width:9px; height:9px; border-radius:50%; }
   .species-modal .sm-info-chips .chip.rar-chip-fill { color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.35); font-weight:800; }
-  .species-modal .sm-desc { font-size:13px; color:var(--ink-2); line-height:1.5; margin-top:12px; padding:10px 12px; background:var(--surface-2); border-left:3px solid var(--line-2); border-radius:0 8px 8px 0; }
+  .species-modal .sm-desc { font-size:13px; color:var(--ink-2); line-height:1.5; margin-top:12px; padding:12px 14px; background:var(--surface-2); border-left:3px solid var(--line-2); border-radius:0 8px 8px 0; }
   .species-modal .sm-desc:empty { display:none; }
+  /* Intro auto-generee : badge subtil */
+  .sm-desc-auto { padding:8px 0 12px; margin-bottom:6px; border-bottom:1px solid var(--line-2); color:var(--ink); font-size:13.5px; line-height:1.5; }
+  .sm-desc-auto-badge { display:inline-flex; align-items:center; gap:4px; font-size:10.5px; font-weight:700; letter-spacing:.3px; text-transform:uppercase; color:var(--accent-ink); background:var(--surface); padding:2px 8px; border-radius:12px; margin-right:6px; vertical-align:middle; }
+  /* Accordeon sections Wikipedia (native <details>) */
+  .sm-desc-section { margin:6px 0; border-bottom:1px solid var(--line-2); }
+  .sm-desc-section:last-of-type { border-bottom:none; }
+  .sm-desc-section > summary { cursor:pointer; padding:8px 0; font-weight:700; font-size:13px; color:var(--ink); list-style:none; display:flex; align-items:center; gap:6px; user-select:none; }
+  .sm-desc-section > summary::-webkit-details-marker { display:none; }
+  .sm-desc-section > summary::after { content:'▾'; margin-left:auto; color:var(--ink-3); font-size:11px; transition:transform .15s; }
+  .sm-desc-section[open] > summary::after { transform:rotate(180deg); }
+  .sm-desc-section > summary:hover { color:var(--accent-ink); }
+  .sm-desc-section .sm-desc-icon { font-size:15px; }
+  .sm-desc-section > p { margin:2px 0 10px; padding:0 4px 0 22px; color:var(--ink-2); font-size:13px; line-height:1.55; }
+  .sm-desc-more { display:inline-block; margin-top:8px; font-size:11.5px; color:var(--accent-ink); text-decoration:none; font-weight:600; }
+  .sm-desc-more:hover { text-decoration:underline; }
   .species-modal .sm-freq { margin-top:14px; }
   .species-modal .sm-freq-title { font-size:13px; color:var(--ink-2); text-transform:uppercase; letter-spacing:.4px; margin:0 0 6px; font-weight:700; }
   .species-modal .sm-freq-src { text-transform:none; letter-spacing:0; font-weight:400; color:var(--ink-3); font-size:11.5px; margin-left:6px; }
