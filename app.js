@@ -7402,8 +7402,8 @@ async function _renderSpeciesTraitsCard(key){
     const NICHE_FR = {
       'invertivore': 'invertivore',
       'vertivore': 'vertivore',
-      'aquatic_predator': 'pêcheur',
-      'aquatic': 'pêcheur',
+      'aquatic_predator': 'piscivore',
+      'aquatic': 'piscivore',
       'frugivore': 'frugivore',
       'granivore': 'granivore',
       'nectarivore': 'nectarivore',
