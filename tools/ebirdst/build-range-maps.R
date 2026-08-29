@@ -164,9 +164,11 @@ for (i in seq_len(nrow(todo))) {
     vals[is.na(vals) | vals <= 0] <- NA
     if (all(is.na(vals))) stop("no data in bbox")
 
-    # Normalisation log pour ecraser les outliers d'abondance
+    # Normalisation sqrt : compression modere (moins agressive que log). Preserve
+    # les differences moyennes / faibles au lieu de tout ecraser en bas. Rend le
+    # degrade continu visuellement au lieu de bandes.
     vmax <- max(vals, na.rm = TRUE)
-    vals_norm <- log1p(vals) / log1p(vmax)
+    vals_norm <- sqrt(vals) / sqrt(vmax)
     vals_norm[is.na(vals_norm)] <- NA
 
     # Cree un vecteur de couleurs
