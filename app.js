@@ -8243,7 +8243,7 @@ function _renderSpeciesDesc(sci){
     // Support gras **texte** -> <strong>texte</strong>. Reste du texte esc-safe.
     const rendered = esc(text).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     el.classList.add('sm-desc');
-    el.innerHTML = `<div class="sm-desc-title">📝 Description</div><p style="margin:4px 0 0;">${rendered}</p>`;
+    el.innerHTML = `<p style="margin:0;">${rendered}</p>`;
   });
 }
 // Histogramme temporel de la fiche. 2 modes :
