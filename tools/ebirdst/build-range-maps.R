@@ -43,14 +43,20 @@ BBOX <- if (mode == "europe") {
   c(-180, -60, 180, 85)     # monde (defaut)
 }
 
-# Dimensions PNG cible. Ratio proche du bbox pour minimiser distortion.
-# Monde : 360 lng x 145 lat -> ratio ~2.48 -> 1200 x 484
-# Europe : 70 lng x 42 lat -> ratio ~1.67 -> 800 x 480
-if (mode == "europe") {
-  PNG_W <- 800; PNG_H <- 480
-} else {
-  PNG_W <- 1200; PNG_H <- 484
-}
+# Dimensions PNG cible : calculees pour matcher l'aspect ratio Mercator du bbox
+# (evite l'etirement quand Leaflet affiche l'image sur des tuiles OSM en Mercator).
+# Compute bbox Mercator une fois pour fixer PNG_W / PNG_H.
+suppressWarnings({
+  bbox_ll_tmp <- terra::ext(BBOX[1], BBOX[3], BBOX[2], BBOX[4])
+  bbox_merc_tmp <- terra::project(terra::as.polygons(bbox_ll_tmp, crs = "EPSG:4326"), "EPSG:3857")
+  e_merc_tmp <- terra::ext(bbox_merc_tmp)
+})
+merc_w <- e_merc_tmp$xmax - e_merc_tmp$xmin
+merc_h <- e_merc_tmp$ymax - e_merc_tmp$ymin
+merc_aspect <- as.numeric(merc_w / merc_h)
+PNG_W <- 1200
+PNG_H <- round(PNG_W / merc_aspect)
+cat(sprintf("Aspect Mercator : %.2f -> PNG %d x %d\n", merc_aspect, PNG_W, PNG_H))
 
 # Especes cibles
 DEMO_SPECIES <- c("euroba1", "tibpar", "eutspa", "commur", "eurmag1")  # 5 especes pour test
@@ -139,13 +145,16 @@ for (i in seq_len(nrow(todo))) {
       raster <- mean(r[[seasons_present]], na.rm = TRUE)
     }
 
-    # Reprojette en lat/lng et crop au BBOX
-    raster_ll <- project(raster, "EPSG:4326", method = "average")
-    e <- ext(BBOX[1], BBOX[3], BBOX[2], BBOX[4])
-    raster_cropped <- crop(raster_ll, e, snap = "out")
-
-    # Resample sur la resolution cible PNG_W x PNG_H
-    target <- rast(nrows = PNG_H, ncols = PNG_W, extent = e, crs = "EPSG:4326")
+    # Reprojette en Web Mercator (EPSG:3857) pour un alignement 1:1 avec les tuiles OSM
+    # de Leaflet. Coordinate frame identique -> aucun etirement/decalage visuel.
+    # BBOX est defini en lat/lng -> on convertit ses coins en Mercator pour le crop.
+    bbox_ll <- ext(BBOX[1], BBOX[3], BBOX[2], BBOX[4])
+    bbox_merc <- project(as.polygons(bbox_ll, crs = "EPSG:4326"), "EPSG:3857")
+    e_merc <- ext(bbox_merc)
+    raster_merc <- project(raster, "EPSG:3857", method = "average")
+    raster_cropped <- crop(raster_merc, e_merc, snap = "out")
+    # Resample sur la resolution cible PNG_W x PNG_H (grille reguliere Mercator)
+    target <- rast(nrows = PNG_H, ncols = PNG_W, extent = e_merc, crs = "EPSG:3857")
     raster_final <- resample(raster_cropped, target, method = "average")
 
     # Rendu PNG avec palette et fond transparent pour zero
