@@ -8222,24 +8222,28 @@ async function _generatePortrait(sci){
   }catch(_){}
   return sentences.length ? sentences.join(' ') : null;
 }
+// Descriptions curated (style Merlin) generees et commit dans data/species-descriptions.json.
+// Chargement lazy + cache session. Si pas d'entree pour l'espece, la card reste vide (hidden).
+let _speciesDescCache = null;
+async function _loadSpeciesDescriptions(){
+  if(_speciesDescCache) return _speciesDescCache;
+  try{
+    const r = await fetch('data/species-descriptions.json?v=20260830');
+    _speciesDescCache = r.ok ? await r.json() : {};
+  }catch(_){ _speciesDescCache = {}; }
+  return _speciesDescCache;
+}
 function _renderSpeciesDesc(sci){
   const el = $('#smDesc'); if(!el) return;
   el.innerHTML = ''; el.classList.remove('sm-desc');
-  _fetchWikiDesc(sci).then(d => {
-    if(!d) return;
-    // Priorite : section Description (physique + identification) ; fallback : Comportement ;
-    // dernier recours : lead paragraph du resume Wikipedia. On ne montre PAS Habitat /
-    // Alimentation / Reproduction (deja couverts par Avonet, freq chart, carte de repartition).
-    let text = null;
-    if(d.description?.text) text = d.description.text;
-    else if(d.comportement?.text) text = d.comportement.text;
-    else if(d.lead) text = d.lead;
-    if(!text) return;
-    // Tronque court : ~80 mots pour rester scannable dans la fiche.
-    const words = text.split(/\s+/);
-    if(words.length > 80) text = words.slice(0, 80).join(' ').replace(/[,;:]?\s*\S*$/,'') + '...';
+  const key = (sci || '').toLowerCase().trim();
+  _loadSpeciesDescriptions().then(dict => {
+    const text = dict[key];
+    if(!text) return;   // pas d'entree = card cachee (CSS :empty)
+    // Support gras **texte** -> <strong>texte</strong>. Reste du texte esc-safe.
+    const rendered = esc(text).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     el.classList.add('sm-desc');
-    el.innerHTML = `<div class="sm-desc-title">📝 Description</div><p style="margin:4px 0 6px;">${esc(text)}</p>${d.wikiUrl ? `<a class="sm-desc-more" href="${esc(d.wikiUrl)}" target="_blank" rel="noopener">Lire sur Wikipedia ↗</a>` : ''}`;
+    el.innerHTML = `<div class="sm-desc-title">📝 Description</div><p style="margin:4px 0 0;">${rendered}</p>`;
   });
 }
 // Histogramme temporel de la fiche. 2 modes :
