@@ -8024,24 +8024,49 @@ async function _fetchWikiDesc(sci){
     if(words.length <= maxWords) return text;
     return words.slice(0, maxWords).join(' ').replace(/[,;:]?\s*\S*$/,'') + '…';
   };
-  const tryMobileSections = async (lang) => {
+  // Parse page HTML complet, extrait les sections par leurs headings h2.
+  // page/html est stable, CORS friendly, contrairement a mobile-sections (deprecie).
+  const tryHtmlSections = async (lang) => {
     try{
-      const url = `https://${lang}.wikipedia.org/api/rest_v1/page/mobile-sections/${encodeURIComponent(sci.replace(/ /g,'_'))}`;
+      const url = `https://${lang}.wikipedia.org/api/rest_v1/page/html/${encodeURIComponent(sci.replace(/ /g,'_'))}`;
       const r = await fetch(url);
       if(!r.ok) return null;
-      const j = await r.json();
-      const sections = j?.remaining?.sections || [];
-      const lead = stripHtml(j?.lead?.sections?.[0]?.text || '');
-      const out = { lead: truncate(lead, 80), wikiUrl: j?.lead?.displaytitle ? `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(sci.replace(/ /g,'_'))}` : null };
-      // Match chaque section aux categories connues (premier match gagne)
+      const html = await r.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      // Wikipedia REST html emet des <section data-mw-section-id="N"> avec un <h2> en premier enfant
+      const out = { lead: '', wikiUrl: `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(sci.replace(/ /g,'_'))}` };
+      // Lead : premier paragraph non vide de la section 0
+      const lead0 = doc.querySelector('section[data-mw-section-id="0"]');
+      if(lead0){
+        const p = Array.from(lead0.querySelectorAll('p')).find(el => (el.textContent || '').trim().length > 30);
+        if(p) out.lead = truncate(stripHtml(p.innerHTML), 80);
+      }
+      // Sections nommees
+      const sections = doc.querySelectorAll('section[data-mw-section-id]');
       for(const sec of sections){
-        const title = (sec.line || '').trim();
+        const id = parseInt(sec.getAttribute('data-mw-section-id'), 10);
+        if(id <= 0) continue;   // section 0 = lead, deja traite
+        const h = sec.querySelector('h2, h3');
+        if(!h) continue;
+        const title = (h.textContent || '').trim();
         if(!title) continue;
+        // Concatene le texte de tous les <p> et <ul> de la section (hors sous-sections)
+        const parts = [];
+        let el = h.nextElementSibling;
+        while(el && el.tagName !== 'H2' && el.tagName !== 'H3'){
+          if(el.tagName === 'P' || el.tagName === 'UL' || el.tagName === 'OL'){
+            const txt = stripHtml(el.innerHTML);
+            if(txt.length > 10) parts.push(txt);
+          }
+          el = el.nextElementSibling;
+        }
+        const combined = parts.join(' ').trim();
+        if(combined.length < 30) continue;
+        // Match aux categories connues
         for(const [cat, cfg] of Object.entries(WIKI_SECTION_MAP)){
-          if(out[cat]) continue;   // deja rempli
+          if(out[cat]) continue;
           if(cfg.patterns.some(p => p.test(title))){
-            const txt = stripHtml(sec.text || '');
-            if(txt.length > 30) out[cat] = { title, text: truncate(txt, 200) };
+            out[cat] = { title, text: truncate(combined, 200) };
             break;
           }
         }
@@ -8058,8 +8083,8 @@ async function _fetchWikiDesc(sci){
     }catch(_){}
     return null;
   };
-  let d = await tryMobileSections('fr');
-  if(!d || !d.lead) d = await tryMobileSections('en');
+  let d = await tryHtmlSections('fr');
+  if(!d || !d.lead) d = await tryHtmlSections('en');
   if(!d || !d.lead) d = await trySummary('fr');
   if(!d || !d.lead) d = await trySummary('en');
   _spDescCache.set(key, d);
