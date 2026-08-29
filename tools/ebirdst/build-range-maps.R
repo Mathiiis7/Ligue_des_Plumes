@@ -187,17 +187,16 @@ for (i in seq_len(nrow(todo))) {
     if (!requireNamespace("png", quietly = TRUE)) install.packages("png", repos = "https://cloud.r-project.org")
     # Extrait R, G, B de la palette (0-255)
     pal_rgb <- col2rgb(pal)   # 3 x 100
-    # Pour chaque cell : idx dans la palette ou NA
-    R_ch <- rep(0L, length(color_idx)); G_ch <- R_ch; B_ch <- R_ch; A_ch <- R_ch
-    for (i in seq_along(color_idx)) {
-      if (!is.na(color_idx[i]) && !is.na(vals_norm[i])) {
-        R_ch[i] <- pal_rgb[1, color_idx[i]]
-        G_ch[i] <- pal_rgb[2, color_idx[i]]
-        B_ch[i] <- pal_rgb[3, color_idx[i]]
-        # Alpha : plancher haut (150/255 = ~59% opacite min) pour que les zones a
-        # abondance faible restent tres lisibles. Boost progressif vers 255.
-        A_ch[i] <- as.integer(pmin(255, pmax(150, vals_norm[i] * 105 + 150)))
-      }
+    # Vectorise l'affectation par pixel (au lieu du for loop sur 1M+ elements = tres lent en R pur)
+    n_px <- length(color_idx)
+    R_ch <- integer(n_px); G_ch <- integer(n_px); B_ch <- integer(n_px); A_ch <- integer(n_px)
+    valid <- !is.na(color_idx) & !is.na(vals_norm)
+    if (any(valid)) {
+      R_ch[valid] <- pal_rgb[1, color_idx[valid]]
+      G_ch[valid] <- pal_rgb[2, color_idx[valid]]
+      B_ch[valid] <- pal_rgb[3, color_idx[valid]]
+      # Alpha : plancher 150/255 (~59% opacite min pour lisibilite sur OSM), boost vers 255
+      A_ch[valid] <- as.integer(pmin(255, pmax(150, vals_norm[valid] * 105 + 150)))
     }
     rgba_array <- array(0, dim = c(PNG_H, PNG_W, 4))
     rgba_array[,,1] <- matrix(R_ch, PNG_H, PNG_W, byrow = TRUE) / 255
