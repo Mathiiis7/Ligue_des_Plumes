@@ -8143,13 +8143,104 @@ async function _fetchWikiDesc(sci){
   _spDescCache.set(key, d);
   return d;
 }
+// Compose un Portrait synthetique riche a partir de TOUTES les donnees dispos.
+// Combine Avonet + freq France + IUCN + famille + confusion groups pour une prose
+// coherente et unique a l'app (contenu que Wikipedia n'a pas). Sert d'intro qui
+// est toujours presente meme quand Wikipedia est sparse.
+async function _generatePortrait(sci){
+  const key = (sci || '').toLowerCase().trim();
+  if(!key) return null;
+  const sentences = [];
+  // 1. Physique + famille + taille adjective
+  try{
+    const traits = await _loadAvonetTraits();
+    const t = traits?.[key];
+    const fam = (typeof familyOf === 'function') ? familyOf(key) : null;
+    if(t){
+      const ma = t.ma ? Math.round(t.ma) : null;
+      let taille = 'oiseau';
+      if(ma){
+        if(ma < 15) taille = 'très petit oiseau';
+        else if(ma < 40) taille = 'petit oiseau';
+        else if(ma < 200) taille = 'oiseau de taille moyenne';
+        else if(ma < 1000) taille = 'grand oiseau';
+        else taille = 'très grand oiseau';
+      }
+      const bits = [];
+      if(ma) bits.push(`${ma} g`);
+      if(t.wi != null) bits.push(`aile ${Math.round(t.wi)} mm`);
+      const metrics = bits.length ? ` (${bits.join(', ')})` : '';
+      const famPart = fam && fam !== 'Autres' ? `. Famille : ${fam}` : '';
+      sentences.push(`${taille.charAt(0).toUpperCase() + taille.slice(1)}${metrics}${famPart}.`);
+    } else if(fam && fam !== 'Autres'){
+      sentences.push(`Famille : ${fam}.`);
+    }
+  }catch(_){}
+  // 2. Ecologie : regime + style de vie + habitat
+  try{
+    const traits = await _loadAvonetTraits();
+    const t = traits?.[key];
+    if(t){
+      const TL = { C:'carnivore', H:'herbivore', O:'omnivore', S:'charognard' };
+      const NICHE = { invertivore:'invertivore', vertivore:'vertivore', aquatic_predator:'piscivore', aquatic:'piscivore', frugivore:'frugivore', granivore:'granivore', nectarivore:'nectarivore' };
+      const PL = { Aer:'aérien', Aqu:'aquatique', Ins:'percheur', Ter:'terrestre', Gen:'généraliste' };
+      const HD = { 1:'milieu dense (forêt, taillis)', 2:'milieu semi-ouvert', 3:'milieu très ouvert (steppe, prairie)' };
+      const bits = [];
+      if(t.tl && TL[t.tl]){
+        const nk = String(t.tn||'').toLowerCase().replace(/\s+/g,'_');
+        const niche = NICHE[nk];
+        bits.push(`régime ${TL[t.tl]}${niche && niche !== TL[t.tl] ? ` (${niche})` : ''}`);
+      }
+      if(t.pl && PL[t.pl]) bits.push(`style de vie ${PL[t.pl]}`);
+      if(t.hd && HD[t.hd]) bits.push(HD[t.hd]);
+      if(bits.length) sentences.push(bits.join(', ').charAt(0).toUpperCase() + bits.join(', ').slice(1) + '.');
+    }
+  }catch(_){}
+  // 3. Migration + presence France
+  try{
+    const traits = await _loadAvonetTraits();
+    const t = traits?.[key];
+    const migTxt = { 1:'Espèce sédentaire.', 2:'Migration partielle : une partie des populations migre.', 3:'Migrateur au long cours.' };
+    if(t?.mi && migTxt[t.mi]) sentences.push(migTxt[t.mi]);
+  }catch(_){}
+  try{
+    const frFreq = (typeof REAL_FREQ_MONTHLY_BY_REGION_MULTI === 'object') ? REAL_FREQ_MONTHLY_BY_REGION_MULTI['FR']?.FR : null;
+    const monthly = frFreq?.[key];
+    if(Array.isArray(monthly) && monthly.length === 12){
+      const active = monthly.map((v,i) => v > 0.005 ? i : -1).filter(i => i >= 0);
+      const months = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+      if(active.length === 12) sentences.push("Présent en France toute l'année.");
+      else if(active.length >= 8) sentences.push('Présent en France presque toute l\'année.');
+      else if(active.length > 0){
+        sentences.push(`Présent en France de ${months[active[0]]} à ${months[active[active.length-1]]}.`);
+      }
+    }
+  }catch(_){}
+  // 4. Statut IUCN
+  try{
+    const rl = (typeof REDLIST === 'object') ? REDLIST[key] : null;
+    if(rl){
+      const IUCN_TXT = {
+        CR:'En danger critique d\'extinction.', EN:'En danger.', VU:'Vulnérable.',
+        NT:'Quasi menacée.', RE:'Éteinte à l\'état sauvage en France.', EX:'Espèce éteinte.', EW:'Éteinte à l\'état sauvage.'
+      };
+      const status = rl.fr && IUCN_TXT[rl.fr] ? IUCN_TXT[rl.fr] : (rl.global && IUCN_TXT[rl.global] ? IUCN_TXT[rl.global] : null);
+      if(status) sentences.push(`⚠️ ${status}`);
+    }
+  }catch(_){}
+  return sentences.length ? sentences.join(' ') : null;
+}
 function _renderSpeciesDesc(sci){
   const el = $('#smDesc'); if(!el) return;
   el.innerHTML = ''; el.classList.remove('sm-desc');
-  _fetchWikiDesc(sci).then(d => {
-    if(!d) return;
+  Promise.all([_fetchWikiDesc(sci), _generatePortrait(sci)]).then(([d, portrait]) => {
+    if(!d && !portrait) return;
     el.classList.add('sm-desc');
     const parts = [];
+    // Portrait synthetique en tete (nos donnees combinees). Toujours present si donnees dispos.
+    if(portrait){
+      parts.push(`<div class="sm-desc-portrait"><div class="sm-desc-portrait-title">📋 Portrait</div><p>${esc(portrait)}</p></div>`);
+    }
     // Sections Wikipedia en accordeon (utilisation de <details> native pour accessibilite)
     if(d){
       const catOrder = ['description','habitat','alimentation','reproduction','comportement'];
@@ -8166,8 +8257,7 @@ function _renderSpeciesDesc(sci){
           const icon = WIKI_SECTION_MAP[cat].icon;
           const catLabel = cat.charAt(0).toUpperCase() + cat.slice(1);
           const isFirst = cat === catOrder.find(k => d[k]);
-          const enFlag = s._isEn ? ' <span title="Traduit de Wikipedia EN — le contenu FR etait indisponible" style="font-size:10px; opacity:.6;">🇬🇧</span>' : '';
-          parts.push(`<details class="sm-desc-section"${isFirst ? ' open' : ''}><summary><span class="sm-desc-icon">${icon}</span> ${esc(catLabel)}${enFlag}</summary><p>${esc(s.text)}</p></details>`);
+          parts.push(`<details class="sm-desc-section"${isFirst ? ' open' : ''}><summary><span class="sm-desc-icon">${icon}</span> ${esc(catLabel)}</summary><p>${esc(s.text)}</p></details>`);
         }
       } else if(d.lead){
         // Fallback : pas de sections trouvees, affiche le lead paragraph
