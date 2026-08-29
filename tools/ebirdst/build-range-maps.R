@@ -31,22 +31,43 @@ Sys.setenv(EBIRDST_KEY = "obfvm9uetmhe")
 
 # ---------- Config ----------
 args <- commandArgs(trailingOnly = TRUE)
-mode <- if (length(args) >= 1) tolower(args[1]) else "europe"
+mode <- if (length(args) >= 1) tolower(args[1]) else "world"
 
-# Extent choisi (bbox en lat/lng WGS84)
-BBOX <- if (mode == "world") c(-180, -60, 180, 85)
-        else if (mode == "demo") c(-25, 30, 45, 72)      # Europe
-        else                    c(-25, 30, 45, 72)       # Europe par defaut
+# Extent choisi (bbox en lat/lng WGS84). Defaut MONDE pour aussi montrer les
+# repartitions non-europeennes (ex Pica pica couvre toute l'Eurasie + Amerique du N).
+BBOX <- if (mode == "europe") {
+  c(-25, 30, 45, 72)
+} else if (mode == "demo") {
+  c(-180, -60, 180, 85)     # monde aussi pour le demo, pour tester le rendu global
+} else {
+  c(-180, -60, 180, 85)     # monde (defaut)
+}
 
-# Dimensions PNG cible
-PNG_W <- 800
-PNG_H <- 600
+# Dimensions PNG cible. Ratio proche du bbox pour minimiser distortion.
+# Monde : 360 lng x 145 lat -> ratio ~2.48 -> 1200 x 484
+# Europe : 70 lng x 42 lat -> ratio ~1.67 -> 800 x 480
+if (mode == "europe") {
+  PNG_W <- 800; PNG_H <- 480
+} else {
+  PNG_W <- 1200; PNG_H <- 484
+}
 
 # Especes cibles
 DEMO_SPECIES <- c("euroba1", "tibpar", "eutspa", "commur", "eurmag1")  # 5 especes pour test
 
 # ---------- Chemins ----------
-ROOT <- normalizePath(file.path(dirname(sys.frame(1)$ofile), "..", ".."))
+# Detecte le chemin du script (marche via Rscript ET via source()).
+get_script_dir <- function() {
+  cmd_args <- commandArgs(trailingOnly = FALSE)
+  file_arg <- cmd_args[grep("^--file=", cmd_args)]
+  if (length(file_arg) > 0) return(normalizePath(dirname(sub("^--file=", "", file_arg[1]))))
+  if (!is.null(sys.frames()) && length(sys.frames()) >= 1) {
+    ofile <- try(sys.frame(1)$ofile, silent = TRUE)
+    if (!inherits(ofile, "try-error") && !is.null(ofile)) return(normalizePath(dirname(ofile)))
+  }
+  return(getwd())
+}
+ROOT <- normalizePath(file.path(get_script_dir(), "..", ".."))
 OUT_DIR <- file.path(ROOT, "data", "range")
 MANIFEST <- file.path(ROOT, "data", "range-index.json")
 if (!dir.exists(OUT_DIR)) dir.create(OUT_DIR, recursive = TRUE)
@@ -143,15 +164,30 @@ for (i in seq_len(nrow(todo))) {
     valid <- !is.na(color_idx)
     colors[valid] <- pal[color_idx[valid]]
 
-    # Ecrit le PNG
+    # Ecrit le PNG en RGBA (transparence propre) via png::writePNG.
+    # Chaque cellule : NA -> alpha 0 (invisible), sinon RGB depuis palette + alpha
+    # proportionnel a la valeur normalisee pour un rendu doux (les zones faibles = pale).
     png_path <- file.path(OUT_DIR, paste0(code, ".png"))
-    png(png_path, width = PNG_W, height = PNG_H, bg = "transparent")
-    par(mar = c(0,0,0,0))
-    plot(rast(matrix(1, PNG_H, PNG_W)), col = "transparent", axes = FALSE, legend = FALSE)
-    # Reconstitue le raster de couleurs
-    image_matrix <- matrix(colors, nrow = PNG_H, ncol = PNG_W, byrow = TRUE)
-    rasterImage(image_matrix, 1, 1, PNG_W, PNG_H, interpolate = FALSE)
-    dev.off()
+    if (!requireNamespace("png", quietly = TRUE)) install.packages("png", repos = "https://cloud.r-project.org")
+    # Extrait R, G, B de la palette (0-255)
+    pal_rgb <- col2rgb(pal)   # 3 x 100
+    # Pour chaque cell : idx dans la palette ou NA
+    R_ch <- rep(0L, length(color_idx)); G_ch <- R_ch; B_ch <- R_ch; A_ch <- R_ch
+    for (i in seq_along(color_idx)) {
+      if (!is.na(color_idx[i]) && !is.na(vals_norm[i])) {
+        R_ch[i] <- pal_rgb[1, color_idx[i]]
+        G_ch[i] <- pal_rgb[2, color_idx[i]]
+        B_ch[i] <- pal_rgb[3, color_idx[i]]
+        # Alpha : boost sur les zones intenses, mais garde une base visible
+        A_ch[i] <- as.integer(pmin(255, pmax(80, vals_norm[i] * 200 + 55)))
+      }
+    }
+    rgba_array <- array(0, dim = c(PNG_H, PNG_W, 4))
+    rgba_array[,,1] <- matrix(R_ch, PNG_H, PNG_W, byrow = TRUE) / 255
+    rgba_array[,,2] <- matrix(G_ch, PNG_H, PNG_W, byrow = TRUE) / 255
+    rgba_array[,,3] <- matrix(B_ch, PNG_H, PNG_W, byrow = TRUE) / 255
+    rgba_array[,,4] <- matrix(A_ch, PNG_H, PNG_W, byrow = TRUE) / 255
+    png::writePNG(rgba_array, png_path)
 
     manifest[[sci]] <- list(
       code = code,
