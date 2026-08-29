@@ -7393,7 +7393,12 @@ async function _renderSpeciesTraitsCard(key){
   // Section Écologie
   const ecoLines = [];
   if(t.mi && MIG[t.mi])   ecoLines.push({ k:'Migration',      v: MIG[t.mi] });
-  if(t.tl && TL[t.tl])    ecoLines.push({ k:'Régime',         v: TL[t.tl] + (t.tn ? ` · ${esc(t.tn)}` : '') });
+  if(t.tl && TL[t.tl]){
+    // Skip le doublon si t.tn (niche precise) == label de la categorie (ex : 'Omnivore').
+    const catLabel = TL[t.tl].replace(/^[^\s]+\s+/, '');   // retire l'emoji
+    const showNiche = t.tn && t.tn.trim().toLowerCase() !== catLabel.toLowerCase();
+    ecoLines.push({ k:'Régime', v: TL[t.tl] + (showNiche ? ` · ${esc(t.tn)}` : '') });
+  }
   if(t.pl && PL[t.pl])    ecoLines.push({ k:'Style de vie',   v: PL[t.pl] });
   if(t.hd && HD[t.hd])    ecoLines.push({ k:'Densité habitat', v: HD[t.hd] });
   // Presence en France derivee du freq monthly (donnee eBird lazy-loaded).
