@@ -9468,7 +9468,7 @@ document.addEventListener('click', e=>{
     // Pool contextuel : depuis Birdydex ou Cette semaine, ordre DOM (preserve le
     // tri utilisateur). Depuis autres contextes (Classement, popups carte, modal
     // amis...), fallback sur ordre taxonomique global (previsible, coherent).
-    const contextEl = sp.closest('#viewPkdx, #viewWeek, .pkdx-body');
+    const contextEl = sp.closest('#viewPokedex, #targetsPanel, .pkdx-grid');
     if(contextEl){
       const siblings = Array.from(contextEl.querySelectorAll('.sp-link[data-sci]')).map(el => el.dataset.sci);
       setSpeciesNavPool([...new Set(siblings)], sp.dataset.sci);
