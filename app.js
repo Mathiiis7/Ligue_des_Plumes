@@ -7396,6 +7396,20 @@ async function _renderSpeciesTraitsCard(key){
   if(t.tl && TL[t.tl])    ecoLines.push({ k:'Régime',         v: TL[t.tl] + (t.tn ? ` · ${esc(t.tn)}` : '') });
   if(t.pl && PL[t.pl])    ecoLines.push({ k:'Style de vie',   v: PL[t.pl] });
   if(t.hd && HD[t.hd])    ecoLines.push({ k:'Densité habitat', v: HD[t.hd] });
+  // Presence en France derivee du freq monthly (donnee eBird lazy-loaded).
+  try{
+    const frFreq = (typeof REAL_FREQ_MONTHLY_BY_REGION_MULTI === 'object') ? REAL_FREQ_MONTHLY_BY_REGION_MULTI['FR']?.FR : null;
+    const monthly = frFreq?.[k];
+    if(Array.isArray(monthly) && monthly.length === 12){
+      const activeMonths = monthly.map((v,i) => v > 0.005 ? i : -1).filter(i => i >= 0);
+      const months = ['jan','fév','mars','avr','mai','juin','juil','août','sept','oct','nov','déc'];
+      let label = null;
+      if(activeMonths.length === 12) label = "Toute l'année";
+      else if(activeMonths.length >= 8) label = "Presque toute l'année";
+      else if(activeMonths.length > 0) label = `${months[activeMonths[0]]} → ${months[activeMonths[activeMonths.length-1]]}`;
+      if(label) ecoLines.push({ k:'🇫🇷 Présence France', v: label });
+    }
+  }catch(_){}
   // Section Morphologie (masse + longueurs + HWI). Arrondi a l'entier, tooltips explicatifs.
   const morphLines = [];
   const round = v => v == null ? '' : String(Math.round(v));
@@ -8090,56 +8104,13 @@ async function _fetchWikiDesc(sci){
   _spDescCache.set(key, d);
   return d;
 }
-// Compose une phrase intro auto a partir des donnees deja fetchees (Avonet + freq monthly).
-// Ex : "Passereau de 26 g. Presence en France : toute l'annee. Migration partielle."
-async function _generateAutoSummary(sci){
-  const key = (sci || '').toLowerCase().trim();
-  const bits = [];
-  // Traits Avonet
-  try{
-    const traits = await _loadAvonetTraits();
-    const t = traits?.[key];
-    if(t){
-      const parts = [];
-      if(t.ma != null) parts.push(`~${Math.round(t.ma)} g`);
-      if(t.wi != null) parts.push(`aile ${Math.round(t.wi)} mm`);
-      const trans = { C:'carnivore', H:'herbivore', O:'omnivore', S:'charognard' };
-      if(parts.length){
-        let phrase = parts.join(', ');
-        if(t.tl && trans[t.tl]) phrase += `, régime ${trans[t.tl]}`;
-        bits.push(phrase.charAt(0).toUpperCase() + phrase.slice(1) + '.');
-      }
-      const mig = { 1:'Sédentaire', 2:'Migration partielle', 3:'Migrateur au long cours' };
-      if(t.mi && mig[t.mi]) bits.push(mig[t.mi] + '.');
-    }
-  }catch(_){}
-  // Presence en France via freq monthly (0 = absent, >0.05 = present)
-  try{
-    const freq = (typeof REAL_FREQ_MONTHLY_BY_REGION_MULTI === 'object') ? REAL_FREQ_MONTHLY_BY_REGION_MULTI['FR']?.FR : null;
-    const monthly = freq?.[key];
-    if(Array.isArray(monthly) && monthly.length === 12){
-      const activeMonths = monthly.map((v,i) => v > 0.005 ? i : -1).filter(i => i >= 0);
-      if(activeMonths.length === 12) bits.push("Présent en France toute l'année.");
-      else if(activeMonths.length >= 8) bits.push('Présent en France presque toute l\'année.');
-      else if(activeMonths.length > 0){
-        const months = ['jan','fév','mars','avr','mai','juin','juil','août','sept','oct','nov','déc'];
-        bits.push(`Présent en France de ${months[activeMonths[0]]} à ${months[activeMonths[activeMonths.length-1]]}.`);
-      }
-    }
-  }catch(_){}
-  return bits.length ? bits.join(' ') : null;
-}
 function _renderSpeciesDesc(sci){
   const el = $('#smDesc'); if(!el) return;
   el.innerHTML = ''; el.classList.remove('sm-desc');
-  Promise.all([_fetchWikiDesc(sci), _generateAutoSummary(sci)]).then(([d, autoSum]) => {
-    if(!d && !autoSum) return;
+  _fetchWikiDesc(sci).then(d => {
+    if(!d) return;
     el.classList.add('sm-desc');
     const parts = [];
-    // Intro auto : badge subtil pour signaler que c'est genere depuis les donnees
-    if(autoSum){
-      parts.push(`<div class="sm-desc-auto"><span class="sm-desc-auto-badge" title="Genere depuis les donnees Avonet + Cornell + eBird">📊 En bref</span> ${esc(autoSum)}</div>`);
-    }
     // Sections Wikipedia en accordeon (utilisation de <details> native pour accessibilite)
     if(d){
       const catOrder = ['description','habitat','alimentation','reproduction','comportement'];
