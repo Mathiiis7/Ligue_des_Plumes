@@ -7419,20 +7419,6 @@ async function _renderSpeciesTraitsCard(key){
   }
   if(t.pl && PL[t.pl])    ecoLines.push({ k:'Style de vie',   v: PL[t.pl] });
   if(t.hd && HD[t.hd])    ecoLines.push({ k:'Densité habitat', v: HD[t.hd] });
-  // Presence en France derivee du freq monthly (donnee eBird lazy-loaded).
-  try{
-    const frFreq = (typeof REAL_FREQ_MONTHLY_BY_REGION_MULTI === 'object') ? REAL_FREQ_MONTHLY_BY_REGION_MULTI['FR']?.FR : null;
-    const monthly = frFreq?.[k];
-    if(Array.isArray(monthly) && monthly.length === 12){
-      const activeMonths = monthly.map((v,i) => v > 0.005 ? i : -1).filter(i => i >= 0);
-      const months = ['jan','fév','mars','avr','mai','juin','juil','août','sept','oct','nov','déc'];
-      let label = null;
-      if(activeMonths.length === 12) label = "Toute l'année";
-      else if(activeMonths.length >= 8) label = "Presque toute l'année";
-      else if(activeMonths.length > 0) label = `${months[activeMonths[0]]} → ${months[activeMonths[activeMonths.length-1]]}`;
-      if(label) ecoLines.push({ k:'🇫🇷 Présence France', v: label });
-    }
-  }catch(_){}
   // Section Morphologie (masse + longueurs + HWI). Arrondi a l'entier, tooltips explicatifs.
   const morphLines = [];
   const round = v => v == null ? '' : String(Math.round(v));
@@ -8809,7 +8795,9 @@ function openSpeciesModal(sci){
     _renderSpeciesRangeCard(sci);
   }
   // Description Wikipedia (async)
-  _renderSpeciesDesc(sci);
+  // Description (Portrait + sections Wikipedia) retirees a la demande utilisateur.
+  // La card Traits Avonet + freq chart + carte de repartition suffisent.
+  const smDesc = $('#smDesc'); if(smDesc) smDesc.innerHTML = '';
   // Note : le freq chart est deja rendu par _renderSpeciesRarityCard avec le
   // pays courant. Ne PAS rappeler _renderSpeciesFreqChart(key) ici : ca
   // ecraserait avec country='FR' par defaut et casserait l'affichage ME/ES/...
