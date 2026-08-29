@@ -11962,13 +11962,36 @@ function _quizPickPool(){
     return t >= 1 && t <= maxTier;
   });
 }
+// Familles ou le cri est distinctif entre especes (signature vocale identifiante).
+// Pour ces familles, l'espece est generalement reconnaissable au cri seul :
+// aquatiques, rapaces, corvides, laro-limicoles, chouettes, pics, martins-p, guepiers.
+// Passereaux insectivores (fauvettes, mesanges, roitelets, pouillots, gobemouches...)
+// sont exclus car leurs cris (alarme, contact) sont largement partages entre especes.
+const CRI_DISTINCTIVE_FAMILIES = new Set([
+  'Canards, oies, cygnes', 'Coucous', 'Râles, foulques', 'Grues',
+  'Bécasseaux, chevaliers', 'Pluviers, vanneaux', 'Avocettes, échasses',
+  'Huîtriers', 'Pingouins, guillemots', 'Goélands, mouettes, sternes',
+  'Plongeons', 'Puffins, pétrels', 'Océanites', 'Fous', 'Hérons, aigrettes',
+  'Balbuzard', 'Rapaces (aigles, buses…)', 'Faucons',
+  'Effraies', 'Chouettes, hiboux',
+  'Martins-pêcheurs', 'Guêpiers',
+  'Pics', 'Corvidés (corneilles, pies…)',
+]);
+
+// Distracteurs : meme famille MAIS pas meme genre (le meme genre a des chants trop
+// proches acoustiquement, quiz devient injuste). Fallback : meme famille meme genre,
+// puis famille differente, si pas assez de candidats.
 function _quizPickDistracters(sci, pool, n){
   const fam = familyOf(sci);
-  const sameFam = pool.filter(s => s !== sci && familyOf(s) === fam);
-  const others = pool.filter(s => s !== sci && familyOf(s) !== fam);
+  const genusOf = s => (s || '').trim().split(' ')[0].toLowerCase();
+  const gen = genusOf(sci);
+  const sameFamDiffGen = pool.filter(s => s !== sci && familyOf(s) === fam && genusOf(s) !== gen);
+  const sameFamSameGen = pool.filter(s => s !== sci && familyOf(s) === fam && genusOf(s) === gen);
+  const diffFam = pool.filter(s => s !== sci && familyOf(s) !== fam);
   const shuffle = arr => arr.map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).map(v=>v[1]);
-  const picked = shuffle(sameFam).slice(0, n);
-  if(picked.length < n) picked.push(...shuffle(others).slice(0, n - picked.length));
+  const picked = shuffle(sameFamDiffGen).slice(0, n);
+  if(picked.length < n) picked.push(...shuffle(diffFam).slice(0, n - picked.length));
+  if(picked.length < n) picked.push(...shuffle(sameFamSameGen).slice(0, n - picked.length));
   return picked;
 }
 async function _quizStart(){
@@ -11976,10 +11999,17 @@ async function _quizStart(){
   stage.innerHTML = '<p class="help" style="margin:0;">🔎 Sélection de l\'espèce…</p>';
   $('#quizNext').hidden = true;
   $('#quizSkip').hidden = true;
-  const pool = _quizPickPool();
+  let pool = _quizPickPool();
   if(!pool.length){ stage.innerHTML = '<p class="help" style="margin:0;">Aucune espèce dans le pool. Change de niveau / source.</p>'; return; }
-  // On tente jusqu'a 5 especes au hasard avant d'abandonner (certaines n'ont pas de sons xeno-canto).
+  // En mode cri : restreint le pool aux familles ou le cri est distinctif entre
+  // especes (rapaces, corvides, laro-limicoles, chouettes, pics, aquatiques, martins-p,
+  // guepiers, coucous). Exclut les passereaux insectivores dont les cris sont trop
+  // generiques (fauvettes/mesanges/roitelets etc.).
   const typeOpt = ($('#quizType')?.value) || 'both';
+  if(typeOpt === 'call'){
+    pool = pool.filter(sci => CRI_DISTINCTIVE_FAMILIES.has(familyOf(sci)));
+    if(!pool.length){ stage.innerHTML = '<p class="help" style="margin:0;">Pas d\'espèces avec cri distinctif dans ce pool. Change de niveau ou passe en mode Chant.</p>'; return; }
+  }
   for(let attempt = 0; attempt < 5; attempt++){
     const sci = pool[Math.floor(Math.random() * pool.length)];
     stage.innerHTML = `<p class="help" style="margin:0;">🎧 Chargement du son (${attempt+1}/5)…</p>`;
