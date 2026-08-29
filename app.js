@@ -8700,6 +8700,22 @@ function setSpeciesNavPool(list, currentSci){
   _speciesNavPool = Array.isArray(list) ? list.filter(Boolean) : [];
   _speciesNavIdx = _speciesNavPool.findIndex(s => s === currentSci || s?.toLowerCase() === currentSci?.toLowerCase());
 }
+// Pool taxonomique global (ordre IOC/eBird : famille selon FAMILY_ORDER puis sci name).
+// Cache car recompute au 1er appel puis reuse. Utilise comme fallback quand on ouvre
+// une fiche depuis un contexte non ordonne (popup carte, modal ami, etc.).
+let _taxonomicPoolCache = null;
+function _getTaxonomicPool(){
+  if(_taxonomicPoolCache) return _taxonomicPoolCache;
+  const scis = Object.keys(FR_NAMES || {});
+  scis.sort((a, b) => {
+    const fa = familyOf(a) || 'Autres', fb = familyOf(b) || 'Autres';
+    const oa = FAMILY_ORDER?.[fa] ?? 9999, ob = FAMILY_ORDER?.[fb] ?? 9999;
+    if(oa !== ob) return oa - ob;
+    return a.localeCompare(b);
+  });
+  _taxonomicPoolCache = scis;
+  return _taxonomicPoolCache;
+}
 function openSpeciesModal(sci){
   if(!sci) return;
   // Si l'espece est dans le pool courant, met a jour l'index (navigation depuis ← →)
@@ -9449,12 +9465,15 @@ document.addEventListener('click', e=>{
   const sp = e.target.closest('.sp-link[data-sci]');
   if(sp){
     e.preventDefault();
-    // Snapshot le pool : liste des sp-link visibles dans le meme conteneur parent
-    // (Birdydex, Classement, Cette semaine, resultats de recherche, etc.)
-    const container = sp.closest('.pkdx, table, .list, #birdydex, #viewList, main, body');
-    if(container){
-      const siblings = Array.from(container.querySelectorAll('.sp-link[data-sci]')).map(el => el.dataset.sci);
+    // Pool contextuel : depuis Birdydex ou Cette semaine, ordre DOM (preserve le
+    // tri utilisateur). Depuis autres contextes (Classement, popups carte, modal
+    // amis...), fallback sur ordre taxonomique global (previsible, coherent).
+    const contextEl = sp.closest('#viewPkdx, #viewWeek, .pkdx-body');
+    if(contextEl){
+      const siblings = Array.from(contextEl.querySelectorAll('.sp-link[data-sci]')).map(el => el.dataset.sci);
       setSpeciesNavPool([...new Set(siblings)], sp.dataset.sci);
+    } else {
+      setSpeciesNavPool(_getTaxonomicPool(), sp.dataset.sci);
     }
     openSpeciesModal(sp.dataset.sci);
   }
