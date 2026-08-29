@@ -9226,10 +9226,18 @@ function _wireCustomAudioPlayer(playerEl){
     if(audio.duration > MAX_PLAYBACK_SEC){
       const sonoImg = playerEl.querySelector('.xa-bar-sono');
       if(sonoImg){
+        // Approche transform:scaleX plutot que width:X% + object-fit:cover.
+        // Transform-origin left = scale sans deplacer le bord gauche. Le layout box
+        // reste 100% (aucun conflit avec inset:0). Le rendu visuel s'etire vers la
+        // droite, l'overflow:hidden du parent .xa-bar clippe. Object-fit fill (defaut
+        // CSS) preserve le mapping X=temps du pixel image au pixel element.
         const scale = audio.duration / MAX_PLAYBACK_SEC;
-        sonoImg.style.width = (scale * 100) + '%';
-        sonoImg.style.objectFit = 'cover';
-        sonoImg.style.objectPosition = 'left';
+        sonoImg.style.transform = `scaleX(${scale})`;
+        sonoImg.style.transformOrigin = 'left center';
+        // Reset les overrides potentiels d'une precedente version
+        sonoImg.style.width = '';
+        sonoImg.style.objectFit = '';
+        sonoImg.style.objectPosition = '';
       }
     }
   };
