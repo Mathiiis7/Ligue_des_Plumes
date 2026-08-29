@@ -627,6 +627,8 @@
   .species-modal .sm-audio-hint { font-size:12px; color:var(--ink-3); }
   .species-modal .sm-obs h3 { font-size:13px; color:var(--ink-2); text-transform:uppercase; letter-spacing:.4px; margin:14px 0 6px; }
   .species-modal .sm-map-wrap { margin-top:14px; }
+  /* Range map : filtre grayscale sur les tuiles OSM pour ne pas voler la vedette a la heatmap */
+  .sm-range-map .leaflet-tile-pane { filter: grayscale(1) contrast(0.85) brightness(1.05); }
   .species-modal .sm-map-header { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0 0 6px; flex-wrap:wrap; }
   .species-modal .sm-map-title { font-size:13px; color:var(--ink-2); text-transform:uppercase; letter-spacing:.4px; font-weight:700; }
   .species-modal .sm-map-seg { font-size:12px; }
@@ -9395,7 +9397,7 @@ async function _renderSpeciesRangeCard(sci){
   const mapId = 'smRangeMap';
   box.innerHTML = `
     <div class="sm-card-title" style="display:flex; align-items:center; gap:8px;">Répartition <span style="font-size:10.5px; color:var(--ink-3); text-transform:none; font-weight:400; letter-spacing:0;">— Cornell Status & Trends (moyenne annuelle 9 km)</span></div>
-    <div id="${mapId}" style="margin-top:6px; height:440px; border-radius:8px; overflow:hidden; background:var(--surface-3);"></div>
+    <div id="${mapId}" class="sm-range-map" style="margin-top:6px; height:440px; border-radius:8px; overflow:hidden; background:var(--surface-3);"></div>
     <div style="margin-top:8px; display:flex; align-items:center; gap:10px; font-size:11px; color:var(--ink-2);">
       <span>Rare</span>
       <div style="flex:1; height:12px; border-radius:3px; background:linear-gradient(to right, #8ec872, #c6d94a, #f5c518, #f39a3d, #e04a20, #7c1d0d);"></div>
@@ -9415,9 +9417,11 @@ async function _renderSpeciesRangeCard(sci){
       zoomControl:true, minZoom:1, maxBounds:dataBounds, maxBoundsViscosity:1.0,
       worldCopyJump:false, attributionControl:true
     });
-    // ESRI Light Gray Canvas : fond gris clair neutre, gratuit sans cle.
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-      attribution:'© Esri', maxZoom:12, noWrap:true
+    // OSM standard + filtre CSS grayscale scope sur .sm-range-map. Evite les tuiles
+    // 'not available' d'ESRI aux extremes du monde, tout en gardant un fond neutre
+    // pour ne pas rentrer en competition visuelle avec la heatmap.
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:'© OpenStreetMap', maxZoom:12, noWrap:true
     }).addTo(_rangeMapInstance);
     L.imageOverlay(pngPath, dataBounds, { opacity:0.75, interactive:false }).addTo(_rangeMapInstance);
     _rangeMapInstance.fitBounds(dataBounds);
