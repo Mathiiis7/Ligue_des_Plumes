@@ -8041,7 +8041,7 @@ const _spDescCache = new Map();
 const WIKI_SECTION_MAP = {
   description: { icon:'🪶', patterns:[/^description/i, /^morphologie/i, /^caract[eè]res? physiques?/i, /^apparence/i, /^aspect/i, /^physique/i, /^plumage/i, /^identification/i, /^dimorphisme/i] },
   habitat: { icon:'🏞️', patterns:[/^habitat/i, /^r[eé]partition/i, /^distribution/i, /^milieu/i, /^biotope/i, /^aire g[eé]ographique/i, /^dans nos r[eé]gions/i, /^[eé]cologie(?!.*comport)/i] },
-  alimentation: { icon:'🍂', patterns:[/^alimentation/i, /^r[eé]gime alimentaire/i, /^r[eé]gime/i, /^nourriture/i, /^di[eè]te/i, /^nutrition/i, /^pr[eé]dation/i, /^chasse/i] },
+  alimentation: { icon:'🍂', patterns:[/^alimentation/i, /^r[eé]gime alimentaire/i, /^r[eé]gime/i, /^nourriture/i, /^di[eè]te/i, /^nutrition/i, /^pr[eé]dation/i] },
   reproduction: { icon:'🥚', patterns:[/^reproduction/i, /^nidification/i, /^nid/i, /^ponte/i, /^cycle de vie/i, /^cycle biologique/i, /^[eé]levage/i, /^parade nuptiale/i, /^accouplement/i] },
   comportement: { icon:'✈️', patterns:[/^comportement/i, /^m[oœ]urs/i, /^vol/i, /^migration/i, /^locomotion/i, /^[eé]thologie/i, /^d[eé]placement/i, /^chant/i, /^vocalisation/i, /^cri$/i] },
 };
