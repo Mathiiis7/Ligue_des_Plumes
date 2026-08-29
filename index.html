@@ -9404,8 +9404,11 @@ async function _renderSpeciesRangeCard(sci){
   requestAnimationFrame(() => {
     if(!mapEl.clientHeight) { setTimeout(() => _renderSpeciesRangeCard(sci), 100); return; }
     _rangeMapInstance = L.map(mapEl, { zoomControl:true, minZoom:1, worldCopyJump:false, attributionControl:true });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution:'© OpenStreetMap', maxZoom:12
+    // CartoDB Positron : fond gris clair neutre, ideal pour overlays de donnees.
+    // Retina si dispo pour ecrans HiDPI ({r} = @2x sur les screens haute densite).
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution:'© OpenStreetMap © CARTO',
+      subdomains:'abcd', maxZoom:12
     }).addTo(_rangeMapInstance);
     L.imageOverlay(pngPath, [[s, w], [n, e]], { opacity:0.75, interactive:false }).addTo(_rangeMapInstance);
     _rangeMapInstance.fitBounds([[s, w], [n, e]]);
