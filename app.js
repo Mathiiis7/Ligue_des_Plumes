@@ -8772,7 +8772,8 @@ function openSpeciesModal(sci){
   _renderSpeciesTraitsCard(key);
   // Card 'A ne pas confondre' : legere, calcul local instantane depuis
   // CONFUSION_GROUPS. Rendue direct.
-  _renderSpeciesConfuseCard(sci);
+  // Card 'A l'oreille' retiree a la demande utilisateur
+  const smConf = $('#smConfuseCard'); if(smConf) smConf.innerHTML = '';
   // Carte de repartition Cornell S&T (LAZY : declenchee seulement quand la card
   // scroll dans le viewport). Init Leaflet coute cher (~50-100ms), fetch png
   // 200-500 KB : on evite ca si l'user reste dans l'onglet Info et ne scroll pas.
