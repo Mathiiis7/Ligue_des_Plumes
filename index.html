@@ -9414,18 +9414,25 @@ async function _renderSpeciesRangeCard(sci){
     // dans le vide au-dela. viscosity 1.0 = mur dur.
     const dataBounds = L.latLngBounds([[s, w], [n, e]]);
     _rangeMapInstance = L.map(mapEl, {
-      zoomControl:true, minZoom:1, maxBounds:dataBounds, maxBoundsViscosity:1.0,
+      zoomControl:true, maxBounds:dataBounds, maxBoundsViscosity:1.0,
       worldCopyJump:false, attributionControl:true
     });
-    // OSM standard + filtre CSS grayscale scope sur .sm-range-map. Evite les tuiles
-    // 'not available' d'ESRI aux extremes du monde, tout en gardant un fond neutre
-    // pour ne pas rentrer en competition visuelle avec la heatmap.
+    // OSM standard + filtre CSS grayscale scope sur .sm-range-map.
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution:'© OpenStreetMap', maxZoom:12, noWrap:true
     }).addTo(_rangeMapInstance);
     L.imageOverlay(pngPath, dataBounds, { opacity:0.75, interactive:false }).addTo(_rangeMapInstance);
+    // Calcule le zoom min = celui qui fait tenir exactement le bbox dans le container
+    // (pas de zone grise vide autour). Applique ce plancher pour empecher de dezoomer
+    // plus loin.
     _rangeMapInstance.fitBounds(dataBounds);
-    setTimeout(() => _rangeMapInstance && _rangeMapInstance.invalidateSize(), 200);
+    setTimeout(() => {
+      if(!_rangeMapInstance) return;
+      _rangeMapInstance.invalidateSize();
+      const fitZoom = _rangeMapInstance.getBoundsZoom(dataBounds, true);
+      _rangeMapInstance.setMinZoom(fitZoom);
+      _rangeMapInstance.fitBounds(dataBounds);
+    }, 200);
   });
 }
 function _renderSpeciesInfoChips(key){
