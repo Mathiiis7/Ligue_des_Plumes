@@ -83,10 +83,12 @@ cat("Extent:", paste(BBOX, collapse=","), "\n")
 cat("Output:", OUT_DIR, "\n\n")
 
 # ---------- Palette heatmap style Merlin / eBird ----------
-# Vert clair -> jaune -> orange -> rouge fonce, transparent pour 0
+# Retire les tons tres pales : commence direct au vert franc. Ainsi les zones ou
+# l'espece est presente en abondance faible (ex Passer montanus en FR vs Russie)
+# restent nettement visibles sur les tuiles OSM.
 pal <- colorRampPalette(c(
-  "#eaf5e0",  # tres pale (rare)
-  "#a8d873",
+  "#8ec872",   # vert medium (plancher visible)
+  "#c6d94a",
   "#f5c518",
   "#f39a3d",
   "#e04a20",
@@ -187,8 +189,9 @@ for (i in seq_len(nrow(todo))) {
         R_ch[i] <- pal_rgb[1, color_idx[i]]
         G_ch[i] <- pal_rgb[2, color_idx[i]]
         B_ch[i] <- pal_rgb[3, color_idx[i]]
-        # Alpha : boost sur les zones intenses, mais garde une base visible
-        A_ch[i] <- as.integer(pmin(255, pmax(80, vals_norm[i] * 200 + 55)))
+        # Alpha : plancher haut (150/255 = ~59% opacite min) pour que les zones a
+        # abondance faible restent tres lisibles. Boost progressif vers 255.
+        A_ch[i] <- as.integer(pmin(255, pmax(150, vals_norm[i] * 105 + 150)))
       }
     }
     rgba_array <- array(0, dim = c(PNG_H, PNG_W, 4))
