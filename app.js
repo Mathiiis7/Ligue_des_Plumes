@@ -9864,7 +9864,7 @@ function renderQuizInit(){ _quizSetMode(_quizMode); _quizRefreshStatsUI(); }
 
 /* ---------------- Pokedex : grille de toutes les especes FR ---------------- */
 // Etat local pour les filtres. Persistant en localStorage pour retrouver la meme vue.
-let _pkdxFilters = { search:'', country:(_globalCountry||'FR'), family:'', habitat:'', owned:'' };
+var _pkdxFilters = { search:'', country:(_globalCountry||'FR'), family:'', habitat:'', owned:'' };
 try{ Object.assign(_pkdxFilters, JSON.parse(localStorage.getItem('mb-pkdx-filters')||'{}')); }catch(_){}
 // Le pays global override le pays local Birdydex (le global est la source de verite).
 _pkdxFilters.country = _globalCountry || _pkdxFilters.country || 'FR';
@@ -9872,15 +9872,15 @@ _pkdxFilters.country = _globalCountry || _pkdxFilters.country || 'FR';
 // nouvelles categories Avonet (migration 2026-08). Reset si non valide.
 if(_pkdxFilters.habitat && typeof HABITAT_CATS !== 'undefined' && !HABITAT_CATS.includes(_pkdxFilters.habitat)) _pkdxFilters.habitat = '';
 // Rarete filtree via chips (Set des tiers EXCLUS). Coche = affiche, decoche = cache.
-let _pkdxTierExcl = new Set();
+var _pkdxTierExcl = new Set();
 try{ const s = localStorage.getItem('mb-pkdx-tier-excl'); if(s) _pkdxTierExcl = new Set(JSON.parse(s)); }catch(_){}
 var _pkdxInit = false;   // var hoisted : evite TDZ quand restore last tab (btn.click) declenche renderPokedex avant que la declaration soit atteinte
 // Photo cache : reutilise _spPhotoCache si defini, sinon Map locale.
 const _pkdxPhotos = new Map();
 // Liste complete triee (fige les numeros #001..#N) memoisee : ne change jamais avec les
 // filtres pour que chaque oiseau garde son numero comme dans un vrai Pokedex.
-let _pkdxAllSorted = null;
-let _pkdxNumById = null;
+var _pkdxAllSorted = null;
+var _pkdxNumById = null;
 /* ---------------- Cibles de la semaine ---------------- */
 // Panel qui affiche les especes les plus faciles a voir CETTE SEMAINE dans la region
 // selectionnee (ou France entiere) que l'utilisateur n'a pas encore cochees. Utilise
