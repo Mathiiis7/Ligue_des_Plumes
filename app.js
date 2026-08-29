@@ -7510,7 +7510,7 @@ function _renderSpeciesConfuseCard(sci){
   const list = [...confused].filter(s => FR_NAMES[s]).slice(0, 8);
   if(!list.length) return;
   box.innerHTML = `
-    <div class="sm-card-title" style="display:flex; align-items:center; gap:8px;">À ne pas confondre <span style="font-size:10.5px; color:var(--ink-3); text-transform:none; font-weight:400; letter-spacing:0;">— espèces classiquement confondues</span></div>
+    <div class="sm-card-title" style="display:flex; align-items:center; gap:8px;">🎵 À l'oreille <span style="font-size:10.5px; color:var(--ink-3); text-transform:none; font-weight:400; letter-spacing:0;">— chants et cris acoustiquement proches</span></div>
     <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:6px;">
       ${list.map(s => `<button type="button" class="sp-link" data-sci="${esc(s)}" style="background:var(--surface-2); border:1px solid var(--line-2); color:var(--ink); font:inherit; font-size:12.5px; padding:4px 10px; border-radius:16px; cursor:pointer;">${esc(FR_NAMES[s]||s)}</button>`).join('')}
     </div>
