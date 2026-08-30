@@ -1461,7 +1461,7 @@ function renderMembers(){
   }
   const admin = isAdmin();
   el.innerHTML = state.people.map(p=>{
-    const adminTools = admin ? `<button class="pchip-admin" data-adm-rename="${esc(p.id)}" data-adm-name="${esc(p.name)}" title="Renommer (admin)">✎</button><button class="pchip-admin pchip-admin-del" data-adm-remove="${esc(p.id)}" data-adm-name="${esc(p.name)}" title="Retirer (admin)">← Quitter</button>` : '';
+    const adminTools = admin ? `<button class="pchip-admin" data-adm-rename="${esc(p.id)}" data-adm-name="${esc(p.name)}" title="Renommer (admin)">✎</button><button class="pchip-admin pchip-admin-del" data-adm-remove="${esc(p.id)}" data-adm-name="${esc(p.name)}" title="Retirer (admin)">✕</button>` : '';
     return `<div class="pchip" style="--series:var(--s${p.si})">
       <span class="dot"></span>
       <span class="pname">${isOnline(p.id)?'<span class="pname-dot" title="en ligne"></span>':''}${esc(p.name)}${p.isMe?'<span class="youtag">vous</span>':''}</span>
@@ -2577,7 +2577,7 @@ function commentsBar(target){
     const t = c.createdAt?.toDate ? c.createdAt.toDate() : null;
     const time = t ? t.toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
     const canDelete = c.uid === myUid || isAdmin();
-    const del = canDelete ? `<button class="cmt-del" data-cmt-del="${esc(c.id)}" title="Supprimer">← Quitter</button>` : '';
+    const del = canDelete ? `<button class="cmt-del" data-cmt-del="${esc(c.id)}" title="Supprimer">✕</button>` : '';
     return `<div class="cmt-item"><span class="cmt-who">${esc(nm)}</span> <span class="cmt-txt">${esc(c.text)}</span>${time?` <span class="cmt-time">${esc(time)}</span>`:''}${del}</div>`;
   }).join('');
   const form = myUid
@@ -6847,7 +6847,7 @@ function renderPhotoDrafts(){
   const box=$('#photoDraft'), thumbs=$('#photoDraftThumbs'); if(!box||!thumbs) return;
   if(!photoDrafts.length){ box.style.display='none'; thumbs.innerHTML=''; return; }
   box.style.display='';
-  thumbs.innerHTML=photoDrafts.map((src,i)=>`<div class="photo-draft-thumb"><img src="${src}" alt="aperçu"><button type="button" data-i="${i}" title="Retirer">← Quitter</button></div>`).join('');
+  thumbs.innerHTML=photoDrafts.map((src,i)=>`<div class="photo-draft-thumb"><img src="${src}" alt="aperçu"><button type="button" data-i="${i}" title="Retirer">✕</button></div>`).join('');
   const btn=$('#photoPublish'); if(btn) btn.textContent = photoDrafts.length>1 ? `Publier (${photoDrafts.length})` : 'Publier';
 }
 $('#photoInput')?.addEventListener('change', async e=>{
