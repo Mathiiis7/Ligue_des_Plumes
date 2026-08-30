@@ -595,7 +595,11 @@
   .qz-pill-lbl { font-size:10.5px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.3px; font-weight:700; margin-left:2px; }
   .qz-settings-btn { background:var(--surface-2); border:none; width:34px; height:34px; border-radius:50%; cursor:pointer; font-size:15px; color:var(--ink-2); transition:all .15s; }
   .qz-settings-btn:hover { background:var(--surface); color:var(--ink); }
-  .qz-settings { display:flex; gap:12px; flex-wrap:wrap; padding:14px; margin-bottom:14px; background:var(--surface-2); border-radius:12px; }
+  .qz-settings { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; padding:16px; margin-bottom:14px; background:var(--surface-2); border-radius:12px; border:1px solid var(--line-2); }
+  .qz-settings .explorer-lbl { display:flex; flex-direction:column; gap:5px; font-size:11px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; color:var(--ink-3); }
+  .qz-settings .filt-sel { width:100%; padding:8px 12px; font-size:14px; font-weight:600; color:var(--ink); background:var(--surface); border:1px solid var(--line-2); border-radius:8px; cursor:pointer; transition:border-color .15s, box-shadow .15s; text-transform:none; letter-spacing:0; appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237c8783' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:32px; }
+  .qz-settings .filt-sel:hover { border-color:var(--accent); }
+  .qz-settings .filt-sel:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
   .qz-stage { position:relative; min-height:280px; border-radius:16px; padding:32px 24px; background:linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%); border:1px solid var(--line-2); }
   .qz-empty { text-align:center; padding:32px 0; }
   .qz-empty-icon { font-size:52px; opacity:.85; margin-bottom:8px; }
