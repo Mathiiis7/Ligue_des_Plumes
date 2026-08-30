@@ -3,7 +3,7 @@
 //   puis rafraichit en background. Prochain reload = nouvelle version.
 // - Requetes cross-origin (Firestore, iNaturalist, xeno-canto, Wikipedia, etc.) : reseau seul.
 // - Bump CACHE_VERSION quand on veut invalider volontairement.
-const CACHE_VERSION = 'v7-2026-08-30-noselfcache';
+const CACHE_VERSION = 'v8-2026-08-30-freshcode';
 const CACHE_NAME = 'lmb-' + CACHE_VERSION;
 
 self.addEventListener('install', (e) => {
@@ -28,6 +28,10 @@ self.addEventListener('fetch', (event) => {
   // IMPORTANT : jamais cacher le SW lui-meme, sinon impossible de le mettre a jour
   // (browser fetch service-worker.js -> SW intercepte -> renvoie l'ancien -> pas d'update).
   if (url.pathname.endsWith('/service-worker.js') || url.pathname.endsWith('/sw.js')) return;
+  // Ni app.js ni index.html : servis fresh a chaque fois. Sans ca, une nouvelle version
+  // du code deploye met plusieurs reloads a etre servie (stale-while-revalidate a un
+  // reload de retard). Cout minimal grace au HTTP cache navigateur.
+  if (url.pathname.endsWith('/app.js') || url.pathname.endsWith('/index.html') || url.pathname === '/Ligue_des_Plumes/') return;
   // Ni le manifest range (evolue frequemment avec nouvelles especes generees).
   if (url.pathname.endsWith('/data/range-index.json')) return;
   // On ignore les requetes navigation avec des query strings importantes (?league=..., ?...).
