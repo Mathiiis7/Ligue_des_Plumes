@@ -9802,13 +9802,30 @@ onAuthStateChanged(auth, user=>{
 let _quizCurrent = null;   // { sci, correctIdx, choices:[sci...], audioUrl, sonoUrl }
 let _quizMode = 'compete';   // 'compete' | 'train'
 try{ const m = localStorage.getItem('mb-quiz-mode'); if(m === 'compete' || m === 'train') _quizMode = m; }catch(_){}
-// Stats quiz enrichies : cumulatif + jour courant + fenetre glissante 100 dernieres + record serie
+// Stats quiz : 3 buckets separes par type de son (both / song / call). Chaque bucket
+// a son propre score cumul, dayScore/dayTotal/dayDate, last100[] et bestStreak.
+// La retro-compat migre les anciennes stats flat dans le bucket 'both' au premier read.
+function _quizStatsBucketDefaults(){ return { score:0, total:0, streak:0, bestStreak:0, dayDate:'', dayScore:0, dayTotal:0, last100:[] }; }
 function _quizStats(){
-  const def = { score:0, total:0, streak:0, bestStreak:0, dayDate:'', dayScore:0, dayTotal:0, last100:[] };
-  try{ return { ...def, ...JSON.parse(localStorage.getItem('mb-quiz-stats')||'{}') }; }
-  catch(_){ return def; }
+  const raw = (() => { try{ return JSON.parse(localStorage.getItem('mb-quiz-stats')||'{}'); }catch(_){ return {}; } })();
+  const out = { byType: { both: _quizStatsBucketDefaults(), song: _quizStatsBucketDefaults(), call: _quizStatsBucketDefaults() } };
+  if(raw && raw.byType && typeof raw.byType === 'object'){
+    for(const t of ['both','song','call']){
+      if(raw.byType[t]) out.byType[t] = { ..._quizStatsBucketDefaults(), ...raw.byType[t] };
+    }
+  } else if(raw && (raw.total || raw.score || raw.dayTotal || (raw.last100 && raw.last100.length))){
+    // Migration : anciennes stats flat -> bucket 'both'
+    out.byType.both = { ..._quizStatsBucketDefaults(), ...raw };
+  }
+  return out;
 }
 function _quizSaveStats(s){ try{ localStorage.setItem('mb-quiz-stats', JSON.stringify(s)); }catch(_){} }
+// Type de son courant : source de verite pour choisir le bucket.
+function _quizCurrentType(){
+  const v = document.getElementById('quizType')?.value;
+  return (v === 'song' || v === 'call') ? v : 'both';
+}
+function _quizTypeLabel(t){ return t === 'song' ? '🎶 Chant' : t === 'call' ? '📣 Cri' : '🎵 Chant + cri'; }
 // Rolling window : ajoute un resultat (true/false), garde les 100 dernieres reponses
 function _quizPushLast100(s, correct){
   if(!Array.isArray(s.last100)) s.last100 = [];
@@ -9842,27 +9859,31 @@ function _quizTrainRecord(sci, correct){
   _quizTrainSave(st);
   _quizRefreshStatsUI();
 }
-// Rafraichit l'affichage stats selon le mode courant.
+// Rafraichit l'affichage stats selon le mode et le type de son courant.
 function _quizRefreshStatsUI(){
-  const s = _quizEnsureDay(_quizStats());
-  // Aujourd'hui : dayScore/dayTotal ; affiche 0% si aucune partie du jour
+  const allStats = _quizStats();
+  const type = _quizCurrentType();
+  const bucket = _quizEnsureDay(allStats.byType[type]);
+  // Label indicateur (quel bucket est affiche)
+  const scopeEl = $('#quizStatsScope'); if(scopeEl) scopeEl.textContent = _quizTypeLabel(type);
+  // Aujourd'hui : dayScore/dayTotal
   const dayEl = $('#quizDayPct');
   if(dayEl){
-    if(s.dayTotal > 0) dayEl.textContent = Math.round(s.dayScore * 100 / s.dayTotal) + '%';
+    if(bucket.dayTotal > 0) dayEl.textContent = Math.round(bucket.dayScore * 100 / bucket.dayTotal) + '%';
     else dayEl.textContent = '-';
   }
-  const dayCntEl = $('#quizDayCount'); if(dayCntEl) dayCntEl.textContent = s.dayScore + '/' + s.dayTotal;
+  const dayCntEl = $('#quizDayCount'); if(dayCntEl) dayCntEl.textContent = bucket.dayScore + '/' + bucket.dayTotal;
   // Niveau : taux glissant sur les 100 dernieres (ou moins si <100 parties)
   const lvlEl = $('#quizLevelPct');
   if(lvlEl){
-    if(s.last100 && s.last100.length > 0){
-      const sum = s.last100.reduce((a,b) => a+b, 0);
-      lvlEl.textContent = Math.round(sum * 100 / s.last100.length) + '%';
+    if(bucket.last100 && bucket.last100.length > 0){
+      const sum = bucket.last100.reduce((a,b) => a+b, 0);
+      lvlEl.textContent = Math.round(sum * 100 / bucket.last100.length) + '%';
     } else lvlEl.textContent = '-';
   }
-  const lvlCntEl = $('#quizLevelCount'); if(lvlCntEl) lvlCntEl.textContent = 'sur ' + (s.last100?.length || 0);
+  const lvlCntEl = $('#quizLevelCount'); if(lvlCntEl) lvlCntEl.textContent = 'sur ' + (bucket.last100?.length || 0);
   // Record serie
-  const bestEl = $('#quizBestStreak'); if(bestEl) bestEl.textContent = s.bestStreak || 0;
+  const bestEl = $('#quizBestStreak'); if(bestEl) bestEl.textContent = bucket.bestStreak || 0;
   // Stats entrainement : nombre d'especes travaillees + maitrisees (>= 3 succ, 0 fail recent)
   const st = _quizTrainStats();
   const entries = Object.entries(st);
@@ -10576,18 +10597,13 @@ document.addEventListener('click', e => {
   const card = e.target.closest('.pkdx-card[data-sci]');
   if(card){ openSpeciesModal(card.dataset.sci); }
 });
-// Pool d'especes selon niveau + source.
+// Pool d'especes selon le niveau (rarete max). Utilise toutes les especes FR
+// calibrees (le filtre 'mes especes cochees' a ete supprime pour homogeneiser
+// la difficulte du classement entre amis).
 function _quizPickPool(){
   const lvl = ($('#quizLevel')?.value) || 'easy';
-  const src = ($('#quizPool')?.value) || 'all';
   const maxTier = lvl === 'easy' ? 3 : lvl === 'med' ? 5 : 8;
-  let pool = [];
-  if(src === 'mine'){
-    const me = realPeople.find(p => p.id === myUid);
-    if(me && me.species) pool = [...me.species.keys()];
-  } else {
-    pool = Object.keys(FR_NAMES);
-  }
+  let pool = Object.keys(FR_NAMES);
   // Filtre : rareté <= maxTier, pas exotique X/C (pas de son fiable), FR_NAMES existe,
   // ET espece calibrée dans le catalogue rareté FR (evite d'inclure les especes mondiales
   // sans data FR qui tombent en tier=1 par defaut et polluent le quiz).
@@ -10787,7 +10803,10 @@ async function _quizStart(){
     if(distracters.length < 3) continue;
     const choices = [sci, ...distracters].map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).map(v=>v[1]);
     const correctIdx = choices.indexOf(sci);
-    _quizCurrent = { sci, correctIdx, choices, audioUrl, sonoUrl };
+    // Snapshot du type actif : les stats de cette question iront dans ce bucket
+    // meme si l'utilisateur change de type apres avoir entendu l'audio (anti-triche
+    // + coherence : la question a ete tiree avec ce filtre).
+    _quizCurrent = { sci, correctIdx, choices, audioUrl, sonoUrl, type: _quizCurrentType() };
     stage.innerHTML = `
       <div class="qz-play">
         <div class="qz-player">
@@ -10827,17 +10846,19 @@ function _quizAnswer(idx){
   // Aucun mode n'ecrit dans l'autre bucket -> comparaison entre amis reste basee
   // uniquement sur les parties competitives.
   if(_quizMode === 'compete'){
-    const s = _quizEnsureDay(_quizStats());
-    // Cumul all-time
-    s.total += 1;
-    if(correct){ s.score += 1; s.streak += 1; } else { s.streak = 0; }
-    if(s.streak > (s.bestStreak || 0)) s.bestStreak = s.streak;
-    // Stats du jour
-    s.dayTotal += 1;
-    if(correct) s.dayScore += 1;
-    // Fenetre glissante 100 dernieres
-    _quizPushLast100(s, correct);
-    _quizSaveStats(s);
+    // Ecrit dans le bucket du type utilise pour cette question (snapshot au tirage).
+    // Chaque type (both/song/call) a son propre classement independant.
+    const all = _quizStats();
+    const type = _quizCurrent.type || _quizCurrentType();
+    const bucket = _quizEnsureDay(all.byType[type] || _quizStatsBucketDefaults());
+    bucket.total += 1;
+    if(correct){ bucket.score += 1; bucket.streak += 1; } else { bucket.streak = 0; }
+    if(bucket.streak > (bucket.bestStreak || 0)) bucket.bestStreak = bucket.streak;
+    bucket.dayTotal += 1;
+    if(correct) bucket.dayScore += 1;
+    _quizPushLast100(bucket, correct);
+    all.byType[type] = bucket;
+    _quizSaveStats(all);
   } else {
     _quizTrainRecord(_quizCurrent.sci, correct);
   }
@@ -10886,18 +10907,25 @@ document.addEventListener('click', e => {
     const sel = document.getElementById('quizLevel'); if(sel){ sel.value = val; sel.dispatchEvent(new Event('change', {bubbles:true})); }
     return;
   }
-  const poolChip = e.target.closest('[data-quiz-pool]');
-  if(poolChip){
-    const val = poolChip.dataset.quizPool;
-    poolChip.parentElement.querySelectorAll('[data-quiz-pool]').forEach(b => b.classList.toggle('on', b === poolChip));
-    const sel = document.getElementById('quizPool'); if(sel){ sel.value = val; sel.dispatchEvent(new Event('change', {bubbles:true})); }
-    return;
-  }
   const typeChip = e.target.closest('[data-quiz-type]');
   if(typeChip){
     const val = typeChip.dataset.quizType;
+    if(typeChip.classList.contains('on')) return;   // deja actif
     typeChip.parentElement.querySelectorAll('[data-quiz-type]').forEach(b => b.classList.toggle('on', b === typeChip));
     const sel = document.getElementById('quizType'); if(sel){ sel.value = val; sel.dispatchEvent(new Event('change', {bubbles:true})); }
+    // Anti-triche : le changement de type doit invalider la question en cours,
+    // sinon on peut ecouter en 'both', deviner l'espece, puis passer en 'song'
+    // pour scorer dans un autre bucket. Meme pattern que le switch de mode.
+    if(_quizCurrent){
+      _quizCurrent = null;
+      const stage = document.getElementById('quizStage');
+      if(stage){
+        stage.innerHTML = '<div class="qz-empty"><div class="qz-empty-icon">🎧</div><p>Prêt à tester ton oreille ?</p><button type="button" class="qz-cta" id="quizStart">Lancer le quiz</button></div>';
+      }
+      const skip = document.getElementById('quizSkip'); if(skip) skip.hidden = true;
+      const next = document.getElementById('quizNext'); if(next) next.hidden = true;
+    }
+    _quizRefreshStatsUI();   // pills reflete le nouveau bucket
     return;
   }
 });

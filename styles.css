@@ -594,6 +594,8 @@
   .qz-pill b { color:var(--accent-ink); font-weight:800; }
   .qz-pill-lbl { font-size:10.5px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.3px; font-weight:700; margin-left:2px; }
   .qz-pill-sub { font-size:11px; color:var(--ink-3); font-weight:600; margin-left:4px; opacity:.85; }
+  /* Petit label qui indique de quel bucket (type de son) proviennent les stats affichees */
+  .qz-stats-scope { display:inline-flex; align-items:center; padding:3px 10px; border-radius:12px; background:color-mix(in srgb,var(--accent) 12%,transparent); color:var(--accent-ink); font:700 11px/1 system-ui; letter-spacing:.2px; margin-right:2px; cursor:help; }
   /* Chips dans le panneau reglages du quiz : hint entre parentheses en petit */
   .qz-settings .person-chip .fp-hint { font-size:10.5px; font-weight:600; margin-left:4px; opacity:.75; }
   .qz-settings .fp-section { margin-bottom:10px; }
