@@ -691,6 +691,22 @@
   .qz-chip-expert { border-color:color-mix(in srgb,#ef4444 40%,var(--line-2)); }
   .qz-chip-expert.on { border-color:#ef4444 !important; background:color-mix(in srgb,#ef4444 14%,var(--surface)) !important; color:#b91c1c !important; }
   .qz-chip-expert:hover { background:color-mix(in srgb,#ef4444 6%,var(--surface)); }
+  /* Mode inverse : photo grand + 4 cartes audio */
+  .qz-inverse { display:flex; flex-direction:column; gap:16px; }
+  .qz-inv-photo-wrap { text-align:center; }
+  .qz-inv-photo { max-width:100%; max-height:280px; border-radius:12px; object-fit:cover; box-shadow:0 2px 12px rgba(0,0,0,.15); }
+  .qz-inv-choices { display:grid; grid-template-columns:1fr 1fr; gap:8px; max-width:520px; margin:0 auto; }
+  .qz-inv-card { display:flex; align-items:center; gap:8px; padding:10px 12px; background:var(--surface); border:2px solid var(--line-2); border-radius:12px; transition:all .15s; }
+  .qz-inv-card.correct { border-color:#22c55e; background:color-mix(in srgb,#22c55e 12%,var(--surface)); }
+  .qz-inv-card.wrong { border-color:#ef4444; background:color-mix(in srgb,#ef4444 12%,var(--surface)); }
+  .qz-inv-play { width:36px; height:36px; border-radius:50%; border:none; background:var(--accent); color:#fff; font-size:14px; cursor:pointer; display:grid; place-items:center; flex:none; }
+  .qz-inv-play:hover { filter:brightness(1.05); }
+  .qz-inv-lbl { flex:1; font:600 14px/1 system-ui; color:var(--ink); }
+  .qz-inv-pick { padding:6px 12px; border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink); border-radius:8px; font:600 12px/1 system-ui; cursor:pointer; }
+  .qz-inv-pick:hover:not(:disabled) { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 10%,var(--surface)); }
+  .qz-inv-pick:disabled { cursor:default; opacity:.6; }
+  .qz-inv-audio { display:none; }
+  @media (max-width: 520px){ .qz-inv-choices { grid-template-columns:1fr; } }
   .qz-actions { display:flex; gap:10px; justify-content:center; margin-top:16px; }
   .qz-btn-primary { background:var(--accent); color:#fff; border:none; padding:10px 22px; font:600 14px/1 system-ui; border-radius:20px; cursor:pointer; }
   .qz-btn-primary:hover { background:var(--accent-ink); }

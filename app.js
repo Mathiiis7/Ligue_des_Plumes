@@ -9810,7 +9810,11 @@ try{ const m = localStorage.getItem('mb-quiz-mode'); if(m === 'compete' || m ===
 function _quizStatsBucketDefaults(){ return { score:0, total:0, streak:0, bestStreak:0, dayDate:'', dayScore:0, dayTotal:0, last100:[] }; }
 function _quizStats(){
   const raw = (() => { try{ return JSON.parse(localStorage.getItem('mb-quiz-stats')||'{}'); }catch(_){ return {}; } })();
-  const out = { byLevel: { easy: _quizStatsBucketDefaults(), med: _quizStatsBucketDefaults(), hard: _quizStatsBucketDefaults(), expert: _quizStatsBucketDefaults() } };
+  const out = {
+    byLevel: { easy: _quizStatsBucketDefaults(), med: _quizStatsBucketDefaults(), hard: _quizStatsBucketDefaults(), expert: _quizStatsBucketDefaults() },
+    inverse: _quizStatsBucketDefaults(),
+  };
+  if(raw && raw.inverse) out.inverse = { ..._quizStatsBucketDefaults(), ...raw.inverse };
   if(raw && raw.byLevel && typeof raw.byLevel === 'object'){
     for(const t of ['easy','med','hard','expert']){
       if(raw.byLevel[t]) out.byLevel[t] = { ..._quizStatsBucketDefaults(), ...raw.byLevel[t] };
@@ -9881,8 +9885,12 @@ function _quizRefreshStatsUI(){
   const allStats = _quizStats();
   const level = _quizCurrentLevel();
   const bucket = _quizEnsureDay(allStats.byLevel[level]);
-  // Label indicateur (quelle difficulte est affichee)
-  const scopeEl = $('#quizStatsScope'); if(scopeEl) scopeEl.textContent = _quizLevelLabel(level);
+  // Label indicateur (quelle difficulte est affichee, uniquement en Classe)
+  const scopeEl = $('#quizStatsScope');
+  if(scopeEl){
+    scopeEl.hidden = (_quizMode !== 'compete');
+    if(_quizMode === 'compete') scopeEl.textContent = _quizLevelLabel(level);
+  }
   // Aujourd'hui : dayScore/dayTotal
   const dayEl = $('#quizDayPct');
   if(dayEl){
@@ -9909,23 +9917,35 @@ function _quizRefreshStatsUI(){
   const seenEl = $('#quizTrainSeen'); if(seenEl) seenEl.textContent = seen;
   const masEl = $('#quizTrainMastered'); if(masEl) masEl.textContent = mastered;
   // Toggle visibilite des blocs stats selon le mode
-  const compBlock = $('#quizStatsCompete'), trainBlock = $('#quizStatsTrain');
+  const compBlock = $('#quizStatsCompete'), trainBlock = $('#quizStatsTrain'), invBlock = $('#quizStatsInverse');
   if(compBlock) compBlock.hidden = (_quizMode !== 'compete');
   if(trainBlock) trainBlock.hidden = (_quizMode !== 'train');
+  if(invBlock) invBlock.hidden = (_quizMode !== 'inverse');
+  // Bucket inverse : meme structure, meme calculs, autres ids UI
+  if(_quizMode === 'inverse'){
+    const b = _quizEnsureDay(allStats.inverse);
+    const dP = $('#quizInvDayPct'); if(dP) dP.textContent = b.dayTotal ? Math.round(b.dayScore*100/b.dayTotal) + '%' : '-';
+    const dC = $('#quizInvDayCount'); if(dC) dC.textContent = b.dayScore + '/' + b.dayTotal;
+    const lP = $('#quizInvLevelPct');
+    if(lP){ if(b.last100?.length){ const sum = b.last100.reduce((a,x)=>a+x,0); lP.textContent = Math.round(sum*100/b.last100.length)+'%'; } else lP.textContent = '-'; }
+    const lC = $('#quizInvLevelCount'); if(lC) lC.textContent = 'sur ' + (b.last100?.length || 0);
+    const bS = $('#quizInvBestStreak'); if(bS) bS.textContent = b.bestStreak || 0;
+  }
   // Badge 'especes a reviser' : rafraichit apres chaque partie
   _quizRefreshProblemBadge();
 }
 // Bascule mode compete <-> train. Met a jour les tabs visuellement + les stats affichees.
 function _quizSetMode(m){
-  if(m !== 'compete' && m !== 'train') return;
+  if(m !== 'compete' && m !== 'train' && m !== 'inverse') return;
   const prev = _quizMode;
   _quizMode = m;
   try{ localStorage.setItem('mb-quiz-mode', m); }catch(_){}
   document.querySelectorAll('.qz-mode[data-quiz-mode]').forEach(b => b.classList.toggle('on', b.dataset.quizMode === m));
   // Section 'Type de son' visible uniquement en Entrainement (en Classe le type
-  // est force a 'both' pour homogeneiser le classement entre amis).
+  // est force a 'both' pour homogeneiser le classement entre amis, en Inverse
+  // idem : le son est deja choisi cote question, la variete est cote reponses).
   const typeSec = document.getElementById('quizTypeSection');
-  if(typeSec) typeSec.hidden = (m === 'compete');
+  if(typeSec) typeSec.hidden = (m !== 'train');
   // Anti-triche : si on switch de mode alors qu'une question est en cours ou vient
   // d'etre repondue, on jette la question. Sinon l'utilisateur pourrait entendre
   // l'audio en Entrainement (non compte), reconnaitre l'espece, puis switcher en
@@ -10891,6 +10911,8 @@ function _quizPickDistracters(sci, pool, n){
   return picked.slice(0, n);
 }
 async function _quizStart(){
+  // Mode inverse : rendu tres different (photo + 4 audios) -> fonction dediee.
+  if(_quizMode === 'inverse') return _quizStartInverse();
   const stage = $('#quizStage'); if(!stage) return;
   // Session 10 questions (mode Classe uniquement) : si la session en cours est
   // terminee, on affiche le recap au lieu de piocher une nouvelle question. Si
@@ -11026,8 +11048,134 @@ async function _quizStart(){
   }
   stage.innerHTML = '<p class="help" style="margin:0;">Pas de son trouvé dans le pool après 5 essais. Ré-essaie ou change de niveau.</p>';
 }
+// Mode Inverse : affiche la photo de l'espece correcte, propose 4 audios
+// (1 bon + 3 distracteurs) a ecouter, l'utilisateur choisit celui qui
+// correspond. Fetch photo + 4 audios en parallele pour minimiser la latence.
+async function _quizStartInverse(){
+  const stage = $('#quizStage'); if(!stage) return;
+  stage.innerHTML = '<p class="help" style="margin:0;">🔎 Sélection de l\'espèce…</p>';
+  const nextBtn = $('#quizNext'); if(nextBtn){ nextBtn.hidden = true; nextBtn.textContent = 'Suivante →'; }
+  $('#quizSkip').hidden = true;
+  const pool = _quizPickPool();
+  if(!pool.length){ stage.innerHTML = '<p class="help" style="margin:0;">Aucune espèce dans le pool.</p>'; return; }
+  for(let attempt = 0; attempt < 5; attempt++){
+    const sci = pool[Math.floor(Math.random() * pool.length)];
+    stage.innerHTML = `<p class="help" style="margin:0;">🎧 Chargement des sons + photo (${attempt+1}/5)…</p>`;
+    const distracters = _quizPickDistracters(sci, pool, 3);
+    if(distracters.length < 3) continue;
+    const allSp = [sci, ...distracters];
+    // Fetch photo + 4 audios en parallele
+    let photo, soundsArr;
+    try{
+      [photo, ...soundsArr] = await Promise.all([
+        (typeof _fetchWikiPhoto === 'function' ? _fetchWikiPhoto(sci).catch(()=>null) : Promise.resolve(null)),
+        ...allSp.map(s => _fetchXenoSound(s).catch(()=>null)),
+      ]);
+    }catch(_){ continue; }
+    if(!photo?.url) continue;   // pas de photo pour l'espece -> retry
+    // Pour chaque espece : pioche un audio dans top 3 (song ou call fallback)
+    const audios = soundsArr.map(s => {
+      if(!s) return null;
+      const top = (s.songList || []).slice(0,3).filter(Boolean);
+      const topC = (s.callList || []).slice(0,3).filter(Boolean);
+      const src = top.length ? top[Math.floor(Math.random()*top.length)] : (topC.length ? topC[Math.floor(Math.random()*topC.length)] : null);
+      return src?.file || null;
+    });
+    if(audios.some(a => !a)) continue;   // manque un audio -> retry
+    // Shuffle : la position de la bonne reponse est aleatoire
+    const shuffled = allSp.map((s, i) => ({ sci: s, audio: audios[i] }))
+      .map(x => [Math.random(), x]).sort((a,b) => a[0]-b[0]).map(x => x[1]);
+    const correctIdx = shuffled.findIndex(x => x.sci === sci);
+    _quizCurrent = { sci, correctIdx, choices: shuffled.map(x => x.sci), audios: shuffled.map(x => x.audio), photoUrl: photo.url, inverse: true, level: _quizCurrentLevel() };
+    _quizAddRecent(sci);
+    const letters = ['A','B','C','D'];
+    stage.innerHTML = `
+      <div class="qz-inverse">
+        <div class="qz-inv-photo-wrap">
+          <img class="qz-inv-photo" src="${esc(photo.url)}" alt="">
+          <p class="qz-prompt">Quel son correspond à cet oiseau ?</p>
+        </div>
+        <div class="qz-inv-choices">
+          ${shuffled.map((c, i) => `
+            <div class="qz-inv-card">
+              <button type="button" class="qz-inv-play" data-inv-play="${i}" aria-label="Écouter le son ${letters[i]}">▶</button>
+              <span class="qz-inv-lbl">Son ${letters[i]}</span>
+              <button type="button" class="qz-inv-pick" data-quiz-choice="${i}">Choisir</button>
+            </div>
+          `).join('')}
+        </div>
+        ${shuffled.map((c, i) => `<audio class="qz-inv-audio" data-inv-audio="${i}"><source src="${esc(c.audio)}"></audio>`).join('')}
+      </div>
+    `;
+    // Wire play toggle + cap 20s + pause les autres au play
+    const audiosEl = [...stage.querySelectorAll('.qz-inv-audio')];
+    const playBtns = [...stage.querySelectorAll('[data-inv-play]')];
+    const CAP = 20;
+    audiosEl.forEach((a, i) => {
+      a.addEventListener('timeupdate', () => {
+        if(a.currentTime >= CAP){ try{ a.pause(); a.currentTime = 0; }catch(_){} playBtns[i].textContent = '▶'; }
+      });
+      a.addEventListener('ended', () => { playBtns[i].textContent = '▶'; });
+    });
+    playBtns.forEach((btn, i) => {
+      btn.addEventListener('click', () => {
+        // Pause les autres
+        audiosEl.forEach((a, j) => { if(j !== i){ try{ a.pause(); a.currentTime = 0; }catch(_){}; playBtns[j].textContent = '▶'; } });
+        const a = audiosEl[i];
+        if(a.paused){ try{ a.currentTime = 0; }catch(_){}; a.play().catch(()=>{}); btn.textContent = '⏸'; }
+        else { a.pause(); btn.textContent = '▶'; }
+      });
+    });
+    $('#quizSkip').hidden = false;
+    return;
+  }
+  stage.innerHTML = '<p class="help" style="margin:0;">Pas trouvé après 5 essais. Ré-essaie.</p>';
+}
+// Reponse mode Inverse : ecrit dans le bucket stats.inverse et rend la verdict card.
+function _quizAnswerInverse(idx){
+  if(!_quizCurrent) return;
+  const correct = idx === _quizCurrent.correctIdx;
+  // Stats bucket inverse (flat, pas de sous-buckets par niveau)
+  const all = _quizStats();
+  const b = _quizEnsureDay(all.inverse || _quizStatsBucketDefaults());
+  b.total += 1;
+  if(correct){ b.score += 1; b.streak += 1; } else { b.streak = 0; }
+  if(b.streak > (b.bestStreak || 0)) b.bestStreak = b.streak;
+  b.dayTotal += 1;
+  if(correct) b.dayScore += 1;
+  _quizPushLast100(b, correct);
+  all.inverse = b;
+  _quizSaveStats(all);
+  _quizTrainRecord(_quizCurrent.sci, correct);   // alimente le top 'a reviser'
+  _quizRefreshStatsUI();
+  // Pause tous les audios + highlight bonne/mauvaise reponse
+  const stage = document.getElementById('quizStage'); if(stage){
+    stage.querySelectorAll('.qz-inv-audio').forEach(a => { try{ a.pause(); }catch(_){} });
+    stage.querySelectorAll('.qz-inv-card').forEach((card, i) => {
+      const pick = card.querySelector('.qz-inv-pick');
+      if(pick) pick.disabled = true;
+      if(i === _quizCurrent.correctIdx) card.classList.add('correct');
+      else if(i === idx) card.classList.add('wrong');
+    });
+  }
+  // Verdict card
+  const nm = FR_NAMES[_quizCurrent.sci] || _quizCurrent.sci;
+  const badge = correct ? '<div class="qz-verdict-badge">✓</div>' : '<div class="qz-verdict-badge">✗</div>';
+  const verdictClass = correct ? 'correct' : 'wrong';
+  const correctLetter = ['A','B','C','D'][_quizCurrent.correctIdx];
+  const html = `<div class="qz-verdict ${verdictClass}">
+    ${badge}
+    <div class="qz-verdict-species"><span class="sp-link" data-sci="${esc(_quizCurrent.sci)}" style="cursor:pointer; text-decoration:underline dotted;">${esc(nm)}</span></div>
+    <div class="qz-verdict-sci">${esc(_quizCurrent.sci)} · Son ${correctLetter}</div>
+  </div>`;
+  if(stage) stage.insertAdjacentHTML('beforeend', html);
+  const nextBtn = $('#quizNext'); if(nextBtn){ nextBtn.hidden = false; nextBtn.textContent = 'Suivante →'; }
+  $('#quizSkip').hidden = true;
+}
 function _quizAnswer(idx){
   if(!_quizCurrent) return;
+  // Mode inverse : logique dediee (bucket stats different, verdict card sans photo)
+  if(_quizCurrent.inverse) return _quizAnswerInverse(idx);
   const correct = idx === _quizCurrent.correctIdx;
   // Enregistre selon le mode : compete = score/streak global, train = stats per-espece.
   // Aucun mode n'ecrit dans l'autre bucket -> comparaison entre amis reste basee
@@ -11183,8 +11331,10 @@ document.addEventListener('keydown', e => {
     if(btn && !btn.disabled){ e.preventDefault(); btn.click(); }
     return;
   }
-  // Espace : relance l'audio de la question (avant ou apres reponse)
+  // Espace : relance l'audio de la question (mode classique ; en inverse y'a 4 audios,
+  // pas d'action Espace car ambigu).
   if(e.key === ' ' || e.code === 'Space'){
+    if(_quizCurrent?.inverse) return;
     if(!document.getElementById('quizAudio')) return;
     e.preventDefault();
     _quizReplayAudio();

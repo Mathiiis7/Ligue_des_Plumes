@@ -822,6 +822,7 @@
         <div class="qz-mode-switch">
           <button type="button" class="qz-mode on" data-quiz-mode="compete" title="Compte dans ton score et ton classement">🏆 Classé</button>
           <button type="button" class="qz-mode" data-quiz-mode="train" title="Pas compté dans le score, revoit les espèces que tu rates">🎯 Entraînement</button>
+          <button type="button" class="qz-mode" data-quiz-mode="inverse" title="Une photo, quatre sons : trouve celui qui correspond">🖼️ Inverse</button>
         </div>
       </div>
       <!-- Stats en pills + bouton reglages -->
@@ -835,6 +836,11 @@
           </span>
           <!-- Legacy hidden fields kept for retro-compat avec le mode entrainement -->
           <span style="display:none;"><b id="quizScore">0</b><b id="quizTotal">0</b><b id="quizStreak">0</b></span>
+          <span id="quizStatsInverse" class="qz-stats-line" hidden>
+            <span class="qz-pill" title="Taux de bonnes réponses aujourd'hui en mode inverse (photo → son)">🎯 <b id="quizInvDayPct">-</b> <span class="qz-pill-lbl">aujourd'hui</span> <span class="qz-pill-sub" id="quizInvDayCount">0/0</span></span>
+            <span class="qz-pill" title="Ton niveau sur les 100 dernières parties en inverse">📊 <b id="quizInvLevelPct">-</b> <span class="qz-pill-lbl">niveau</span> <span class="qz-pill-sub" id="quizInvLevelCount">sur 0</span></span>
+            <span class="qz-pill" title="Ta meilleure série de bonnes réponses en mode inverse">🔥 <b id="quizInvBestStreak">0</b> <span class="qz-pill-lbl">record</span></span>
+          </span>
           <span id="quizStatsTrain" class="qz-stats-line" hidden>
             <span class="qz-pill" title="Nombre d'espèces différentes rencontrées en entraînement">📚 <b id="quizTrainSeen">0</b> <span class="qz-pill-lbl">vues</span></span>
             <span class="qz-pill" title="Espèces avec ≥3 bonnes réponses et aucune erreur récente">⭐ <b id="quizTrainMastered">0</b> <span class="qz-pill-lbl">maîtrisées</span></span>
