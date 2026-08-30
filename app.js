@@ -10623,13 +10623,30 @@ function _quizPickPool(){
   // Filtre : rareté <= maxTier, pas exotique X/C (pas de son fiable), FR_NAMES existe,
   // ET espece calibrée dans le catalogue rareté FR (evite d'inclure les especes mondiales
   // sans data FR qui tombent en tier=1 par defaut et polluent le quiz).
-  return pool.filter(sci => {
+  const filtered = pool.filter(sci => {
     if(_isExoticNotCounted(sci)) return false;
     if(!FR_NAMES[sci]) return false;
     if(typeof hasRarityCalibration === 'function' && !hasRarityCalibration(sci)) return false;
     const t = rarityForFilter(sci);
     return t >= 1 && t <= maxTier;
   });
+  // Anti-repetition : exclut les 20 dernieres especes vues (evite de retomber
+  // sur la meme). Fallback : si le pool restant est trop petit, on relache le filtre.
+  const recent = new Set(_quizRecent());
+  const fresh = filtered.filter(sci => !recent.has((sci||'').toLowerCase()));
+  return fresh.length >= 8 ? fresh : filtered;
+}
+// Anti-repetition : garde les 20 dernieres especes tirees (localStorage).
+const _QUIZ_RECENT_MAX = 20;
+function _quizRecent(){ try{ return JSON.parse(localStorage.getItem('mb-quiz-recent')||'[]'); }catch(_){ return []; } }
+function _quizAddRecent(sci){
+  const k = (sci||'').toLowerCase().trim();
+  if(!k) return;
+  let arr = _quizRecent();
+  arr = arr.filter(x => x !== k);   // dedup
+  arr.push(k);
+  if(arr.length > _QUIZ_RECENT_MAX) arr = arr.slice(-_QUIZ_RECENT_MAX);
+  try{ localStorage.setItem('mb-quiz-recent', JSON.stringify(arr)); }catch(_){}
 }
 // Familles ou le cri est distinctif entre especes (signature vocale identifiante).
 // Pour ces familles, l'espece est generalement reconnaissable au cri seul :
@@ -10823,6 +10840,7 @@ async function _quizStart(){
     // meme si l'utilisateur change de niveau apres avoir entendu l'audio (anti-triche
     // + coherence : la question a ete tiree avec ce filtre).
     _quizCurrent = { sci, correctIdx, choices, audioUrl, sonoUrl, type: _quizCurrentType(), level: _quizCurrentLevel() };
+    _quizAddRecent(sci);   // marque comme "vue" pour ne pas retomber dessus dans les 20 prochaines
     stage.innerHTML = `
       <div class="qz-play">
         <div class="qz-player">
@@ -10896,6 +10914,7 @@ function _quizAnswer(idx){
       <div class="qz-verdict-species"><span class="sp-link" data-sci="${esc(_quizCurrent.sci)}" style="cursor:pointer; text-decoration:underline dotted;">${esc(nm)}</span></div>
       <div class="qz-verdict-sci">${esc(_quizCurrent.sci)}</div>
       <div id="quizVerdictPhoto"></div>
+      <button type="button" class="qz-verdict-replay" id="quizReplayBtn" title="Réécouter (Espace)">🔁 Réécouter</button>
     </div>`;
     stage.insertAdjacentHTML('beforeend', verdictHtml);
     // Fetch photo Wikipedia (deja en cache session si l'espece a ete consultee)
@@ -10908,10 +10927,19 @@ function _quizAnswer(idx){
   $('#quizNext').hidden = false;
   $('#quizSkip').hidden = true;
 }
+// Helper : relance l'audio de la question depuis le debut. Utilise par le bouton
+// Rejouer de la verdict card et par le raccourci clavier Espace.
+function _quizReplayAudio(){
+  const audio = document.getElementById('quizAudio');
+  if(!audio) return;
+  try{ audio.currentTime = 0; }catch(_){}
+  audio.play().catch(()=>{});
+}
 document.addEventListener('click', e => {
   const start = e.target.closest('#quizStart'); if(start){ _quizStart(); return; }
   const next = e.target.closest('#quizNext'); if(next){ _quizStart(); return; }
   const skip = e.target.closest('#quizSkip'); if(skip){ _quizStart(); return; }
+  const replay = e.target.closest('#quizReplayBtn'); if(replay){ _quizReplayAudio(); return; }
   const choice = e.target.closest('[data-quiz-choice]'); if(choice){ _quizAnswer(+choice.dataset.quizChoice); return; }
   const modeBtn = e.target.closest('[data-quiz-mode]'); if(modeBtn){ _quizSetMode(modeBtn.dataset.quizMode); return; }
   const settings = e.target.closest('#quizSettingsBtn'); if(settings){ const p = document.getElementById('quizSettings'); if(p) p.hidden = !p.hidden; return; }
@@ -10957,6 +10985,39 @@ document.addEventListener('click', e => {
     }
     _quizRefreshStatsUI();   // pills reflete le nouveau bucket
     return;
+  }
+});
+// Raccourcis clavier quiz : actifs seulement quand la vue quiz est visible.
+// 1/2/3/4 -> choisir la reponse ; Espace -> relancer l'audio ; Entree -> suivante.
+// Ignore si le focus est dans un input/textarea/contenteditable (evite les collisions).
+document.addEventListener('keydown', e => {
+  const view = document.getElementById('viewQuiz');
+  if(!view || view.style.display === 'none' || view.offsetParent === null) return;
+  const tag = (e.target?.tagName || '').toLowerCase();
+  if(tag === 'input' || tag === 'textarea' || tag === 'select' || e.target?.isContentEditable) return;
+  if(e.ctrlKey || e.metaKey || e.altKey) return;
+  // Chiffres 1-4 : repond a la question si en cours (pas en verdict)
+  if(e.key >= '1' && e.key <= '4'){
+    if(!_quizCurrent) return;
+    const box = document.getElementById('quizChoices');
+    if(!box) return;
+    const btn = box.querySelector(`[data-quiz-choice="${(+e.key) - 1}"]`);
+    if(btn && !btn.disabled){ e.preventDefault(); btn.click(); }
+    return;
+  }
+  // Espace : relance l'audio de la question (avant ou apres reponse)
+  if(e.key === ' ' || e.code === 'Space'){
+    if(!document.getElementById('quizAudio')) return;
+    e.preventDefault();
+    _quizReplayAudio();
+    return;
+  }
+  // Entree : suivante (visible apres reponse) sinon Lancer si stage vide
+  if(e.key === 'Enter'){
+    const next = document.getElementById('quizNext');
+    if(next && !next.hidden){ e.preventDefault(); next.click(); return; }
+    const start = document.getElementById('quizStart');
+    if(start){ e.preventDefault(); start.click(); return; }
   }
 });
 // PWA : installation sur l'écran d'accueil

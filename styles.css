@@ -647,6 +647,8 @@
   .qz-verdict-sci { font-size:12px; color:var(--ink-3); font-style:italic; margin-bottom:8px; }
   .qz-verdict-photo { max-width:220px; max-height:150px; border-radius:8px; margin:8px auto 0; display:block; object-fit:cover; }
   .qz-verdict-sono { max-width:100%; margin:8px 0 0; border-radius:6px; opacity:.85; }
+  .qz-verdict-replay { margin-top:12px; padding:8px 16px; border:1px solid var(--line-2); background:var(--surface); color:var(--ink); border-radius:999px; font:600 13px/1 system-ui; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+  .qz-verdict-replay:hover { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,var(--surface)); }
   .qz-actions { display:flex; gap:10px; justify-content:center; margin-top:16px; }
   .qz-btn-primary { background:var(--accent); color:#fff; border:none; padding:10px 22px; font:600 14px/1 system-ui; border-radius:20px; cursor:pointer; }
   .qz-btn-primary:hover { background:var(--accent-ink); }
