@@ -9789,7 +9789,7 @@ $('#authReset')?.addEventListener('click', async ()=>{
   catch(e){ authMsg(authErr(e)); }
 });
 onAuthStateChanged(auth, user=>{
-  if(user){ myUid=user.uid; updateAuthUI(user); boot(); }
+  if(user){ myUid=user.uid; window.myUid=user.uid; console.log('[myUid]', user.uid); updateAuthUI(user); boot(); }
   else { myUid=null; signInAnonymously(auth).catch(err=>{ showError(err); }); }
 });
 /* ---------------- Quiz chants (xeno-canto v3) ---------------- */
