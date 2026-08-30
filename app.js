@@ -9997,8 +9997,9 @@ function _quizRefreshStatsUI(){
   if(scopeEl){
     scopeEl.hidden = (_quizMode !== 'compete');
     if(_quizMode === 'compete'){
-      const sensIco = _quizIsInverse() ? '🖼️' : '🔊';
-      scopeEl.textContent = _quizLevelLabel(level) + ' · ' + sensIco;
+      // Pas de suffixe en mode classique (le sens par defaut se comprend seul).
+      // Suffixe explicite uniquement en Photo->Son pour signaler le bucket different.
+      scopeEl.textContent = _quizLevelLabel(level) + (_quizIsInverse() ? ' · Photo→Son' : '');
     }
   }
   // Aujourd'hui : dayScore/dayTotal

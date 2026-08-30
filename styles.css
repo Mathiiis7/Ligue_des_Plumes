@@ -590,13 +590,13 @@
   .qz-mode:hover:not(.on) { color:var(--ink); }
   .qz-topbar { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
   .qz-stats-line { display:inline-flex; gap:6px; flex-wrap:wrap; }
-  .qz-pill { display:inline-flex; align-items:center; gap:5px; padding:5px 12px; background:var(--surface-2); border-radius:14px; font:600 13px/1 system-ui; color:var(--ink); cursor:help; }
+  .qz-pill { display:inline-flex; align-items:baseline; gap:5px; padding:6px 12px; background:var(--surface-2); border-radius:14px; font:600 13px/1.2 system-ui; color:var(--ink); cursor:help; }
   /* Les enfants ne captent pas les evenements souris : le title du parent s'affiche
      de maniere fiable sur toute la surface (sinon flicker/retard sur changement de child). */
-  .qz-pill > * { pointer-events:none; }
+  .qz-pill > * { pointer-events:none; line-height:1.2; }
   .qz-pill b { color:var(--accent-ink); font-weight:800; }
   .qz-pill-lbl { font-size:10.5px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.3px; font-weight:700; margin-left:2px; }
-  .qz-pill-sub { font-size:11px; color:var(--ink-3); font-weight:600; margin-left:4px; opacity:.85; }
+  .qz-pill-sub { font-size:10.5px; color:var(--ink-3); font-weight:600; margin-left:4px; opacity:.85; text-transform:uppercase; letter-spacing:.3px; }
   /* Petit label qui indique de quel bucket (type de son) proviennent les stats affichees */
   .qz-stats-scope { display:inline-flex; align-items:center; padding:3px 10px; border-radius:12px; background:color-mix(in srgb,var(--accent) 12%,transparent); color:var(--accent-ink); font:700 11px/1 system-ui; letter-spacing:.2px; margin-right:2px; cursor:help; }
   /* Chips dans le panneau reglages du quiz : hint entre parentheses en petit */
