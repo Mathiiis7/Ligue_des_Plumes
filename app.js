@@ -9810,9 +9810,9 @@ try{ const m = localStorage.getItem('mb-quiz-mode'); if(m === 'compete' || m ===
 function _quizStatsBucketDefaults(){ return { score:0, total:0, streak:0, bestStreak:0, dayDate:'', dayScore:0, dayTotal:0, last100:[] }; }
 function _quizStats(){
   const raw = (() => { try{ return JSON.parse(localStorage.getItem('mb-quiz-stats')||'{}'); }catch(_){ return {}; } })();
-  const out = { byLevel: { easy: _quizStatsBucketDefaults(), med: _quizStatsBucketDefaults(), hard: _quizStatsBucketDefaults() } };
+  const out = { byLevel: { easy: _quizStatsBucketDefaults(), med: _quizStatsBucketDefaults(), hard: _quizStatsBucketDefaults(), expert: _quizStatsBucketDefaults() } };
   if(raw && raw.byLevel && typeof raw.byLevel === 'object'){
-    for(const t of ['easy','med','hard']){
+    for(const t of ['easy','med','hard','expert']){
       if(raw.byLevel[t]) out.byLevel[t] = { ..._quizStatsBucketDefaults(), ...raw.byLevel[t] };
     }
   } else if(raw && raw.byType && raw.byType.both){
@@ -9828,9 +9828,14 @@ function _quizSaveStats(s){ try{ localStorage.setItem('mb-quiz-stats', JSON.stri
 // Difficulte courante : source de verite pour choisir le bucket de stats en Classe.
 function _quizCurrentLevel(){
   const v = document.getElementById('quizLevel')?.value;
-  return (v === 'med' || v === 'hard') ? v : 'easy';
+  return (v === 'med' || v === 'hard' || v === 'expert') ? v : 'easy';
 }
-function _quizLevelLabel(l){ return l === 'hard' ? '🔴 Difficile' : l === 'med' ? '🟡 Moyen' : '🟢 Facile'; }
+function _quizLevelLabel(l){
+  if(l === 'expert') return '🔥 Expert';
+  if(l === 'hard') return '🔴 Difficile';
+  if(l === 'med') return '🟡 Moyen';
+  return '🟢 Facile';
+}
 // Type de son actif. En Classe on force 'both' (pas de bucket type ; type = filtre
 // audio uniquement en Entrainement).
 function _quizCurrentType(){
@@ -10625,7 +10630,7 @@ function _quizPickPool(){
     return _quizForcedPool.filter(sci => FR_NAMES[sci] && !_isExoticNotCounted(sci));
   }
   const lvl = ($('#quizLevel')?.value) || 'easy';
-  const maxTier = lvl === 'easy' ? 3 : lvl === 'med' ? 5 : 8;
+  const maxTier = lvl === 'easy' ? 3 : lvl === 'med' ? 5 : 8;   // expert = 8 (comme hard)
   let pool = Object.keys(FR_NAMES);
   // Filtre : rareté <= maxTier, pas exotique X/C (pas de son fiable), FR_NAMES existe,
   // ET espece calibrée dans le catalogue rareté FR (evite d'inclure les especes mondiales
@@ -10948,16 +10953,25 @@ async function _quizStart(){
     const sci = pickWeighted();
     stage.innerHTML = `<p class="help" style="margin:0;">🎧 Chargement du son (${attempt+1}/5)…</p>`;
     const sounds = await _fetchXenoSound(sci);
-    // Selectionne le meilleur record disponible (songList[0] deja trie par scoreRec).
+    // Multi-enregistrement : pioche aleatoirement parmi les 3 meilleurs de la liste
+    // au lieu de toujours le 1er. Empeche l'utilisateur d'apprendre 'cet audio precis'
+    // plutot que le chant/cri de l'espece (evite biais de sur-apprentissage).
+    const pickTopN = (arr, n = 3) => {
+      const top = (arr || []).slice(0, n).filter(Boolean);
+      return top.length ? top[Math.floor(Math.random() * top.length)] : null;
+    };
     let rec = null;
-    if(typeOpt === 'song') rec = sounds.songList?.[0];
-    else if(typeOpt === 'call') rec = sounds.callList?.[0];
-    else rec = sounds.songList?.[0] || sounds.callList?.[0];
+    if(typeOpt === 'song') rec = pickTopN(sounds.songList);
+    else if(typeOpt === 'call') rec = pickTopN(sounds.callList);
+    else rec = pickTopN(sounds.songList) || pickTopN(sounds.callList);
     const audioUrl = rec?.file;
     const sonoUrl = rec?.sono;   // pour reveal apres reponse (spectro pedagogique)
     if(!audioUrl) continue;   // espece sans son -> reessaie
-    const distracters = _quizPickDistracters(sci, pool, 3);
-    if(distracters.length < 3) continue;
+    // Nombre de choix : 6 en Expert (5 distracteurs), 4 sinon (3 distracteurs).
+    const isExpert = _quizCurrentLevel() === 'expert';
+    const nDistr = isExpert ? 5 : 3;
+    const distracters = _quizPickDistracters(sci, pool, nDistr);
+    if(distracters.length < nDistr) continue;
     const choices = [sci, ...distracters].map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).map(v=>v[1]);
     const correctIdx = choices.indexOf(sci);
     // Snapshot difficulte + type actifs : la reponse ecrit dans le bucket byLevel[level]
@@ -10988,12 +11002,22 @@ async function _quizStart(){
     const playBtn = document.getElementById('quizPlayBtn');
     const progFill = document.getElementById('quizProgressFill');
     if(audio && playBtn){
+      // Cap la duree lue selon le niveau : 10s en Expert (challenge), 20s sinon.
+      const CAP_SEC = isExpert ? 10 : 20;
       const togglePlay = () => { if(audio.paused) audio.play().catch(()=>{}); else audio.pause(); };
       playBtn.addEventListener('click', togglePlay);
       audio.addEventListener('play', () => { playBtn.textContent = '⏸'; playBtn.classList.add('playing'); });
       audio.addEventListener('pause', () => { playBtn.textContent = '▶'; playBtn.classList.remove('playing'); });
       audio.addEventListener('ended', () => { playBtn.textContent = '▶'; playBtn.classList.remove('playing'); if(progFill) progFill.style.width = '0%'; });
-      audio.addEventListener('timeupdate', () => { if(audio.duration && progFill) progFill.style.width = ((audio.currentTime / audio.duration) * 100) + '%'; });
+      audio.addEventListener('timeupdate', () => {
+        if(audio.currentTime >= CAP_SEC){
+          try{ audio.pause(); audio.currentTime = 0; }catch(_){}
+          if(progFill) progFill.style.width = '0%';
+          return;
+        }
+        const effDur = Math.min(audio.duration || CAP_SEC, CAP_SEC);
+        if(effDur && progFill) progFill.style.width = ((audio.currentTime / effDur) * 100) + '%';
+      });
       // Auto-play au chargement
       audio.play().catch(()=>{});
     }
@@ -11150,8 +11174,8 @@ document.addEventListener('keydown', e => {
   const tag = (e.target?.tagName || '').toLowerCase();
   if(tag === 'input' || tag === 'textarea' || tag === 'select' || e.target?.isContentEditable) return;
   if(e.ctrlKey || e.metaKey || e.altKey) return;
-  // Chiffres 1-4 : repond a la question si en cours (pas en verdict)
-  if(e.key >= '1' && e.key <= '4'){
+  // Chiffres 1-6 : repond a la question (4 choix ou 6 en Expert)
+  if(e.key >= '1' && e.key <= '6'){
     if(!_quizCurrent) return;
     const box = document.getElementById('quizChoices');
     if(!box) return;

@@ -687,6 +687,10 @@
   .qz-prob-stat b { color:#b91c1c; font-weight:800; }
   .qz-prob-pct { color:var(--ink-3); font-weight:500; margin-left:2px; }
   .qz-problem-actions { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+  /* Chip mode Expert : orange/rouge distinctif */
+  .qz-chip-expert { border-color:color-mix(in srgb,#ef4444 40%,var(--line-2)); }
+  .qz-chip-expert.on { border-color:#ef4444 !important; background:color-mix(in srgb,#ef4444 14%,var(--surface)) !important; color:#b91c1c !important; }
+  .qz-chip-expert:hover { background:color-mix(in srgb,#ef4444 6%,var(--surface)); }
   .qz-actions { display:flex; gap:10px; justify-content:center; margin-top:16px; }
   .qz-btn-primary { background:var(--accent); color:#fff; border:none; padding:10px 22px; font:600 14px/1 system-ui; border-radius:20px; cursor:pointer; }
   .qz-btn-primary:hover { background:var(--accent-ink); }
