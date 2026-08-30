@@ -11996,15 +11996,14 @@ document.addEventListener('click', e => {
     }
     return;
   }
-  // Bouton dedie 'voir le classement' sur les recaps
+  // Bouton dedie 'voir le classement' sur les recaps : sort du mode focus SANS
+  // clear le stage (garde le recap visible pour le contexte) et scroll vers le
+  // leaderboard qui reapparait en dessous.
   const seeLb = e.target.closest('#quizSeeLeaderboard');
   if(seeLb){
     _quizDailyActive = null;
     _quizWeeklyActive = null;
     _quizChallengeSetActive(false);
-    const stage = document.getElementById('quizStage'); if(stage){
-      stage.innerHTML = '<div class="qz-empty"><div class="qz-empty-icon">🎧</div><p>Prêt à tester ton oreille ?</p><button type="button" class="qz-cta" id="quizStart">Lancer le quiz</button></div>';
-    }
     const lb = document.getElementById('quizLeaderboard');
     if(lb) setTimeout(() => lb.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
     return;
