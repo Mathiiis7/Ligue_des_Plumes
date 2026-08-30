@@ -9917,7 +9917,7 @@ function _quizRenderLeaderboard(){
     if(b.nivPct !== a.nivPct) return b.nivPct - a.nivPct;
     return b.total - a.total;
   });
-  if(!rows.length){ el.innerHTML = '<div class="qz-lb-empty">Personne dans ta ligue n\'a encore joué à ce bucket. Sois le premier !</div>'; el.hidden = false; return; }
+  if(!rows.length){ el.innerHTML = '<div class="qz-lb-empty">🐦 Aucun rival dans ta ligue sur ce quiz. Ouvre le bal, montre-leur qui a l\'oreille fine !</div>'; el.hidden = false; return; }
   const sensIco = isInv ? '🖼️' : '🔊';
   const html = `
     <div class="qz-lb">
@@ -11363,14 +11363,39 @@ function _quizDailyAnswer(idx){
       else if(i === idx) b.classList.add('wrong');
     });
   }
-  // Alimente aussi les stats per-espece (top a reviser)
   _quizTrainRecord(q.sci, correct);
-  // Petit delai puis passe a la suivante (ou finish)
-  setTimeout(() => {
-    _quizDailyActive.current++;
-    if(_quizDailyActive.current >= _QUIZ_DAILY_LEN) _quizDailyFinish();
-    else _quizDailyRenderQuestion();
-  }, 1400);
+  _quizChallengeShowVerdict(q.sci, correct, 'daily');
+}
+// Rend la verdict card commune daily/weekly : photo + bouton reecouter + Suivante.
+function _quizChallengeShowVerdict(sci, correct, kind){
+  const stage = document.getElementById('quizStage'); if(!stage) return;
+  const nm = FR_NAMES[sci] || sci;
+  const badge = correct ? '<div class="qz-verdict-badge">✓</div>' : '<div class="qz-verdict-badge">✗</div>';
+  const verdictClass = correct ? 'correct' : 'wrong';
+  const html = `<div class="qz-verdict ${verdictClass}">
+    ${badge}
+    <div class="qz-verdict-species"><span class="sp-link" data-sci="${esc(sci)}" style="cursor:pointer; text-decoration:underline dotted;">${esc(nm)}</span></div>
+    <div class="qz-verdict-sci">${esc(sci)}</div>
+    <div id="quizVerdictPhoto"></div>
+    <button type="button" class="qz-verdict-replay" id="quizReplayBtn" title="Réécouter (Espace)">🔁 Réécouter</button>
+  </div>`;
+  stage.insertAdjacentHTML('beforeend', html);
+  // Photo Wikipedia async (cache session si deja consultee)
+  if(typeof _fetchWikiPhoto === 'function'){
+    _fetchWikiPhoto(sci).then(p => {
+      if(p?.url){ const ph = document.getElementById('quizVerdictPhoto'); if(ph) ph.innerHTML = `<img class="qz-verdict-photo" src="${esc(p.url)}" alt="${esc(nm)}">`; }
+    }).catch(()=>{});
+  }
+  // Bouton Suivante : le click handler global detecte le defi actif et avance
+  const nextBtn = document.getElementById('quizNext');
+  if(nextBtn){
+    nextBtn.hidden = false;
+    const isLast = (kind === 'daily'
+      ? _quizDailyActive && _quizDailyActive.current >= _QUIZ_DAILY_LEN - 1
+      : _quizWeeklyActive && _quizWeeklyActive.current >= _QUIZ_WEEKLY_LEN - 1);
+    nextBtn.textContent = isLast ? 'Voir le résultat 🏁' : 'Suivante →';
+  }
+  const skip = document.getElementById('quizSkip'); if(skip) skip.hidden = true;
 }
 // Termine le defi : update streak + affiche le recap
 function _quizDailyFinish(){
@@ -11576,11 +11601,7 @@ function _quizWeeklyAnswer(idx){
     });
   }
   _quizTrainRecord(q.sci, correct);
-  setTimeout(() => {
-    _quizWeeklyActive.current++;
-    if(_quizWeeklyActive.current >= _QUIZ_WEEKLY_LEN) _quizWeeklyFinish();
-    else _quizWeeklyRenderQuestion();
-  }, 1200);
+  _quizChallengeShowVerdict(q.sci, correct, 'weekly');
 }
 function _quizWeeklyFinish(){
   if(!_quizWeeklyActive) return;
@@ -11834,7 +11855,24 @@ function _quizReplayAudio(){
 }
 document.addEventListener('click', e => {
   const start = e.target.closest('#quizStart'); if(start){ _quizStart(); return; }
-  const next = e.target.closest('#quizNext'); if(next){ _quizStart(); return; }
+  const next = e.target.closest('#quizNext');
+  if(next){
+    // Pendant un defi : le 'Suivante' avance dans le defi (pas restart quiz classique)
+    if(_quizDailyActive){
+      _quizDailyActive.current++;
+      if(_quizDailyActive.current >= _QUIZ_DAILY_LEN) _quizDailyFinish();
+      else _quizDailyRenderQuestion();
+      return;
+    }
+    if(_quizWeeklyActive){
+      _quizWeeklyActive.current++;
+      if(_quizWeeklyActive.current >= _QUIZ_WEEKLY_LEN) _quizWeeklyFinish();
+      else _quizWeeklyRenderQuestion();
+      return;
+    }
+    _quizStart();
+    return;
+  }
   const skip = e.target.closest('#quizSkip'); if(skip){ _quizStart(); return; }
   const replay = e.target.closest('#quizReplayBtn'); if(replay){ _quizReplayAudio(); return; }
   // Defi du jour : bouton Jouer + selection reponse
