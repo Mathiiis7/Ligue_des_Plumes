@@ -10206,6 +10206,12 @@ document.addEventListener('click', e => {
 
 function renderPokedex(){
   const grid = $('#pkdxGrid'); if(!grid) return;
+  // Garde defensive : si render est appele avant que le module ait initialise les vars
+  // (ex : boot restore last-tab + race conditions), init avec defaults et continue.
+  if(typeof _pkdxFilters === 'undefined' || !_pkdxFilters){
+    _pkdxFilters = { search:'', country:(typeof _globalCountry !== 'undefined' && _globalCountry) || 'FR', family:'', habitat:'', owned:'' };
+  }
+  if(typeof _pkdxTierExcl === 'undefined' || !_pkdxTierExcl) _pkdxTierExcl = new Set();
   if(!_pkdxInit){
     // Restore search input value (les autres filtres sont des boutons -> sync via label plus bas).
     const searchEl = document.getElementById('pkdxSearch');
