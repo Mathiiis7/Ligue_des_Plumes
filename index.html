@@ -904,6 +904,7 @@
         <div class="qz-empty">
           <div class="qz-empty-icon">🎧</div>
           <p>Prêt à tester ton oreille ?</p>
+          <p class="qz-empty-sub">Session de 10 questions - ta perf est classée</p>
           <button type="button" class="qz-cta" id="quizStart">Lancer le quiz</button>
         </div>
       </div>
@@ -912,8 +913,8 @@
         <button type="button" class="qz-btn-secondary" id="quizSkip" hidden>Passer</button>
         <button type="button" class="qz-btn-primary" id="quizNext" hidden>Suivante →</button>
       </div>
-      <!-- Classement entre amis (Firestore) : liste tries par niveau% dans le bucket courant -->
-      <div id="quizLeaderboard" hidden></div>
+      <!-- Classement entre amis (Firestore) : liste triee par niveau% dans le bucket courant -->
+      <div id="quizLeaderboard"><div class="qz-lb-empty">🐦 Chargement du classement de la ligue...</div></div>
     </section>
   </div>
 

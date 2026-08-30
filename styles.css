@@ -653,8 +653,9 @@
   .qz-verdict-replay { margin-top:12px; padding:8px 16px; border:1px solid var(--line-2); background:var(--surface); color:var(--ink); border-radius:999px; font:600 13px/1 system-ui; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
   .qz-verdict-replay:hover { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,var(--surface)); }
   /* Progress badge en haut du player pendant une session Classe */
-  .qz-session-progress { display:inline-block; margin:0 auto 10px; padding:4px 12px; background:color-mix(in srgb,var(--accent) 10%,var(--surface-2)); color:var(--accent-ink); border-radius:999px; font:700 12px/1 system-ui; letter-spacing:.2px; }
-  .qz-session-progress b { font-weight:800; }
+  .qz-session-progress { display:block; width:fit-content; margin:0 auto 12px; padding:6px 14px; background:color-mix(in srgb,var(--accent) 12%,var(--surface-2)); color:var(--accent-ink); border-radius:999px; font:700 13px/1 system-ui; letter-spacing:.2px; text-align:center; }
+  .qz-session-progress b { font-weight:800; font-size:14px; }
+  .qz-empty-sub { color:var(--ink-3); font-size:12.5px; margin:-4px 0 12px; }
   /* Recap card affichee apres la 10eme question */
   .qz-recap { text-align:center; padding:24px 18px; border-radius:16px; background:var(--surface-2); }
   .qz-recap.good { background:color-mix(in srgb,#22c55e 12%,var(--surface-2)); }

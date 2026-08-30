@@ -10071,7 +10071,7 @@ function _quizSetMode(m){
     _quizCurrent = null;
     const stage = document.getElementById('quizStage');
     if(stage){
-      stage.innerHTML = '<div class="qz-empty"><div class="qz-empty-icon">🎧</div><p>Prêt à tester ton oreille ?</p><button type="button" class="qz-cta" id="quizStart">Lancer le quiz</button></div>';
+      stage.innerHTML = _quizEmptyStateHtml();
     }
     const skip = document.getElementById('quizSkip'); if(skip) skip.hidden = true;
     const next = document.getElementById('quizNext'); if(next) next.hidden = true;
@@ -11065,7 +11065,7 @@ function _quizSetSens(s){
     _quizForcedPool = null;
     const stage = document.getElementById('quizStage');
     if(stage){
-      stage.innerHTML = '<div class="qz-empty"><div class="qz-empty-icon">🎧</div><p>Prêt à tester ton oreille ?</p><button type="button" class="qz-cta" id="quizStart">Lancer le quiz</button></div>';
+      stage.innerHTML = _quizEmptyStateHtml();
     }
     const skip = document.getElementById('quizSkip'); if(skip) skip.hidden = true;
     const next = document.getElementById('quizNext'); if(next) next.hidden = true;
@@ -11499,6 +11499,14 @@ function _quizDailyFinish(){
     `;
   }
   _quizDailyActive = null;
+}
+// HTML uniforme pour l'ecran vide 'Pret a tester ton oreille ?' : mentionne le
+// format selon le mode (Classe = 10Q, Entrainement = continu Leitner).
+function _quizEmptyStateHtml(){
+  let subtitle = '';
+  if(_quizMode === 'compete') subtitle = '<p class="qz-empty-sub">Session de 10 questions - ta perf est classée</p>';
+  else if(_quizMode === 'train') subtitle = '<p class="qz-empty-sub">Entraînement libre - focus sur tes espèces à revoir</p>';
+  return `<div class="qz-empty"><div class="qz-empty-icon">🎧</div><p>Prêt à tester ton oreille ?</p>${subtitle}<button type="button" class="qz-cta" id="quizStart">Lancer le quiz</button></div>`;
 }
 // Bascule l'UI en mode 'defi en cours' : cache tabs / stats / banner / cartes /
 // leaderboard pour focus sur les questions. Affiche un bouton 'Quitter' en tete.
@@ -12003,7 +12011,7 @@ document.addEventListener('click', e => {
     _quizWeeklyActive = null;
     _quizChallengeSetActive(false);
     const stage = document.getElementById('quizStage'); if(stage){
-      stage.innerHTML = '<div class="qz-empty"><div class="qz-empty-icon">🎧</div><p>Prêt à tester ton oreille ?</p><button type="button" class="qz-cta" id="quizStart">Lancer le quiz</button></div>';
+      stage.innerHTML = _quizEmptyStateHtml();
     }
     const skip = document.getElementById('quizSkip'); if(skip) skip.hidden = true;
     const next = document.getElementById('quizNext'); if(next) next.hidden = true;
@@ -12057,7 +12065,7 @@ document.addEventListener('click', e => {
       _quizForcedPool = null;   // sortir aussi du mode revision
       const stage = document.getElementById('quizStage');
       if(stage){
-        stage.innerHTML = '<div class="qz-empty"><div class="qz-empty-icon">🎧</div><p>Prêt à tester ton oreille ?</p><button type="button" class="qz-cta" id="quizStart">Lancer le quiz</button></div>';
+        stage.innerHTML = _quizEmptyStateHtml();
       }
       const skip = document.getElementById('quizSkip'); if(skip) skip.hidden = true;
       const next = document.getElementById('quizNext'); if(next) next.hidden = true;
@@ -12086,7 +12094,7 @@ document.addEventListener('click', e => {
       _quizForcedPool = null;   // sortir aussi du mode revision
       const stage = document.getElementById('quizStage');
       if(stage){
-        stage.innerHTML = '<div class="qz-empty"><div class="qz-empty-icon">🎧</div><p>Prêt à tester ton oreille ?</p><button type="button" class="qz-cta" id="quizStart">Lancer le quiz</button></div>';
+        stage.innerHTML = _quizEmptyStateHtml();
       }
       const skip = document.getElementById('quizSkip'); if(skip) skip.hidden = true;
       const next = document.getElementById('quizNext'); if(next) next.hidden = true;
