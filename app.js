@@ -9793,7 +9793,7 @@ onAuthStateChanged(auth, user=>{
   else { myUid=null; signInAnonymously(auth).catch(err=>{ showError(err); }); }
 });
 /* ---------------- Quiz chants (xeno-canto v3) ---------------- */
-// Deux modes distincts (basculables par les tabs "🏆 Quiz" / "🎯 Entrainement") :
+// Deux modes distincts (basculables par les tabs "🏆 Classe" / "🎯 Entrainement") :
 // - Quiz competitif : selection aleatoire du pool, score/streak sauve en localStorage.
 //   Sert pour la comparaison entre amis (score/streak visibles).
 // - Entrainement Leitner : selection ponderee vers les especes ratees / peu vues.
@@ -9878,9 +9878,23 @@ function _quizRefreshStatsUI(){
 // Bascule mode compete <-> train. Met a jour les tabs visuellement + les stats affichees.
 function _quizSetMode(m){
   if(m !== 'compete' && m !== 'train') return;
+  const prev = _quizMode;
   _quizMode = m;
   try{ localStorage.setItem('mb-quiz-mode', m); }catch(_){}
   document.querySelectorAll('.qz-mode[data-quiz-mode]').forEach(b => b.classList.toggle('on', b.dataset.quizMode === m));
+  // Anti-triche : si on switch de mode alors qu'une question est en cours ou vient
+  // d'etre repondue, on jette la question. Sinon l'utilisateur pourrait entendre
+  // l'audio en Entrainement (non compte), reconnaitre l'espece, puis switcher en
+  // Classe pour scorer une bonne reponse gratuite. Ne reset que si vrai changement.
+  if(prev !== m && _quizCurrent){
+    _quizCurrent = null;
+    const stage = document.getElementById('quizStage');
+    if(stage){
+      stage.innerHTML = '<div class="qz-empty"><div class="qz-empty-icon">🎧</div><p>Prêt à tester ton oreille ?</p><button type="button" class="qz-cta" id="quizStart">Lancer le quiz</button></div>';
+    }
+    const skip = document.getElementById('quizSkip'); if(skip) skip.hidden = true;
+    const next = document.getElementById('quizNext'); if(next) next.hidden = true;
+  }
   _quizRefreshStatsUI();
 }
 function renderQuizInit(){ _quizSetMode(_quizMode); _quizRefreshStatsUI(); }
