@@ -11295,12 +11295,41 @@ function _quizDailyRefreshCard(){
   if(state.lastPlayedDate !== today && state.lastPlayedDate !== yesterday) displayStreak = 0;
   if(streakEl){ const b = streakEl.querySelector('b'); if(b) b.textContent = displayStreak; }
   if(alreadyDone){
-    if(btn){ btn.disabled = true; btn.textContent = '✓ Terminé'; btn.classList.add('done'); }
+    if(btn){ btn.disabled = false; btn.textContent = '✓ Voir mon résultat'; btn.classList.add('done'); btn.title = 'Ton score du jour + classement (rejouer possible demain)'; }
     if(status) status.textContent = `Score du jour : ${state.lastScore}/${_QUIZ_DAILY_LEN} · reviens demain`;
   } else {
-    if(btn){ btn.disabled = false; btn.textContent = 'Jouer'; btn.classList.remove('done'); }
+    if(btn){ btn.disabled = false; btn.textContent = 'Jouer'; btn.classList.remove('done'); btn.title = ''; }
     if(status) status.textContent = displayStreak > 0 ? 'Prêt à continuer ta série ?' : 'Nouveau : 5 questions par jour';
   }
+}
+// Affiche le recap du defi du jour deja termine (view-only, ne modifie rien)
+function _quizDailyShowLastRecap(){
+  const state = _quizDailyState();
+  const today = _quizDayKey();
+  if(state.lastPlayedDate !== today) return;
+  _quizChallengeSetActive(true);
+  const stage = document.getElementById('quizStage'); if(!stage) return;
+  const score = state.lastScore;
+  const pctColor = score >= 4 ? 'good' : score >= 3 ? 'ok' : 'bad';
+  const emoji = score === 5 ? '🏆' : score >= 4 ? '🎯' : score >= 3 ? '👍' : '💪';
+  stage.innerHTML = `
+    <div class="qz-recap ${pctColor}">
+      <div class="qz-recap-emoji">${emoji}</div>
+      <div class="qz-recap-title">Défi du jour — ton résultat</div>
+      <div class="qz-recap-score"><b>${score}</b><span class="qz-recap-total">/${_QUIZ_DAILY_LEN}</span></div>
+      <div class="qz-recap-meta">
+        <span>🔥 Série actuelle <b>${state.streak}</b></span>
+        <span>· Record <b>${state.bestStreak}</b></span>
+      </div>
+      <p class="help" style="margin:10px 0 0; text-align:center;">Reviens demain pour un nouveau défi.</p>
+      <div class="qz-recap-actions">
+        <button type="button" class="qz-cta qz-recap-back" id="quizChallengeExit">Retour au quiz</button>
+        <button type="button" class="qz-btn-secondary" id="quizSeeLeaderboard">🏆 Voir le classement</button>
+      </div>
+    </div>
+  `;
+  const skip = document.getElementById('quizSkip'); if(skip) skip.hidden = true;
+  const next = document.getElementById('quizNext'); if(next) next.hidden = true;
 }
 // Demarre le defi (si pas deja joue aujourd'hui). Prend le controle du stage.
 async function _quizDailyStart(){
@@ -11539,12 +11568,51 @@ function _quizWeeklyRefreshCard(){
   const badge = document.getElementById('quizWeeklyBadge');
   if(badge){ const b = badge.querySelector('b'); if(b) b.textContent = alreadyDone ? state.lastScore + '/' + _QUIZ_WEEKLY_LEN : '-'; }
   if(alreadyDone){
-    if(btn){ btn.disabled = true; btn.textContent = '✓ Terminé'; btn.classList.add('done'); }
+    if(btn){ btn.disabled = false; btn.textContent = '✓ Voir mon résultat'; btn.classList.add('done'); btn.title = 'Ton score de la semaine + classement (rejouer possible lundi)'; }
     if(status) status.textContent = `Score cette semaine : ${state.lastScore}/${_QUIZ_WEEKLY_LEN} · reviens lundi`;
   } else {
-    if(btn){ btn.disabled = false; btn.textContent = 'Jouer'; btn.classList.remove('done'); }
+    if(btn){ btn.disabled = false; btn.textContent = 'Jouer'; btn.classList.remove('done'); btn.title = ''; }
     if(status) status.textContent = state.bestScore ? `Ton record : ${state.bestScore}/${_QUIZ_WEEKLY_LEN}` : '20 questions communes à toute la ligue';
   }
+}
+// Affiche le recap du defi hebdo deja termine (view-only + leaderboard hebdo)
+function _quizWeeklyShowLastRecap(){
+  const state = _quizWeeklyState();
+  const weekKey = _quizWeekKey();
+  if(state.lastPlayedWeek !== weekKey) return;
+  _quizChallengeSetActive(true);
+  const stage = document.getElementById('quizStage'); if(!stage) return;
+  const score = state.lastScore;
+  const pctColor = score >= 16 ? 'good' : score >= 12 ? 'ok' : 'bad';
+  const emoji = score >= 18 ? '🏆' : score >= 14 ? '🎯' : score >= 10 ? '👍' : '💪';
+  // Leaderboard hebdo : lit les docs quizStats de la ligue pour la semaine en cours
+  const rows = [];
+  _quizCloudAll.forEach(d => {
+    const w = d?.weekly?.[weekKey];
+    if(typeof w?.score === 'number') rows.push({ uid: d.uid, name: d.name || 'Joueur', score: w.score });
+  });
+  if(!rows.find(r => r.uid === myUid)) rows.push({ uid: myUid, name: (realPeople.find(p => p.id === myUid)?.name) || 'toi', score });
+  rows.sort((a,b) => b.score - a.score);
+  const lbHtml = rows.length
+    ? `<div class="qz-lb-inline"><div class="qz-lb-title">🏅 Classement hebdo</div><ol class="qz-lb-list">${rows.map((r,i) => `<li class="${r.uid===myUid?'me':''}"><span class="qz-lb-rank">${i+1}</span><span class="qz-lb-name">${esc(r.name)}${r.uid===myUid?' <span class="qz-lb-you">(toi)</span>':''}</span><span class="qz-lb-metric"><b>${r.score}</b><span class="qz-lb-sub">/${_QUIZ_WEEKLY_LEN}</span></span></li>`).join('')}</ol></div>` : '';
+  stage.innerHTML = `
+    <div class="qz-recap ${pctColor}">
+      <div class="qz-recap-emoji">${emoji}</div>
+      <div class="qz-recap-title">Défi hebdo — ton résultat</div>
+      <div class="qz-recap-score"><b>${score}</b><span class="qz-recap-total">/${_QUIZ_WEEKLY_LEN}</span></div>
+      <div class="qz-recap-meta">
+        <span>Record perso <b>${state.bestScore}</b></span>
+      </div>
+      <p class="help" style="margin:10px 0 0; text-align:center;">Reviens lundi prochain pour le nouveau défi.</p>
+      ${lbHtml}
+      <div class="qz-recap-actions">
+        <button type="button" class="qz-cta qz-recap-back" id="quizChallengeExit">Retour au quiz</button>
+        <button type="button" class="qz-btn-secondary" id="quizSeeLeaderboard">🏆 Classement niveau</button>
+      </div>
+    </div>
+  `;
+  const skip = document.getElementById('quizSkip'); if(skip) skip.hidden = true;
+  const next = document.getElementById('quizNext'); if(next) next.hidden = true;
 }
 async function _quizWeeklyStart(){
   const weekKey = _quizWeekKey();
@@ -11894,10 +11962,20 @@ document.addEventListener('click', e => {
   const skip = e.target.closest('#quizSkip'); if(skip){ _quizStart(); return; }
   const replay = e.target.closest('#quizReplayBtn'); if(replay){ _quizReplayAudio(); return; }
   // Defi du jour : bouton Jouer + selection reponse
-  const dailyBtn = e.target.closest('#quizDailyBtn'); if(dailyBtn && !dailyBtn.disabled){ _quizDailyStart(); return; }
+  const dailyBtn = e.target.closest('#quizDailyBtn');
+  if(dailyBtn){
+    // Deja joue aujourd'hui : affiche le recap (view-only). Sinon lance le defi.
+    if(dailyBtn.classList.contains('done')) _quizDailyShowLastRecap();
+    else _quizDailyStart();
+    return;
+  }
   const dailyChoice = e.target.closest('[data-quiz-daily-choice]'); if(dailyChoice){ _quizDailyAnswer(+dailyChoice.dataset.quizDailyChoice); return; }
-  // Defi hebdo : bouton Jouer + selection reponse
-  const weeklyBtn = e.target.closest('#quizWeeklyBtn'); if(weeklyBtn && !weeklyBtn.disabled){ _quizWeeklyStart(); return; }
+  const weeklyBtn = e.target.closest('#quizWeeklyBtn');
+  if(weeklyBtn){
+    if(weeklyBtn.classList.contains('done')) _quizWeeklyShowLastRecap();
+    else _quizWeeklyStart();
+    return;
+  }
   const weeklyChoice = e.target.closest('[data-quiz-weekly-choice]'); if(weeklyChoice){ _quizWeeklyAnswer(+weeklyChoice.dataset.quizWeeklyChoice); return; }
   // Retour au quiz normal apres un defi (recap ou abandon en cours)
   const chExit = e.target.closest('#quizChallengeExit');
