@@ -817,6 +817,17 @@
   <div id="viewQuiz" style="display:none;">
     <section class="panel qz-panel">
       <!-- Header : titre + mode switch pill -->
+      <!-- Defi du jour : 5 questions communes a tous, seed=date, streak persiste -->
+      <div class="qz-daily-card" id="quizDailyCard" hidden>
+        <div class="qz-daily-main">
+          <div class="qz-daily-titleline">🎪 <b>Défi du jour</b> <span class="qz-daily-sub">5 questions communes à tous · 1 fois par jour</span></div>
+          <div class="qz-daily-status" id="quizDailyStatus"></div>
+        </div>
+        <div class="qz-daily-right">
+          <div class="qz-daily-streak" id="quizDailyStreak" title="Jours consécutifs joués">🔥 <b>0</b></div>
+          <button type="button" class="qz-daily-btn" id="quizDailyBtn">Jouer</button>
+        </div>
+      </div>
       <div class="qz-head">
         <h2 class="qz-title">🎵 Quiz des chants</h2>
         <div class="qz-mode-switch">

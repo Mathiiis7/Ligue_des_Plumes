@@ -9989,6 +9989,7 @@ function renderQuizInit(){
   document.querySelectorAll('[data-quiz-sens]').forEach(b => b.classList.toggle('on', b.dataset.quizSens === _quizSens));
   _quizRefreshStatsUI();
   _quizRefreshProblemBadge();
+  _quizDailyRefreshCard();
 }
 
 /* ---------------- Pokedex : grille de toutes les especes FR ---------------- */
@@ -11107,6 +11108,216 @@ async function _quizStart(){
   }
   stage.innerHTML = '<p class="help" style="margin:0;">Pas de son trouvé dans le pool après 5 essais. Ré-essaie ou change de niveau.</p>';
 }
+/* ---------------- Defi du jour ----------------
+   5 questions communes a tous les utilisateurs chaque jour (seed = date).
+   Streak persiste : jours consecutifs joues, tracked en localStorage.
+   Une seule tentative par jour. Ne compte pas dans le classement classe.
+   ------------------------------------------------ */
+const _QUIZ_DAILY_LEN = 5;
+let _quizDailyActive = null;   // { questions:[{sci,choices,correctIdx}], current, correctCount, date }
+function _quizDailyState(){
+  const def = { lastPlayedDate:'', lastScore:0, streak:0, bestStreak:0, totalPlayed:0, totalCorrect:0 };
+  try{ return { ...def, ...JSON.parse(localStorage.getItem('mb-quiz-daily')||'{}') }; }catch(_){ return def; }
+}
+function _quizDailySave(s){ try{ localStorage.setItem('mb-quiz-daily', JSON.stringify(s)); }catch(_){} }
+function _quizDayShift(dateStr, dDays){
+  const d = new Date(dateStr + 'T12:00:00');   // midi pour eviter les surprises DST
+  d.setDate(d.getDate() + dDays);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+// Mulberry32 : PRNG deterministe rapide
+function _seededRng(seed){
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6D2B79F5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function _hashSeed(str){
+  let h = 5381;
+  for(let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+  return h;
+}
+// Genere les 5 questions du jour : deterministe par date. Tier 1-5 (moderee),
+// tous les joueurs voient les memes especes + memes distracteurs + meme ordre.
+function _quizDailyGenerate(dateStr){
+  const rng = _seededRng(_hashSeed('daily-v1-' + dateStr));
+  // Pool trie alphabetiquement pour etre pareil chez tout le monde (Object.keys peut varier).
+  const pool = Object.keys(FR_NAMES).filter(sci => {
+    if(_isExoticNotCounted(sci)) return false;
+    if(typeof hasRarityCalibration === 'function' && !hasRarityCalibration(sci)) return false;
+    const t = rarityForFilter(sci);
+    return t >= 1 && t <= 5;
+  }).sort();
+  // Fisher-Yates seeded
+  const shuffled = pool.slice();
+  for(let i = shuffled.length - 1; i > 0; i--){
+    const j = Math.floor(rng() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  const five = shuffled.slice(0, _QUIZ_DAILY_LEN);
+  return five.map(sci => {
+    // 3 distracteurs pris deterministicement dans le reste du pool
+    const others = shuffled.filter(s => s !== sci);
+    const distracters = [];
+    for(let i = 0; i < 3 && others.length; i++){
+      const idx = Math.floor(rng() * others.length);
+      distracters.push(others.splice(idx, 1)[0]);
+    }
+    const choices = [sci, ...distracters];
+    // Shuffle des choix (position de la bonne reponse deterministe)
+    for(let i = choices.length - 1; i > 0; i--){
+      const j = Math.floor(rng() * (i + 1));
+      [choices[i], choices[j]] = [choices[j], choices[i]];
+    }
+    return { sci, choices, correctIdx: choices.indexOf(sci) };
+  });
+}
+// Rafraichit la carte 'Defi du jour' selon l'etat (deja joue ? streak ?)
+function _quizDailyRefreshCard(){
+  const card = document.getElementById('quizDailyCard');
+  if(!card) return;
+  card.hidden = false;
+  const state = _quizDailyState();
+  const today = _quizDayKey();
+  const alreadyDone = state.lastPlayedDate === today;
+  const btn = document.getElementById('quizDailyBtn');
+  const status = document.getElementById('quizDailyStatus');
+  const streakEl = document.getElementById('quizDailyStreak');
+  // Streak affiche : compte le streak actuel si joue hier ou aujourd'hui, sinon 0
+  const yesterday = _quizDayShift(today, -1);
+  let displayStreak = state.streak || 0;
+  if(state.lastPlayedDate !== today && state.lastPlayedDate !== yesterday) displayStreak = 0;
+  if(streakEl){ const b = streakEl.querySelector('b'); if(b) b.textContent = displayStreak; }
+  if(alreadyDone){
+    if(btn){ btn.disabled = true; btn.textContent = '✓ Terminé'; btn.classList.add('done'); }
+    if(status) status.textContent = `Score du jour : ${state.lastScore}/${_QUIZ_DAILY_LEN} · reviens demain`;
+  } else {
+    if(btn){ btn.disabled = false; btn.textContent = 'Jouer'; btn.classList.remove('done'); }
+    if(status) status.textContent = displayStreak > 0 ? 'Prêt à continuer ta série ?' : 'Nouveau : 5 questions par jour';
+  }
+}
+// Demarre le defi (si pas deja joue aujourd'hui). Prend le controle du stage.
+async function _quizDailyStart(){
+  const today = _quizDayKey();
+  const state = _quizDailyState();
+  if(state.lastPlayedDate === today) return;   // deja joue
+  _quizDailyActive = { questions: _quizDailyGenerate(today), current: 0, correctCount: 0, date: today };
+  _quizDailyRenderQuestion();
+}
+// Rend la question courante du defi (fetch audio en background).
+async function _quizDailyRenderQuestion(){
+  if(!_quizDailyActive) return;
+  const q = _quizDailyActive.questions[_quizDailyActive.current];
+  if(!q){ _quizDailyFinish(); return; }
+  const stage = document.getElementById('quizStage'); if(!stage) return;
+  const nextBtn = document.getElementById('quizNext'); if(nextBtn){ nextBtn.hidden = true; nextBtn.textContent = 'Suivante →'; }
+  const skipBtn = document.getElementById('quizSkip'); if(skipBtn) skipBtn.hidden = true;
+  stage.innerHTML = `<p class="help" style="margin:0;">🎧 Chargement du défi (${_quizDailyActive.current + 1}/${_QUIZ_DAILY_LEN})…</p>`;
+  const sounds = await _fetchXenoSound(q.sci).catch(() => null);
+  if(!sounds){ stage.innerHTML = '<p class="help">Pas de son trouvé pour cette question, on saute.</p>'; setTimeout(() => { _quizDailyActive.current++; _quizDailyRenderQuestion(); }, 800); return; }
+  const top = (sounds.songList || []).slice(0,3).filter(Boolean);
+  const topC = (sounds.callList || []).slice(0,3).filter(Boolean);
+  const src = top.length ? top[Math.floor(Math.random()*top.length)] : (topC.length ? topC[Math.floor(Math.random()*topC.length)] : null);
+  if(!src?.file){ _quizDailyActive.current++; _quizDailyRenderQuestion(); return; }
+  stage.innerHTML = `
+    <div class="qz-play">
+      <div class="qz-session-progress qz-daily-progress">🎪 Défi du jour · Question <b>${_quizDailyActive.current + 1}</b> / ${_QUIZ_DAILY_LEN}</div>
+      <div class="qz-player">
+        <button type="button" class="qz-play-btn" id="quizPlayBtn">▶</button>
+        <div class="qz-progress"><div class="qz-progress-fill" id="quizProgressFill"></div></div>
+      </div>
+      <p class="qz-prompt">Quelle espèce est-ce ?</p>
+      <div class="qz-choices" id="quizChoices">
+        ${q.choices.map((c,i)=>`<button type="button" class="qz-choice" data-quiz-daily-choice="${i}"><span class="qz-choice-fr">${esc(FR_NAMES[c]||c)}</span><span class="qz-choice-sci">${esc(c)}</span></button>`).join('')}
+      </div>
+    </div>
+    <audio id="quizAudio" style="display:none;"><source src="${esc(src.file)}"></audio>
+  `;
+  // Wire player (meme logique que le mode classique, cap 20s)
+  const audio = document.getElementById('quizAudio');
+  const playBtn = document.getElementById('quizPlayBtn');
+  const progFill = document.getElementById('quizProgressFill');
+  if(audio && playBtn){
+    const CAP_SEC = 20;
+    const togglePlay = () => { if(audio.paused) audio.play().catch(()=>{}); else audio.pause(); };
+    playBtn.addEventListener('click', togglePlay);
+    audio.addEventListener('play', () => { playBtn.textContent = '⏸'; playBtn.classList.add('playing'); });
+    audio.addEventListener('pause', () => { playBtn.textContent = '▶'; playBtn.classList.remove('playing'); });
+    audio.addEventListener('ended', () => { playBtn.textContent = '▶'; playBtn.classList.remove('playing'); if(progFill) progFill.style.width = '0%'; });
+    audio.addEventListener('timeupdate', () => {
+      if(audio.currentTime >= CAP_SEC){ try{ audio.pause(); audio.currentTime = 0; }catch(_){}; if(progFill) progFill.style.width = '0%'; return; }
+      const effDur = Math.min(audio.duration || CAP_SEC, CAP_SEC);
+      if(effDur && progFill) progFill.style.width = ((audio.currentTime / effDur) * 100) + '%';
+    });
+    audio.play().catch(()=>{});
+  }
+}
+// Reponse a une question du defi. Highlight bonne/mauvaise, avance apres 1.2s.
+function _quizDailyAnswer(idx){
+  if(!_quizDailyActive) return;
+  const q = _quizDailyActive.questions[_quizDailyActive.current];
+  if(!q) return;
+  const correct = idx === q.correctIdx;
+  if(correct) _quizDailyActive.correctCount++;
+  const box = document.getElementById('quizChoices'); if(box){
+    box.querySelectorAll('[data-quiz-daily-choice]').forEach((b, i) => {
+      b.disabled = true;
+      if(i === q.correctIdx) b.classList.add('correct');
+      else if(i === idx) b.classList.add('wrong');
+    });
+  }
+  // Alimente aussi les stats per-espece (top a reviser)
+  _quizTrainRecord(q.sci, correct);
+  // Petit delai puis passe a la suivante (ou finish)
+  setTimeout(() => {
+    _quizDailyActive.current++;
+    if(_quizDailyActive.current >= _QUIZ_DAILY_LEN) _quizDailyFinish();
+    else _quizDailyRenderQuestion();
+  }, 1400);
+}
+// Termine le defi : update streak + affiche le recap
+function _quizDailyFinish(){
+  if(!_quizDailyActive) return;
+  const today = _quizDailyActive.date;
+  const score = _quizDailyActive.correctCount;
+  const state = _quizDailyState();
+  // Streak logic : consecutive si lastPlayedDate = hier, sinon reset a 1
+  const yesterday = _quizDayShift(today, -1);
+  const wasContinuation = state.lastPlayedDate === yesterday;
+  state.streak = wasContinuation ? (state.streak || 0) + 1 : 1;
+  if(state.streak > (state.bestStreak || 0)) state.bestStreak = state.streak;
+  state.lastPlayedDate = today;
+  state.lastScore = score;
+  state.totalPlayed = (state.totalPlayed || 0) + 1;
+  state.totalCorrect = (state.totalCorrect || 0) + score;
+  _quizDailySave(state);
+  // Recap card
+  const stage = document.getElementById('quizStage'); if(stage){
+    const pctColor = score >= 4 ? 'good' : score >= 3 ? 'ok' : 'bad';
+    const emoji = score === 5 ? '🏆' : score >= 4 ? '🎯' : score >= 3 ? '👍' : '💪';
+    const streakLine = wasContinuation
+      ? `<div class="qz-recap-diff-wrap"><span class="qz-recap-diff up">🔥 ${state.streak} jours de suite !</span></div>`
+      : (state.streak === 1 && state.bestStreak > 1 ? `<div class="qz-recap-diff-wrap"><span class="qz-recap-diff down">Série cassée · nouvelle 1re</span></div>` : '');
+    stage.innerHTML = `
+      <div class="qz-recap ${pctColor}">
+        <div class="qz-recap-emoji">${emoji}</div>
+        <div class="qz-recap-title">Défi du jour terminé</div>
+        <div class="qz-recap-score"><b>${score}</b><span class="qz-recap-total">/${_QUIZ_DAILY_LEN}</span></div>
+        ${streakLine}
+        <div class="qz-recap-meta">
+          <span>🔥 Série actuelle <b>${state.streak}</b></span>
+          <span>· Record <b>${state.bestStreak}</b></span>
+        </div>
+        <p class="help" style="margin:10px 0 0; text-align:center;">Reviens demain pour continuer la série.</p>
+      </div>
+    `;
+  }
+  _quizDailyActive = null;
+  _quizDailyRefreshCard();
+}
 // Mode Inverse : affiche la photo de l'espece correcte, propose 4 audios
 // (1 bon + 3 distracteurs) a ecouter, l'utilisateur choisit celui qui
 // correspond. Fetch photo + 4 audios en parallele pour minimiser la latence.
@@ -11319,6 +11530,9 @@ document.addEventListener('click', e => {
   const next = e.target.closest('#quizNext'); if(next){ _quizStart(); return; }
   const skip = e.target.closest('#quizSkip'); if(skip){ _quizStart(); return; }
   const replay = e.target.closest('#quizReplayBtn'); if(replay){ _quizReplayAudio(); return; }
+  // Defi du jour : bouton Jouer + selection reponse
+  const dailyBtn = e.target.closest('#quizDailyBtn'); if(dailyBtn && !dailyBtn.disabled){ _quizDailyStart(); return; }
+  const dailyChoice = e.target.closest('[data-quiz-daily-choice]'); if(dailyChoice){ _quizDailyAnswer(+dailyChoice.dataset.quizDailyChoice); return; }
   // Ouvre la carte des especes a reviser
   const probOpen = e.target.closest('#quizProblemOpen'); if(probOpen){ _quizRenderProblemCard(); return; }
   // Lance une session de revision sur les 10 especes a probleme (bascule en Entrainement)
@@ -11397,12 +11611,13 @@ document.addEventListener('keydown', e => {
   const tag = (e.target?.tagName || '').toLowerCase();
   if(tag === 'input' || tag === 'textarea' || tag === 'select' || e.target?.isContentEditable) return;
   if(e.ctrlKey || e.metaKey || e.altKey) return;
-  // Chiffres 1-6 : repond a la question (4 choix ou 6 en Expert)
+  // Chiffres 1-6 : repond a la question (4 choix ou 6 en Expert, ou defi du jour)
   if(e.key >= '1' && e.key <= '6'){
-    if(!_quizCurrent) return;
     const box = document.getElementById('quizChoices');
     if(!box) return;
-    const btn = box.querySelector(`[data-quiz-choice="${(+e.key) - 1}"]`);
+    // Marche pour les choix classiques ET le defi (data-quiz-daily-choice)
+    const btn = box.querySelector(`[data-quiz-choice="${(+e.key) - 1}"]`)
+             || box.querySelector(`[data-quiz-daily-choice="${(+e.key) - 1}"]`);
     if(btn && !btn.disabled){ e.preventDefault(); btn.click(); }
     return;
   }
