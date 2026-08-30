@@ -6683,14 +6683,19 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   if(b.dataset.view==='targets') renderTargets();
   try{ localStorage.setItem('mb-last-tab', b.dataset.view); }catch(_){ }
 }));
-// Restaure l'onglet visité la dernière fois (par défaut Ma liste)
-try{
-  const last = localStorage.getItem('mb-last-tab');
-  if(last && last!=='load'){
-    const btn = [...document.querySelectorAll('.tab')].find(x=>x.dataset.view===last);
-    if(btn) btn.click();
-  }
-}catch(_){ }
+// Restaure l'onglet visité la dernière fois (par défaut Ma liste).
+// Defer via setTimeout(0) pour laisser le reste du module finir de s'executer avant
+// que renderPokedex / renderTargets etc. n'accedent aux vars _pkdxFilters/_targetsX
+// declarees plus tard dans le fichier (evite les TDZ / undefined au boot).
+setTimeout(() => {
+  try{
+    const last = localStorage.getItem('mb-last-tab');
+    if(last && last!=='load'){
+      const btn = [...document.querySelectorAll('.tab')].find(x=>x.dataset.view===last);
+      if(btn) btn.click();
+    }
+  }catch(_){ }
+}, 0);
 let pendingImage = null;
 async function compressImage(file, maxDim=1000, maxLen=700000){
   const img = await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>rej(new Error('img')); i.src=URL.createObjectURL(file); });
