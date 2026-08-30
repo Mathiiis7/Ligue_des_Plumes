@@ -1461,7 +1461,7 @@ function renderMembers(){
   }
   const admin = isAdmin();
   el.innerHTML = state.people.map(p=>{
-    const adminTools = admin ? `<button class="pchip-admin" data-adm-rename="${esc(p.id)}" data-adm-name="${esc(p.name)}" title="Renommer (admin)">✎</button><button class="pchip-admin pchip-admin-del" data-adm-remove="${esc(p.id)}" data-adm-name="${esc(p.name)}" title="Retirer (admin)">✕</button>` : '';
+    const adminTools = admin ? `<button class="pchip-admin" data-adm-rename="${esc(p.id)}" data-adm-name="${esc(p.name)}" title="Renommer (admin)">✎</button><button class="pchip-admin pchip-admin-del" data-adm-remove="${esc(p.id)}" data-adm-name="${esc(p.name)}" title="Retirer (admin)">← Quitter</button>` : '';
     return `<div class="pchip" style="--series:var(--s${p.si})">
       <span class="dot"></span>
       <span class="pname">${isOnline(p.id)?'<span class="pname-dot" title="en ligne"></span>':''}${esc(p.name)}${p.isMe?'<span class="youtag">vous</span>':''}</span>
@@ -2577,7 +2577,7 @@ function commentsBar(target){
     const t = c.createdAt?.toDate ? c.createdAt.toDate() : null;
     const time = t ? t.toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
     const canDelete = c.uid === myUid || isAdmin();
-    const del = canDelete ? `<button class="cmt-del" data-cmt-del="${esc(c.id)}" title="Supprimer">✕</button>` : '';
+    const del = canDelete ? `<button class="cmt-del" data-cmt-del="${esc(c.id)}" title="Supprimer">← Quitter</button>` : '';
     return `<div class="cmt-item"><span class="cmt-who">${esc(nm)}</span> <span class="cmt-txt">${esc(c.text)}</span>${time?` <span class="cmt-time">${esc(time)}</span>`:''}${del}</div>`;
   }).join('');
   const form = myUid
@@ -6847,7 +6847,7 @@ function renderPhotoDrafts(){
   const box=$('#photoDraft'), thumbs=$('#photoDraftThumbs'); if(!box||!thumbs) return;
   if(!photoDrafts.length){ box.style.display='none'; thumbs.innerHTML=''; return; }
   box.style.display='';
-  thumbs.innerHTML=photoDrafts.map((src,i)=>`<div class="photo-draft-thumb"><img src="${src}" alt="aperçu"><button type="button" data-i="${i}" title="Retirer">✕</button></div>`).join('');
+  thumbs.innerHTML=photoDrafts.map((src,i)=>`<div class="photo-draft-thumb"><img src="${src}" alt="aperçu"><button type="button" data-i="${i}" title="Retirer">← Quitter</button></div>`).join('');
   const btn=$('#photoPublish'); if(btn) btn.textContent = photoDrafts.length>1 ? `Publier (${photoDrafts.length})` : 'Publier';
 }
 $('#photoInput')?.addEventListener('change', async e=>{
@@ -10832,7 +10832,10 @@ function _quizSessionShowRecap(){
         <span>🔥 Série max <b>${s.streakMax}</b></span>
         <span class="qz-recap-lvl">${_quizLevelLabel(s.level)}</span>
       </div>
-      <button type="button" class="qz-cta" id="quizStart">Nouvelle manche</button>
+      <div class="qz-recap-actions">
+        <button type="button" class="qz-cta" id="quizStart">Nouvelle manche</button>
+        <button type="button" class="qz-btn-secondary" id="quizSeeLeaderboard">🏆 Voir le classement</button>
+      </div>
     </div>
   `;
   const skip = document.getElementById('quizSkip'); if(skip) skip.hidden = true;
@@ -11319,7 +11322,7 @@ async function _quizDailyRenderQuestion(){
   if(!src?.file){ _quizDailyActive.current++; _quizDailyRenderQuestion(); return; }
   stage.innerHTML = `
     <div class="qz-play">
-      <div class="qz-session-progress qz-daily-progress">🎪 Défi du jour · Question <b>${_quizDailyActive.current + 1}</b> / ${_QUIZ_DAILY_LEN} <button type="button" class="qz-challenge-exit-btn" id="quizChallengeExit" title="Abandonner (progression perdue)">✕</button></div>
+      <div class="qz-session-progress qz-daily-progress">🎪 Défi du jour · Question <b>${_quizDailyActive.current + 1}</b> / ${_QUIZ_DAILY_LEN} <button type="button" class="qz-challenge-exit-btn" id="quizChallengeExit" title="Abandonner (progression perdue)">← Quitter</button></div>
       <div class="qz-player">
         <button type="button" class="qz-play-btn" id="quizPlayBtn">▶</button>
         <div class="qz-progress"><div class="qz-progress-fill" id="quizProgressFill"></div></div>
@@ -11433,7 +11436,10 @@ function _quizDailyFinish(){
           <span>· Record <b>${state.bestStreak}</b></span>
         </div>
         <p class="help" style="margin:10px 0 0; text-align:center;">Reviens demain pour continuer la série.</p>
-        <button type="button" class="qz-cta qz-recap-back" id="quizChallengeExit">Retour au quiz</button>
+        <div class="qz-recap-actions">
+          <button type="button" class="qz-cta qz-recap-back" id="quizChallengeExit">Retour au quiz</button>
+          <button type="button" class="qz-btn-secondary" id="quizSeeLeaderboard">🏆 Voir le classement</button>
+        </div>
       </div>
     `;
   }
@@ -11558,7 +11564,7 @@ async function _quizWeeklyRenderQuestion(){
   if(!src?.file){ _quizWeeklyActive.current++; _quizWeeklyRenderQuestion(); return; }
   stage.innerHTML = `
     <div class="qz-play">
-      <div class="qz-session-progress qz-weekly-progress">🏅 Défi hebdo · Question <b>${_quizWeeklyActive.current + 1}</b> / ${_QUIZ_WEEKLY_LEN} <button type="button" class="qz-challenge-exit-btn" id="quizChallengeExit" title="Abandonner (progression perdue)">✕</button></div>
+      <div class="qz-session-progress qz-weekly-progress">🏅 Défi hebdo · Question <b>${_quizWeeklyActive.current + 1}</b> / ${_QUIZ_WEEKLY_LEN} <button type="button" class="qz-challenge-exit-btn" id="quizChallengeExit" title="Abandonner (progression perdue)">← Quitter</button></div>
       <div class="qz-player">
         <button type="button" class="qz-play-btn" id="quizPlayBtn">▶</button>
         <div class="qz-progress"><div class="qz-progress-fill" id="quizProgressFill"></div></div>
@@ -11641,7 +11647,10 @@ function _quizWeeklyFinish(){
         </div>
         <p class="help" style="margin:10px 0 0; text-align:center;">Reviens lundi prochain pour le nouveau défi.</p>
         ${lbHtml}
-        <button type="button" class="qz-cta qz-recap-back" id="quizChallengeExit">Retour au quiz</button>
+        <div class="qz-recap-actions">
+          <button type="button" class="qz-cta qz-recap-back" id="quizChallengeExit">Retour au quiz</button>
+          <button type="button" class="qz-btn-secondary" id="quizSeeLeaderboard">🏆 Classement niveau</button>
+        </div>
       </div>
     `;
   }
@@ -11885,6 +11894,7 @@ document.addEventListener('click', e => {
   // Retour au quiz normal apres un defi (recap ou abandon en cours)
   const chExit = e.target.closest('#quizChallengeExit');
   if(chExit){
+    const wasAfterFinish = !_quizDailyActive && !_quizWeeklyActive;   // clic depuis le recap
     _quizDailyActive = null;
     _quizWeeklyActive = null;
     _quizChallengeSetActive(false);
@@ -11893,6 +11903,24 @@ document.addEventListener('click', e => {
     }
     const skip = document.getElementById('quizSkip'); if(skip) skip.hidden = true;
     const next = document.getElementById('quizNext'); if(next) next.hidden = true;
+    // Scroll vers le leaderboard si on sort apres avoir termine un defi
+    if(wasAfterFinish){
+      const lb = document.getElementById('quizLeaderboard');
+      if(lb) setTimeout(() => lb.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    }
+    return;
+  }
+  // Bouton dedie 'voir le classement' sur les recaps
+  const seeLb = e.target.closest('#quizSeeLeaderboard');
+  if(seeLb){
+    _quizDailyActive = null;
+    _quizWeeklyActive = null;
+    _quizChallengeSetActive(false);
+    const stage = document.getElementById('quizStage'); if(stage){
+      stage.innerHTML = '<div class="qz-empty"><div class="qz-empty-icon">🎧</div><p>Prêt à tester ton oreille ?</p><button type="button" class="qz-cta" id="quizStart">Lancer le quiz</button></div>';
+    }
+    const lb = document.getElementById('quizLeaderboard');
+    if(lb) setTimeout(() => lb.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
     return;
   }
   // Ouvre la carte des especes a reviser

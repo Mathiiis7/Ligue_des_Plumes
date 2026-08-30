@@ -717,10 +717,11 @@
   .qz-weekly-badge { background:color-mix(in srgb,#eab308 15%,var(--surface)) !important; color:#a16207 !important; }
   .qz-weekly-progress { background:color-mix(in srgb,#eab308 15%,var(--surface-2)) !important; color:#a16207 !important; }
   .qz-lb-inline { margin-top:16px; padding-top:12px; border-top:1px solid var(--line); }
-  .qz-challenge-exit-btn { margin-left:8px; padding:2px 8px; border:1px solid rgba(0,0,0,.12); background:transparent; color:inherit; border-radius:10px; font:600 11px/1 system-ui; cursor:pointer; opacity:.7; }
-  .qz-challenge-exit-btn:hover { opacity:1; background:rgba(0,0,0,.06); }
-  .qz-recap-back { margin-top:14px; padding:10px 20px; border:none; background:var(--surface); color:var(--ink); border-radius:10px; font:600 13px/1 system-ui; cursor:pointer; border:1px solid var(--line-2); }
+  .qz-challenge-exit-btn { margin-left:10px; padding:4px 10px; border:1px solid rgba(0,0,0,.15); background:rgba(255,255,255,.6); color:inherit; border-radius:8px; font:600 11px/1 system-ui; cursor:pointer; opacity:.85; }
+  .qz-challenge-exit-btn:hover { opacity:1; background:rgba(0,0,0,.08); }
+  .qz-recap-back { padding:10px 20px; border:none; background:var(--surface); color:var(--ink); border-radius:10px; font:600 13px/1 system-ui; cursor:pointer; border:1px solid var(--line-2); }
   .qz-recap-back:hover { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,var(--surface)); }
+  .qz-recap-actions { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:14px; }
   /* Classement entre amis (Firestore) */
   #quizLeaderboard { margin-top:20px; padding-top:16px; border-top:1px solid var(--line); }
   .qz-lb-title { font-size:14px; font-weight:700; color:var(--ink); margin-bottom:10px; }
