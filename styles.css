@@ -649,6 +649,44 @@
   .qz-verdict-sono { max-width:100%; margin:8px 0 0; border-radius:6px; opacity:.85; }
   .qz-verdict-replay { margin-top:12px; padding:8px 16px; border:1px solid var(--line-2); background:var(--surface); color:var(--ink); border-radius:999px; font:600 13px/1 system-ui; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
   .qz-verdict-replay:hover { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,var(--surface)); }
+  /* Progress badge en haut du player pendant une session Classe */
+  .qz-session-progress { display:inline-block; margin:0 auto 10px; padding:4px 12px; background:color-mix(in srgb,var(--accent) 10%,var(--surface-2)); color:var(--accent-ink); border-radius:999px; font:700 12px/1 system-ui; letter-spacing:.2px; }
+  .qz-session-progress b { font-weight:800; }
+  /* Recap card affichee apres la 10eme question */
+  .qz-recap { text-align:center; padding:24px 18px; border-radius:16px; background:var(--surface-2); }
+  .qz-recap.good { background:color-mix(in srgb,#22c55e 12%,var(--surface-2)); }
+  .qz-recap.ok { background:color-mix(in srgb,#f59e0b 10%,var(--surface-2)); }
+  .qz-recap.bad { background:color-mix(in srgb,#ef4444 10%,var(--surface-2)); }
+  .qz-recap-emoji { font-size:54px; line-height:1; margin-bottom:6px; }
+  .qz-recap-title { font-size:15px; font-weight:700; color:var(--ink-2); letter-spacing:.4px; text-transform:uppercase; margin-bottom:8px; }
+  .qz-recap-score { font-size:52px; line-height:1; color:var(--ink); font-weight:800; margin-bottom:8px; }
+  .qz-recap-score b { font-weight:800; }
+  .qz-recap-total { font-size:26px; color:var(--ink-3); font-weight:600; }
+  .qz-recap-diff-wrap { margin-bottom:12px; }
+  .qz-recap-diff { display:inline-block; padding:4px 12px; border-radius:999px; font:700 12px/1 system-ui; }
+  .qz-recap-diff.up { background:color-mix(in srgb,#22c55e 20%,transparent); color:#15803d; }
+  .qz-recap-diff.down { background:color-mix(in srgb,#ef4444 20%,transparent); color:#b91c1c; }
+  .qz-recap-diff.eq { background:var(--surface); color:var(--ink-3); }
+  .qz-recap-meta { display:flex; justify-content:center; gap:12px; font-size:13px; color:var(--ink-2); margin-bottom:16px; flex-wrap:wrap; }
+  .qz-recap-meta b { color:var(--ink); }
+  .qz-recap-lvl { color:var(--ink-3); }
+  /* Banner 'especes a reviser' entre topbar et stage */
+  #quizProblemBanner { margin:8px 0 0; }
+  .qz-problem-badge { padding:8px 14px; border:1px solid color-mix(in srgb,#ef4444 40%,var(--line-2)); background:color-mix(in srgb,#ef4444 8%,var(--surface)); color:var(--ink); border-radius:12px; font:600 13px/1.2 system-ui; cursor:pointer; display:inline-flex; align-items:center; gap:6px; width:100%; justify-content:center; }
+  .qz-problem-badge:hover { background:color-mix(in srgb,#ef4444 14%,var(--surface)); }
+  .qz-problem-badge b { color:#b91c1c; font-weight:800; }
+  /* Carte 'especes a reviser' rendue dans le stage */
+  .qz-problem { padding:16px; background:var(--surface-2); border-radius:12px; }
+  .qz-problem-head { text-align:center; margin-bottom:12px; }
+  .qz-problem-title { font-size:18px; font-weight:700; color:var(--ink); margin-bottom:4px; }
+  .qz-problem-sub { font-size:12px; color:var(--ink-3); }
+  .qz-problem-list { list-style:decimal; padding-left:24px; margin:0 0 16px; display:flex; flex-direction:column; gap:6px; }
+  .qz-problem-list li { display:flex; justify-content:space-between; align-items:baseline; gap:12px; font-size:14px; padding:6px 8px; background:var(--surface); border-radius:6px; }
+  .qz-prob-nm { font-weight:600; color:var(--ink); }
+  .qz-prob-stat { font-size:12px; color:var(--ink-2); white-space:nowrap; }
+  .qz-prob-stat b { color:#b91c1c; font-weight:800; }
+  .qz-prob-pct { color:var(--ink-3); font-weight:500; margin-left:2px; }
+  .qz-problem-actions { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
   .qz-actions { display:flex; gap:10px; justify-content:center; margin-top:16px; }
   .qz-btn-primary { background:var(--accent); color:#fff; border:none; padding:10px 22px; font:600 14px/1 system-ui; border-radius:20px; cursor:pointer; }
   .qz-btn-primary:hover { background:var(--accent-ink); }
