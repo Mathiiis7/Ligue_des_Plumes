@@ -10808,58 +10808,9 @@ function _quizPickPool(){
   const fresh = filtered.filter(sci => !recent.has((sci||'').toLowerCase()));
   return fresh.length >= 8 ? fresh : filtered;
 }
-// Session 10 questions (mode Classe uniquement) : recap a la fin avec score,
-// serie max et diff vs derniere manche. Entrainement reste en jeu libre continu.
-const _QUIZ_SESSION_LEN = 10;
-let _quizSession = null;   // { qNum, correct, streak, streakMax, level, done }
-function _quizSessionStart(){ _quizSession = { qNum: 0, correct: 0, streak: 0, streakMax: 0, level: _quizCurrentLevel(), done: false }; }
-function _quizSessionOnAnswer(correct){
-  if(!_quizSession) return;
-  _quizSession.qNum++;
-  if(correct){
-    _quizSession.correct++;
-    _quizSession.streak++;
-    if(_quizSession.streak > _quizSession.streakMax) _quizSession.streakMax = _quizSession.streak;
-  } else _quizSession.streak = 0;
-  if(_quizSession.qNum >= _QUIZ_SESSION_LEN) _quizSession.done = true;
-}
-function _quizSessionLastKey(level){ return 'mb-quiz-last-session-' + level; }
-function _quizSessionLastLoad(level){ try{ return JSON.parse(localStorage.getItem(_quizSessionLastKey(level)) || 'null'); }catch(_){ return null; } }
-function _quizSessionShowRecap(){
-  const stage = document.getElementById('quizStage'); if(!stage || !_quizSession) return;
-  const s = _quizSession;
-  const prev = _quizSessionLastLoad(s.level);
-  let diffTxt = '';
-  if(prev && typeof prev.correct === 'number'){
-    const diff = s.correct - prev.correct;
-    if(diff > 0) diffTxt = `<span class="qz-recap-diff up">+${diff} vs dernière</span>`;
-    else if(diff < 0) diffTxt = `<span class="qz-recap-diff down">${diff} vs dernière</span>`;
-    else diffTxt = `<span class="qz-recap-diff eq">= vs dernière</span>`;
-  }
-  // Sauve cette manche comme derniere pour compareison future
-  try{ localStorage.setItem(_quizSessionLastKey(s.level), JSON.stringify({ correct: s.correct, total: _QUIZ_SESSION_LEN, streakMax: s.streakMax })); }catch(_){}
-  const emoji = s.correct >= 9 ? '🏆' : s.correct >= 7 ? '🎯' : s.correct >= 5 ? '👍' : '💪';
-  const pctColor = s.correct >= 7 ? 'good' : s.correct >= 5 ? 'ok' : 'bad';
-  stage.innerHTML = `
-    <div class="qz-recap ${pctColor}">
-      <div class="qz-recap-emoji">${emoji}</div>
-      <div class="qz-recap-title">Manche terminée</div>
-      <div class="qz-recap-score"><b>${s.correct}</b><span class="qz-recap-total">/${_QUIZ_SESSION_LEN}</span></div>
-      ${diffTxt ? `<div class="qz-recap-diff-wrap">${diffTxt}</div>` : ''}
-      <div class="qz-recap-meta">
-        <span>🔥 Série max <b>${s.streakMax}</b></span>
-        <span class="qz-recap-lvl">${_quizLevelLabel(s.level)}</span>
-      </div>
-      <div class="qz-recap-actions">
-        <button type="button" class="qz-cta" id="quizStart">Nouvelle manche</button>
-        <button type="button" class="qz-btn-secondary" id="quizSeeLeaderboard">🏆 Voir le classement</button>
-      </div>
-    </div>
-  `;
-  const skip = document.getElementById('quizSkip'); if(skip) skip.hidden = true;
-  const next = document.getElementById('quizNext'); if(next) next.hidden = true;
-  _quizSession = null;   // reset pour la prochaine
-}
+// Session : refactoree en jeu continu. Le classement suit deja les stats
+// glissantes (dayScore/dayTotal + last100 + bestStreak) qui se mettent a jour
+// a chaque reponse, independamment de tout groupement par 10 questions.
 // Pool force : quand l'utilisateur clique 'Reviser mes especes ratees', on limite
 // le tirage a ce sous-ensemble. Reset a null apres la session (ou switch mode/niveau).
 let _quizForcedPool = null;
@@ -11073,7 +11024,6 @@ function _quizSetSens(s){
   // Anti-triche : changer de sens = changer de bucket, jette la question en cours
   if(_quizCurrent){
     _quizCurrent = null;
-    _quizSession = null;
     _quizForcedPool = null;
     const stage = document.getElementById('quizStage');
     if(stage){
@@ -11086,14 +11036,8 @@ function _quizSetSens(s){
   _quizRenderLeaderboard();
 }
 async function _quizStart(){
-  // Session 10 questions (mode Classe : classic ET inverse). Applique avant le
-  // dispatch inverse pour que le recap et le compteur marchent dans les 2 sens.
-  if(_quizMode === 'compete'){
-    if(_quizSession && _quizSession.done){ _quizSessionShowRecap(); return; }
-    if(!_quizSession) _quizSessionStart();
-  } else {
-    _quizSession = null;
-  }
+  // Jeu continu : plus de session de 10 questions. Les stats classement
+  // (dayScore, last100, bestStreak) suivent en temps reel a chaque reponse.
   // Mode inverse : rendu tres different (photo + 4 audios) -> fonction dediee.
   // Sub-mode de Classe : dispatch via _quizIsInverse (compete + sens=inverse).
   if(_quizIsInverse()) return _quizStartInverse();
@@ -11177,12 +11121,8 @@ async function _quizStart(){
     _quizCurrent = { sci, correctIdx, choices, audioUrl, sonoUrl, type: _quizCurrentType(), level: _quizCurrentLevel() };
     _quizAddRecent(sci);   // marque comme "vue" pour ne pas retomber dessus dans les 20 prochaines
     // Badge de progression : visible uniquement en mode Classe (session 10 questions).
-    const progBadge = (_quizMode === 'compete' && _quizSession)
-      ? `<div class="qz-session-progress">Question <b>${_quizSession.qNum + 1}</b> / ${_QUIZ_SESSION_LEN}</div>`
-      : '';
     stage.innerHTML = `
       <div class="qz-play">
-        ${progBadge}
         <div class="qz-player">
           <button type="button" class="qz-play-btn" id="quizPlayBtn">▶</button>
           <div class="qz-progress"><div class="qz-progress-fill" id="quizProgressFill"></div></div>
@@ -11516,7 +11456,7 @@ function _quizDailyFinish(){
 // format selon le mode (Classe = 10Q, Entrainement = continu Leitner).
 function _quizEmptyStateHtml(){
   let subtitle = '';
-  if(_quizMode === 'compete') subtitle = '<p class="qz-empty-sub">Session de 10 questions - ta perf est classée</p>';
+  if(_quizMode === 'compete') subtitle = '<p class="qz-empty-sub">Jeu continu - ta perf est classée en temps réel</p>';
   else if(_quizMode === 'train') subtitle = '<p class="qz-empty-sub">Entraînement libre - focus sur tes espèces à revoir</p>';
   return `<div class="qz-empty"><div class="qz-empty-icon">🎧</div><p>Prêt à tester ton oreille ?</p>${subtitle}<button type="button" class="qz-cta" id="quizStart">Lancer le quiz</button></div>`;
 }
@@ -11809,9 +11749,7 @@ async function _quizStartInverse(){
     _quizCurrent = { sci, correctIdx, choices: shuffled.map(x => x.sci), audios: shuffled.map(x => x.audio), photoUrl: photo.url, inverse: true, level: _quizCurrentLevel() };
     _quizAddRecent(sci);
     const letters = ['A','B','C','D'];
-    const progBadge = (_quizSession)
-      ? `<div class="qz-session-progress">Question <b>${_quizSession.qNum + 1}</b> / ${_QUIZ_SESSION_LEN}</div>`
-      : '';
+    const progBadge = '';
     stage.innerHTML = `
       <div class="qz-inverse">
         ${progBadge}
@@ -11872,7 +11810,6 @@ function _quizAnswerInverse(idx){
     _quizPushLast100(b, correct);
     all.byLevelInverse[level] = b;
     _quizSaveStats(all);
-    _quizSessionOnAnswer(correct);   // session 10 questions marche aussi en inverse
   }
   _quizTrainRecord(_quizCurrent.sci, correct);   // alimente le top 'a reviser'
   _quizRefreshStatsUI();
@@ -11900,7 +11837,7 @@ function _quizAnswerInverse(idx){
   const nextBtn = $('#quizNext');
   if(nextBtn){
     nextBtn.hidden = false;
-    nextBtn.textContent = (_quizSession && _quizSession.done) ? 'Voir le résultat 🏁' : 'Suivante →';
+    nextBtn.textContent = 'Suivante →';
   }
   $('#quizSkip').hidden = true;
 }
@@ -11926,7 +11863,6 @@ function _quizAnswer(idx){
     _quizPushLast100(bucket, correct);
     all.byLevel[level] = bucket;
     _quizSaveStats(all);
-    _quizSessionOnAnswer(correct);   // track pour le recap 10/10
     // Alimente aussi les stats per-espece (utilise pour le top 'especes qui posent
     // probleme' + Leitner en Entrainement). Un raté en Classe compte comme un rate.
     _quizTrainRecord(_quizCurrent.sci, correct);
@@ -11965,7 +11901,7 @@ function _quizAnswer(idx){
   if(nextBtn){
     nextBtn.hidden = false;
     // Si la session Classe est terminee, le prochain clic affiche le recap : label explicite.
-    nextBtn.textContent = (_quizSession && _quizSession.done) ? 'Voir le résultat 🏁' : 'Suivante →';
+    nextBtn.textContent = 'Suivante →';
   }
   $('#quizSkip').hidden = true;
 }
@@ -12073,8 +12009,7 @@ document.addEventListener('click', e => {
     // audio deja entendu sur Facile soit re-utilise pour scorer sur Difficile.
     if(_quizCurrent){
       _quizCurrent = null;
-      _quizSession = null;   // reset session : le niveau/mode a change, on repart de 0
-      _quizForcedPool = null;   // sortir aussi du mode revision
+        _quizForcedPool = null;   // sortir aussi du mode revision
       const stage = document.getElementById('quizStage');
       if(stage){
         stage.innerHTML = _quizEmptyStateHtml();
@@ -12102,8 +12037,7 @@ document.addEventListener('click', e => {
     // pour scorer dans un autre bucket. Meme pattern que le switch de mode.
     if(_quizCurrent){
       _quizCurrent = null;
-      _quizSession = null;   // reset session : le niveau/mode a change, on repart de 0
-      _quizForcedPool = null;   // sortir aussi du mode revision
+        _quizForcedPool = null;   // sortir aussi du mode revision
       const stage = document.getElementById('quizStage');
       if(stage){
         stage.innerHTML = _quizEmptyStateHtml();
