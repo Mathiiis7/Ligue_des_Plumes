@@ -9946,6 +9946,17 @@ function _quizSetMode(m){
   // idem : le son est deja choisi cote question, la variete est cote reponses).
   const typeSec = document.getElementById('quizTypeSection');
   if(typeSec) typeSec.hidden = (m !== 'train');
+  // Chip Expert : cache en Inverse (pas 6 audios, gameplay ne s'y prete pas).
+  // Si Expert etait selectionne, on repli sur Difficile.
+  const expertChip = document.querySelector('[data-quiz-level="expert"]');
+  if(expertChip) expertChip.style.display = (m === 'inverse') ? 'none' : '';
+  if(m === 'inverse'){
+    const lvlSel = document.getElementById('quizLevel');
+    if(lvlSel && lvlSel.value === 'expert'){
+      lvlSel.value = 'hard';
+      document.querySelectorAll('[data-quiz-level]').forEach(b => b.classList.toggle('on', b.dataset.quizLevel === 'hard'));
+    }
+  }
   // Anti-triche : si on switch de mode alors qu'une question est en cours ou vient
   // d'etre repondue, on jette la question. Sinon l'utilisateur pourrait entendre
   // l'audio en Entrainement (non compte), reconnaitre l'espece, puis switcher en
@@ -10650,7 +10661,8 @@ function _quizPickPool(){
     return _quizForcedPool.filter(sci => FR_NAMES[sci] && !_isExoticNotCounted(sci));
   }
   const lvl = ($('#quizLevel')?.value) || 'easy';
-  const maxTier = lvl === 'easy' ? 3 : lvl === 'med' ? 5 : 8;   // expert = 8 (comme hard)
+  // Expert : toutes rarites (tier 1-9, inclut ultra rares) pour justifier son nom.
+  const maxTier = lvl === 'easy' ? 3 : lvl === 'med' ? 5 : lvl === 'hard' ? 8 : 9;
   let pool = Object.keys(FR_NAMES);
   // Filtre : rareté <= maxTier, pas exotique X/C (pas de son fiable), FR_NAMES existe,
   // ET espece calibrée dans le catalogue rareté FR (evite d'inclure les especes mondiales
