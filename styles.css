@@ -709,6 +709,26 @@
   .qz-daily-btn:disabled { background:var(--line-2); color:var(--ink-3); cursor:default; box-shadow:none; }
   .qz-daily-btn.done { background:#22c55e; color:#fff; opacity:.9; }
   .qz-daily-progress { background:color-mix(in srgb,var(--accent) 15%,var(--surface-2)) !important; color:var(--accent-ink) !important; }
+  /* Classement entre amis (Firestore) */
+  #quizLeaderboard { margin-top:20px; padding-top:16px; border-top:1px solid var(--line); }
+  .qz-lb-title { font-size:14px; font-weight:700; color:var(--ink); margin-bottom:10px; }
+  .qz-lb-empty { padding:16px; background:var(--surface-2); border-radius:10px; text-align:center; font-size:13px; color:var(--ink-3); }
+  .qz-lb-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:6px; }
+  .qz-lb-list li { display:grid; grid-template-columns:32px 1fr auto auto auto; gap:10px; align-items:center; padding:8px 12px; background:var(--surface-2); border-radius:8px; font-size:13px; }
+  .qz-lb-list li.me { background:color-mix(in srgb,var(--accent) 14%,var(--surface-2)); border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line-2)); }
+  .qz-lb-rank { font-weight:800; color:var(--ink-3); text-align:center; }
+  .qz-lb-list li:nth-child(1) .qz-lb-rank { color:#eab308; }
+  .qz-lb-list li:nth-child(2) .qz-lb-rank { color:#94a3b8; }
+  .qz-lb-list li:nth-child(3) .qz-lb-rank { color:#a16207; }
+  .qz-lb-name { font-weight:600; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .qz-lb-you { color:var(--accent-ink); font-size:11px; font-weight:600; }
+  .qz-lb-metric { font-size:12px; color:var(--ink-2); text-align:right; white-space:nowrap; }
+  .qz-lb-metric b { color:var(--ink); font-weight:800; }
+  .qz-lb-sub { font-size:10.5px; color:var(--ink-3); font-weight:500; margin-left:2px; }
+  @media (max-width: 520px){
+    .qz-lb-list li { grid-template-columns:28px 1fr auto; gap:8px; row-gap:2px; }
+    .qz-lb-list li .qz-lb-metric:nth-of-type(2) { display:none; }
+  }
   @media (max-width: 520px){
     .qz-daily-card { flex-direction:column; align-items:stretch; text-align:center; }
     .qz-daily-right { justify-content:center; }

@@ -9845,7 +9845,89 @@ function _quizStats(){
   }
   return out;
 }
-function _quizSaveStats(s){ try{ localStorage.setItem('mb-quiz-stats', JSON.stringify(s)); }catch(_){} }
+function _quizSaveStats(s){
+  try{ localStorage.setItem('mb-quiz-stats', JSON.stringify(s)); }catch(_){}
+  _quizScheduleCloudSync();
+}
+// Sync Firestore : pousse les stats de l'utilisateur pour le classement entre amis.
+// Debounce a 3s pour eviter les rafales d'ecritures (une par reponse).
+let _quizCloudSyncTimer = null;
+function _quizScheduleCloudSync(){
+  if(!myUid || !leagueId) return;
+  if(_quizCloudSyncTimer) clearTimeout(_quizCloudSyncTimer);
+  _quizCloudSyncTimer = setTimeout(() => { _quizCloudSyncTimer = null; _quizCloudSyncNow().catch(()=>{}); }, 3000);
+}
+async function _quizCloudSyncNow(){
+  if(!myUid || !leagueId) return;
+  try{
+    const stats = _quizStats();
+    const daily = _quizDailyState();
+    const me = realPeople.find(p => p.id === myUid);
+    const payload = {
+      uid: myUid,
+      name: (me?.name) || myMemberName?.() || 'Joueur',
+      byLevel: stats.byLevel,
+      byLevelInverse: stats.byLevelInverse,
+      daily: { streak: daily.streak, bestStreak: daily.bestStreak, totalPlayed: daily.totalPlayed, totalCorrect: daily.totalCorrect, lastPlayedDate: daily.lastPlayedDate, lastScore: daily.lastScore },
+      updatedAt: serverTimestamp(),
+    };
+    await setDoc(doc(db, 'leagues', leagueId, 'quizStats', myUid), payload, { merge: true });
+  }catch(_){}
+}
+// Charge le classement entre amis pour le bucket courant (level + sens).
+let _quizCloudAll = new Map();   // uid -> stats doc
+let _quizUnsubCloud = null;
+function _quizSubscribeCloud(){
+  if(_quizUnsubCloud) return;   // deja abonne
+  if(!leagueId) return;
+  try{
+    _quizUnsubCloud = onSnapshot(collection(db, 'leagues', leagueId, 'quizStats'), snap => {
+      _quizCloudAll.clear();
+      snap.forEach(d => _quizCloudAll.set(d.id, d.data()));
+      _quizRenderLeaderboard();
+    }, () => {});
+  }catch(_){}
+}
+// Rend le petit tableau classement entre amis pour le bucket courant.
+function _quizRenderLeaderboard(){
+  const el = document.getElementById('quizLeaderboard');
+  if(!el) return;
+  const level = _quizCurrentLevel();
+  const isInv = _quizIsInverse();
+  const key = isInv ? 'byLevelInverse' : 'byLevel';
+  const rows = [];
+  _quizCloudAll.forEach(doc => {
+    const bucket = doc?.[key]?.[level];
+    if(!bucket || !bucket.total) return;
+    const last100 = bucket.last100 || [];
+    const nivPct = last100.length ? Math.round(last100.reduce((a,b)=>a+b,0) * 100 / last100.length) : null;
+    rows.push({ uid: doc.uid, name: doc.name || 'Joueur', total: bucket.total, score: bucket.score, nivPct, bestStreak: bucket.bestStreak || 0 });
+  });
+  // Tri : par niveau% desc (nul en dernier), egalite: par total desc
+  rows.sort((a, b) => {
+    if(a.nivPct == null && b.nivPct == null) return b.total - a.total;
+    if(a.nivPct == null) return 1;
+    if(b.nivPct == null) return -1;
+    if(b.nivPct !== a.nivPct) return b.nivPct - a.nivPct;
+    return b.total - a.total;
+  });
+  if(!rows.length){ el.innerHTML = '<div class="qz-lb-empty">Personne dans ta ligue n\'a encore joué à ce bucket. Sois le premier !</div>'; el.hidden = false; return; }
+  const sensIco = isInv ? '🖼️' : '🔊';
+  const html = `
+    <div class="qz-lb">
+      <div class="qz-lb-title">🏆 Classement de la ligue · ${_quizLevelLabel(level)} · ${sensIco}</div>
+      <ol class="qz-lb-list">
+        ${rows.map((r, i) => {
+          const isMe = r.uid === myUid;
+          const nivTxt = r.nivPct == null ? '-' : r.nivPct + '%';
+          return `<li class="${isMe ? 'me' : ''}"><span class="qz-lb-rank">${i+1}</span><span class="qz-lb-name">${esc(r.name)}${isMe ? ' <span class="qz-lb-you">(toi)</span>' : ''}</span><span class="qz-lb-metric"><b>${nivTxt}</b> <span class="qz-lb-sub">niveau</span></span><span class="qz-lb-metric"><b>${r.total}</b> <span class="qz-lb-sub">parties</span></span><span class="qz-lb-metric">🔥 <b>${r.bestStreak}</b></span></li>`;
+        }).join('')}
+      </ol>
+    </div>
+  `;
+  el.innerHTML = html;
+  el.hidden = false;
+}
 // Difficulte courante : source de verite pour choisir le bucket de stats en Classe.
 function _quizCurrentLevel(){
   const v = document.getElementById('quizLevel')?.value;
@@ -9990,6 +10072,9 @@ function renderQuizInit(){
   _quizRefreshStatsUI();
   _quizRefreshProblemBadge();
   _quizDailyRefreshCard();
+  // Firestore : subscribe au classement de la ligue + push initial des stats
+  _quizSubscribeCloud();
+  _quizScheduleCloudSync();
 }
 
 /* ---------------- Pokedex : grille de toutes les especes FR ---------------- */
@@ -10969,6 +11054,7 @@ function _quizSetSens(s){
     const next = document.getElementById('quizNext'); if(next) next.hidden = true;
   }
   _quizRefreshStatsUI();
+  _quizRenderLeaderboard();
 }
 async function _quizStart(){
   // Session 10 questions (mode Classe : classic ET inverse). Applique avant le
@@ -11294,6 +11380,7 @@ function _quizDailyFinish(){
   state.totalPlayed = (state.totalPlayed || 0) + 1;
   state.totalCorrect = (state.totalCorrect || 0) + score;
   _quizDailySave(state);
+  _quizScheduleCloudSync();   // pousse le nouveau streak + score du jour
   // Recap card
   const stage = document.getElementById('quizStage'); if(stage){
     const pctColor = score >= 4 ? 'good' : score >= 3 ? 'ok' : 'bad';
@@ -11599,6 +11686,7 @@ document.addEventListener('click', e => {
       const next = document.getElementById('quizNext'); if(next) next.hidden = true;
     }
     _quizRefreshStatsUI();   // pills reflete le nouveau bucket
+    _quizRenderLeaderboard();   // classement refleche le nouveau bucket
     return;
   }
 });
