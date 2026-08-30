@@ -604,10 +604,14 @@
   .qz-cta:active { transform:translateY(0); }
   /* Player audio custom quiz : gros bouton play central + progress */
   .qz-player { display:flex; flex-direction:column; align-items:center; gap:14px; margin-bottom:22px; }
-  .qz-play-btn { width:80px; height:80px; border-radius:50%; border:none; background:var(--accent); color:#fff; font-size:32px; cursor:pointer; display:grid; place-items:center; box-shadow:0 6px 20px color-mix(in srgb, var(--accent) 45%, transparent); transition:transform .12s; padding-left:5px; }
+  .qz-play-btn { width:80px; height:80px; border-radius:50%; border:none; background:var(--accent); color:#fff; font-size:0; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 20px color-mix(in srgb, var(--accent) 45%, transparent); transition:transform .12s; padding:0; line-height:1; }
   .qz-play-btn:hover { transform:scale(1.05); }
   .qz-play-btn:active { transform:scale(.98); }
-  .qz-play-btn.playing { padding-left:0; }
+  /* Icones play/pause en SVG inline via pseudos pour centrage geometrique parfait */
+  .qz-play-btn::before { content:''; display:block; width:0; height:0; border-style:solid; border-width:14px 0 14px 22px; border-color:transparent transparent transparent #fff; margin-left:5px; }
+  .qz-play-btn.playing::before { display:none; }
+  .qz-play-btn::after { content:''; display:none; width:22px; height:26px; border-left:7px solid #fff; border-right:7px solid #fff; }
+  .qz-play-btn.playing::after { display:block; }
   .qz-progress { width:100%; max-width:340px; height:6px; background:var(--surface-2); border-radius:3px; overflow:hidden; }
   .qz-progress-fill { height:100%; background:var(--accent); border-radius:3px; width:0; transition:width .1s linear; }
   .qz-prompt { text-align:center; font-size:15px; color:var(--ink-2); margin:0 0 16px; font-weight:600; }

@@ -10794,14 +10794,12 @@ function _quizAnswer(idx){
     const nm = FR_NAMES[_quizCurrent.sci] || _quizCurrent.sci;
     const badge = correct ? '<div class="qz-verdict-badge">✓</div>' : '<div class="qz-verdict-badge">✗</div>';
     const verdictClass = correct ? 'correct' : 'wrong';
-    const sonoHtml = _quizCurrent.sonoUrl ? `<img class="qz-verdict-sono" src="${esc(_quizCurrent.sonoUrl)}" alt="Spectrogramme" onerror="this.remove()">` : '';
     // Lookup Wikipedia photo asynchrone puis update le verdict
     const verdictHtml = `<div class="qz-verdict ${verdictClass}">
       ${badge}
       <div class="qz-verdict-species"><span class="sp-link" data-sci="${esc(_quizCurrent.sci)}" style="cursor:pointer; text-decoration:underline dotted;">${esc(nm)}</span></div>
       <div class="qz-verdict-sci">${esc(_quizCurrent.sci)}</div>
       <div id="quizVerdictPhoto"></div>
-      ${sonoHtml}
     </div>`;
     stage.insertAdjacentHTML('beforeend', verdictHtml);
     // Fetch photo Wikipedia (deja en cache session si l'espece a ete consultee)
