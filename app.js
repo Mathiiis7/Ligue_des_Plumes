@@ -1494,7 +1494,16 @@ document.addEventListener('click', async e=>{
     const uid = del.dataset.admRemove;
     const old = del.dataset.admName;
     if(!confirm(`Retirer "${old}" de la ligue ? Ses obs et son profil seront supprimés (irréversible).`)) return;
-    try{ await deleteDoc(doc(db,'leagues',leagueId,'members',uid)); }catch(err){ showError(err); }
+    try{
+      console.log('[admin-remove] deleteDoc leagues/'+leagueId+'/members/'+uid);
+      await deleteDoc(doc(db,'leagues',leagueId,'members',uid));
+      console.log('[admin-remove] OK, snapshot should update');
+      alert(`"${old}" retiré. Si tu vois encore son chip, recharge la page.`);
+    }catch(err){
+      console.error('[admin-remove] FAIL', err);
+      alert('Échec suppression : ' + (err?.code || err?.message || 'inconnu') + '\n\nLikely cause : Firestore security rules. Voir console.');
+      showError(err);
+    }
   }
 });
 
