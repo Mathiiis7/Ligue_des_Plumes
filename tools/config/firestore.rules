@@ -126,6 +126,13 @@ service cloud.firestore {
         allow create, update: if request.auth != null;
         allow delete: if false;
       }
+
+      // Stats quiz : classement des chants entre membres. Lecture par tous (leaderboard),
+      // chacun n'ecrit que son propre document.
+      match /quizStats/{uid} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && request.auth.uid == uid;
+      }
     }
   }
 }
