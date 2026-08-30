@@ -9942,10 +9942,10 @@ function _quizCurrentLevel(){
   return (v === 'med' || v === 'hard' || v === 'expert') ? v : 'easy';
 }
 function _quizLevelLabel(l){
-  if(l === 'expert') return '🔥 Expert';
-  if(l === 'hard') return '🔴 Difficile';
-  if(l === 'med') return '🟡 Moyen';
-  return '🟢 Facile';
+  if(l === 'expert') return 'Expert';
+  if(l === 'hard') return 'Difficile';
+  if(l === 'med') return 'Moyen';
+  return 'Facile';
 }
 // Type de son actif. En Classe on force 'both' (pas de bucket type ; type = filtre
 // audio uniquement en Entrainement).
@@ -9999,9 +9999,8 @@ function _quizRefreshStatsUI(){
   if(scopeEl){
     scopeEl.hidden = (_quizMode !== 'compete');
     if(_quizMode === 'compete'){
-      // Pas de suffixe en mode classique (le sens par defaut se comprend seul).
-      // Suffixe explicite uniquement en Photo->Son pour signaler le bucket different.
-      scopeEl.textContent = _quizLevelLabel(level) + (_quizIsInverse() ? ' · Photo→Son' : '');
+      // Juste le nom de la difficulte, sans emoji ni suffixe sens.
+      scopeEl.textContent = _quizLevelLabel(level);
     }
   }
   // Aujourd'hui : dayScore/dayTotal
