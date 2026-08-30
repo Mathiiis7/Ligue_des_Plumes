@@ -10538,10 +10538,13 @@ function _quizPickPool(){
   } else {
     pool = Object.keys(FR_NAMES);
   }
-  // Filtre : rareté <= maxTier, pas exotique X/C (pas de son fiable), FR_NAMES existe.
+  // Filtre : rareté <= maxTier, pas exotique X/C (pas de son fiable), FR_NAMES existe,
+  // ET espece calibrée dans le catalogue rareté FR (evite d'inclure les especes mondiales
+  // sans data FR qui tombent en tier=1 par defaut et polluent le quiz).
   return pool.filter(sci => {
     if(_isExoticNotCounted(sci)) return false;
     if(!FR_NAMES[sci]) return false;
+    if(typeof hasRarityCalibration === 'function' && !hasRarityCalibration(sci)) return false;
     const t = rarityForFilter(sci);
     return t >= 1 && t <= maxTier;
   });
