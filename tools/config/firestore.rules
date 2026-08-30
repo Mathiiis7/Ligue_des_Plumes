@@ -6,10 +6,14 @@ service cloud.firestore {
       // Doc de la ligue (ex. intitulé de colonne) : lecture/écriture par tout utilisateur connecté (anonyme OK)
       allow read, write: if request.auth != null;
 
-      // Membres : chacun voit tout le monde, mais n'écrit que sa propre fiche
+      // Membres : chacun voit tout le monde, ecrit sa propre fiche ; les admins
+      // (UIDs listes) peuvent aussi retirer / renommer n'importe quel membre.
       match /members/{memberId} {
         allow read: if request.auth != null;
-        allow write: if request.auth != null && request.auth.uid == memberId;
+        allow write: if request.auth != null && (
+          request.auth.uid == memberId
+          || request.auth.uid == 'pCf1HuUeIkNJTXC0wujsX04UsFs2'
+        );
       }
 
       // Tchat : lecture par tout connecté ; chacun ne crée QUE ses propres messages ;
