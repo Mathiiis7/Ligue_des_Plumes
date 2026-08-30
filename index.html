@@ -815,17 +815,31 @@
   </div>
 
   <div id="viewQuiz" style="display:none;">
-    <section class="panel" style="padding:20px; margin-top:22px;">
-      <div class="section-head">
-        <div><div class="eyebrow">Reconnaissance auditive</div><h2>🎵 Quiz des chants</h2>
-          <p class="help" style="margin-top:2px;">Écoute et devine l'espèce. Les sons viennent de xeno-canto.</p></div>
+    <section class="panel qz-panel">
+      <!-- Header : titre + mode switch pill -->
+      <div class="qz-head">
+        <h2 class="qz-title">🎵 Quiz des chants</h2>
+        <div class="qz-mode-switch">
+          <button type="button" class="qz-mode on" data-quiz-mode="compete">🏆 Quiz</button>
+          <button type="button" class="qz-mode" data-quiz-mode="train">🎯 Entraînement</button>
+        </div>
       </div>
-      <!-- Mode selecteur : Quiz (competitif, score+streak) vs Entrainement (adaptatif Leitner) -->
-      <div class="quiz-mode-tabs" style="display:flex; gap:6px; margin:0 0 12px; border-bottom:1px solid var(--line);">
-        <button type="button" id="quizModeCompete" class="btn" data-quiz-mode="compete" style="border-radius:8px 8px 0 0; border-bottom:none;">🏆 Quiz</button>
-        <button type="button" id="quizModeTrain" class="btn" data-quiz-mode="train" style="border-radius:8px 8px 0 0; border-bottom:none; background:transparent; color:var(--ink-2);">🎯 Entraînement</button>
+      <!-- Stats en pills + bouton reglages -->
+      <div class="qz-topbar">
+        <div class="qz-stats">
+          <span id="quizStatsCompete" class="qz-stats-line">
+            <span class="qz-pill">🎯 <b id="quizScore">0</b>/<b id="quizTotal">0</b></span>
+            <span class="qz-pill">🔥 <b id="quizStreak">0</b></span>
+          </span>
+          <span id="quizStatsTrain" class="qz-stats-line" hidden>
+            <span class="qz-pill">📚 <b id="quizTrainSeen">0</b></span>
+            <span class="qz-pill">⭐ <b id="quizTrainMastered">0</b></span>
+          </span>
+        </div>
+        <button type="button" class="qz-settings-btn" id="quizSettingsBtn" title="Réglages du quiz">⚙️</button>
       </div>
-      <div class="quiz-ctrls" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:10px 0 14px;">
+      <!-- Reglages depliables (Niveau / Source / Type) -->
+      <div class="qz-settings" id="quizSettings" hidden>
         <label class="explorer-lbl">Niveau
           <select id="quizLevel" class="filt-sel">
             <option value="easy" selected>Facile (tier 1-3)</option>
@@ -846,18 +860,19 @@
             <option value="call">Cri seulement</option>
           </select>
         </label>
-        <div style="margin-left:auto; font-size:13px; color:var(--ink-2);">
-          <span id="quizStatsCompete">Score : <b id="quizScore">0</b> / <b id="quizTotal">0</b> · Streak <b id="quizStreak">0</b></span>
-          <span id="quizStatsTrain" hidden>Travaillées : <b id="quizTrainSeen">0</b> · Maîtrisées : <b id="quizTrainMastered">0</b></span>
+      </div>
+      <!-- Stage principal -->
+      <div id="quizStage" class="qz-stage">
+        <div class="qz-empty">
+          <div class="qz-empty-icon">🎧</div>
+          <p>Prêt à tester ton oreille ?</p>
+          <button type="button" class="qz-cta" id="quizStart">Lancer le quiz</button>
         </div>
       </div>
-      <div id="quizStage" style="border:1px solid var(--line); border-radius:12px; padding:16px; background:var(--surface-2); min-height:220px;">
-        <p class="help" style="margin:0;">Clique sur <b>Nouveau quiz</b> pour commencer.</p>
-      </div>
-      <div style="display:flex; gap:10px; margin-top:12px;">
-        <button type="button" class="btn" id="quizStart">▶ Nouveau quiz</button>
-        <button type="button" class="btn" id="quizSkip" hidden>⏭ Passer</button>
-        <button type="button" class="btn" id="quizNext" hidden>➡ Suivante</button>
+      <!-- Actions bottom -->
+      <div class="qz-actions">
+        <button type="button" class="qz-btn-secondary" id="quizSkip" hidden>Passer</button>
+        <button type="button" class="qz-btn-primary" id="quizNext" hidden>Suivante →</button>
       </div>
     </section>
   </div>

@@ -9842,9 +9842,7 @@ function _quizSetMode(m){
   if(m !== 'compete' && m !== 'train') return;
   _quizMode = m;
   try{ localStorage.setItem('mb-quiz-mode', m); }catch(_){}
-  const compBtn = $('#quizModeCompete'), trainBtn = $('#quizModeTrain');
-  if(compBtn){ compBtn.style.background = (m === 'compete') ? '' : 'transparent'; compBtn.style.color = (m === 'compete') ? '' : 'var(--ink-2)'; }
-  if(trainBtn){ trainBtn.style.background = (m === 'train') ? '' : 'transparent'; trainBtn.style.color = (m === 'train') ? '' : 'var(--ink-2)'; }
+  document.querySelectorAll('.qz-mode[data-quiz-mode]').forEach(b => b.classList.toggle('on', b.dataset.quizMode === m));
   _quizRefreshStatsUI();
 }
 function renderQuizInit(){ _quizSetMode(_quizMode); _quizRefreshStatsUI(); }
@@ -10739,13 +10737,32 @@ async function _quizStart(){
     const correctIdx = choices.indexOf(sci);
     _quizCurrent = { sci, correctIdx, choices, audioUrl, sonoUrl };
     stage.innerHTML = `
-      <div style="text-align:center;">
-        <audio id="quizAudio" controls autoplay style="width:100%; max-width:520px;"><source src="${esc(audioUrl)}"></audio>
-        <p class="help" style="margin:8px 0 12px;">Quelle espèce est-ce ?</p>
-        <div id="quizChoices" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; max-width:520px; margin:0 auto;">
-          ${choices.map((c,i)=>`<button type="button" class="btn" data-quiz-choice="${i}">${esc(FR_NAMES[c]||c)}</button>`).join('')}
+      <div class="qz-play">
+        <div class="qz-player">
+          <button type="button" class="qz-play-btn" id="quizPlayBtn">▶</button>
+          <div class="qz-progress"><div class="qz-progress-fill" id="quizProgressFill"></div></div>
         </div>
-      </div>`;
+        <p class="qz-prompt">Quelle espèce est-ce ?</p>
+        <div class="qz-choices" id="quizChoices">
+          ${choices.map((c,i)=>`<button type="button" class="qz-choice" data-quiz-choice="${i}"><span class="qz-choice-fr">${esc(FR_NAMES[c]||c)}</span><span class="qz-choice-sci">${esc(c)}</span></button>`).join('')}
+        </div>
+      </div>
+      <audio id="quizAudio" style="display:none;"><source src="${esc(audioUrl)}"></audio>
+    `;
+    // Wire custom player
+    const audio = document.getElementById('quizAudio');
+    const playBtn = document.getElementById('quizPlayBtn');
+    const progFill = document.getElementById('quizProgressFill');
+    if(audio && playBtn){
+      const togglePlay = () => { if(audio.paused) audio.play().catch(()=>{}); else audio.pause(); };
+      playBtn.addEventListener('click', togglePlay);
+      audio.addEventListener('play', () => { playBtn.textContent = '⏸'; playBtn.classList.add('playing'); });
+      audio.addEventListener('pause', () => { playBtn.textContent = '▶'; playBtn.classList.remove('playing'); });
+      audio.addEventListener('ended', () => { playBtn.textContent = '▶'; playBtn.classList.remove('playing'); if(progFill) progFill.style.width = '0%'; });
+      audio.addEventListener('timeupdate', () => { if(audio.duration && progFill) progFill.style.width = ((audio.currentTime / audio.duration) * 100) + '%'; });
+      // Auto-play au chargement
+      audio.play().catch(()=>{});
+    }
     $('#quizSkip').hidden = false;
     return;
   }
@@ -10767,19 +10784,32 @@ function _quizAnswer(idx){
   }
   _quizRefreshStatsUI();
   const box = $('#quizChoices'); if(box){
-    box.querySelectorAll('button').forEach((b, i) => {
+    box.querySelectorAll('button.qz-choice').forEach((b, i) => {
       b.disabled = true;
-      if(i === _quizCurrent.correctIdx){ b.style.background = 'rgb(34 197 94 / .15)'; b.style.borderColor = '#22c55e'; b.style.color = '#166534'; }
-      else if(i === idx){ b.style.background = 'rgb(239 68 68 / .15)'; b.style.borderColor = '#ef4444'; b.style.color = '#991b1b'; }
+      if(i === _quizCurrent.correctIdx) b.classList.add('correct');
+      else if(i === idx) b.classList.add('wrong');
     });
   }
   const stage = $('#quizStage'); if(stage){
     const nm = FR_NAMES[_quizCurrent.sci] || _quizCurrent.sci;
-    const verdict = correct ? '<span style="color:#16a34a; font-weight:700;">✓ Bravo !</span>' : '<span style="color:#dc2626; font-weight:700;">✗ Raté</span>';
-    // Bloc feedback : verdict + espece + spectrogramme du son entendu (mnemotechnique
-    // visuelle : la forme du chant reste en memoire mieux que l'audio seul, cf. Merlin).
-    const sonoHtml = _quizCurrent.sonoUrl ? `<div style="margin-top:12px; max-width:520px; margin-left:auto; margin-right:auto;"><img src="${esc(_quizCurrent.sonoUrl)}" alt="Spectrogramme du chant" style="width:100%; height:auto; border-radius:6px; display:block;" onerror="this.remove()"><p class="help" style="margin:6px 0 0; text-align:center; font-size:11px;">Spectrogramme du son entendu</p></div>` : '';
-    stage.insertAdjacentHTML('beforeend', `<p style="text-align:center; margin:14px 0 0;">${verdict} - c'était <b class="sp-link" data-sci="${esc(_quizCurrent.sci)}" style="cursor:pointer; text-decoration:underline dotted;">${esc(nm)}</b> <span class="p-sci">${esc(_quizCurrent.sci)}</span></p>${sonoHtml}`);
+    const badge = correct ? '<div class="qz-verdict-badge">✓</div>' : '<div class="qz-verdict-badge">✗</div>';
+    const verdictClass = correct ? 'correct' : 'wrong';
+    const sonoHtml = _quizCurrent.sonoUrl ? `<img class="qz-verdict-sono" src="${esc(_quizCurrent.sonoUrl)}" alt="Spectrogramme" onerror="this.remove()">` : '';
+    // Lookup Wikipedia photo asynchrone puis update le verdict
+    const verdictHtml = `<div class="qz-verdict ${verdictClass}">
+      ${badge}
+      <div class="qz-verdict-species"><span class="sp-link" data-sci="${esc(_quizCurrent.sci)}" style="cursor:pointer; text-decoration:underline dotted;">${esc(nm)}</span></div>
+      <div class="qz-verdict-sci">${esc(_quizCurrent.sci)}</div>
+      <div id="quizVerdictPhoto"></div>
+      ${sonoHtml}
+    </div>`;
+    stage.insertAdjacentHTML('beforeend', verdictHtml);
+    // Fetch photo Wikipedia (deja en cache session si l'espece a ete consultee)
+    if(typeof _fetchWikiPhoto === 'function'){
+      _fetchWikiPhoto(_quizCurrent.sci).then(p => {
+        if(p?.url){ const ph = document.getElementById('quizVerdictPhoto'); if(ph) ph.innerHTML = `<img class="qz-verdict-photo" src="${esc(p.url)}" alt="${esc(nm)}">`; }
+      }).catch(()=>{});
+    }
   }
   $('#quizNext').hidden = false;
   $('#quizSkip').hidden = true;
@@ -10790,6 +10820,7 @@ document.addEventListener('click', e => {
   const skip = e.target.closest('#quizSkip'); if(skip){ _quizStart(); return; }
   const choice = e.target.closest('[data-quiz-choice]'); if(choice){ _quizAnswer(+choice.dataset.quizChoice); return; }
   const modeBtn = e.target.closest('[data-quiz-mode]'); if(modeBtn){ _quizSetMode(modeBtn.dataset.quizMode); return; }
+  const settings = e.target.closest('#quizSettingsBtn'); if(settings){ const p = document.getElementById('quizSettings'); if(p) p.hidden = !p.hidden; return; }
 });
 // PWA : installation sur l'écran d'accueil
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('service-worker.js').catch(()=>{}); }
