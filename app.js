@@ -8782,27 +8782,9 @@ function openSpeciesModal(sci){
   // CONFUSION_GROUPS. Rendue direct.
   // Card 'A l'oreille' retiree a la demande utilisateur
   const smConf = $('#smConfuseCard'); if(smConf) smConf.innerHTML = '';
-  // Carte de repartition Cornell S&T (LAZY : declenchee seulement quand la card
-  // scroll dans le viewport). Init Leaflet coute cher (~50-100ms), fetch png
-  // 200-500 KB : on evite ca si l'user reste dans l'onglet Info et ne scroll pas.
-  const rangeBox = $('#smRangeCard');
-  if(rangeBox && 'IntersectionObserver' in window){
-    if(rangeBox._rangeObserver){ try{ rangeBox._rangeObserver.disconnect(); }catch(_){}; }
-    rangeBox._pendingSci = sci;
-    rangeBox._rangeObserver = new IntersectionObserver((entries) => {
-      for(const en of entries){
-        if(en.isIntersecting && rangeBox._pendingSci){
-          _renderSpeciesRangeCard(rangeBox._pendingSci);
-          rangeBox._pendingSci = null;
-          rangeBox._rangeObserver.disconnect();
-          break;
-        }
-      }
-    }, { root: modal.querySelector('.sm-scroll') || null, rootMargin: '200px 0px' });
-    rangeBox._rangeObserver.observe(rangeBox);
-  } else {
-    _renderSpeciesRangeCard(sci);
-  }
+  // Carte de repartition Cornell S&T + GBIF (rendu direct, plus de lazy load
+  // IntersectionObserver qui ne firait pas correctement selon le scroll container).
+  _renderSpeciesRangeCard(sci);
   // Description Wikipedia (async)
   _renderSpeciesDesc(sci);
   // Note : le freq chart est deja rendu par _renderSpeciesRarityCard avec le
