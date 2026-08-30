@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  build-rarity-me-ebird.mjs — Rareté ME depuis le bar chart eBird (comme la FR).
+  build-rarity-me-ebird.mjs - Rareté ME depuis le bar chart eBird (comme la FR).
 
   Utilise ebird-barchart-ME-2015-2026.txt téléchargé depuis
   https://ebird.org/barchart?byr=2015&eyr=2026&r=ME
@@ -18,7 +18,7 @@ const OUT = join(__dir, 'real-rarity-me-ebird.generated.js');
 const GBIF_ME = join(__dir, 'real-rarity-me.generated.js');
 
 // Mêmes seuils que FR (bar chart eBird = même unité : % listes).
-// Mêmes seuils que FR (Option 1 recalibré 2026-08-27) — voir build-rarity-ebird.mjs.
+// Mêmes seuils que FR (Option 1 recalibré 2026-08-27) - voir build-rarity-ebird.mjs.
 const THRESHOLDS = [
   [0.25, 1], [0.15, 2], [0.08, 3], [0.04, 4],
   [0.02, 5], [0.007, 6], [0.0015, 7], [0.0003, 8],

@@ -1,4 +1,4 @@
-# eBird Status & Trends — Migration prep
+# eBird Status & Trends - Migration prep
 
 Ce dossier prepare la migration de `REAL_RARITY` / `REAL_FREQ_MONTHLY` /
 `REAL_RARITY_ME_EBIRD` vers **eBird Status & Trends** (produit Cornell Lab

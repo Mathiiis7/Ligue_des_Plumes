@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  build-rarity-exo-gbif.mjs — Rareté "observabilité réelle" des exotiques FR via GBIF.
+  build-rarity-exo-gbif.mjs - Rareté "observabilité réelle" des exotiques FR via GBIF.
 
   Pourquoi : eBird filtre les oiseaux marqués captifs, ce qui sous-classe les exotiques
   de parc (Oie à tête barrée, Cygne noir, Bernache nonnette...) qui sont totalement

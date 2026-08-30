@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  build-rarity-me.mjs — Rareté GBIF spécifique au Monténégro.
+  build-rarity-me.mjs - Rareté GBIF spécifique au Monténégro.
 
   PRINCIPE
   --------

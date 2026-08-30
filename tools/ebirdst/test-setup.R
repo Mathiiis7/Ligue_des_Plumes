@@ -1,4 +1,4 @@
-# test-setup.R — POC : telecharge et agrege l'abondance d'UNE espece pour la France.
+# test-setup.R - POC : telecharge et agrege l'abondance d'UNE espece pour la France.
 # Valide que le pipeline ebirdst + polygones + zonal stats fonctionne bout en bout.
 # Usage : Rscript tools/ebirdst/test-setup.R
 #

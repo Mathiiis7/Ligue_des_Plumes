@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  build-rarity-ebird.mjs — Barème de "rareté réelle" basé sur la FRÉQUENCE eBird.
+  build-rarity-ebird.mjs - Barème de "rareté réelle" basé sur la FRÉQUENCE eBird.
 
   PRINCIPE
   --------
@@ -11,7 +11,7 @@
 
   Plus le pic de fréquence est bas, plus l'espèce est rare -> poids (1 à 9) élevé.
 
-  BARÈME (seuils fixes sur le pic de fréquence) — SOURCE DE VÉRITÉ DU POIDS
+  BARÈME (seuils fixes sur le pic de fréquence) - SOURCE DE VÉRITÉ DU POIDS
   ------------------------------------------------------------------------
      freq >= 0.35  -> 1  Très commun
      freq >= 0.20  -> 2  Commun

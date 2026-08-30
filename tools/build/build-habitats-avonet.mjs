@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  build-habitats-avonet.mjs — Habitats par espece depuis Avonet (Tobias et al 2022,
+  build-habitats-avonet.mjs - Habitats par espece depuis Avonet (Tobias et al 2022,
   Ecology Letters, DOI 10.6084/m9.figshare.16586228).
 
   Source : tools/avonet.xlsx, sheet 'AVONET2_eBird' (10 661 species, taxonomie eBird)

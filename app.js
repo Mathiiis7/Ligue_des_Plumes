@@ -11315,7 +11315,7 @@ function _quizDailyShowLastRecap(){
   stage.innerHTML = `
     <div class="qz-recap ${pctColor}">
       <div class="qz-recap-emoji">${emoji}</div>
-      <div class="qz-recap-title">Défi du jour — ton résultat</div>
+      <div class="qz-recap-title">Défi du jour - ton résultat</div>
       <div class="qz-recap-score"><b>${score}</b><span class="qz-recap-total">/${_QUIZ_DAILY_LEN}</span></div>
       <div class="qz-recap-meta">
         <span>🔥 Série actuelle <b>${state.streak}</b></span>
@@ -11598,7 +11598,7 @@ function _quizWeeklyShowLastRecap(){
   stage.innerHTML = `
     <div class="qz-recap ${pctColor}">
       <div class="qz-recap-emoji">${emoji}</div>
-      <div class="qz-recap-title">Défi hebdo — ton résultat</div>
+      <div class="qz-recap-title">Défi hebdo - ton résultat</div>
       <div class="qz-recap-score"><b>${score}</b><span class="qz-recap-total">/${_QUIZ_WEEKLY_LEN}</span></div>
       <div class="qz-recap-meta">
         <span>Record perso <b>${state.bestScore}</b></span>

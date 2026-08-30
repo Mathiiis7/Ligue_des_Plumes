@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  build-redlist.mjs — Extrait la Liste rouge de France (UICN France) des oiseaux
+  build-redlist.mjs - Extrait la Liste rouge de France (UICN France) des oiseaux
   depuis les articles Wikipédia (mêmes sources que FR_NAMES), qui reprennent les
   statuts officiels INPN par population (nicheur / hivernant / de passage).
 

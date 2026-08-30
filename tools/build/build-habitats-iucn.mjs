@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  build-habitats-iucn.mjs — Habitats par espèce depuis IUCN Red List API v3.
+  build-habitats-iucn.mjs - Habitats par espèce depuis IUCN Red List API v3.
 
   Remplace le mapping famille eBird de build-habitats.mjs par une source
   espèce-par-espèce beaucoup plus fine (l'aigle royal est classé "rocher/
@@ -169,7 +169,7 @@ console.log(`\nDistribution :`);
 for (const c of CATS) console.log(`  ${c.padEnd(10)} : ${catCounts[c]} espèces`);
 
 // --- Écriture ---
-const out = `// Généré par tools/build-habitats-iucn.mjs — Habitats depuis IUCN Red List (10 catégories).\n` +
+const out = `// Généré par tools/build-habitats-iucn.mjs - Habitats depuis IUCN Red List (10 catégories).\n` +
             `// Ne pas éditer à la main. Regénérable : node tools/build-habitats-iucn.mjs\n` +
             `export const HABITATS = ${JSON.stringify(HABITATS, null, 0)};\n` +
             `export const HABITAT_CATS = ${JSON.stringify(CATS)};\n`;

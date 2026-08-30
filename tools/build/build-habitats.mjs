@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 /*
-  build-habitats.mjs — Habitats par espèce, basés sur la FAMILLE eBird.
+  build-habitats.mjs - Habitats par espèce, basés sur la FAMILLE eBird.
 
   10 catégories (assez fines pour un badge "polyvalent") :
-    forestier    — forêts (feuillus, conifères, taïga, mangrove...)
-    hzhumide     — marais, roselières, tourbières (eaux stagnantes végétalisées)
-    eaudouce     — rivières, lacs, étangs (eau ouverte)
-    pelagique    — océan large (puffins, pétrels, océanites, albatros)
-    littoral     — plage, dune, port, estuaire (bord de mer)
-    montagne     — falaise, alpin, tundra, haute altitude
-    steppe       — steppes arides, garrigues, gr. plaines sèches (Alaudidae, Otididae...)
-    bocage       — bocage, prairies humides, cultures modestes (Emberizidae, Motacillidae...)
-    urbain       — ville, parc, jardin, bâtiment
-    rocher       — falaises intérieures, éboulis, milieux rocheux (Tichodromidae, monticoles)
+    forestier    - forêts (feuillus, conifères, taïga, mangrove...)
+    hzhumide     - marais, roselières, tourbières (eaux stagnantes végétalisées)
+    eaudouce     - rivières, lacs, étangs (eau ouverte)
+    pelagique    - océan large (puffins, pétrels, océanites, albatros)
+    littoral     - plage, dune, port, estuaire (bord de mer)
+    montagne     - falaise, alpin, tundra, haute altitude
+    steppe       - steppes arides, garrigues, gr. plaines sèches (Alaudidae, Otididae...)
+    bocage       - bocage, prairies humides, cultures modestes (Emberizidae, Motacillidae...)
+    urbain       - ville, parc, jardin, bâtiment
+    rocher       - falaises intérieures, éboulis, milieux rocheux (Tichodromidae, monticoles)
 
   Une famille peut appartenir à plusieurs catégories.
 
@@ -322,7 +322,7 @@ for (const cats of Object.values(HABITATS)) for (const c of cats) if (catCounts[
 console.log(`\nDistribution :`);
 for (const c of CATS) console.log(`  ${c.padEnd(10)} : ${catCounts[c]} espèces`);
 
-const out = `// Généré par tools/build-habitats.mjs — Habitats par famille eBird (10 catégories).\n` +
+const out = `// Généré par tools/build-habitats.mjs - Habitats par famille eBird (10 catégories).\n` +
             `// Ne pas éditer à la main. Regénérable : node tools/build-habitats.mjs\n` +
             `export const HABITATS = ${JSON.stringify(HABITATS, null, 0)};\n` +
             `export const HABITAT_CATS = ${JSON.stringify(CATS)};\n`;

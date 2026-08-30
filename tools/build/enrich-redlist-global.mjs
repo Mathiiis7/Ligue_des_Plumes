@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  enrich-redlist-global.mjs — Complete tools/redlist.json avec le statut
+  enrich-redlist-global.mjs - Complete tools/redlist.json avec le statut
   IUCN Global des especes manquantes, via l'API GBIF.
 
   Redlist.json actuel = base Liste Rouge FR 2016 + statut global des ~645 especes FR.
@@ -101,7 +101,7 @@ for (let i = 0; i < missing.length; i++) {
     ok++;
 
     if (i % 50 === 0 || i === missing.length - 1) {
-      console.log(`  [${i+1}/${missing.length}] OK: ${ok}, NotFound: ${notFound}, Err: ${err} — ${sci} = ${code}`);
+      console.log(`  [${i+1}/${missing.length}] OK: ${ok}, NotFound: ${notFound}, Err: ${err} - ${sci} = ${code}`);
     }
   } catch (e) {
     err++;

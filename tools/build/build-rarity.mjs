@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  build-rarity.mjs — Génère le barème de "rareté réelle" de la Ligue Merlin Bird.
+  build-rarity.mjs - Génère le barème de "rareté réelle" de la Ligue Merlin Bird.
 
   PRINCIPE
   --------
@@ -14,7 +14,7 @@
   1) https://api.gbif.org/v1/species/match?name=<nom scientifique>   -> usageKey
   2) https://api.gbif.org/v1/occurrence/search?country=FR&taxonKey=<usageKey>&limit=0 -> count
 
-  BARÈME (seuils fixes, en nombre d'observations FR) — SOURCE DE VÉRITÉ DU POIDS
+  BARÈME (seuils fixes, en nombre d'observations FR) - SOURCE DE VÉRITÉ DU POIDS
   ----------------------------------------------------------------------------
      n >= 500000 -> 1  Très commun
      n >= 150000 -> 2  Commun
@@ -28,7 +28,7 @@
 
   Remarque : les espèces exotiques/échappées (liste EXOTIC dans index.html) sont
   forcées à 1 au moment de l'affichage (fonction rarityReal), quel que soit le
-  poids calculé ici — inutile de les traiter à part.
+  poids calculé ici - inutile de les traiter à part.
 
   SORTIES
   -------

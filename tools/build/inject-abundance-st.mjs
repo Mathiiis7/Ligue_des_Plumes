@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  inject-abundance-st.mjs — remplace le litteral REAL_ABUNDANCE_ST_FR dans index.html
+  inject-abundance-st.mjs - remplace le litteral REAL_ABUNDANCE_ST_FR dans index.html
   par celui produit par tools/real-abundance-st.generated.js.
 
   Le generated.js est ecrit par tools/ebirdst/build-abundance-by-country.R (Rscript).

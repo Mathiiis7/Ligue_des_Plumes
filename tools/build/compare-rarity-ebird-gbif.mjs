@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  compare-rarity-ebird-gbif.mjs — Compare le tier eBird vs GBIF sur 50 especes temoins FR.
+  compare-rarity-ebird-gbif.mjs - Compare le tier eBird vs GBIF sur 50 especes temoins FR.
 
   Objectif : verifier si l'ecart est faible (~0-1 tier) ou systematique (2+ tiers dans un sens).
   Si faible -> GBIF peut remplacer eBird pour les wild birds. Si systematique -> on garde eBird.

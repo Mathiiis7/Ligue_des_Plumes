@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  download-bar-charts-regional.mjs — Download automatique des bar charts eBird
+  download-bar-charts-regional.mjs - Download automatique des bar charts eBird
   par region (admin1) pour ES/IT/GB/PT. Utilise le cookie de session Mathis
   passe en variable d'environnement EBIRD_COOKIE.
 

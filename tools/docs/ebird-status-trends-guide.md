@@ -11,7 +11,7 @@ Prévu pour session du **2026-08-01**.
 ### 1.1 Installer R
 
 - **Windows** : télécharger depuis [cran.r-project.org/bin/windows/base](https://cran.r-project.org/bin/windows/base/) → installer avec les options par défaut.
-- Optionnel mais recommandé : installer **RStudio Desktop** (gratuit) depuis [posit.co/download/rstudio-desktop](https://posit.co/download/rstudio-desktop/) — IDE pour R, bien plus confortable que la console pure.
+- Optionnel mais recommandé : installer **RStudio Desktop** (gratuit) depuis [posit.co/download/rstudio-desktop](https://posit.co/download/rstudio-desktop/) - IDE pour R, bien plus confortable que la console pure.
 
 ### 1.2 Installer le package ebirdst
 
@@ -122,7 +122,7 @@ library(terra)
 # Charger les contours des 96 départements FR depuis IGN ou geoJSON
 # (fichier statique à mettre dans le repo une fois)
 depts <- st_read("data/departements-france.geojson")
-# Colonne "code" = code INSEE ex "83", "75" — on convertira vers FR-PAC-83 etc.
+# Colonne "code" = code INSEE ex "83", "75" - on convertira vers FR-PAC-83 etc.
 
 # Pour chaque espèce, calculer l'abondance moyenne par département × semaine
 abundance_by_dept <- function(sp_code) {
@@ -188,4 +188,4 @@ Une fois le JSON généré, côté client :
 
 - [ebirdst package tutorial](https://ebird.github.io/ebirdst/)
 - [Status & Trends FAQ](https://science.ebird.org/en/status-and-trends/faq)
-- [Data license](https://science.ebird.org/en/status-and-trends/citations) — free for non-commercial + attribution obligatoire
+- [Data license](https://science.ebird.org/en/status-and-trends/citations) - free for non-commercial + attribution obligatoire

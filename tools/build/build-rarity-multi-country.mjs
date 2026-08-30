@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  build-rarity-multi-country.mjs — Regenere tier + monthly bar chart pour ES/IT/GB/PT
+  build-rarity-multi-country.mjs - Regenere tier + monthly bar chart pour ES/IT/GB/PT
   (les 4 pays sans bar chart pour le moment). Same logic que build-rarity-me-ebird.mjs
   mais parametrisee.
 

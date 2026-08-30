@@ -1,4 +1,4 @@
-# setup.R — Verifie / installe le pipeline ebirdst.
+# setup.R - Verifie / installe le pipeline ebirdst.
 # Usage : Rscript tools/ebirdst/setup.R
 
 cat("=== ebirdst setup check ===\n\n")

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  enrich-fr-names.mjs — Enrichit FR_NAMES avec la eBird taxonomy complete
+  enrich-fr-names.mjs - Enrichit FR_NAMES avec la eBird taxonomy complete
   en francais. Fetch UNE fois via /v2/ref/taxonomy/ebird?locale=fr&cat=species.
 
   Comportement :

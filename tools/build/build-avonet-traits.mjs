@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  build-avonet-traits.mjs — Extrait ecologie + morphologie Avonet pour affichage
+  build-avonet-traits.mjs - Extrait ecologie + morphologie Avonet pour affichage
   sur les fiches especes.
 
   Source : tools/avonet.xlsx, sheet AVONET2_eBird
