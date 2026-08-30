@@ -828,7 +828,7 @@
       <div class="qz-topbar">
         <div class="qz-stats">
           <span id="quizStatsCompete" class="qz-stats-line">
-            <span class="qz-stats-scope" id="quizStatsScope" title="Classement séparé par type de son (à changer dans ⚙️)">🎵 Chant + cri</span>
+            <span class="qz-stats-scope" id="quizStatsScope" title="Classement séparé par difficulté (à changer dans ⚙️)">🟢 Facile</span>
             <span class="qz-pill" title="Taux de bonnes réponses aujourd'hui (reset chaque jour)">🎯 <b id="quizDayPct">-</b> <span class="qz-pill-lbl">aujourd'hui</span> <span class="qz-pill-sub" id="quizDayCount">0/0</span></span>
             <span class="qz-pill" title="Ton niveau moyen sur les 100 dernières parties (glisse au fur et à mesure)">📊 <b id="quizLevelPct">-</b> <span class="qz-pill-lbl">niveau</span> <span class="qz-pill-sub" id="quizLevelCount">sur 0</span></span>
             <span class="qz-pill" title="Ta meilleure série de bonnes réponses consécutives jamais atteinte">🔥 <b id="quizBestStreak">0</b> <span class="qz-pill-lbl">record</span></span>
@@ -852,8 +852,8 @@
             <button type="button" class="person-chip" data-quiz-level="hard">Difficile <span class="fp-hint">tier 1-8</span></button>
           </div>
         </div>
-        <div class="fp-section">
-          <div class="fp-title">Type de son <span class="fp-hint">(classement séparé par type)</span></div>
+        <div class="fp-section" id="quizTypeSection">
+          <div class="fp-title">Type de son <span class="fp-hint">(uniquement en mode Entraînement)</span></div>
           <div class="person-chips" id="quizTypeChips" role="radiogroup" aria-label="Type de son">
             <button type="button" class="person-chip on" data-quiz-type="both">🎵 Chant ou cri</button>
             <button type="button" class="person-chip" data-quiz-type="song">🎶 Chant seulement</button>

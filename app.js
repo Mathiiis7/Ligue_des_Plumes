@@ -9802,30 +9802,42 @@ onAuthStateChanged(auth, user=>{
 let _quizCurrent = null;   // { sci, correctIdx, choices:[sci...], audioUrl, sonoUrl }
 let _quizMode = 'compete';   // 'compete' | 'train'
 try{ const m = localStorage.getItem('mb-quiz-mode'); if(m === 'compete' || m === 'train') _quizMode = m; }catch(_){}
-// Stats quiz : 3 buckets separes par type de son (both / song / call). Chaque bucket
-// a son propre score cumul, dayScore/dayTotal/dayDate, last100[] et bestStreak.
-// La retro-compat migre les anciennes stats flat dans le bucket 'both' au premier read.
+// Stats quiz Classe : 3 buckets separes par niveau de difficulte (easy/med/hard).
+// Le classement du mode Classe est scope par difficulte car les taux sont pas
+// comparables entre niveaux (facile plein de tier 1-3, difficile tier 1-8).
+// Le type de son (chant/cri) n'affecte que le mode Entrainement -> pas de bucket.
+// Migration : ancien byType.both, ou flat legacy, -> byLevel.easy (defaut historique).
 function _quizStatsBucketDefaults(){ return { score:0, total:0, streak:0, bestStreak:0, dayDate:'', dayScore:0, dayTotal:0, last100:[] }; }
 function _quizStats(){
   const raw = (() => { try{ return JSON.parse(localStorage.getItem('mb-quiz-stats')||'{}'); }catch(_){ return {}; } })();
-  const out = { byType: { both: _quizStatsBucketDefaults(), song: _quizStatsBucketDefaults(), call: _quizStatsBucketDefaults() } };
-  if(raw && raw.byType && typeof raw.byType === 'object'){
-    for(const t of ['both','song','call']){
-      if(raw.byType[t]) out.byType[t] = { ..._quizStatsBucketDefaults(), ...raw.byType[t] };
+  const out = { byLevel: { easy: _quizStatsBucketDefaults(), med: _quizStatsBucketDefaults(), hard: _quizStatsBucketDefaults() } };
+  if(raw && raw.byLevel && typeof raw.byLevel === 'object'){
+    for(const t of ['easy','med','hard']){
+      if(raw.byLevel[t]) out.byLevel[t] = { ..._quizStatsBucketDefaults(), ...raw.byLevel[t] };
     }
+  } else if(raw && raw.byType && raw.byType.both){
+    // Migration precedente (byType.both) -> byLevel.easy (defaut historique)
+    out.byLevel.easy = { ..._quizStatsBucketDefaults(), ...raw.byType.both };
   } else if(raw && (raw.total || raw.score || raw.dayTotal || (raw.last100 && raw.last100.length))){
-    // Migration : anciennes stats flat -> bucket 'both'
-    out.byType.both = { ..._quizStatsBucketDefaults(), ...raw };
+    // Migration originale (flat) -> byLevel.easy
+    out.byLevel.easy = { ..._quizStatsBucketDefaults(), ...raw };
   }
   return out;
 }
 function _quizSaveStats(s){ try{ localStorage.setItem('mb-quiz-stats', JSON.stringify(s)); }catch(_){} }
-// Type de son courant : source de verite pour choisir le bucket.
+// Difficulte courante : source de verite pour choisir le bucket de stats en Classe.
+function _quizCurrentLevel(){
+  const v = document.getElementById('quizLevel')?.value;
+  return (v === 'med' || v === 'hard') ? v : 'easy';
+}
+function _quizLevelLabel(l){ return l === 'hard' ? '🔴 Difficile' : l === 'med' ? '🟡 Moyen' : '🟢 Facile'; }
+// Type de son actif. En Classe on force 'both' (pas de bucket type ; type = filtre
+// audio uniquement en Entrainement).
 function _quizCurrentType(){
+  if(_quizMode === 'compete') return 'both';
   const v = document.getElementById('quizType')?.value;
   return (v === 'song' || v === 'call') ? v : 'both';
 }
-function _quizTypeLabel(t){ return t === 'song' ? '🎶 Chant' : t === 'call' ? '📣 Cri' : '🎵 Chant + cri'; }
 // Rolling window : ajoute un resultat (true/false), garde les 100 dernieres reponses
 function _quizPushLast100(s, correct){
   if(!Array.isArray(s.last100)) s.last100 = [];
@@ -9859,13 +9871,13 @@ function _quizTrainRecord(sci, correct){
   _quizTrainSave(st);
   _quizRefreshStatsUI();
 }
-// Rafraichit l'affichage stats selon le mode et le type de son courant.
+// Rafraichit l'affichage stats selon le mode et la difficulte courante.
 function _quizRefreshStatsUI(){
   const allStats = _quizStats();
-  const type = _quizCurrentType();
-  const bucket = _quizEnsureDay(allStats.byType[type]);
-  // Label indicateur (quel bucket est affiche)
-  const scopeEl = $('#quizStatsScope'); if(scopeEl) scopeEl.textContent = _quizTypeLabel(type);
+  const level = _quizCurrentLevel();
+  const bucket = _quizEnsureDay(allStats.byLevel[level]);
+  // Label indicateur (quelle difficulte est affichee)
+  const scopeEl = $('#quizStatsScope'); if(scopeEl) scopeEl.textContent = _quizLevelLabel(level);
   // Aujourd'hui : dayScore/dayTotal
   const dayEl = $('#quizDayPct');
   if(dayEl){
@@ -9903,6 +9915,10 @@ function _quizSetMode(m){
   _quizMode = m;
   try{ localStorage.setItem('mb-quiz-mode', m); }catch(_){}
   document.querySelectorAll('.qz-mode[data-quiz-mode]').forEach(b => b.classList.toggle('on', b.dataset.quizMode === m));
+  // Section 'Type de son' visible uniquement en Entrainement (en Classe le type
+  // est force a 'both' pour homogeneiser le classement entre amis).
+  const typeSec = document.getElementById('quizTypeSection');
+  if(typeSec) typeSec.hidden = (m === 'compete');
   // Anti-triche : si on switch de mode alors qu'une question est en cours ou vient
   // d'etre repondue, on jette la question. Sinon l'utilisateur pourrait entendre
   // l'audio en Entrainement (non compte), reconnaitre l'espece, puis switcher en
@@ -10803,10 +10819,10 @@ async function _quizStart(){
     if(distracters.length < 3) continue;
     const choices = [sci, ...distracters].map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).map(v=>v[1]);
     const correctIdx = choices.indexOf(sci);
-    // Snapshot du type actif : les stats de cette question iront dans ce bucket
-    // meme si l'utilisateur change de type apres avoir entendu l'audio (anti-triche
+    // Snapshot difficulte + type actifs : la reponse ecrit dans le bucket byLevel[level]
+    // meme si l'utilisateur change de niveau apres avoir entendu l'audio (anti-triche
     // + coherence : la question a ete tiree avec ce filtre).
-    _quizCurrent = { sci, correctIdx, choices, audioUrl, sonoUrl, type: _quizCurrentType() };
+    _quizCurrent = { sci, correctIdx, choices, audioUrl, sonoUrl, type: _quizCurrentType(), level: _quizCurrentLevel() };
     stage.innerHTML = `
       <div class="qz-play">
         <div class="qz-player">
@@ -10846,18 +10862,18 @@ function _quizAnswer(idx){
   // Aucun mode n'ecrit dans l'autre bucket -> comparaison entre amis reste basee
   // uniquement sur les parties competitives.
   if(_quizMode === 'compete'){
-    // Ecrit dans le bucket du type utilise pour cette question (snapshot au tirage).
-    // Chaque type (both/song/call) a son propre classement independant.
+    // Ecrit dans le bucket de la difficulte utilisee pour cette question (snapshot
+    // au tirage). Chaque niveau a son propre classement independant.
     const all = _quizStats();
-    const type = _quizCurrent.type || _quizCurrentType();
-    const bucket = _quizEnsureDay(all.byType[type] || _quizStatsBucketDefaults());
+    const level = _quizCurrent.level || _quizCurrentLevel();
+    const bucket = _quizEnsureDay(all.byLevel[level] || _quizStatsBucketDefaults());
     bucket.total += 1;
     if(correct){ bucket.score += 1; bucket.streak += 1; } else { bucket.streak = 0; }
     if(bucket.streak > (bucket.bestStreak || 0)) bucket.bestStreak = bucket.streak;
     bucket.dayTotal += 1;
     if(correct) bucket.dayScore += 1;
     _quizPushLast100(bucket, correct);
-    all.byType[type] = bucket;
+    all.byLevel[level] = bucket;
     _quizSaveStats(all);
   } else {
     _quizTrainRecord(_quizCurrent.sci, correct);
@@ -10903,8 +10919,22 @@ document.addEventListener('click', e => {
   const lvlChip = e.target.closest('[data-quiz-level]');
   if(lvlChip){
     const val = lvlChip.dataset.quizLevel;
+    if(lvlChip.classList.contains('on')) return;
     lvlChip.parentElement.querySelectorAll('[data-quiz-level]').forEach(b => b.classList.toggle('on', b === lvlChip));
     const sel = document.getElementById('quizLevel'); if(sel){ sel.value = val; sel.dispatchEvent(new Event('change', {bubbles:true})); }
+    // Anti-triche + coherence : en Classe, changer de difficulte change de bucket
+    // (chaque niveau a son classement). Jeter la question en cours evite qu'un
+    // audio deja entendu sur Facile soit re-utilise pour scorer sur Difficile.
+    if(_quizCurrent){
+      _quizCurrent = null;
+      const stage = document.getElementById('quizStage');
+      if(stage){
+        stage.innerHTML = '<div class="qz-empty"><div class="qz-empty-icon">🎧</div><p>Prêt à tester ton oreille ?</p><button type="button" class="qz-cta" id="quizStart">Lancer le quiz</button></div>';
+      }
+      const skip = document.getElementById('quizSkip'); if(skip) skip.hidden = true;
+      const next = document.getElementById('quizNext'); if(next) next.hidden = true;
+    }
+    _quizRefreshStatsUI();   // pills reflete le bucket du nouveau niveau
     return;
   }
   const typeChip = e.target.closest('[data-quiz-type]');
