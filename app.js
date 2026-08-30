@@ -9801,7 +9801,17 @@ onAuthStateChanged(auth, user=>{
 // Audio via xeno-canto v3 (voir _fetchXenoSound). Spectrogramme revele apres reponse.
 let _quizCurrent = null;   // { sci, correctIdx, choices:[sci...], audioUrl, sonoUrl }
 let _quizMode = 'compete';   // 'compete' | 'train'
-try{ const m = localStorage.getItem('mb-quiz-mode'); if(m === 'compete' || m === 'train') _quizMode = m; }catch(_){}
+// Sens de la question en Classe : 'classic' (Son -> Nom) ou 'inverse' (Photo -> Son).
+// Chaque sens a son propre classement (bucket separe par niveau).
+let _quizSens = 'classic';
+try{
+  const m = localStorage.getItem('mb-quiz-mode');
+  if(m === 'compete' || m === 'train') _quizMode = m;
+  // Migration Batch 4 : ancien mode 'inverse' -> mode compete + sens=inverse
+  else if(m === 'inverse'){ _quizMode = 'compete'; _quizSens = 'inverse'; try{ localStorage.setItem('mb-quiz-mode', 'compete'); localStorage.setItem('mb-quiz-sens', 'inverse'); }catch(_){} }
+  const s = localStorage.getItem('mb-quiz-sens'); if(s === 'classic' || s === 'inverse') _quizSens = s;
+}catch(_){}
+function _quizIsInverse(){ return _quizMode === 'compete' && _quizSens === 'inverse'; }
 // Stats quiz Classe : 3 buckets separes par niveau de difficulte (easy/med/hard).
 // Le classement du mode Classe est scope par difficulte car les taux sont pas
 // comparables entre niveaux (facile plein de tier 1-3, difficile tier 1-8).
@@ -9812,9 +9822,16 @@ function _quizStats(){
   const raw = (() => { try{ return JSON.parse(localStorage.getItem('mb-quiz-stats')||'{}'); }catch(_){ return {}; } })();
   const out = {
     byLevel: { easy: _quizStatsBucketDefaults(), med: _quizStatsBucketDefaults(), hard: _quizStatsBucketDefaults(), expert: _quizStatsBucketDefaults() },
-    inverse: _quizStatsBucketDefaults(),
+    byLevelInverse: { easy: _quizStatsBucketDefaults(), med: _quizStatsBucketDefaults(), hard: _quizStatsBucketDefaults(), expert: _quizStatsBucketDefaults() },
   };
-  if(raw && raw.inverse) out.inverse = { ..._quizStatsBucketDefaults(), ...raw.inverse };
+  if(raw && raw.byLevelInverse && typeof raw.byLevelInverse === 'object'){
+    for(const t of ['easy','med','hard','expert']){
+      if(raw.byLevelInverse[t]) out.byLevelInverse[t] = { ..._quizStatsBucketDefaults(), ...raw.byLevelInverse[t] };
+    }
+  } else if(raw && raw.inverse){
+    // Migration Batch 4 : ancien bucket flat 'inverse' (sans niveau) -> byLevelInverse.easy
+    out.byLevelInverse.easy = { ..._quizStatsBucketDefaults(), ...raw.inverse };
+  }
   if(raw && raw.byLevel && typeof raw.byLevel === 'object'){
     for(const t of ['easy','med','hard','expert']){
       if(raw.byLevel[t]) out.byLevel[t] = { ..._quizStatsBucketDefaults(), ...raw.byLevel[t] };
@@ -9884,12 +9901,17 @@ function _quizTrainRecord(sci, correct){
 function _quizRefreshStatsUI(){
   const allStats = _quizStats();
   const level = _quizCurrentLevel();
-  const bucket = _quizEnsureDay(allStats.byLevel[level]);
-  // Label indicateur (quelle difficulte est affichee, uniquement en Classe)
+  // En Classe, choisir le bucket selon le sens (classic ou inverse)
+  const bucketSrc = _quizIsInverse() ? allStats.byLevelInverse : allStats.byLevel;
+  const bucket = _quizEnsureDay(bucketSrc[level]);
+  // Label indicateur (uniquement en Classe : difficulte + sens)
   const scopeEl = $('#quizStatsScope');
   if(scopeEl){
     scopeEl.hidden = (_quizMode !== 'compete');
-    if(_quizMode === 'compete') scopeEl.textContent = _quizLevelLabel(level);
+    if(_quizMode === 'compete'){
+      const sensIco = _quizIsInverse() ? '🖼️' : '🔊';
+      scopeEl.textContent = _quizLevelLabel(level) + ' · ' + sensIco;
+    }
   }
   // Aujourd'hui : dayScore/dayTotal
   const dayEl = $('#quizDayPct');
@@ -9916,41 +9938,30 @@ function _quizRefreshStatsUI(){
   const mastered = entries.filter(([, v]) => (v.succ || 0) >= 3 && (v.fail || 0) === 0).length;
   const seenEl = $('#quizTrainSeen'); if(seenEl) seenEl.textContent = seen;
   const masEl = $('#quizTrainMastered'); if(masEl) masEl.textContent = mastered;
-  // Toggle visibilite des blocs stats selon le mode
-  const compBlock = $('#quizStatsCompete'), trainBlock = $('#quizStatsTrain'), invBlock = $('#quizStatsInverse');
+  // Toggle visibilite des blocs stats selon le mode (2 modes : compete / train)
+  const compBlock = $('#quizStatsCompete'), trainBlock = $('#quizStatsTrain');
   if(compBlock) compBlock.hidden = (_quizMode !== 'compete');
   if(trainBlock) trainBlock.hidden = (_quizMode !== 'train');
-  if(invBlock) invBlock.hidden = (_quizMode !== 'inverse');
-  // Bucket inverse : meme structure, meme calculs, autres ids UI
-  if(_quizMode === 'inverse'){
-    const b = _quizEnsureDay(allStats.inverse);
-    const dP = $('#quizInvDayPct'); if(dP) dP.textContent = b.dayTotal ? Math.round(b.dayScore*100/b.dayTotal) + '%' : '-';
-    const dC = $('#quizInvDayCount'); if(dC) dC.textContent = b.dayScore + '/' + b.dayTotal;
-    const lP = $('#quizInvLevelPct');
-    if(lP){ if(b.last100?.length){ const sum = b.last100.reduce((a,x)=>a+x,0); lP.textContent = Math.round(sum*100/b.last100.length)+'%'; } else lP.textContent = '-'; }
-    const lC = $('#quizInvLevelCount'); if(lC) lC.textContent = 'sur ' + (b.last100?.length || 0);
-    const bS = $('#quizInvBestStreak'); if(bS) bS.textContent = b.bestStreak || 0;
-  }
   // Badge 'especes a reviser' : rafraichit apres chaque partie
   _quizRefreshProblemBadge();
 }
 // Bascule mode compete <-> train. Met a jour les tabs visuellement + les stats affichees.
 function _quizSetMode(m){
-  if(m !== 'compete' && m !== 'train' && m !== 'inverse') return;
+  if(m !== 'compete' && m !== 'train') return;
   const prev = _quizMode;
   _quizMode = m;
   try{ localStorage.setItem('mb-quiz-mode', m); }catch(_){}
   document.querySelectorAll('.qz-mode[data-quiz-mode]').forEach(b => b.classList.toggle('on', b.dataset.quizMode === m));
-  // Section 'Type de son' visible uniquement en Entrainement (en Classe le type
-  // est force a 'both' pour homogeneiser le classement entre amis, en Inverse
-  // idem : le son est deja choisi cote question, la variete est cote reponses).
+  // Section 'Type de son' visible uniquement en Entrainement (Classe force 'both').
   const typeSec = document.getElementById('quizTypeSection');
   if(typeSec) typeSec.hidden = (m !== 'train');
-  // Chip Expert : cache en Inverse (pas 6 audios, gameplay ne s'y prete pas).
-  // Si Expert etait selectionne, on repli sur Difficile.
+  // Section 'Sens' visible uniquement en Classe (sous-filtre Son->Nom / Photo->Son).
+  const sensSec = document.getElementById('quizSensSection');
+  if(sensSec) sensSec.hidden = (m !== 'compete');
+  // Chip Expert : cache si Photo->Son (le gameplay 4 audios ne se prete pas au 6 choix).
   const expertChip = document.querySelector('[data-quiz-level="expert"]');
-  if(expertChip) expertChip.style.display = (m === 'inverse') ? 'none' : '';
-  if(m === 'inverse'){
+  if(expertChip) expertChip.style.display = _quizIsInverse() ? 'none' : '';
+  if(_quizIsInverse()){
     const lvlSel = document.getElementById('quizLevel');
     if(lvlSel && lvlSel.value === 'expert'){
       lvlSel.value = 'hard';
@@ -9972,7 +9983,13 @@ function _quizSetMode(m){
   }
   _quizRefreshStatsUI();
 }
-function renderQuizInit(){ _quizSetMode(_quizMode); _quizRefreshStatsUI(); _quizRefreshProblemBadge(); }
+function renderQuizInit(){
+  _quizSetMode(_quizMode);
+  // Restore le chip 'Sens' selon la valeur persistee (default classic)
+  document.querySelectorAll('[data-quiz-sens]').forEach(b => b.classList.toggle('on', b.dataset.quizSens === _quizSens));
+  _quizRefreshStatsUI();
+  _quizRefreshProblemBadge();
+}
 
 /* ---------------- Pokedex : grille de toutes les especes FR ---------------- */
 // Etat local pour les filtres. Persistant en localStorage pour retrouver la meme vue.
@@ -10661,8 +10678,7 @@ function _quizPickPool(){
     return _quizForcedPool.filter(sci => FR_NAMES[sci] && !_isExoticNotCounted(sci));
   }
   const lvl = ($('#quizLevel')?.value) || 'easy';
-  // Expert : toutes rarites (tier 1-9, inclut ultra rares) pour justifier son nom.
-  const maxTier = lvl === 'easy' ? 3 : lvl === 'med' ? 5 : lvl === 'hard' ? 8 : 9;
+  const maxTier = lvl === 'easy' ? 3 : lvl === 'med' ? 5 : 8;   // expert = 8 (comme hard)
   let pool = Object.keys(FR_NAMES);
   // Filtre : rareté <= maxTier, pas exotique X/C (pas de son fiable), FR_NAMES existe,
   // ET espece calibrée dans le catalogue rareté FR (evite d'inclure les especes mondiales
@@ -10922,19 +10938,50 @@ function _quizPickDistracters(sci, pool, n){
   if(picked.length < n) picked.push(...shuffle(others).slice(0, n - picked.length));
   return picked.slice(0, n);
 }
+// Change le sens de la question en Classe et rafraichit l'UI.
+function _quizSetSens(s){
+  if(s !== 'classic' && s !== 'inverse') return;
+  if(s === _quizSens) return;
+  _quizSens = s;
+  try{ localStorage.setItem('mb-quiz-sens', s); }catch(_){}
+  document.querySelectorAll('[data-quiz-sens]').forEach(b => b.classList.toggle('on', b.dataset.quizSens === s));
+  // Chip Expert : cache en Photo->Son. Bascule sur Difficile si Expert selectionne.
+  const expertChip = document.querySelector('[data-quiz-level="expert"]');
+  if(expertChip) expertChip.style.display = _quizIsInverse() ? 'none' : '';
+  if(_quizIsInverse()){
+    const lvlSel = document.getElementById('quizLevel');
+    if(lvlSel && lvlSel.value === 'expert'){
+      lvlSel.value = 'hard';
+      document.querySelectorAll('[data-quiz-level]').forEach(b => b.classList.toggle('on', b.dataset.quizLevel === 'hard'));
+    }
+  }
+  // Anti-triche : changer de sens = changer de bucket, jette la question en cours
+  if(_quizCurrent){
+    _quizCurrent = null;
+    _quizSession = null;
+    _quizForcedPool = null;
+    const stage = document.getElementById('quizStage');
+    if(stage){
+      stage.innerHTML = '<div class="qz-empty"><div class="qz-empty-icon">🎧</div><p>Prêt à tester ton oreille ?</p><button type="button" class="qz-cta" id="quizStart">Lancer le quiz</button></div>';
+    }
+    const skip = document.getElementById('quizSkip'); if(skip) skip.hidden = true;
+    const next = document.getElementById('quizNext'); if(next) next.hidden = true;
+  }
+  _quizRefreshStatsUI();
+}
 async function _quizStart(){
-  // Mode inverse : rendu tres different (photo + 4 audios) -> fonction dediee.
-  if(_quizMode === 'inverse') return _quizStartInverse();
-  const stage = $('#quizStage'); if(!stage) return;
-  // Session 10 questions (mode Classe uniquement) : si la session en cours est
-  // terminee, on affiche le recap au lieu de piocher une nouvelle question. Si
-  // pas de session active, on en demarre une. En Entrainement : jeu libre continu.
+  // Session 10 questions (mode Classe : classic ET inverse). Applique avant le
+  // dispatch inverse pour que le recap et le compteur marchent dans les 2 sens.
   if(_quizMode === 'compete'){
     if(_quizSession && _quizSession.done){ _quizSessionShowRecap(); return; }
     if(!_quizSession) _quizSessionStart();
   } else {
     _quizSession = null;
   }
+  // Mode inverse : rendu tres different (photo + 4 audios) -> fonction dediee.
+  // Sub-mode de Classe : dispatch via _quizIsInverse (compete + sens=inverse).
+  if(_quizIsInverse()) return _quizStartInverse();
+  const stage = $('#quizStage'); if(!stage) return;
   stage.innerHTML = '<p class="help" style="margin:0;">🔎 Sélection de l\'espèce…</p>';
   $('#quizNext').hidden = true;
   $('#quizSkip').hidden = true;
@@ -11101,8 +11148,12 @@ async function _quizStartInverse(){
     _quizCurrent = { sci, correctIdx, choices: shuffled.map(x => x.sci), audios: shuffled.map(x => x.audio), photoUrl: photo.url, inverse: true, level: _quizCurrentLevel() };
     _quizAddRecent(sci);
     const letters = ['A','B','C','D'];
+    const progBadge = (_quizSession)
+      ? `<div class="qz-session-progress">Question <b>${_quizSession.qNum + 1}</b> / ${_QUIZ_SESSION_LEN}</div>`
+      : '';
     stage.innerHTML = `
       <div class="qz-inverse">
+        ${progBadge}
         <div class="qz-inv-photo-wrap">
           <img class="qz-inv-photo" src="${esc(photo.url)}" alt="">
           <p class="qz-prompt">Quel son correspond à cet oiseau ?</p>
@@ -11147,17 +11198,19 @@ async function _quizStartInverse(){
 function _quizAnswerInverse(idx){
   if(!_quizCurrent) return;
   const correct = idx === _quizCurrent.correctIdx;
-  // Stats bucket inverse (flat, pas de sous-buckets par niveau)
+  // Stats bucket byLevelInverse[level] : chaque difficulte a son classement Photo->Son
   const all = _quizStats();
-  const b = _quizEnsureDay(all.inverse || _quizStatsBucketDefaults());
+  const level = _quizCurrent.level || _quizCurrentLevel();
+  const b = _quizEnsureDay(all.byLevelInverse[level] || _quizStatsBucketDefaults());
   b.total += 1;
   if(correct){ b.score += 1; b.streak += 1; } else { b.streak = 0; }
   if(b.streak > (b.bestStreak || 0)) b.bestStreak = b.streak;
   b.dayTotal += 1;
   if(correct) b.dayScore += 1;
   _quizPushLast100(b, correct);
-  all.inverse = b;
+  all.byLevelInverse[level] = b;
   _quizSaveStats(all);
+  _quizSessionOnAnswer(correct);   // session 10 questions marche aussi en inverse
   _quizTrainRecord(_quizCurrent.sci, correct);   // alimente le top 'a reviser'
   _quizRefreshStatsUI();
   // Pause tous les audios + highlight bonne/mauvaise reponse
@@ -11181,7 +11234,11 @@ function _quizAnswerInverse(idx){
     <div class="qz-verdict-sci">${esc(_quizCurrent.sci)} · Son ${correctLetter}</div>
   </div>`;
   if(stage) stage.insertAdjacentHTML('beforeend', html);
-  const nextBtn = $('#quizNext'); if(nextBtn){ nextBtn.hidden = false; nextBtn.textContent = 'Suivante →'; }
+  const nextBtn = $('#quizNext');
+  if(nextBtn){
+    nextBtn.hidden = false;
+    nextBtn.textContent = (_quizSession && _quizSession.done) ? 'Voir le résultat 🏁' : 'Suivante →';
+  }
   $('#quizSkip').hidden = true;
 }
 function _quizAnswer(idx){
@@ -11299,6 +11356,12 @@ document.addEventListener('click', e => {
       const next = document.getElementById('quizNext'); if(next) next.hidden = true;
     }
     _quizRefreshStatsUI();   // pills reflete le bucket du nouveau niveau
+    return;
+  }
+  const sensChip = e.target.closest('[data-quiz-sens]');
+  if(sensChip){
+    if(sensChip.classList.contains('on')) return;
+    _quizSetSens(sensChip.dataset.quizSens);
     return;
   }
   const typeChip = e.target.closest('[data-quiz-type]');
