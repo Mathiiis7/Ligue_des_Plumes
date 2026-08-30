@@ -592,6 +592,7 @@
   .qz-stats-line { display:inline-flex; gap:6px; flex-wrap:wrap; }
   .qz-pill { display:inline-flex; align-items:center; gap:5px; padding:5px 12px; background:var(--surface-2); border-radius:14px; font:600 13px/1 system-ui; color:var(--ink); }
   .qz-pill b { color:var(--accent-ink); font-weight:800; }
+  .qz-pill-lbl { font-size:10.5px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.3px; font-weight:700; margin-left:2px; }
   .qz-settings-btn { background:var(--surface-2); border:none; width:34px; height:34px; border-radius:50%; cursor:pointer; font-size:15px; color:var(--ink-2); transition:all .15s; }
   .qz-settings-btn:hover { background:var(--surface); color:var(--ink); }
   .qz-settings { display:flex; gap:12px; flex-wrap:wrap; padding:14px; margin-bottom:14px; background:var(--surface-2); border-radius:12px; }
