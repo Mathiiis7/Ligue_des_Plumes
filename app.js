@@ -7495,7 +7495,7 @@ async function _renderSpeciesRangeCard(sci){
       <div style="flex:1; height:12px; border-radius:3px; background:linear-gradient(to right, #3ea86b, #a8d155, #f5c518, #f0733a, #a11408);"></div>
       <span>Abondant</span>
     </div>
-    <div style="margin-top:4px; font-size:10.5px; color:var(--ink-3); text-align:center;">Échelle relative à l'espèce (percentiles) - pan et zoom pour explorer</div>
+    <div style="margin-top:4px; font-size:10.5px; color:var(--ink-3); text-align:center;">Échelle relative à l'espèce (percentiles)</div>
   `;
   box.hidden = false;
   const mapEl = box.querySelector('#' + mapId);
