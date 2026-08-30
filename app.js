@@ -11298,6 +11298,7 @@ async function _quizDailyStart(){
   const state = _quizDailyState();
   if(state.lastPlayedDate === today) return;   // deja joue
   _quizDailyActive = { questions: _quizDailyGenerate(today), current: 0, correctCount: 0, date: today };
+  _quizChallengeSetActive(true);   // focus mode : masque le reste
   _quizDailyRenderQuestion();
 }
 // Rend la question courante du defi (fetch audio en background).
@@ -11317,7 +11318,7 @@ async function _quizDailyRenderQuestion(){
   if(!src?.file){ _quizDailyActive.current++; _quizDailyRenderQuestion(); return; }
   stage.innerHTML = `
     <div class="qz-play">
-      <div class="qz-session-progress qz-daily-progress">🎪 Défi du jour · Question <b>${_quizDailyActive.current + 1}</b> / ${_QUIZ_DAILY_LEN}</div>
+      <div class="qz-session-progress qz-daily-progress">🎪 Défi du jour · Question <b>${_quizDailyActive.current + 1}</b> / ${_QUIZ_DAILY_LEN} <button type="button" class="qz-challenge-exit-btn" id="quizChallengeExit" title="Abandonner (progression perdue)">✕</button></div>
       <div class="qz-player">
         <button type="button" class="qz-play-btn" id="quizPlayBtn">▶</button>
         <div class="qz-progress"><div class="qz-progress-fill" id="quizProgressFill"></div></div>
@@ -11406,11 +11407,34 @@ function _quizDailyFinish(){
           <span>· Record <b>${state.bestStreak}</b></span>
         </div>
         <p class="help" style="margin:10px 0 0; text-align:center;">Reviens demain pour continuer la série.</p>
+        <button type="button" class="qz-cta qz-recap-back" id="quizChallengeExit">Retour au quiz</button>
       </div>
     `;
   }
   _quizDailyActive = null;
-  _quizDailyRefreshCard();
+}
+// Bascule l'UI en mode 'defi en cours' : cache tabs / stats / banner / cartes /
+// leaderboard pour focus sur les questions. Affiche un bouton 'Quitter' en tete.
+function _quizChallengeSetActive(active){
+  const selectors = [
+    '.qz-head',              // titre + tabs mode
+    '.qz-topbar',            // pills stats + bouton reglages
+    '#quizProblemBanner',    // badge especes a reviser
+    '#quizSettings',         // panneau reglages (deja masque mais on force)
+    '#quizLeaderboard',      // classement ligue
+    '.qz-challenges',        // les 2 cartes daily + weekly
+  ];
+  selectors.forEach(sel => {
+    const el = document.querySelector(sel);
+    if(!el) return;
+    if(active) el.style.display = 'none';
+    else el.style.display = '';
+  });
+  if(!active){
+    // Restaure l'etat correct des cartes (elles gerent leur propre hidden)
+    _quizDailyRefreshCard?.();
+    _quizWeeklyRefreshCard?.();
+  }
 }
 /* ---------------- Defi hebdo ----------------
    20 questions communes chaque semaine (seed = ISO week). Une tentative par
@@ -11489,6 +11513,7 @@ async function _quizWeeklyStart(){
   const state = _quizWeeklyState();
   if(state.lastPlayedWeek === weekKey) return;   // deja joue cette semaine
   _quizWeeklyActive = { questions: _quizWeeklyGenerate(weekKey), current: 0, correctCount: 0, weekKey };
+  _quizChallengeSetActive(true);   // focus mode : masque le reste
   _quizWeeklyRenderQuestion();
 }
 async function _quizWeeklyRenderQuestion(){
@@ -11507,7 +11532,7 @@ async function _quizWeeklyRenderQuestion(){
   if(!src?.file){ _quizWeeklyActive.current++; _quizWeeklyRenderQuestion(); return; }
   stage.innerHTML = `
     <div class="qz-play">
-      <div class="qz-session-progress qz-weekly-progress">🏅 Défi hebdo · Question <b>${_quizWeeklyActive.current + 1}</b> / ${_QUIZ_WEEKLY_LEN}</div>
+      <div class="qz-session-progress qz-weekly-progress">🏅 Défi hebdo · Question <b>${_quizWeeklyActive.current + 1}</b> / ${_QUIZ_WEEKLY_LEN} <button type="button" class="qz-challenge-exit-btn" id="quizChallengeExit" title="Abandonner (progression perdue)">✕</button></div>
       <div class="qz-player">
         <button type="button" class="qz-play-btn" id="quizPlayBtn">▶</button>
         <div class="qz-progress"><div class="qz-progress-fill" id="quizProgressFill"></div></div>
@@ -11594,11 +11619,11 @@ function _quizWeeklyFinish(){
         </div>
         <p class="help" style="margin:10px 0 0; text-align:center;">Reviens lundi prochain pour le nouveau défi.</p>
         ${lbHtml}
+        <button type="button" class="qz-cta qz-recap-back" id="quizChallengeExit">Retour au quiz</button>
       </div>
     `;
   }
   _quizWeeklyActive = null;
-  _quizWeeklyRefreshCard();
 }
 // Mode Inverse : affiche la photo de l'espece correcte, propose 4 audios
 // (1 bon + 3 distracteurs) a ecouter, l'utilisateur choisit celui qui
@@ -11818,6 +11843,19 @@ document.addEventListener('click', e => {
   // Defi hebdo : bouton Jouer + selection reponse
   const weeklyBtn = e.target.closest('#quizWeeklyBtn'); if(weeklyBtn && !weeklyBtn.disabled){ _quizWeeklyStart(); return; }
   const weeklyChoice = e.target.closest('[data-quiz-weekly-choice]'); if(weeklyChoice){ _quizWeeklyAnswer(+weeklyChoice.dataset.quizWeeklyChoice); return; }
+  // Retour au quiz normal apres un defi (recap ou abandon en cours)
+  const chExit = e.target.closest('#quizChallengeExit');
+  if(chExit){
+    _quizDailyActive = null;
+    _quizWeeklyActive = null;
+    _quizChallengeSetActive(false);
+    const stage = document.getElementById('quizStage'); if(stage){
+      stage.innerHTML = '<div class="qz-empty"><div class="qz-empty-icon">🎧</div><p>Prêt à tester ton oreille ?</p><button type="button" class="qz-cta" id="quizStart">Lancer le quiz</button></div>';
+    }
+    const skip = document.getElementById('quizSkip'); if(skip) skip.hidden = true;
+    const next = document.getElementById('quizNext'); if(next) next.hidden = true;
+    return;
+  }
   // Ouvre la carte des especes a reviser
   const probOpen = e.target.closest('#quizProblemOpen'); if(probOpen){ _quizRenderProblemCard(); return; }
   // Lance une session de revision sur les 10 especes a probleme (bascule en Entrainement)
