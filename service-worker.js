@@ -3,7 +3,7 @@
 //   puis rafraichit en background. Prochain reload = nouvelle version.
 // - Requetes cross-origin (Firestore, iNaturalist, xeno-canto, Wikipedia, etc.) : reseau seul.
 // - Bump CACHE_VERSION quand on veut invalider volontairement.
-const CACHE_VERSION = 'v6-2026-08-30-rangemaps';
+const CACHE_VERSION = 'v7-2026-08-30-noselfcache';
 const CACHE_NAME = 'lmb-' + CACHE_VERSION;
 
 self.addEventListener('install', (e) => {
@@ -25,6 +25,11 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   // Uniquement les statiques memes-origine (pas Firestore, pas les APIs externes).
   if (url.origin !== self.location.origin) return;
+  // IMPORTANT : jamais cacher le SW lui-meme, sinon impossible de le mettre a jour
+  // (browser fetch service-worker.js -> SW intercepte -> renvoie l'ancien -> pas d'update).
+  if (url.pathname.endsWith('/service-worker.js') || url.pathname.endsWith('/sw.js')) return;
+  // Ni le manifest range (evolue frequemment avec nouvelles especes generees).
+  if (url.pathname.endsWith('/data/range-index.json')) return;
   // On ignore les requetes navigation avec des query strings importantes (?league=..., ?...).
   // On sert quand meme la meme index en cache : les params sont lus cote client au boot.
   event.respondWith((async () => {
