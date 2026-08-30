@@ -9911,6 +9911,18 @@ function _quizRenderLeaderboard(){
     const nivPct = last100.length ? Math.round(last100.reduce((a,b)=>a+b,0) * 100 / last100.length) : null;
     rows.push({ uid: doc.uid, name: doc.name || 'Joueur', total: bucket.total, score: bucket.score, nivPct, bestStreak: bucket.bestStreak || 0 });
   });
+  // Injecte MON score local si pas encore remonte du cloud (sync 3s debounce,
+  // ou hors ligue). Sinon un utilisateur qui vient de jouer voit un leaderboard
+  // vide alors qu'il a des stats.
+  if(myUid && !rows.find(r => r.uid === myUid)){
+    const localStats = _quizStats();
+    const myBucket = (isInv ? localStats.byLevelInverse : localStats.byLevel)?.[level];
+    if(myBucket && myBucket.total){
+      const l100 = myBucket.last100 || [];
+      const nivPct = l100.length ? Math.round(l100.reduce((a,b)=>a+b,0) * 100 / l100.length) : null;
+      rows.push({ uid: myUid, name: (realPeople.find(p => p.id === myUid)?.name) || 'toi', total: myBucket.total, score: myBucket.score, nivPct, bestStreak: myBucket.bestStreak || 0 });
+    }
+  }
   // Tri : par niveau% desc (nul en dernier), egalite: par total desc
   rows.sort((a, b) => {
     if(a.nivPct == null && b.nivPct == null) return b.total - a.total;
@@ -10032,8 +10044,9 @@ function _quizRefreshStatsUI(){
   const compBlock = $('#quizStatsCompete'), trainBlock = $('#quizStatsTrain');
   if(compBlock) compBlock.hidden = (_quizMode !== 'compete');
   if(trainBlock) trainBlock.hidden = (_quizMode !== 'train');
-  // Badge 'especes a reviser' : rafraichit apres chaque partie
+  // Badge 'especes a reviser' + leaderboard : rafraichit apres chaque partie
   _quizRefreshProblemBadge();
+  _quizRenderLeaderboard();
 }
 // Bascule mode compete <-> train. Met a jour les tabs visuellement + les stats affichees.
 function _quizSetMode(m){
