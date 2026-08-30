@@ -9802,8 +9802,30 @@ onAuthStateChanged(auth, user=>{
 let _quizCurrent = null;   // { sci, correctIdx, choices:[sci...], audioUrl, sonoUrl }
 let _quizMode = 'compete';   // 'compete' | 'train'
 try{ const m = localStorage.getItem('mb-quiz-mode'); if(m === 'compete' || m === 'train') _quizMode = m; }catch(_){}
-function _quizStats(){ try{ return JSON.parse(localStorage.getItem('mb-quiz-stats')||'{"score":0,"total":0,"streak":0}'); }catch(_){ return {score:0,total:0,streak:0}; } }
+// Stats quiz enrichies : cumulatif + jour courant + fenetre glissante 100 dernieres + record serie
+function _quizStats(){
+  const def = { score:0, total:0, streak:0, bestStreak:0, dayDate:'', dayScore:0, dayTotal:0, last100:[] };
+  try{ return { ...def, ...JSON.parse(localStorage.getItem('mb-quiz-stats')||'{}') }; }
+  catch(_){ return def; }
+}
 function _quizSaveStats(s){ try{ localStorage.setItem('mb-quiz-stats', JSON.stringify(s)); }catch(_){} }
+// Rolling window : ajoute un resultat (true/false), garde les 100 dernieres reponses
+function _quizPushLast100(s, correct){
+  if(!Array.isArray(s.last100)) s.last100 = [];
+  s.last100.push(correct ? 1 : 0);
+  if(s.last100.length > 100) s.last100 = s.last100.slice(-100);
+}
+function _quizDayKey(){
+  // Format YYYY-MM-DD. Utilise l'API Date (dispo au runtime, contrairement aux scripts workflow).
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+// Assure que dayScore/dayTotal sont a jour pour aujourd'hui (reset si on est un autre jour)
+function _quizEnsureDay(s){
+  const today = _quizDayKey();
+  if(s.dayDate !== today){ s.dayDate = today; s.dayScore = 0; s.dayTotal = 0; }
+  return s;
+}
 // Stats per-species pour Leitner : { "sci lower": { succ, fail, lastSeen: ts } }
 function _quizTrainStats(){ try{ return JSON.parse(localStorage.getItem('mb-quiz-train')||'{}'); }catch(_){ return {}; } }
 function _quizTrainSave(s){ try{ localStorage.setItem('mb-quiz-train', JSON.stringify(s)); }catch(_){} }
@@ -9822,9 +9844,25 @@ function _quizTrainRecord(sci, correct){
 }
 // Rafraichit l'affichage stats selon le mode courant.
 function _quizRefreshStatsUI(){
-  const s = _quizStats();
-  const a=$('#quizScore'), b=$('#quizTotal'), c=$('#quizStreak');
-  if(a) a.textContent = s.score; if(b) b.textContent = s.total; if(c) c.textContent = s.streak;
+  const s = _quizEnsureDay(_quizStats());
+  // Aujourd'hui : dayScore/dayTotal ; affiche 0% si aucune partie du jour
+  const dayEl = $('#quizDayPct');
+  if(dayEl){
+    if(s.dayTotal > 0) dayEl.textContent = Math.round(s.dayScore * 100 / s.dayTotal) + '%';
+    else dayEl.textContent = '-';
+  }
+  const dayCntEl = $('#quizDayCount'); if(dayCntEl) dayCntEl.textContent = s.dayScore + '/' + s.dayTotal;
+  // Niveau : taux glissant sur les 100 dernieres (ou moins si <100 parties)
+  const lvlEl = $('#quizLevelPct');
+  if(lvlEl){
+    if(s.last100 && s.last100.length > 0){
+      const sum = s.last100.reduce((a,b) => a+b, 0);
+      lvlEl.textContent = Math.round(sum * 100 / s.last100.length) + '%';
+    } else lvlEl.textContent = '-';
+  }
+  const lvlCntEl = $('#quizLevelCount'); if(lvlCntEl) lvlCntEl.textContent = 'sur ' + (s.last100?.length || 0);
+  // Record serie
+  const bestEl = $('#quizBestStreak'); if(bestEl) bestEl.textContent = s.bestStreak || 0;
   // Stats entrainement : nombre d'especes travaillees + maitrisees (>= 3 succ, 0 fail recent)
   const st = _quizTrainStats();
   const entries = Object.entries(st);
@@ -10775,9 +10813,16 @@ function _quizAnswer(idx){
   // Aucun mode n'ecrit dans l'autre bucket -> comparaison entre amis reste basee
   // uniquement sur les parties competitives.
   if(_quizMode === 'compete'){
-    const s = _quizStats();
+    const s = _quizEnsureDay(_quizStats());
+    // Cumul all-time
     s.total += 1;
     if(correct){ s.score += 1; s.streak += 1; } else { s.streak = 0; }
+    if(s.streak > (s.bestStreak || 0)) s.bestStreak = s.streak;
+    // Stats du jour
+    s.dayTotal += 1;
+    if(correct) s.dayScore += 1;
+    // Fenetre glissante 100 dernieres
+    _quizPushLast100(s, correct);
     _quizSaveStats(s);
   } else {
     _quizTrainRecord(_quizCurrent.sci, correct);
@@ -10819,6 +10864,28 @@ document.addEventListener('click', e => {
   const choice = e.target.closest('[data-quiz-choice]'); if(choice){ _quizAnswer(+choice.dataset.quizChoice); return; }
   const modeBtn = e.target.closest('[data-quiz-mode]'); if(modeBtn){ _quizSetMode(modeBtn.dataset.quizMode); return; }
   const settings = e.target.closest('#quizSettingsBtn'); if(settings){ const p = document.getElementById('quizSettings'); if(p) p.hidden = !p.hidden; return; }
+  // Chips reglages : synchro avec hidden selects (source de verite pour _quizPickPool)
+  const lvlChip = e.target.closest('[data-quiz-level]');
+  if(lvlChip){
+    const val = lvlChip.dataset.quizLevel;
+    lvlChip.parentElement.querySelectorAll('[data-quiz-level]').forEach(b => b.classList.toggle('on', b === lvlChip));
+    const sel = document.getElementById('quizLevel'); if(sel){ sel.value = val; sel.dispatchEvent(new Event('change', {bubbles:true})); }
+    return;
+  }
+  const poolChip = e.target.closest('[data-quiz-pool]');
+  if(poolChip){
+    const val = poolChip.dataset.quizPool;
+    poolChip.parentElement.querySelectorAll('[data-quiz-pool]').forEach(b => b.classList.toggle('on', b === poolChip));
+    const sel = document.getElementById('quizPool'); if(sel){ sel.value = val; sel.dispatchEvent(new Event('change', {bubbles:true})); }
+    return;
+  }
+  const typeChip = e.target.closest('[data-quiz-type]');
+  if(typeChip){
+    const val = typeChip.dataset.quizType;
+    typeChip.parentElement.querySelectorAll('[data-quiz-type]').forEach(b => b.classList.toggle('on', b === typeChip));
+    const sel = document.getElementById('quizType'); if(sel){ sel.value = val; sel.dispatchEvent(new Event('change', {bubbles:true})); }
+    return;
+  }
 });
 // PWA : installation sur l'écran d'accueil
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('service-worker.js').catch(()=>{}); }

@@ -828,9 +828,12 @@
       <div class="qz-topbar">
         <div class="qz-stats">
           <span id="quizStatsCompete" class="qz-stats-line">
-            <span class="qz-pill" title="Bonnes réponses / total joué">🎯 <b id="quizScore">0</b>/<b id="quizTotal">0</b> <span class="qz-pill-lbl">score</span></span>
-            <span class="qz-pill" title="Série de bonnes réponses consécutives (se remet à 0 à la 1re erreur)">🔥 <b id="quizStreak">0</b> <span class="qz-pill-lbl">série</span></span>
+            <span class="qz-pill" title="Taux de bonnes réponses aujourd'hui (reset chaque jour)">🎯 <b id="quizDayPct">-</b> <span class="qz-pill-lbl">aujourd'hui</span> <span class="qz-pill-sub" id="quizDayCount">0/0</span></span>
+            <span class="qz-pill" title="Ton niveau moyen sur les 100 dernières parties (glisse au fur et à mesure)">📊 <b id="quizLevelPct">-</b> <span class="qz-pill-lbl">niveau</span> <span class="qz-pill-sub" id="quizLevelCount">sur 0</span></span>
+            <span class="qz-pill" title="Ta meilleure série de bonnes réponses consécutives jamais atteinte">🔥 <b id="quizBestStreak">0</b> <span class="qz-pill-lbl">record</span></span>
           </span>
+          <!-- Legacy hidden fields kept for retro-compat avec le mode entrainement -->
+          <span style="display:none;"><b id="quizScore">0</b><b id="quizTotal">0</b><b id="quizStreak">0</b></span>
           <span id="quizStatsTrain" class="qz-stats-line" hidden>
             <span class="qz-pill" title="Nombre d'espèces différentes rencontrées en entraînement">📚 <b id="quizTrainSeen">0</b> <span class="qz-pill-lbl">vues</span></span>
             <span class="qz-pill" title="Espèces avec ≥3 bonnes réponses et aucune erreur récente">⭐ <b id="quizTrainMastered">0</b> <span class="qz-pill-lbl">maîtrisées</span></span>
@@ -838,28 +841,37 @@
         </div>
         <button type="button" class="qz-settings-btn" id="quizSettingsBtn" title="Réglages du quiz">⚙️</button>
       </div>
-      <!-- Reglages depliables (Niveau / Source / Type) -->
+      <!-- Reglages depliables : meme pattern que les filtres du classement (chips) -->
       <div class="qz-settings" id="quizSettings" hidden>
-        <label class="explorer-lbl">Niveau
-          <select id="quizLevel" class="filt-sel">
-            <option value="easy" selected>Facile (tier 1-3)</option>
-            <option value="med">Moyen (tier 1-5)</option>
-            <option value="hard">Difficile (tier 1-8)</option>
-          </select>
-        </label>
-        <label class="explorer-lbl">Source
-          <select id="quizPool" class="filt-sel">
-            <option value="all" selected>Toutes espèces FR</option>
-            <option value="mine">Mes espèces cochées</option>
-          </select>
-        </label>
-        <label class="explorer-lbl">Type
-          <select id="quizType" class="filt-sel">
-            <option value="both" selected>Chant ou cri</option>
-            <option value="song">Chant seulement</option>
-            <option value="call">Cri seulement</option>
-          </select>
-        </label>
+        <div class="fp-section">
+          <div class="fp-title">Niveau <span class="fp-hint">(rareté max des espèces qui peuvent tomber)</span></div>
+          <div class="person-chips" id="quizLevelChips" role="radiogroup" aria-label="Niveau de difficulté">
+            <button type="button" class="person-chip on" data-quiz-level="easy">Facile <span class="fp-hint">tier 1-3</span></button>
+            <button type="button" class="person-chip" data-quiz-level="med">Moyen <span class="fp-hint">tier 1-5</span></button>
+            <button type="button" class="person-chip" data-quiz-level="hard">Difficile <span class="fp-hint">tier 1-8</span></button>
+          </div>
+        </div>
+        <div class="fp-section">
+          <div class="fp-title">Source</div>
+          <div class="person-chips" id="quizPoolChips" role="radiogroup" aria-label="Source des espèces">
+            <button type="button" class="person-chip on" data-quiz-pool="all">Toutes espèces FR</button>
+            <button type="button" class="person-chip" data-quiz-pool="mine">Mes espèces cochées</button>
+          </div>
+        </div>
+        <div class="fp-section">
+          <div class="fp-title">Type de son</div>
+          <div class="person-chips" id="quizTypeChips" role="radiogroup" aria-label="Type de son">
+            <button type="button" class="person-chip on" data-quiz-type="both">🎵 Chant ou cri</button>
+            <button type="button" class="person-chip" data-quiz-type="song">🎶 Chant seulement</button>
+            <button type="button" class="person-chip" data-quiz-type="call">📣 Cri seulement</button>
+          </div>
+        </div>
+        <!-- Legacy hidden selects : quiz code lit toujours ces valeurs ; les chips les synchronisent -->
+        <div style="display:none;">
+          <select id="quizLevel"><option value="easy" selected>easy</option><option value="med">med</option><option value="hard">hard</option></select>
+          <select id="quizPool"><option value="all" selected>all</option><option value="mine">mine</option></select>
+          <select id="quizType"><option value="both" selected>both</option><option value="song">song</option><option value="call">call</option></select>
+        </div>
       </div>
       <!-- Stage principal -->
       <div id="quizStage" class="qz-stage">
