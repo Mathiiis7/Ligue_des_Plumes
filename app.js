@@ -3554,7 +3554,7 @@ const REAL_FREQ_MONTHLY_BY_REGION_MULTI = {};
 const _freqDataPromises = {};
 async function _loadFreqDataForCountry(cc){
   if(_freqDataPromises[cc]) return _freqDataPromises[cc];
-  const filename = 'data/countries/' + cc.toLowerCase() + '/freq_by_region.json?v=20260829';
+  const filename = 'data/countries/' + cc.toLowerCase() + '/freq_by_region.json?v=20260830';
   _freqDataPromises[cc] = (async () => {
     try{
       const data = await fetch(filename).then(r => r.ok ? r.json() : null);
@@ -3581,8 +3581,8 @@ async function _loadAbundanceData(){
   _abundanceDataPromise = (async () => {
     try{
       const [dept, deptMean] = await Promise.all([
-        fetch('data/countries/fr/abundance_dept.json?v=20260829').then(r => r.json()),
-        fetch('data/countries/fr/abundance_dept_mean.json?v=20260829').then(r => r.json()),
+        fetch('data/countries/fr/abundance_dept.json?v=20260830').then(r => r.json()),
+        fetch('data/countries/fr/abundance_dept_mean.json?v=20260830').then(r => r.json()),
       ]);
       REAL_ABUNDANCE_DEPT = dept;
       REAL_ABUNDANCE_DEPT_MEAN = deptMean;
@@ -3601,7 +3601,7 @@ async function _loadAbundanceRegionData(cc){
   const country = cc || 'FR';
   if(_abundanceRegionPromises[country]) return _abundanceRegionPromises[country];
   _abundanceRegionPromises[country] = (async () => {
-    const filename = 'data/countries/' + country.toLowerCase() + '/abundance_st_by_region.json?v=20260829';
+    const filename = 'data/countries/' + country.toLowerCase() + '/abundance_st_by_region.json?v=20260830';
     try{
       const data = await fetch(filename).then(r => {
         if(!r.ok) throw new Error('HTTP '+r.status);
@@ -7457,7 +7457,7 @@ let _rangeIndexCache = null;
 async function _loadRangeIndex(){
   if(_rangeIndexCache) return _rangeIndexCache;
   try{
-    const res = await fetch('data/range-index.json?v=20260829');
+    const res = await fetch('data/range-index.json?v=20260830');
     if(!res.ok) return (_rangeIndexCache = {});
     const raw = await res.json();
     // Normalise en index case-insensitive (les cles R sont 'Pica pica' Title case,
@@ -7479,7 +7479,7 @@ async function _renderSpeciesRangeCard(sci){
   const idx = await _loadRangeIndex();
   const entry = idx[(sci || '').toLowerCase().trim()];
   if(!entry || !entry.code) return;
-  const pngPath = `data/range/${entry.code}.png?v=20260829`;
+  const pngPath = `data/range/${entry.code}.png?v=20260830`;
   const [w, s, e, n] = (entry.bbox || [-180, -60, 180, 85]);
   const mapId = 'smRangeMap';
   box.innerHTML = `
