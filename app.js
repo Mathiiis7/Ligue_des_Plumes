@@ -11302,6 +11302,24 @@ function _quizDailyRefreshCard(){
     if(status) status.textContent = displayStreak > 0 ? 'Prêt à continuer ta série ?' : 'Nouveau : 5 questions par jour';
   }
 }
+// Construit le HTML du classement quotidien : filtre les joueurs qui ont joue
+// aujourd'hui, tri par score du jour desc puis serie desc. Injecte mon score
+// courant si le sync cloud n'est pas encore remonte.
+function _quizDailyLeaderboardHtml(dateKey, myScoreIfSyncing){
+  const rows = [];
+  _quizCloudAll.forEach(d => {
+    const daily = d?.daily;
+    if(!daily || daily.lastPlayedDate !== dateKey || typeof daily.lastScore !== 'number') return;
+    rows.push({ uid: d.uid, name: d.name || 'Joueur', score: daily.lastScore, streak: daily.streak || 0 });
+  });
+  if(typeof myScoreIfSyncing === 'number' && !rows.find(r => r.uid === myUid)){
+    const me = _quizDailyState();
+    rows.push({ uid: myUid, name: (realPeople.find(p => p.id === myUid)?.name) || 'toi', score: myScoreIfSyncing, streak: me.streak || 1 });
+  }
+  if(!rows.length) return '';
+  rows.sort((a, b) => (b.score - a.score) || (b.streak - a.streak));
+  return `<div class="qz-lb-inline"><div class="qz-lb-title">🎪 Classement du jour</div><ol class="qz-lb-list">${rows.map((r, i) => `<li class="${r.uid===myUid?'me':''}"><span class="qz-lb-rank">${i+1}</span><span class="qz-lb-name">${esc(r.name)}${r.uid===myUid?' <span class="qz-lb-you">(toi)</span>':''}</span><span class="qz-lb-metric"><b>${r.score}</b><span class="qz-lb-sub">/${_QUIZ_DAILY_LEN}</span></span><span class="qz-lb-metric">🔥 <b>${r.streak}</b></span></li>`).join('')}</ol></div>`;
+}
 // Affiche le recap du defi du jour deja termine (view-only, ne modifie rien)
 function _quizDailyShowLastRecap(){
   const state = _quizDailyState();
@@ -11312,6 +11330,7 @@ function _quizDailyShowLastRecap(){
   const score = state.lastScore;
   const pctColor = score >= 4 ? 'good' : score >= 3 ? 'ok' : 'bad';
   const emoji = score === 5 ? '🏆' : score >= 4 ? '🎯' : score >= 3 ? '👍' : '💪';
+  const lbHtmlDaily = _quizDailyLeaderboardHtml(today, score);
   stage.innerHTML = `
     <div class="qz-recap ${pctColor}">
       <div class="qz-recap-emoji">${emoji}</div>
@@ -11322,9 +11341,9 @@ function _quizDailyShowLastRecap(){
         <span>· Record <b>${state.bestStreak}</b></span>
       </div>
       <p class="help" style="margin:10px 0 0; text-align:center;">Reviens demain pour un nouveau défi.</p>
+      ${lbHtmlDaily}
       <div class="qz-recap-actions">
         <button type="button" class="qz-cta qz-recap-back" id="quizChallengeExit">Retour au quiz</button>
-        <button type="button" class="qz-btn-secondary" id="quizSeeLeaderboard">🏆 Voir le classement</button>
       </div>
     </div>
   `;
@@ -11460,6 +11479,7 @@ function _quizDailyFinish(){
     const streakLine = wasContinuation
       ? `<div class="qz-recap-diff-wrap"><span class="qz-recap-diff up">🔥 ${state.streak} jours de suite !</span></div>`
       : (state.streak === 1 && state.bestStreak > 1 ? `<div class="qz-recap-diff-wrap"><span class="qz-recap-diff down">Série cassée · nouvelle 1re</span></div>` : '');
+    const lbHtmlDaily = _quizDailyLeaderboardHtml(today, score);
     stage.innerHTML = `
       <div class="qz-recap ${pctColor}">
         <div class="qz-recap-emoji">${emoji}</div>
@@ -11471,9 +11491,9 @@ function _quizDailyFinish(){
           <span>· Record <b>${state.bestStreak}</b></span>
         </div>
         <p class="help" style="margin:10px 0 0; text-align:center;">Reviens demain pour continuer la série.</p>
+        ${lbHtmlDaily}
         <div class="qz-recap-actions">
           <button type="button" class="qz-cta qz-recap-back" id="quizChallengeExit">Retour au quiz</button>
-          <button type="button" class="qz-btn-secondary" id="quizSeeLeaderboard">🏆 Voir le classement</button>
         </div>
       </div>
     `;
@@ -11607,7 +11627,6 @@ function _quizWeeklyShowLastRecap(){
       ${lbHtml}
       <div class="qz-recap-actions">
         <button type="button" class="qz-cta qz-recap-back" id="quizChallengeExit">Retour au quiz</button>
-        <button type="button" class="qz-btn-secondary" id="quizSeeLeaderboard">🏆 Classement niveau</button>
       </div>
     </div>
   `;
@@ -11723,7 +11742,6 @@ function _quizWeeklyFinish(){
         ${lbHtml}
         <div class="qz-recap-actions">
           <button type="button" class="qz-cta qz-recap-back" id="quizChallengeExit">Retour au quiz</button>
-          <button type="button" class="qz-btn-secondary" id="quizSeeLeaderboard">🏆 Classement niveau</button>
         </div>
       </div>
     `;
