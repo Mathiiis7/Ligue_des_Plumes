@@ -817,15 +817,27 @@
   <div id="viewQuiz" style="display:none;">
     <section class="panel qz-panel">
       <!-- Header : titre + mode switch pill -->
-      <!-- Defi du jour : 5 questions communes a tous, seed=date, streak persiste -->
-      <div class="qz-daily-card" id="quizDailyCard" hidden>
-        <div class="qz-daily-main">
-          <div class="qz-daily-titleline">🎪 <b>Défi du jour</b> <span class="qz-daily-sub">5 questions communes à tous · 1 fois par jour</span></div>
-          <div class="qz-daily-status" id="quizDailyStatus"></div>
+      <!-- Defis communs : quotidien (5Q) et hebdo (20Q). Meme graine partagee pour tous -->
+      <div class="qz-challenges">
+        <div class="qz-daily-card" id="quizDailyCard" hidden>
+          <div class="qz-daily-main">
+            <div class="qz-daily-titleline">🎪 <b>Défi du jour</b> <span class="qz-daily-sub">5 questions · 1 fois par jour</span></div>
+            <div class="qz-daily-status" id="quizDailyStatus"></div>
+          </div>
+          <div class="qz-daily-right">
+            <div class="qz-daily-streak" id="quizDailyStreak" title="Jours consécutifs joués">🔥 <b>0</b></div>
+            <button type="button" class="qz-daily-btn" id="quizDailyBtn">Jouer</button>
+          </div>
         </div>
-        <div class="qz-daily-right">
-          <div class="qz-daily-streak" id="quizDailyStreak" title="Jours consécutifs joués">🔥 <b>0</b></div>
-          <button type="button" class="qz-daily-btn" id="quizDailyBtn">Jouer</button>
+        <div class="qz-daily-card qz-weekly-card" id="quizWeeklyCard" hidden>
+          <div class="qz-daily-main">
+            <div class="qz-daily-titleline">🏅 <b>Défi hebdo</b> <span class="qz-daily-sub">20 questions · 1 fois par semaine</span></div>
+            <div class="qz-daily-status" id="quizWeeklyStatus"></div>
+          </div>
+          <div class="qz-daily-right">
+            <div class="qz-daily-streak qz-weekly-badge" id="quizWeeklyBadge" title="Ton meilleur score cette semaine">🏆 <b>-</b></div>
+            <button type="button" class="qz-daily-btn" id="quizWeeklyBtn">Jouer</button>
+          </div>
         </div>
       </div>
       <div class="qz-head">

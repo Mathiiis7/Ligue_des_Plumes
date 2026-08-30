@@ -709,6 +709,14 @@
   .qz-daily-btn:disabled { background:var(--line-2); color:var(--ink-3); cursor:default; box-shadow:none; }
   .qz-daily-btn.done { background:#22c55e; color:#fff; opacity:.9; }
   .qz-daily-progress { background:color-mix(in srgb,var(--accent) 15%,var(--surface-2)) !important; color:var(--accent-ink) !important; }
+  .qz-challenges { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+  .qz-challenges .qz-daily-card { margin-bottom:0; }
+  @media (max-width: 720px){ .qz-challenges { grid-template-columns:1fr; } }
+  /* Weekly card : accent doré/gold pour distinguer du daily */
+  .qz-weekly-card { background:linear-gradient(135deg, color-mix(in srgb,#eab308 18%,var(--surface-2)) 0%, color-mix(in srgb,#eab308 8%,var(--surface-2)) 100%); border-color:color-mix(in srgb,#eab308 30%,var(--line-2)); }
+  .qz-weekly-badge { background:color-mix(in srgb,#eab308 15%,var(--surface)) !important; color:#a16207 !important; }
+  .qz-weekly-progress { background:color-mix(in srgb,#eab308 15%,var(--surface-2)) !important; color:#a16207 !important; }
+  .qz-lb-inline { margin-top:16px; padding-top:12px; border-top:1px solid var(--line); }
   /* Classement entre amis (Firestore) */
   #quizLeaderboard { margin-top:20px; padding-top:16px; border-top:1px solid var(--line); }
   .qz-lb-title { font-size:14px; font-weight:700; color:var(--ink); margin-bottom:10px; }

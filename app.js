@@ -9862,13 +9862,19 @@ async function _quizCloudSyncNow(){
   try{
     const stats = _quizStats();
     const daily = _quizDailyState();
+    const weekly = _quizWeeklyState();
     const me = realPeople.find(p => p.id === myUid);
+    // 'weekly' map : { weekKey -> {score, playedAt} } pour permettre le leaderboard hebdo
+    // meme sans lire une collection separee. On garde seulement le score du weekKey actuel.
+    const weeklyMap = weekly.lastPlayedWeek ? { [weekly.lastPlayedWeek]: { score: weekly.lastScore, bestScore: weekly.bestScore } } : {};
     const payload = {
       uid: myUid,
       name: (me?.name) || myMemberName?.() || 'Joueur',
       byLevel: stats.byLevel,
       byLevelInverse: stats.byLevelInverse,
       daily: { streak: daily.streak, bestStreak: daily.bestStreak, totalPlayed: daily.totalPlayed, totalCorrect: daily.totalCorrect, lastPlayedDate: daily.lastPlayedDate, lastScore: daily.lastScore },
+      weekly: weeklyMap,
+      weeklyBest: weekly.bestScore || 0,
       updatedAt: serverTimestamp(),
     };
     await setDoc(doc(db, 'leagues', leagueId, 'quizStats', myUid), payload, { merge: true });
@@ -10072,6 +10078,7 @@ function renderQuizInit(){
   _quizRefreshStatsUI();
   _quizRefreshProblemBadge();
   _quizDailyRefreshCard();
+  _quizWeeklyRefreshCard();
   // Firestore : subscribe au classement de la ligue + push initial des stats
   _quizSubscribeCloud();
   _quizScheduleCloudSync();
@@ -11405,6 +11412,194 @@ function _quizDailyFinish(){
   _quizDailyActive = null;
   _quizDailyRefreshCard();
 }
+/* ---------------- Defi hebdo ----------------
+   20 questions communes chaque semaine (seed = ISO week). Une tentative par
+   semaine. Scores partages via Firestore (leaderboard hebdo).
+   ---------------------------------------------- */
+const _QUIZ_WEEKLY_LEN = 20;
+let _quizWeeklyActive = null;   // { questions, current, correctCount, weekKey }
+function _quizWeekKey(dateStr){
+  // ISO week YYYY-Www. dateStr optionnel = today.
+  const d = dateStr ? new Date(dateStr + 'T12:00:00') : new Date();
+  // ISO week : jeudi de la semaine
+  const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = tmp.getUTCDay() || 7;
+  tmp.setUTCDate(tmp.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil(((tmp - yearStart) / 86400000 + 1) / 7);
+  return tmp.getUTCFullYear() + '-W' + String(weekNo).padStart(2,'0');
+}
+function _quizWeeklyState(){
+  const def = { lastPlayedWeek:'', lastScore:0, bestScore:0, totalPlayed:0 };
+  try{ return { ...def, ...JSON.parse(localStorage.getItem('mb-quiz-weekly')||'{}') }; }catch(_){ return def; }
+}
+function _quizWeeklySave(s){ try{ localStorage.setItem('mb-quiz-weekly', JSON.stringify(s)); }catch(_){} }
+// Genere les 20 questions de la semaine (deterministe par ISO week)
+function _quizWeeklyGenerate(weekKey){
+  const rng = _seededRng(_hashSeed('weekly-v1-' + weekKey));
+  // Pool tier 1-6 (un peu plus difficile que daily : autant que Moyen)
+  const pool = Object.keys(FR_NAMES).filter(sci => {
+    if(_isExoticNotCounted(sci)) return false;
+    if(typeof hasRarityCalibration === 'function' && !hasRarityCalibration(sci)) return false;
+    const t = rarityForFilter(sci);
+    return t >= 1 && t <= 6;
+  }).sort();
+  const shuffled = pool.slice();
+  for(let i = shuffled.length - 1; i > 0; i--){
+    const j = Math.floor(rng() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  const picks = shuffled.slice(0, _QUIZ_WEEKLY_LEN);
+  return picks.map(sci => {
+    const others = shuffled.filter(s => s !== sci);
+    const distracters = [];
+    for(let i = 0; i < 3 && others.length; i++){
+      const idx = Math.floor(rng() * others.length);
+      distracters.push(others.splice(idx, 1)[0]);
+    }
+    const choices = [sci, ...distracters];
+    for(let i = choices.length - 1; i > 0; i--){
+      const j = Math.floor(rng() * (i + 1));
+      [choices[i], choices[j]] = [choices[j], choices[i]];
+    }
+    return { sci, choices, correctIdx: choices.indexOf(sci) };
+  });
+}
+function _quizWeeklyRefreshCard(){
+  const card = document.getElementById('quizWeeklyCard');
+  if(!card) return;
+  card.hidden = false;
+  const state = _quizWeeklyState();
+  const weekKey = _quizWeekKey();
+  const alreadyDone = state.lastPlayedWeek === weekKey;
+  const btn = document.getElementById('quizWeeklyBtn');
+  const status = document.getElementById('quizWeeklyStatus');
+  const badge = document.getElementById('quizWeeklyBadge');
+  if(badge){ const b = badge.querySelector('b'); if(b) b.textContent = alreadyDone ? state.lastScore + '/' + _QUIZ_WEEKLY_LEN : '-'; }
+  if(alreadyDone){
+    if(btn){ btn.disabled = true; btn.textContent = '✓ Terminé'; btn.classList.add('done'); }
+    if(status) status.textContent = `Score cette semaine : ${state.lastScore}/${_QUIZ_WEEKLY_LEN} · reviens lundi`;
+  } else {
+    if(btn){ btn.disabled = false; btn.textContent = 'Jouer'; btn.classList.remove('done'); }
+    if(status) status.textContent = state.bestScore ? `Ton record : ${state.bestScore}/${_QUIZ_WEEKLY_LEN}` : '20 questions communes à toute la ligue';
+  }
+}
+async function _quizWeeklyStart(){
+  const weekKey = _quizWeekKey();
+  const state = _quizWeeklyState();
+  if(state.lastPlayedWeek === weekKey) return;   // deja joue cette semaine
+  _quizWeeklyActive = { questions: _quizWeeklyGenerate(weekKey), current: 0, correctCount: 0, weekKey };
+  _quizWeeklyRenderQuestion();
+}
+async function _quizWeeklyRenderQuestion(){
+  if(!_quizWeeklyActive) return;
+  const q = _quizWeeklyActive.questions[_quizWeeklyActive.current];
+  if(!q){ _quizWeeklyFinish(); return; }
+  const stage = document.getElementById('quizStage'); if(!stage) return;
+  const nextBtn = document.getElementById('quizNext'); if(nextBtn){ nextBtn.hidden = true; nextBtn.textContent = 'Suivante →'; }
+  const skipBtn = document.getElementById('quizSkip'); if(skipBtn) skipBtn.hidden = true;
+  stage.innerHTML = `<p class="help" style="margin:0;">🎧 Chargement du défi hebdo (${_quizWeeklyActive.current + 1}/${_QUIZ_WEEKLY_LEN})…</p>`;
+  const sounds = await _fetchXenoSound(q.sci).catch(() => null);
+  if(!sounds){ setTimeout(() => { _quizWeeklyActive.current++; _quizWeeklyRenderQuestion(); }, 600); return; }
+  const top = (sounds.songList || []).slice(0,3).filter(Boolean);
+  const topC = (sounds.callList || []).slice(0,3).filter(Boolean);
+  const src = top.length ? top[Math.floor(Math.random()*top.length)] : (topC.length ? topC[Math.floor(Math.random()*topC.length)] : null);
+  if(!src?.file){ _quizWeeklyActive.current++; _quizWeeklyRenderQuestion(); return; }
+  stage.innerHTML = `
+    <div class="qz-play">
+      <div class="qz-session-progress qz-weekly-progress">🏅 Défi hebdo · Question <b>${_quizWeeklyActive.current + 1}</b> / ${_QUIZ_WEEKLY_LEN}</div>
+      <div class="qz-player">
+        <button type="button" class="qz-play-btn" id="quizPlayBtn">▶</button>
+        <div class="qz-progress"><div class="qz-progress-fill" id="quizProgressFill"></div></div>
+      </div>
+      <p class="qz-prompt">Quelle espèce est-ce ?</p>
+      <div class="qz-choices" id="quizChoices">
+        ${q.choices.map((c,i)=>`<button type="button" class="qz-choice" data-quiz-weekly-choice="${i}"><span class="qz-choice-fr">${esc(FR_NAMES[c]||c)}</span><span class="qz-choice-sci">${esc(c)}</span></button>`).join('')}
+      </div>
+    </div>
+    <audio id="quizAudio" style="display:none;"><source src="${esc(src.file)}"></audio>
+  `;
+  const audio = document.getElementById('quizAudio');
+  const playBtn = document.getElementById('quizPlayBtn');
+  const progFill = document.getElementById('quizProgressFill');
+  if(audio && playBtn){
+    const CAP_SEC = 20;
+    const togglePlay = () => { if(audio.paused) audio.play().catch(()=>{}); else audio.pause(); };
+    playBtn.addEventListener('click', togglePlay);
+    audio.addEventListener('play', () => { playBtn.textContent = '⏸'; playBtn.classList.add('playing'); });
+    audio.addEventListener('pause', () => { playBtn.textContent = '▶'; playBtn.classList.remove('playing'); });
+    audio.addEventListener('ended', () => { playBtn.textContent = '▶'; playBtn.classList.remove('playing'); if(progFill) progFill.style.width = '0%'; });
+    audio.addEventListener('timeupdate', () => {
+      if(audio.currentTime >= CAP_SEC){ try{ audio.pause(); audio.currentTime = 0; }catch(_){}; if(progFill) progFill.style.width = '0%'; return; }
+      const effDur = Math.min(audio.duration || CAP_SEC, CAP_SEC);
+      if(effDur && progFill) progFill.style.width = ((audio.currentTime / effDur) * 100) + '%';
+    });
+    audio.play().catch(()=>{});
+  }
+}
+function _quizWeeklyAnswer(idx){
+  if(!_quizWeeklyActive) return;
+  const q = _quizWeeklyActive.questions[_quizWeeklyActive.current];
+  if(!q) return;
+  const correct = idx === q.correctIdx;
+  if(correct) _quizWeeklyActive.correctCount++;
+  const box = document.getElementById('quizChoices'); if(box){
+    box.querySelectorAll('[data-quiz-weekly-choice]').forEach((b, i) => {
+      b.disabled = true;
+      if(i === q.correctIdx) b.classList.add('correct');
+      else if(i === idx) b.classList.add('wrong');
+    });
+  }
+  _quizTrainRecord(q.sci, correct);
+  setTimeout(() => {
+    _quizWeeklyActive.current++;
+    if(_quizWeeklyActive.current >= _QUIZ_WEEKLY_LEN) _quizWeeklyFinish();
+    else _quizWeeklyRenderQuestion();
+  }, 1200);
+}
+function _quizWeeklyFinish(){
+  if(!_quizWeeklyActive) return;
+  const weekKey = _quizWeeklyActive.weekKey;
+  const score = _quizWeeklyActive.correctCount;
+  const state = _quizWeeklyState();
+  state.lastPlayedWeek = weekKey;
+  state.lastScore = score;
+  state.totalPlayed = (state.totalPlayed || 0) + 1;
+  if(score > (state.bestScore || 0)) state.bestScore = score;
+  _quizWeeklySave(state);
+  _quizScheduleCloudSync();
+  const stage = document.getElementById('quizStage'); if(stage){
+    const pctColor = score >= 16 ? 'good' : score >= 12 ? 'ok' : 'bad';
+    const emoji = score >= 18 ? '🏆' : score >= 14 ? '🎯' : score >= 10 ? '👍' : '💪';
+    // Leaderboard hebdo : filtre les docs quizStats qui ont joue cette semaine
+    let lbHtml = '';
+    const rows = [];
+    _quizCloudAll.forEach(d => {
+      const w = d?.weekly?.[weekKey];
+      if(typeof w?.score === 'number') rows.push({ uid: d.uid, name: d.name || 'Joueur', score: w.score });
+    });
+    // Injecte mon score si pas encore dans le doc cloud (sync en cours)
+    if(!rows.find(r => r.uid === myUid)) rows.push({ uid: myUid, name: (realPeople.find(p => p.id === myUid)?.name) || 'toi', score });
+    rows.sort((a,b) => b.score - a.score);
+    if(rows.length){
+      lbHtml = `<div class="qz-lb-inline"><div class="qz-lb-title">🏅 Classement hebdo</div><ol class="qz-lb-list">${rows.map((r,i) => `<li class="${r.uid===myUid?'me':''}"><span class="qz-lb-rank">${i+1}</span><span class="qz-lb-name">${esc(r.name)}${r.uid===myUid?' <span class="qz-lb-you">(toi)</span>':''}</span><span class="qz-lb-metric"><b>${r.score}</b><span class="qz-lb-sub">/${_QUIZ_WEEKLY_LEN}</span></span></li>`).join('')}</ol></div>`;
+    }
+    stage.innerHTML = `
+      <div class="qz-recap ${pctColor}">
+        <div class="qz-recap-emoji">${emoji}</div>
+        <div class="qz-recap-title">Défi hebdo terminé</div>
+        <div class="qz-recap-score"><b>${score}</b><span class="qz-recap-total">/${_QUIZ_WEEKLY_LEN}</span></div>
+        <div class="qz-recap-meta">
+          <span>Record perso <b>${state.bestScore}</b></span>
+        </div>
+        <p class="help" style="margin:10px 0 0; text-align:center;">Reviens lundi prochain pour le nouveau défi.</p>
+        ${lbHtml}
+      </div>
+    `;
+  }
+  _quizWeeklyActive = null;
+  _quizWeeklyRefreshCard();
+}
 // Mode Inverse : affiche la photo de l'espece correcte, propose 4 audios
 // (1 bon + 3 distracteurs) a ecouter, l'utilisateur choisit celui qui
 // correspond. Fetch photo + 4 audios en parallele pour minimiser la latence.
@@ -11620,6 +11815,9 @@ document.addEventListener('click', e => {
   // Defi du jour : bouton Jouer + selection reponse
   const dailyBtn = e.target.closest('#quizDailyBtn'); if(dailyBtn && !dailyBtn.disabled){ _quizDailyStart(); return; }
   const dailyChoice = e.target.closest('[data-quiz-daily-choice]'); if(dailyChoice){ _quizDailyAnswer(+dailyChoice.dataset.quizDailyChoice); return; }
+  // Defi hebdo : bouton Jouer + selection reponse
+  const weeklyBtn = e.target.closest('#quizWeeklyBtn'); if(weeklyBtn && !weeklyBtn.disabled){ _quizWeeklyStart(); return; }
+  const weeklyChoice = e.target.closest('[data-quiz-weekly-choice]'); if(weeklyChoice){ _quizWeeklyAnswer(+weeklyChoice.dataset.quizWeeklyChoice); return; }
   // Ouvre la carte des especes a reviser
   const probOpen = e.target.closest('#quizProblemOpen'); if(probOpen){ _quizRenderProblemCard(); return; }
   // Lance une session de revision sur les 10 especes a probleme (bascule en Entrainement)
@@ -11703,9 +11901,10 @@ document.addEventListener('keydown', e => {
   if(e.key >= '1' && e.key <= '6'){
     const box = document.getElementById('quizChoices');
     if(!box) return;
-    // Marche pour les choix classiques ET le defi (data-quiz-daily-choice)
+    // Marche pour les choix classiques ET le defi quotidien et hebdo
     const btn = box.querySelector(`[data-quiz-choice="${(+e.key) - 1}"]`)
-             || box.querySelector(`[data-quiz-daily-choice="${(+e.key) - 1}"]`);
+             || box.querySelector(`[data-quiz-daily-choice="${(+e.key) - 1}"]`)
+             || box.querySelector(`[data-quiz-weekly-choice="${(+e.key) - 1}"]`);
     if(btn && !btn.disabled){ e.preventDefault(); btn.click(); }
     return;
   }
