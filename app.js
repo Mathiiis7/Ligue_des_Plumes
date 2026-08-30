@@ -7483,7 +7483,7 @@ async function _renderSpeciesRangeCard(sci){
   const [w, s, e, n] = (entry.bbox || [-180, -60, 180, 85]);
   const mapId = 'smRangeMap';
   box.innerHTML = `
-    <div class="sm-card-title" style="display:flex; align-items:center; gap:8px;">Répartition <span style="font-size:10.5px; color:var(--ink-3); text-transform:none; font-weight:400; letter-spacing:0;">- Cornell Status & Trends (moyenne annuelle 9 km)</span></div>
+    <div class="sm-card-title" style="display:flex; align-items:center; gap:8px;">Répartition <span style="font-size:10.5px; color:var(--ink-3); text-transform:none; font-weight:400; letter-spacing:0;">- ${entry._source === 'gbif' ? `GBIF (${entry._n||'?'} observations)` : 'Cornell Status & Trends (moyenne annuelle 9 km)'}</span></div>
     <div id="${mapId}" class="sm-range-map" style="margin-top:6px; height:440px; border-radius:8px; overflow:hidden; background:var(--surface-3);"></div>
     <div style="margin-top:8px; display:flex; align-items:center; gap:10px; font-size:11px; color:var(--ink-2);">
       <span>Rare</span>
