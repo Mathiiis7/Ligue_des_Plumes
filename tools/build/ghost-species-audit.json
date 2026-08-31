@@ -1,0 +1,1391 @@
+[
+  {
+    "sci": "accipiter brevipes",
+    "tier": 9,
+    "name": "?",
+    "gbifKey": 2480578,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "alauda leucoptera",
+    "tier": 8,
+    "name": "Alouette leucoptère",
+    "gbifKey": 7607411,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "alaudala heinei",
+    "tier": 9,
+    "name": "Alouette de Heine",
+    "gbifKey": 11234805,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "alaudala rufescens",
+    "tier": 9,
+    "name": "Alouette pispolette",
+    "gbifKey": 8728578,
+    "recentCount": 15,
+    "ghost": false
+  },
+  {
+    "sci": "ammomanes cinctura",
+    "tier": 9,
+    "name": "Ammomane élégante",
+    "gbifKey": 7340809,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "anarhynchus asiaticus",
+    "tier": 9,
+    "name": "Pluvier asiatique",
+    "gbifKey": 9490752,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "anarhynchus atrifrons",
+    "tier": 9,
+    "name": "Pluvier du Tibet",
+    "gbifKey": null,
+    "recentCount": -1,
+    "ghost": false,
+    "note": "no gbif key"
+  },
+  {
+    "sci": "anarhynchus mongolus",
+    "tier": 9,
+    "name": "Pluvier de Mongolie",
+    "gbifKey": null,
+    "recentCount": -1,
+    "ghost": false,
+    "note": "no gbif key"
+  },
+  {
+    "sci": "anarhynchus pecuarius",
+    "tier": 9,
+    "name": "Pluvier pâtre",
+    "gbifKey": null,
+    "recentCount": -1,
+    "ghost": false,
+    "note": "no gbif key"
+  },
+  {
+    "sci": "anas rubripes",
+    "tier": 9,
+    "name": "Canard noir",
+    "gbifKey": 9581438,
+    "recentCount": 1,
+    "ghost": false
+  },
+  {
+    "sci": "anser erythropus",
+    "tier": 10,
+    "name": "Oie naine",
+    "gbifKey": 2498026,
+    "recentCount": 16,
+    "ghost": false
+  },
+  {
+    "sci": "anthus godlewskii",
+    "tier": 8,
+    "name": "Pipit de Godlewski",
+    "gbifKey": 2490264,
+    "recentCount": 55,
+    "ghost": false
+  },
+  {
+    "sci": "anthus gustavi",
+    "tier": 8,
+    "name": "Pipit de la Petchora",
+    "gbifKey": 2490281,
+    "recentCount": 9,
+    "ghost": false
+  },
+  {
+    "sci": "anthus rubescens",
+    "tier": 8,
+    "name": "Pipit d'Amérique",
+    "gbifKey": 2490263,
+    "recentCount": 94,
+    "ghost": false
+  },
+  {
+    "sci": "antigone canadensis",
+    "tier": 9,
+    "name": "Grue du Canada",
+    "gbifKey": 9036008,
+    "recentCount": 1,
+    "ghost": false
+  },
+  {
+    "sci": "aquila adalberti",
+    "tier": 8,
+    "name": "Aigle ibérique",
+    "gbifKey": 2480510,
+    "recentCount": 10,
+    "ghost": false
+  },
+  {
+    "sci": "ardea herodias",
+    "tier": 9,
+    "name": "Grand Héron",
+    "gbifKey": 9630752,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "ardea melanocephala",
+    "tier": 9,
+    "name": "Héron mélanocéphale",
+    "gbifKey": 2480923,
+    "recentCount": 1,
+    "ghost": false
+  },
+  {
+    "sci": "ardenna tenuirostris",
+    "tier": 10,
+    "name": "Puffin à bec grêle",
+    "gbifKey": 7456133,
+    "recentCount": 3,
+    "ghost": false
+  },
+  {
+    "sci": "balearica regulorum",
+    "tier": 8,
+    "name": "Grue royale",
+    "gbifKey": 5228229,
+    "recentCount": 83,
+    "ghost": false
+  },
+  {
+    "sci": "botaurus sturmii",
+    "tier": 9,
+    "name": "Blongios de Sturm",
+    "gbifKey": null,
+    "recentCount": -1,
+    "ghost": false,
+    "note": "no gbif key"
+  },
+  {
+    "sci": "branta hutchinsii",
+    "tier": 10,
+    "name": "Bernache de Hutchins",
+    "gbifKey": 5232452,
+    "recentCount": 42,
+    "ghost": false
+  },
+  {
+    "sci": "branta ruficollis",
+    "tier": 8,
+    "name": "Bernache à cou roux",
+    "gbifKey": 5232451,
+    "recentCount": 114,
+    "ghost": false
+  },
+  {
+    "sci": "bubo scandiacus",
+    "tier": 8,
+    "name": "Harfang des neiges",
+    "gbifKey": 5959143,
+    "recentCount": 1,
+    "ghost": false
+  },
+  {
+    "sci": "bucephala albeola",
+    "tier": 9,
+    "name": "Petit Garrot",
+    "gbifKey": 2498329,
+    "recentCount": 9,
+    "ghost": false
+  },
+  {
+    "sci": "bucephala islandica",
+    "tier": 8,
+    "name": "Garrot d'Islande",
+    "gbifKey": 2498325,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "bulweria bulwerii",
+    "tier": 8,
+    "name": "Pétrel de Bulwer",
+    "gbifKey": 2481606,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "butorides virescens",
+    "tier": 9,
+    "name": "Héron vert",
+    "gbifKey": 9539567,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "calidris acuminata",
+    "tier": 8,
+    "name": "Bécasseau à queue pointue",
+    "gbifKey": 2481769,
+    "recentCount": 38,
+    "ghost": false
+  },
+  {
+    "sci": "calidris fuscicollis",
+    "tier": 8,
+    "name": "Bécasseau à croupion blanc",
+    "gbifKey": 2481756,
+    "recentCount": 71,
+    "ghost": false
+  },
+  {
+    "sci": "calidris pusilla",
+    "tier": 8,
+    "name": "Bécasseau semipalmé",
+    "gbifKey": 2481764,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "calidris ruficollis",
+    "tier": 9,
+    "name": "Bécasseau à col roux",
+    "gbifKey": 2481746,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "calidris subminuta",
+    "tier": 9,
+    "name": "Bécasseau à longs doigts",
+    "gbifKey": 2481750,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "caprimulgus ruficollis",
+    "tier": 8,
+    "name": "Engoulevent à collier roux",
+    "gbifKey": 9411857,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "cathartes aura",
+    "tier": 10,
+    "name": "Urubu à tête rouge",
+    "gbifKey": 2481930,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "catharus minimus",
+    "tier": 8,
+    "name": "Grive à joues grises",
+    "gbifKey": 2490826,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "catharus ustulatus",
+    "tier": 8,
+    "name": "Grive à dos olive",
+    "gbifKey": 2490821,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "cercotrichas galactotes",
+    "tier": 8,
+    "name": "Agrobate roux",
+    "gbifKey": 2492478,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "ceryle rudis",
+    "tier": 9,
+    "name": "Martin-pêcheur pie",
+    "gbifKey": 2475679,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "chaetura pelagica",
+    "tier": 9,
+    "name": "Martinet ramoneur",
+    "gbifKey": 4409023,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "charadrius semipalmatus",
+    "tier": 8,
+    "name": "Pluvier semipalmé",
+    "gbifKey": 2480295,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "charadrius vociferus",
+    "tier": 8,
+    "name": "Pluvier kildir",
+    "gbifKey": 2480320,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "chenonetta jubata",
+    "tier": 10,
+    "name": "Canard à crinière",
+    "gbifKey": 2498046,
+    "recentCount": 13,
+    "ghost": false
+  },
+  {
+    "sci": "chersophilus duponti",
+    "tier": 8,
+    "name": "Sirli de Dupont",
+    "gbifKey": 2490674,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "chlamydotis macqueenii",
+    "tier": 9,
+    "name": "Outarde de Macqueen",
+    "gbifKey": 2474863,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "chordeiles minor",
+    "tier": 8,
+    "name": "Engoulevent d'Amérique",
+    "gbifKey": 2497035,
+    "recentCount": 12,
+    "ghost": false
+  },
+  {
+    "sci": "coccyzus americanus",
+    "tier": 9,
+    "name": "Coulicou à bec jaune",
+    "gbifKey": 2496287,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "coccyzus erythropthalmus",
+    "tier": 9,
+    "name": "Coulicou à bec noir",
+    "gbifKey": 2496286,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "coloeus dauuricus",
+    "tier": 9,
+    "name": "Choucas de Daourie",
+    "gbifKey": 6100955,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "columba guinea",
+    "tier": 10,
+    "name": "Pigeon roussard",
+    "gbifKey": 5231817,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "curruca crassirostris",
+    "tier": 9,
+    "name": "Fauvette orphéane",
+    "gbifKey": 11098086,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "curruca deserti",
+    "tier": 9,
+    "name": "Fauvette du désert",
+    "gbifKey": 11016136,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "curruca deserticola",
+    "tier": 9,
+    "name": "Fauvette de l'Atlas",
+    "gbifKey": 11091935,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "curruca nana",
+    "tier": 9,
+    "name": "Fauvette naine",
+    "gbifKey": 9039514,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "curruca nisoria",
+    "tier": 8,
+    "name": "Fauvette épervière",
+    "gbifKey": 10983621,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "daption capense",
+    "tier": 8,
+    "name": "Damier du Cap",
+    "gbifKey": 2481545,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "dendrocopos syriacus",
+    "tier": 9,
+    "name": "Pic syriaque",
+    "gbifKey": 2478031,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "dolichonyx oryzivorus",
+    "tier": 9,
+    "name": "Goglu des prés",
+    "gbifKey": 2484417,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "egretta gularis",
+    "tier": 8,
+    "name": "Aigrette à gorge blanche",
+    "gbifKey": 2480898,
+    "recentCount": 31,
+    "ghost": false
+  },
+  {
+    "sci": "emberiza aureola",
+    "tier": 8,
+    "name": "Bruant auréole",
+    "gbifKey": 2491518,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "emberiza bruniceps",
+    "tier": 8,
+    "name": "Bruant à tête rousse",
+    "gbifKey": 2491521,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "emberiza caesia",
+    "tier": 8,
+    "name": "Bruant cendrillard",
+    "gbifKey": 2491490,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "emberiza chrysophrys",
+    "tier": 9,
+    "name": "Bruant à sourcils jaunes",
+    "gbifKey": 2491530,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "emberiza rutila",
+    "tier": 9,
+    "name": "Bruant roux",
+    "gbifKey": 2491517,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "eudocimus albus",
+    "tier": 8,
+    "name": "Ibis blanc",
+    "gbifKey": 5229205,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "eudocimus ruber",
+    "tier": 8,
+    "name": "Ibis rouge",
+    "gbifKey": 5229204,
+    "recentCount": 17,
+    "ghost": false
+  },
+  {
+    "sci": "falco biarmicus",
+    "tier": 8,
+    "name": "Faucon lanier",
+    "gbifKey": 8014966,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "falco concolor",
+    "tier": 9,
+    "name": "Faucon concolore",
+    "gbifKey": 2481061,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "falco rusticolus",
+    "tier": 8,
+    "name": "Faucon gerfaut",
+    "gbifKey": 8069880,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "ficedula semitorquata",
+    "tier": 8,
+    "name": "Gobemouche à demi-collier",
+    "gbifKey": 2492608,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "fregata magnificens",
+    "tier": 8,
+    "name": "Frégate superbe",
+    "gbifKey": 2480189,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "fringilla spodiogenys",
+    "tier": 9,
+    "name": "Pinson d'Afrique",
+    "gbifKey": 12217905,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "fulica cristata",
+    "tier": 8,
+    "name": "Foulque à crête",
+    "gbifKey": 2474381,
+    "recentCount": 1,
+    "ghost": false
+  },
+  {
+    "sci": "gallinago delicata",
+    "tier": 9,
+    "name": "Bécassine de Wilson",
+    "gbifKey": 2481817,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "geokichla sibirica",
+    "tier": 9,
+    "name": "Grive de Sibérie",
+    "gbifKey": 6100888,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "glareola maldivarum",
+    "tier": 9,
+    "name": "Glaréole orientale",
+    "gbifKey": 2480759,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "helopsaltes certhiola",
+    "tier": 9,
+    "name": "Locustelle de Pallas",
+    "gbifKey": 10273344,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "helopsaltes fasciolatus",
+    "tier": 9,
+    "name": "Locustelle fasciée",
+    "gbifKey": 10258717,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "hippolais olivetorum",
+    "tier": 9,
+    "name": "Hypolaïs des oliviers",
+    "gbifKey": 2493219,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "histrionicus histrionicus",
+    "tier": 8,
+    "name": "Arlequin plongeur",
+    "gbifKey": 2498224,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "hydrobates castro",
+    "tier": 10,
+    "name": "Océanite de Castro",
+    "gbifKey": 9272607,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "hydrobates monorhis",
+    "tier": 9,
+    "name": "Océanite de Swinhoe",
+    "gbifKey": 9378883,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "icterus galbula",
+    "tier": 8,
+    "name": "Oriole de Baltimore",
+    "gbifKey": 2484340,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "iduna opaca",
+    "tier": 10,
+    "name": "Hypolaïs obscure",
+    "gbifKey": 5739355,
+    "recentCount": 4,
+    "ghost": false
+  },
+  {
+    "sci": "iduna rama",
+    "tier": 9,
+    "name": "Hypolaïs rama",
+    "gbifKey": 5739357,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "ketupa zeylonensis",
+    "tier": 9,
+    "name": "Kétoupa brun",
+    "gbifKey": 5232229,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "lanius nubicus",
+    "tier": 9,
+    "name": "Pie-grièche masquée",
+    "gbifKey": 2492855,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "larus smithsonianus",
+    "tier": 9,
+    "name": "Goéland hudsonien",
+    "gbifKey": 4848480,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "larus vegae",
+    "tier": 9,
+    "name": "Goéland de la Véga",
+    "gbifKey": 5789289,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "limnodromus griseus",
+    "tier": 9,
+    "name": "Bécassin roux",
+    "gbifKey": 2481672,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "locustella fluviatilis",
+    "tier": 8,
+    "name": "Locustelle fluviatile",
+    "gbifKey": 2493549,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "locustella lanceolata",
+    "tier": 8,
+    "name": "Locustelle lancéolée",
+    "gbifKey": 2493550,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "loxia leucoptera",
+    "tier": 8,
+    "name": "Bec-croisé bifascié",
+    "gbifKey": 8144830,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "loxia pytyopsittacus",
+    "tier": 8,
+    "name": "Bec-croisé perroquet",
+    "gbifKey": 2494154,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "luscinia luscinia",
+    "tier": 8,
+    "name": "Rossignol progné",
+    "gbifKey": 2492542,
+    "recentCount": 7,
+    "ghost": false
+  },
+  {
+    "sci": "macronectes giganteus",
+    "tier": 8,
+    "name": "Pétrel géant",
+    "gbifKey": 2481515,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "macronectes halli",
+    "tier": 9,
+    "name": "Pétrel de Hall",
+    "gbifKey": 2481516,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "mareca americana",
+    "tier": 8,
+    "name": "Canard d'Amérique",
+    "gbifKey": 2498155,
+    "recentCount": 21,
+    "ghost": false
+  },
+  {
+    "sci": "marmaronetta angustirostris",
+    "tier": 8,
+    "name": "Marmaronette marbrée",
+    "gbifKey": 2498390,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "melanitta deglandi",
+    "tier": 9,
+    "name": "Macreuse à ailes blanches",
+    "gbifKey": 2498243,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "melanitta stejnegeri",
+    "tier": 9,
+    "name": "Macreuse de Sibérie",
+    "gbifKey": 10056448,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "melanocorypha bimaculata",
+    "tier": 9,
+    "name": "Alouette monticole",
+    "gbifKey": 2490609,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "meleagris gallopavo",
+    "tier": 9,
+    "name": "Dindon sauvage",
+    "gbifKey": 9606290,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "merops persicus",
+    "tier": 9,
+    "name": "Guêpier de Perse",
+    "gbifKey": 2475419,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "mniotilta varia",
+    "tier": 8,
+    "name": "Paruline noir et blanc",
+    "gbifKey": 2489613,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "molothrus ater",
+    "tier": 9,
+    "name": "Vacher à tête brune",
+    "gbifKey": 2484391,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "motacilla tschutschensis",
+    "tier": 8,
+    "name": "Bergeronnette de Béringie",
+    "gbifKey": 2490303,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "muscicapa tyrrhenica",
+    "tier": 8,
+    "name": "Gobemouche tyrrhénien",
+    "gbifKey": 9559647,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "nannopterum auritum",
+    "tier": 9,
+    "name": "Cormoran à aigrettes",
+    "gbifKey": 9275717,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "numenius tenuirostris",
+    "tier": 9,
+    "name": "Courlis à bec grêle",
+    "gbifKey": 2481789,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "oenanthe leucopyga",
+    "tier": 9,
+    "name": "Traquet à tête blanche",
+    "gbifKey": 5231253,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "oenanthe leucura",
+    "tier": 8,
+    "name": "Traquet rieur",
+    "gbifKey": 5231236,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "oenanthe pleschanka",
+    "tier": 8,
+    "name": "Traquet pie",
+    "gbifKey": 5231233,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "oenanthe seebohmi",
+    "tier": 9,
+    "name": "Traquet de Seebohm",
+    "gbifKey": 8236049,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "oenanthe xanthoprymna",
+    "tier": 8,
+    "name": "Traquet kurde",
+    "gbifKey": 5231239,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "oxyura leucocephala",
+    "tier": 8,
+    "name": "Érismature à tête blanche",
+    "gbifKey": 2498302,
+    "recentCount": 50,
+    "ghost": false
+  },
+  {
+    "sci": "pagophila eburnea",
+    "tier": 8,
+    "name": "Mouette blanche",
+    "gbifKey": 2481202,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "parkesia noveboracensis",
+    "tier": 9,
+    "name": "Paruline des ruisseaux",
+    "gbifKey": 6093856,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "pelecanus crispus",
+    "tier": 8,
+    "name": "Pélican frisé",
+    "gbifKey": 2480353,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "petrochelidon pyrrhonota",
+    "tier": 9,
+    "name": "Hirondelle à front blanc",
+    "gbifKey": 2489169,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "pheucticus ludovicianus",
+    "tier": 10,
+    "name": "Cardinal à poitrine rose",
+    "gbifKey": 2490494,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "phylloscopus coronatus",
+    "tier": 9,
+    "name": "Pouillot de Temminck",
+    "gbifKey": 2493060,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "phylloscopus ibericus",
+    "tier": 8,
+    "name": "Pouillot ibérique",
+    "gbifKey": 7341585,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "phylloscopus nitidus",
+    "tier": 9,
+    "name": "Pouillot du Caucase",
+    "gbifKey": 9584952,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "phylloscopus orientalis",
+    "tier": 8,
+    "name": "Pouillot oriental",
+    "gbifKey": 4408827,
+    "recentCount": 28,
+    "ghost": false
+  },
+  {
+    "sci": "pinguinus impennis",
+    "tier": 9,
+    "name": "Grand Pingouin",
+    "gbifKey": 5229273,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "pinicola enucleator",
+    "tier": 8,
+    "name": "Durbec des sapins",
+    "gbifKey": 2494771,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "piranga olivacea",
+    "tier": 9,
+    "name": "Piranga écarlate",
+    "gbifKey": 2488517,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "poecile lugubris",
+    "tier": 9,
+    "name": "Mésange lugubre",
+    "gbifKey": 2487857,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "polysticta stelleri",
+    "tier": 8,
+    "name": "Eider de Steller",
+    "gbifKey": 5232431,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "porphyrio alleni",
+    "tier": 9,
+    "name": "Talève d'Allen",
+    "gbifKey": 4408502,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "porphyrio martinica",
+    "tier": 9,
+    "name": "Talève violacée",
+    "gbifKey": 5228136,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "porzana carolina",
+    "tier": 9,
+    "name": "Marouette de Caroline",
+    "gbifKey": 2474639,
+    "recentCount": 1,
+    "ghost": false
+  },
+  {
+    "sci": "prunella atrogularis",
+    "tier": 8,
+    "name": "Accenteur à gorge noire",
+    "gbifKey": 5231766,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "pterodroma baraui",
+    "tier": 9,
+    "name": "Pétrel de Barau",
+    "gbifKey": 2481475,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "pterodroma feae",
+    "tier": 8,
+    "name": "Pétrel gongon",
+    "gbifKey": 2481473,
+    "recentCount": 5,
+    "ghost": false
+  },
+  {
+    "sci": "pterodroma madeira",
+    "tier": 9,
+    "name": "Pétrel de Madère",
+    "gbifKey": 2481463,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "puffinus baroli",
+    "tier": 8,
+    "name": "Puffin de Macaronésie",
+    "gbifKey": 5843955,
+    "recentCount": 9,
+    "ghost": false
+  },
+  {
+    "sci": "pycnonotus jocosus",
+    "tier": 9,
+    "name": "Bulbul orphée",
+    "gbifKey": 2486151,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "quiscalus quiscula",
+    "tier": 9,
+    "name": "Quiscale bronzé",
+    "gbifKey": 2484155,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "rhodostethia rosea",
+    "tier": 8,
+    "name": "Mouette rosée",
+    "gbifKey": 2481218,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "scolopax minor",
+    "tier": 9,
+    "name": "Bécasse d'Amérique",
+    "gbifKey": 2481695,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "setophaga americana",
+    "tier": 9,
+    "name": "Paruline à collier",
+    "gbifKey": 6093345,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "setophaga fusca",
+    "tier": 9,
+    "name": "Paruline à gorge orangée",
+    "gbifKey": 6093199,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "setophaga pensylvanica",
+    "tier": 9,
+    "name": "Paruline à flancs marron",
+    "gbifKey": 6092942,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "setophaga ruticilla",
+    "tier": 9,
+    "name": "Paruline flamboyante",
+    "gbifKey": 2489985,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "setophaga striata",
+    "tier": 9,
+    "name": "Paruline rayée",
+    "gbifKey": 6092935,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "sibirionetta formosa",
+    "tier": 8,
+    "name": "Sarcelle élégante",
+    "gbifKey": 9235549,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "sitta neumayer",
+    "tier": 9,
+    "name": "Sittelle de Neumayer",
+    "gbifKey": 2484890,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "strix uralensis",
+    "tier": 9,
+    "name": "Chouette de l'Oural",
+    "gbifKey": 2497509,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "sula dactylatra",
+    "tier": 9,
+    "name": "Fou masqué",
+    "gbifKey": 2480967,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "sula sula",
+    "tier": 10,
+    "name": "Fou à pieds rouges",
+    "gbifKey": 2480972,
+    "recentCount": 4,
+    "ghost": false
+  },
+  {
+    "sci": "surnia ulula",
+    "tier": 8,
+    "name": "Chouette épervière",
+    "gbifKey": 2497894,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "syrrhaptes paradoxus",
+    "tier": 9,
+    "name": "Syrrhapte paradoxal",
+    "gbifKey": 2480208,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "tachyspiza brevipes",
+    "tier": 9,
+    "name": "Épervier à pieds courts",
+    "gbifKey": null,
+    "recentCount": -1,
+    "ghost": false,
+    "note": "no gbif key"
+  },
+  {
+    "sci": "thalassarche chlororhynchos",
+    "tier": 8,
+    "name": "Albatros à nez jaune",
+    "gbifKey": 2481399,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "thalasseus maximus",
+    "tier": 8,
+    "name": "Sterne royale",
+    "gbifKey": 5789281,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "torgos tracheliotos",
+    "tier": 9,
+    "name": "Vautour oricou",
+    "gbifKey": 5788496,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "tringa flavipes",
+    "tier": 8,
+    "name": "Petit Chevalier",
+    "gbifKey": 2481721,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "tringa melanoleuca",
+    "tier": 9,
+    "name": "Grand Chevalier",
+    "gbifKey": 2481720,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "tringa semipalmata",
+    "tier": 9,
+    "name": "Chevalier semipalmé",
+    "gbifKey": 5789298,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "tringa solitaria",
+    "tier": 9,
+    "name": "Chevalier solitaire",
+    "gbifKey": 2481710,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "turdus atrogularis",
+    "tier": 9,
+    "name": "Grive à gorge noire",
+    "gbifKey": 4408790,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "turdus eunomus",
+    "tier": 9,
+    "name": "Grive à ailes rousses",
+    "gbifKey": 9615912,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "turdus naumanni",
+    "tier": 9,
+    "name": "Grive de Naumann",
+    "gbifKey": 8294007,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "turdus obscurus",
+    "tier": 9,
+    "name": "Merle obscur",
+    "gbifKey": 2490728,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "turdus ruficollis",
+    "tier": 8,
+    "name": "Grive à gorge rousse",
+    "gbifKey": 2490740,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "turnix sylvaticus",
+    "tier": 8,
+    "name": "Turnix d'Andalousie",
+    "gbifKey": 2475001,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "uria lomvia",
+    "tier": 8,
+    "name": "Guillemot de Brünnich",
+    "gbifKey": 2481339,
+    "recentCount": 0,
+    "ghost": true
+  },
+  {
+    "sci": "vanellus cinereus",
+    "tier": 9,
+    "name": "Vanneau à tête grise",
+    "gbifKey": 5229145,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "vireo olivaceus",
+    "tier": 8,
+    "name": "Viréo aux yeux rouges",
+    "gbifKey": 2487430,
+    "recentCount": 59,
+    "ghost": false
+  },
+  {
+    "sci": "zonotrichia leucophrys",
+    "tier": 9,
+    "name": "Bruant à couronne blanche",
+    "gbifKey": 5231132,
+    "recentCount": -1,
+    "ghost": false
+  },
+  {
+    "sci": "zoothera aurea",
+    "tier": 8,
+    "name": "Grive dorée",
+    "gbifKey": 4408785,
+    "recentCount": -1,
+    "ghost": false
+  }
+]
