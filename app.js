@@ -6925,9 +6925,10 @@ const PHOTO_OVERRIDE_WIKI = {
   // Photo par defaut Wikipedia est domestique blanche : on utilise le male sauvage type.
   'cairina moschata': { url:'https://upload.wikimedia.org/wikipedia/commons/b/b4/Muscovy_Duck_%28Cairina_moschata%29_male.jpg' },
   'dendrocygna viduata': { url:'https://upload.wikimedia.org/wikipedia/commons/b/bf/Dendrocygna_viduata_001.jpg' },
-  // Wiki par defaut = variante domestique avec bosse. On prend un male sauvage plus rapproche.
-  'anser cygnoides': { url:'https://upload.wikimedia.org/wikipedia/commons/d/df/Swan_geese_in_Beijing_Olympic_Forest_Park_02.jpg' },
+  // Wiki par defaut = variante domestique avec bosse. On prend un male sauvage Qiqihar.
+  'anser cygnoides': { url:'https://upload.wikimedia.org/wikipedia/commons/3/3f/Anser_cygnoides_Qiqihar_2.jpg' },
   'amazonetta brasiliensis': { url:'https://upload.wikimedia.org/wikipedia/commons/f/fd/Brazilian_Teals_%28Amazonetta_brasiliensis%29_couple_%28male_left%29_%2829061603735%29.jpg' },
+  'ploceus melanocephalus': { url:'https://upload.wikimedia.org/wikipedia/commons/c/c2/Black_headed_weaver_bird_bw_%283338893964%29.jpg' },
 };
 async function _fetchWikiPhoto(sci){
   const key = sci.toLowerCase();
