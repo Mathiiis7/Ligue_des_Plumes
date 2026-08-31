@@ -6913,7 +6913,7 @@ $('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove(
 // reload de page. ~200 bytes par entree, 700 especes = 140 KB, tient largement dans les
 // 5-10 MB dispo. Sans persistance, l'utilisateur re-attend le fetch de toutes les
 // photos du Birdydex a chaque visite -> tres lent.
-const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v2';
+const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v3';
 const _SP_PHOTO_CACHE_TTL_MS = 30 * 24 * 3600 * 1000;
 const _spPhotoCache = new Map();      // sci → {url, thumb, credit} | null (échec)
 try{
@@ -6957,6 +6957,11 @@ const PHOTO_OVERRIDE_WIKI = {
   // tete noire diagnostique (les autres photos iNat/wiki montraient souvent le male non
   // nuptial ou une variation regionale sans tete noire).
   'ploceus melanocephalus': { url:'https://upload.wikimedia.org/wikipedia/commons/d/d7/Yellow_backed_weaver.jpg' },
+  // Photos Wiki FR summary : bien cadrees, curatees par les redacteurs Wikipedia.
+  'corvus corone': { url:'https://upload.wikimedia.org/wikipedia/commons/2/2a/Carrion_crow_2022_04_05_05_01.jpg' },
+  'garrulus glandarius': { url:'https://upload.wikimedia.org/wikipedia/commons/6/6d/Garrulus_glandarius_1_Luc_Viatour.jpg' },
+  'apus apus': { url:'https://upload.wikimedia.org/wikipedia/commons/d/d5/Common_Swift_2025_07_18_02_%28cropped%29.jpg' },
+  'picus viridis': { url:'https://upload.wikimedia.org/wikipedia/commons/d/d5/European_green_woodpecker_%28Picus_viridis%29_female.jpg' },
 };
 async function _fetchWikiPhoto(sci){
   const key = sci.toLowerCase();
