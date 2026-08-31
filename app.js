@@ -6953,7 +6953,10 @@ const PHOTO_OVERRIDE_WIKI = {
   // Photos iNat curatees par les birders : mieux cadrees que les defaut wiki.
   'anser cygnoides': { url:'https://inaturalist-open-data.s3.amazonaws.com/photos/479827075/original.jpg', credit:'iNaturalist' },
   'amazonetta brasiliensis': { url:'https://static.inaturalist.org/photos/423943353/original.jpeg', credit:'iNaturalist' },
-  'ploceus melanocephalus': { url:'https://inaturalist-open-data.s3.amazonaws.com/photos/598532518/original.jpg', credit:'iNaturalist' },
+  // Photo Wikipedia EN "Yellow_backed_weaver" : le male en plumage nuptial avec la vraie
+  // tete noire diagnostique (les autres photos iNat/wiki montraient souvent le male non
+  // nuptial ou une variation regionale sans tete noire).
+  'ploceus melanocephalus': { url:'https://upload.wikimedia.org/wikipedia/commons/d/d7/Yellow_backed_weaver.jpg' },
 };
 async function _fetchWikiPhoto(sci){
   const key = sci.toLowerCase();
