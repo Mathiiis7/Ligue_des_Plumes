@@ -11933,7 +11933,6 @@ document.addEventListener('click', e => {
     _quizStart();
     return;
   }
-  const skip = e.target.closest('#quizSkip'); if(skip){ _quizStart(); return; }
   const replay = e.target.closest('#quizReplayBtn'); if(replay){ _quizReplayAudio(); return; }
   // Defi du jour : bouton Jouer + selection reponse
   const dailyBtn = e.target.closest('#quizDailyBtn');
