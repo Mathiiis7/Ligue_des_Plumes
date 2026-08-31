@@ -10473,7 +10473,11 @@ function _targetsLazyPhotos(){
 // Delegation click : ouvre la fiche au clic sur une carte cible.
 document.addEventListener('click', e => {
   const card = e.target.closest('.target-card[data-sci]');
-  if(card){ openSpeciesModal(card.dataset.sci); }
+  if(!card) return;
+  // Pool navigation : cartes 'Cette semaine' dans l'ordre affiche
+  const siblings = [...document.querySelectorAll('#targetsGrid .target-card[data-sci]')].map(c => c.dataset.sci);
+  setSpeciesNavPool(siblings, card.dataset.sci);
+  openSpeciesModal(card.dataset.sci);
 });
 
 function renderPokedex(){
@@ -10799,7 +10803,13 @@ function _pkdxLazyPhotos(){
 // Delegation click : ouvre la fiche au clic sur une carte pokedex.
 document.addEventListener('click', e => {
   const card = e.target.closest('.pkdx-card[data-sci]');
-  if(card){ openSpeciesModal(card.dataset.sci); }
+  if(!card) return;
+  // Pool de navigation : toutes les cartes du Pokedex dans l'ordre affiche
+  // (respecte les filtres actifs). Les fleches prev/next de la fiche circuleront
+  // dans cet ordre.
+  const siblings = [...document.querySelectorAll('#pkdxGrid .pkdx-card[data-sci]')].map(c => c.dataset.sci);
+  setSpeciesNavPool(siblings, card.dataset.sci);
+  openSpeciesModal(card.dataset.sci);
 });
 // Pool d'especes selon le niveau (rarete max). Utilise toutes les especes FR
 // calibrees (le filtre 'mes especes cochees' a ete supprime pour homogeneiser
