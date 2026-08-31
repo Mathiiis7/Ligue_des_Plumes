@@ -6920,6 +6920,8 @@ const PHOTO_OVERRIDE_WIKI = {
   // Photo Wikipedia par defaut trop cropee : on utilise directement une meilleure photo Commons.
   // Format alternatif { url } : renvoie directement cette URL sans passer par un article wiki.
   'oenanthe seebohmi': { url:'https://upload.wikimedia.org/wikipedia/commons/0/07/Atlas_Wheatear%2C_Djurdjura_NP%2C_Algeria_1.jpg' },
+  // Photo par defaut cropee, on utilise une photo plein cadre du couple.
+  'anas poecilorhyncha': { url:'https://upload.wikimedia.org/wikipedia/commons/8/8f/Indian_Spot-billed_Duck.jpg' },
 };
 async function _fetchWikiPhoto(sci){
   const key = sci.toLowerCase();
