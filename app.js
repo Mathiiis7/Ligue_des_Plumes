@@ -6938,8 +6938,9 @@ async function _fetchWikiPhoto(sci){
       // Mais l'URL '/medium.jpg' se remplace directement par '/original.jpg' cote S3
       // pour recuperer la full res (fichier original). Test HTTP 200 confirme.
       let url = p?.original_url || p?.large_url || p?.medium_url || p?.square_url || null;
+      const thumb = p?.medium_url || url;   // ~500px pour la grille birdydex
       if(url && /\/medium\.(jpe?g|png)$/i.test(url)) url = url.replace(/\/medium\.(jpe?g|png)$/i, '/original.$1');
-      if(url) return { url, credit:'iNaturalist' };
+      if(url) return { url, thumb, credit:'iNaturalist' };
     }catch(_){ }
     return null;
   };
@@ -6953,7 +6954,8 @@ async function _fetchWikiPhoto(sci){
       const j = await r.json();
       // Prefer originalimage (haute res) sur thumbnail (320px par defaut).
       const url = j?.originalimage?.source || j?.thumbnail?.source;
-      if(url) return { url, credit:'Wikipédia '+lang.toUpperCase() };
+      const thumb = j?.thumbnail?.source || url;   // 320px pour la grille birdydex
+      if(url) return { url, thumb, credit:'Wikipédia '+lang.toUpperCase() };
     }catch(_){ }
     return null;
   };
@@ -6976,7 +6978,7 @@ async function _fetchWikiPhoto(sci){
   const ovr = PHOTO_OVERRIDE_WIKI[key];
   let res = null;
   if(ovr){
-    if(ovr.url) res = { url: ovr.url, credit: ovr.credit || 'Wikimedia Commons' };
+    if(ovr.url) res = { url: ovr.url, thumb: ovr.thumb || ovr.url, credit: ovr.credit || 'Wikimedia Commons' };
     else if(ovr.title) res = await tryWiki(ovr.lang, ovr.title);
   }
   if(!res) res = await tryINat(sci);
@@ -10458,7 +10460,8 @@ function _targetsLazyPhotos(){
       const sci = el.dataset.targLazy;
       if(!sci) continue;
       _fetchWikiPhoto(sci).then(p => {
-        if(p && p.url){ el.innerHTML = `<img loading="lazy" src="${esc(p.url)}" alt="${esc(sci)}" onerror="this.parentElement.textContent='🐦'">`; }
+        const src = p?.thumb || p?.url;   // grille -> thumb (fast)
+        if(src){ el.innerHTML = `<img loading="lazy" src="${esc(src)}" alt="${esc(sci)}" onerror="this.parentElement.textContent='🐦'">`; }
       }).catch(()=>{});
     }
   }, { rootMargin:'150px' });
@@ -10781,7 +10784,10 @@ function _pkdxLazyPhotos(){
       const sci = el.dataset.pkdxLazy;
       if(!sci) continue;
       _fetchWikiPhoto(sci).then(p => {
-        if(p && p.url){ el.innerHTML = `<img loading="lazy" src="${esc(p.url)}" alt="${esc(sci)}" onerror="this.parentElement.textContent='🐦'">`; }
+        // Grille Birdydex : utilise thumb (~500px) pas la full res (1-5 MB). Full res
+        // reservee a la fiche espece qui ouvre au clic.
+        const src = p?.thumb || p?.url;
+        if(src){ el.innerHTML = `<img loading="lazy" src="${esc(src)}" alt="${esc(sci)}" onerror="this.parentElement.textContent='🐦'">`; }
       }).catch(()=>{});
     }
   }, { rootMargin:'200px' });
@@ -11405,7 +11411,8 @@ function _quizChallengeShowVerdict(sci, correct, kind){
   // Photo Wikipedia async (cache session si deja consultee)
   if(typeof _fetchWikiPhoto === 'function'){
     _fetchWikiPhoto(sci).then(p => {
-      if(p?.url){ const ph = document.getElementById('quizVerdictPhoto'); if(ph) ph.innerHTML = `<img class="qz-verdict-photo" src="${esc(p.url)}" alt="${esc(nm)}">`; }
+      const src = p?.thumb || p?.url;   // verdict card 220x150 : thumb suffit
+      if(src){ const ph = document.getElementById('quizVerdictPhoto'); if(ph) ph.innerHTML = `<img class="qz-verdict-photo" src="${esc(src)}" alt="${esc(nm)}">`; }
     }).catch(()=>{});
   }
   // Bouton Suivante : le click handler global detecte le defi actif et avance
