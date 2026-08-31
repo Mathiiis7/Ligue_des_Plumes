@@ -6913,7 +6913,7 @@ $('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove(
 // reload de page. ~200 bytes par entree, 700 especes = 140 KB, tient largement dans les
 // 5-10 MB dispo. Sans persistance, l'utilisateur re-attend le fetch de toutes les
 // photos du Birdydex a chaque visite -> tres lent.
-const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v5';
+const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v6';
 const _SP_PHOTO_CACHE_TTL_MS = 30 * 24 * 3600 * 1000;
 const _spPhotoCache = new Map();      // sci → {url, thumb, credit} | null (échec)
 try{
@@ -6963,6 +6963,11 @@ const PHOTO_OVERRIDE_WIKI = {
   'apus apus': { url:'https://upload.wikimedia.org/wikipedia/commons/d/d5/Common_Swift_2025_07_18_02_%28cropped%29.jpg' },
   'picus viridis': { url:'https://upload.wikimedia.org/wikipedia/commons/8/89/Picus_viridis_01%28js%29%2C_Lodz_%28Poland%29.jpg' },
   'cygnus olor': { url:'https://upload.wikimedia.org/wikipedia/commons/b/b3/A_swan_swimming_in_the_water.jpg' },
+  'falco tinnunculus': { url:'https://upload.wikimedia.org/wikipedia/commons/7/77/Eurasian_Kestrel_R1_1804.jpg' },
+  'oriolus oriolus': { url:'https://upload.wikimedia.org/wikipedia/commons/6/69/Rigogolo-%28Oriolus_oriolus%29_Lazio%2C_isola_di_Ventotene_%28LT%29_19.4.2024_%28cropped%29.png' },
+  'gyps fulvus': { url:'https://upload.wikimedia.org/wikipedia/commons/7/70/Griffon_Vulture_1.jpg' },
+  'streptopelia turtur': { url:'https://upload.wikimedia.org/wikipedia/commons/e/ec/Turtle_dove_%28Streptopelia_turtur_turtur%29_Hungary.jpg' },
+  'dendrocopos major': { url:'https://upload.wikimedia.org/wikipedia/commons/d/df/Great_spotted_woodpecker_%28Dendrocopos_major%29_male_Drenthe.jpg' },
 };
 async function _fetchWikiPhoto(sci){
   const key = sci.toLowerCase();
