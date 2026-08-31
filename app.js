@@ -6932,8 +6932,11 @@ async function _fetchWikiPhoto(sci){
       const u = `https://api.inaturalist.org/v1/taxa/autocomplete?q=${encodeURIComponent(q)}&rank=species&per_page=1`;
       const r = await fetch(u); const j = await r.json();
       const p = j?.results?.[0]?.default_photo;
-      // Prefere original (full res) sur large (~1024px) pour meme qualite que Wikipedia originalimage.
-      const url = p?.original_url || p?.large_url || p?.medium_url || p?.square_url || null;
+      // iNat API expose seulement medium (~500px) et square (~75px) dans autocomplete.
+      // Mais l'URL '/medium.jpg' se remplace directement par '/original.jpg' cote S3
+      // pour recuperer la full res (fichier original). Test HTTP 200 confirme.
+      let url = p?.original_url || p?.large_url || p?.medium_url || p?.square_url || null;
+      if(url && /\/medium\.(jpe?g|png)$/i.test(url)) url = url.replace(/\/medium\.(jpe?g|png)$/i, '/original.$1');
       if(url) return { url, credit:'iNaturalist' };
     }catch(_){ }
     return null;
