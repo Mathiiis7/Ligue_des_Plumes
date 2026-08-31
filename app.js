@@ -6909,7 +6909,32 @@ $('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove(
 
 // ---- Fiche espèce (modal ouvert au clic sur un nom d'oiseau) ----
 // Cache session pour éviter de refetcher Wikipédia / xeno-canto pour la même espèce.
-const _spPhotoCache = new Map();      // sci → {url, credit} | null (échec)
+// Photo cache : persistant localStorage (30j TTL) pour eviter refetch complet a chaque
+// reload de page. ~200 bytes par entree, 700 especes = 140 KB, tient largement dans les
+// 5-10 MB dispo. Sans persistance, l'utilisateur re-attend le fetch de toutes les
+// photos du Birdydex a chaque visite -> tres lent.
+const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v1';
+const _SP_PHOTO_CACHE_TTL_MS = 30 * 24 * 3600 * 1000;
+const _spPhotoCache = new Map();      // sci → {url, thumb, credit} | null (échec)
+try{
+  const raw = localStorage.getItem(_SP_PHOTO_CACHE_KEY);
+  if(raw){
+    const parsed = JSON.parse(raw);
+    if(parsed && parsed.ts && (Date.now() - parsed.ts) < _SP_PHOTO_CACHE_TTL_MS && parsed.entries){
+      for(const [k, v] of Object.entries(parsed.entries)) _spPhotoCache.set(k, v);
+    }
+  }
+}catch(_){}
+let _spPhotoCacheSaveTimer = 0;
+function _spPhotoCachePersist(){
+  clearTimeout(_spPhotoCacheSaveTimer);
+  _spPhotoCacheSaveTimer = setTimeout(() => {
+    try{
+      const entries = Object.fromEntries(_spPhotoCache);
+      localStorage.setItem(_SP_PHOTO_CACHE_KEY, JSON.stringify({ ts: Date.now(), entries }));
+    }catch(_){}
+  }, 2000);
+}
 const _spSoundCache = new Map();      // sci → url mp3 | null
 // Overrides manuels quand la photo par defaut est mauvaise (cropee, tete uniquement,
 // individu immature peu identifiable...). Force la recherche sur un titre Wikipedia
@@ -6998,6 +7023,7 @@ async function _fetchWikiPhoto(sci){
   if(!res && frNm) res = await tryWikiSearch('fr', frNm);
   if(!res) res = await tryWikiSearch('en', sci);
   _spPhotoCache.set(key, res);
+  _spPhotoCachePersist();
   return res;
 }
 // Cle xeno-canto API v3 (Mathis). La v2 a ete fermee en 2024, v3 exige une cle par compte.
