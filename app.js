@@ -4689,29 +4689,29 @@ async function _showSpeciesDetail(sciName, speciesCode){
   // Ne pas clearLayers ici : on garde les vieux markers visibles pendant le fetch
   // (swap en fin de fonction quand les nouvelles obs sont pretes, cf. _showSpeciesDetailGbif).
   _lyrDetail.addTo(_map);
-  // Cascade dept → région → pays : les endpoints eBird /recent/{speciesCode} sont capricieux
-  // (parfois vide pour un dept alors qu'une région voisine a des obs). On élargit auto
-  // jusqu'au pays de ebFilter.country (pas hardcode FR).
+  // On requete TOUJOURS au niveau pays et on filtre client-side par region/dept si
+  // demande. Ancienne cascade dept -> region -> pays cassait la monotonie : passer de
+  // 14j a 30j pouvait afficher MOINS d'obs car une zone plus restrictive se remplissait
+  // et prenait la priorite. Country-first + filtre local = 30j inclut toujours 14j.
   const cty = ebFilter.country || 'FR';
   const ctyName = { FR:'la France', ME:'le Monténégro', ES:"l'Espagne", PT:'le Portugal', IT:"l'Italie", GR:'la Grèce', HR:'la Croatie', AL:"l'Albanie", MA:'le Maroc', CH:'la Suisse', BE:'la Belgique', DE:"l'Allemagne", GB:'le Royaume-Uni', TR:'la Turquie', IS:"l'Islande" }[cty] || cty;
-  const zones = [];
   const deptLbl = ebFilter.dept ? (DEPT_NAMES[ebFilter.dept]||ebFilter.dept) : '';
-  if(ebFilter.dept) zones.push({z: ebFilter.dept, lbl: deptLbl, level: 'dept'});
-  if(ebFilter.region && ebFilter.region !== cty) zones.push({z: ebFilter.region, lbl: 'la région', level: 'region'});
-  zones.push({z: cty, lbl: 'tout ' + ctyName, level: 'country'});
+  const regionCode = (ebFilter.region && ebFilter.region !== cty) ? ebFilter.region : '';
+  const deptCode = ebFilter.dept || '';
   try{
     const nm = FR_NAMES[(sciName||'').toLowerCase()] || sciName;
     const country = ebFilter.country || 'FR';
     const w = rarityForCountry(sciName, country);
     const color = sciColorForCountry(sciName, country);
-    let data = [], used = null;
-    for(const z of zones){
-      const url = `https://api.ebird.org/v2/data/obs/${z.z}/recent/${speciesCode}?back=${days}&maxResults=10000&locale=fr`;
-      const r = await _ebFetch(url);
-      if(Array.isArray(r) && r.length){ data = r; used = z; break; }
-    }
+    const url = `https://api.ebird.org/v2/data/obs/${cty}/recent/${speciesCode}?back=${days}&maxResults=10000&locale=fr`;
+    const raw = await _ebFetch(url);
+    let data = Array.isArray(raw) ? raw : [];
+    // Filtre client-side sur dept/region (le plus specifique gagne). Les codes eBird :
+    // subnational1Code = 'FR-XX' (region), subnational2Code = 'FR-XX-YY' (dept).
+    if(deptCode) data = data.filter(o => o?.subnational2Code === deptCode);
+    else if(regionCode) data = data.filter(o => o?.subnational1Code === regionCode);
+    let used = data.length ? { lbl: deptCode ? deptLbl : (regionCode ? 'la région' : 'tout ' + ctyName) } : null;
     if(!stillMine()) return 0;
-    // Si vraiment rien nulle part : laisse la couche missing visible + hint clair.
     if(!used){
       _lyrDetail.clearLayers();   // nettoie les vieux markers avant d'afficher le message
       const cnt = $('#mapEbCount');
@@ -4742,18 +4742,8 @@ async function _showSpeciesDetail(sciName, speciesCode){
     const latlngs=[]; _lyrDetail.eachLayer(l=>{ const ll=l.getLatLng?l.getLatLng():null; if(ll) latlngs.push([ll.lat,ll.lng]); });
     if(latlngs.length){ _map.fitBounds(L.latLngBounds(latlngs), { padding:[40,40], maxZoom:11 }); }
     _mapApplyFilter();
-    // Hint : si on a élargi au-delà de la sélection utilisateur, on l'indique.
     const cnt = $('#mapEbCount');
-    if(cnt){
-      const requested = ebFilter.dept ? deptLbl : (ebFilter.region && ebFilter.region!=='FR' ? 'la région' : '');
-      if(requested && used.level === 'region' && ebFilter.dept){
-        cnt.textContent = `${count} obs de ${nm} - rien dans ${deptLbl}, élargi à la région`;
-      } else if(requested && used.level === 'fr'){
-        cnt.textContent = `${count} obs de ${nm} - rien dans ${requested}, élargi à toute la France`;
-      } else {
-        cnt.textContent = `${count} obs de ${nm} (${days} j)${_zoneLabel()}`;
-      }
-    }
+    if(cnt) cnt.textContent = `${count} obs de ${nm} (${days} j)${_zoneLabel()}`;
     if(document.getElementById('mapEbAbundance')?.checked){ _renderAbundanceOverlayFor(sciName); }
     return count;
   }catch(_){ return 0; }
