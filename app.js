@@ -6152,29 +6152,45 @@ function _countUnread(view, seen){
   return 0;
 }
 function updateTabDots(){
+  // Chaque view a jusqu'a 3 hotes possibles pour son badge :
+  // - .tab[data-view=X] (legacy, tabs caches dans le nouveau layout mais on garde)
+  // - FAB button (chat/photos/feed) : classe .fab-badge
+  // - .ham-item[data-view=X] (requests via menu hamburger) : classe .ham-badge
+  const activeView = document.querySelector('.tab.on')?.dataset.view;
+  const FAB_MAP = { chat:'fabChat', photos:'fabPhotos', feed:'fabFeed' };
   [['chat',chatLatest],['photos',photosLatest],['feed',feedLatest],['requests',requestsLatest]].forEach(([v,latest])=>{
-    const btn=[...document.querySelectorAll('.tab')].find(b=>b.dataset.view===v); if(!btn) return;
-    const isActive=document.querySelector('.tab.on')?.dataset.view===v;
-    // Onglet actif : auto-marque comme vu (evite les faux positifs quand l'utilisateur
-    // envoie un message sur le tchat qu'il regarde et voit son propre message compte comme "nouveau").
+    const isActive = activeView === v;
     if(isActive){
       try{ localStorage.setItem('mb-seen-'+v, String(Date.now())); }catch(_){}
-      const b = btn.querySelector('.tab-count'); if(b) b.remove();
-      btn.classList.remove('has-new');
-      return;
     }
     let seen=0; try{ seen=+localStorage.getItem('mb-seen-'+v)||0; }catch(_){ }
-    const n = _countUnread(v, seen);
-    let badge = btn.querySelector('.tab-count');
-    if(n > 0){
-      if(!badge){ badge = document.createElement('span'); badge.className='tab-count'; btn.appendChild(badge); }
-      badge.textContent = n > 99 ? '99+' : String(n);
-      btn.classList.add('has-new');
-    } else {
-      if(badge) badge.remove();
-      btn.classList.remove('has-new');
+    const n = isActive ? 0 : _countUnread(v, seen);
+
+    // Hote 1 : ancien tab
+    const legacyTab = [...document.querySelectorAll('.tab')].find(b=>b.dataset.view===v);
+    if(legacyTab){ _setBadge(legacyTab, 'tab-count', n, false); legacyTab.classList.toggle('has-new', n>0); }
+
+    // Hote 2 : FAB button (position absolute in top-right corner)
+    if(FAB_MAP[v]){
+      const fab = document.getElementById(FAB_MAP[v]);
+      if(fab) _setBadge(fab, 'notif-badge fab-badge', n, false);
     }
+
+    // Hote 3 : item hamburger (badge inline a droite)
+    const ham = document.querySelector('.ham-item[data-view="'+v+'"]');
+    if(ham) _setBadge(ham, 'notif-badge ham-badge', n, false);
   });
+}
+// Pose/retire une pastille .{className} sur `host`. n > 0 = affiche count, sinon retire.
+function _setBadge(host, className, n, hideIfEmpty){
+  const primaryClass = className.split(' ')[0];
+  let badge = host.querySelector('.'+primaryClass);
+  if(n > 0){
+    if(!badge){ badge = document.createElement('span'); badge.className = className; host.appendChild(badge); }
+    badge.textContent = n > 99 ? '99+' : String(n);
+  } else if(badge){
+    badge.remove();
+  }
 }
 function markSeen(v){ try{ localStorage.setItem('mb-seen-'+v, String(Date.now())); }catch(_){ } updateTabDots(); }
 // ---- Inviter ----

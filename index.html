@@ -83,15 +83,23 @@
   </div>
   <!-- Boutons flottants Fil + Photos + Tchat, positionnes en bas a droite -->
   <div id="fabStack" style="position:fixed; right:20px; bottom:20px; display:flex; flex-direction:column; gap:10px; z-index:1600;">
-    <button type="button" id="fabFeed" title="Fil" style="width:54px; height:54px; border-radius:50%; border:none; background:var(--warn, #d97a1c); color:#fff; font-size:22px; line-height:1; padding:0; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.25); display:grid; place-items:center; transition:transform .15s;">📰</button>
-    <button type="button" id="fabPhotos" title="Photos" style="width:54px; height:54px; border-radius:50%; border:none; background:var(--accent-2); color:#fff; font-size:22px; line-height:1; padding:0; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.25); display:grid; place-items:center; transition:transform .15s;">📸</button>
-    <button type="button" id="fabChat" title="Tchat" style="width:54px; height:54px; border-radius:50%; border:none; background:var(--accent); color:#fff; font-size:22px; line-height:1; padding:0; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,.3); display:grid; place-items:center; transition:transform .15s;">💬</button>
+    <button type="button" id="fabFeed" title="Fil" style="position:relative; width:54px; height:54px; border-radius:50%; border:none; background:var(--warn, #d97a1c); color:#fff; font-size:22px; line-height:1; padding:0; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.25); display:grid; place-items:center; transition:transform .15s;">📰</button>
+    <button type="button" id="fabPhotos" title="Photos" style="position:relative; width:54px; height:54px; border-radius:50%; border:none; background:var(--accent-2); color:#fff; font-size:22px; line-height:1; padding:0; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.25); display:grid; place-items:center; transition:transform .15s;">📸</button>
+    <button type="button" id="fabChat" title="Tchat" style="position:relative; width:54px; height:54px; border-radius:50%; border:none; background:var(--accent); color:#fff; font-size:22px; line-height:1; padding:0; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,.3); display:grid; place-items:center; transition:transform .15s;">💬</button>
   </div>
   <!-- Backdrop pour fermer les panneaux flottants au clic exterieur -->
   <div id="fabBackdrop" hidden style="position:fixed; inset:0; background:rgba(0,0,0,.25); z-index:1400; animation:fab-fade-in .15s ease both;"></div>
   <style>
-    .ham-item { display:block; width:100%; text-align:left; padding:8px 12px; background:transparent; border:none; border-radius:8px; font:600 13px system-ui; color:var(--ink); cursor:pointer; }
+    .ham-item { display:flex; align-items:center; gap:8px; width:100%; text-align:left; padding:8px 12px; background:transparent; border:none; border-radius:8px; font:600 13px system-ui; color:var(--ink); cursor:pointer; }
+    .ham-item > span:first-child { flex:1; }
     .ham-item:hover { background:var(--surface-2); color:var(--accent-ink); }
+    /* Pastille de notif : posee en top-right des FAB (position:absolute), en fin de ligne des items hamburger */
+    .notif-badge { min-width:18px; height:18px; padding:0 5px; background:#d43a3a; color:#fff; font:700 11px/1 system-ui, -apple-system, sans-serif; border-radius:999px; display:grid; place-items:center; box-shadow:0 2px 4px rgba(0,0,0,.2); pointer-events:none; }
+    .fab-badge { position:absolute; top:-4px; right:-4px; border:2px solid var(--surface, #fff); z-index:5; }
+    .ham-badge { margin-left:auto; }
+    /* Pulse subtle pour attirer l'oeil quand nouvelle notif apparait */
+    @keyframes notif-pulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.12); } }
+    .notif-badge { animation: notif-pulse 1.8s ease-in-out infinite; }
     #fabChat:hover, #fabPhotos:hover { transform:scale(1.08); }
     #fabChat:active, #fabPhotos:active { transform:scale(.96); }
     .fab-active { box-shadow:0 0 0 4px color-mix(in srgb, currentColor 30%, transparent), 0 4px 14px rgba(0,0,0,.3) !important; }
