@@ -1658,9 +1658,13 @@ function renderMatrix({universe,N}){
     ${peopleForHead.map(p=>`<th class="pcol${p.id===state.playerMain?' is-main':''}" style="--series:var(--s${p.si})"><span class="cap"><span class="dot"></span>${esc(p.name)}${p.id===state.playerMain?' <span class="youtag" title="Liste principale">★</span>':''}</span></th>`).join('')}
     <th class="pcol">Vues</th></tr>`;
 
-  // Familles présentes triées alpha. Multi-sélection via chips ; les 8 premières sont
-  // Famille : simple dropdown alphabétique.
-  const fams=[...new Set(uni.map(u=>familyOf(u.sci)))].sort((a,b)=>a.localeCompare(b,'fr'));
+  // Familles présentes triées alpha : uniquement celles ayant >= 1 espece qui
+  // passe le filtre tier courant (sinon on afficherait des familles vides apres
+  // filtrage, ex : filtre 'tier 1-3' + famille 'Pouillots' → 0 obs).
+  const uniForFam = state.tierExcl?.size
+    ? uni.filter(u => !state.tierExcl.has(rarOf(u).id))
+    : uni;
+  const fams=[...new Set(uniForFam.map(u=>familyOf(u.sci)))].sort((a,b)=>a.localeCompare(b,'fr'));
   const famKey=fams.join('|');
   if(famKey!==lastFamKey){
     lastFamKey=famKey;
