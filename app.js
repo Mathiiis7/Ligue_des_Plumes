@@ -6927,6 +6927,7 @@ const PHOTO_OVERRIDE_WIKI = {
   'dendrocygna viduata': { url:'https://upload.wikimedia.org/wikipedia/commons/b/bf/Dendrocygna_viduata_001.jpg' },
   // Wiki par defaut = variante domestique avec bosse. On prend un male sauvage plus rapproche.
   'anser cygnoides': { url:'https://upload.wikimedia.org/wikipedia/commons/d/df/Swan_geese_in_Beijing_Olympic_Forest_Park_02.jpg' },
+  'amazonetta brasiliensis': { url:'https://upload.wikimedia.org/wikipedia/commons/f/fd/Brazilian_Teals_%28Amazonetta_brasiliensis%29_couple_%28male_left%29_%2829061603735%29.jpg' },
 };
 async function _fetchWikiPhoto(sci){
   const key = sci.toLowerCase();
