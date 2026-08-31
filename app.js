@@ -8858,7 +8858,18 @@ function openSpeciesModal(sci){
   if(cred) cred.textContent = '';
   _fetchWikiPhoto(sci).then(p => {
     if(!p || !p.url){ if(cred) cred.textContent = 'Pas de photo trouvée sur Wikipédia'; return; }
-    if(hero) hero.src = p.url;
+    // Progressive loading : affiche thumb (500px, ~100 KB, instantane) puis swap
+    // vers full res quand elle finit de charger en background. Evite l'attente de
+    // 5-15 MB pour voir une image.
+    if(hero){
+      hero.src = p.thumb || p.url;
+      if(p.thumb && p.thumb !== p.url){
+        const hd = new Image();
+        hd.onload = () => { if(hero.dataset.sci === sci) hero.src = p.url; };
+        hd.src = p.url;
+        hero.dataset.sci = sci;   // evite swap si l'utilisateur a change de fiche
+      }
+    }
     if(photoCard) photoCard.hidden = false;
     if(photoCap) photoCap.textContent = 'Photo : ' + p.credit;
     if(cred) cred.textContent = 'Photo : ' + p.credit;
