@@ -48,6 +48,17 @@ const AUDIT_OUT = path.join(__dir, 'ghost-species-audit.json');
 const appContent = fs.readFileSync(APP_JS, 'utf-8');
 const frNames = eval('(' + appContent.match(/const FR_NAMES\s*=\s*(\{[^;]+\});/)[1] + ')');
 const exotics = eval('(' + appContent.match(/const EXOTIQUES_CONNUES_FR=(\{[^;]+\});/)[1] + ')');
+// Categories exotiques : N (Naturalisé, pop établie) et C (Domestique) sont skip
+// du filtre fantomes (ce sont des vraies populations, pas de check GBIF necessaire).
+// X (Echappe isole) et defaut = check GBIF comme les autres.
+const exoticCategoriesMatch = appContent.match(/const EXOTIQUES_CATEGORIES_FR = (\{[\s\S]*?\n\});/);
+const exoticCategories = exoticCategoriesMatch ? eval('(' + exoticCategoriesMatch[1] + ')') : {};
+// Renvoie true si l'espece doit etre skip du filtre (N ou C).
+function skipExoticFilter(sci){
+  if(!exotics[sci]) return false;                       // pas exotique -> normal check
+  const cat = exoticCategories[sci] || 'X';             // defaut X (Echappe)
+  return cat === 'N' || cat === 'C';                    // seulement N et C sont proteges
+}
 
 const RATE_MS = 100;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -103,7 +114,8 @@ async function processCountry(cfg){
       ebirdSources = new Map(arr.map(r => [r.sci, r.source]));
     }
   }
-  const candidates = Object.keys(rarity).filter(sci => rarity[sci] >= cfg.minTier && !exotics[sci]);
+  // Skip uniquement les Naturalises (N) et Domestiques (C). Les Echappes (X) sont scannes.
+  const candidates = Object.keys(rarity).filter(sci => rarity[sci] >= cfg.minTier && !skipExoticFilter(sci));
   console.log(`\n[${cfg.code}] ${Object.keys(rarity).length} especes total, ${candidates.length} candidats tier >= ${cfg.minTier}${ebirdSources ? ' (double filtre eBird actif)' : ''}`);
   const results = [];
   let done = 0;

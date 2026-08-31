@@ -1,131 +1,158 @@
 {
   "FR": [
     {
-      "sci": "emberiza rutila",
+      "sci": "anas capensis",
       "tier": 9,
-      "name": "Bruant roux",
-      "gbifKey": 2491517,
+      "name": "Canard du Cap",
+      "gbifKey": 2498094,
       "recentCount": 1,
       "ghost": true,
       "savedBy": null
     },
     {
-      "sci": "ficedula semitorquata",
-      "tier": 8,
-      "name": "Gobemouche à demi-collier",
-      "gbifKey": 2492608,
-      "recentCount": 0,
-      "ghost": true,
-      "savedBy": null
-    },
-    {
-      "sci": "fregata magnificens",
-      "tier": 8,
-      "name": "Frégate superbe",
-      "gbifKey": 2480189,
-      "recentCount": 0,
-      "ghost": true,
-      "savedBy": null
-    },
-    {
-      "sci": "iduna rama",
+      "sci": "molothrus ater",
       "tier": 9,
-      "name": "Hypolaïs rama",
-      "gbifKey": 5739357,
+      "name": "Vacher à tête brune",
+      "gbifKey": 2484391,
       "recentCount": 0,
       "ghost": true,
       "savedBy": null
     },
     {
-      "sci": "ketupa zeylonensis",
+      "sci": "riparia paludicola",
       "tier": 9,
-      "name": "Kétoupa brun",
-      "gbifKey": 5232229,
+      "name": "Hirondelle paludicole",
+      "gbifKey": 5230750,
       "recentCount": 0,
       "ghost": true,
       "savedBy": null
     },
     {
-      "sci": "larus vegae",
+      "sci": "trichoglossus haematodus",
       "tier": 9,
-      "name": "Goéland de la Véga",
-      "gbifKey": 5789289,
-      "recentCount": 0,
-      "ghost": true,
-      "savedBy": null
-    },
-    {
-      "sci": "macronectes halli",
-      "tier": 9,
-      "name": "Pétrel de Hall",
-      "gbifKey": 2481516,
-      "recentCount": 0,
-      "ghost": true,
-      "savedBy": null
-    },
-    {
-      "sci": "oenanthe xanthoprymna",
-      "tier": 8,
-      "name": "Traquet kurde",
-      "gbifKey": 5231239,
-      "recentCount": 0,
-      "ghost": true,
-      "savedBy": null
-    },
-    {
-      "sci": "pterodroma baraui",
-      "tier": 9,
-      "name": "Pétrel de Barau",
-      "gbifKey": 2481475,
+      "name": "Loriquet à tête bleue",
+      "gbifKey": 2479686,
       "recentCount": 1,
-      "ghost": true,
-      "savedBy": null
-    },
-    {
-      "sci": "vanellus cinereus",
-      "tier": 9,
-      "name": "Vanneau à tête grise",
-      "gbifKey": 5229145,
-      "recentCount": 0,
       "ghost": true,
       "savedBy": null
     }
   ],
   "ES": [
     {
-      "sci": "vanellus armatus",
+      "sci": "anser canagicus",
       "tier": 10,
-      "name": "Vanneau armé",
-      "gbifKey": 5229136,
+      "name": "Oie empereur",
+      "gbifKey": 2498163,
+      "recentCount": 0,
+      "ghost": true,
+      "savedBy": null
+    },
+    {
+      "sci": "branta sandvicensis",
+      "tier": 10,
+      "name": "Bernache néné",
+      "gbifKey": 5232445,
+      "recentCount": 2,
+      "ghost": true,
+      "savedBy": null
+    },
+    {
+      "sci": "chloephaga picta",
+      "tier": 10,
+      "name": "Ouette de Magellan",
+      "gbifKey": 5232428,
       "recentCount": 1,
       "ghost": true,
       "savedBy": null
     },
     {
-      "sci": "curruca deserticola",
+      "sci": "spatula hottentota",
       "tier": 10,
-      "name": "Fauvette de l'Atlas",
-      "gbifKey": 11091935,
-      "recentCount": 1,
+      "name": "Sarcelle à bec bleu",
+      "gbifKey": 9496048,
+      "recentCount": 0,
       "ghost": true,
       "savedBy": null
     },
     {
-      "sci": "amadina fasciata",
+      "sci": "syrmaticus reevesii",
+      "tier": 7,
+      "name": "Faisan vénéré",
+      "gbifKey": 2473477,
+      "recentCount": 0,
+      "ghost": true,
+      "savedBy": null
+    },
+    {
+      "sci": "phoenicopterus chilensis",
       "tier": 10,
-      "name": "Amadine cou-coupé",
-      "gbifKey": 2493707,
-      "recentCount": 1,
+      "name": "Flamant du Chili",
+      "gbifKey": 2481110,
+      "recentCount": 0,
+      "ghost": true,
+      "savedBy": null
+    },
+    {
+      "sci": "cacatua alba",
+      "tier": 10,
+      "name": "Cacatoès blanc",
+      "gbifKey": 2479870,
+      "recentCount": 0,
+      "ghost": true,
+      "savedBy": null
+    },
+    {
+      "sci": "aratinga solstitialis",
+      "tier": 7,
+      "name": "Conure soleil",
+      "gbifKey": 2479158,
+      "recentCount": 2,
+      "ghost": true,
+      "savedBy": null
+    },
+    {
+      "sci": "psittacara leucophthalmus",
+      "tier": 7,
+      "name": "Conure pavouane",
+      "gbifKey": 8317396,
+      "recentCount": 2,
       "ghost": true,
       "savedBy": null
     }
   ],
   "IT": [
     {
-      "sci": "phalaropus fulicarius",
-      "tier": 9,
-      "name": "Phalarope à bec large",
-      "gbifKey": 5229390,
+      "sci": "spatula hottentota",
+      "tier": 8,
+      "name": "Sarcelle à bec bleu",
+      "gbifKey": 9496048,
+      "recentCount": 1,
+      "ghost": true,
+      "savedBy": null
+    },
+    {
+      "sci": "spatula cyanoptera",
+      "tier": 8,
+      "name": "Sarcelle cannelle",
+      "gbifKey": 9345027,
+      "recentCount": 1,
+      "ghost": true,
+      "savedBy": null
+    },
+    {
+      "sci": "cacatua galerita",
+      "tier": 7,
+      "name": "Cacatoès à huppe jaune",
+      "gbifKey": 2479888,
+      "recentCount": 1,
+      "ghost": true,
+      "savedBy": null
+    },
+    {
+      "sci": "psittacus erithacus",
+      "tier": 7,
+      "name": "Perroquet jaco",
+      "gbifKey": 2480181,
       "recentCount": 2,
       "ghost": true,
       "savedBy": null
@@ -133,88 +160,188 @@
   ],
   "GB": [
     {
-      "sci": "balearica regulorum",
-      "tier": 7,
-      "name": "Grue royale",
-      "gbifKey": 5228229,
-      "recentCount": 1,
-      "ghost": true,
-      "savedBy": null
-    },
-    {
-      "sci": "ptilopsis granti",
-      "tier": 7,
-      "name": "Petit-duc de Grant",
-      "gbifKey": 5232238,
-      "recentCount": 1,
-      "ghost": true,
-      "savedBy": null
-    },
-    {
-      "sci": "pionites melanocephalus",
-      "tier": 7,
-      "name": "Maïpouri à tête noire",
-      "gbifKey": 2479437,
-      "recentCount": 1,
-      "ghost": true,
-      "savedBy": null
-    },
-    {
-      "sci": "pyrrhura emma",
-      "tier": 7,
-      "name": "Conure d'Emma",
-      "gbifKey": 2479849,
-      "recentCount": 0,
-      "ghost": true,
-      "savedBy": null
-    },
-    {
-      "sci": "lanius schach",
-      "tier": 7,
-      "name": "Pie-grièche schach",
-      "gbifKey": 9273219,
-      "recentCount": 0,
-      "ghost": true,
-      "savedBy": null
-    },
-    {
-      "sci": "irania gutturalis",
+      "sci": "spatula versicolor",
       "tier": 10,
-      "name": "Iranie à gorge blanche",
-      "gbifKey": 2492700,
+      "name": "Sarcelle bariolée",
+      "gbifKey": 9305555,
       "recentCount": 0,
       "ghost": true,
       "savedBy": null
     },
     {
-      "sci": "padda oryzivora",
+      "sci": "anas zonorhyncha",
+      "tier": 10,
+      "name": "Canard de Chine",
+      "gbifKey": 2498061,
+      "recentCount": 2,
+      "ghost": true,
+      "savedBy": null
+    },
+    {
+      "sci": "anas capensis",
+      "tier": 10,
+      "name": "Canard du Cap",
+      "gbifKey": 2498094,
+      "recentCount": 2,
+      "ghost": true,
+      "savedBy": null
+    },
+    {
+      "sci": "eolophus roseicapilla",
+      "tier": 10,
+      "name": "Cacatoès rosalbin",
+      "gbifKey": 2479598,
+      "recentCount": 1,
+      "ghost": true,
+      "savedBy": null
+    },
+    {
+      "sci": "cacatua galerita",
       "tier": 7,
-      "name": "Padda de Java",
-      "gbifKey": 2493591,
+      "name": "Cacatoès à huppe jaune",
+      "gbifKey": 2479888,
       "recentCount": 0,
       "ghost": true,
       "savedBy": null
     },
     {
-      "sci": "crithagra mozambica",
+      "sci": "psittacula cyanocephala",
+      "tier": 10,
+      "name": "Perruche à tête prune",
+      "gbifKey": 5229044,
+      "recentCount": 1,
+      "ghost": true,
+      "savedBy": null
+    },
+    {
+      "sci": "trichoglossus moluccanus",
       "tier": 7,
-      "name": "Serin du Mozambique",
-      "gbifKey": 6100996,
+      "name": "Loriquet arc-en-ciel",
+      "gbifKey": 2479694,
       "recentCount": 0,
+      "ghost": true,
+      "savedBy": null
+    },
+    {
+      "sci": "ara ararauna",
+      "tier": 7,
+      "name": "Ara bleu",
+      "gbifKey": 5959231,
+      "recentCount": 2,
+      "ghost": true,
+      "savedBy": null
+    },
+    {
+      "sci": "ara militaris",
+      "tier": 7,
+      "name": "Ara militaire",
+      "gbifKey": 5959230,
+      "recentCount": 0,
+      "ghost": true,
+      "savedBy": null
+    },
+    {
+      "sci": "thectocercus acuticaudatus",
+      "tier": 7,
+      "name": "Conure à tête bleue",
+      "gbifKey": 7826906,
+      "recentCount": 1,
+      "ghost": true,
+      "savedBy": null
+    },
+    {
+      "sci": "erythrura psittacea",
+      "tier": 7,
+      "name": "Diamant psittaculaire",
+      "gbifKey": 5231412,
+      "recentCount": 1,
       "ghost": true,
       "savedBy": null
     }
   ],
   "PT": [
     {
-      "sci": "setophaga citrina",
-      "tier": 8,
-      "name": "Paruline à capuchon",
-      "gbifKey": 6093374,
+      "sci": "dendrocygna autumnalis",
+      "tier": 10,
+      "name": "Dendrocygne à ventre noir",
+      "gbifKey": 2498393,
+      "recentCount": 0,
+      "ghost": true,
+      "savedBy": null
+    },
+    {
+      "sci": "amazonetta brasiliensis",
+      "tier": 10,
+      "name": "Canard amazonette",
+      "gbifKey": 2498411,
+      "recentCount": 2,
+      "ghost": true,
+      "savedBy": null
+    },
+    {
+      "sci": "mareca sibilatrix",
+      "tier": 10,
+      "name": "Canard de Chiloé",
+      "gbifKey": 9508460,
+      "recentCount": 1,
+      "ghost": true,
+      "savedBy": null
+    },
+    {
+      "sci": "thalasseus maximus",
+      "tier": 7,
+      "name": "Sterne royale",
+      "gbifKey": 5789281,
+      "recentCount": 0,
+      "ghost": true,
+      "savedBy": null
+    },
+    {
+      "sci": "cacatua galerita",
+      "tier": 10,
+      "name": "Cacatoès à huppe jaune",
+      "gbifKey": 2479888,
+      "recentCount": 1,
+      "ghost": true,
+      "savedBy": null
+    },
+    {
+      "sci": "psittacula cyanocephala",
+      "tier": 7,
+      "name": "Perruche à tête prune",
+      "gbifKey": 5229044,
+      "recentCount": 0,
+      "ghost": true,
+      "savedBy": null
+    },
+    {
+      "sci": "aratinga solstitialis",
+      "tier": 7,
+      "name": "Conure soleil",
+      "gbifKey": 2479158,
+      "recentCount": 0,
+      "ghost": true,
+      "savedBy": null
+    },
+    {
+      "sci": "ara ararauna",
+      "tier": 7,
+      "name": "Ara bleu",
+      "gbifKey": 5959231,
       "recentCount": 0,
       "ghost": true,
       "savedBy": null
     }
   ],
-  "ME": []
+  "ME": [
+    {
+      "sci": "melopsittacus undulatus",
+      "tier": 7,
+      "name": "Perruche ondulée",
+      "gbifKey": 2479798,
+      "recentCount": 1,
+      "ghost": true,
+      "savedBy": null
+    }
+  ]
 }
