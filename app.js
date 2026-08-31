@@ -8860,7 +8860,7 @@ let _smGbifSelectsInit = false;
 // Sans persistance, chaque nouvelle session paierait ~500 lookups /species/match a l'ouverture
 // du mode missing GBIF (~1 min de resolution la 1re fois).
 try{
-  const raw = localStorage.getItem('gbifKeyBySci-v1');
+  const raw = localStorage.getItem('gbifKeyBySci-v2');
   if(raw){
     const obj = JSON.parse(raw);
     for(const [k, v] of Object.entries(obj)) _gbifKeyBySci.set(k, v);
@@ -8873,7 +8873,7 @@ function _persistGbifKeyCache(){
   _gbifKeyCacheSaveTimer = setTimeout(() => {
     try{
       const obj = Object.fromEntries(_gbifKeyBySci);
-      localStorage.setItem('gbifKeyBySci-v1', JSON.stringify(obj));
+      localStorage.setItem('gbifKeyBySci-v2', JSON.stringify(obj));
     }catch(_){}
   }, 500);
 }
@@ -9008,11 +9008,17 @@ async function _sciToGbifKey(sci){
     if(cached || !GBIF_SCI_ALIAS[(sci||'').toLowerCase()]) return cached;
   }
   // Essai 1 : nom eBird tel quel.
+  // Retourne usageKey si SYNONYM (sinon speciesKey pointe vers l'espece parente accepted
+  // et on fetch des obs de la mauvaise espece - ex: Oenanthe seebohmi split en 2021 pointe
+  // vers Oenanthe oenanthe, on recuperait 128k obs de motteux au lieu de 3 obs de Seebohm).
   const tryFetch = async (name) => {
     const r = await fetch(`https://api.gbif.org/v1/species/match?name=${encodeURIComponent(name)}`);
     if(!r.ok) throw new Error('http');
     const j = await r.json();
-    return ((j.matchType === 'EXACT' || j.matchType === 'FUZZY') && j.speciesKey) ? j.speciesKey : null;
+    if(j.matchType !== 'EXACT' && j.matchType !== 'FUZZY') return null;
+    // Synonyme : utiliser usageKey (l'entree elle-meme) pas speciesKey (parente accepted).
+    if(j.status === 'SYNONYM' && j.usageKey) return j.usageKey;
+    return j.speciesKey || j.usageKey || null;
   };
   try{
     let key = await tryFetch(sci);
