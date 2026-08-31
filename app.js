@@ -6925,6 +6925,8 @@ const PHOTO_OVERRIDE_WIKI = {
   // Photo par defaut Wikipedia est domestique blanche : on utilise le male sauvage type.
   'cairina moschata': { url:'https://upload.wikimedia.org/wikipedia/commons/b/b4/Muscovy_Duck_%28Cairina_moschata%29_male.jpg' },
   'dendrocygna viduata': { url:'https://upload.wikimedia.org/wikipedia/commons/b/bf/Dendrocygna_viduata_001.jpg' },
+  // Wiki par defaut = variante domestique avec bosse. On prend un male sauvage Mongolie.
+  'anser cygnoides': { url:'https://upload.wikimedia.org/wikipedia/commons/7/7c/Anser_cygnoides%2C_Mongolia_1.jpg' },
 };
 async function _fetchWikiPhoto(sci){
   const key = sci.toLowerCase();
