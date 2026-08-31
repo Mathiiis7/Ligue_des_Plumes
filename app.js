@@ -6928,7 +6928,8 @@ async function _fetchWikiPhoto(sci){
       const u = `https://api.inaturalist.org/v1/taxa/autocomplete?q=${encodeURIComponent(q)}&rank=species&per_page=1`;
       const r = await fetch(u); const j = await r.json();
       const p = j?.results?.[0]?.default_photo;
-      const url = p?.large_url || p?.original_url || p?.medium_url || p?.square_url || null;
+      // Prefere original (full res) sur large (~1024px) pour meme qualite que Wikipedia originalimage.
+      const url = p?.original_url || p?.large_url || p?.medium_url || p?.square_url || null;
       if(url) return { url, credit:'iNaturalist' };
     }catch(_){ }
     return null;
