@@ -69,15 +69,20 @@ async function gbifMatch(sci){
   }catch(_){ gbifKeyCache.set(sci, null); return null; }
 }
 
-// Fetch GBIF occurrence count for taxonKey in <country> sur 5 dernieres annees (2020-2025)
+// Fetch GBIF occurrence count for taxonKey in <country> sur 5 dernieres annees.
+// Retry 2 fois sur echec reseau (evite les -1 fantomes qui font passer des especes
+// injustement).
 async function gbifRecentCount(taxonKey, country){
-  try{
-    const url = `https://api.gbif.org/v1/occurrence/search?taxonKey=${taxonKey}&country=${country}&year=2020,2025&hasCoordinate=true&limit=0`;
-    const r = await fetch(url);
-    if(!r.ok) return -1;
-    const j = await r.json();
-    return typeof j.count === 'number' ? j.count : -1;
-  }catch(_){ return -1; }
+  const url = `https://api.gbif.org/v1/occurrence/search?taxonKey=${taxonKey}&country=${country}&year=2020,2025&hasCoordinate=true&limit=0`;
+  for(let attempt = 0; attempt < 3; attempt++){
+    try{
+      const r = await fetch(url);
+      if(!r.ok){ await sleep(500); continue; }
+      const j = await r.json();
+      if(typeof j.count === 'number') return j.count;
+    }catch(_){ await sleep(500); }
+  }
+  return -1;
 }
 
 // Process une entree pays : lit son fichier, scan candidates tier >= minTier,
