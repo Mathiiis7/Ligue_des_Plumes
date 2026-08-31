@@ -6934,14 +6934,16 @@ async function _fetchWikiPhoto(sci){
     return null;
   };
   // Wikipedia : essaie titre exact (sci) puis nom FR. Origin=* pour CORS.
+  // API REST /page/summary : renvoie originalimage (full res, plus net que thumbnail 1200).
   const tryWiki = async (lang, q)=>{
     if(!q) return null;
     try{
-      const u = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&pithumbsize=1200&titles=${encodeURIComponent(q)}&origin=*`;
-      const r = await fetch(u); const j = await r.json();
-      const pages = j?.query?.pages || {};
-      const p = Object.values(pages)[0];
-      if(p?.thumbnail?.source) return { url:p.thumbnail.source, credit:'Wikipédia '+lang.toUpperCase() };
+      const u = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(q)}`;
+      const r = await fetch(u); if(!r.ok) return null;
+      const j = await r.json();
+      // Prefer originalimage (haute res) sur thumbnail (320px par defaut).
+      const url = j?.originalimage?.source || j?.thumbnail?.source;
+      if(url) return { url, credit:'Wikipédia '+lang.toUpperCase() };
     }catch(_){ }
     return null;
   };
@@ -6953,11 +6955,7 @@ async function _fetchWikiPhoto(sci){
       const su = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch=${encodeURIComponent(q)}&srlimit=1&origin=*`;
       const sr = await fetch(su); const sj = await sr.json();
       const title = sj?.query?.search?.[0]?.title; if(!title) return null;
-      const iu = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&pithumbsize=1200&titles=${encodeURIComponent(title)}&origin=*`;
-      const ir = await fetch(iu); const ij = await ir.json();
-      const pages = ij?.query?.pages || {};
-      const p = Object.values(pages)[0];
-      if(p?.thumbnail?.source) return { url:p.thumbnail.source, credit:'Wikipédia '+lang.toUpperCase() };
+      return await tryWiki(lang, title);
     }catch(_){ }
     return null;
   };
