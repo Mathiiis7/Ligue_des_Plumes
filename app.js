@@ -6922,6 +6922,8 @@ const PHOTO_OVERRIDE_WIKI = {
   'oenanthe seebohmi': { url:'https://upload.wikimedia.org/wikipedia/commons/0/07/Atlas_Wheatear%2C_Djurdjura_NP%2C_Algeria_1.jpg' },
   // Photo par defaut cropee, on utilise une photo plein cadre du couple.
   'anas poecilorhyncha': { url:'https://upload.wikimedia.org/wikipedia/commons/8/8f/Indian_Spot-billed_Duck.jpg' },
+  // Photo par defaut Wikipedia est domestique blanche : on utilise le male sauvage type.
+  'cairina moschata': { url:'https://upload.wikimedia.org/wikipedia/commons/b/b4/Muscovy_Duck_%28Cairina_moschata%29_male.jpg' },
 };
 async function _fetchWikiPhoto(sci){
   const key = sci.toLowerCase();
@@ -11912,7 +11914,8 @@ function _quizAnswer(idx){
     // Fetch photo Wikipedia (deja en cache session si l'espece a ete consultee)
     if(typeof _fetchWikiPhoto === 'function'){
       _fetchWikiPhoto(_quizCurrent.sci).then(p => {
-        if(p?.url){ const ph = document.getElementById('quizVerdictPhoto'); if(ph) ph.innerHTML = `<img class="qz-verdict-photo" src="${esc(p.url)}" alt="${esc(nm)}">`; }
+        const src = p?.thumb || p?.url;
+        if(src){ const ph = document.getElementById('quizVerdictPhoto'); if(ph) ph.innerHTML = `<img class="qz-verdict-photo" src="${esc(src)}" alt="${esc(nm)}">`; }
       }).catch(()=>{});
     }
   }
