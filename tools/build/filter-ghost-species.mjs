@@ -29,8 +29,14 @@ const APP_JS = path.join(ROOT, 'app.js');
 // Config des pays : chaque entree = { code, rarityFile, minTier }.
 // minTier : on ne verifie que les especes >= ce tier (les plus communes ont trop d'obs
 // eBird pour etre fantomes, tester des Colombes/Corneilles serait perte d'API calls).
+// Seuil GBIF : nb minimum d'obs recentes (2020-2025) pour ne PAS etre fantome.
+// 3 = elimine les erreurs d'ID isolees et vraies megararetes '1 obs', garde vagrants
+// recurrents (>= 1/an). Pour FR uniquement : double filtre = espece sauvee si eBird
+// bar chart l'a (evite d'exclure a tort vagrants taxonomiquement splittes comme
+// anas carolinensis roule dans crecca cote eBird).
+const GBIF_MIN_OBS = 3;
 const COUNTRIES = [
-  { code: 'FR', file: 'data/generated/real-rarity.generated.js', minTier: 7 },
+  { code: 'FR', file: 'data/generated/real-rarity.generated.js', minTier: 7, ebirdSourceFile: 'data/generated/rarity-data-ebird.json' },
   { code: 'ES', file: 'data/generated/real-rarity-es-ebird.generated.js', minTier: 7 },
   { code: 'IT', file: 'data/generated/real-rarity-it-ebird.generated.js', minTier: 7 },
   { code: 'GB', file: 'data/generated/real-rarity-gb-ebird.generated.js', minTier: 7 },
@@ -76,13 +82,24 @@ async function gbifRecentCount(taxonKey, country){
 
 // Process une entree pays : lit son fichier, scan candidates tier >= minTier,
 // requete GBIF pour le pays, retire les fantomes, reecrit le fichier.
+// Double filtre pour FR (ebirdSourceFile): sauve les especes qui ont un vrai
+// freq eBird (source != 'gbif-fallback'), meme si peu d'obs GBIF.
 async function processCountry(cfg){
   const rarityFile = path.join(ROOT, cfg.file);
   if(!fs.existsSync(rarityFile)){ console.log(`[${cfg.code}] SKIP fichier absent : ${cfg.file}`); return { code: cfg.code, ghosts: [] }; }
   const content = fs.readFileSync(rarityFile, 'utf-8');
   const rarity = eval('(' + content.match(/\{[^;]+\}/)[0] + ')');
+  // Charge le tableau source eBird si dispo (FR uniquement pour l'instant)
+  let ebirdSources = null;
+  if(cfg.ebirdSourceFile){
+    const src = path.join(ROOT, cfg.ebirdSourceFile);
+    if(fs.existsSync(src)){
+      const arr = JSON.parse(fs.readFileSync(src, 'utf-8'));
+      ebirdSources = new Map(arr.map(r => [r.sci, r.source]));
+    }
+  }
   const candidates = Object.keys(rarity).filter(sci => rarity[sci] >= cfg.minTier && !exotics[sci]);
-  console.log(`\n[${cfg.code}] ${Object.keys(rarity).length} especes total, ${candidates.length} candidats tier >= ${cfg.minTier}`);
+  console.log(`\n[${cfg.code}] ${Object.keys(rarity).length} especes total, ${candidates.length} candidats tier >= ${cfg.minTier}${ebirdSources ? ' (double filtre eBird actif)' : ''}`);
   const results = [];
   let done = 0;
   for(let i = 0; i < candidates.length; i += 8){
@@ -92,14 +109,21 @@ async function processCountry(cfg){
       if(!key) return { sci, tier: rarity[sci], name: frNames[sci]||'?', gbifKey: null, recentCount: -1, ghost: false, note: 'no gbif key' };
       await sleep(RATE_MS);
       const count = await gbifRecentCount(key, cfg.code);
-      const ghost = count === 0;
-      return { sci, tier: rarity[sci], name: frNames[sci]||'?', gbifKey: key, recentCount: count, ghost };
+      // Fantome si GBIF < seuil MIN. Save si eBird a un freq (source != gbif-fallback).
+      let ghost = count >= 0 && count < GBIF_MIN_OBS;
+      let savedBy = null;
+      if(ghost && ebirdSources){
+        const src = ebirdSources.get(sci);
+        if(src && src !== 'gbif-fallback'){ ghost = false; savedBy = 'ebird-' + src; }
+      }
+      return { sci, tier: rarity[sci], name: frNames[sci]||'?', gbifKey: key, recentCount: count, ghost, savedBy };
     }));
     results.push(...res);
     done += batch.length;
     if(done % 40 === 0 || done === candidates.length){
       const gN = results.filter(a => a.ghost).length;
-      console.log(`  [${cfg.code}] ${done}/${candidates.length} verifies, ${gN} fantomes`);
+      const sv = results.filter(a => a.savedBy).length;
+      console.log(`  [${cfg.code}] ${done}/${candidates.length} verifies, ${gN} fantomes${sv ? ` (${sv} sauves par eBird)` : ''}`);
     }
     await sleep(RATE_MS);
   }
