@@ -6950,10 +6950,10 @@ const PHOTO_OVERRIDE_WIKI = {
   // Photo par defaut Wikipedia est domestique blanche : on utilise le male sauvage type.
   'cairina moschata': { url:'https://upload.wikimedia.org/wikipedia/commons/b/b4/Muscovy_Duck_%28Cairina_moschata%29_male.jpg' },
   'dendrocygna viduata': { url:'https://upload.wikimedia.org/wikipedia/commons/b/bf/Dendrocygna_viduata_001.jpg' },
-  // Wiki par defaut = variante domestique avec bosse. On prend un male sauvage bien cadre.
-  'anser cygnoides': { url:'https://upload.wikimedia.org/wikipedia/commons/f/fb/Anser_cygnoides%2C_Nanhaizi_Park%2C_Beijing_2.jpg' },
-  'amazonetta brasiliensis': { url:'https://upload.wikimedia.org/wikipedia/commons/f/f2/P%C3%A9_vermelho_Amazonetta_brasiliensis_em_Cesario_Lange_SP.jpg' },
-  'ploceus melanocephalus': { url:'https://upload.wikimedia.org/wikipedia/commons/f/f8/Ploceus_melanocephalus_DT_-UG_Entebbe-_%281%29_%2820683600398%29.jpg' },
+  // Photos iNat curatees par les birders : mieux cadrees que les defaut wiki.
+  'anser cygnoides': { url:'https://inaturalist-open-data.s3.amazonaws.com/photos/479827075/original.jpg', credit:'iNaturalist' },
+  'amazonetta brasiliensis': { url:'https://static.inaturalist.org/photos/423943353/original.jpeg', credit:'iNaturalist' },
+  'ploceus melanocephalus': { url:'https://inaturalist-open-data.s3.amazonaws.com/photos/598532518/original.jpg', credit:'iNaturalist' },
 };
 async function _fetchWikiPhoto(sci){
   const key = sci.toLowerCase();
