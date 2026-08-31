@@ -3,7 +3,7 @@
 //   puis rafraichit en background. Prochain reload = nouvelle version.
 // - Requetes cross-origin (Firestore, iNaturalist, xeno-canto, Wikipedia, etc.) : reseau seul.
 // - Bump CACHE_VERSION quand on veut invalider volontairement.
-const CACHE_VERSION = 'v8-2026-08-30-freshcode';
+const CACHE_VERSION = 'v9-2026-08-31-generated-bypass';
 const CACHE_NAME = 'lmb-' + CACHE_VERSION;
 
 self.addEventListener('install', (e) => {
@@ -34,6 +34,10 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.endsWith('/app.js') || url.pathname.endsWith('/index.html') || url.pathname === '/Ligue_des_Plumes/') return;
   // Ni le manifest range (evolue frequemment avec nouvelles especes generees).
   if (url.pathname.endsWith('/data/range-index.json')) return;
+  // Ni les fichiers generated (bareme, freq mensuelle, etc.) : evolue avec les
+  // scripts build (filter-ghost-species, build-rarity...). Sans ca, les users
+  // voient une ancienne liste d'especes apres un update du bareme.
+  if (url.pathname.includes('/data/generated/')) return;
   // On ignore les requetes navigation avec des query strings importantes (?league=..., ?...).
   // On sert quand meme la meme index en cache : les params sont lus cote client au boot.
   event.respondWith((async () => {
