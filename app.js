@@ -6913,7 +6913,7 @@ $('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove(
 // reload de page. ~200 bytes par entree, 700 especes = 140 KB, tient largement dans les
 // 5-10 MB dispo. Sans persistance, l'utilisateur re-attend le fetch de toutes les
 // photos du Birdydex a chaque visite -> tres lent.
-const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v14';
+const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v15';
 const _SP_PHOTO_CACHE_TTL_MS = 30 * 24 * 3600 * 1000;
 const _spPhotoCache = new Map();      // sci → {url, thumb, credit} | null (échec)
 try{
@@ -6943,6 +6943,7 @@ const _spSoundCache = new Map();      // sci → url mp3 | null
 const PHOTO_OVERRIDE_WIKI = {
   'circus hudsonius': { lang:'en', title:'Northern Harrier' },   // photo par defaut cropee, EN a un plan complet
   'branta bernicla': { url:'https://upload.wikimedia.org/wikipedia/commons/7/75/Branta_bernicla_bernicla_-_Brent_Goose.jpg' },
+  'otis tarda': { url:'https://upload.wikimedia.org/wikipedia/commons/d/d8/Abetarda-comum%2C_macho%2C_concentrado_e_a_fazer_o_seu_melhor..%21_Great_Bustard%2C_male%2C_focused_and_doing_his_best..%21_%2854460360805%29.jpg' },
   // Photo Wikipedia par defaut trop cropee : on utilise directement une meilleure photo Commons.
   // Format alternatif { url } : renvoie directement cette URL sans passer par un article wiki.
   'oenanthe seebohmi': { url:'https://upload.wikimedia.org/wikipedia/commons/0/07/Atlas_Wheatear%2C_Djurdjura_NP%2C_Algeria_1.jpg' },
