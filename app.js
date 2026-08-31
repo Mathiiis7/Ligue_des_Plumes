@@ -6913,6 +6913,9 @@ const _spSoundCache = new Map();      // sci → url mp3 | null
 // probleatiques a la volee.
 const PHOTO_OVERRIDE_WIKI = {
   'circus hudsonius': { lang:'en', title:'Northern Harrier' },   // photo par defaut cropee, EN a un plan complet
+  // Photo Wikipedia par defaut trop cropee : on utilise directement une meilleure photo Commons.
+  // Format alternatif { url } : renvoie directement cette URL sans passer par un article wiki.
+  'oenanthe seebohmi': { url:'https://upload.wikimedia.org/wikipedia/commons/0/07/Atlas_Wheatear%2C_Djurdjura_NP%2C_Algeria_1.jpg' },
 };
 async function _fetchWikiPhoto(sci){
   const key = sci.toLowerCase();
@@ -6961,8 +6964,13 @@ async function _fetchWikiPhoto(sci){
   // Fallback aliases eBird<->GBIF (ex : cecropis rufula / cecropis daurica).
   const altSci = (typeof GBIF_SCI_ALIAS !== 'undefined' && GBIF_SCI_ALIAS[key]) || (typeof SCI_ALIAS !== 'undefined' && SCI_ALIAS[key]) || '';
   // Override manuel prioritaire quand la photo iNat/Wiki par defaut est de mauvaise qualite.
+  // Deux formes : { lang, title } -> resolution via article wiki. { url } -> URL directe Commons.
   const ovr = PHOTO_OVERRIDE_WIKI[key];
-  let res = ovr ? await tryWiki(ovr.lang, ovr.title) : null;
+  let res = null;
+  if(ovr){
+    if(ovr.url) res = { url: ovr.url, source: 'wiki-override' };
+    else if(ovr.title) res = await tryWiki(ovr.lang, ovr.title);
+  }
   if(!res) res = await tryINat(sci);
   if(!res && altSci) res = await tryINat(altSci);
   if(!res && frNm) res = await tryINat(frNm);
