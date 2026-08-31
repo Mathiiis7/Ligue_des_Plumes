@@ -6968,7 +6968,7 @@ async function _fetchWikiPhoto(sci){
   const ovr = PHOTO_OVERRIDE_WIKI[key];
   let res = null;
   if(ovr){
-    if(ovr.url) res = { url: ovr.url, source: 'wiki-override' };
+    if(ovr.url) res = { url: ovr.url, credit: ovr.credit || 'Wikimedia Commons' };
     else if(ovr.title) res = await tryWiki(ovr.lang, ovr.title);
   }
   if(!res) res = await tryINat(sci);
