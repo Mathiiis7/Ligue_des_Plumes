@@ -6927,7 +6927,7 @@ const PHOTO_OVERRIDE_WIKI = {
   'dendrocygna viduata': { url:'https://upload.wikimedia.org/wikipedia/commons/b/bf/Dendrocygna_viduata_001.jpg' },
   // Wiki par defaut = variante domestique avec bosse. On prend un male sauvage Qiqihar.
   'anser cygnoides': { url:'https://upload.wikimedia.org/wikipedia/commons/3/3f/Anser_cygnoides_Qiqihar_2.jpg' },
-  'amazonetta brasiliensis': { url:'https://upload.wikimedia.org/wikipedia/commons/f/fd/Brazilian_Teals_%28Amazonetta_brasiliensis%29_couple_%28male_left%29_%2829061603735%29.jpg' },
+  'amazonetta brasiliensis': { url:'https://upload.wikimedia.org/wikipedia/commons/e/ec/Brazilian_Teal_%28Amazonetta_brasiliensis%29_male.jpg' },
   'ploceus melanocephalus': { url:'https://upload.wikimedia.org/wikipedia/commons/c/c2/Black_headed_weaver_bird_bw_%283338893964%29.jpg' },
 };
 async function _fetchWikiPhoto(sci){
