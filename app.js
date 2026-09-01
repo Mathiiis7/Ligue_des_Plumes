@@ -2676,11 +2676,33 @@ function _saveCompState(s){ try{ localStorage.setItem('mb-comp-state', JSON.stri
 function _slug(s){ return (s||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'').slice(0,60); }
 // Detecte les changements d'etat cote client, ecrit les nouveaux evenements dans Firestore.
 // La collection sert de source de verite : le fil affiche trophyEventsList (populee par le snapshot).
+// Timestamp de mount de la page + debounce timer pour eviter les detections trop
+// frequentes pendant que les snapshots Firestore streamant les donnees initiales.
+const _MOUNT_TS = Date.now();
+const _DETECT_MIN_DELAY_MS = 10000;     // n'ecrit pas d'events avant 10s post-mount (data settle)
+let _detectTimer = null;
 function _detectTrophyEvents(){
   if(!realPeople.length || !myUid || !leagueId) return;
   // On attend que le snapshot Firestore ait repondu au moins une fois : sinon existingIds
   // est vide et on re-ecrit tous les events avec un nouveau serverTimestamp (bug historique
   // "trophees qui reapparaissent au hasard").
+  if(!_trophyEventsLoaded) return;
+  // Grace period au boot : les snapshots (photos, votes, reactions, comments...) arrivent
+  // en cascade -> les stats fluctuent et des trophees seraient faussement debloques/perdus.
+  // On attend 10 secondes que tout se stabilise.
+  if(Date.now() - _MOUNT_TS < _DETECT_MIN_DELAY_MS){
+    if(_detectTimer) return;
+    _detectTimer = setTimeout(() => { _detectTimer = null; _detectTrophyEvents(); },
+                              _DETECT_MIN_DELAY_MS - (Date.now() - _MOUNT_TS) + 500);
+    return;
+  }
+  // Debounce : si un autre snapshot arrive dans les 2s, on recompute juste apres au lieu de
+  // toutes les 50ms pendant que la stream d'updates arrive.
+  if(_detectTimer){ clearTimeout(_detectTimer); }
+  _detectTimer = setTimeout(() => { _detectTimer = null; _detectTrophyEventsCore(); }, 2000);
+}
+function _detectTrophyEventsCore(){
+  if(!realPeople.length || !myUid || !leagueId) return;
   if(!_trophyEventsLoaded) return;
   const prev = _loadCompState();
   const firstRun = !prev.unlocked;
