@@ -7601,6 +7601,113 @@ async function _renderSpeciesRangeCard(sci){
     }, 200);
   });
 }
+// Migration animee : 52 frames WebP hebdo par migrateur, timeline slider + autoplay.
+// Charge le manifest range-weekly, verifie si sci est dispo, monte une carte Leaflet
+// dediee + timeline. Preload les frames pour animation fluide.
+let _weeklyIndexCache = null;
+async function _loadWeeklyIndex(){
+  if(_weeklyIndexCache) return _weeklyIndexCache;
+  try{
+    const res = await fetch('data/range-weekly-index.json?v=20260901');
+    if(!res.ok) return (_weeklyIndexCache = {});
+    const raw = await res.json();
+    _weeklyIndexCache = {};
+    for(const [k, v] of Object.entries(raw)) _weeklyIndexCache[k.toLowerCase()] = v;
+  }catch(_){ _weeklyIndexCache = {}; }
+  return _weeklyIndexCache;
+}
+let _migrationMapInstance = null;
+let _migrationPlayInterval = null;
+let _migrationOverlays = [];
+async function _renderSpeciesMigrationCard(sci){
+  const box = $('#smMigrationCard'); if(!box) return;
+  // Cleanup instance precedente
+  if(_migrationPlayInterval){ clearInterval(_migrationPlayInterval); _migrationPlayInterval = null; }
+  if(_migrationMapInstance){ try{ _migrationMapInstance.remove(); }catch(_){} _migrationMapInstance = null; }
+  _migrationOverlays = [];
+  box.hidden = true;
+  box.innerHTML = '';
+  const idx = await _loadWeeklyIndex();
+  const entry = idx[(sci || '').toLowerCase().trim()];
+  if(!entry || !entry.code || !entry.weeks || !entry.weeks.length) return;
+  const weeks = entry.weeks;
+  const [w, s, e, n] = (entry.bbox || [-25, -10, 45, 72]);
+  const mapId = 'smMigrationMap';
+  // Semaine -> mois FR approximatif (ISO 8601 semaine ~ commence lundi de la 1re semaine avec un jeudi de janvier)
+  const weekToLabel = wk => {
+    const monthStart = [1,5,9,14,18,22,27,31,36,40,44,49];
+    const monthNames = ['janv','fév','mars','avr','mai','juin','juil','août','sept','oct','nov','déc'];
+    let m = 0; for(let i=0;i<12;i++) if(wk >= monthStart[i]) m = i;
+    return `${monthNames[m]}`;
+  };
+  box.innerHTML = `
+    <div class="sm-card-title" style="display:flex; align-items:center; gap:8px;">Migration semaine par semaine <span style="font-size:10.5px; color:var(--ink-3); text-transform:none; font-weight:400; letter-spacing:0;">- Cornell S&amp;T weekly</span></div>
+    <div id="${mapId}" class="sm-range-map" style="margin-top:6px; height:380px; border-radius:8px; overflow:hidden; background:var(--surface-3);"></div>
+    <div style="margin-top:10px; display:flex; align-items:center; gap:12px;">
+      <button type="button" id="smMigPlay" class="btn tiny" style="min-width:60px;">▶ Lire</button>
+      <input type="range" id="smMigSlider" min="0" max="${weeks.length-1}" value="0" step="1" style="flex:1; cursor:pointer;">
+      <span id="smMigLabel" style="font-family:ui-monospace,monospace; font-size:12px; color:var(--ink); min-width:80px; text-align:right;">Sem ${weeks[0]} · ${weekToLabel(weeks[0])}</span>
+    </div>
+    <div style="margin-top:8px; display:flex; align-items:center; gap:10px; font-size:11px; color:var(--ink-2);">
+      <span>Rare</span>
+      <div style="flex:1; height:12px; border-radius:3px; background:linear-gradient(to right, #3ea86b, #a8d155, #f5c518, #f0733a, #a11408);"></div>
+      <span>Abondant</span>
+    </div>
+    <div style="margin-top:4px; font-size:10.5px; color:var(--ink-3); text-align:center;">Vague migration : les couleurs sont normalisées sur l'année complète (une zone qui devient rouge = pic d'abondance à cette période)</div>
+  `;
+  box.hidden = false;
+  const mapEl = box.querySelector('#' + mapId);
+  const slider = box.querySelector('#smMigSlider');
+  const label = box.querySelector('#smMigLabel');
+  const playBtn = box.querySelector('#smMigPlay');
+  requestAnimationFrame(() => {
+    if(!mapEl.clientHeight) { setTimeout(() => _renderSpeciesMigrationCard(sci), 100); return; }
+    const dataBounds = L.latLngBounds([[s, w], [n, e]]);
+    _migrationMapInstance = L.map(mapEl, {
+      zoomControl:true, maxBounds:dataBounds, maxBoundsViscosity:1.0,
+      worldCopyJump:false, attributionControl:true
+    });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:'© OpenStreetMap', maxZoom:12, noWrap:true
+    }).addTo(_migrationMapInstance);
+    _migrationMapInstance.fitBounds(dataBounds);
+    setTimeout(() => {
+      if(!_migrationMapInstance) return;
+      _migrationMapInstance.invalidateSize();
+      const fitZoom = _migrationMapInstance.getBoundsZoom(dataBounds, true);
+      _migrationMapInstance.setMinZoom(fitZoom);
+      _migrationMapInstance.fitBounds(dataBounds);
+    }, 200);
+
+    // Preload toutes les frames pour animation fluide (~5-8 KB/frame * 52 = 300-400 KB)
+    const frameUrl = wk => `data/range-weekly/${entry.code}/w${String(wk).padStart(2,'0')}.webp?v=20260901`;
+    weeks.forEach(wk => { const img = new Image(); img.src = frameUrl(wk); });
+
+    // Single overlay swap - on modifie son src pour animer (evite de re-creer un ImageOverlay Leaflet a chaque frame)
+    let overlay = L.imageOverlay(frameUrl(weeks[0]), dataBounds, { opacity:0.78, interactive:false, className:'sm-mig-overlay' }).addTo(_migrationMapInstance);
+    const setFrame = i => {
+      const wk = weeks[i];
+      // Recree l'overlay (Leaflet API n'a pas de setUrl officiel stable, mais si dispo on l'utilise)
+      if(overlay.setUrl){ overlay.setUrl(frameUrl(wk)); }
+      else { _migrationMapInstance.removeLayer(overlay); overlay = L.imageOverlay(frameUrl(wk), dataBounds, { opacity:0.78, interactive:false }).addTo(_migrationMapInstance); }
+      label.textContent = `Sem ${wk} · ${weekToLabel(wk)}`;
+    };
+    slider.addEventListener('input', () => setFrame(+slider.value));
+    playBtn.addEventListener('click', () => {
+      if(_migrationPlayInterval){
+        clearInterval(_migrationPlayInterval); _migrationPlayInterval = null;
+        playBtn.textContent = '▶ Lire';
+      } else {
+        playBtn.textContent = '⏸ Pause';
+        _migrationPlayInterval = setInterval(() => {
+          let v = (+slider.value + 1) % weeks.length;
+          slider.value = String(v);
+          setFrame(v);
+        }, 220);   // ~4.5 fps, joue les 52 semaines en ~11s
+      }
+    });
+  });
+}
 // Card 'A ne pas confondre avec' : liste les especes acoustiquement / visuellement
 // proches, dérivées de la table CONFUSION_GROUPS (deja utilisee pour les mauvaises
 // reponses du quiz). Chaque nom est cliquable pour ouvrir sa fiche.
@@ -8864,6 +8971,7 @@ function openSpeciesModal(sci){
   // Carte de repartition Cornell S&T + GBIF (rendu direct, plus de lazy load
   // IntersectionObserver qui ne firait pas correctement selon le scroll container).
   _renderSpeciesRangeCard(sci);
+  _renderSpeciesMigrationCard(sci);
   // Description Wikipedia (async)
   _renderSpeciesDesc(sci);
   // Note : le freq chart est deja rendu par _renderSpeciesRarityCard avec le

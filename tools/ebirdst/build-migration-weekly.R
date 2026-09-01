@@ -7,14 +7,14 @@
 #   data/range-weekly/{code}/w{01..52}.webp   WebP LOSSLESS indexed + alpha
 #   data/range-weekly-index.json              Manifest { sci: {code, w, h, bbox, weeks:[]} }
 #
-# Optimisations appliquees :
-# - PNG_W = 500 (au lieu de 900) : les images sont pour anim, pas pour zoom pixel
+# Optimisations appliquees (empilees, max compression sans perte visuelle) :
+# - PNG_W = 400 (au lieu de 900) : les images sont pour anim, pas pour zoom pixel
 # - Skip semaines vides : aucune donnee ce week -> pas de fichier (allege ~15-30%)
 # - Quantize 128 couleurs (100 palette + variantes alpha) via magick
-# - WebP LOSSLESS (method=6) : -30-40% vs PNG optimise SANS perte de qualite
-#   (l'input est deja quantize a 128 couleurs, lossless preserve tout)
+# - WebP lossy q=90 method=6 : imperceptible sur palette + compression max
 # - Fallback PNG optimise via oxipng si magick indispo
 # - Skip complet des especes deja traitees (via manifest)
+# Cible : ~5-8 KB par frame WebP = ~350-450 KB par espece, ~120 MB total pour 304 sp
 #
 # Normalisation percentile GLOBALE sur les 52 weeks (cle du signal migration :
 # semaines vides restent vides, pics d'abondance sont rouges).
@@ -89,7 +89,7 @@ suppressWarnings({
 merc_w <- e_merc_tmp$xmax - e_merc_tmp$xmin
 merc_h <- e_merc_tmp$ymax - e_merc_tmp$ymin
 merc_aspect <- as.numeric(merc_w / merc_h)
-PNG_W <- 500L
+PNG_W <- 400L
 PNG_H <- as.integer(round(PNG_W / merc_aspect))
 cat(sprintf("Aspect Mercator Europe : %.2f -> PNG %d x %d\n", merc_aspect, PNG_W, PNG_H))
 
@@ -195,9 +195,10 @@ write_optimized_png <- function(ranks, path) {
     img <- magick::image_read(rgba)
     img <- magick::image_quantize(img, max = 128, colorspace = "rgb", dither = FALSE)
     if (is_webp) {
-      # method 6 = qualite max, lossless = zero perte.
-      magick::image_write(img, path = path, format = "webp",
-                          defines = c("webp:lossless" = "true", "webp:method" = "6"))
+      # WebP lossy quality 90 : imperceptible sur palette 128 couleurs, -30% vs
+      # lossless. method 6 = compression max (slower encode, better ratio).
+      magick::image_write(img, path = path, format = "webp", quality = 90,
+                          defines = c("webp:method" = "6"))
     } else {
       magick::image_write(img, path = path, format = "png", depth = 8)
     }
