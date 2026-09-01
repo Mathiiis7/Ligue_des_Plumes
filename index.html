@@ -10,13 +10,12 @@
   script-src 'self' 'unsafe-inline' https://www.gstatic.com https://unpkg.com;
   style-src 'self' 'unsafe-inline' https://unpkg.com;
   img-src 'self' data: blob: https://upload.wikimedia.org https://fr.wikipedia.org https://en.wikipedia.org https://static.inaturalist.org https://inaturalist-open-data.s3.amazonaws.com https://odata-inpn.mnhn.fr https://mathiiis7.github.io https://*.tile.openstreetmap.org https://server.arcgisonline.com https://flagcdn.com https://firebasestorage.googleapis.com;
-  connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.firebaseio.com https://api.ebird.org https://ebird.org https://api.gbif.org https://api.inaturalist.org https://xeno-canto.org https://fr.wikipedia.org https://en.wikipedia.org https://*.wikipedia.org https://upload.wikimedia.org https://odata-inpn.mnhn.fr https://mathiiis7.github.io https://nominatim.openstreetmap.org https://*.tile.openstreetmap.org https://server.arcgisonline.com;
+  connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.firebaseio.com https://www.gstatic.com https://unpkg.com https://api.ebird.org https://ebird.org https://api.gbif.org https://api.inaturalist.org https://xeno-canto.org https://fr.wikipedia.org https://en.wikipedia.org https://*.wikipedia.org https://upload.wikimedia.org https://odata-inpn.mnhn.fr https://mathiiis7.github.io https://nominatim.openstreetmap.org https://*.tile.openstreetmap.org https://server.arcgisonline.com;
   font-src 'self' data:;
   media-src 'self' https://xeno-canto.org;
   object-src 'none';
   base-uri 'self';
   form-action 'self';
-  frame-ancestors 'none';
 ">
 <!-- Referrer Policy : envoie l'origine mais pas le path complet lors des cross-origin
      (evite que les APIs externes voient quelle page ligue tu consultes). -->
