@@ -44,19 +44,21 @@ if (!fs.existsSync(KEY_PATH)) {
   process.exit(1);
 }
 
-let admin;
+let initializeApp, cert, getFirestore;
 try {
-  admin = (await import('firebase-admin')).default;
+  ({ initializeApp, cert } = await import('firebase-admin/app'));
+  ({ getFirestore } = await import('firebase-admin/firestore'));
 } catch (e) {
-  console.error(`ERREUR : firebase-admin non installe`);
+  console.error(`ERREUR : firebase-admin non installe ou import ESM foire`);
   console.error(`Lance a la racine du repo :`);
   console.error(`  npm install firebase-admin`);
+  console.error(`Detail : ${e.message}`);
   process.exit(1);
 }
 
 const serviceAccount = JSON.parse(fs.readFileSync(KEY_PATH, 'utf-8'));
-admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-const db = admin.firestore();
+initializeApp({ credential: cert(serviceAccount) });
+const db = getFirestore();
 
 if (!fs.existsSync(OUT_DIR)) fs.mkdirSync(OUT_DIR, { recursive: true });
 
