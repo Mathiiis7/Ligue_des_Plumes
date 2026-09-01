@@ -11277,8 +11277,8 @@ async function _quizStart(){
   if(_quizIsInverse()) return _quizStartInverse();
   const stage = $('#quizStage'); if(!stage) return;
   stage.innerHTML = '<p class="help" style="margin:0;">🔎 Sélection de l\'espèce…</p>';
-  $('#quizNext').hidden = true;
-  $('#quizSkip').hidden = true;
+  const nextBtnEl0 = document.getElementById('quizNext'); if(nextBtnEl0) nextBtnEl0.hidden = true;
+  const skipBtnEl0 = document.getElementById('quizSkip'); if(skipBtnEl0) skipBtnEl0.hidden = true;
   let pool = _quizPickPool();
   if(!pool.length){ stage.innerHTML = '<p class="help" style="margin:0;">Aucune espèce dans le pool. Change de niveau / source.</p>'; return; }
   // En mode cri : restreint le pool aux familles ou le cri est distinctif entre
@@ -11392,7 +11392,7 @@ async function _quizStart(){
       // Auto-play au chargement
       audio.play().catch(()=>{});
     }
-    $('#quizSkip').hidden = false;
+    const skipBtnEl = document.getElementById('quizSkip'); if(skipBtnEl) skipBtnEl.hidden = false;
     return;
   }
   stage.innerHTML = '<p class="help" style="margin:0;">Pas de son trouvé dans le pool après 5 essais. Ré-essaie ou change de niveau.</p>';
@@ -11950,7 +11950,7 @@ async function _quizStartInverse(){
   const stage = $('#quizStage'); if(!stage) return;
   stage.innerHTML = '<p class="help" style="margin:0;">🔎 Sélection de l\'espèce…</p>';
   const nextBtn = $('#quizNext'); if(nextBtn){ nextBtn.hidden = true; nextBtn.textContent = 'Suivante →'; }
-  $('#quizSkip').hidden = true;
+  const skipBtnEl2 = document.getElementById('quizSkip'); if(skipBtnEl2) skipBtnEl2.hidden = true;
   const pool = _quizPickPool();
   if(!pool.length){ stage.innerHTML = '<p class="help" style="margin:0;">Aucune espèce dans le pool.</p>'; return; }
   for(let attempt = 0; attempt < 5; attempt++){
