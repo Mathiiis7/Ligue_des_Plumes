@@ -10540,9 +10540,84 @@ try{ const s = localStorage.getItem('mb-targets-tier-excl'); if(s) _targetsTierE
 let _speciesRegion = '';
 try{ _speciesRegion = localStorage.getItem('mb-species-region') || ''; }catch(_){ _speciesRegion = ''; }
 try{ _targetsRegion = localStorage.getItem('mb-targets-region') || ''; }catch(_){ _targetsRegion = ''; }
+// Alertes mega-rares : recupere les obs eBird "notable" tier 8+ des 30 derniers
+// jours dans la region/pays cible, dedoublonne par espece, rend sous forme de cards.
+// Non-bloquant : fire and forget, s'affiche quand fetch termine.
+async function _renderMegaRareAlerts(){
+  const box = document.getElementById('megaRareAlerts');
+  if(!box) return;
+  const cty = (typeof _targetsCountry !== 'undefined' && _targetsCountry) ? _targetsCountry : 'FR';
+  const region = (typeof _targetsRegion !== 'undefined' && _targetsRegion) ? _targetsRegion : cty;
+  box.innerHTML = '<div style="padding:10px 14px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--ink-3);">🚨 Chargement des alertes méga-rares…</div>';
+  try{
+    const url = `https://api.ebird.org/v2/data/obs/${region}/recent/notable?back=30&locale=fr&hotspot=false`;
+    const data = await _ebFetch(url);
+    if(!Array.isArray(data) || data.length === 0){
+      box.innerHTML = `<div style="padding:10px 14px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--ink-3);">🕊️ Aucune méga-rare (tier 8+) signalée dans les 30 derniers jours pour cette région.</div>`;
+      return;
+    }
+    // Filtre tier >= 8, dedupe par species, garde le plus recent
+    const meSp = (realPeople.find(p => p.id === myUid))?.species || new Map();
+    const bySp = new Map();
+    for(const o of data){
+      const sci = (o.sciName || '').toLowerCase().trim();
+      if(!sci) continue;
+      const tier = rarityForFilter(sci);
+      if(tier < 8) continue;
+      const key = sci;
+      const cur = bySp.get(key);
+      // Garde le plus recent + preserve nombre d'obs (compte)
+      const dt = new Date(o.obsDt).getTime();
+      if(!cur || dt > cur._maxDt){
+        bySp.set(key, { ...o, _maxDt: dt, _count: (cur?._count || 0) + 1, _tier: tier });
+      } else {
+        cur._count++;
+      }
+    }
+    if(bySp.size === 0){
+      box.innerHTML = `<div style="padding:10px 14px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--ink-3);">🕊️ Aucune méga-rare (tier 8+) signalée dans les 30 derniers jours pour cette région.</div>`;
+      return;
+    }
+    // Tri : d'abord tier decroissant, puis date decroissante
+    const sorted = [...bySp.values()].sort((a, b) => b._tier - a._tier || b._maxDt - a._maxDt);
+    const now = Date.now();
+    const daysAgo = ms => {
+      const d = Math.round((now - ms) / 86400000);
+      if(d === 0) return "aujourd'hui";
+      if(d === 1) return 'hier';
+      return `il y a ${d}j`;
+    };
+    const rows = sorted.slice(0, 10).map(o => {
+      const sciLower = (o.sciName || '').toLowerCase();
+      const nm = frName(sciLower, o.comName);
+      const iOwn = meSp.has(sciLower) || meSp.has(sciLower.replace(/\s+/g, ' '));
+      const own = iOwn ? '<span style="background:#2d7a3f; color:white; padding:1px 6px; border-radius:3px; font-size:10px; font-weight:600; margin-left:6px;">déjà cochée</span>' : '';
+      const tierBadge = `<span style="background:#a02121; color:white; padding:1px 6px; border-radius:3px; font-size:10px; font-weight:600;">tier ${o._tier}</span>`;
+      const locHtml = o.locName ? `<span style="color:var(--ink-3);">${esc(o.locName)}</span>` : '';
+      const countHtml = o._count > 1 ? `<span style="color:var(--ink-3); font-size:11px;"> · ${o._count} signalements</span>` : '';
+      return `
+        <div class="mr-card sp-link" data-sci="${esc(sciLower)}" style="padding:10px 14px; background:var(--surface); border:1px solid var(--line); border-left:3px solid #a02121; border-radius:6px; margin-bottom:6px; cursor:pointer; transition:background .15s;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background='var(--surface)'">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:0;">
+              <div style="font-weight:600; color:var(--ink);">🚨 ${esc(nm)} ${tierBadge}${own}</div>
+              <div style="font-size:12px; color:var(--ink-2); margin-top:3px;">${locHtml} · ${daysAgo(o._maxDt)}${countHtml}</div>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+    box.innerHTML = `
+      <div style="margin-bottom:8px; font-size:13px; font-weight:600; color:var(--ink);">🚨 Méga-rares signalées <span style="font-weight:400; color:var(--ink-3);">(tier 8+, 30 derniers jours)</span></div>
+      ${rows}`;
+  }catch(err){
+    box.innerHTML = `<div style="padding:10px 14px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--ink-3);">⚠️ Impossible de charger les alertes eBird (${esc(err.message || 'erreur')}).</div>`;
+  }
+}
+
 function renderTargets(){
   const panel = $('#targetsPanel'), grid = $('#targetsGrid'), hint = $('#targetsHint');
   if(!panel || !grid) return;
+  // Alertes mega-rares en arriere-plan (fire and forget, non bloquant)
+  _renderMegaRareAlerts();
   const me = realPeople.find(p => p.id === myUid);
   const mine = me ? new Set([...me.species.keys()]) : new Set();
   // Onglet dedie : on affiche le panel meme sans liste chargee (onboarding), et meme sans
