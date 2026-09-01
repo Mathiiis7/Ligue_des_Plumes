@@ -293,12 +293,12 @@ for (cc in active_countries) {
     paste0("export const REAL_ABUNDANCE_ST_", cc, " = ",
            toJSON(out, auto_unbox = TRUE, null = "null"), ";")
   )
-  out_path <- paste0("C:/Users/mathi/Documents/Ligue_des_Plumes/tools/real-abundance-st-",
+  out_path <- paste0("C:/Users/mathi/Documents/Projets/Ligue_des_Plumes/tools/real-abundance-st-",
                      cc, ".generated.js")
   writeLines(js_content, out_path)
   cat("  Ecrit :", out_path, "(", file.info(out_path)$size, "bytes)\n")
 
-  log_path <- paste0("C:/Users/mathi/Documents/Ligue_des_Plumes/tools/ebirdst-build-", cc, ".log")
+  log_path <- paste0("C:/Users/mathi/Documents/Projets/Ligue_des_Plumes/tools/ebirdst-build-", cc, ".log")
   log_lines <- c(
     paste0("Build eBird S&T ", cc_name, " (", cc, ") - ", format(Sys.time())),
     paste0("Phase 3 duree globale : ", round(phase3_elapsed, 1), " min (partagee entre tous les pays)"),

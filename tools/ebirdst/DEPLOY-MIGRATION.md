@@ -60,7 +60,7 @@ git push
 ## 5. Push le manifest a jour dans le main repo
 
 ```powershell
-cd C:\Users\mathi\Documents\Ligue_des_Plumes
+cd C:\Users\mathi\Documents\Projets\Ligue_des_Plumes
 git add data\range-weekly-index.json
 git commit -m "Manifest range-weekly complet (304 migrateurs)"
 git push
@@ -72,7 +72,7 @@ Le main a servi de scratch pendant les tests. Maintenant que tout est dans le re
 on peut retirer `data/range-weekly/` du main pour ne pas dupliquer 150+ MB inutile :
 
 ```powershell
-cd C:\Users\mathi\Documents\Ligue_des_Plumes
+cd C:\Users\mathi\Documents\Projets\Ligue_des_Plumes
 git rm -r data\range-weekly
 git commit -m "Retire range-weekly du main (deplace vers Ligue_des_Plumes_data)"
 git push
@@ -83,7 +83,7 @@ git push
 ```powershell
 # Optionnel apres le git rm : purge du dossier local
 # (les fichiers ne sont plus tracks par git, seulement en workspace)
-Remove-Item C:\Users\mathi\Documents\Ligue_des_Plumes\data\range-weekly -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item C:\Users\mathi\Documents\Projets\Ligue_des_Plumes\data\range-weekly -Recurse -Force -ErrorAction SilentlyContinue
 ```
 
 ## 7. Tester

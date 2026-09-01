@@ -32,7 +32,7 @@ cat("Start :", format(t_start), "\n\n")
 
 # -------- 1) Charger la liste des especes FR depuis index.html --------
 cat("[1] Charge liste especes FR depuis index.html...\n")
-html <- readLines("C:/Users/mathi/Documents/Ligue_des_Plumes/index.html", warn = FALSE)
+html <- readLines("C:/Users/mathi/Documents/Projets/Ligue_des_Plumes/index.html", warn = FALSE)
 html_str <- paste(html, collapse = "\n")
 fr_line <- regmatches(html_str, regexpr('const FR_NAMES = \\{[^\\n]+?\\}', html_str, perl = TRUE))
 if (length(fr_line) == 0) stop("FR_NAMES not found in index.html")
@@ -249,12 +249,12 @@ js_content <- c(
   "// Merge dans index.html avec REAL_RARITY (bar chart) via _tierFromSTvsBarChart (regle +/-1 tier).",
   paste0("export const REAL_ABUNDANCE_ST_FR = ", toJSON(out, auto_unbox = TRUE, null = "null"), ";")
 )
-out_path <- "C:/Users/mathi/Documents/Ligue_des_Plumes/tools/real-abundance-st.generated.js"
+out_path <- "C:/Users/mathi/Documents/Projets/Ligue_des_Plumes/tools/real-abundance-st.generated.js"
 writeLines(js_content, out_path)
 cat("    Ecrit :", out_path, "(", file.info(out_path)$size, " bytes)\n")
 
 # Log
-log_path <- "C:/Users/mathi/Documents/Ligue_des_Plumes/tools/ebirdst-build.log"
+log_path <- "C:/Users/mathi/Documents/Projets/Ligue_des_Plumes/tools/ebirdst-build.log"
 elapsed_min <- as.numeric(Sys.time() - t_start, units = "mins")
 log_lines <- c(
   paste0("Build eBird S&T FR v2 (composite) - ", format(Sys.time())),

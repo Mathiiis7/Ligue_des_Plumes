@@ -309,14 +309,14 @@ for (cc in names(COUNTRIES)) {
     )
     n_total_entries <- n_total_entries + length(sp_list)
   }
-  out_path <- paste0("C:/Users/mathi/Documents/Ligue_des_Plumes/data/abundance_st_by_region_",
+  out_path <- paste0("C:/Users/mathi/Documents/Projets/Ligue_des_Plumes/data/abundance_st_by_region_",
                      tolower(cc), ".json")
   writeLines(toJSON(out, auto_unbox = TRUE, null = "null"), out_path)
   cat("    Ecrit :", out_path, "(", file.info(out_path)$size, "bytes,",
       n_total_entries, "entries region-species)\n")
 
   # Log
-  log_path <- paste0("C:/Users/mathi/Documents/Ligue_des_Plumes/tools/ebirdst-build-region-", cc, ".log")
+  log_path <- paste0("C:/Users/mathi/Documents/Projets/Ligue_des_Plumes/tools/ebirdst-build-region-", cc, ".log")
   elapsed_min <- as.numeric(Sys.time() - t_start, units = "mins")
   writeLines(c(
     paste0("Build eBird S&T weekly par region ", cc, " - ", format(Sys.time())),
