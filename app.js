@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, EmailAuthProvider, linkWithCredential } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, onSnapshot, serverTimestamp, addDoc, query, orderBy, limit }
+import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, onSnapshot, serverTimestamp, addDoc, query, orderBy, limit, where, getDocs, writeBatch }
   from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 /* ---------------- Firebase ---------------- */
@@ -6451,6 +6451,48 @@ $('#removeMineBtn').addEventListener('click',async()=>{
   try{ await deleteDoc(doc(db,'leagues',leagueId,'members',myUid)); $('#myStatus').textContent=''; }
   catch(err){ showError(err); }
 });
+// RGPD : suppression complete de toutes les data utilisateur (life list + chat + photos
+// + commentaires + reactions + votes + requetes + quiz stats). Double confirmation.
+$('#rgpdDeleteAll')?.addEventListener('click', async ()=>{
+  if(!myUid || !leagueId){ alert('Connexion requise.'); return; }
+  if(!confirm('⚠️ SUPPRESSION DÉFINITIVE\n\nCela va supprimer :\n• Ta fiche membre + life list\n• Tous tes messages tchat\n• Toutes tes photos\n• Tous tes commentaires\n• Toutes tes réactions emoji\n• Tous tes votes trophées\n• Toutes tes stats quiz\n\nAction IRRÉVERSIBLE. Continuer ?')) return;
+  if(!confirm('Vraiment sûr ? Dernière chance. Tape OK sur la prochaine boîte pour confirmer.')) return;
+  const confirmTxt = prompt('Tape exactement "SUPPRIMER" pour confirmer la suppression définitive :');
+  if(confirmTxt !== 'SUPPRIMER'){ alert('Suppression annulée (texte incorrect).'); return; }
+
+  const btn = document.getElementById('rgpdDeleteAll');
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ Suppression en cours...'; }
+  const targetsToKill = ['chat', 'photos', 'comments', 'reactions', 'votes', 'requestVotes', 'requests', 'trophyEvents'];
+  let totalDeleted = 0;
+  try{
+    for(const coll of targetsToKill){
+      // Query les docs de la collection ou uid == myUid (le field 'uid' est standard partout)
+      const q = query(collection(db, 'leagues', leagueId, coll), where('uid', '==', myUid));
+      const snap = await getDocs(q);
+      if(snap.empty) continue;
+      // Batch delete par lots de 400 (limite Firestore = 500 ops/batch)
+      let batch = writeBatch(db);
+      let count = 0;
+      for(const d of snap.docs){
+        batch.delete(d.ref);
+        count++; totalDeleted++;
+        if(count >= 400){ await batch.commit(); batch = writeBatch(db); count = 0; }
+      }
+      if(count > 0) await batch.commit();
+    }
+    // Docs uniques : quizStats + member
+    try{ await deleteDoc(doc(db,'leagues',leagueId,'quizStats',myUid)); totalDeleted++; }catch(_){}
+    try{ await deleteDoc(doc(db,'leagues',leagueId,'members',myUid)); totalDeleted++; }catch(_){}
+    // localStorage : wipe complet
+    try{ Object.keys(localStorage).filter(k => k.startsWith('mb-')).forEach(k => localStorage.removeItem(k)); }catch(_){}
+    alert(`✓ Suppression terminée. ${totalDeleted} documents effacés.\n\nSi tu veux supprimer aussi ton compte Firebase Auth (email + mot de passe), fais-le via la console Firebase ou demande à l'admin.\n\nDéconnexion en cours...`);
+    try{ await signOut(auth); }catch(_){}
+    setTimeout(() => location.reload(), 500);
+  }catch(err){
+    if(btn){ btn.disabled = false; btn.textContent = '🗑️ Supprimer définitivement mon compte et toutes mes données'; }
+    showError(err);
+  }
+});
 
 // ---- Ajout manuel d'une espèce ----
 let _manualPickedLat=null, _manualPickedLon=null, _manualPickedName='';
@@ -10014,6 +10056,12 @@ function updateAuthUI(user){
 $('#authSignup')?.addEventListener('click', async ()=>{
   const email=$('#authEmail').value.trim(), pass=$('#authPass').value;
   if(!email||!pass){ authMsg('Entre un email et un mot de passe.'); return; }
+  // RGPD : consentement explicite requis a la creation de compte
+  const consentEl = document.getElementById('authConsent');
+  if(consentEl && !consentEl.checked){
+    authMsg('Accepte les conditions de confidentialite pour continuer.');
+    return;
+  }
   authMsg('…', true);
   const cur=auth.currentUser;
   try{

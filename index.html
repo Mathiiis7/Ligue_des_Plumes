@@ -156,6 +156,10 @@
         <input type="email" id="authEmail" placeholder="Email" autocomplete="email">
         <input type="password" id="authPass" placeholder="Mot de passe (6 caractères min.)" autocomplete="current-password">
       </div>
+      <label style="display:flex; align-items:flex-start; gap:8px; margin:8px 0 12px; font-size:12px; color:var(--ink-3); cursor:pointer;">
+        <input type="checkbox" id="authConsent" name="consent" style="margin-top:3px; flex-shrink:0;">
+        <span>J'accepte que mes données (email, life list, messages, photos) soient stockées via Firebase pour l'usage de la ligue entre amis. Détails et suppression dans l'onglet <b>ℹ️ À propos → Confidentialité</b>.</span>
+      </label>
       <div class="auth-actions">
         <button class="btn" id="authSignup">Créer mon compte</button>
         <button class="btn ghost" id="authSignin">J'ai déjà un compte</button>
@@ -840,6 +844,15 @@
 
         <h3 style="margin:20px 0 8px; font-size:16px; color:var(--ink);">🐛 Feedback</h3>
         <p style="margin:0;">Une aberration de tier, un chart bizarre, une idée de feature ? Utilise l'onglet <b>💡 Requêtes</b> (dans le menu ☰) pour signaler.</p>
+
+        <h3 style="margin:24px 0 8px; font-size:16px; color:var(--ink);">🔒 Confidentialité (RGPD)</h3>
+        <p style="margin:0 0 8px;"><b>Data collectée</b> : email (Firebase Auth), nom d'affichage, life list eBird (espèces + lieux d'observation + dates), messages du tchat, photos uploadées, commentaires, réactions emoji, statistiques quiz.</p>
+        <p style="margin:0 0 8px;"><b>Finalité</b> : partager sa liste d'oiseaux entre amis, comparer les cochages, tchatter, débloquer des trophées. Aucune revente, aucune publicité, aucun tracking commercial.</p>
+        <p style="margin:0 0 8px;"><b>Qui a accès</b> : les membres de la ligue (personnes ayant uploadé leur life list) uniquement. Les visiteurs anonymes ne voient rien. Google Firebase héberge les données (règles Firestore restrictives, transfert US encadré par les Standard Contractual Clauses de Google).</p>
+        <p style="margin:0 0 8px;"><b>Durée de conservation</b> : tant que tu es actif dans la ligue. Suppression manuelle possible à tout moment via le bouton <b>« Supprimer mon compte »</b> ci-dessous (efface définitivement ta fiche membre, tes messages, photos, commentaires, votes et stats quiz).</p>
+        <p style="margin:0 0 8px;"><b>Tes droits (RGPD)</b> : accès, rectification, effacement, portabilité. Contacte l'admin (Mathis) via l'onglet 💡 Requêtes ou par email pour toute demande.</p>
+        <p style="margin:0 0 8px;"><b>Sécurité</b> : HTTPS bout en bout, règles Firestore par membre, rate limiting anti-spam, Content Security Policy, EXIF strippé automatiquement des photos, authentification 2 facteurs sur le compte admin.</p>
+        <p style="margin:12px 0 0;"><button type="button" class="linkbtn" id="rgpdDeleteAll" style="color:#c00; font-weight:600;">🗑️ Supprimer définitivement mon compte et toutes mes données</button></p>
       </div>
     </section>
   </div>
