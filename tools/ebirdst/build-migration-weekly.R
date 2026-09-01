@@ -7,20 +7,19 @@
 #   data/range-weekly/{code}/w{01..52}.webp   WebP LOSSLESS indexed + alpha
 #   data/range-weekly-index.json              Manifest { sci: {code, w, h, bbox, weeks:[]} }
 #
-# Optimisations appliquees (empilees, max compression sans perte visuelle) :
-# - PNG_W = 350, PNG_H calcule par espece via bbox adaptatif (gain -40pct vs fixe)
-# - BBOX adaptatif : trim des bords transparents + padding 2 degres + filtre p1
-#   -> chaque espece a un bbox pile a son aire de repartition, pas de vide inutile
-# - PNG_W = 300, padding bbox = 1 degre (bbox pile a l'aire, marge minimale)
-# - Alpha cutoff rank < 0.05 : les 5pct pixels les plus faibles -> transparent
-#   (elimine le bruit de fond ET ameliore la compression PNG)
-# - 26 frames au lieu de 52 (1 sur 2) : -50pct stockage, fluidite quasi imperceptible
-# - Skip semaines vides : aucune donnee ce week -> pas de fichier (allege ~15-30%)
-# - Quantize 128 couleurs (100 palette + variantes alpha) via magick
-# - PNG-8 indexed + oxipng lossless : le meilleur ratio mesure sur ce type d'image
-#   (WebP lossy testee mais PIRE que PNG-8 pour heatmap avec grosses zones alpha)
-# - Skip complet des especes deja traitees (via manifest)
-# Cible : ~300-500 KB par espece = ~90-150 MB total pour 304 sp
+# Configuration qualite max (stockage sur repo separe Ligue_des_Plumes_data, plus
+# de contrainte poids sur main) :
+# - PNG_W = 500 (nettete sur retina), PNG_H calcule par espece via bbox adaptatif
+# - BBOX adaptatif par espece : trim transparent + padding 3 degres + filtre p1
+# - Alpha cutoff rank < 0.02 : elimine bruit de fond en gardant la dynamique
+# - 52 frames complets : fluidite max animation
+# - Skip semaines vides : aucune donnee -> pas de fichier
+# - Quantize 128 couleurs (palette + alpha) via magick
+# - PNG-8 indexed + oxipng lossless : meilleur ratio sur heatmap avec alpha
+#   (WebP lossy testee mais PIRE que PNG-8 pour ce type d'image)
+# - Skip complet des especes deja traitees via manifest
+# Estimation : ~1500-2000 KB par espece = ~500-600 MB total pour 304 sp
+# (aucun impact sur main repo, tout dans Ligue_des_Plumes_data)
 #
 # Normalisation percentile GLOBALE sur les 52 weeks (cle du signal migration :
 # semaines vides restent vides, pics d'abondance sont rouges).
@@ -90,7 +89,7 @@ DEMO_CODES <- c(
 
 # Dimensions PNG : largeur cible fixe, hauteur calculee par espece depuis son bbox
 # adaptatif (voir boucle principale). Gain estime -40pct vs bbox fixe.
-PNG_W <- 300L
+PNG_W <- 500L
 cat(sprintf("PNG_W cible : %d (H calcule par espece via bbox adaptatif)\n", PNG_W))
 
 # ---------- Chemins ----------
@@ -260,8 +259,8 @@ for (i in seq_len(nrow(migrators))) {
     r_trimmed <- terra::trim(r_max)
     if (is.null(r_trimmed)) stop("trim returned null")
     e_ll <- terra::ext(r_trimmed)
-    # 4) Padding 1 degre + clamp world extent (marge minimale de respiration)
-    pad <- 1
+    # 4) Padding 3 degres + clamp world extent (marge confortable pour contexte visuel)
+    pad <- 3
     sp_bbox <- c(
       max(-180, e_ll$xmin - pad),
       max(-60,  e_ll$ymin - pad),
@@ -292,19 +291,18 @@ for (i in seq_len(nrow(migrators))) {
     global_ranks <- rep(NA_real_, length(all_vals))
     global_ranks[valid_global] <- (rank(all_vals[valid_global], ties.method = "average") - 1) /
                                   max(1, sum(valid_global) - 1)
-    # Alpha cutoff : les 5% de pixels les plus faibles deviennent transparents
-    # (elimine le bruit de fond, ameliore la lisibilite ET la compression PNG car
-    # cree de plus grosses zones alpha=0 qui compressent tres bien).
-    global_ranks[global_ranks < 0.05] <- NA
+    # Alpha cutoff : les 2% de pixels les plus faibles deviennent transparents
+    # (elimine le bruit de fond, garde une bonne dynamique). Seuil bas car stockage
+    # plus une contrainte, on privilegie la richesse d'info.
+    global_ranks[global_ranks < 0.02] <- NA
 
     n_px_layer <- sp_png_w * sp_png_h
     ranks_mat <- matrix(global_ranks, nrow = n_px_layer, ncol = n_weeks)
 
-    # Sous-echantillonnage 1 week sur 2 : 26 frames au lieu de 52 (-50pct stockage,
-    # perte de fluidite quasi imperceptible sur une animation d'anim migration).
+    # 52 frames complets (stockage sur repo separe, plus de contrainte poids repo main).
+    # Fluidite max de l'animation migration.
     weeks_written <- integer(0)
-    week_seq <- seq(1L, n_weeks, by = 2L)   # 1, 3, 5, ..., 51
-    for (w in week_seq) {
+    for (w in seq_len(n_weeks)) {
       week_ranks <- ranks_mat[, w]
       png_path <- file.path(sp_dir, sprintf("w%02d.png", w))
       wrote <- write_optimized_png(week_ranks, png_path, sp_png_w, sp_png_h)

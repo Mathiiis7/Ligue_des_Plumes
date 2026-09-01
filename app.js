@@ -7708,7 +7708,7 @@ async function _renderSpeciesMigrationCard(sci){
           let v = (+slider.value + 1) % weeks.length;
           slider.value = String(v);
           setFrame(v);
-        }, 400);   // 26 frames x 400ms = 10.4s par cycle (equivalent visuel a l'ancien 52 x 220ms)
+        }, 220);   // 52 frames x 220ms = 11.4s par cycle, fluidite max
       }
     });
   });
