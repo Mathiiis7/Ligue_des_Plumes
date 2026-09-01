@@ -245,40 +245,48 @@ for (i in seq_len(nrow(migrators))) {
                      metric = "median", resolution = "9km")
     n_weeks <- terra::nlyr(r)
 
-    # ---- BBOX adaptatif par espece ----
-    # 1) Reduction : max des 52 weeks par pixel -> masque "presence quelconque annuelle"
-    r_max <- terra::app(r, fun = function(x) { m <- max(x, na.rm = TRUE); if(is.infinite(m)) NA_real_ else m })
-    # 2) Filtre : garde uniquement pixels au-dessus du 1er percentile (evite les points
-    #    outliers/GPS-error qui gonfleraient artificiellement le bbox)
-    vals_max <- terra::values(r_max)
+    # ---- BBOX adaptatif par espece (en Mercator direct) ----
+    # Les rasters Cornell sont en projection Sinusoidale (metres). On reprojette
+    # d'abord en Mercator, puis on trim la, ce qui donne le bbox directement dans
+    # la CRS de rendu final (evite les conversions CRS piegees).
+    r_merc <- project(r, "EPSG:3857", method = "average")
+    # 1) Reduction : max des 52 weeks par pixel -> masque "presence quelconque"
+    r_max_merc <- terra::app(r_merc, fun = function(x) { m <- max(x, na.rm = TRUE); if(is.infinite(m)) NA_real_ else m })
+    # 2) Filtre : garde uniquement pixels au-dessus du 1er percentile (vire outliers)
+    vals_max <- terra::values(r_max_merc)
     pos_vals <- vals_max[!is.na(vals_max) & vals_max > 0]
     if (length(pos_vals) == 0) stop("no positive data")
     p1_threshold <- as.numeric(quantile(pos_vals, 0.01))
-    r_max[r_max <= p1_threshold] <- NA
-    # 3) Trim les bords tout-transparents pour obtenir le bbox natif
-    r_trimmed <- terra::trim(r_max)
+    r_max_merc[r_max_merc <= p1_threshold] <- NA
+    # 3) Trim les bords tout-transparents
+    r_trimmed <- terra::trim(r_max_merc)
     if (is.null(r_trimmed)) stop("trim returned null")
-    e_ll <- terra::ext(r_trimmed)
-    # 4) Padding 3 degres + clamp world extent (marge confortable pour contexte visuel)
-    pad <- 3
-    sp_bbox <- c(
-      max(-180, e_ll$xmin - pad),
-      max(-60,  e_ll$ymin - pad),
-      min( 180, e_ll$xmax + pad),
-      min(  85, e_ll$ymax + pad)
+    e_merc <- terra::ext(r_trimmed)
+    # 4) Padding fixe en metres Mercator (~350km = ~3 degres a l'equateur) + clamp
+    #    au bbox monde en Mercator (evite les singularites aux poles).
+    pad_m <- 350000
+    world_x <- 20037508
+    world_y_max <-  18500000    # ~85 degres N en Mercator
+    world_y_min <-  -8399737    # ~-60 degres S en Mercator
+    e_merc <- terra::ext(
+      max(-world_x,     e_merc$xmin - pad_m),
+      min( world_x,     e_merc$xmax + pad_m),
+      max( world_y_min, e_merc$ymin - pad_m),
+      min( world_y_max, e_merc$ymax + pad_m)
     )
-    # 5) Compute PNG dims from Mercator aspect
-    bbox_ll <- ext(sp_bbox[1], sp_bbox[3], sp_bbox[2], sp_bbox[4])
-    bbox_merc <- project(as.polygons(bbox_ll, crs = "EPSG:4326"), "EPSG:3857")
-    e_merc <- ext(bbox_merc)
-    aspect_sp <- as.numeric((e_merc$xmax - e_merc$xmin) / (e_merc$ymax - e_merc$ymin))
+    # 5) Convertit le bbox en WGS84 pour le manifest (client Leaflet utilise lat/lng)
+    poly_ll <- terra::project(terra::as.polygons(e_merc, crs = "EPSG:3857"), "EPSG:4326")
+    e_ll <- terra::ext(poly_ll)
+    sp_bbox <- c(e_ll$xmin, e_ll$ymin, e_ll$xmax, e_ll$ymax)
+    # 6) Dimensions PNG depuis aspect Mercator (aucune distorsion)
+    merc_w <- as.numeric(e_merc$xmax - e_merc$xmin)
+    merc_h <- as.numeric(e_merc$ymax - e_merc$ymin)
+    aspect_sp <- merc_w / merc_h
     sp_png_w <- PNG_W
     sp_png_h <- as.integer(round(sp_png_w / aspect_sp))
-    # Clamp dimensions raisonnables (evite ratios extremes qui casseraient le layout)
     sp_png_h <- max(200L, min(sp_png_h, 900L))
 
-    # Reprojection et resample sur la grille cible
-    r_merc <- project(r, "EPSG:3857", method = "average")
+    # Crop et resample sur la grille cible
     r_cropped <- crop(r_merc, e_merc, snap = "out")
     target <- rast(nrows = sp_png_h, ncols = sp_png_w, extent = e_merc, crs = "EPSG:3857")
     r_final <- resample(r_cropped, target, method = "average")
