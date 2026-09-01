@@ -7576,15 +7576,14 @@ async function _renderSpeciesRangeCard(sci){
   // Attend que le DOM ait fini de se rendre (clientHeight non-zero) avant d'init Leaflet.
   requestAnimationFrame(() => {
     if(!mapEl.clientHeight) { setTimeout(() => _renderSpeciesRangeCard(sci), 100); return; }
-    // Vue par defaut : zoom sur la data. L'user peut dezoomer jusqu'au monde entier
-    // (pas de lock minZoom) pour voir le contexte, et paner dans le monde entier.
+    // Vue par defaut : zoom sur la data. minZoom calcule dynamiquement pour qu'au
+    // dezoom max la Terre remplisse le container SANS zones grises.
     const dataBounds = L.latLngBounds([[s, w], [n, e]]);
     const worldBounds = L.latLngBounds([[-60, -180], [85, 180]]);
     _rangeMapInstance = L.map(mapEl, {
       zoomControl:true, maxBounds:worldBounds, maxBoundsViscosity:1.0,
-      worldCopyJump:false, attributionControl:true, minZoom:1
+      worldCopyJump:false, attributionControl:true
     });
-    // OSM standard + filtre CSS grayscale scope sur .sm-range-map.
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution:'© OpenStreetMap', maxZoom:12, noWrap:true
     }).addTo(_rangeMapInstance);
@@ -7593,6 +7592,8 @@ async function _renderSpeciesRangeCard(sci){
     setTimeout(() => {
       if(!_rangeMapInstance) return;
       _rangeMapInstance.invalidateSize();
+      const worldFitZoom = _rangeMapInstance.getBoundsZoom(worldBounds, true);
+      _rangeMapInstance.setMinZoom(worldFitZoom);
       _rangeMapInstance.fitBounds(dataBounds);
     }, 200);
   });
@@ -7661,13 +7662,14 @@ async function _renderSpeciesMigrationCard(sci){
   const playBtn = box.querySelector('#smMigPlay');
   requestAnimationFrame(() => {
     if(!mapEl.clientHeight) { setTimeout(() => _renderSpeciesMigrationCard(sci), 100); return; }
-    // Vue par defaut : zoom sur bbox espece, mais l'user peut dezoomer jusqu'au
-    // monde entier via molette (aucun lock du minZoom).
+    // Vue par defaut : zoom sur bbox espece. minZoom calcule dynamiquement pour
+    // qu'a l'echelle max de dezoom la Terre remplisse le container SANS zones
+    // grises. maxBounds = monde pour pan libre partout.
     const dataBounds = L.latLngBounds([[s, w], [n, e]]);
     const worldBounds = L.latLngBounds([[-60, -180], [85, 180]]);
     _migrationMapInstance = L.map(mapEl, {
       zoomControl:true, maxBounds:worldBounds, maxBoundsViscosity:1.0,
-      worldCopyJump:false, attributionControl:true, minZoom:1
+      worldCopyJump:false, attributionControl:true
     });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution:'© OpenStreetMap', maxZoom:12, noWrap:true
@@ -7676,6 +7678,10 @@ async function _renderSpeciesMigrationCard(sci){
     setTimeout(() => {
       if(!_migrationMapInstance) return;
       _migrationMapInstance.invalidateSize();
+      // minZoom = plus petit zoom qui fait tenir le monde entier sans laisser
+      // de zones grises sur les cotes (fit exact du container au bbox monde).
+      const worldFitZoom = _migrationMapInstance.getBoundsZoom(worldBounds, true);
+      _migrationMapInstance.setMinZoom(worldFitZoom);
       _migrationMapInstance.fitBounds(dataBounds);
     }, 200);
 
