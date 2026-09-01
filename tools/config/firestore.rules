@@ -168,20 +168,33 @@ service cloud.firestore {
         allow update, delete: if false;
       }
 
-      // Cache eBird partage. Ouvert car les cles sont deterministes cote client
-      // et le contenu est de la data publique eBird (bar charts, freq, obs recentes).
-      // On limite juste la taille pour eviter les abus.
+      // Cache eBird partage. Cles deterministes cote client (URL hash < 200 chars),
+      // contenu = data publique eBird (bar charts, freq, obs recentes).
+      // Restrictions : 3 champs uniquement, url string < 500, json string < 100 KB.
       match /ebirdCache/{docId} {
         allow read: if isSignedIn();
-        allow write: if isSignedIn();
+        allow write: if isSignedIn()
+          && hasOnlyKeys(['url', 'json', 'updatedAt'])
+          && isBoundedString(request.resource.data.url, 1, 500)
+          && isBoundedString(request.resource.data.json, 0, 100000);
       }
 
-      // Evenements trophees
+      // Evenements trophees. Shape possible :
+      //   unlock  : { kind, uid, name, trophyName, at }
+      //   transfer: { kind, uid, name, fromUid, fromName, trophyName, at }
+      //   demote  : { kind, uid, name, fromTrophy, toTrophy, at }
       match /trophyEvents/{eid} {
         allow read: if isSignedIn();
         allow create, update: if isSignedIn()
-          && (!('kind' in request.resource.data) || isBoundedString(request.resource.data.kind, 1, 50))
-          && (!('uid'  in request.resource.data) || isBoundedString(request.resource.data.uid, 1, 128));
+          && hasOnlyKeys(['kind', 'uid', 'name', 'trophyName', 'fromUid', 'fromName', 'fromTrophy', 'toTrophy', 'at'])
+          && isBoundedString(request.resource.data.kind, 1, 30)
+          && isBoundedString(request.resource.data.uid, 1, 128)
+          && (!('name'        in request.resource.data) || isBoundedString(request.resource.data.name, 0, 60))
+          && (!('trophyName'  in request.resource.data) || isBoundedString(request.resource.data.trophyName, 0, 80))
+          && (!('fromUid'     in request.resource.data) || request.resource.data.fromUid == null || isBoundedString(request.resource.data.fromUid, 0, 128))
+          && (!('fromName'    in request.resource.data) || request.resource.data.fromName == null || isBoundedString(request.resource.data.fromName, 0, 60))
+          && (!('fromTrophy'  in request.resource.data) || isBoundedString(request.resource.data.fromTrophy, 0, 80))
+          && (!('toTrophy'    in request.resource.data) || isBoundedString(request.resource.data.toTrophy, 0, 80));
         allow delete: if isAdmin();
       }
 
