@@ -7662,20 +7662,22 @@ async function _renderSpeciesMigrationCard(sci){
   const playBtn = box.querySelector('#smMigPlay');
   requestAnimationFrame(() => {
     if(!mapEl.clientHeight) { setTimeout(() => _renderSpeciesMigrationCard(sci), 100); return; }
+    // dataBounds = bbox adaptatif de l'espece (aire de repartition reelle)
+    // worldBounds = limite de pan (permet a l'user de dezoomer pour contexte mondial)
     const dataBounds = L.latLngBounds([[s, w], [n, e]]);
+    const worldBounds = L.latLngBounds([[-60, -180], [85, 180]]);
     _migrationMapInstance = L.map(mapEl, {
-      zoomControl:true, maxBounds:dataBounds, maxBoundsViscosity:1.0,
-      worldCopyJump:false, attributionControl:true
+      zoomControl:true, maxBounds:worldBounds, maxBoundsViscosity:1.0,
+      worldCopyJump:false, attributionControl:true, minZoom:1
     });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution:'© OpenStreetMap', maxZoom:12, noWrap:true
     }).addTo(_migrationMapInstance);
+    // Vue initiale : zoom sur l'aire de l'espece (focus immediat)
     _migrationMapInstance.fitBounds(dataBounds);
     setTimeout(() => {
       if(!_migrationMapInstance) return;
       _migrationMapInstance.invalidateSize();
-      const fitZoom = _migrationMapInstance.getBoundsZoom(dataBounds, true);
-      _migrationMapInstance.setMinZoom(fitZoom);
       _migrationMapInstance.fitBounds(dataBounds);
     }, 200);
 
