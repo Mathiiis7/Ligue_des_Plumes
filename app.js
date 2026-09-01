@@ -10540,10 +10540,10 @@ try{ const s = localStorage.getItem('mb-targets-tier-excl'); if(s) _targetsTierE
 let _speciesRegion = '';
 try{ _speciesRegion = localStorage.getItem('mb-species-region') || ''; }catch(_){ _speciesRegion = ''; }
 try{ _targetsRegion = localStorage.getItem('mb-targets-region') || ''; }catch(_){ _targetsRegion = ''; }
-// Alertes mega-rares : recupere les obs eBird "notable" tier 8+ des 30 derniers
-// jours dans la region/pays cible, dedoublonne par espece, rend sous forme de cards.
-// Non-bloquant : fire and forget, s'affiche quand fetch termine.
-async function _renderMegaRareAlerts(){
+/* Alertes mega-rares retirees le 2026-09-02 - feature abandonnee (inconsistances
+   eBird notable vs recent + obs de sites confidentiels non retrouvables par species).
+   Voir git log pour retrouver le code si besoin de la reimplementer differemment.
+async function _renderMegaRareAlertsREMOVED_UNUSED(){
   const box = document.getElementById('megaRareAlerts');
   if(!box) return;
   const cty = (typeof _targetsCountry !== 'undefined' && _targetsCountry) ? _targetsCountry : 'FR';
@@ -10664,12 +10664,11 @@ async function _renderMegaRareAlerts(){
     box.innerHTML = `<div style="padding:10px 14px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--ink-3);">⚠️ Impossible de charger les alertes eBird (${esc(err.message || 'erreur')}).</div>`;
   }
 }
+*/
 
 function renderTargets(){
   const panel = $('#targetsPanel'), grid = $('#targetsGrid'), hint = $('#targetsHint');
   if(!panel || !grid) return;
-  // Alertes mega-rares en arriere-plan (fire and forget, non bloquant)
-  _renderMegaRareAlerts();
   const me = realPeople.find(p => p.id === myUid);
   const mine = me ? new Set([...me.species.keys()]) : new Set();
   // Onglet dedie : on affiche le panel meme sans liste chargee (onboarding), et meme sans
