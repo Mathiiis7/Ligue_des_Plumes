@@ -7680,7 +7680,7 @@ async function _renderSpeciesMigrationCard(sci){
     }, 200);
 
     // Preload toutes les frames pour animation fluide (~5-8 KB/frame * 52 = 300-400 KB)
-    const frameUrl = wk => `data/range-weekly/${entry.code}/w${String(wk).padStart(2,'0')}.webp?v=20260901`;
+    const frameUrl = wk => `data/range-weekly/${entry.code}/w${String(wk).padStart(2,'0')}.png?v=20260901`;
     weeks.forEach(wk => { const img = new Image(); img.src = frameUrl(wk); });
 
     // Single overlay swap - on modifie son src pour animer (evite de re-creer un ImageOverlay Leaflet a chaque frame)

@@ -8,13 +8,13 @@
 #   data/range-weekly-index.json              Manifest { sci: {code, w, h, bbox, weeks:[]} }
 #
 # Optimisations appliquees (empilees, max compression sans perte visuelle) :
-# - PNG_W = 400 (au lieu de 900) : les images sont pour anim, pas pour zoom pixel
+# - PNG_W = 350 (bbox etendu Cape Town -> hauteur +30%, budget pixels conserve)
 # - Skip semaines vides : aucune donnee ce week -> pas de fichier (allege ~15-30%)
 # - Quantize 128 couleurs (100 palette + variantes alpha) via magick
-# - WebP lossy q=90 method=6 : imperceptible sur palette + compression max
-# - Fallback PNG optimise via oxipng si magick indispo
+# - PNG-8 indexed + oxipng lossless : le meilleur ratio mesure sur ce type d'image
+#   (WebP lossy testee mais PIRE que PNG-8 pour heatmap avec grosses zones alpha)
 # - Skip complet des especes deja traitees (via manifest)
-# Cible : ~5-8 KB par frame WebP = ~350-450 KB par espece, ~120 MB total pour 304 sp
+# Cible : ~1000-1200 KB par espece = ~300-360 MB total pour 304 sp
 #
 # Normalisation percentile GLOBALE sur les 52 weeks (cle du signal migration :
 # semaines vides restent vides, pics d'abondance sont rouges).
@@ -68,8 +68,10 @@ mode <- if (length(args) >= 1) tolower(args[1]) else "all"
 single_code <- if (mode == "sp" && length(args) >= 2) args[2] else NULL
 FORCE_REBUILD <- mode == "rebuild"
 
-# Europe + Afrique du N + Afrique subsaharienne (couvre migrateurs FR jusqu'au Sahel)
-BBOX <- c(-25, -10, 45, 72)
+# Europe + Afrique COMPLETE (jusqu'a Cape Town au sud) : couvre l'aire de migration
+# integrale des migrateurs FR long-distance (Hirondelles, Cigognes, Fauvettes...) qui
+# hivernent jusqu'en Afrique australe. Etendue verticale +30% vs Sahel-only.
+BBOX <- c(-20, -35, 50, 72)
 
 # Codes Cornell des migrateurs FR classiques pour le mode demo
 DEMO_CODES <- c(
@@ -89,7 +91,9 @@ suppressWarnings({
 merc_w <- e_merc_tmp$xmax - e_merc_tmp$xmin
 merc_h <- e_merc_tmp$ymax - e_merc_tmp$ymin
 merc_aspect <- as.numeric(merc_w / merc_h)
-PNG_W <- 400L
+# 350 au lieu de 400 pour compenser l'extension verticale du bbox (Cape Town = +30% hauteur).
+# Budget pixels total conserve, poids par frame equivalent.
+PNG_W <- 350L
 PNG_H <- as.integer(round(PNG_W / merc_aspect))
 cat(sprintf("Aspect Mercator Europe : %.2f -> PNG %d x %d\n", merc_aspect, PNG_W, PNG_H))
 
@@ -270,7 +274,7 @@ for (i in seq_len(nrow(migrators))) {
     weeks_written <- integer(0)
     for (w in seq_len(n_weeks)) {
       week_ranks <- ranks_mat[, w]
-      png_path <- file.path(sp_dir, sprintf("w%02d.webp", w))
+      png_path <- file.path(sp_dir, sprintf("w%02d.png", w))
       wrote <- write_optimized_png(week_ranks, png_path)
       if (wrote) {
         weeks_written <- c(weeks_written, w)
