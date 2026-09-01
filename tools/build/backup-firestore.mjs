@@ -76,34 +76,51 @@ function serialize(v) {
   return v;
 }
 
-// Recurse dans toutes les sous-collections. listDocuments() retourne aussi les
-// docs implicites (parent avec sous-collections mais pas de fields directs).
-async function dumpCollection(collRef, path) {
-  const docRefs = await collRef.listDocuments();
+// Recurse dans les sous-collections. listCollections() est LENT (~100ms par doc)
+// donc on ne l'appelle QUE sur les docs qu'on sait etre des containers (leagues/{lg}).
+// Les leaf docs (chat, photos, comments...) sont dumped sans check subs.
+const CONTAINER_COLLECTIONS = new Set(['leagues']);
+async function dumpCollection(collRef, path, depth = 0) {
+  // Recupere les docs explicites via .get() (rapide, une seule query) au lieu de
+  // listDocuments() qui necessite 1 get() par doc pour recuperer les fields.
+  const snap = await collRef.get();
   const docs = {};
-  let explicitCount = 0, subCount = 0;
-  for (const dRef of docRefs) {
-    const dSnap = await dRef.get();
+  let subCount = 0;
+  const isContainer = CONTAINER_COLLECTIONS.has(collRef.id);
+
+  // Pour les containers (leagues), on utilise listDocuments pour recuperer aussi les implicites
+  let docList;
+  if (isContainer) {
+    const refs = await collRef.listDocuments();
+    docList = [];
+    for (const r of refs) {
+      const s = await r.get();
+      docList.push({ ref: r, snap: s });
+    }
+  } else {
+    docList = snap.docs.map(d => ({ ref: d.ref, snap: d }));
+  }
+
+  for (const { ref, snap: dSnap } of docList) {
     const data = dSnap.exists ? serialize(dSnap.data()) : null;
-    docs[dRef.id] = { _data: data, _implicit: !dSnap.exists };
-    if (dSnap.exists) explicitCount++;
-    // Sous-collections
-    const subs = await dRef.listCollections();
-    if (subs.length > 0) {
-      docs[dRef.id]._subs = {};
-      for (const sub of subs) {
-        const subDump = await dumpCollection(sub, `${path}/${dRef.id}/${sub.id}`);
-        docs[dRef.id]._subs[sub.id] = subDump;
-        subCount += Object.keys(subDump).length;
+    docs[ref.id] = { _data: data };
+    if (!dSnap.exists) docs[ref.id]._implicit = true;
+    // Sous-collections : seulement pour les docs containers (evite 100ms x N leaf docs)
+    if (isContainer) {
+      const subs = await ref.listCollections();
+      if (subs.length > 0) {
+        docs[ref.id]._subs = {};
+        for (const sub of subs) {
+          const subDump = await dumpCollection(sub, `${path}/${ref.id}/${sub.id}`, depth + 1);
+          docs[ref.id]._subs[sub.id] = subDump;
+          subCount += Object.keys(subDump).length;
+        }
       }
     }
   }
-  const implicitCount = docRefs.length - explicitCount;
-  const details = [
-    `${docRefs.length} docs`,
-    implicitCount > 0 ? `(${implicitCount} implicites)` : null,
-    subCount > 0 ? `+ ${subCount} sub-docs` : null,
-  ].filter(Boolean).join(' ');
+  const details = subCount > 0
+    ? `${docList.length} docs + ${subCount} sub-docs`
+    : `${docList.length} docs`;
   console.log(`  ${path} : ${details}`);
   return docs;
 }
