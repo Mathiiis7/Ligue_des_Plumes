@@ -6153,7 +6153,94 @@ function renderStats(me){
            <div class="stat-time-cell"><div class="stat-time-lbl">Année record</div><div class="stat-time-val">${esc(bestYearLabel)}${rankTxt(rankBestYear)}</div><div class="stat-time-sub">${bestYearCount} nouvelle${bestYearCount>1?'s':''} espèce${bestYearCount>1?'s':''} cette année-là</div></div>
          </div>`
       : '')+
-    (fams.length?`<div class="stat-fam-title">Vos familles</div><div class="stat-fams">`+fams.map(([f,n])=>`<div class="stat-fam"><div class="stat-fam-row"><span>${esc(f)}</span><span>${n}</span></div><div class="stat-fam-bar"><div style="width:${Math.round(n/maxFam*100)}%"></div></div></div>`).join('')+`</div>`:'');
+    (fams.length?`<div class="stat-fam-title">Vos familles</div><div class="stat-fams">`+fams.map(([f,n])=>`<div class="stat-fam"><div class="stat-fam-row"><span>${esc(f)}</span><span>${n}</span></div><div class="stat-fam-bar"><div style="width:${Math.round(n/maxFam*100)}%"></div></div></div>`).join('')+`</div>`:'')+
+    _renderPersonalTimeline(active);
+}
+// Timeline personnelle : liste chronologique des jalons majeurs (1ere espece, 100e/500e/1000e,
+// 1er tier 8/9/10, 1ere espece de chaque annee). Affichee en bas du profil.
+function _renderPersonalTimeline(active){
+  // Extrait toutes les especes avec date valide, trie chronologiquement
+  const dated = [];
+  for(const v of active.values()){
+    if(!countsFR(v)) continue;
+    const pd = parseDate(v.date);
+    if(!pd) continue;
+    dated.push({ sci: v.sci, common: v.common, ord: pd.ord, disp: pd.disp, loc: v.loc||'' });
+  }
+  if(dated.length < 5) return '';   // pas assez de data pour une timeline interessante
+  dated.sort((a, b) => a.ord - b.ord);
+
+  // Detecte les jalons
+  const milestones = [];
+  const yearsSeen = new Set();
+  let firstTier8 = null, firstTier9 = null, firstTier10 = null;
+  dated.forEach((v, i) => {
+    const nth = i + 1;
+    const year = String(v.ord).slice(0, 4);
+    const nm = frName(v.sci, v.common);
+    const tier = rarityForFilter(v.sci);
+    // Premiere espece ever
+    if(nth === 1){
+      milestones.push({ ord: v.ord, disp: v.disp, year, icon: '⭐', label: '1<sup>ère</sup> espèce cochée', sp: nm, sci: v.sci });
+    }
+    // Multiples de 100 (100, 200, 300, 500, 1000)
+    if([100, 200, 300, 500, 750, 1000, 1500, 2000].includes(nth)){
+      const icon = nth >= 1000 ? '💎' : nth >= 500 ? '🥇' : nth >= 200 ? '🥈' : '🥉';
+      milestones.push({ ord: v.ord, disp: v.disp, year, icon, label: `<b>${nth}<sup>e</sup></b> espèce`, sp: nm, sci: v.sci });
+    }
+    // 1er tier 8 / 9 / 10 (les gros trophées de rareté)
+    if(tier >= 8 && !firstTier8){ firstTier8 = 1;
+      milestones.push({ ord: v.ord, disp: v.disp, year, icon: '🔥', label: '1<sup>ère</sup> rareté (tier 8+)', sp: nm, sci: v.sci }); }
+    if(tier >= 9 && !firstTier9){ firstTier9 = 1;
+      milestones.push({ ord: v.ord, disp: v.disp, year, icon: '💥', label: '1<sup>ère</sup> ultra-rare (tier 9)', sp: nm, sci: v.sci }); }
+    if(tier >= 10 && !firstTier10){ firstTier10 = 1;
+      milestones.push({ ord: v.ord, disp: v.disp, year, icon: '👑', label: '1<sup>ère</sup> exceptionnelle (tier 10)', sp: nm, sci: v.sci }); }
+    // 1ere espece de chaque annee
+    if(!yearsSeen.has(year)){
+      yearsSeen.add(year);
+      if(nth > 1){   // skip la 1ere annee (deja capturee par "1ere espece ever")
+        milestones.push({ ord: v.ord, disp: v.disp, year, icon: '📅', label: `1<sup>ère</sup> espèce de ${year}`, sp: nm, sci: v.sci });
+      }
+    }
+  });
+
+  // Sort by ord et dedupe si 2 milestones tombent sur la meme espece (ex: 500e + 1ere de l'annee)
+  milestones.sort((a, b) => a.ord - b.ord);
+  // Groupe par ord+sci pour merger les jalons simultanes
+  const grouped = new Map();
+  for(const m of milestones){
+    const k = m.ord + '__' + m.sci;
+    if(!grouped.has(k)) grouped.set(k, { ...m, labels: [m.label], icons: [m.icon] });
+    else { const g = grouped.get(k); g.labels.push(m.label); g.icons.push(m.icon); }
+  }
+  const merged = [...grouped.values()];
+
+  if(merged.length === 0) return '';
+
+  // Render : timeline verticale compacte
+  const rows = merged.map(m => `
+    <div class="tl-row" data-sci="${esc(m.sci)}">
+      <div class="tl-date">${esc(m.disp)}</div>
+      <div class="tl-dot">${m.icons.join('')}</div>
+      <div class="tl-body">
+        <div class="tl-labels">${m.labels.join(' · ')}</div>
+        <div class="tl-species"><span class="sp-link" data-sci="${esc(m.sci)}">${esc(m.sp)}</span></div>
+      </div>
+    </div>`).join('');
+
+  return `<div class="stat-time-title" style="margin-top:20px;">🎞️ Ma timeline <span class="help" style="font-weight:400;">(${merged.length} jalon${merged.length>1?'s':''} sur ${dated.length} espèces datées)</span></div>
+    <div class="tl-wrap">${rows}</div>
+    <style>
+      .tl-wrap { border-left: 2px solid var(--line); margin: 10px 0 0 8px; padding-left: 0; }
+      .tl-row { display: grid; grid-template-columns: 60px 28px 1fr; gap: 8px; align-items: start; padding: 8px 0; position: relative; cursor: pointer; transition: background .15s; border-radius: 6px; padding-right: 6px; }
+      .tl-row:hover { background: var(--surface-2); }
+      .tl-date { font-family: ui-monospace, monospace; font-size: 11px; color: var(--ink-3); padding-top: 4px; padding-left: 8px; }
+      .tl-dot { margin-left: -15px; background: var(--surface); border: 2px solid var(--line); border-radius: 50%; width: 26px; height: 26px; display: grid; place-items: center; font-size: 13px; z-index: 1; }
+      .tl-body { padding-top: 2px; }
+      .tl-labels { font-size: 13px; color: var(--ink); font-weight: 500; }
+      .tl-species { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+      .tl-species .sp-link { color: var(--ink-2); text-decoration: underline dotted; }
+    </style>`;
 }
 // ---- Pastilles "non lu" (Tchat / Photos / Fil / Requêtes) ----
 let chatLatest=0, photosLatest=0, feedLatest=0, requestsLatest=0;
