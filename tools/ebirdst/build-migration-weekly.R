@@ -11,6 +11,9 @@
 # - PNG_W = 350, PNG_H calcule par espece via bbox adaptatif (gain -40pct vs fixe)
 # - BBOX adaptatif : trim des bords transparents + padding 2 degres + filtre p1
 #   -> chaque espece a un bbox pile a son aire de repartition, pas de vide inutile
+# - PNG_W = 300, padding bbox = 1 degre (bbox pile a l'aire, marge minimale)
+# - Alpha cutoff rank < 0.05 : les 5pct pixels les plus faibles -> transparent
+#   (elimine le bruit de fond ET ameliore la compression PNG)
 # - 26 frames au lieu de 52 (1 sur 2) : -50pct stockage, fluidite quasi imperceptible
 # - Skip semaines vides : aucune donnee ce week -> pas de fichier (allege ~15-30%)
 # - Quantize 128 couleurs (100 palette + variantes alpha) via magick
@@ -87,7 +90,7 @@ DEMO_CODES <- c(
 
 # Dimensions PNG : largeur cible fixe, hauteur calculee par espece depuis son bbox
 # adaptatif (voir boucle principale). Gain estime -40pct vs bbox fixe.
-PNG_W <- 350L
+PNG_W <- 300L
 cat(sprintf("PNG_W cible : %d (H calcule par espece via bbox adaptatif)\n", PNG_W))
 
 # ---------- Chemins ----------
@@ -257,8 +260,8 @@ for (i in seq_len(nrow(migrators))) {
     r_trimmed <- terra::trim(r_max)
     if (is.null(r_trimmed)) stop("trim returned null")
     e_ll <- terra::ext(r_trimmed)
-    # 4) Padding 2 degres + clamp world extent
-    pad <- 2
+    # 4) Padding 1 degre + clamp world extent (marge minimale de respiration)
+    pad <- 1
     sp_bbox <- c(
       max(-180, e_ll$xmin - pad),
       max(-60,  e_ll$ymin - pad),
@@ -289,6 +292,10 @@ for (i in seq_len(nrow(migrators))) {
     global_ranks <- rep(NA_real_, length(all_vals))
     global_ranks[valid_global] <- (rank(all_vals[valid_global], ties.method = "average") - 1) /
                                   max(1, sum(valid_global) - 1)
+    # Alpha cutoff : les 5% de pixels les plus faibles deviennent transparents
+    # (elimine le bruit de fond, ameliore la lisibilite ET la compression PNG car
+    # cree de plus grosses zones alpha=0 qui compressent tres bien).
+    global_ranks[global_ranks < 0.05] <- NA
 
     n_px_layer <- sp_png_w * sp_png_h
     ranks_mat <- matrix(global_ranks, nrow = n_px_layer, ncol = n_weeks)
