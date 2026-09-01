@@ -7601,9 +7601,12 @@ async function _renderSpeciesRangeCard(sci){
     }, 200);
   });
 }
-// Migration animee : 52 frames WebP hebdo par migrateur, timeline slider + autoplay.
+// Migration animee : 26 frames PNG hebdo (1 sur 2) par migrateur, timeline slider + autoplay.
 // Charge le manifest range-weekly, verifie si sci est dispo, monte une carte Leaflet
 // dediee + timeline. Preload les frames pour animation fluide.
+// STOCKAGE : les PNGs (~90 MB total) sont dans le repo SEPARE Ligue_des_Plumes_data
+// pour ne pas alourdir le repo main. Manifest reste dans le repo main (petit fichier).
+const WEEKLY_DATA_BASE = 'https://mathiiis7.github.io/Ligue_des_Plumes_data';
 let _weeklyIndexCache = null;
 async function _loadWeeklyIndex(){
   if(_weeklyIndexCache) return _weeklyIndexCache;
@@ -7682,7 +7685,7 @@ async function _renderSpeciesMigrationCard(sci){
     }, 200);
 
     // Preload toutes les frames pour animation fluide (~5-8 KB/frame * 52 = 300-400 KB)
-    const frameUrl = wk => `data/range-weekly/${entry.code}/w${String(wk).padStart(2,'0')}.png?v=20260901`;
+    const frameUrl = wk => `${WEEKLY_DATA_BASE}/range-weekly/${entry.code}/w${String(wk).padStart(2,'0')}.png?v=20260901`;
     weeks.forEach(wk => { const img = new Image(); img.src = frameUrl(wk); });
 
     // Single overlay swap - on modifie son src pour animer (evite de re-creer un ImageOverlay Leaflet a chaque frame)
