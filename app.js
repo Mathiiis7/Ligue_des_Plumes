@@ -7642,7 +7642,7 @@ async function _renderSpeciesMigrationCard(sci){
   };
   box.innerHTML = `
     <div class="sm-card-title" style="display:flex; align-items:center; gap:8px;">Migration semaine par semaine <span style="font-size:10.5px; color:var(--ink-3); text-transform:none; font-weight:400; letter-spacing:0;">- Cornell S&amp;T weekly</span></div>
-    <div id="${mapId}" class="sm-range-map" style="margin-top:6px; height:380px; border-radius:8px; overflow:hidden; background:var(--surface-3);"></div>
+    <div id="${mapId}" class="sm-range-map" style="margin-top:6px; height:440px; border-radius:8px; overflow:hidden; background:var(--surface-3);"></div>
     <div style="margin-top:10px; display:flex; align-items:center; gap:12px;">
       <button type="button" id="smMigPlay" class="btn tiny" style="min-width:60px;">▶ Lire</button>
       <input type="range" id="smMigSlider" min="0" max="${weeks.length-1}" value="0" step="1" style="flex:1; cursor:pointer;">
