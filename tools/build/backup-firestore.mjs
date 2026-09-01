@@ -76,26 +76,35 @@ function serialize(v) {
   return v;
 }
 
-// Recurse dans toutes les sous-collections (leagues/{lg}/chat, etc.)
+// Recurse dans toutes les sous-collections. listDocuments() retourne aussi les
+// docs implicites (parent avec sous-collections mais pas de fields directs).
 async function dumpCollection(collRef, path) {
-  const snap = await collRef.get();
+  const docRefs = await collRef.listDocuments();
   const docs = {};
-  let subCount = 0;
-  for (const d of snap.docs) {
-    const data = serialize(d.data());
-    docs[d.id] = { _data: data };
+  let explicitCount = 0, subCount = 0;
+  for (const dRef of docRefs) {
+    const dSnap = await dRef.get();
+    const data = dSnap.exists ? serialize(dSnap.data()) : null;
+    docs[dRef.id] = { _data: data, _implicit: !dSnap.exists };
+    if (dSnap.exists) explicitCount++;
     // Sous-collections
-    const subs = await d.ref.listCollections();
+    const subs = await dRef.listCollections();
     if (subs.length > 0) {
-      docs[d.id]._subs = {};
+      docs[dRef.id]._subs = {};
       for (const sub of subs) {
-        const subDump = await dumpCollection(sub, `${path}/${d.id}/${sub.id}`);
-        docs[d.id]._subs[sub.id] = subDump;
+        const subDump = await dumpCollection(sub, `${path}/${dRef.id}/${sub.id}`);
+        docs[dRef.id]._subs[sub.id] = subDump;
         subCount += Object.keys(subDump).length;
       }
     }
   }
-  console.log(`  ${path} : ${snap.size} docs${subCount ? ` + ${subCount} sub-docs` : ''}`);
+  const implicitCount = docRefs.length - explicitCount;
+  const details = [
+    `${docRefs.length} docs`,
+    implicitCount > 0 ? `(${implicitCount} implicites)` : null,
+    subCount > 0 ? `+ ${subCount} sub-docs` : null,
+  ].filter(Boolean).join(' ');
+  console.log(`  ${path} : ${details}`);
   return docs;
 }
 
