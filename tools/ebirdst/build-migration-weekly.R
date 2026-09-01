@@ -4,16 +4,17 @@
 # "migration animee". Cible : voir la vague de migration semaine par semaine.
 #
 # Sortie :
-#   data/range-weekly/{code}/w{01..52}.png    PNGs indexed 8-bit + alpha
+#   data/range-weekly/{code}/w{01..52}.webp   WebP LOSSLESS indexed + alpha
 #   data/range-weekly-index.json              Manifest { sci: {code, w, h, bbox, weeks:[]} }
 #
 # Optimisations appliquees :
 # - PNG_W = 500 (au lieu de 900) : les images sont pour anim, pas pour zoom pixel
-# - Skip semaines vides : aucune donnee ce week -> pas de PNG (allege ~15-30%)
-# - PNG indexed 8-bit + palette via magick (au lieu de RGBA truecolor) : -60% poids
-# - Fallback png::writePNG RGBA si magick indispo
-# - Post-compression via oxipng ou optipng si binaire dispo (-15-25% supplement)
-# - Skip complet des especes deja traitees (via manifest, pas comptage PNG)
+# - Skip semaines vides : aucune donnee ce week -> pas de fichier (allege ~15-30%)
+# - Quantize 128 couleurs (100 palette + variantes alpha) via magick
+# - WebP LOSSLESS (method=6) : -30-40% vs PNG optimise SANS perte de qualite
+#   (l'input est deja quantize a 128 couleurs, lossless preserve tout)
+# - Fallback PNG optimise via oxipng si magick indispo
+# - Skip complet des especes deja traitees (via manifest)
 #
 # Normalisation percentile GLOBALE sur les 52 weeks (cle du signal migration :
 # semaines vides restent vides, pics d'abondance sont rouges).
@@ -186,20 +187,28 @@ write_optimized_png <- function(ranks, path) {
   rgba[,,3] <- matrix(B_ch, PNG_H, PNG_W, byrow = TRUE) / 255
   rgba[,,4] <- matrix(A_ch, PNG_H, PNG_W, byrow = TRUE) / 255
 
+  # Format WebP LOSSLESS pour zero perte de qualite (l'input est deja quantize a
+  # 128 couleurs, donc lossless preserve tout exactement). Fallback PNG si magick
+  # indispo.
+  is_webp <- endsWith(path, ".webp")
   if (HAS_MAGICK) {
-    # PNG indexed 8-bit + alpha (-60% poids vs truecolor RGBA). Quantize sur 128 couleurs
-    # (100 palette + variantes alpha).
     img <- magick::image_read(rgba)
     img <- magick::image_quantize(img, max = 128, colorspace = "rgb", dither = FALSE)
-    magick::image_write(img, path = path, format = "png", depth = 8)
+    if (is_webp) {
+      # method 6 = qualite max, lossless = zero perte.
+      magick::image_write(img, path = path, format = "webp",
+                          defines = c("webp:lossless" = "true", "webp:method" = "6"))
+    } else {
+      magick::image_write(img, path = path, format = "png", depth = 8)
+    }
     magick::image_destroy(img)
   } else {
     if (!requireNamespace("png", quietly = TRUE)) install.packages("png", repos = "https://cloud.r-project.org")
-    png::writePNG(rgba, path)
+    png::writePNG(rgba, sub("\\.webp$", ".png", path))
   }
 
-  # Post-compression sans perte via oxipng/optipng
-  if (nzchar(OPT_BIN)) {
+  # Post-compression oxipng/optipng : PNG uniquement (WebP lossless est deja optim au max)
+  if (!is_webp && nzchar(OPT_BIN)) {
     args_opt <- if (grepl("oxipng", OPT_BIN)) c("-o", "4", "--strip", "safe", path)
                 else                           c("-o5", "-strip", "all", path)
     tryCatch(
@@ -260,7 +269,7 @@ for (i in seq_len(nrow(migrators))) {
     weeks_written <- integer(0)
     for (w in seq_len(n_weeks)) {
       week_ranks <- ranks_mat[, w]
-      png_path <- file.path(sp_dir, sprintf("w%02d.png", w))
+      png_path <- file.path(sp_dir, sprintf("w%02d.webp", w))
       wrote <- write_optimized_png(week_ranks, png_path)
       if (wrote) {
         weeks_written <- c(weeks_written, w)
@@ -307,7 +316,7 @@ jsonlite::write_json(manifest, MANIFEST, auto_unbox = TRUE, pretty = FALSE)
 cat("\n=== Termine ===\n")
 cat("Succes :", success, " ; Echecs :", failed, "\n")
 n_dirs <- length(list.dirs(OUT_DIR, recursive = FALSE))
-n_pngs <- length(list.files(OUT_DIR, pattern = "\\.png$", recursive = TRUE))
-total_mb <- round(sum(file.info(list.files(OUT_DIR, pattern="\\.png$", recursive=TRUE, full.names=TRUE))$size, na.rm=TRUE) / 1024 / 1024, 1)
+n_pngs <- length(list.files(OUT_DIR, pattern = "\\.(png|webp)$", recursive = TRUE))
+total_mb <- round(sum(file.info(list.files(OUT_DIR, pattern="\\.(png|webp)$", recursive=TRUE, full.names=TRUE))$size, na.rm=TRUE) / 1024 / 1024, 1)
 cat("Dossiers especes :", n_dirs, " ; Total PNGs :", n_pngs, " ; Poids :", total_mb, "MB\n")
 cat("Manifest :", MANIFEST, "\n")
