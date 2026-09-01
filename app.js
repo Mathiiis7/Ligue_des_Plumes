@@ -7504,13 +7504,14 @@ async function _renderSpeciesTraitsCard(key){
   }
   if(t.pl && PL[t.pl])    ecoLines.push({ k:'Style de vie',   v: PL[t.pl] });
   if(t.hd && HD[t.hd])    ecoLines.push({ k:'Densité habitat', v: HD[t.hd] });
-  // Section Morphologie (masse + longueurs). Arrondi a l'entier, tooltips explicatifs.
+  // Section Morphologie (masse + longueurs). Longueurs en cm (Avonet fournit en mm).
   const morphLines = [];
   const round = v => v == null ? '' : String(Math.round(v));
+  const cm = v => v == null ? '' : (v/10).toFixed(1).replace(/\.0$/, '');
   if(t.ma != null)   morphLines.push({ k:'Masse',        v: `${round(t.ma)} g`, hint:'Masse corporelle moyenne (adulte)' });
-  if(t.wi != null)   morphLines.push({ k:'Aile',         v: `${round(t.wi)} mm`, hint:'Longueur de l\'aile pliée, du poignet à l\'extrémité de la plus grande rémige' });
-  if(t.bl != null)   morphLines.push({ k:'Bec (culmen)', v: `${round(t.bl)} mm`, hint:'Culmen : arête supérieure du bec, du front à la pointe. Mesure standard pour comparer la taille des becs' });
-  if(t.tail != null) morphLines.push({ k:'Queue',        v: `${round(t.tail)} mm`, hint:'Longueur de la queue, base à extrémité de la plus longue rectrice' });
+  if(t.wi != null)   morphLines.push({ k:'Aile',         v: `${cm(t.wi)} cm`, hint:'Longueur de l\'aile pliée, du poignet à l\'extrémité de la plus grande rémige' });
+  if(t.bl != null)   morphLines.push({ k:'Bec (culmen)', v: `${cm(t.bl)} cm`, hint:'Culmen : arête supérieure du bec, du front à la pointe. Mesure standard pour comparer la taille des becs' });
+  if(t.tail != null) morphLines.push({ k:'Queue',        v: `${cm(t.tail)} cm`, hint:'Longueur de la queue, base à extrémité de la plus longue rectrice' });
   if(!ecoLines.length && !morphLines.length) return;
   const renderLine = ({k, v, hint}) => `<div style="display:flex; justify-content:space-between; gap:12px; padding:3px 0; font-size:13px;"><span style="color:var(--ink-3);${hint?' cursor:help;':''}"${hint?` title="${esc(hint)}"`:''}>${esc(k)}</span><span style="color:var(--ink); font-weight:600; text-align:right;">${v}</span></div>`;
   box.innerHTML = `
