@@ -250,10 +250,12 @@ for (i in seq_len(nrow(migrators))) {
     # d'abord en Mercator, puis on trim la, ce qui donne le bbox directement dans
     # la CRS de rendu final (evite les conversions CRS piegees).
     r_merc <- project(r, "EPSG:3857", method = "average")
-    # 1) Reduction : max des 52 weeks par pixel -> masque "presence quelconque"
-    r_max_merc <- terra::app(r_merc, fun = function(x) { m <- max(x, na.rm = TRUE); if(is.infinite(m)) NA_real_ else m })
+    # 1) Reduction : max des 52 weeks par pixel -> masque "presence quelconque".
+    #    IMPORTANT : utilise max(r) natif terra (code C++) au lieu de terra::app avec
+    #    fonction R (qui appelle R par pixel = 100x plus lent).
+    r_max_merc <- max(r_merc, na.rm = TRUE)
     # 2) Filtre : garde uniquement pixels au-dessus du 1er percentile (vire outliers)
-    vals_max <- terra::values(r_max_merc)
+    vals_max <- terra::values(r_max_merc, mat = FALSE)
     pos_vals <- vals_max[!is.na(vals_max) & vals_max > 0]
     if (length(pos_vals) == 0) stop("no positive data")
     p1_threshold <- as.numeric(quantile(pos_vals, 0.01))
