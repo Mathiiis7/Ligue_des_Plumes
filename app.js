@@ -33,8 +33,10 @@ let unsubReactions = null, reactionsMap = new Map(), unsubPhotos = null, photos 
 let unsubComments = null, commentsMap = new Map();   // Map<target, Array<{id,uid,name,text,createdAt}>>
 let unsubTrophyEvents = null, trophyEventsList = [], _trophyEventsLoaded = false;   // events synchronises via Firestore (partages entre appareils)
 let unsubRequests = null, requests = [], unsubReqVotes = null, reqVotesMap = new Map();
-// Admin(s) : uid autorisé à changer le statut d'une requête (À faire / En cours / Fait).
-// Mathis (compte email) - ajouter d'autres uid si besoin.
+// Admin(s) : ensemble d'UIDs autorises aux actions moderateur (retirer un membre,
+// changer statut requete, supprimer commentaires...). Alimente en temps reel depuis
+// la collection Firestore /admins/{uid} (via subscribeAdmins ci-dessous). Le UID
+// hardcode de Mathis sert de bootstrap pour le cas ou la collection est vide.
 const ADMIN_UIDS = new Set(['pCf1HuUeIkNJTXC0wujsX04UsFs2']);
 const isAdmin = () => myUid && ADMIN_UIDS.has(myUid);
 const EMOJIS = [
@@ -9992,8 +9994,22 @@ $('#authReset')?.addEventListener('click', async ()=>{
   try{ await sendPasswordResetEmail(auth, email); authMsg('Email de réinitialisation envoyé à '+email+' ✓', true); }
   catch(e){ authMsg(authErr(e)); }
 });
+// Sync temps reel de la collection /admins vers ADMIN_UIDS. Boot une seule fois au
+// premier login. Le UID hardcode reste toujours dedans (bootstrap si /admins vide).
+let _unsubAdmins = null;
+function subscribeAdmins(){
+  if(_unsubAdmins) return;
+  try{
+    _unsubAdmins = onSnapshot(collection(db, 'admins'), snap=>{
+      // Reset le Set et re-ajoute les hardcodes (bootstrap) + ceux de Firestore
+      ADMIN_UIDS.clear();
+      ADMIN_UIDS.add('pCf1HuUeIkNJTXC0wujsX04UsFs2');
+      snap.forEach(d => { if(d.id) ADMIN_UIDS.add(d.id); });
+    }, ()=>{});
+  }catch(_){}
+}
 onAuthStateChanged(auth, user=>{
-  if(user){ myUid=user.uid; updateAuthUI(user); boot(); }
+  if(user){ myUid=user.uid; subscribeAdmins(); updateAuthUI(user); boot(); }
   else { myUid=null; signInAnonymously(auth).catch(err=>{ showError(err); }); }
 });
 /* ---------------- Quiz chants (xeno-canto v3) ---------------- */

@@ -2,137 +2,203 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    match /leagues/{leagueId} {
-      // Doc de la ligue (ex. intitulé de colonne) : lecture/écriture par tout utilisateur connecté (anonyme OK)
-      allow read, write: if request.auth != null;
+    // ============================================================
+    // Helper functions
+    // ============================================================
+    function isSignedIn() { return request.auth != null; }
+    function isSelf(uid) { return isSignedIn() && request.auth.uid == uid; }
+    // Admin dynamique : lookup dans /admins/{uid} au lieu de UID hardcode.
+    // Permet d'ajouter/retirer des admins via Firebase console sans redeploy.
+    function isAdmin() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    // Verifie qu'un champ (path) est bien une string dans les limites [min,max]
+    function isBoundedString(field, min, max) {
+      return field is string && field.size() >= min && field.size() <= max;
+    }
+    // Verifie que la resource ne contient QUE les cles autorisees (empeche d'injecter
+    // des champs pirates comme "isAdmin=true" ou "score=99999")
+    function hasOnlyKeys(allowed) {
+      return request.resource.data.keys().hasOnly(allowed);
+    }
 
-      // Membres : chacun voit tout le monde, ecrit sa propre fiche ; les admins
-      // (UIDs listes) peuvent aussi retirer / renommer n'importe quel membre.
+    // ============================================================
+    // /admins/{uid} : collection des admins
+    // Doc vide, l'UID dans le path suffit. Lecture publique (pour que le
+    // client sache si l'user courant est admin). Ecriture uniquement via
+    // Firebase console (pas depuis l'app).
+    // ============================================================
+    match /admins/{uid} {
+      allow read: if isSignedIn();
+      allow write: if false;   // manage via Firebase console only
+    }
+
+    // ============================================================
+    // /leagues/{leagueId}
+    // ============================================================
+    match /leagues/{leagueId} {
+
+      // Doc racine de la ligue (goalHeader, intitules, etc.)
+      // Champs autorises + limites de taille pour eviter les injections.
+      allow read: if isSignedIn();
+      allow write: if isSignedIn()
+        && hasOnlyKeys(['goalHeader', 'name', 'createdAt', 'updatedAt'])
+        && (!('goalHeader' in request.resource.data) || isBoundedString(request.resource.data.goalHeader, 0, 200))
+        && (!('name' in request.resource.data)       || isBoundedString(request.resource.data.name, 0, 100));
+
+      // Membres : chacun ecrit sa fiche, les admins peuvent tout modifier.
       match /members/{memberId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null && (
-          request.auth.uid == memberId
-          || request.auth.uid == 'pCf1HuUeIkNJTXC0wujsX04UsFs2'
-        );
+        allow read: if isSignedIn();
+        allow write: if isSelf(memberId) || isAdmin();
       }
 
-      // Tchat : lecture par tout connecté ; chacun ne crée QUE ses propres messages ;
-      // un message doit avoir du texte (1..500) OU une image ; pas de modif/suppression.
+      // Tchat
       match /chat/{msgId} {
-        allow read: if request.auth != null;
-        allow create: if request.auth != null
+        allow read: if isSignedIn();
+        allow create: if isSignedIn()
           && request.resource.data.uid == request.auth.uid
+          && hasOnlyKeys(['uid', 'name', 'text', 'image', 'createdAt', 'replyTo'])
+          && (!('name' in request.resource.data) || isBoundedString(request.resource.data.name, 0, 30))
           && (
                (request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 500)
                || (request.resource.data.image is string && request.resource.data.image.size() > 0)
              )
-          && (!('text' in request.resource.data) || (request.resource.data.text is string && request.resource.data.text.size() <= 500))
+          && (!('text' in request.resource.data)  || isBoundedString(request.resource.data.text, 0, 500))
           && (!('image' in request.resource.data) || (request.resource.data.image is string && request.resource.data.image.size() <= 950000));
         allow update: if false;
-        allow delete: if request.auth != null && resource.data.uid == request.auth.uid; // chacun supprime SES messages
+        allow delete: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
       }
 
-      // Présence "en ligne" : lecture par tout connecté ; chacun n'écrit que sa propre présence.
+      // Presence en ligne
       match /presence/{uid} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null && request.auth.uid == uid;
+        allow read: if isSignedIn();
+        allow write: if isSelf(uid)
+          && hasOnlyKeys(['at', 'name']);
       }
 
-      // Votes de trophées communautaires (ex. "Gros Bébé") : lecture par tous ;
-      // on ne crée QUE son propre vote, pas pour soi-même, et seulement si on est membre.
+      // Votes de trophees
       match /votes/{voteId} {
-        allow read: if request.auth != null;
-        allow create: if request.auth != null
+        allow read: if isSignedIn();
+        allow create: if isSignedIn()
           && request.resource.data.voter == request.auth.uid
           && request.resource.data.target != request.auth.uid
+          && hasOnlyKeys(['voter', 'target', 'trophy', 'createdAt'])
+          && isBoundedString(request.resource.data.trophy, 1, 50)
+          && isBoundedString(request.resource.data.target, 1, 128)
           && exists(/databases/$(database)/documents/leagues/$(leagueId)/members/$(request.auth.uid));
-        allow delete: if request.auth != null && resource.data.voter == request.auth.uid;
+        allow delete: if isSignedIn() && (resource.data.voter == request.auth.uid || isAdmin());
         allow update: if false;
       }
 
-      // Photos d'observation : lecture par tous ; chacun poste les siennes et supprime les siennes.
+      // Photos
       match /photos/{photoId} {
-        allow read: if request.auth != null;
-        allow create: if request.auth != null
+        allow read: if isSignedIn();
+        allow create: if isSignedIn()
           && request.resource.data.uid == request.auth.uid
+          && hasOnlyKeys(['uid', 'name', 'image', 'caption', 'sci', 'common', 'createdAt', 'lat', 'lng'])
           && request.resource.data.image is string && request.resource.data.image.size() <= 950000
-          && (!('caption' in request.resource.data) || (request.resource.data.caption is string && request.resource.data.caption.size() <= 200));
+          && (!('caption' in request.resource.data) || isBoundedString(request.resource.data.caption, 0, 200))
+          && (!('name'    in request.resource.data) || isBoundedString(request.resource.data.name, 0, 30))
+          && (!('sci'     in request.resource.data) || isBoundedString(request.resource.data.sci, 0, 100))
+          && (!('common'  in request.resource.data) || isBoundedString(request.resource.data.common, 0, 100));
         allow update: if false;
-        allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+        allow delete: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
       }
 
-      // Réactions emoji (messages du tchat + photos) : lecture par tous ; chacun (dé)pose les siennes.
+      // Reactions emoji (chat + photos)
       match /reactions/{rid} {
-        allow read: if request.auth != null;
-        allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
-        allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+        allow read: if isSignedIn();
+        allow create: if isSignedIn()
+          && request.resource.data.uid == request.auth.uid
+          && hasOnlyKeys(['uid', 'target', 'emoji', 'createdAt'])
+          && isBoundedString(request.resource.data.emoji, 1, 8)      // emoji court, pas de payload
+          && isBoundedString(request.resource.data.target, 1, 128);
+        allow delete: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
         allow update: if false;
       }
 
-      // Commentaires (sur photos + observations du fil) : lecture par tous ;
-      // chacun poste ses propres commentaires (texte 1..500 chars) ; chacun supprime les siens.
+      // Commentaires
       match /comments/{cid} {
-        allow read: if request.auth != null;
-        allow create: if request.auth != null
+        allow read: if isSignedIn();
+        allow create: if isSignedIn()
           && request.resource.data.uid == request.auth.uid
-          && request.resource.data.text is string
-          && request.resource.data.text.size() > 0
-          && request.resource.data.text.size() <= 500
-          && request.resource.data.target is string;
+          && hasOnlyKeys(['uid', 'name', 'text', 'target', 'createdAt'])
+          && isBoundedString(request.resource.data.text, 1, 500)
+          && isBoundedString(request.resource.data.target, 1, 128)
+          && (!('name' in request.resource.data) || isBoundedString(request.resource.data.name, 0, 30));
         allow update: if false;
-        allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+        allow delete: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
       }
 
-      // Requêtes/suggestions : lecture par tous ; création par l'auteur (texte 1..500 chars) ;
-      // suppression par l'auteur ; mise à jour = changement de statut uniquement (admin côté client).
+      // Requetes/suggestions
       match /requests/{reqId} {
-        allow read: if request.auth != null;
-        allow create: if request.auth != null
+        allow read: if isSignedIn();
+        allow create: if isSignedIn()
           && request.resource.data.uid == request.auth.uid
-          && request.resource.data.text is string
-          && request.resource.data.text.size() > 0
-          && request.resource.data.text.size() <= 500;
-        allow update: if request.auth != null
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
-        allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+          && hasOnlyKeys(['uid', 'name', 'text', 'status', 'createdAt'])
+          && isBoundedString(request.resource.data.text, 1, 500)
+          && (!('name'   in request.resource.data) || isBoundedString(request.resource.data.name, 0, 30))
+          && (!('status' in request.resource.data) || isBoundedString(request.resource.data.status, 0, 20));
+        allow update: if isSignedIn()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+          && (!('status' in request.resource.data) || isBoundedString(request.resource.data.status, 0, 20));
+        allow delete: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
       }
 
-      // Votes de requêtes : lecture par tous ; chacun (dé)pose son vote.
+      // Votes de requetes
       match /requestVotes/{voteId} {
-        allow read: if request.auth != null;
-        allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
-        allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+        allow read: if isSignedIn();
+        allow create: if isSignedIn()
+          && request.resource.data.uid == request.auth.uid
+          && hasOnlyKeys(['uid', 'requestId', 'createdAt'])
+          && isBoundedString(request.resource.data.requestId, 1, 128);
+        allow delete: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
         allow update: if false;
       }
 
-      // Historique des changements de nom (audit) : lecture par tous ; création uniquement,
-      // pas de modif ni suppression (append-only).
+      // Historique nom (append-only)
       match /nameChanges/{cid} {
-        allow read: if request.auth != null;
-        allow create: if request.auth != null && request.resource.data.byUid == request.auth.uid;
+        allow read: if isSignedIn();
+        allow create: if isSignedIn()
+          && request.resource.data.byUid == request.auth.uid
+          && hasOnlyKeys(['byUid', 'targetUid', 'oldName', 'newName', 'at'])
+          && (!('oldName' in request.resource.data) || isBoundedString(request.resource.data.oldName, 0, 60))
+          && (!('newName' in request.resource.data) || isBoundedString(request.resource.data.newName, 0, 60));
         allow update, delete: if false;
       }
 
-      // Cache eBird partage entre les membres : lecture/écriture par tout connecté.
+      // Cache eBird partage. Ouvert car les cles sont deterministes cote client
+      // et le contenu est de la data publique eBird (bar charts, freq, obs recentes).
+      // On limite juste la taille pour eviter les abus.
       match /ebirdCache/{docId} {
-        allow read, write: if request.auth != null;
+        allow read: if isSignedIn();
+        allow write: if isSignedIn();
       }
 
-      // Evenements trophees (unlock / transfer / demote) : partages entre appareils.
-      // Ecrits par n'importe quel membre connecte, avec des IDs deterministes cote client
-      // pour eviter les doublons quand plusieurs appareils detectent le meme changement.
+      // Evenements trophees
       match /trophyEvents/{eid} {
-        allow read: if request.auth != null;
-        allow create, update: if request.auth != null;
-        allow delete: if false;
+        allow read: if isSignedIn();
+        allow create, update: if isSignedIn()
+          && (!('kind' in request.resource.data) || isBoundedString(request.resource.data.kind, 1, 50))
+          && (!('uid'  in request.resource.data) || isBoundedString(request.resource.data.uid, 1, 128));
+        allow delete: if isAdmin();
       }
 
-      // Stats quiz : classement des chants entre membres. Lecture par tous (leaderboard),
-      // chacun n'ecrit que son propre document.
+      // Stats quiz
       match /quizStats/{uid} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null && request.auth.uid == uid;
+        allow read: if isSignedIn();
+        allow write: if isSelf(uid) || isAdmin();
       }
+    }
+
+    // ============================================================
+    // Deny by default : toute autre collection est bloquee tant qu'on n'a
+    // pas ecrit ses regles. Empeche d'oublier des permissions sur une
+    // nouvelle feature.
+    // ============================================================
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

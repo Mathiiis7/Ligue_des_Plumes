@@ -1,0 +1,54 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper : est-ce que l'utilisateur est connecte
+    function isSignedIn() { return request.auth != null; }
+    // Path type : /leagues/{lg}/photos/{uid}/... -> l'user ne peut ecrire que dans son propre uid
+    function isSelf(uid) { return isSignedIn() && request.auth.uid == uid; }
+    // Verifie que le fichier est une image raisonnable
+    function isValidImage() {
+      return request.resource != null
+        && request.resource.size < 5 * 1024 * 1024                 // max 5 MB
+        && request.resource.contentType.matches('image/.*');       // JPEG, PNG, WebP, GIF, HEIC...
+    }
+
+    // ============================================================
+    // Photos d'observation : /leagues/{lg}/photos/{uid}/{filename}
+    // Lecture publique (auth requis), ecriture par le proprietaire.
+    // ============================================================
+    match /leagues/{leagueId}/photos/{uid}/{fileName} {
+      allow read: if isSignedIn();
+      allow create: if isSelf(uid) && isValidImage();
+      allow update: if false;
+      allow delete: if isSelf(uid);
+    }
+
+    // ============================================================
+    // Photos profil / avatars : /users/{uid}/avatar/{filename}
+    // ============================================================
+    match /users/{uid}/avatar/{fileName} {
+      allow read: if isSignedIn();
+      allow create, update: if isSelf(uid) && isValidImage();
+      allow delete: if isSelf(uid);
+    }
+
+    // ============================================================
+    // Images tchat (si upload) : /leagues/{lg}/chat/{uid}/{filename}
+    // ============================================================
+    match /leagues/{leagueId}/chat/{uid}/{fileName} {
+      allow read: if isSignedIn();
+      allow create: if isSelf(uid) && isValidImage();
+      allow update: if false;
+      allow delete: if isSelf(uid);
+    }
+
+    // ============================================================
+    // Deny by default : tout autre path est bloque. Empeche d'uploader
+    // n'importe ou dans le bucket (ex. path traversal, files divers).
+    // ============================================================
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
