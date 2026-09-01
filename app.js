@@ -10587,13 +10587,41 @@ async function _renderMegaRareAlerts(){
       if(d === 1) return 'hier';
       return `il y a ${d}j`;
     };
+    // Helper : identifie le departement FR depuis lat/lng (bbox match dans FR_DEPTS)
+    const deptFromLatLng = (lat, lng) => {
+      if(typeof FR_DEPTS === 'undefined' || lat == null || lng == null) return null;
+      for(const [code, name, , latMin, latMax, lonMin, lonMax] of FR_DEPTS){
+        if(lat >= latMin && lat <= latMax && lng >= lonMin && lng <= lonMax){
+          return { code, name };
+        }
+      }
+      return null;
+    };
+    // Detecte les locName "inutiles" : coords brutes, "FR, sélection auto", empty
+    const isJunkLocName = s => {
+      if(!s) return true;
+      if(/^-?\d+[,.]?\d*\s*[,;]\s*-?\d+[,.]?\d*/.test(s.trim())) return true;   // coords brutes
+      if(/s.lection auto/i.test(s)) return true;
+      return false;
+    };
     const rows = sorted.slice(0, 10).map(o => {
       const sciLower = (o.sciName || '').toLowerCase();
       const nm = frName(sciLower, o.comName);
       const iOwn = meSp.has(sciLower) || meSp.has(sciLower.replace(/\s+/g, ' '));
       const own = iOwn ? '<span style="background:#2d7a3f; color:white; padding:1px 6px; border-radius:3px; font-size:10px; font-weight:600; margin-left:6px;">déjà cochée</span>' : '';
       const tierBadge = `<span style="background:#a02121; color:white; padding:1px 6px; border-radius:3px; font-size:10px; font-weight:600;">tier ${o._tier}</span>`;
-      const locHtml = o.locName ? `<span style="color:var(--ink-3);">${esc(o.locName)}</span>` : '';
+      // Localisation : combine locName utile + dept depuis lat/lng
+      const dept = deptFromLatLng(o.lat, o.lng);
+      const deptTxt = dept ? `${dept.name} (${dept.code})` : '';
+      let locTxt;
+      if(!isJunkLocName(o.locName)){
+        // locName utile + dept en secondaire
+        locTxt = deptTxt ? `${o.locName} · <span style="opacity:.7;">${deptTxt}</span>` : o.locName;
+      } else {
+        // locName inutile, fallback sur dept, sinon "Lieu inconnu"
+        locTxt = deptTxt || 'Lieu inconnu (coordonnées privées)';
+      }
+      const locHtml = `<span style="color:var(--ink-3);">📍 ${esc(locTxt)}</span>`;
       const countHtml = o._count > 1 ? `<span style="color:var(--ink-3); font-size:11px;"> · ${o._count} signalements</span>` : '';
       return `
         <div class="mr-card sp-link" data-sci="${esc(sciLower)}" style="padding:10px 14px; background:var(--surface); border:1px solid var(--line); border-left:3px solid #a02121; border-radius:6px; margin-bottom:6px; cursor:pointer; transition:background .15s;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background='var(--surface)'">
