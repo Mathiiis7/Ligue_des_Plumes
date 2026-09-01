@@ -7576,27 +7576,23 @@ async function _renderSpeciesRangeCard(sci){
   // Attend que le DOM ait fini de se rendre (clientHeight non-zero) avant d'init Leaflet.
   requestAnimationFrame(() => {
     if(!mapEl.clientHeight) { setTimeout(() => _renderSpeciesRangeCard(sci), 100); return; }
-    // maxBounds = limites de la donnee (PNG overlay) : l'user ne peut pas paner
-    // dans le vide au-dela. viscosity 1.0 = mur dur.
+    // Vue par defaut : zoom sur la data. L'user peut dezoomer jusqu'au monde entier
+    // (pas de lock minZoom) pour voir le contexte, et paner dans le monde entier.
     const dataBounds = L.latLngBounds([[s, w], [n, e]]);
+    const worldBounds = L.latLngBounds([[-60, -180], [85, 180]]);
     _rangeMapInstance = L.map(mapEl, {
-      zoomControl:true, maxBounds:dataBounds, maxBoundsViscosity:1.0,
-      worldCopyJump:false, attributionControl:true
+      zoomControl:true, maxBounds:worldBounds, maxBoundsViscosity:1.0,
+      worldCopyJump:false, attributionControl:true, minZoom:1
     });
     // OSM standard + filtre CSS grayscale scope sur .sm-range-map.
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution:'© OpenStreetMap', maxZoom:12, noWrap:true
     }).addTo(_rangeMapInstance);
     L.imageOverlay(pngPath, dataBounds, { opacity:0.75, interactive:false }).addTo(_rangeMapInstance);
-    // Calcule le zoom min = celui qui fait tenir exactement le bbox dans le container
-    // (pas de zone grise vide autour). Applique ce plancher pour empecher de dezoomer
-    // plus loin.
     _rangeMapInstance.fitBounds(dataBounds);
     setTimeout(() => {
       if(!_rangeMapInstance) return;
       _rangeMapInstance.invalidateSize();
-      const fitZoom = _rangeMapInstance.getBoundsZoom(dataBounds, true);
-      _rangeMapInstance.setMinZoom(fitZoom);
       _rangeMapInstance.fitBounds(dataBounds);
     }, 200);
   });
@@ -7665,12 +7661,13 @@ async function _renderSpeciesMigrationCard(sci){
   const playBtn = box.querySelector('#smMigPlay');
   requestAnimationFrame(() => {
     if(!mapEl.clientHeight) { setTimeout(() => _renderSpeciesMigrationCard(sci), 100); return; }
-    // Meme comportement que la range map annuelle : verrouille au bbox adaptatif
-    // de l'espece (pas de zone grise vide autour, pas de dezoom en dessous du fit).
+    // Vue par defaut : zoom sur bbox espece, mais l'user peut dezoomer jusqu'au
+    // monde entier via molette (aucun lock du minZoom).
     const dataBounds = L.latLngBounds([[s, w], [n, e]]);
+    const worldBounds = L.latLngBounds([[-60, -180], [85, 180]]);
     _migrationMapInstance = L.map(mapEl, {
-      zoomControl:true, maxBounds:dataBounds, maxBoundsViscosity:1.0,
-      worldCopyJump:false, attributionControl:true
+      zoomControl:true, maxBounds:worldBounds, maxBoundsViscosity:1.0,
+      worldCopyJump:false, attributionControl:true, minZoom:1
     });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution:'© OpenStreetMap', maxZoom:12, noWrap:true
@@ -7679,8 +7676,6 @@ async function _renderSpeciesMigrationCard(sci){
     setTimeout(() => {
       if(!_migrationMapInstance) return;
       _migrationMapInstance.invalidateSize();
-      const fitZoom = _migrationMapInstance.getBoundsZoom(dataBounds, true);
-      _migrationMapInstance.setMinZoom(fitZoom);
       _migrationMapInstance.fitBounds(dataBounds);
     }, 200);
 
