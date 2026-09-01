@@ -7730,7 +7730,7 @@ async function _renderSpeciesRangeCard(sci){
   const idx = await _loadRangeIndex();
   const entry = idx[(sci || '').toLowerCase().trim()];
   if(!entry || !entry.code) return;
-  const pngPath = `data/range/${entry.code}.png?v=20260830`;
+  const pngPath = `${WEEKLY_DATA_BASE}/range/${entry.code}.png?v=20260902`;
   const [w, s, e, n] = (entry.bbox || [-180, -60, 180, 85]);
   const mapId = 'smRangeMap';
   box.innerHTML = `
