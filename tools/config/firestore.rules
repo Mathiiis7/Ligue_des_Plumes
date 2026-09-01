@@ -3,31 +3,34 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ============================================================
-    // Helper functions
+    // Helpers
     // ============================================================
     function isSignedIn() { return request.auth != null; }
     function isSelf(uid) { return isSignedIn() && request.auth.uid == uid; }
-    // Admin dynamique : lookup dans /admins/{uid} au lieu de UID hardcode.
-    // Permet d'ajouter/retirer des admins via Firebase console sans redeploy.
     function isAdmin() {
       return isSignedIn() &&
         exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
-    // Verifie qu'un champ (path) est bien une string dans les limites [min,max]
+    function isMember(leagueId) {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/leagues/$(leagueId)/members/$(request.auth.uid));
+    }
     function isBoundedString(field, min, max) {
       return field is string && field.size() >= min && field.size() <= max;
     }
-    // Verifie que la resource ne contient QUE les cles autorisees (empeche d'injecter
-    // des champs pirates comme "isAdmin=true" ou "score=99999")
     function hasOnlyKeys(allowed) {
       return request.resource.data.keys().hasOnly(allowed);
     }
+    // Verifie qu'un membre existe depuis N jours (anti-manipulation votes/trophees).
+    // Grandfathered : si joinedAt manque (vieux membres pre-refonte), autorise sans check.
+    function memberOlderThan(leagueId, uid, days) {
+      let m = get(/databases/$(database)/documents/leagues/$(leagueId)/members/$(uid)).data;
+      return exists(/databases/$(database)/documents/leagues/$(leagueId)/members/$(uid))
+        && (!('joinedAt' in m) || m.joinedAt < request.time - duration.value(days, 'd'));
+    }
 
     // ============================================================
-    // /admins/{uid} : collection des admins
-    // Doc vide, l'UID dans le path suffit. Lecture publique (pour que le
-    // client sache si l'user courant est admin). Ecriture uniquement via
-    // Firebase console (pas depuis l'app).
+    // /admins/{uid} : lecture publique (client verifie si user est admin)
     // ============================================================
     match /admins/{uid} {
       allow read: if isSignedIn();
@@ -39,24 +42,32 @@ service cloud.firestore {
     // ============================================================
     match /leagues/{leagueId} {
 
-      // Doc racine de la ligue (goalHeader, intitules, etc.)
-      // Champs autorises + limites de taille pour eviter les injections.
+      // Doc racine : lisible par signed-in (necessaire pour boot). Ecriture admin only.
       allow read: if isSignedIn();
-      allow write: if isSignedIn()
+      allow write: if isAdmin()
         && hasOnlyKeys(['goalHeader', 'name', 'createdAt', 'updatedAt'])
         && (!('goalHeader' in request.resource.data) || isBoundedString(request.resource.data.goalHeader, 0, 200))
         && (!('name' in request.resource.data)       || isBoundedString(request.resource.data.name, 0, 100));
 
-      // Membres : chacun ecrit sa fiche, les admins peuvent tout modifier.
+      // ------------------------------------------------------------
+      // MEMBRES : accessible aux signed-in pour permettre le check "suis-je membre".
+      // - Ecriture : chacun sa fiche (upload lifelist), admins peuvent tout.
+      // - Lecture : tous les signed-in (car chacun doit pouvoir lire les autres membres
+      //   apres son inscription, ET checker sa propre membership avant inscription).
+      // ------------------------------------------------------------
       match /members/{memberId} {
         allow read: if isSignedIn();
         allow write: if isSelf(memberId) || isAdmin();
       }
 
-      // Tchat
+      // ============================================================
+      // COLLECTIONS MEMBRES-ONLY : lecture ET ecriture reservees aux membres.
+      // Un anon (juste signed-in mais pas inscrit) ne peut RIEN voir ici.
+      // ============================================================
+
       match /chat/{msgId} {
-        allow read: if isSignedIn();
-        allow create: if isSignedIn()
+        allow read: if isMember(leagueId) || isAdmin();
+        allow create: if isMember(leagueId)
           && request.resource.data.uid == request.auth.uid
           && hasOnlyKeys(['uid', 'name', 'text', 'image', 'createdAt', 'replyTo'])
           && (!('name' in request.resource.data) || isBoundedString(request.resource.data.name, 0, 30))
@@ -67,34 +78,32 @@ service cloud.firestore {
           && (!('text' in request.resource.data)  || isBoundedString(request.resource.data.text, 0, 500))
           && (!('image' in request.resource.data) || (request.resource.data.image is string && request.resource.data.image.size() <= 950000));
         allow update: if false;
-        allow delete: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+        allow delete: if isMember(leagueId) && (resource.data.uid == request.auth.uid || isAdmin());
       }
 
-      // Presence en ligne
       match /presence/{uid} {
-        allow read: if isSignedIn();
-        allow write: if isSelf(uid)
+        allow read: if isMember(leagueId) || isAdmin();
+        allow write: if isSelf(uid) && isMember(leagueId)
           && hasOnlyKeys(['at', 'name']);
       }
 
-      // Votes de trophees
+      // Votes trophees : requiert membre >= 7 jours (anti-manipulation coup rapide)
       match /votes/{voteId} {
-        allow read: if isSignedIn();
-        allow create: if isSignedIn()
+        allow read: if isMember(leagueId) || isAdmin();
+        allow create: if isMember(leagueId)
+          && memberOlderThan(leagueId, request.auth.uid, 7)
           && request.resource.data.voter == request.auth.uid
           && request.resource.data.target != request.auth.uid
           && hasOnlyKeys(['voter', 'target', 'trophy', 'createdAt'])
           && isBoundedString(request.resource.data.trophy, 1, 50)
-          && isBoundedString(request.resource.data.target, 1, 128)
-          && exists(/databases/$(database)/documents/leagues/$(leagueId)/members/$(request.auth.uid));
-        allow delete: if isSignedIn() && (resource.data.voter == request.auth.uid || isAdmin());
+          && isBoundedString(request.resource.data.target, 1, 128);
+        allow delete: if isMember(leagueId) && (resource.data.voter == request.auth.uid || isAdmin());
         allow update: if false;
       }
 
-      // Photos
       match /photos/{photoId} {
-        allow read: if isSignedIn();
-        allow create: if isSignedIn()
+        allow read: if isMember(leagueId) || isAdmin();
+        allow create: if isMember(leagueId)
           && request.resource.data.uid == request.auth.uid
           && hasOnlyKeys(['uid', 'name', 'image', 'caption', 'sci', 'common', 'createdAt', 'lat', 'lng'])
           && request.resource.data.image is string && request.resource.data.image.size() <= 950000
@@ -103,64 +112,59 @@ service cloud.firestore {
           && (!('sci'     in request.resource.data) || isBoundedString(request.resource.data.sci, 0, 100))
           && (!('common'  in request.resource.data) || isBoundedString(request.resource.data.common, 0, 100));
         allow update: if false;
-        allow delete: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+        allow delete: if isMember(leagueId) && (resource.data.uid == request.auth.uid || isAdmin());
       }
 
-      // Reactions emoji (chat + photos)
       match /reactions/{rid} {
-        allow read: if isSignedIn();
-        allow create: if isSignedIn()
+        allow read: if isMember(leagueId) || isAdmin();
+        allow create: if isMember(leagueId)
           && request.resource.data.uid == request.auth.uid
           && hasOnlyKeys(['uid', 'target', 'emoji', 'createdAt'])
-          && isBoundedString(request.resource.data.emoji, 1, 8)      // emoji court, pas de payload
+          && isBoundedString(request.resource.data.emoji, 1, 8)
           && isBoundedString(request.resource.data.target, 1, 128);
-        allow delete: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+        allow delete: if isMember(leagueId) && (resource.data.uid == request.auth.uid || isAdmin());
         allow update: if false;
       }
 
-      // Commentaires
       match /comments/{cid} {
-        allow read: if isSignedIn();
-        allow create: if isSignedIn()
+        allow read: if isMember(leagueId) || isAdmin();
+        allow create: if isMember(leagueId)
           && request.resource.data.uid == request.auth.uid
           && hasOnlyKeys(['uid', 'name', 'text', 'target', 'createdAt'])
           && isBoundedString(request.resource.data.text, 1, 500)
           && isBoundedString(request.resource.data.target, 1, 128)
           && (!('name' in request.resource.data) || isBoundedString(request.resource.data.name, 0, 30));
         allow update: if false;
-        allow delete: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+        allow delete: if isMember(leagueId) && (resource.data.uid == request.auth.uid || isAdmin());
       }
 
-      // Requetes/suggestions
       match /requests/{reqId} {
-        allow read: if isSignedIn();
-        allow create: if isSignedIn()
+        allow read: if isMember(leagueId) || isAdmin();
+        allow create: if isMember(leagueId)
           && request.resource.data.uid == request.auth.uid
           && hasOnlyKeys(['uid', 'name', 'text', 'status', 'createdAt'])
           && isBoundedString(request.resource.data.text, 1, 500)
           && (!('name'   in request.resource.data) || isBoundedString(request.resource.data.name, 0, 30))
           && (!('status' in request.resource.data) || isBoundedString(request.resource.data.status, 0, 20));
-        allow update: if isSignedIn()
+        allow update: if isMember(leagueId)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
           && (!('status' in request.resource.data) || isBoundedString(request.resource.data.status, 0, 20));
-        allow delete: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+        allow delete: if isMember(leagueId) && (resource.data.uid == request.auth.uid || isAdmin());
       }
 
-      // Votes de requetes
       match /requestVotes/{voteId} {
-        allow read: if isSignedIn();
-        allow create: if isSignedIn()
+        allow read: if isMember(leagueId) || isAdmin();
+        allow create: if isMember(leagueId)
           && request.resource.data.uid == request.auth.uid
           && hasOnlyKeys(['uid', 'requestId', 'createdAt'])
           && isBoundedString(request.resource.data.requestId, 1, 128);
-        allow delete: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+        allow delete: if isMember(leagueId) && (resource.data.uid == request.auth.uid || isAdmin());
         allow update: if false;
       }
 
-      // Historique nom (append-only)
       match /nameChanges/{cid} {
-        allow read: if isSignedIn();
-        allow create: if isSignedIn()
+        allow read: if isMember(leagueId) || isAdmin();
+        allow create: if isMember(leagueId)
           && request.resource.data.byUid == request.auth.uid
           && hasOnlyKeys(['byUid', 'targetUid', 'oldName', 'newName', 'at'])
           && (!('oldName' in request.resource.data) || isBoundedString(request.resource.data.oldName, 0, 60))
@@ -168,24 +172,17 @@ service cloud.firestore {
         allow update, delete: if false;
       }
 
-      // Cache eBird partage. Cles deterministes cote client (URL hash < 200 chars),
-      // contenu = data publique eBird (bar charts, freq, obs recentes).
-      // Restrictions : 3 champs uniquement, url string < 500, json string < 100 KB.
       match /ebirdCache/{docId} {
-        allow read: if isSignedIn();
-        allow write: if isSignedIn()
+        allow read: if isMember(leagueId) || isAdmin();
+        allow write: if isMember(leagueId)
           && hasOnlyKeys(['url', 'json', 'updatedAt'])
           && isBoundedString(request.resource.data.url, 1, 500)
           && isBoundedString(request.resource.data.json, 0, 100000);
       }
 
-      // Evenements trophees. Shape possible :
-      //   unlock  : { kind, uid, name, trophyName, at }
-      //   transfer: { kind, uid, name, fromUid, fromName, trophyName, at }
-      //   demote  : { kind, uid, name, fromTrophy, toTrophy, at }
       match /trophyEvents/{eid} {
-        allow read: if isSignedIn();
-        allow create, update: if isSignedIn()
+        allow read: if isMember(leagueId) || isAdmin();
+        allow create, update: if isMember(leagueId)
           && hasOnlyKeys(['kind', 'uid', 'name', 'trophyName', 'fromUid', 'fromName', 'fromTrophy', 'toTrophy', 'at'])
           && isBoundedString(request.resource.data.kind, 1, 30)
           && isBoundedString(request.resource.data.uid, 1, 128)
@@ -198,17 +195,14 @@ service cloud.firestore {
         allow delete: if isAdmin();
       }
 
-      // Stats quiz
       match /quizStats/{uid} {
-        allow read: if isSignedIn();
-        allow write: if isSelf(uid) || isAdmin();
+        allow read: if isMember(leagueId) || isAdmin();
+        allow write: if isSelf(uid) && isMember(leagueId);
       }
     }
 
     // ============================================================
-    // Deny by default : toute autre collection est bloquee tant qu'on n'a
-    // pas ecrit ses regles. Empeche d'oublier des permissions sur une
-    // nouvelle feature.
+    // Deny-by-default catch-all
     // ============================================================
     match /{document=**} {
       allow read, write: if false;
