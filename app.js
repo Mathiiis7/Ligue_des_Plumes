@@ -11294,6 +11294,32 @@ const CONFUSION_GROUPS = {
   chanteurs_forestiers: ['sturnus vulgaris','pastor roseus','oriolus oriolus'],
   // Faisans, perdrix, cailles (Phasianidae) : cris de contact/reproduction
   galliformes: ['phasianus colchicus','perdix perdix','alectoris rufa','coturnix coturnix','lyrurus tetrix','tetrao urogallus','lagopus muta','tetrastes bonasia'],
+  // Aigles et grands vautours (Accipitridae grands) : cris planeurs distincts
+  aigles_vautours: ['aquila chrysaetos','aquila fasciata','aquila heliaca','aquila adalberti','aquila nipalensis','clanga clanga','clanga pomarina','circaetus gallicus','hieraaetus pennatus','aegypius monachus','gyps fulvus','gyps rueppelli','gypaetus barbatus','neophron percnopterus','haliaeetus albicilla','pandion haliaetus'],
+  // Faucons (Falconidae) : cris aigus proches, distincts des Accipitridae
+  faucons: ['falco tinnunculus','falco naumanni','falco subbuteo','falco peregrinus','falco columbarius','falco cherrug','falco eleonorae','falco vespertinus','falco biarmicus','falco jugger'],
+  // Oies (Anser + Branta) : cris de contact grégaires
+  oies: ['anser anser','anser albifrons','anser fabalis','anser brachyrhynchus','anser erythropus','anser serrirostris','anser caerulescens','anser indicus','anser cygnoides','branta bernicla','branta canadensis','branta leucopsis','branta ruficollis'],
+  // Cygnes (Cygnus) : trompettes graves proches
+  cygnes: ['cygnus olor','cygnus cygnus','cygnus columbianus','cygnus atratus','cygnus melancoryphus'],
+  // Sarcelles + petits canards (subset canards_surface, discrimination fine)
+  sarcelles: ['anas crecca','anas carolinensis','spatula querquedula','spatula discors','marmaronetta angustirostris','netta rufina'],
+  // Puffins, pétrels, océanites (Procellariiformes) : marins, cris pélagiques
+  procellariides: ['calonectris diomedea','calonectris borealis','puffinus puffinus','puffinus yelkouan','puffinus mauretanicus','puffinus baroli','ardenna gravis','ardenna grisea','hydrobates pelagicus','hydrobates leucorhous','hydrobates castro','pterodroma feae','fulmarus glacialis'],
+  // Cormorans (Phalacrocoracidae) : silhouette + cris rauques colonies
+  cormorans: ['phalacrocorax carbo','phalacrocorax aristotelis','gulosus aristotelis','microcarbo pygmaeus'],
+  // Guepiers, rolliers, martins-pêcheurs, huppes (passereaux colorés à cris flûtés)
+  colores_flutes: ['merops apiaster','merops persicus','coracias garrulus','alcedo atthis','upupa epops','megaceryle alcyon'],
+  // Bécassines et bécasse (Scolopacidae longs becs) : cris nasillards distincts
+  becassines: ['gallinago gallinago','gallinago media','scolopax rusticola','lymnocryptes minimus','limnodromus scolopaceus'],
+  // Chevaliers (Tringa) : cris de vol tres proches, discrimination fine
+  chevaliers: ['tringa totanus','tringa erythropus','tringa nebularia','tringa ochropus','tringa glareola','tringa stagnatilis','tringa flavipes','actitis hypoleucos','xenus cinereus'],
+  // Bécasseaux (Calidris) : cris de vol proches, difficulté classique
+  becasseaux: ['calidris alpina','calidris minuta','calidris ferruginea','calidris canutus','calidris pugnax','calidris temminckii','calidris alba','calidris maritima','calidris melanotos','calidris subruficollis','calidris falcinellus'],
+  // Labbes (Stercorariidae) : cris pélagiques, silhouette proche
+  labbes: ['stercorarius parasiticus','stercorarius pomarinus','stercorarius longicaudus','stercorarius skua','stercorarius maccormicki'],
+  // Cigognes, spatules, ibis (grands echassiers cous longs)
+  ciconies_ibis: ['ciconia ciconia','ciconia nigra','platalea leucorodia','plegadis falcinellus','geronticus eremita','threskiornis aethiopicus'],
 };
 // Index inverse : sci -> liste de groupes auxquels appartient l'espece
 const _confusionIndex = (() => {

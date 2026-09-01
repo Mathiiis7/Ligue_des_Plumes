@@ -18,6 +18,14 @@ tools/ebirdst-target-codes.txt
 *.log
 Thumbs.db
 .DS_Store
+
+# Firebase Admin SDK service account key (SECRET, ne JAMAIS pusher)
+tools/config/firebase-admin-key.json
+# Backups Firestore locaux (peuvent contenir des data perso RGPD)
+tools/backups/
+# npm
+node_modules/
+package-lock.json
 node_modules/
 
 # Caches et fichiers intermediaires jamais lus par le site
