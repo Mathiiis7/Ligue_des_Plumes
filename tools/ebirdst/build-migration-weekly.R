@@ -8,13 +8,15 @@
 #   data/range-weekly-index.json              Manifest { sci: {code, w, h, bbox, weeks:[]} }
 #
 # Optimisations appliquees (empilees, max compression sans perte visuelle) :
-# - PNG_W = 350 (bbox etendu Cape Town -> hauteur +30%, budget pixels conserve)
+# - PNG_W = 350, PNG_H calcule par espece via bbox adaptatif (gain -40pct vs fixe)
+# - BBOX adaptatif : trim des bords transparents + padding 2 degres + filtre p1
+#   -> chaque espece a un bbox pile a son aire de repartition, pas de vide inutile
 # - Skip semaines vides : aucune donnee ce week -> pas de fichier (allege ~15-30%)
 # - Quantize 128 couleurs (100 palette + variantes alpha) via magick
 # - PNG-8 indexed + oxipng lossless : le meilleur ratio mesure sur ce type d'image
 #   (WebP lossy testee mais PIRE que PNG-8 pour heatmap avec grosses zones alpha)
 # - Skip complet des especes deja traitees (via manifest)
-# Cible : ~1000-1200 KB par espece = ~300-360 MB total pour 304 sp
+# Cible : ~600-1000 KB par espece = ~180-300 MB total pour 304 sp
 #
 # Normalisation percentile GLOBALE sur les 52 weeks (cle du signal migration :
 # semaines vides restent vides, pics d'abondance sont rouges).
@@ -68,10 +70,10 @@ mode <- if (length(args) >= 1) tolower(args[1]) else "all"
 single_code <- if (mode == "sp" && length(args) >= 2) args[2] else NULL
 FORCE_REBUILD <- mode == "rebuild"
 
-# Europe + Afrique COMPLETE (jusqu'a Cape Town au sud) : couvre l'aire de migration
-# integrale des migrateurs FR long-distance (Hirondelles, Cigognes, Fauvettes...) qui
-# hivernent jusqu'en Afrique australe. Etendue verticale +30% vs Sahel-only.
-BBOX <- c(-20, -35, 50, 72)
+# BBOX ADAPTATIF par espece calcule dans la boucle (voir "BBOX adaptatif par espece"
+# plus bas). Ce fallback est utilise seulement pour le mode demo/sp au cas ou le
+# trim echoue. En pratique jamais utilise.
+BBOX <- c(-25, -35, 55, 75)
 
 # Codes Cornell des migrateurs FR classiques pour le mode demo
 DEMO_CODES <- c(
@@ -82,20 +84,10 @@ DEMO_CODES <- c(
   "eurhoo"      # Huppe fasciee - Eurasian Hoopoe
 )
 
-# Dimensions PNG : aspect Mercator bbox Europe. PNG_W reduit pour anim.
-suppressWarnings({
-  bbox_ll_tmp <- terra::ext(BBOX[1], BBOX[3], BBOX[2], BBOX[4])
-  bbox_merc_tmp <- terra::project(terra::as.polygons(bbox_ll_tmp, crs = "EPSG:4326"), "EPSG:3857")
-  e_merc_tmp <- terra::ext(bbox_merc_tmp)
-})
-merc_w <- e_merc_tmp$xmax - e_merc_tmp$xmin
-merc_h <- e_merc_tmp$ymax - e_merc_tmp$ymin
-merc_aspect <- as.numeric(merc_w / merc_h)
-# 350 au lieu de 400 pour compenser l'extension verticale du bbox (Cape Town = +30% hauteur).
-# Budget pixels total conserve, poids par frame equivalent.
+# Dimensions PNG : largeur cible fixe, hauteur calculee par espece depuis son bbox
+# adaptatif (voir boucle principale). Gain estime -40pct vs bbox fixe.
 PNG_W <- 350L
-PNG_H <- as.integer(round(PNG_W / merc_aspect))
-cat(sprintf("Aspect Mercator Europe : %.2f -> PNG %d x %d\n", merc_aspect, PNG_W, PNG_H))
+cat(sprintf("PNG_W cible : %d (H calcule par espece via bbox adaptatif)\n", PNG_W))
 
 # ---------- Chemins ----------
 get_script_dir <- function() {
@@ -168,10 +160,10 @@ if (!FORCE_REBUILD && mode == "all") {
 }
 
 # ---------- Ecrit un PNG optimise ----------
-# ranks : vecteur de percentiles (0-1) longueur PNG_W * PNG_H, NA pour transparent
-# path : chemin de sortie
+# ranks : vecteur de percentiles (0-1) longueur png_w*png_h, NA pour transparent
+# path : chemin de sortie ; png_w/png_h : dimensions (par espece, adaptatif)
 # Retourne TRUE si PNG ecrit (contient au moins un pixel non-vide), FALSE sinon (semaine vide)
-write_optimized_png <- function(ranks, path) {
+write_optimized_png <- function(ranks, path, png_w, png_h) {
   valid <- !is.na(ranks)
   if (!any(valid)) return(FALSE)   # skip semaine totalement vide
   n_px <- length(ranks)
@@ -185,11 +177,11 @@ write_optimized_png <- function(ranks, path) {
   A_ch[valid] <- as.integer(pmin(255L, pmax(120L, as.integer(ranks[valid] * 135) + 120L)))
 
   # Array [H, W, 4]
-  rgba <- array(0, dim = c(PNG_H, PNG_W, 4))
-  rgba[,,1] <- matrix(R_ch, PNG_H, PNG_W, byrow = TRUE) / 255
-  rgba[,,2] <- matrix(G_ch, PNG_H, PNG_W, byrow = TRUE) / 255
-  rgba[,,3] <- matrix(B_ch, PNG_H, PNG_W, byrow = TRUE) / 255
-  rgba[,,4] <- matrix(A_ch, PNG_H, PNG_W, byrow = TRUE) / 255
+  rgba <- array(0, dim = c(png_h, png_w, 4))
+  rgba[,,1] <- matrix(R_ch, png_h, png_w, byrow = TRUE) / 255
+  rgba[,,2] <- matrix(G_ch, png_h, png_w, byrow = TRUE) / 255
+  rgba[,,3] <- matrix(B_ch, png_h, png_w, byrow = TRUE) / 255
+  rgba[,,4] <- matrix(A_ch, png_h, png_w, byrow = TRUE) / 255
 
   # Format WebP LOSSLESS pour zero perte de qualite (l'input est deja quantize a
   # 128 couleurs, donc lossless preserve tout exactement). Fallback PNG si magick
@@ -250,32 +242,61 @@ for (i in seq_len(nrow(migrators))) {
                      metric = "median", resolution = "9km")
     n_weeks <- terra::nlyr(r)
 
-    # Reprojection unique de toute la stack en Web Mercator
-    bbox_ll <- ext(BBOX[1], BBOX[3], BBOX[2], BBOX[4])
+    # ---- BBOX adaptatif par espece ----
+    # 1) Reduction : max des 52 weeks par pixel -> masque "presence quelconque annuelle"
+    r_max <- terra::app(r, fun = function(x) { m <- max(x, na.rm = TRUE); if(is.infinite(m)) NA_real_ else m })
+    # 2) Filtre : garde uniquement pixels au-dessus du 1er percentile (evite les points
+    #    outliers/GPS-error qui gonfleraient artificiellement le bbox)
+    vals_max <- terra::values(r_max)
+    pos_vals <- vals_max[!is.na(vals_max) & vals_max > 0]
+    if (length(pos_vals) == 0) stop("no positive data")
+    p1_threshold <- as.numeric(quantile(pos_vals, 0.01))
+    r_max[r_max <= p1_threshold] <- NA
+    # 3) Trim les bords tout-transparents pour obtenir le bbox natif
+    r_trimmed <- terra::trim(r_max)
+    if (is.null(r_trimmed)) stop("trim returned null")
+    e_ll <- terra::ext(r_trimmed)
+    # 4) Padding 2 degres + clamp world extent
+    pad <- 2
+    sp_bbox <- c(
+      max(-180, e_ll$xmin - pad),
+      max(-60,  e_ll$ymin - pad),
+      min( 180, e_ll$xmax + pad),
+      min(  85, e_ll$ymax + pad)
+    )
+    # 5) Compute PNG dims from Mercator aspect
+    bbox_ll <- ext(sp_bbox[1], sp_bbox[3], sp_bbox[2], sp_bbox[4])
     bbox_merc <- project(as.polygons(bbox_ll, crs = "EPSG:4326"), "EPSG:3857")
     e_merc <- ext(bbox_merc)
+    aspect_sp <- as.numeric((e_merc$xmax - e_merc$xmin) / (e_merc$ymax - e_merc$ymin))
+    sp_png_w <- PNG_W
+    sp_png_h <- as.integer(round(sp_png_w / aspect_sp))
+    # Clamp dimensions raisonnables (evite ratios extremes qui casseraient le layout)
+    sp_png_h <- max(200L, min(sp_png_h, 900L))
+
+    # Reprojection et resample sur la grille cible
     r_merc <- project(r, "EPSG:3857", method = "average")
     r_cropped <- crop(r_merc, e_merc, snap = "out")
-    target <- rast(nrows = PNG_H, ncols = PNG_W, extent = e_merc, crs = "EPSG:3857")
+    target <- rast(nrows = sp_png_h, ncols = sp_png_w, extent = e_merc, crs = "EPSG:3857")
     r_final <- resample(r_cropped, target, method = "average")
 
     # Normalisation percentile GLOBALE sur les 52 weeks (cle de la vague migration)
     all_vals <- values(r_final)
     all_vals[all_vals <= 0] <- NA
     valid_global <- !is.na(all_vals)
-    if (!any(valid_global)) stop("no data in europe bbox")
+    if (!any(valid_global)) stop("no data in adaptive bbox")
     global_ranks <- rep(NA_real_, length(all_vals))
     global_ranks[valid_global] <- (rank(all_vals[valid_global], ties.method = "average") - 1) /
                                   max(1, sum(valid_global) - 1)
 
-    n_px_layer <- PNG_W * PNG_H
+    n_px_layer <- sp_png_w * sp_png_h
     ranks_mat <- matrix(global_ranks, nrow = n_px_layer, ncol = n_weeks)
 
     weeks_written <- integer(0)
     for (w in seq_len(n_weeks)) {
       week_ranks <- ranks_mat[, w]
       png_path <- file.path(sp_dir, sprintf("w%02d.png", w))
-      wrote <- write_optimized_png(week_ranks, png_path)
+      wrote <- write_optimized_png(week_ranks, png_path, sp_png_w, sp_png_h)
       if (wrote) {
         weeks_written <- c(weeks_written, w)
       } else if (file.exists(png_path)) {
@@ -286,8 +307,8 @@ for (i in seq_len(nrow(migrators))) {
 
     manifest[[sci]] <- list(
       code = code,
-      w = PNG_W, h = PNG_H,
-      bbox = as.numeric(BBOX),
+      w = sp_png_w, h = sp_png_h,
+      bbox = as.numeric(sp_bbox),
       weeks = weeks_written
     )
     TRUE
@@ -302,10 +323,11 @@ for (i in seq_len(nrow(migrators))) {
     elapsed_min <- as.numeric(difftime(Sys.time(), start_ts, units = "mins"))
     rate <- i / elapsed_min
     eta_min <- (nrow(migrators) - i) / rate
-    # Poids moyen du dossier espece pour reporter le gain d'optim
+    # Poids moyen + bbox adaptatif pour tracer les gains
     sp_size_kb <- round(sum(file.info(list.files(sp_dir, full.names = TRUE))$size, na.rm = TRUE) / 1024)
-    cat(sprintf("OK %d weeks, %d KB (%.1fmin, ETA %.1fmin)\n",
-                n_w, sp_size_kb, elapsed_min, eta_min))
+    entry <- manifest[[sci]]
+    cat(sprintf("OK %d wk, %dx%d, %d KB (%.1fmin, ETA %.1fmin)\n",
+                n_w, entry$w, entry$h, sp_size_kb, elapsed_min, eta_min))
   } else {
     failed <- failed + 1
   }
