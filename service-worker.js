@@ -34,9 +34,9 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.endsWith('/app.js') || url.pathname.endsWith('/index.html') || url.pathname === '/Ligue_des_Plumes/') return;
   // Ni le manifest range (evolue frequemment avec nouvelles especes generees).
   if (url.pathname.endsWith('/data/range-index.json')) return;
-  // Ni les fichiers generated (bareme, freq mensuelle, etc.) : evolue avec les
-  // scripts build (filter-ghost-species, build-rarity...). Sans ca, les users
-  // voient une ancienne liste d'especes apres un update du bareme.
+  // data/generated/ retire du repo (2026-09-02) : etaient des build artifacts
+  // jamais fetches par le site (data inline dans app.js). Cette regle bypass devient
+  // inutile mais laissee pour retrocompat au cas ou.
   if (url.pathname.includes('/data/generated/')) return;
   // On ignore les requetes navigation avec des query strings importantes (?league=..., ?...).
   // On sert quand meme la meme index en cache : les params sont lus cote client au boot.

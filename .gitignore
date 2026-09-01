@@ -47,3 +47,12 @@ tools/habitats.generated.js
 tools/habitats-audit.json
 tools/.iucn-key
 tools/iucn-habitats-cache.json
+
+# Build artifacts : jamais fetches par le site en runtime (data inline dans app.js).
+# Servent uniquement de source de sync pour les scripts locaux.
+data/generated/
+
+# Cartes de repartition : deplacees dans le repo separe Ligue_des_Plumes_data
+# (95 MB de PNGs, ne devraient pas alourdir le main repo)
+data/range/
+data/range-weekly/
