@@ -11,12 +11,13 @@
 # - PNG_W = 350, PNG_H calcule par espece via bbox adaptatif (gain -40pct vs fixe)
 # - BBOX adaptatif : trim des bords transparents + padding 2 degres + filtre p1
 #   -> chaque espece a un bbox pile a son aire de repartition, pas de vide inutile
+# - 26 frames au lieu de 52 (1 sur 2) : -50pct stockage, fluidite quasi imperceptible
 # - Skip semaines vides : aucune donnee ce week -> pas de fichier (allege ~15-30%)
 # - Quantize 128 couleurs (100 palette + variantes alpha) via magick
 # - PNG-8 indexed + oxipng lossless : le meilleur ratio mesure sur ce type d'image
 #   (WebP lossy testee mais PIRE que PNG-8 pour heatmap avec grosses zones alpha)
 # - Skip complet des especes deja traitees (via manifest)
-# Cible : ~600-1000 KB par espece = ~180-300 MB total pour 304 sp
+# Cible : ~300-500 KB par espece = ~90-150 MB total pour 304 sp
 #
 # Normalisation percentile GLOBALE sur les 52 weeks (cle du signal migration :
 # semaines vides restent vides, pics d'abondance sont rouges).
@@ -292,8 +293,11 @@ for (i in seq_len(nrow(migrators))) {
     n_px_layer <- sp_png_w * sp_png_h
     ranks_mat <- matrix(global_ranks, nrow = n_px_layer, ncol = n_weeks)
 
+    # Sous-echantillonnage 1 week sur 2 : 26 frames au lieu de 52 (-50pct stockage,
+    # perte de fluidite quasi imperceptible sur une animation d'anim migration).
     weeks_written <- integer(0)
-    for (w in seq_len(n_weeks)) {
+    week_seq <- seq(1L, n_weeks, by = 2L)   # 1, 3, 5, ..., 51
+    for (w in week_seq) {
       week_ranks <- ranks_mat[, w]
       png_path <- file.path(sp_dir, sprintf("w%02d.png", w))
       wrote <- write_optimized_png(week_ranks, png_path, sp_png_w, sp_png_h)
