@@ -10605,9 +10605,28 @@ async function _renderMegaRareAlerts(){
           </div>
         </div>`;
     }).join('');
+    // Persist etat ouvert/ferme dans localStorage
+    let openState = true;
+    try{ const s = localStorage.getItem('mb-mr-open'); if(s === '0') openState = false; }catch(_){}
     box.innerHTML = `
-      <div style="margin-bottom:8px; font-size:13px; font-weight:600; color:var(--ink);">🚨 Méga-rares signalées <span style="font-weight:400; color:var(--ink-3);">(tier 8+, 30 derniers jours)</span></div>
-      ${rows}`;
+      <details id="megaRareDetails" ${openState ? 'open' : ''} style="background:var(--surface-2); border-radius:8px; padding:0;">
+        <summary style="cursor:pointer; padding:10px 14px; font-size:13px; font-weight:600; color:var(--ink); list-style:none; display:flex; align-items:center; gap:8px; user-select:none;">
+          <span style="transition:transform .2s; display:inline-block;" class="mr-caret">▸</span>
+          🚨 Méga-rares signalées
+          <span style="background:#a02121; color:white; padding:1px 8px; border-radius:999px; font-size:11px; font-weight:700;">${bySp.size}</span>
+          <span style="font-weight:400; color:var(--ink-3); font-size:12px;">tier 8+, 30 derniers jours</span>
+        </summary>
+        <div style="padding:6px 10px 10px;">${rows}</div>
+      </details>
+      <style>
+        #megaRareDetails[open] .mr-caret { transform: rotate(90deg); }
+        #megaRareDetails summary::-webkit-details-marker { display: none; }
+        #megaRareDetails summary::marker { display: none; }
+      </style>`;
+    // Persist toggle
+    box.querySelector('#megaRareDetails')?.addEventListener('toggle', e => {
+      try{ localStorage.setItem('mb-mr-open', e.target.open ? '1' : '0'); }catch(_){}
+    });
   }catch(err){
     box.innerHTML = `<div style="padding:10px 14px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--ink-3);">⚠️ Impossible de charger les alertes eBird (${esc(err.message || 'erreur')}).</div>`;
   }
