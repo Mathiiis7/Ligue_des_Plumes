@@ -1,5 +1,26 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<!-- Content Security Policy : restreint quels scripts/styles/images/connexions
+     sont autorises. Bloque les injections XSS externes (si un attaquant reussit
+     a injecter du code, il ne peut pas exfiltrer vers un domaine hors liste).
+     'unsafe-inline' pour script est necessaire pour les qq handlers inline
+     (~13 dans le code) - tolerable vu que l'audit esc() est clean. -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' https://www.gstatic.com https://unpkg.com;
+  style-src 'self' 'unsafe-inline' https://unpkg.com;
+  img-src 'self' data: blob: https://upload.wikimedia.org https://fr.wikipedia.org https://en.wikipedia.org https://static.inaturalist.org https://inaturalist-open-data.s3.amazonaws.com https://odata-inpn.mnhn.fr https://mathiiis7.github.io https://*.tile.openstreetmap.org https://server.arcgisonline.com https://flagcdn.com https://firebasestorage.googleapis.com;
+  connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.firebaseio.com https://api.ebird.org https://ebird.org https://api.gbif.org https://api.inaturalist.org https://xeno-canto.org https://fr.wikipedia.org https://en.wikipedia.org https://*.wikipedia.org https://upload.wikimedia.org https://odata-inpn.mnhn.fr https://mathiiis7.github.io https://nominatim.openstreetmap.org https://*.tile.openstreetmap.org https://server.arcgisonline.com;
+  font-src 'self' data:;
+  media-src 'self' https://xeno-canto.org;
+  object-src 'none';
+  base-uri 'self';
+  form-action 'self';
+  frame-ancestors 'none';
+">
+<!-- Referrer Policy : envoie l'origine mais pas le path complet lors des cross-origin
+     (evite que les APIs externes voient quelle page ligue tu consultes). -->
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0b7c77">
 <meta name="mobile-web-app-capable" content="yes">

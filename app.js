@@ -1804,6 +1804,21 @@ function renderMatrix({universe,N}){
 }
 
 function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+// Rate limiter client-side pour empecher le spam. Non-cryptographique (contournable
+// avec devtools), utile juste pour eviter les erreurs / abus non intentionnels.
+// bucket = nom de la file (chat, comment, photo, request), max = nb autorises / minute.
+// Retourne true si l'action est permise (et enregistre le tick), false si limite atteinte.
+function _rateLimit(bucket, maxPerMin){
+  const key = 'mb-rl-' + bucket;
+  const now = Date.now();
+  let arr = [];
+  try{ arr = JSON.parse(localStorage.getItem(key) || '[]'); }catch(_){}
+  arr = arr.filter(t => now - t < 60000);
+  if(arr.length >= maxPerMin) return false;
+  arr.push(now);
+  try{ localStorage.setItem(key, JSON.stringify(arr)); }catch(_){}
+  return true;
+}
 
 /* ---------------- trophées ---------------- */
 // Fabrique un fond tricolore (bandes verticales égales) depuis 2 ou 3 couleurs.
@@ -2595,6 +2610,7 @@ function commentsBar(target){
 }
 async function postComment(target, text){
   if(!myUid || !target || !text.trim()) return;
+  if(!_rateLimit('comment', 10)){ alert('Trop de commentaires en peu de temps (limite : 10/min). Attends un peu.'); return; }
   const nm = myMemberName() || 'Invité';
   try{
     await addDoc(collection(db,'leagues',leagueId,'comments'), { target, uid:myUid, name:nm, text:text.trim(), createdAt:serverTimestamp() });
@@ -6743,6 +6759,7 @@ $('#chatForm')?.addEventListener('submit',async e=>{
   }
   if(!name){ $('#chatName').focus(); return; }
   if(!text && !pendingImage) return;
+  if(!_rateLimit('chat', 20)){ showError(new Error('Trop de messages en peu de temps (limite : 20/min). Attends un peu.')); return; }
   const img=pendingImage;
   $('#chatText').value=''; pendingImage=null; $('#chatPreview').style.display='none'; $('#chatPreviewImg').src='';
   const payload={ uid:myUid, name, createdAt:serverTimestamp() };
@@ -6765,6 +6782,7 @@ $('#reqForm')?.addEventListener('submit', async e=>{
   const ti=$('#reqText'); const text=(ti?.value||'').trim();
   if(!text) return;
   if(!myUid){ showError(new Error('Connexion en cours, réessayez.')); return; }
+  if(!_rateLimit('request', 5)){ showError(new Error('Trop de requêtes envoyées récemment (limite : 5/min). Attends un peu.')); return; }
   const name = myMemberName() || localStorage.getItem('mb-chatname') || 'Invité';
   const payload = { uid:myUid, name, text, status:'todo', createdAt:serverTimestamp() };
   const btn = e.submitter; if(btn) btn.disabled=true;
@@ -6882,6 +6900,8 @@ $('#photoPublish')?.addEventListener('click', async ()=>{
     showError(new Error('Publication de photos réservée aux membres. Chargez votre life list eBird pour rejoindre la ligue.'));
     return;
   }
+  // Rate limit : max 10 photos publiees par minute (couvre les batches de 2-5)
+  if(!_rateLimit('photo', 10)){ showError(new Error('Trop de photos publiées récemment (limite : 10/min). Attends un peu.')); return; }
   const caption=$('#photoCaption').value.trim();
   const name=myMemberName() || 'Membre';
   const btn=$('#photoPublish'); btn.disabled=true;
