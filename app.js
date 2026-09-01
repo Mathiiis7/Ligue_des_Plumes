@@ -10562,7 +10562,10 @@ async function _renderMegaRareAlerts(){
     for(const o of data){
       const sci = (o.sciName || '').toLowerCase().trim();
       if(!sci) continue;
-      const tier = rarityForFilter(sci);
+      // Utilise le tier brut REAL_RARITY (celui affiche sur la fiche espece), pas
+      // rarityForFilter qui applique le merge S&T + bar chart et peut bumper certaines
+      // especes seasonally rares (ex Butor etoile tier 7 -> 8 merged en fin d'ete).
+      const tier = REAL_RARITY[sci] || 0;
       if(tier < 8) continue;
       const key = sci;
       const cur = bySp.get(key);
@@ -10609,7 +10612,9 @@ async function _renderMegaRareAlerts(){
       const nm = frName(sciLower, o.comName);
       const iOwn = meSp.has(sciLower) || meSp.has(sciLower.replace(/\s+/g, ' '));
       const own = iOwn ? '<span style="background:#2d7a3f; color:white; padding:1px 6px; border-radius:3px; font-size:10px; font-weight:600; margin-left:6px;">déjà cochée</span>' : '';
-      const tierBadge = `<span style="background:#a02121; color:white; padding:1px 6px; border-radius:3px; font-size:10px; font-weight:600;">tier ${o._tier}</span>`;
+      // Utilise REAL_RARITY[sci] pour aligner avec la fiche espece (evite bumping merge)
+      const rawTier = REAL_RARITY[sciLower] || o._tier;
+      const tierBadge = `<span style="background:#a02121; color:white; padding:1px 6px; border-radius:3px; font-size:10px; font-weight:600;">tier ${rawTier}</span>`;
       // Localisation : combine locName utile + dept depuis lat/lng
       const dept = deptFromLatLng(o.lat, o.lng);
       const deptTxt = dept ? `${dept.name} (${dept.code})` : '';
