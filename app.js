@@ -430,7 +430,7 @@ function _openCountryPicker(currentCode, opts = {}){
           <span>Choisir un pays</span>
           <button type="button" class="cp-modal-close" aria-label="Fermer">×</button>
         </div>
-        <input type="search" class="cp-search" placeholder="Rechercher (nom fr)…" autofocus>
+        <input type="search" name="cp-search" aria-label="Rechercher par nom francais" class="cp-search" placeholder="Rechercher (nom fr)…" autofocus>
         <div class="cp-list"></div>
       </div>`;
     const listEl = backdrop.querySelector('.cp-list');
@@ -2602,7 +2602,7 @@ function commentsBar(target){
     return `<div class="cmt-item"><span class="cmt-who">${esc(nm)}</span> <span class="cmt-txt">${esc(c.text)}</span>${time?` <span class="cmt-time">${esc(time)}</span>`:''}${del}</div>`;
   }).join('');
   const form = myUid
-    ? `<form class="cmt-form" data-cmt-target="${esc(target)}"><input type="text" class="cmt-input" placeholder="Commenter…" maxlength="500" required><button type="submit" class="cmt-send" title="Envoyer">➤</button></form>`
+    ? `<form class="cmt-form" data-cmt-target="${esc(target)}"><input type="text" name="cmt-input" aria-label="Commenter" class="cmt-input" placeholder="Commenter…" maxlength="500" required><button type="submit" class="cmt-send" title="Envoyer">➤</button></form>`
     : '';
   const label = n>0 ? `${n} commentaire${n>1?'s':''}` : 'Commenter';
   return `<details class="cmt-wrap"${n>0?' open':''}><summary class="cmt-summary">💬 ${label}</summary>
