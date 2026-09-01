@@ -62,6 +62,17 @@ for (const lgRef of leagues) {
   const lgId = lgRef.id;
   const cacheRef = lgRef.collection('ebirdCache');
 
+  // Diagnostic : recupere les 5 docs les plus vieux + les 5 plus recents
+  const oldest = await cacheRef.orderBy('updatedAt', 'asc').limit(5).get();
+  const newest = await cacheRef.orderBy('updatedAt', 'desc').limit(5).get();
+  if (!oldest.empty) {
+    const oldestTs = oldest.docs[0].data().updatedAt?.toDate?.();
+    const newestTs = newest.docs[0].data().updatedAt?.toDate?.();
+    const oldestDays = oldestTs ? Math.round((Date.now() - oldestTs.getTime()) / 86400000) : '?';
+    const newestDays = newestTs ? Math.round((Date.now() - newestTs.getTime()) / 86400000) : '?';
+    console.log(`  [diag ${lgId}] doc le plus vieux : ${oldestDays}j, plus recent : ${newestDays}j`);
+  }
+
   // Query par lots de 500 (limite Firestore)
   let totalScanned = 0, totalDeleted = 0;
   let hasMore = true;
