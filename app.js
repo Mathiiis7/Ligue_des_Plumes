@@ -7964,8 +7964,7 @@ async function _openMigrationFullscreen(sci){
     const recalcMinZoom = () => {
       if(!_migFsMap) return;
       _migFsMap.invalidateSize();
-      // +1 pour compenser le rounding down de Leaflet qui laisse une marge parasite
-      const fitZoom = _migFsMap.getBoundsZoom(worldBounds, true) + 1;
+      const fitZoom = _migFsMap.getBoundsZoom(worldBounds, true);
       _migFsMap.setMinZoom(fitZoom);
       _migFsMap.fitBounds(dataBounds);
     };
@@ -9268,7 +9267,8 @@ function openSpeciesModal(sci){
   // Carte de repartition Cornell S&T + GBIF (rendu direct, plus de lazy load
   // IntersectionObserver qui ne firait pas correctement selon le scroll container).
   _renderSpeciesRangeCard(sci);
-  _renderSpeciesMigrationCard(sci);
+  // Migration weekly card in-fiche desactivee : remplacee par le bouton "🎞️ Animation"
+  // dans la section Ecologie qui ouvre en plein ecran (evite duplication).
   // Description Wikipedia (async)
   _renderSpeciesDesc(sci);
   // Note : le freq chart est deja rendu par _renderSpeciesRarityCard avec le
