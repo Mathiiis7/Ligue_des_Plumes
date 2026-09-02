@@ -7964,7 +7964,7 @@ async function _openMigrationFullscreen(sci){
     const recalcMinZoom = () => {
       if(!_migFsMap) return;
       _migFsMap.invalidateSize();
-      const fitZoom = _migFsMap.getBoundsZoom(worldBounds, true);
+      const fitZoom = _migFsMap.getBoundsZoom(worldBounds, false);
       _migFsMap.setMinZoom(fitZoom);
       _migFsMap.fitBounds(dataBounds);
     };
