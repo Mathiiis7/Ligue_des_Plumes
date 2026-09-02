@@ -7102,7 +7102,7 @@ $('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove(
 // reload de page. ~200 bytes par entree, 700 especes = 140 KB, tient largement dans les
 // 5-10 MB dispo. Sans persistance, l'utilisateur re-attend le fetch de toutes les
 // photos du Birdydex a chaque visite -> tres lent.
-const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v19';
+const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v20';
 const _SP_PHOTO_CACHE_TTL_MS = 30 * 24 * 3600 * 1000;
 const _spPhotoCache = new Map();      // sci → {url, thumb, credit} | null (échec)
 try{
@@ -7166,14 +7166,14 @@ const PHOTO_OVERRIDE_WIKI = {
   'gallinago gallinago': { url:'https://upload.wikimedia.org/wikipedia/commons/c/c6/Common_snipe_%28Gallinago_gallinago%29_2022.jpg' },
   'larus canus': { url:'https://upload.wikimedia.org/wikipedia/commons/b/b1/Larus_canus_Common_Gull_in_Norway.jpg' },
   'ichthyaetus melanocephalus': { url:'https://upload.wikimedia.org/wikipedia/commons/e/e7/Larus_melanocephalus_aka_Mediterranean_Gull_rare_guest_in_Sweden2.jpg' },
-  'strix aluco': { url:'https://upload.wikimedia.org/wikipedia/commons/1/18/Strix_aluco_aluco.jpg' },
+  'strix aluco': { url:'https://upload.wikimedia.org/wikipedia/commons/4/4c/Asleep_%2851116731229%29.jpg' },
   'merops apiaster': { url:'https://upload.wikimedia.org/wikipedia/commons/9/97/Gu%C3%A9pier_d%27Europe_Ichkeul_NP.jpg' },
   'corvus frugilegus': { url:'https://upload.wikimedia.org/wikipedia/commons/0/0b/Corvus_frugilegus_perched_Muirton.jpg' },
   'calidris alpina': { url:'https://upload.wikimedia.org/wikipedia/commons/1/1c/Calidris_alpina_alpina%2C_Riga%2C_Latvia_1.jpg' },
-  'ciconia ciconia': { url:'https://upload.wikimedia.org/wikipedia/commons/d/d4/Ciconia_ciconia_%28aka%29.jpg' },
+  'ciconia ciconia': { url:'https://upload.wikimedia.org/wikipedia/commons/d/dd/20150720Ciconia_ciconia.jpg' },
   'pernis apivorus': { url:'https://upload.wikimedia.org/wikipedia/commons/a/a6/Honey_Buzzard_-_Flickr_-_Andy_Morffew.jpg' },
-  'tachymarptis melba': { url:'https://upload.wikimedia.org/wikipedia/commons/0/0b/Tachymarptis_melba_in_flight.jpg' },
-  'apus melba': { url:'https://upload.wikimedia.org/wikipedia/commons/0/0b/Tachymarptis_melba_in_flight.jpg' },
+  'tachymarptis melba': { url:'https://upload.wikimedia.org/wikipedia/commons/8/84/Alpine_Swift_%284781590209%29.jpg' },
+  'apus melba': { url:'https://upload.wikimedia.org/wikipedia/commons/8/84/Alpine_Swift_%284781590209%29.jpg' },
   'curruca melanocephala': { url:'https://upload.wikimedia.org/wikipedia/commons/e/e1/Sardinian_Warbler.jpg' },
   'coccothraustes coccothraustes': { url:'https://upload.wikimedia.org/wikipedia/commons/4/48/Hawfinch_%28Coccothraustes_coccothraustes%29_male_Drenthe.jpg' },
 };
