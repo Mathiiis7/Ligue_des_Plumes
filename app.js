@@ -7964,8 +7964,14 @@ async function _openMigrationFullscreen(sci){
     const recalcMinZoom = () => {
       if(!_migFsMap) return;
       _migFsMap.invalidateSize();
-      const fitZoom = _migFsMap.getBoundsZoom(worldBounds, true);
-      _migFsMap.setMinZoom(fitZoom);
+      // Zoom min = celui ou la LARGEUR du monde (256 * 2^zoom px) = largeur container.
+      // Comme ca le dezoom max s'arrete pile quand les bords gauche/droite du monde
+      // touchent les cotes du container (aucune marge horizontale grise possible).
+      // La hauteur peut avoir un peu de marge en haut/bas mais c'est normal (le monde
+      // n'est pas carre en Mercator).
+      const w = mapEl.clientWidth || 800;
+      const widthFitZoom = Math.log2(w / 256);
+      _migFsMap.setMinZoom(widthFitZoom);
       _migFsMap.fitBounds(dataBounds);
     };
     setTimeout(recalcMinZoom, 100);
