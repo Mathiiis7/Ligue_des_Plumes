@@ -7160,6 +7160,17 @@ const PHOTO_OVERRIDE_WIKI = {
   'gyps fulvus': { url:'https://upload.wikimedia.org/wikipedia/commons/7/70/Griffon_Vulture_1.jpg' },
   'streptopelia turtur': { url:'https://upload.wikimedia.org/wikipedia/commons/e/ec/Turtle_dove_%28Streptopelia_turtur_turtur%29_Hungary.jpg' },
   'dendrocopos major': { url:'https://upload.wikimedia.org/wikipedia/commons/d/df/Great_spotted_woodpecker_%28Dendrocopos_major%29_male_Drenthe.jpg' },
+  'tachybaptus ruficollis': { url:'https://upload.wikimedia.org/wikipedia/commons/8/84/Little_grebe_Zwergtaucher.jpg' },
+  'columba oenas': { url:'https://upload.wikimedia.org/wikipedia/commons/b/b5/Pigeon_colombin_%28Colulmba_oenas%29%2C_Parc_de_Woluwe%2C_Bruxelles_%2851921513878%29.jpg' },
+  'haematopus ostralegus': { url:'https://upload.wikimedia.org/wikipedia/commons/5/51/Haematopus_ostralegus_He.jpg' },
+  'gallinago gallinago': { url:'https://upload.wikimedia.org/wikipedia/commons/c/c6/Common_snipe_%28Gallinago_gallinago%29_2022.jpg' },
+  'larus canus': { url:'https://upload.wikimedia.org/wikipedia/commons/b/b1/Larus_canus_Common_Gull_in_Norway.jpg' },
+  'ichthyaetus melanocephalus': { url:'https://upload.wikimedia.org/wikipedia/commons/e/e7/Larus_melanocephalus_aka_Mediterranean_Gull_rare_guest_in_Sweden2.jpg' },
+  'strix aluco': { url:'https://upload.wikimedia.org/wikipedia/commons/5/55/Strix_aluco_3_%28Martin_Mecnarowski%29.jpg' },
+  'merops apiaster': { url:'https://upload.wikimedia.org/wikipedia/commons/c/c2/Bee-eater_%2819270331108%29.jpg' },
+  'corvus frugilegus': { url:'https://upload.wikimedia.org/wikipedia/commons/a/af/Rook_%28Corvus_frugilegus%29_Heligan.jpg' },
+  'curruca melanocephala': { url:'https://upload.wikimedia.org/wikipedia/commons/e/e1/Sardinian_Warbler.jpg' },
+  'coccothraustes coccothraustes': { url:'https://upload.wikimedia.org/wikipedia/commons/4/48/Hawfinch_%28Coccothraustes_coccothraustes%29_male_Drenthe.jpg' },
 };
 async function _fetchWikiPhoto(sci){
   const key = sci.toLowerCase();
