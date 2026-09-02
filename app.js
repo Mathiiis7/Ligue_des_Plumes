@@ -7102,7 +7102,7 @@ $('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove(
 // reload de page. ~200 bytes par entree, 700 especes = 140 KB, tient largement dans les
 // 5-10 MB dispo. Sans persistance, l'utilisateur re-attend le fetch de toutes les
 // photos du Birdydex a chaque visite -> tres lent.
-const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v22';
+const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v23';
 const _SP_PHOTO_CACHE_TTL_MS = 30 * 24 * 3600 * 1000;
 const _spPhotoCache = new Map();      // sci → {url, thumb, credit} | null (échec)
 try{
@@ -7175,7 +7175,7 @@ const PHOTO_OVERRIDE_WIKI = {
   'tachymarptis melba': { url:'https://upload.wikimedia.org/wikipedia/commons/8/84/Alpine_Swift_%284781590209%29.jpg' },
   'apus melba': { url:'https://upload.wikimedia.org/wikipedia/commons/8/84/Alpine_Swift_%284781590209%29.jpg' },
   'curruca melanocephala': { url:'https://upload.wikimedia.org/wikipedia/commons/e/e1/Sardinian_Warbler.jpg' },
-  'alectoris rufa': { url:'https://upload.wikimedia.org/wikipedia/commons/a/a5/Perdiz-vermelha_ou_perdiz-comum_%28Alectoris_rufa%29.jpg' },
+  'alectoris rufa': { url:'https://upload.wikimedia.org/wikipedia/commons/1/19/Perdiz_%28Alectoris_rufa%29_%2853032047788%29.jpg' },
   'calidris alba': { url:'https://upload.wikimedia.org/wikipedia/commons/d/df/Calidris_alba_%28breeding_plumage%29.jpg' },
   'ardea purpurea': { url:'https://upload.wikimedia.org/wikipedia/commons/c/c9/Ardpur2.jpg' },
   'aquila chrysaetos': { url:'https://upload.wikimedia.org/wikipedia/commons/c/cc/015_Wild_Golden_Eagle_in_flight_at_Pfyn-Finges_%28Switzerland%29_Photo_by_Giles_Laurent.jpg' },
