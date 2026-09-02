@@ -7914,8 +7914,8 @@ async function _openMigrationFullscreen(sci){
   const modal = document.createElement('div');
   modal.id = 'migFsModal';
   modal.innerHTML = `
-    <div id="migFsBackdrop" style="position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:9998;"></div>
-    <div id="migFsContent" style="position:fixed; inset:20px; z-index:9999; background:var(--surface); border-radius:12px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.5);">
+    <div id="migFsBackdrop" style="position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:2147483500;"></div>
+    <div id="migFsContent" style="position:fixed; inset:5vh 5vw; z-index:2147483501; background:var(--surface); border-radius:12px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.6);">
       <div style="padding:14px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px; border-bottom:1px solid var(--line);">
         <div>
           <div style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700;">🎞️ Migration semaine par semaine</div>
@@ -7939,6 +7939,7 @@ async function _openMigrationFullscreen(sci){
   const closeModal = () => {
     if(_migFsPlay){ clearInterval(_migFsPlay); _migFsPlay = null; }
     if(_migFsMap){ try{ _migFsMap.remove(); }catch(_){} _migFsMap = null; }
+    if(window._migFsResizeObs){ try{ window._migFsResizeObs.disconnect(); }catch(_){} window._migFsResizeObs = null; }
     modal.remove();
     document.removeEventListener('keydown', onKey);
   };
@@ -7957,13 +7958,24 @@ async function _openMigrationFullscreen(sci){
     _migFsMap = L.map(mapEl, { zoomControl:true, maxBounds:worldBounds, maxBoundsViscosity:1.0, worldCopyJump:false, attributionControl:true });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap', maxZoom:12, noWrap:true }).addTo(_migFsMap);
     _migFsMap.fitBounds(dataBounds);
-    setTimeout(() => {
+    // Recalcule minZoom plusieurs fois car le container prend un peu de temps a
+    // avoir ses vraies dimensions (animation modal, transitions CSS). ResizeObserver
+    // couvre aussi les redimensionnements fenetre.
+    const recalcMinZoom = () => {
       if(!_migFsMap) return;
       _migFsMap.invalidateSize();
-      const worldFitZoom = _migFsMap.getBoundsZoom(worldBounds, true);
-      _migFsMap.setMinZoom(worldFitZoom);
+      const fitZoom = _migFsMap.getBoundsZoom(worldBounds, true);
+      _migFsMap.setMinZoom(fitZoom);
       _migFsMap.fitBounds(dataBounds);
-    }, 200);
+    };
+    setTimeout(recalcMinZoom, 100);
+    setTimeout(recalcMinZoom, 400);
+    setTimeout(recalcMinZoom, 800);
+    try{
+      if(window._migFsResizeObs){ try{ window._migFsResizeObs.disconnect(); }catch(_){} }
+      window._migFsResizeObs = new ResizeObserver(() => recalcMinZoom());
+      window._migFsResizeObs.observe(mapEl);
+    }catch(_){}
     const frameUrl = wk => `${WEEKLY_DATA_BASE}/range-weekly/${entry.code}/w${String(wk).padStart(2,'0')}.png?v=20260901`;
     weeks.forEach(wk => { const img = new Image(); img.src = frameUrl(wk); });
     let overlay = L.imageOverlay(frameUrl(weeks[0]), dataBounds, { opacity:0.78, interactive:false }).addTo(_migFsMap);
