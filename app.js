@@ -7650,7 +7650,11 @@ async function _renderSpeciesTraitsCard(key){
   const HD  = { 1:'🌲 Milieu dense', 2:'🌾 Semi-ouvert', 3:'🏞️ Très ouvert' };
   // Section Écologie
   const ecoLines = [];
-  if(t.mi && MIG[t.mi])   ecoLines.push({ k:'Migration',      v: MIG[t.mi] });
+  // Check async si l'espece a des cartes migration hebdo dispo -> bouton anim plein ecran
+  let hasWeekly = false;
+  try{ const idx = await _loadWeeklyIndex(); hasWeekly = !!(idx && idx[k]); }catch(_){}
+  const animBtn = hasWeekly ? ` <button type="button" class="mig-fs-btn" data-sci="${esc(k)}" title="Animation migration en plein écran" style="margin-left:8px; padding:2px 8px; font-size:11px; border:none; background:var(--accent); color:white; border-radius:4px; cursor:pointer; font-weight:600;">🎞️ Animation</button>` : '';
+  if(t.mi && MIG[t.mi])   ecoLines.push({ k:'Migration',      v: MIG[t.mi] + animBtn });
   if(t.tl && TL[t.tl]){
     // Skip le doublon si t.tn (niche precise) == label de la categorie (ex : 'Omnivore').
     const catLabel = TL[t.tl].replace(/^[^\s]+\s+/, '');   // retire l'emoji
@@ -7886,6 +7890,108 @@ async function _renderSpeciesMigrationCard(sci){
     });
   });
 }
+// Ouvre l'animation migration en plein ecran (modal overlay). Reutilise la meme
+// logique que la card in-fiche mais en viewport complet pour mieux voir la vague.
+let _migFsMap = null, _migFsPlay = null;
+async function _openMigrationFullscreen(sci){
+  const idx = await _loadWeeklyIndex();
+  const entry = idx[(sci || '').toLowerCase().trim()];
+  if(!entry || !entry.code || !entry.weeks || !entry.weeks.length) return;
+  const weeks = entry.weeks;
+  const [w, s, e, n] = (entry.bbox || [-25, -35, 55, 75]);
+  const weekToLabel = wk => {
+    const monthStart = [1,5,9,14,18,22,27,31,36,40,44,49];
+    const monthNames = ['janv','fév','mars','avr','mai','juin','juil','août','sept','oct','nov','déc'];
+    let m = 0; for(let i=0;i<12;i++) if(wk >= monthStart[i]) m = i;
+    return monthNames[m];
+  };
+  const spName = frName(sci.toLowerCase(), '') || sci;
+  // Cleanup precedent modal si existe
+  const prev = document.getElementById('migFsModal'); if(prev) prev.remove();
+  if(_migFsPlay){ clearInterval(_migFsPlay); _migFsPlay = null; }
+  if(_migFsMap){ try{ _migFsMap.remove(); }catch(_){} _migFsMap = null; }
+  // Cree le modal overlay
+  const modal = document.createElement('div');
+  modal.id = 'migFsModal';
+  modal.innerHTML = `
+    <div id="migFsBackdrop" style="position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:9998;"></div>
+    <div id="migFsContent" style="position:fixed; inset:20px; z-index:9999; background:var(--surface); border-radius:12px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.5);">
+      <div style="padding:14px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px; border-bottom:1px solid var(--line);">
+        <div>
+          <div style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700;">🎞️ Migration semaine par semaine</div>
+          <div style="font-size:18px; font-weight:600; color:var(--ink); margin-top:2px;">${esc(spName)} <span style="font-weight:400; color:var(--ink-3); font-size:13px;">${esc(sci)}</span></div>
+        </div>
+        <button type="button" id="migFsClose" title="Fermer (Échap)" style="border:none; background:var(--surface-2); font-size:20px; width:36px; height:36px; border-radius:50%; cursor:pointer;">✕</button>
+      </div>
+      <div id="migFsMapEl" style="flex:1; background:var(--surface-3);"></div>
+      <div style="padding:12px 20px; display:flex; align-items:center; gap:12px; border-top:1px solid var(--line);">
+        <button type="button" id="migFsPlayBtn" class="btn tiny" style="min-width:80px;">▶ Lire</button>
+        <input type="range" id="migFsSlider" min="0" max="${weeks.length-1}" value="0" step="1" style="flex:1; cursor:pointer;">
+        <span id="migFsLabel" style="font-family:ui-monospace,monospace; font-size:13px; color:var(--ink); min-width:110px; text-align:right;">Sem ${weeks[0]} · ${weekToLabel(weeks[0])}</span>
+      </div>
+      <div style="padding:8px 20px 14px; display:flex; align-items:center; gap:10px; font-size:11px; color:var(--ink-2);">
+        <span>Rare</span>
+        <div style="flex:1; height:12px; border-radius:3px; background:linear-gradient(to right, #3ea86b, #a8d155, #f5c518, #f0733a, #a11408);"></div>
+        <span>Abondant</span>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  const closeModal = () => {
+    if(_migFsPlay){ clearInterval(_migFsPlay); _migFsPlay = null; }
+    if(_migFsMap){ try{ _migFsMap.remove(); }catch(_){} _migFsMap = null; }
+    modal.remove();
+    document.removeEventListener('keydown', onKey);
+  };
+  const onKey = ev => { if(ev.key === 'Escape') closeModal(); };
+  document.addEventListener('keydown', onKey);
+  modal.querySelector('#migFsClose').addEventListener('click', closeModal);
+  modal.querySelector('#migFsBackdrop').addEventListener('click', closeModal);
+  // Init Leaflet
+  const mapEl = modal.querySelector('#migFsMapEl');
+  const slider = modal.querySelector('#migFsSlider');
+  const label = modal.querySelector('#migFsLabel');
+  const playBtn = modal.querySelector('#migFsPlayBtn');
+  requestAnimationFrame(() => {
+    const dataBounds = L.latLngBounds([[s, w], [n, e]]);
+    const worldBounds = L.latLngBounds([[-60, -180], [85, 180]]);
+    _migFsMap = L.map(mapEl, { zoomControl:true, maxBounds:worldBounds, maxBoundsViscosity:1.0, worldCopyJump:false, attributionControl:true });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap', maxZoom:12, noWrap:true }).addTo(_migFsMap);
+    _migFsMap.fitBounds(dataBounds);
+    setTimeout(() => {
+      if(!_migFsMap) return;
+      _migFsMap.invalidateSize();
+      const worldFitZoom = _migFsMap.getBoundsZoom(worldBounds, true);
+      _migFsMap.setMinZoom(worldFitZoom);
+      _migFsMap.fitBounds(dataBounds);
+    }, 200);
+    const frameUrl = wk => `${WEEKLY_DATA_BASE}/range-weekly/${entry.code}/w${String(wk).padStart(2,'0')}.png?v=20260901`;
+    weeks.forEach(wk => { const img = new Image(); img.src = frameUrl(wk); });
+    let overlay = L.imageOverlay(frameUrl(weeks[0]), dataBounds, { opacity:0.78, interactive:false }).addTo(_migFsMap);
+    const setFrame = i => {
+      const wk = weeks[i];
+      if(overlay.setUrl){ overlay.setUrl(frameUrl(wk)); }
+      else { _migFsMap.removeLayer(overlay); overlay = L.imageOverlay(frameUrl(wk), dataBounds, { opacity:0.78, interactive:false }).addTo(_migFsMap); }
+      label.textContent = `Sem ${wk} · ${weekToLabel(wk)}`;
+    };
+    slider.addEventListener('input', () => setFrame(+slider.value));
+    playBtn.addEventListener('click', () => {
+      if(_migFsPlay){ clearInterval(_migFsPlay); _migFsPlay = null; playBtn.textContent = '▶ Lire'; }
+      else {
+        playBtn.textContent = '⏸ Pause';
+        _migFsPlay = setInterval(() => {
+          let v = (+slider.value + 1) % weeks.length;
+          slider.value = String(v);
+          setFrame(v);
+        }, 350);
+      }
+    });
+  });
+}
+// Delegated click handler pour les boutons "Animation" ajoutes dans la section Ecologie
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.mig-fs-btn');
+  if(btn){ e.preventDefault(); e.stopPropagation(); _openMigrationFullscreen(btn.dataset.sci); }
+});
 // Card 'A ne pas confondre avec' : liste les especes acoustiquement / visuellement
 // proches, dérivées de la table CONFUSION_GROUPS (deja utilisee pour les mauvaises
 // reponses du quiz). Chaque nom est cliquable pour ouvrir sa fiche.
