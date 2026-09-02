@@ -7745,7 +7745,10 @@ async function _renderSpeciesRangeCard(sci){
       <div style="flex:1; height:12px; border-radius:3px; background:linear-gradient(to right, #3ea86b, #a8d155, #f5c518, #f0733a, #a11408);"></div>
       <span>Abondant</span>
     </div>
-    <div style="margin-top:4px; font-size:10.5px; color:var(--ink-3); text-align:center;">Échelle relative à l'espèce (percentiles)</div>
+    <div style="margin-top:4px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+      <div style="font-size:10.5px; color:var(--ink-3);">Échelle relative à l'espèce (percentiles)</div>
+      <button type="button" data-map-render-toggle style="font-size:11px; padding:3px 8px; border:1px solid var(--line); background:var(--surface-2); border-radius:4px; cursor:pointer;">${document.body.dataset.mapRender === 'sharp' ? '🌊 Rendu flou' : '🔲 Rendu net'}</button>
+    </div>
   `;
   box.hidden = false;
   const mapEl = box.querySelector('#' + mapId);
@@ -7942,6 +7945,7 @@ async function _openMigrationFullscreen(sci){
         <span>Rare</span>
         <div style="flex:1; height:12px; border-radius:3px; background:linear-gradient(to right, #3ea86b, #a8d155, #f5c518, #f0733a, #a11408);"></div>
         <span>Abondant</span>
+        <button type="button" data-map-render-toggle style="margin-left:12px; font-size:11px; padding:3px 10px; border:1px solid var(--line); background:var(--surface-2); border-radius:4px; cursor:pointer;">${document.body.dataset.mapRender === 'sharp' ? '🌊 Rendu flou' : '🔲 Rendu net'}</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -10319,6 +10323,23 @@ function subscribeAdmins(){
     }, ()=>{});
   }catch(_){}
 }
+// Restaure la preference du rendu des overlays raster (net/flou) au boot
+try{ const m = localStorage.getItem('mb-map-render'); if(m === 'sharp') document.body.dataset.mapRender = 'sharp'; }catch(_){}
+// Toggle rendu net/flou sur les cartes range + migration. Persiste en localStorage.
+function _toggleMapRender(){
+  const cur = document.body.dataset.mapRender === 'sharp' ? 'sharp' : 'smooth';
+  const next = cur === 'sharp' ? 'smooth' : 'sharp';
+  if(next === 'sharp') document.body.dataset.mapRender = 'sharp';
+  else delete document.body.dataset.mapRender;
+  try{ localStorage.setItem('mb-map-render', next); }catch(_){}
+  // Update les labels des boutons visibles
+  document.querySelectorAll('[data-map-render-toggle]').forEach(b => {
+    b.textContent = next === 'sharp' ? '🌊 Rendu flou' : '🔲 Rendu net';
+  });
+}
+document.addEventListener('click', e => {
+  if(e.target.closest('[data-map-render-toggle]')) _toggleMapRender();
+});
 onAuthStateChanged(auth, user=>{
   if(user){ myUid=user.uid; subscribeAdmins(); updateAuthUI(user); boot(); }
   else { myUid=null; signInAnonymously(auth).catch(err=>{ showError(err); }); }

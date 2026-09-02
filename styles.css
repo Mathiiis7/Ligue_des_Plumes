@@ -1,6 +1,7 @@
-  /* Rendu net des overlays raster (range + migration) : evite l'interpolation
-   bilinear du navigateur qui rend flou l'upscale x2-3 des PNGs 500px. */
-.sharp-overlay { image-rendering: pixelated; image-rendering: crisp-edges; }
+  /* Rendu overlays raster (range + migration) : toggle net/flou via data attribut.
+   Par defaut = flou (rendu bilinear, transitions douces).
+   body[data-map-render="sharp"] = pixels nets (crisp-edges). */
+body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image-rendering: crisp-edges; }
 
 :root {
     --bg: #eef2f1;
