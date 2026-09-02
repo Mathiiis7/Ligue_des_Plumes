@@ -16,6 +16,7 @@
   font-src 'self' data:;
   media-src 'self' https://xeno-canto.org;
   object-src 'none';
+  frame-src https://claude.ai https://*.claude.ai;
   base-uri 'self';
   form-action 'self';
 ">
@@ -844,6 +845,13 @@
 
         <h3 style="margin:20px 0 8px; font-size:16px; color:var(--ink);">🐛 Feedback</h3>
         <p style="margin:0;">Une aberration de tier, un chart bizarre, une idée de feature ? Utilise l'onglet <b>💡 Requêtes</b> (dans le menu ☰) pour signaler.</p>
+
+        <h3 style="margin:24px 0 8px; font-size:16px; color:var(--ink);">📊 Tableau de bord interne</h3>
+        <p style="margin:0 0 10px;">L'état complet de l'app en temps réel : sources de données, couverture par pays, features en prod, méthodes de calcul, backlog, plafonds data, maintenance. Mis à jour automatiquement à chaque évolution.</p>
+        <div style="margin-top:10px; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:var(--surface-2);">
+          <iframe src="https://claude.ai/code/artifact/437344f3-b6f8-404d-aa00-c40e010402ba/embed" style="width:100%; height:700px; border:0; display:block;" title="Tableau de bord Ligue des Plumes" loading="lazy"></iframe>
+        </div>
+        <p style="margin:8px 0 0; font-size:12px; color:var(--ink-3);">Si l'iframe ne charge pas correctement, <a href="https://claude.ai/code/artifact/437344f3-b6f8-404d-aa00-c40e010402ba" target="_blank" rel="noopener" style="color:var(--accent);">ouvre le dashboard en plein onglet</a>.</p>
 
         <h3 style="margin:24px 0 8px; font-size:16px; color:var(--ink);">🔒 Confidentialité (RGPD)</h3>
         <p style="margin:0 0 8px;"><b>Data collectée</b> : email (Firebase Auth), nom d'affichage, life list eBird (espèces + lieux d'observation + dates), messages du tchat, photos uploadées, commentaires, réactions emoji, statistiques quiz.</p>
