@@ -7964,7 +7964,8 @@ async function _openMigrationFullscreen(sci){
     const recalcMinZoom = () => {
       if(!_migFsMap) return;
       _migFsMap.invalidateSize();
-      const fitZoom = _migFsMap.getBoundsZoom(worldBounds, false);
+      // +1 pour compenser le rounding down de Leaflet qui laisse une marge parasite
+      const fitZoom = _migFsMap.getBoundsZoom(worldBounds, true) + 1;
       _migFsMap.setMinZoom(fitZoom);
       _migFsMap.fitBounds(dataBounds);
     };
