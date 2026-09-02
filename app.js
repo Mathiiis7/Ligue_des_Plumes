@@ -7102,7 +7102,7 @@ $('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove(
 // reload de page. ~200 bytes par entree, 700 especes = 140 KB, tient largement dans les
 // 5-10 MB dispo. Sans persistance, l'utilisateur re-attend le fetch de toutes les
 // photos du Birdydex a chaque visite -> tres lent.
-const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v20';
+const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v21';
 const _SP_PHOTO_CACHE_TTL_MS = 30 * 24 * 3600 * 1000;
 const _spPhotoCache = new Map();      // sci → {url, thumb, credit} | null (échec)
 try{
@@ -7175,6 +7175,18 @@ const PHOTO_OVERRIDE_WIKI = {
   'tachymarptis melba': { url:'https://upload.wikimedia.org/wikipedia/commons/8/84/Alpine_Swift_%284781590209%29.jpg' },
   'apus melba': { url:'https://upload.wikimedia.org/wikipedia/commons/8/84/Alpine_Swift_%284781590209%29.jpg' },
   'curruca melanocephala': { url:'https://upload.wikimedia.org/wikipedia/commons/e/e1/Sardinian_Warbler.jpg' },
+  'alectoris rufa': { url:'https://upload.wikimedia.org/wikipedia/commons/8/82/AlectorisRufa.jpg' },
+  'calidris alba': { url:'https://upload.wikimedia.org/wikipedia/commons/d/df/Calidris_alba_%28breeding_plumage%29.jpg' },
+  'ardea purpurea': { url:'https://upload.wikimedia.org/wikipedia/commons/c/c9/Ardpur2.jpg' },
+  'aquila chrysaetos': { url:'https://upload.wikimedia.org/wikipedia/commons/c/cc/015_Wild_Golden_Eagle_in_flight_at_Pfyn-Finges_%28Switzerland%29_Photo_by_Giles_Laurent.jpg' },
+  'circus cyaneus': { url:'https://upload.wikimedia.org/wikipedia/commons/9/90/Blauwe_kiekendief_masc.jpg' },
+  'dryobates minor': { url:'https://upload.wikimedia.org/wikipedia/commons/f/fc/Male_lesser_spotted_woodpecker_%28Dryobates_minor%29.png' },
+  'dendrocoptes minor': { url:'https://upload.wikimedia.org/wikipedia/commons/f/fc/Male_lesser_spotted_woodpecker_%28Dryobates_minor%29.png' },
+  'dendrocopos minor': { url:'https://upload.wikimedia.org/wikipedia/commons/f/fc/Male_lesser_spotted_woodpecker_%28Dryobates_minor%29.png' },
+  'dendrocopos medius': { url:'https://upload.wikimedia.org/wikipedia/commons/5/5f/%D0%A1%D1%80%D0%B5%D0%B4%D0%BD%D0%B8%D0%B9_%D0%BF%D1%91%D1%81%D1%82%D1%80%D1%8B%D0%B9_%D0%B4%D1%8F%D1%82%D0%B5%D0%BB_%28Dendrocoptes_medius%29%2C_%D0%91%D0%B8%D1%82%D1%86%D0%B5%D0%B2%D1%81%D0%BA%D0%B8%D0%B9_%D0%BB%D0%B5%D1%81.jpg' },
+  'dendrocoptes medius': { url:'https://upload.wikimedia.org/wikipedia/commons/5/5f/%D0%A1%D1%80%D0%B5%D0%B4%D0%BD%D0%B8%D0%B9_%D0%BF%D1%91%D1%81%D1%82%D1%80%D1%8B%D0%B9_%D0%B4%D1%8F%D1%82%D0%B5%D0%BB_%28Dendrocoptes_medius%29%2C_%D0%91%D0%B8%D1%82%D1%86%D0%B5%D0%B2%D1%81%D0%BA%D0%B8%D0%B9_%D0%BB%D0%B5%D1%81.jpg' },
+  'dryocopus martius': { url:'https://upload.wikimedia.org/wikipedia/commons/e/e6/Black_woodpecker_%28Dryocopus_martius%29.jpg' },
+  'pyrrhocorax graculus': { url:'https://upload.wikimedia.org/wikipedia/commons/4/49/Chocard_%C3%A0_bec_jaune.jpg' },
   'coccothraustes coccothraustes': { url:'https://upload.wikimedia.org/wikipedia/commons/4/48/Hawfinch_%28Coccothraustes_coccothraustes%29_male_Drenthe.jpg' },
 };
 async function _fetchWikiPhoto(sci){
