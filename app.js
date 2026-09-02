@@ -7955,7 +7955,7 @@ async function _openMigrationFullscreen(sci){
   requestAnimationFrame(() => {
     const dataBounds = L.latLngBounds([[s, w], [n, e]]);
     const worldBounds = L.latLngBounds([[-60, -180], [85, 180]]);
-    _migFsMap = L.map(mapEl, { zoomControl:true, maxBounds:worldBounds, maxBoundsViscosity:1.0, worldCopyJump:false, attributionControl:true });
+    _migFsMap = L.map(mapEl, { zoomControl:true, maxBounds:worldBounds, maxBoundsViscosity:1.0, worldCopyJump:false, attributionControl:true, zoomSnap:0, zoomDelta:0.5 });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap', maxZoom:12, noWrap:true }).addTo(_migFsMap);
     _migFsMap.fitBounds(dataBounds);
     // Recalcule minZoom plusieurs fois car le container prend un peu de temps a
