@@ -7758,20 +7758,29 @@ async function _renderSpeciesRangeCard(sci){
     const worldBounds = L.latLngBounds([[-60, -180], [85, 180]]);
     _rangeMapInstance = L.map(mapEl, {
       zoomControl:true, maxBounds:worldBounds, maxBoundsViscosity:1.0,
-      worldCopyJump:false, attributionControl:true
+      worldCopyJump:false, attributionControl:true, zoomSnap:0, zoomDelta:0.5
     });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution:'© OpenStreetMap', maxZoom:12, noWrap:true
     }).addTo(_rangeMapInstance);
     L.imageOverlay(pngPath, dataBounds, { opacity:0.75, interactive:false }).addTo(_rangeMapInstance);
     _rangeMapInstance.fitBounds(dataBounds);
-    setTimeout(() => {
+    // Meme calcul minZoom que la migration plein ecran : le monde touche les bords lateraux
+    const recalcRangeMinZoom = () => {
       if(!_rangeMapInstance) return;
       _rangeMapInstance.invalidateSize();
-      const worldFitZoom = _rangeMapInstance.getBoundsZoom(worldBounds, true);
-      _rangeMapInstance.setMinZoom(worldFitZoom);
+      const w = mapEl.clientWidth || 800;
+      const widthFitZoom = Math.log2(w / 256);
+      _rangeMapInstance.setMinZoom(widthFitZoom);
       _rangeMapInstance.fitBounds(dataBounds);
-    }, 200);
+    };
+    setTimeout(recalcRangeMinZoom, 100);
+    setTimeout(recalcRangeMinZoom, 400);
+    try{
+      if(window._rangeMapResizeObs){ try{ window._rangeMapResizeObs.disconnect(); }catch(_){} }
+      window._rangeMapResizeObs = new ResizeObserver(() => recalcRangeMinZoom());
+      window._rangeMapResizeObs.observe(mapEl);
+    }catch(_){}
   });
 }
 // Migration animee : 26 frames PNG hebdo (1 sur 2) par migrateur, timeline slider + autoplay.
