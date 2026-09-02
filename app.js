@@ -7763,7 +7763,7 @@ async function _renderSpeciesRangeCard(sci){
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution:'© OpenStreetMap', maxZoom:12, noWrap:true
     }).addTo(_rangeMapInstance);
-    L.imageOverlay(pngPath, dataBounds, { opacity:0.75, interactive:false }).addTo(_rangeMapInstance);
+    L.imageOverlay(pngPath, dataBounds, { opacity:0.75, interactive:false, className:'sharp-overlay' }).addTo(_rangeMapInstance);
     _rangeMapInstance.fitBounds(dataBounds);
     // Meme calcul minZoom que la migration plein ecran : le monde touche les bords lateraux
     const recalcRangeMinZoom = () => {
@@ -7993,11 +7993,11 @@ async function _openMigrationFullscreen(sci){
     }catch(_){}
     const frameUrl = wk => `${WEEKLY_DATA_BASE}/range-weekly/${entry.code}/w${String(wk).padStart(2,'0')}.png?v=20260901`;
     weeks.forEach(wk => { const img = new Image(); img.src = frameUrl(wk); });
-    let overlay = L.imageOverlay(frameUrl(weeks[0]), dataBounds, { opacity:0.78, interactive:false }).addTo(_migFsMap);
+    let overlay = L.imageOverlay(frameUrl(weeks[0]), dataBounds, { opacity:0.78, interactive:false, className:'sharp-overlay' }).addTo(_migFsMap);
     const setFrame = i => {
       const wk = weeks[i];
       if(overlay.setUrl){ overlay.setUrl(frameUrl(wk)); }
-      else { _migFsMap.removeLayer(overlay); overlay = L.imageOverlay(frameUrl(wk), dataBounds, { opacity:0.78, interactive:false }).addTo(_migFsMap); }
+      else { _migFsMap.removeLayer(overlay); overlay = L.imageOverlay(frameUrl(wk), dataBounds, { opacity:0.78, interactive:false, className:'sharp-overlay' }).addTo(_migFsMap); }
       label.textContent = `Sem ${wk} · ${weekToLabel(wk)}`;
     };
     slider.addEventListener('input', () => setFrame(+slider.value));

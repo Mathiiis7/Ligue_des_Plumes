@@ -1,4 +1,8 @@
-  :root {
+  /* Rendu net des overlays raster (range + migration) : evite l'interpolation
+   bilinear du navigateur qui rend flou l'upscale x2-3 des PNGs 500px. */
+.sharp-overlay { image-rendering: pixelated; image-rendering: crisp-edges; }
+
+:root {
     --bg: #eef2f1;
     --surface: #ffffff;
     --surface-2: #e7eceb;
