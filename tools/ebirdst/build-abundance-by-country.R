@@ -193,13 +193,13 @@ abd_to_tier <- function(a) {
   return(10L)
 }
 
-# -------- 6) Composite tier = 40% annual + 30% pic_national + 30% pic_local --------
-cat("[6] Calcul du tier composite (40/30/30)...\n")
+# -------- 6) Composite tier = 50% annual + 30% pic_national + 20% pic_local --------
+cat("[6] Calcul du tier composite (50/30/20)...\n")
 compute_composite_tier <- function(annual, peak_nat, peak_local) {
   t_a <- abd_to_tier(annual)
   t_n <- abd_to_tier(peak_nat)
   t_l <- abd_to_tier(peak_local)
-  composite <- round(0.4 * t_a + 0.3 * t_n + 0.3 * t_l)
+  composite <- round(0.5 * t_a + 0.3 * t_n + 0.2 * t_l)
   if (composite < 1) composite <- 1L
   if (composite > 10) composite <- 10L
   return(as.integer(composite))

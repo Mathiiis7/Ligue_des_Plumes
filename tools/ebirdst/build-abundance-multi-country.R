@@ -67,7 +67,9 @@ abd_to_tier <- function(a) {
 
 compute_composite_tier <- function(annual, peak_nat, peak_local) {
   t_a <- abd_to_tier(annual); t_n <- abd_to_tier(peak_nat); t_l <- abd_to_tier(peak_local)
-  composite <- round(0.4 * t_a + 0.3 * t_n + 0.3 * t_l)
+  # Composite 50/30/20 : reduit le poids de la densite hotspot (biais grosses concentrations)
+  # au profit de la moyenne annuelle. Voir dashboard historique.
+  composite <- round(0.5 * t_a + 0.3 * t_n + 0.2 * t_l)
   if (composite < 1) composite <- 1L
   if (composite > 10) composite <- 10L
   as.integer(composite)
