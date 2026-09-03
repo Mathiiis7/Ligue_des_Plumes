@@ -7102,7 +7102,7 @@ $('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove(
 // reload de page. ~200 bytes par entree, 700 especes = 140 KB, tient largement dans les
 // 5-10 MB dispo. Sans persistance, l'utilisateur re-attend le fetch de toutes les
 // photos du Birdydex a chaque visite -> tres lent.
-const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v25';
+const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v26';
 const _SP_PHOTO_CACHE_TTL_MS = 30 * 24 * 3600 * 1000;
 const _spPhotoCache = new Map();      // sci → {url, thumb, credit} | null (échec)
 try{
@@ -7221,6 +7221,16 @@ const PHOTO_OVERRIDE_WIKI = {
   'haliaeetus leucocephalus': { url:'https://upload.wikimedia.org/wikipedia/commons/9/99/Bald_Eagle_%2817709349330%29.jpg' },
   'aegypius monachus': { url:'https://upload.wikimedia.org/wikipedia/commons/4/49/Buitre_negro.jpg' },
   'anas carolinensis': { url:'https://upload.wikimedia.org/wikipedia/commons/8/8e/Anas_carolinensis_DSC_5271.jpg' },
+  'picus canus': { url:'https://upload.wikimedia.org/wikipedia/commons/f/fd/Grey-headed_Woodpecker_from_Himachal_Pradesh_02.jpg' },
+  'falco columbarius': { url:'https://upload.wikimedia.org/wikipedia/commons/5/56/Merlin_%2811737397626%29.jpg' },
+  'lanius phoenicuroides': { url:'https://upload.wikimedia.org/wikipedia/commons/8/8a/Lanius_phoenicuroides_221320163.jpg' },
+  'iduna caligata': { url:'https://upload.wikimedia.org/wikipedia/commons/c/c9/Bird_Walk_at_Pullzhi%2C_Thrissur_Kole_Wetlands_24.jpg' },
+  'hippolais caligata': { url:'https://upload.wikimedia.org/wikipedia/commons/c/c9/Bird_Walk_at_Pullzhi%2C_Thrissur_Kole_Wetlands_24.jpg' },
+  'acrocephalus dumetorum': { url:'https://upload.wikimedia.org/wikipedia/commons/0/0e/Blyth%27s_reed_warbler_%2855433%29.jpg' },
+  'locustella naevia': { url:'https://upload.wikimedia.org/wikipedia/commons/d/d0/Grasshopper_Warbler_%28Locustella_naevia%29_%2834231783040%29.jpg' },
+  'passer luteus': { url:'https://upload.wikimedia.org/wikipedia/commons/a/a3/Passer_luteus_262388966.jpg' },
+  'loxia scotica': { url:'https://upload.wikimedia.org/wikipedia/commons/6/67/Loxia_scotica_-_Simone_Littledale_-_562388281.jpeg' },
+  'emberiza rustica': { url:'https://upload.wikimedia.org/wikipedia/commons/5/52/%E3%82%AB%E3%82%B7%E3%83%A9%E3%83%80%E3%82%AB_%28%E9%A0%AD%E9%AB%98%29_%28Rustic_Bunting%29_%28Emberiza_rustica%29_%2823264222832%29.jpg' },
   'coccothraustes coccothraustes': { url:'https://upload.wikimedia.org/wikipedia/commons/4/48/Hawfinch_%28Coccothraustes_coccothraustes%29_male_Drenthe.jpg' },
 };
 async function _fetchWikiPhoto(sci){
