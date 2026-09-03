@@ -7147,7 +7147,7 @@ $('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove(
 // reload de page. ~200 bytes par entree, 700 especes = 140 KB, tient largement dans les
 // 5-10 MB dispo. Sans persistance, l'utilisateur re-attend le fetch de toutes les
 // photos du Birdydex a chaque visite -> tres lent.
-const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v40';
+const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v41';
 const _SP_PHOTO_CACHE_TTL_MS = 30 * 24 * 3600 * 1000;
 const _spPhotoCache = new Map();      // sci → {url, thumb, credit} | null (échec)
 try{
@@ -7274,8 +7274,8 @@ const PHOTO_OVERRIDE_WIKI = {
   'catharus minimus': { url:'https://upload.wikimedia.org/wikipedia/commons/a/a6/Catharus_minimus%2C_Boston%2C_Massachusetts_3.jpg' },
   'alaudala rufescens': { url:'https://upload.wikimedia.org/wikipedia/commons/d/d8/Terrera_Marisme%C3%B1a%2C_Calandrella_rufescens_%285825387078%29.jpg' },
   'calandrella rufescens': { url:'https://upload.wikimedia.org/wikipedia/commons/d/d8/Terrera_Marisme%C3%B1a%2C_Calandrella_rufescens_%285825387078%29.jpg' },
-  'setophaga striata': { url:'https://upload.wikimedia.org/wikipedia/commons/4/4e/Blackpoll_warbler_%2841305725734%29.jpg' },
-  'dendroica striata': { url:'https://upload.wikimedia.org/wikipedia/commons/4/4e/Blackpoll_warbler_%2841305725734%29.jpg' },
+  'setophaga striata': { url:'https://upload.wikimedia.org/wikipedia/commons/4/46/Dendroica_striata_MN.jpg' },
+  'dendroica striata': { url:'https://upload.wikimedia.org/wikipedia/commons/4/46/Dendroica_striata_MN.jpg' },
   'picus canus': { url:'https://upload.wikimedia.org/wikipedia/commons/7/79/Grey-headed_woodpecker_%28Picus_canus%29_445.jpg' },
   'falco columbarius': { url:'https://upload.wikimedia.org/wikipedia/commons/4/43/Falco_columbarius_%2831623037788%29.jpg' },
   'lanius phoenicuroides': { url:'https://upload.wikimedia.org/wikipedia/commons/8/8a/Lanius_phoenicuroides_221320163.jpg' },
