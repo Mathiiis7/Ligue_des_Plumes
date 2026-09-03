@@ -7102,7 +7102,7 @@ $('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove(
 // reload de page. ~200 bytes par entree, 700 especes = 140 KB, tient largement dans les
 // 5-10 MB dispo. Sans persistance, l'utilisateur re-attend le fetch de toutes les
 // photos du Birdydex a chaque visite -> tres lent.
-const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v28';
+const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v29';
 const _SP_PHOTO_CACHE_TTL_MS = 30 * 24 * 3600 * 1000;
 const _spPhotoCache = new Map();      // sci → {url, thumb, credit} | null (échec)
 try{
@@ -7194,7 +7194,7 @@ const PHOTO_OVERRIDE_WIKI = {
   'nycticorax nycticorax': { url:'https://upload.wikimedia.org/wikipedia/commons/1/10/Black-crowned_Night_Heron_by_Tisha_Mukherjee_14.jpg' },
   'circus pygargus': { url:'https://upload.wikimedia.org/wikipedia/commons/7/7a/A_Spooked_Montagu_Harrier_-_with_breakfast_at_her_Feet_%28thumb_like_creature%29.jpg' },
   'elanus caeruleus': { url:'https://upload.wikimedia.org/wikipedia/commons/2/2f/Black-winged_kite_%28Elanus_caeruleus_caeruleus%29_Serengeti.jpg' },
-  'haliaeetus albicilla': { url:'https://upload.wikimedia.org/wikipedia/commons/d/d0/White-tailed_Eagle_Haliaeetus_albicilla.jpg' },
+  'haliaeetus albicilla': { url:'https://upload.wikimedia.org/wikipedia/commons/0/08/White-tailed_eagle_%28Haliaeetus_albicilla%29%2C_in_Jammu_and_Kashmir%2C_India_01.jpg' },
   'coracias garrulus': { url:'https://upload.wikimedia.org/wikipedia/commons/e/ec/Coracias_garrulus%2C_Alentejo%2C_Portugal.jpg' },
   'jynx torquilla': { url:'https://upload.wikimedia.org/wikipedia/commons/3/31/Eurasian_Wryneck_%28Jynx_torquilla%29_%2830744793337%29.jpg' },
   'nucifraga caryocatactes': { url:'https://upload.wikimedia.org/wikipedia/commons/5/54/Nucifraga_caryocatactes_Davos_2.jpg' },
