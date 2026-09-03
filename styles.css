@@ -1163,7 +1163,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   /* Manquantes : silhouette noire (comme Pokedex classique) */
   .pkdx-card.missing { opacity:.9; background:var(--surface-2); }
   .pkdx-card.missing .pkdx-img img { filter:brightness(0) contrast(2) opacity(.65); }
-  .pkdx-card.missing .pkdx-img { color:var(--ink-3); opacity:.4; font-size:36px; }
+  .pkdx-card.missing .pkdx-img { background:linear-gradient(135deg, var(--surface-2) 0%, var(--line-2) 100%); }
   .pkdx-card.missing .pkdx-name { color:var(--ink-3); font-style:italic; }
   .pkdx-card.missing .pkdx-sci { visibility:hidden; }
   .pkdx-card.missing .pkdx-tier { opacity:.4; filter:grayscale(.5); }

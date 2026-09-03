@@ -11504,7 +11504,7 @@ function _pkdxRender(){
     return `<div class="pkdx-card${r.owned?'':' missing'}" data-sci="${esc(r.sci)}">
       <span class="pkdx-num">#${num}</span>
       <span class="pkdx-tier" style="background:${tierBg};" title="Tier ${r.tier}">${r.tier}</span>
-      <div class="pkdx-img" data-pkdx-lazy="${esc(r.sci)}">🐦</div>
+      <div class="pkdx-img" data-pkdx-lazy="${esc(r.sci)}">${r.owned ? '🐦' : ''}</div>
       <div class="pkdx-name">${esc(r.nm)}</div>
       <div class="pkdx-sci">${esc(r.sci)}</div>
     </div>`;
