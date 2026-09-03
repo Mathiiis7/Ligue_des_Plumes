@@ -7102,7 +7102,7 @@ $('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove(
 // reload de page. ~200 bytes par entree, 700 especes = 140 KB, tient largement dans les
 // 5-10 MB dispo. Sans persistance, l'utilisateur re-attend le fetch de toutes les
 // photos du Birdydex a chaque visite -> tres lent.
-const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v34';
+const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v35';
 const _SP_PHOTO_CACHE_TTL_MS = 30 * 24 * 3600 * 1000;
 const _spPhotoCache = new Map();      // sci → {url, thumb, credit} | null (échec)
 try{
@@ -7130,7 +7130,7 @@ const _spSoundCache = new Map();      // sci → url mp3 | null
 // specifique dont l'article a une photo pleine longueur. Ajouter ici les especes
 // probleatiques a la volee.
 const PHOTO_OVERRIDE_WIKI = {
-  'circus hudsonius': { url:'https://upload.wikimedia.org/wikipedia/commons/7/7b/Circus_hudsonius%2C_male_perched%2C_Berkeley%2C_California_%28cropped%29.jpg' },   // Busard des marais (Nord-Am), male perched cropped
+  'circus hudsonius': { url:'https://upload.wikimedia.org/wikipedia/commons/7/71/Male_Northern_Harrier_%2814364839779%29.jpg' },   // Busard des marais : male en vol, 4695x3259
   'branta bernicla': { url:'https://upload.wikimedia.org/wikipedia/commons/7/75/Branta_bernicla_bernicla_-_Brent_Goose.jpg' },
   'otis tarda': { url:'https://upload.wikimedia.org/wikipedia/commons/d/d8/Abetarda-comum%2C_macho%2C_concentrado_e_a_fazer_o_seu_melhor..%21_Great_Bustard%2C_male%2C_focused_and_doing_his_best..%21_%2854460360805%29.jpg' },
   'curruca sarda': { url:'https://upload.wikimedia.org/wikipedia/commons/3/37/Fauvette_sarde_Fejjet_errih014.jpg' },
