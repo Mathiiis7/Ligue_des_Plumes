@@ -7102,7 +7102,7 @@ $('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove(
 // reload de page. ~200 bytes par entree, 700 especes = 140 KB, tient largement dans les
 // 5-10 MB dispo. Sans persistance, l'utilisateur re-attend le fetch de toutes les
 // photos du Birdydex a chaque visite -> tres lent.
-const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v33';
+const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v34';
 const _SP_PHOTO_CACHE_TTL_MS = 30 * 24 * 3600 * 1000;
 const _spPhotoCache = new Map();      // sci → {url, thumb, credit} | null (échec)
 try{
@@ -7229,7 +7229,7 @@ const PHOTO_OVERRIDE_WIKI = {
   'acrocephalus dumetorum': { url:'https://upload.wikimedia.org/wikipedia/commons/0/0e/Blyth%27s_reed_warbler_%2855433%29.jpg' },
   'locustella naevia': { url:'https://upload.wikimedia.org/wikipedia/commons/d/d0/Grasshopper_Warbler_%28Locustella_naevia%29_%2834231783040%29.jpg' },
   'passer luteus': { url:'https://upload.wikimedia.org/wikipedia/commons/a/a3/Passer_luteus_262388966.jpg' },
-  'loxia scotica': { url:'https://cdn.download.ams.birds.cornell.edu/api/v2/asset/256709021/900' },   // Macaulay Library Cornell (fournie par l'utilisateur)
+  'loxia scotica': { url:'https://base-prod.rspb-prod.magnolia-platform.com/.imaging/focalpoint/landscape16to9/1600x900/dam/jcr:e0c1b9db-4b1d-4074-a145-2f0c2c861736/1585855924-Species-Scottish-Crossbill-MALE-In-pine-tree.jpg' },   // RSPB photo male in pine tree (fournie par user)
   'emberiza rustica': { url:'https://upload.wikimedia.org/wikipedia/commons/5/52/%E3%82%AB%E3%82%B7%E3%83%A9%E3%83%80%E3%82%AB_%28%E9%A0%AD%E9%AB%98%29_%28Rustic_Bunting%29_%28Emberiza_rustica%29_%2823264222832%29.jpg' },
   'acanthis flammea': { url:'https://upload.wikimedia.org/wikipedia/commons/6/62/Birkenzeisige_%28Acanthis_flammea%29_auf_Juist_-_Nationalpark_Nieders%C3%A4chsisches_Wattenmeer.jpg' },
   'acanthis hornemanni': { url:'https://upload.wikimedia.org/wikipedia/commons/8/8d/Hoary_Redpoll_%285308630118%29.jpg' },
