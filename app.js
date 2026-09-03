@@ -11520,6 +11520,11 @@ function _pkdxLazyPhotos(){
       if(!e.isIntersecting) continue;
       const el = e.target;
       io.unobserve(el);
+      // Ne fetch PAS les photos pour especes non observees (silhouette noire de toute
+      // facon via CSS filter, aucun benefice de telecharger 100-500 KB par espece
+      // pour l'apercu grise). Garde l'emoji 🐦 par defaut.
+      const isMissing = el.closest('.pkdx-card.missing');
+      if(isMissing) continue;
       const sci = el.dataset.pkdxLazy;
       if(!sci) continue;
       _fetchWikiPhoto(sci).then(p => {
