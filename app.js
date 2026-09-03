@@ -1800,7 +1800,7 @@ function renderMatrix({universe,N}){
   const uniForFam = state.tierExcl?.size
     ? uni.filter(u => !state.tierExcl.has(rarOf(u).id))
     : uni;
-  const fams=[...new Set(uniForFam.map(u=>familyOf(u.sci)))].sort((a,b)=>a.localeCompare(b,'fr'));
+  const fams=[...new Set(uniForFam.map(u=>familyOf(u.sci)))].sort((a,b) => (FAMILY_ORDER[a] ?? 9999) - (FAMILY_ORDER[b] ?? 9999) || a.localeCompare(b, 'fr'));
   const famKey=fams.join('|');
   if(famKey!==lastFamKey){
     lastFamKey=famKey;
