@@ -7102,7 +7102,7 @@ $('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove(
 // reload de page. ~200 bytes par entree, 700 especes = 140 KB, tient largement dans les
 // 5-10 MB dispo. Sans persistance, l'utilisateur re-attend le fetch de toutes les
 // photos du Birdydex a chaque visite -> tres lent.
-const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v29';
+const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v30';
 const _SP_PHOTO_CACHE_TTL_MS = 30 * 24 * 3600 * 1000;
 const _spPhotoCache = new Map();      // sci → {url, thumb, credit} | null (échec)
 try{
@@ -7178,7 +7178,7 @@ const PHOTO_OVERRIDE_WIKI = {
   'alectoris rufa': { url:'https://upload.wikimedia.org/wikipedia/commons/1/19/Perdiz_%28Alectoris_rufa%29_%2853032047788%29.jpg' },
   'calidris alba': { url:'https://upload.wikimedia.org/wikipedia/commons/d/df/Calidris_alba_%28breeding_plumage%29.jpg' },
   'ardea purpurea': { url:'https://upload.wikimedia.org/wikipedia/commons/c/c9/Ardpur2.jpg' },
-  'aquila chrysaetos': { url:'https://upload.wikimedia.org/wikipedia/commons/2/2f/Golden_Eagle_%28Aquila_chrysaetos%29_%2813667892725%29.jpg' },
+  'aquila chrysaetos': { url:'https://upload.wikimedia.org/wikipedia/commons/c/c2/Maakotka_%28Aquila_chrysaetos%29_by_Jarkko_J%C3%A4rvinen.jpg' },
   'circus cyaneus': { url:'https://upload.wikimedia.org/wikipedia/commons/9/90/Blauwe_kiekendief_masc.jpg' },
   'dryobates minor': { url:'https://upload.wikimedia.org/wikipedia/commons/f/fc/Male_lesser_spotted_woodpecker_%28Dryobates_minor%29.png' },
   'dendrocoptes minor': { url:'https://upload.wikimedia.org/wikipedia/commons/f/fc/Male_lesser_spotted_woodpecker_%28Dryobates_minor%29.png' },
@@ -7201,7 +7201,7 @@ const PHOTO_OVERRIDE_WIKI = {
   'remiz pendulinus': { url:'https://upload.wikimedia.org/wikipedia/commons/6/66/Chapim-de-faces-pretas_%28Remiz_pendulinus%29_%2852712339112%29.jpg' },
   'acrocephalus palustris': { url:'https://upload.wikimedia.org/wikipedia/commons/a/af/Acrocephalus_palustris._Lazaritskaya_Luka.jpg' },
   'acrocephalus arundinaceus': { url:'https://upload.wikimedia.org/wikipedia/commons/4/47/Carricero_tordal_Acrocephalus_arundinaceus.jpg' },
-  'certhia familiaris': { url:'https://upload.wikimedia.org/wikipedia/commons/3/36/Certhia_familiaris%2C_Spomenik_prirode_Lisine_%283%29.jpg' },
+  'certhia familiaris': { url:'https://upload.wikimedia.org/wikipedia/commons/e/e1/Eurasian_Treecreeper_in_the_snow%2C_cropped_version.jpg' },
   'loxia curvirostra': { url:'https://upload.wikimedia.org/wikipedia/commons/e/e6/Cruza-bico_comum%2C_f%C3%AAmea%2C_Red_Crossbill%2C_female_%2851692602998%29.jpg' },
   'tetrao urogallus': { url:'https://upload.wikimedia.org/wikipedia/commons/b/ba/David_Palmer_Capercaillie.jpg' },
   'streptopelia orientalis': { url:'https://upload.wikimedia.org/wikipedia/commons/4/44/2026-08-27_Streptopelia_orientalis_in_Chitose.jpg' },
