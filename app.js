@@ -7102,7 +7102,7 @@ $('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove(
 // reload de page. ~200 bytes par entree, 700 especes = 140 KB, tient largement dans les
 // 5-10 MB dispo. Sans persistance, l'utilisateur re-attend le fetch de toutes les
 // photos du Birdydex a chaque visite -> tres lent.
-const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v35';
+const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v36';
 const _SP_PHOTO_CACHE_TTL_MS = 30 * 24 * 3600 * 1000;
 const _spPhotoCache = new Map();      // sci → {url, thumb, credit} | null (échec)
 try{
@@ -7221,6 +7221,8 @@ const PHOTO_OVERRIDE_WIKI = {
   'haliaeetus leucocephalus': { url:'https://upload.wikimedia.org/wikipedia/commons/e/e9/025_Haliaeetus_leucocephalus.jpg' },
   'aegypius monachus': { url:'https://upload.wikimedia.org/wikipedia/commons/4/49/Buitre_negro.jpg' },
   'anas carolinensis': { url:'https://upload.wikimedia.org/wikipedia/commons/2/23/Anas_carolinensis_Palo_Alto_2.jpg' },
+  'balearica regulorum': { url:'https://upload.wikimedia.org/wikipedia/commons/e/e1/Grey_Crowned_Crane_-_Forest.jpg' },
+  'chlidonias leucopterus': { url:'https://upload.wikimedia.org/wikipedia/commons/d/d0/Chlidonias_leucopterus_2023-04-08.jpg' },
   'picus canus': { url:'https://upload.wikimedia.org/wikipedia/commons/7/79/Grey-headed_woodpecker_%28Picus_canus%29_445.jpg' },
   'falco columbarius': { url:'https://upload.wikimedia.org/wikipedia/commons/4/43/Falco_columbarius_%2831623037788%29.jpg' },
   'lanius phoenicuroides': { url:'https://upload.wikimedia.org/wikipedia/commons/8/8a/Lanius_phoenicuroides_221320163.jpg' },
