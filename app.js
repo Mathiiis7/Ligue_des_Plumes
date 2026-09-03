@@ -7102,7 +7102,7 @@ $('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove(
 // reload de page. ~200 bytes par entree, 700 especes = 140 KB, tient largement dans les
 // 5-10 MB dispo. Sans persistance, l'utilisateur re-attend le fetch de toutes les
 // photos du Birdydex a chaque visite -> tres lent.
-const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v31';
+const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v32';
 const _SP_PHOTO_CACHE_TTL_MS = 30 * 24 * 3600 * 1000;
 const _spPhotoCache = new Map();      // sci → {url, thumb, credit} | null (échec)
 try{
@@ -7130,7 +7130,7 @@ const _spSoundCache = new Map();      // sci → url mp3 | null
 // specifique dont l'article a une photo pleine longueur. Ajouter ici les especes
 // probleatiques a la volee.
 const PHOTO_OVERRIDE_WIKI = {
-  'circus hudsonius': { lang:'en', title:'Northern Harrier' },   // photo par defaut cropee, EN a un plan complet
+  'circus hudsonius': { url:'https://upload.wikimedia.org/wikipedia/commons/7/7b/Circus_hudsonius%2C_male_perched%2C_Berkeley%2C_California_%28cropped%29.jpg' },   // Busard des marais (Nord-Am), male perched cropped
   'branta bernicla': { url:'https://upload.wikimedia.org/wikipedia/commons/7/75/Branta_bernicla_bernicla_-_Brent_Goose.jpg' },
   'otis tarda': { url:'https://upload.wikimedia.org/wikipedia/commons/d/d8/Abetarda-comum%2C_macho%2C_concentrado_e_a_fazer_o_seu_melhor..%21_Great_Bustard%2C_male%2C_focused_and_doing_his_best..%21_%2854460360805%29.jpg' },
   'curruca sarda': { url:'https://upload.wikimedia.org/wikipedia/commons/3/37/Fauvette_sarde_Fejjet_errih014.jpg' },
@@ -7206,10 +7206,10 @@ const PHOTO_OVERRIDE_WIKI = {
   'tetrao urogallus': { url:'https://upload.wikimedia.org/wikipedia/commons/b/ba/David_Palmer_Capercaillie.jpg' },
   'streptopelia orientalis': { url:'https://upload.wikimedia.org/wikipedia/commons/4/44/2026-08-27_Streptopelia_orientalis_in_Chitose.jpg' },
   'apus caffer': { url:'https://upload.wikimedia.org/wikipedia/commons/6/6a/White-rumped_swift%2C_Apus_caffer%2C_at_Suikerbosrand_Nature_Reserve%2C_Gauteng%2C_South_Africa_%2830511369955%29.jpg' },
-  'grus virgo': { url:'https://upload.wikimedia.org/wikipedia/commons/c/c3/Demoiselle_Cranes_at_Tal_Chappar.jpg' },
-  'anthropoides virgo': { url:'https://upload.wikimedia.org/wikipedia/commons/c/c3/Demoiselle_Cranes_at_Tal_Chappar.jpg' },
+  'grus virgo': { url:'https://upload.wikimedia.org/wikipedia/commons/6/69/Demoiselle_Crane_%28Grus_virgo%29_%2849049108046%29.jpg' },
+  'anthropoides virgo': { url:'https://upload.wikimedia.org/wikipedia/commons/6/69/Demoiselle_Crane_%28Grus_virgo%29_%2849049108046%29.jpg' },
   'pluvialis dominica': { url:'https://upload.wikimedia.org/wikipedia/commons/1/1f/American_golden_plover_%2851101437442%29.jpg' },
-  'scolopax rusticola': { url:'https://upload.wikimedia.org/wikipedia/commons/8/8d/Scolopax_rusticola.jpg' },
+  'scolopax rusticola': { url:'https://upload.wikimedia.org/wikipedia/commons/1/1c/Woodcock_earthworm.jpg' },
   'limnodromus scolopaceus': { url:'https://upload.wikimedia.org/wikipedia/commons/8/82/Long-billed_dowitcher_%28Limnodromus_scolopaceus%29_2018.jpg' },
   'fratercula arctica': { url:'https://upload.wikimedia.org/wikipedia/commons/e/e7/Atlantic_puffin_%2827946409202%29.jpg' },
   'hydrocoloeus minutus': { url:'https://upload.wikimedia.org/wikipedia/commons/e/e5/Hydrocoloeus_minutus_Russia_04.jpg' },
@@ -7229,7 +7229,7 @@ const PHOTO_OVERRIDE_WIKI = {
   'acrocephalus dumetorum': { url:'https://upload.wikimedia.org/wikipedia/commons/0/0e/Blyth%27s_reed_warbler_%2855433%29.jpg' },
   'locustella naevia': { url:'https://upload.wikimedia.org/wikipedia/commons/d/d0/Grasshopper_Warbler_%28Locustella_naevia%29_%2834231783040%29.jpg' },
   'passer luteus': { url:'https://upload.wikimedia.org/wikipedia/commons/a/a3/Passer_luteus_262388966.jpg' },
-  'loxia scotica': { url:'https://upload.wikimedia.org/wikipedia/commons/0/07/Scottish_Crossbill_from_the_Crossley_ID_Guide_Britain_and_Ireland.jpg' },
+  'loxia scotica': { url:'https://upload.wikimedia.org/wikipedia/commons/6/67/Loxia_scotica_-_Simone_Littledale_-_562388281.jpeg' },   // Seule vraie photo dispo Commons
   'emberiza rustica': { url:'https://upload.wikimedia.org/wikipedia/commons/5/52/%E3%82%AB%E3%82%B7%E3%83%A9%E3%83%80%E3%82%AB_%28%E9%A0%AD%E9%AB%98%29_%28Rustic_Bunting%29_%28Emberiza_rustica%29_%2823264222832%29.jpg' },
   'acanthis flammea': { url:'https://upload.wikimedia.org/wikipedia/commons/6/62/Birkenzeisige_%28Acanthis_flammea%29_auf_Juist_-_Nationalpark_Nieders%C3%A4chsisches_Wattenmeer.jpg' },
   'acanthis hornemanni': { url:'https://upload.wikimedia.org/wikipedia/commons/8/8d/Hoary_Redpoll_%285308630118%29.jpg' },

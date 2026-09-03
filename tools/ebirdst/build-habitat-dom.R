@@ -72,7 +72,7 @@ for (cc in names(DOMS)) {
 
     st <- tryCatch(rast(st_path), error=function(e) NULL)
     if (is.null(st)) next
-    st_proj <- tryCatch(project(st, habitat, method="bilinear"), error=function(e) NULL)
+    st_proj <- tryCatch(project(st, habitat, method="near"), error=function(e) NULL)
     if (is.null(st_proj)) next
 
     h_vals <- values(habitat)

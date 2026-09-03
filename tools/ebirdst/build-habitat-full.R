@@ -163,7 +163,7 @@ phase_b_species_country <- function(species_code, cc, habitat_cache) {
   habitat <- habitat_cache[[cc]]
   if (is.null(habitat)) return(NULL)
 
-  st_proj <- project(st, habitat, method="bilinear")
+  st_proj <- project(st, habitat, method="near")
   h_vals <- values(habitat)
   s_vals <- values(st_proj)
 
