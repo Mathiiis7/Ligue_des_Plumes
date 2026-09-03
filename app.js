@@ -141,8 +141,8 @@ const FAMILY_ORDER = Object.fromEntries([
   'Bécasseaux, chevaliers', 'Glaréoles', 'Labbes',
   'Pingouins, guillemots', 'Goélands, mouettes, sternes',
   'Plongeons',
-  'Diomedeidés', 'Océanites', 'Puffins, pétrels',
-  'Cigognes', 'Frégatidés',
+  'Albatros', 'Océanites', 'Puffins, pétrels',
+  'Cigognes', 'Frégates',
   'Fous', 'Cormorans', 'Pélicans',
   'Hérons, aigrettes', 'Ibis, spatules',
   'Balbuzard', 'Rapaces (aigles, buses…)',        // rapaces diurnes hors faucons
@@ -151,7 +151,7 @@ const FAMILY_ORDER = Object.fromEntries([
   'Pics',
   'Faucons',                                       // faucons deplaces apres les pics (taxonomie moderne)
   'Perruches', 'Perroquets',
-  'Loriots', 'Pies-grièches', 'Vireonidés',
+  'Loriots', 'Pies-grièches', 'Viréos',
   'Corvidés (corneilles, pies…)',
   'Jaseurs',
   'Mésanges', 'Rémiz', 'Panure',
@@ -161,7 +161,7 @@ const FAMILY_ORDER = Object.fromEntries([
   'Pouillots', 'Bouscarles',
   'Rousserolles', 'Locustelles', 'Cisticoles',
   'Fauvettes',
-  'Leiothrichidés',
+  'Léiothrichidés', 'Timaliidés',
   'Roitelets',
   'Sittelles', 'Tichodrome', 'Grimpereaux', 'Troglodytes',
   'Étourneaux',
