@@ -7102,7 +7102,7 @@ $('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove(
 // reload de page. ~200 bytes par entree, 700 especes = 140 KB, tient largement dans les
 // 5-10 MB dispo. Sans persistance, l'utilisateur re-attend le fetch de toutes les
 // photos du Birdydex a chaque visite -> tres lent.
-const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v24';
+const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v25';
 const _SP_PHOTO_CACHE_TTL_MS = 30 * 24 * 3600 * 1000;
 const _spPhotoCache = new Map();      // sci → {url, thumb, credit} | null (échec)
 try{
@@ -7178,7 +7178,7 @@ const PHOTO_OVERRIDE_WIKI = {
   'alectoris rufa': { url:'https://upload.wikimedia.org/wikipedia/commons/1/19/Perdiz_%28Alectoris_rufa%29_%2853032047788%29.jpg' },
   'calidris alba': { url:'https://upload.wikimedia.org/wikipedia/commons/d/df/Calidris_alba_%28breeding_plumage%29.jpg' },
   'ardea purpurea': { url:'https://upload.wikimedia.org/wikipedia/commons/c/c9/Ardpur2.jpg' },
-  'aquila chrysaetos': { url:'https://upload.wikimedia.org/wikipedia/commons/d/d6/Rovf%C3%A5gel_%288346672496%29.jpg' },
+  'aquila chrysaetos': { url:'https://upload.wikimedia.org/wikipedia/commons/b/b4/Golden_Eagle_%28Aquila_chrysaetos%29_%2813668234394%29.jpg' },
   'circus cyaneus': { url:'https://upload.wikimedia.org/wikipedia/commons/9/90/Blauwe_kiekendief_masc.jpg' },
   'dryobates minor': { url:'https://upload.wikimedia.org/wikipedia/commons/f/fc/Male_lesser_spotted_woodpecker_%28Dryobates_minor%29.png' },
   'dendrocoptes minor': { url:'https://upload.wikimedia.org/wikipedia/commons/f/fc/Male_lesser_spotted_woodpecker_%28Dryobates_minor%29.png' },
@@ -7189,20 +7189,38 @@ const PHOTO_OVERRIDE_WIKI = {
   'pyrrhocorax graculus': { url:'https://upload.wikimedia.org/wikipedia/commons/4/49/Chocard_%C3%A0_bec_jaune.jpg' },
   'alopochen aegyptiaca': { url:'https://upload.wikimedia.org/wikipedia/commons/6/60/Nile_Goose_%2851171596345%29.jpg' },
   'alopochen aegyptiacus': { url:'https://upload.wikimedia.org/wikipedia/commons/6/60/Nile_Goose_%2851171596345%29.jpg' },
-  'porphyrio porphyrio': { url:'https://upload.wikimedia.org/wikipedia/commons/7/70/%22Porphyrio_porphyrio%22_%28Gall_faver%29_cercant_menjar_entre_els_canyissars_de_s%27Albufera_de_Mallorca_2.jpg' },
-  'rissa tridactyla': { url:'https://upload.wikimedia.org/wikipedia/commons/1/14/Anim1475_-_Flickr_-_NOAA_Photo_Library.jpg' },
+  'porphyrio porphyrio': { url:'https://upload.wikimedia.org/wikipedia/commons/a/a5/Cam%C3%A3o%2C_Western_Swamphen_%2850293032653%29.jpg' },
+  'rissa tridactyla': { url:'https://upload.wikimedia.org/wikipedia/commons/d/d1/Bear_Island_Svalbard_Arctic_%2820095735989%29.jpg' },
   'nycticorax nycticorax': { url:'https://upload.wikimedia.org/wikipedia/commons/1/10/Black-crowned_Night_Heron_by_Tisha_Mukherjee_14.jpg' },
   'circus pygargus': { url:'https://upload.wikimedia.org/wikipedia/commons/7/7a/A_Spooked_Montagu_Harrier_-_with_breakfast_at_her_Feet_%28thumb_like_creature%29.jpg' },
   'elanus caeruleus': { url:'https://upload.wikimedia.org/wikipedia/commons/2/2f/Black-winged_kite_%28Elanus_caeruleus_caeruleus%29_Serengeti.jpg' },
-  'haliaeetus albicilla': { url:'https://upload.wikimedia.org/wikipedia/commons/5/5a/Tulcea_to_Mila_35_-_13_-_white-tailed_eagles.jpg' },
+  'haliaeetus albicilla': { url:'https://upload.wikimedia.org/wikipedia/commons/6/6c/White-tailed_eagle_%28Haliaeetus_albicilla%29%2C_in_Jammu_and_Kashmir%2C_India_03.jpg' },
   'coracias garrulus': { url:'https://upload.wikimedia.org/wikipedia/commons/e/ec/Coracias_garrulus%2C_Alentejo%2C_Portugal.jpg' },
   'jynx torquilla': { url:'https://upload.wikimedia.org/wikipedia/commons/3/31/Eurasian_Wryneck_%28Jynx_torquilla%29_%2830744793337%29.jpg' },
   'nucifraga caryocatactes': { url:'https://upload.wikimedia.org/wikipedia/commons/5/54/Nucifraga_caryocatactes_Davos_2.jpg' },
   'remiz pendulinus': { url:'https://upload.wikimedia.org/wikipedia/commons/6/66/Chapim-de-faces-pretas_%28Remiz_pendulinus%29_%2852712339112%29.jpg' },
   'acrocephalus palustris': { url:'https://upload.wikimedia.org/wikipedia/commons/a/af/Acrocephalus_palustris._Lazaritskaya_Luka.jpg' },
-  'acrocephalus arundinaceus': { url:'https://upload.wikimedia.org/wikipedia/commons/6/6b/Acrocephalus_arundinaceus%2C_Srbija_%2851%29.jpg' },
-  'certhia familiaris': { url:'https://upload.wikimedia.org/wikipedia/commons/b/b4/Certhia_familiaris%2C_Kanjon_reke_Jerme%2C_Srbija_%28206%29.jpg' },
+  'acrocephalus arundinaceus': { url:'https://upload.wikimedia.org/wikipedia/commons/4/47/Carricero_tordal_Acrocephalus_arundinaceus.jpg' },
+  'certhia familiaris': { url:'https://upload.wikimedia.org/wikipedia/commons/5/52/Certhia_familiaris%2C_Spomenik_prirode_Lisine_%282%29.jpg' },
   'loxia curvirostra': { url:'https://upload.wikimedia.org/wikipedia/commons/e/e6/Cruza-bico_comum%2C_f%C3%AAmea%2C_Red_Crossbill%2C_female_%2851692602998%29.jpg' },
+  'tetrao urogallus': { url:'https://upload.wikimedia.org/wikipedia/commons/0/03/Auerhenne_in_Deckung.JPG' },
+  'streptopelia orientalis': { url:'https://upload.wikimedia.org/wikipedia/commons/4/44/2026-08-27_Streptopelia_orientalis_in_Chitose.jpg' },
+  'apus caffer': { url:'https://upload.wikimedia.org/wikipedia/commons/6/6a/White-rumped_swift%2C_Apus_caffer%2C_at_Suikerbosrand_Nature_Reserve%2C_Gauteng%2C_South_Africa_%2830511369955%29.jpg' },
+  'grus virgo': { url:'https://upload.wikimedia.org/wikipedia/commons/2/20/Bird_109.jpg' },
+  'anthropoides virgo': { url:'https://upload.wikimedia.org/wikipedia/commons/2/20/Bird_109.jpg' },
+  'pluvialis dominica': { url:'https://upload.wikimedia.org/wikipedia/commons/1/1f/American_golden_plover_%2851101437442%29.jpg' },
+  'scolopax rusticola': { url:'https://upload.wikimedia.org/wikipedia/commons/1/18/Eurasian_woodcock%2C_Scolopax_rusticola%2C_Morkulla_%2850939374872%29.jpg' },
+  'limnodromus scolopaceus': { url:'https://upload.wikimedia.org/wikipedia/commons/d/d8/Long-billed_dowitcher_%2851393490733%29.jpg' },
+  'fratercula arctica': { url:'https://upload.wikimedia.org/wikipedia/commons/e/e7/Atlantic_puffin_%2827946409202%29.jpg' },
+  'hydrocoloeus minutus': { url:'https://upload.wikimedia.org/wikipedia/commons/3/3e/Little_gull_%28Hydrocoloeus_minutus%29_2019.jpg' },
+  'larus minutus': { url:'https://upload.wikimedia.org/wikipedia/commons/3/3e/Little_gull_%28Hydrocoloeus_minutus%29_2019.jpg' },
+  'leucophaeus atricilla': { url:'https://upload.wikimedia.org/wikipedia/commons/2/2d/Gull_2_%284372064416%29.jpg' },
+  'larus atricilla': { url:'https://upload.wikimedia.org/wikipedia/commons/2/2d/Gull_2_%284372064416%29.jpg' },
+  'geronticus eremita': { url:'https://upload.wikimedia.org/wikipedia/commons/c/cb/Geronticus_eremita_239292051.jpg' },
+  'circus aeruginosus': { url:'https://upload.wikimedia.org/wikipedia/commons/e/ea/Circus_aeruginosus_Valencia_3.jpeg' },
+  'haliaeetus leucocephalus': { url:'https://upload.wikimedia.org/wikipedia/commons/9/99/Bald_Eagle_%2817709349330%29.jpg' },
+  'aegypius monachus': { url:'https://upload.wikimedia.org/wikipedia/commons/4/49/Buitre_negro.jpg' },
+  'anas carolinensis': { url:'https://upload.wikimedia.org/wikipedia/commons/8/8e/Anas_carolinensis_DSC_5271.jpg' },
   'coccothraustes coccothraustes': { url:'https://upload.wikimedia.org/wikipedia/commons/4/48/Hawfinch_%28Coccothraustes_coccothraustes%29_male_Drenthe.jpg' },
 };
 async function _fetchWikiPhoto(sci){
