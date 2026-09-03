@@ -7102,7 +7102,7 @@ $('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove(
 // reload de page. ~200 bytes par entree, 700 especes = 140 KB, tient largement dans les
 // 5-10 MB dispo. Sans persistance, l'utilisateur re-attend le fetch de toutes les
 // photos du Birdydex a chaque visite -> tres lent.
-const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v30';
+const _SP_PHOTO_CACHE_KEY = 'mb-sp-photo-cache-v31';
 const _SP_PHOTO_CACHE_TTL_MS = 30 * 24 * 3600 * 1000;
 const _spPhotoCache = new Map();      // sci → {url, thumb, credit} | null (échec)
 try{
@@ -7194,22 +7194,22 @@ const PHOTO_OVERRIDE_WIKI = {
   'nycticorax nycticorax': { url:'https://upload.wikimedia.org/wikipedia/commons/1/10/Black-crowned_Night_Heron_by_Tisha_Mukherjee_14.jpg' },
   'circus pygargus': { url:'https://upload.wikimedia.org/wikipedia/commons/7/7a/A_Spooked_Montagu_Harrier_-_with_breakfast_at_her_Feet_%28thumb_like_creature%29.jpg' },
   'elanus caeruleus': { url:'https://upload.wikimedia.org/wikipedia/commons/2/2f/Black-winged_kite_%28Elanus_caeruleus_caeruleus%29_Serengeti.jpg' },
-  'haliaeetus albicilla': { url:'https://upload.wikimedia.org/wikipedia/commons/0/08/White-tailed_eagle_%28Haliaeetus_albicilla%29%2C_in_Jammu_and_Kashmir%2C_India_01.jpg' },
+  'haliaeetus albicilla': { url:'https://upload.wikimedia.org/wikipedia/commons/9/90/Fighting_white-tailed_eagles_%28Haliaeetus_albicilla%29_%281%29.jpg' },
   'coracias garrulus': { url:'https://upload.wikimedia.org/wikipedia/commons/e/ec/Coracias_garrulus%2C_Alentejo%2C_Portugal.jpg' },
   'jynx torquilla': { url:'https://upload.wikimedia.org/wikipedia/commons/3/31/Eurasian_Wryneck_%28Jynx_torquilla%29_%2830744793337%29.jpg' },
   'nucifraga caryocatactes': { url:'https://upload.wikimedia.org/wikipedia/commons/5/54/Nucifraga_caryocatactes_Davos_2.jpg' },
   'remiz pendulinus': { url:'https://upload.wikimedia.org/wikipedia/commons/6/66/Chapim-de-faces-pretas_%28Remiz_pendulinus%29_%2852712339112%29.jpg' },
   'acrocephalus palustris': { url:'https://upload.wikimedia.org/wikipedia/commons/a/af/Acrocephalus_palustris._Lazaritskaya_Luka.jpg' },
   'acrocephalus arundinaceus': { url:'https://upload.wikimedia.org/wikipedia/commons/4/47/Carricero_tordal_Acrocephalus_arundinaceus.jpg' },
-  'certhia familiaris': { url:'https://upload.wikimedia.org/wikipedia/commons/e/e1/Eurasian_Treecreeper_in_the_snow%2C_cropped_version.jpg' },
+  'certhia familiaris': { url:'https://upload.wikimedia.org/wikipedia/commons/d/d7/Eurasian_treecreeper%2C_Certhia_familiaris%2C_tr%C3%A4dkrypare.jpg' },
   'loxia curvirostra': { url:'https://upload.wikimedia.org/wikipedia/commons/e/e6/Cruza-bico_comum%2C_f%C3%AAmea%2C_Red_Crossbill%2C_female_%2851692602998%29.jpg' },
   'tetrao urogallus': { url:'https://upload.wikimedia.org/wikipedia/commons/b/ba/David_Palmer_Capercaillie.jpg' },
   'streptopelia orientalis': { url:'https://upload.wikimedia.org/wikipedia/commons/4/44/2026-08-27_Streptopelia_orientalis_in_Chitose.jpg' },
   'apus caffer': { url:'https://upload.wikimedia.org/wikipedia/commons/6/6a/White-rumped_swift%2C_Apus_caffer%2C_at_Suikerbosrand_Nature_Reserve%2C_Gauteng%2C_South_Africa_%2830511369955%29.jpg' },
-  'grus virgo': { url:'https://upload.wikimedia.org/wikipedia/commons/d/de/Anthropoides_virgo_%28Linnaeus%2C_1758%29_%2845584347352%29.jpg' },
-  'anthropoides virgo': { url:'https://upload.wikimedia.org/wikipedia/commons/d/de/Anthropoides_virgo_%28Linnaeus%2C_1758%29_%2845584347352%29.jpg' },
+  'grus virgo': { url:'https://upload.wikimedia.org/wikipedia/commons/c/c3/Demoiselle_Cranes_at_Tal_Chappar.jpg' },
+  'anthropoides virgo': { url:'https://upload.wikimedia.org/wikipedia/commons/c/c3/Demoiselle_Cranes_at_Tal_Chappar.jpg' },
   'pluvialis dominica': { url:'https://upload.wikimedia.org/wikipedia/commons/1/1f/American_golden_plover_%2851101437442%29.jpg' },
-  'scolopax rusticola': { url:'https://upload.wikimedia.org/wikipedia/commons/e/ea/Eurasian_woodcock%2C_Scolopax_rusticola%2C_Morkulla_%2850925537116%29.jpg' },
+  'scolopax rusticola': { url:'https://upload.wikimedia.org/wikipedia/commons/8/8d/Scolopax_rusticola.jpg' },
   'limnodromus scolopaceus': { url:'https://upload.wikimedia.org/wikipedia/commons/8/82/Long-billed_dowitcher_%28Limnodromus_scolopaceus%29_2018.jpg' },
   'fratercula arctica': { url:'https://upload.wikimedia.org/wikipedia/commons/e/e7/Atlantic_puffin_%2827946409202%29.jpg' },
   'hydrocoloeus minutus': { url:'https://upload.wikimedia.org/wikipedia/commons/e/e5/Hydrocoloeus_minutus_Russia_04.jpg' },
@@ -7217,7 +7217,7 @@ const PHOTO_OVERRIDE_WIKI = {
   'leucophaeus atricilla': { url:'https://upload.wikimedia.org/wikipedia/commons/2/2d/Gull_2_%284372064416%29.jpg' },
   'larus atricilla': { url:'https://upload.wikimedia.org/wikipedia/commons/2/2d/Gull_2_%284372064416%29.jpg' },
   'geronticus eremita': { url:'https://upload.wikimedia.org/wikipedia/commons/c/cb/Geronticus_eremita_239292051.jpg' },
-  'circus aeruginosus': { url:'https://upload.wikimedia.org/wikipedia/commons/0/0b/Circus_aeruginosus_feeding_2013.jpg' },
+  'circus aeruginosus': { url:'https://upload.wikimedia.org/wikipedia/commons/b/bf/M%C3%A4nnliche_Rohrweihe_im_Flug_04.jpg' },
   'haliaeetus leucocephalus': { url:'https://upload.wikimedia.org/wikipedia/commons/e/e9/025_Haliaeetus_leucocephalus.jpg' },
   'aegypius monachus': { url:'https://upload.wikimedia.org/wikipedia/commons/4/49/Buitre_negro.jpg' },
   'anas carolinensis': { url:'https://upload.wikimedia.org/wikipedia/commons/2/23/Anas_carolinensis_Palo_Alto_2.jpg' },
@@ -7229,7 +7229,7 @@ const PHOTO_OVERRIDE_WIKI = {
   'acrocephalus dumetorum': { url:'https://upload.wikimedia.org/wikipedia/commons/0/0e/Blyth%27s_reed_warbler_%2855433%29.jpg' },
   'locustella naevia': { url:'https://upload.wikimedia.org/wikipedia/commons/d/d0/Grasshopper_Warbler_%28Locustella_naevia%29_%2834231783040%29.jpg' },
   'passer luteus': { url:'https://upload.wikimedia.org/wikipedia/commons/a/a3/Passer_luteus_262388966.jpg' },
-  'loxia scotica': { url:'https://upload.wikimedia.org/wikipedia/commons/6/67/Loxia_scotica_-_Simone_Littledale_-_562388281.jpeg' },
+  'loxia scotica': { url:'https://upload.wikimedia.org/wikipedia/commons/0/07/Scottish_Crossbill_from_the_Crossley_ID_Guide_Britain_and_Ireland.jpg' },
   'emberiza rustica': { url:'https://upload.wikimedia.org/wikipedia/commons/5/52/%E3%82%AB%E3%82%B7%E3%83%A9%E3%83%80%E3%82%AB_%28%E9%A0%AD%E9%AB%98%29_%28Rustic_Bunting%29_%28Emberiza_rustica%29_%2823264222832%29.jpg' },
   'acanthis flammea': { url:'https://upload.wikimedia.org/wikipedia/commons/6/62/Birkenzeisige_%28Acanthis_flammea%29_auf_Juist_-_Nationalpark_Nieders%C3%A4chsisches_Wattenmeer.jpg' },
   'acanthis hornemanni': { url:'https://upload.wikimedia.org/wikipedia/commons/8/8d/Hoary_Redpoll_%285308630118%29.jpg' },
