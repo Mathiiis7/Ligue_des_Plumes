@@ -7750,6 +7750,123 @@ async function _renderSpeciesTraitsCard(key){
   `;
   box.hidden = false;
 }
+// =============================================================================
+// HABITAT (Corine Land Cover Europe + CGLC monde)
+// =============================================================================
+// Lazy load des legendes (44 CLC + 22 CGLC + 5 super-categories L1)
+let _habitatLegendsCache = null;
+async function _loadHabitatLegends(){
+  if(_habitatLegendsCache) return _habitatLegendsCache;
+  try{
+    const r = await fetch('data/habitat-legends.json?v=20260903');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    _habitatLegendsCache = await r.json();
+  }catch(e){ console.warn('habitat-legends load failed:', e.message); _habitatLegendsCache = null; }
+  return _habitatLegendsCache;
+}
+// Lazy load par pays du JSON habitat des especes
+const _habitatByCountryPromises = {};
+const _habitatByCountryCache = {};
+async function _loadHabitatByCountry(cc){
+  const key = (cc||'FR').toLowerCase();
+  if(_habitatByCountryCache[key] !== undefined) return _habitatByCountryCache[key];
+  if(_habitatByCountryPromises[key]) return _habitatByCountryPromises[key];
+  _habitatByCountryPromises[key] = (async () => {
+    try{
+      const r = await fetch('data/countries/'+key+'/habitat_by_species.json?v=20260903');
+      if(!r.ok){ _habitatByCountryCache[key] = null; return null; }
+      const d = await r.json();
+      _habitatByCountryCache[key] = d;
+      return d;
+    }catch(_){ _habitatByCountryCache[key] = null; return null; }
+  })();
+  return _habitatByCountryPromises[key];
+}
+// Rendu accordeon L1 -> L3 pour une espece dans un pays donne.
+async function _renderSpeciesHabitatCard(sci, cc){
+  const box = $('#smHabitatCard'); if(!box) return;
+  box.hidden = true;
+  box.innerHTML = '';
+  const key = (sci||'').toLowerCase().trim();
+  const country = (cc || _globalCountry || 'FR');
+  if(!key) return;
+
+  const [legends, byCountry] = await Promise.all([
+    _loadHabitatLegends(),
+    _loadHabitatByCountry(country)
+  ]);
+  if(!legends || !byCountry) return;
+  const entry = byCountry[key];
+  if(!entry || !entry.L1) return;
+
+  const dataset = entry.d;   // 'clc' ou 'cglc'
+  const l1Meta = legends.L1_super_categories;
+  const classes = legends[dataset]?.classes || {};
+
+  // Ordre L1 : par pourcentage decroissant (montre d'abord la super-cat dominante)
+  const l1Sorted = Object.entries(entry.L1).sort((a,b) => b[1] - a[1]);
+
+  // Pour L3 : trier decroissant, garder >=2%, agreger le reste en "Autres" par super-cat
+  const l3Entries = Object.entries(entry.L3).map(([code, pct]) => ({
+    code, pct: +pct, meta: classes[code], l1: (classes[code]||{}).l1
+  })).sort((a,b) => b.pct - a.pct);
+
+  const datasetLabel = dataset === 'clc'
+    ? `<span style="font-size:10px;color:var(--ink-3);background:var(--line-2);padding:2px 6px;border-radius:4px;font-weight:600;">EU · CLC ${legends.clc.class_count} classes</span>`
+    : `<span style="font-size:10px;color:var(--ink-3);background:var(--line-2);padding:2px 6px;border-radius:4px;font-weight:600;">Monde · CGLC ${legends.cglc.class_count} classes</span>`;
+
+  const rowsHtml = l1Sorted.map(([l1Key, l1Pct]) => {
+    const meta = l1Meta[l1Key];
+    if(!meta) return '';
+    const emoji = meta.emoji || '';
+    const name = meta.name_fr || l1Key;
+    const l3InCat = l3Entries.filter(e => e.l1 === l1Key && e.pct >= 0.5);
+    const hasDetail = l3InCat.length > 0;
+    const detailHtml = hasDetail ? l3InCat.map(e => {
+      const nm = e.meta?.name_fr || `Classe ${e.code}`;
+      const tip = e.meta?.tooltip_fr || '';
+      return `<div style="display:flex; justify-content:space-between; gap:8px; padding:2px 0 2px 26px; font-size:12.5px; color:var(--ink-2);">
+        <span title="${esc(tip)}" style="cursor:${tip?'help':'default'};">${esc(nm)}</span>
+        <span style="font-weight:600; color:var(--ink-3);">${e.pct.toFixed(1)}%</span>
+      </div>`;
+    }).join('') : '';
+    return `<details style="margin:0; padding:2px 0; ${hasDetail ? '' : 'pointer-events:none;'}">
+      <summary style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 4px; cursor:${hasDetail?'pointer':'default'}; list-style:none; border-bottom:1px solid var(--line-2);">
+        <span style="display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:600; color:var(--ink);">
+          <span style="width:16px; text-align:center;">${hasDetail ? '▸' : ' '}</span>
+          <span>${emoji} ${esc(name)}</span>
+        </span>
+        <span style="font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums;">${l1Pct.toFixed(1)}%</span>
+      </summary>
+      <div style="padding:4px 0 6px 0; background:var(--bg-1);">${detailHtml}</div>
+    </details>`;
+  }).join('');
+
+  const totalPct = l1Sorted.reduce((s,[,v]) => s + v, 0);
+  const otherPct = totalPct < 99.5 ? (100 - totalPct) : 0;
+  const otherHtml = otherPct > 0.5 ? `<div style="display:flex; justify-content:space-between; padding:6px 4px 2px 28px; font-size:12.5px; color:var(--ink-3);"><span>Autres milieux</span><span style="font-weight:600;">${otherPct.toFixed(1)}%</span></div>` : '';
+
+  box.innerHTML = `
+    <div class="sm-card-title" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+      <span>Habitat préféré</span>
+      ${datasetLabel}
+    </div>
+    <div style="margin-top:6px;">${rowsHtml}${otherHtml}</div>
+    <div style="font-size:10.5px; color:var(--ink-3); margin-top:8px; line-height:1.4;">
+      Croisement Cornell S&amp;T (abondance ${key}) × ${dataset==='clc' ? 'Corine Land Cover 2018' : 'Copernicus Global Land Cover 2019'}.
+      Pourcentages = fréquence pondérée d'occupation de chaque type de milieu là où l'espèce est présente.
+    </div>
+  `;
+  box.hidden = false;
+  // Style overrides pour les details deployes (fleche rotative)
+  box.querySelectorAll('details').forEach(d => {
+    d.addEventListener('toggle', () => {
+      const arrow = d.querySelector('summary > span > span');
+      if(arrow && arrow.textContent.trim() === '▸' && d.open) arrow.textContent = '▾';
+      else if(arrow && arrow.textContent.trim() === '▾' && !d.open) arrow.textContent = '▸';
+    });
+  });
+}
 // Carte de repartition Cornell S&T (heatmap annuelle 9km). Lazy load du manifest global
 // puis affichage PNG statique cliquable qui ouvre une modal Leaflet interactive.
 let _rangeIndexCache = null;
@@ -8524,6 +8641,8 @@ function _renderSpeciesRarityCard(key){
         if(lbl) lbl.textContent = getTriggerLabel(chosen);
         _renderSpeciesFreqChart(k, chosen);
       });
+      // Rerender la card Habitat pour le nouveau pays
+      _renderSpeciesHabitatCard(k, chosen);
     });
   }
   if(regPick){
@@ -9323,6 +9442,8 @@ function openSpeciesModal(sci){
   _renderSpeciesRarityCard(key);
   // Traits Avonet (ecologie + morphologie), lazy fetch au 1er open
   _renderSpeciesTraitsCard(key);
+  // Habitat (CLC Europe / CGLC monde) : accordeon L1 -> L3, dynamique par pays
+  _renderSpeciesHabitatCard(sci, _globalCountry);
   // Card 'A ne pas confondre' : legere, calcul local instantane depuis
   // CONFUSION_GROUPS. Rendue direct.
   // Card 'A l'oreille' retiree a la demande utilisateur
