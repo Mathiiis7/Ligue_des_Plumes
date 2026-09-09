@@ -8793,34 +8793,50 @@ function _renderSpeciesRarityCard(key){
   });
   _renderSpeciesFreqChart(k, initCountry);
   const sel = $('#smRarityCountrySel');
+  const mapSel = $('#smMapCountrySel');
+  // Fonction commune : appliquer un changement de pays (source de verite = smRarityCountrySel).
+  // Utilisee par les 2 pickers (Rarete dans l'onglet Info + Carte & amis) pour rester sync.
+  const applyCountryChange = (chosen) => {
+    if(!chosen) return;
+    _syncCountryButton(sel, chosen);
+    if(mapSel) _syncCountryButton(mapSel, chosen);
+    renderLine(chosen);
+    updateRegVisibility(chosen);
+    if(_speciesRegion){
+      const belongs = (REGIONS_BY_COUNTRY[chosen] || []).some(r => r.code === _speciesRegion);
+      if(!belongs){
+        _speciesRegion = '';
+        try{ localStorage.setItem('mb-species-region', ''); }catch(_){}
+      }
+    }
+    loadRegionalDataFor(chosen).then(() => {
+      const p = $('#smRegPickerPanel');
+      if(p) p.innerHTML = buildRegPanel(chosen);
+      const lbl = $('#smRegPickerLabel');
+      if(lbl) lbl.textContent = getTriggerLabel(chosen);
+      _renderSpeciesFreqChart(k, chosen);
+    });
+    _renderSpeciesHabitatCard(k, chosen);
+    try{ _renderSpeciesMap(k); }catch(_){}
+  };
+  // Sync initial de #smMapCountrySel
+  if(mapSel) _syncCountryButton(mapSel, initCountry);
   if(sel){
     // Handler bouton -> modal country picker (filtre aux pays qui ont cette espece)
     sel.addEventListener('click', async () => {
       const availableCodes = avail.map(a => a.code);
       const chosen = await _openCountryPicker(sel.dataset.cc, { availableCodes, sci: k });
       if(!chosen || chosen === sel.dataset.cc) return;
-      _syncCountryButton(sel, chosen);
-      renderLine(chosen);
-      updateRegVisibility(chosen);
-      if(_speciesRegion){
-        const belongs = (REGIONS_BY_COUNTRY[chosen] || []).some(r => r.code === _speciesRegion);
-        if(!belongs){
-          _speciesRegion = '';
-          try{ localStorage.setItem('mb-species-region', ''); }catch(_){}
-        }
-      }
-      loadRegionalDataFor(chosen).then(() => {
-        const p = $('#smRegPickerPanel');
-        if(p) p.innerHTML = buildRegPanel(chosen);
-        const lbl = $('#smRegPickerLabel');
-        if(lbl) lbl.textContent = getTriggerLabel(chosen);
-        _renderSpeciesFreqChart(k, chosen);
-      });
-      // Rerender la card Habitat pour le nouveau pays
-      _renderSpeciesHabitatCard(k, chosen);
-      // Rerender l'onglet Carte de la fiche : eBird zone + GBIF region + selects
-      // (nouveau pays = nouvelles regions dispo, nouvelle zone de recherche eBird)
-      try{ _renderSpeciesMap(k); }catch(_){}
+      applyCountryChange(chosen);
+    });
+  }
+  if(mapSel){
+    // Meme handler que sel : ouvre le meme picker modal, applique le meme changement.
+    mapSel.addEventListener('click', async () => {
+      const availableCodes = avail.map(a => a.code);
+      const chosen = await _openCountryPicker(mapSel.dataset.cc, { availableCodes, sci: k });
+      if(!chosen || chosen === mapSel.dataset.cc) return;
+      applyCountryChange(chosen);
     });
   }
   if(regPick){
