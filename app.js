@@ -13374,8 +13374,10 @@ window._perfBench = (action = 'all', opts = {}) => {
 // et a mesure. Concurrence limitee a 4 en parallele pour ne pas casser iNat/Wiki.
 // Usage : await _preloadAllPhotos() dans la console, attendre ~5-10 min, puis dump.
 window._preloadAllPhotos = async (opts = {}) => {
-  const concurrency = opts.concurrency || 4;
-  const delayMs = opts.delayMs || 100;
+  // Concurrence 1 + delay 1200ms = ~0.8 req/s, sous le seuil iNat (~1 req/s/IP).
+  // Depasser cause 429 (throttling) et blocage 5-10 min.
+  const concurrency = opts.concurrency || 1;
+  const delayMs = opts.delayMs || 1200;
   // Collecte les especes uniques de tous les pays supportes.
   const species = new Set();
   const countries = Object.keys(COUNTRIES_REG || {});
@@ -13390,12 +13392,14 @@ window._preloadAllPhotos = async (opts = {}) => {
   const total = all.length;
   console.log(`[preload] ${total} especes uniques a fetch (concurrence ${concurrency}, delay ${delayMs}ms)`);
   let done = 0, ok = 0, fail = 0, skipped = 0;
+  let consecutiveFails = 0;
   const t0 = performance.now();
   // Vide les entrees null du cache (echecs precedents) pour reessayer
   for(const [k, v] of _spPhotoCache){
     if(v === null) _spPhotoCache.delete(k);
   }
-  // Worker : consomme la queue
+  // Worker : consomme la queue avec detection auto de rate-limit iNat (429).
+  // Sur 5 echecs consecutifs -> pause 60s (temps que le throttle expire).
   const queue = [...all];
   const worker = async () => {
     while(queue.length){
@@ -13405,15 +13409,23 @@ window._preloadAllPhotos = async (opts = {}) => {
         const cached = _spPhotoCache.get(sci);
         if(cached && cached.url){ skipped++; done++; continue; }
         const res = await _fetchWikiPhoto(sci);
-        if(res && res.url) ok++; else fail++;
-      }catch(_){ fail++; }
+        if(res && res.url){ ok++; consecutiveFails = 0; }
+        else { fail++; consecutiveFails++; }
+      }catch(_){ fail++; consecutiveFails++; }
       done++;
       if(done % 50 === 0){
         const pct = ((done/total)*100).toFixed(1);
         const elapsedS = ((performance.now() - t0)/1000).toFixed(1);
         console.log(`[preload] ${done}/${total} (${pct}%) · ok=${ok} skipped=${skipped} fail=${fail} · ${elapsedS}s`);
       }
-      if(delayMs) await new Promise(r => setTimeout(r, delayMs));
+      // Backoff : si N echecs consecutifs (probablement 429 iNat), pause 60s
+      if(consecutiveFails >= 5){
+        console.warn(`[preload] ${consecutiveFails} echecs consecutifs, probablement rate-limit iNat. Pause 60s...`);
+        await new Promise(r => setTimeout(r, 60000));
+        consecutiveFails = 0;
+      } else if(delayMs){
+        await new Promise(r => setTimeout(r, delayMs));
+      }
     }
   };
   const workers = [];
