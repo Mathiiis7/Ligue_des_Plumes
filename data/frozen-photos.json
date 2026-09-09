@@ -1,0 +1,512 @@
+{
+  "phoenicurus ochruros": {
+    "url": "https://static.inaturalist.org/photos/120990680/original.jpeg",
+    "thumb": "https://static.inaturalist.org/photos/120990680/medium.jpeg",
+    "credit": "iNaturalist"
+  },
+  "vanellus vanellus": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/96099602/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/96099602/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "platalea leucorodia": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/8809/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/8809/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "chloris chloris": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/61258110/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/61258110/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "tringa nebularia": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/52660452/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/52660452/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "emberiza citrinella": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/115890496/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/115890496/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "motacilla flava": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/393839170/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/393839170/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "aythya ferina": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/355915419/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/355915419/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "sitta europaea": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/98789726/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/98789726/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "troglodytes troglodytes": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/447128005/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/447128005/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "circus pygargus": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/7/7a/A_Spooked_Montagu_Harrier_-_with_breakfast_at_her_Feet_%28thumb_like_creature%29.jpg",
+    "thumb": "https://upload.wikimedia.org/wikipedia/commons/7/7a/A_Spooked_Montagu_Harrier_-_with_breakfast_at_her_Feet_%28thumb_like_creature%29.jpg",
+    "credit": "Wikimedia Commons"
+  },
+  "alopochen aegyptiaca": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/6/60/Nile_Goose_%2851171596345%29.jpg",
+    "thumb": "https://upload.wikimedia.org/wikipedia/commons/6/60/Nile_Goose_%2851171596345%29.jpg",
+    "credit": "Wikimedia Commons"
+  },
+  "muscicapa striata": {
+    "url": "https://static.inaturalist.org/photos/9066136/original.jpg",
+    "thumb": "https://static.inaturalist.org/photos/9066136/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "garrulus glandarius": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/6/6d/Garrulus_glandarius_1_Luc_Viatour.jpg",
+    "thumb": "https://upload.wikimedia.org/wikipedia/commons/6/6d/Garrulus_glandarius_1_Luc_Viatour.jpg",
+    "credit": "Wikimedia Commons"
+  },
+  "corvus frugilegus": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/0/0b/Corvus_frugilegus_perched_Muirton.jpg",
+    "thumb": "https://upload.wikimedia.org/wikipedia/commons/0/0b/Corvus_frugilegus_perched_Muirton.jpg",
+    "credit": "Wikimedia Commons"
+  },
+  "dendrocopos major": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/d/df/Great_spotted_woodpecker_%28Dendrocopos_major%29_male_Drenthe.jpg",
+    "thumb": "https://upload.wikimedia.org/wikipedia/commons/d/df/Great_spotted_woodpecker_%28Dendrocopos_major%29_male_Drenthe.jpg",
+    "credit": "Wikimedia Commons"
+  },
+  "merops apiaster": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/9/97/Gu%C3%A9pier_d%27Europe_Ichkeul_NP.jpg",
+    "thumb": "https://upload.wikimedia.org/wikipedia/commons/9/97/Gu%C3%A9pier_d%27Europe_Ichkeul_NP.jpg",
+    "credit": "Wikimedia Commons"
+  },
+  "falco tinnunculus": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/115746261/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/115746261/original.jpg",
+    "credit": "iNaturalist"
+  },
+  "chroicocephalus ridibundus": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/4/4b/Black-headed_Gull_from_the_Crossley_ID_Guide_Britain_and_Ireland.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4b/Black-headed_Gull_from_the_Crossley_ID_Guide_Britain_and_Ireland.jpg/330px-Black-headed_Gull_from_the_Crossley_ID_Guide_Britain_and_Ireland.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "ficedula hypoleuca": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f9/Ficedula_hypoleuca_Sussex_1.jpg/3840px-Ficedula_hypoleuca_Sussex_1.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f9/Ficedula_hypoleuca_Sussex_1.jpg/330px-Ficedula_hypoleuca_Sussex_1.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "linaria cannabina": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/4/48/Linaria_cannabina_-_Linotte_m%C3%A9lodieuse.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/48/Linaria_cannabina_-_Linotte_m%C3%A9lodieuse.jpg/330px-Linaria_cannabina_-_Linotte_m%C3%A9lodieuse.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "delichon urbicum": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/7/74/Delichon_urbicum_Oulu_20120527_04.JPG?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/74/Delichon_urbicum_Oulu_20120527_04.JPG/330px-Delichon_urbicum_Oulu_20120527_04.JPG?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "certhia brachydactyla": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/c/c1/Short-toed_Treecreeper_%28Certhia_brachydactyla%29.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c1/Short-toed_Treecreeper_%28Certhia_brachydactyla%29.jpg/330px-Short-toed_Treecreeper_%28Certhia_brachydactyla%29.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "streptopelia decaocto": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/a/a7/Tourterelle_Turque_Duntz.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a7/Tourterelle_Turque_Duntz.jpg/330px-Tourterelle_Turque_Duntz.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "erithacus rubecula": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/a/a3/030_European_robin_in_the_Camargue_Photo_by_Giles_Laurent.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a3/030_European_robin_in_the_Camargue_Photo_by_Giles_Laurent.jpg/330px-030_European_robin_in_the_Camargue_Photo_by_Giles_Laurent.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "fulica atra": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/33/Eurasian_Coot_2026_03_23_01.jpg/3840px-Eurasian_Coot_2026_03_23_01.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/33/Eurasian_Coot_2026_03_23_01.jpg/330px-Eurasian_Coot_2026_03_23_01.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "ardea ibis": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ea/H%C3%A9ron_garde_boeufs_lac_sud_de_Tunis.jpg/3840px-H%C3%A9ron_garde_boeufs_lac_sud_de_Tunis.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ea/H%C3%A9ron_garde_boeufs_lac_sud_de_Tunis.jpg/330px-H%C3%A9ron_garde_boeufs_lac_sud_de_Tunis.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "columba palumbus": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/f/f5/Columba_palumbus_-garden_post-8.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f5/Columba_palumbus_-garden_post-8.jpg/330px-Columba_palumbus_-garden_post-8.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "phylloscopus collybita": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/c/cc/Chiffchaff_-_Phylloscopus_collybita.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cc/Chiffchaff_-_Phylloscopus_collybita.jpg/330px-Chiffchaff_-_Phylloscopus_collybita.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "passer domesticus": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9f/House_sparrow_David_Raju_%282%29.jpg/3840px-House_sparrow_David_Raju_%282%29.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9f/House_sparrow_David_Raju_%282%29.jpg/330px-House_sparrow_David_Raju_%282%29.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "hirundo rustica": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/3/33/%D0%94%D0%B5%D1%80%D0%B5%D0%B2%D0%B5%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BB%D0%B0%D1%81%D1%82%D0%BE%D1%87%D0%BA%D0%B0_%28Hirundo_rustica%29%2C_%D0%9C%D0%B5%D0%BB%D0%B8%D1%85%D0%BE%D0%B2%D0%BE.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/33/%D0%94%D0%B5%D1%80%D0%B5%D0%B2%D0%B5%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BB%D0%B0%D1%81%D1%82%D0%BE%D1%87%D0%BA%D0%B0_%28Hirundo_rustica%29%2C_%D0%9C%D0%B5%D0%BB%D0%B8%D1%85%D0%BE%D0%B2%D0%BE.jpg/330px-%D0%94%D0%B5%D1%80%D0%B5%D0%B2%D0%B5%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BB%D0%B0%D1%81%D1%82%D0%BE%D1%87%D0%BA%D0%B0_%28Hirundo_rustica%29%2C_%D0%9C%D0%B5%D0%BB%D0%B8%D1%85%D0%BE%D0%B2%D0%BE.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "anthus trivialis": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/d/db/Anthus_triviallis_%28Marek_Szczepanek%29.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/db/Anthus_triviallis_%28Marek_Szczepanek%29.jpg/330px-Anthus_triviallis_%28Marek_Szczepanek%29.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "emberiza calandra": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/57/Bruant_proyer_Ichkeul017.jpg/3840px-Bruant_proyer_Ichkeul017.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/57/Bruant_proyer_Ichkeul017.jpg/330px-Bruant_proyer_Ichkeul017.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "anas platyrhynchos": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/b/bf/Anas_platyrhynchos_male_female_quadrat.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bf/Anas_platyrhynchos_male_female_quadrat.jpg/330px-Anas_platyrhynchos_male_female_quadrat.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "fringilla coelebs": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/a/ab/Chaffinch_%28Fringilla_coelebs%29.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/Chaffinch_%28Fringilla_coelebs%29.jpg/330px-Chaffinch_%28Fringilla_coelebs%29.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "cyanistes caeruleus": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/c/ce/%D0%9B%D0%B0%D0%B7%D0%BE%D1%80%D0%B5%D0%B2%D0%BA%D0%B0_%28Cyanistes_caeruleus%29%2C_%D0%91%D0%B8%D1%82%D1%86%D0%B5%D0%B2%D1%81%D0%BA%D0%B8%D0%B9_%D0%BB%D0%B5%D1%81.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ce/%D0%9B%D0%B0%D0%B7%D0%BE%D1%80%D0%B5%D0%B2%D0%BA%D0%B0_%28Cyanistes_caeruleus%29%2C_%D0%91%D0%B8%D1%82%D1%86%D0%B5%D0%B2%D1%81%D0%BA%D0%B8%D0%B9_%D0%BB%D0%B5%D1%81.jpg/330px-%D0%9B%D0%B0%D0%B7%D0%BE%D1%80%D0%B5%D0%B2%D0%BA%D0%B0_%28Cyanistes_caeruleus%29%2C_%D0%91%D0%B8%D1%82%D1%86%D0%B5%D0%B2%D1%81%D0%BA%D0%B8%D0%B9_%D0%BB%D0%B5%D1%81.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "turdus merula": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ad/%D0%A7%D1%91%D1%80%D0%BD%D1%8B%D0%B9_%D0%B4%D1%80%D0%BE%D0%B7%D0%B4_%28Turdus_merula%2C_per_aspera%29%2C_%D0%91%D0%B8%D1%82%D1%86%D0%B5%D0%B2%D1%81%D0%BA%D0%B8%D0%B9_%D0%BB%D0%B5%D1%81.jpg/3840px-%D0%A7%D1%91%D1%80%D0%BD%D1%8B%D0%B9_%D0%B4%D1%80%D0%BE%D0%B7%D0%B4_%28Turdus_merula%2C_per_aspera%29%2C_%D0%91%D0%B8%D1%82%D1%86%D0%B5%D0%B2%D1%81%D0%BA%D0%B8%D0%B9_%D0%BB%D0%B5%D1%81.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ad/%D0%A7%D1%91%D1%80%D0%BD%D1%8B%D0%B9_%D0%B4%D1%80%D0%BE%D0%B7%D0%B4_%28Turdus_merula%2C_per_aspera%29%2C_%D0%91%D0%B8%D1%82%D1%86%D0%B5%D0%B2%D1%81%D0%BA%D0%B8%D0%B9_%D0%BB%D0%B5%D1%81.jpg/330px-%D0%A7%D1%91%D1%80%D0%BD%D1%8B%D0%B9_%D0%B4%D1%80%D0%BE%D0%B7%D0%B4_%28Turdus_merula%2C_per_aspera%29%2C_%D0%91%D0%B8%D1%82%D1%86%D0%B5%D0%B2%D1%81%D0%BA%D0%B8%D0%B9_%D0%BB%D0%B5%D1%81.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "sturnus vulgaris": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/5/5a/Sturnus_vulgaris_2_%28Marek_Szczepanek%29.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5a/Sturnus_vulgaris_2_%28Marek_Szczepanek%29.jpg/330px-Sturnus_vulgaris_2_%28Marek_Szczepanek%29.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "pica pica": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/24/Eurasian_Magpie_2023-10-16_01.jpg/3840px-Eurasian_Magpie_2023-10-16_01.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/24/Eurasian_Magpie_2023-10-16_01.jpg/330px-Eurasian_Magpie_2023-10-16_01.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "parus major": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/6/65/Parus_major_2_Luc_Viatour.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/65/Parus_major_2_Luc_Viatour.jpg/330px-Parus_major_2_Luc_Viatour.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "sylvia atricapilla": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/f/f5/Blackcap_%28Sylvia_atricapilla%29_male.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f5/Blackcap_%28Sylvia_atricapilla%29_male.jpg/330px-Blackcap_%28Sylvia_atricapilla%29_male.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "buteo buteo": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/4/47/Common_Buzzard_by_caroline_legg_%28cropped%29.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/47/Common_Buzzard_by_caroline_legg_%28cropped%29.jpg/330px-Common_Buzzard_by_caroline_legg_%28cropped%29.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "cygnus olor": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/a/a2/CygneVaires.jpg",
+    "thumb": "https://upload.wikimedia.org/wikipedia/commons/a/a2/CygneVaires.jpg",
+    "credit": "Wikimedia Commons"
+  },
+  "anser anser": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/5/57/Greylag_Goose_-_St_James%27s_Park%2C_London_-_Nov_2006.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/57/Greylag_Goose_-_St_James%27s_Park%2C_London_-_Nov_2006.jpg/330px-Greylag_Goose_-_St_James%27s_Park%2C_London_-_Nov_2006.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "cygnus atratus": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3d/Black_Swan_in_Australia.JPG/3840px-Black_Swan_in_Australia.JPG?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3d/Black_Swan_in_Australia.JPG/330px-Black_Swan_in_Australia.JPG?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "aythya fuligula": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/e/eb/Tufted-Duck-male-female.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/eb/Tufted-Duck-male-female.jpg/330px-Tufted-Duck-male-female.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "mareca strepera": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/2/24/Anas_strepera_pair.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/24/Anas_strepera_pair.jpg/330px-Anas_strepera_pair.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "netta rufina": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/99/Nette_rousse_%28Netta_rufina%29%2C_m%C3%A2le%2C_au_bord_du_L%C3%A9man.jpg/3840px-Nette_rousse_%28Netta_rufina%29%2C_m%C3%A2le%2C_au_bord_du_L%C3%A9man.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/99/Nette_rousse_%28Netta_rufina%29%2C_m%C3%A2le%2C_au_bord_du_L%C3%A9man.jpg/330px-Nette_rousse_%28Netta_rufina%29%2C_m%C3%A2le%2C_au_bord_du_L%C3%A9man.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "branta canadensis": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/74/Branta_canadensis%2C_Neuss_%28DE%29_--_2022_--_2857.jpg/3840px-Branta_canadensis%2C_Neuss_%28DE%29_--_2022_--_2857.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/74/Branta_canadensis%2C_Neuss_%28DE%29_--_2022_--_2857.jpg/330px-Branta_canadensis%2C_Neuss_%28DE%29_--_2022_--_2857.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "credit": "Wikipédia FR"
+  },
+  "falco subbuteo": {
+    "url": "https://static.inaturalist.org/photos/127170560/original.jpg",
+    "thumb": "https://static.inaturalist.org/photos/127170560/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "apus pallidus": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/189184432/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/189184432/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "ptyonoprogne rupestris": {
+    "url": "https://static.inaturalist.org/photos/64291747/original.jpg",
+    "thumb": "https://static.inaturalist.org/photos/64291747/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "lagopus muta": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/45166074/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/45166074/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "dryobates minor": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/f/fc/Male_lesser_spotted_woodpecker_%28Dryobates_minor%29.png",
+    "thumb": "https://upload.wikimedia.org/wikipedia/commons/f/fc/Male_lesser_spotted_woodpecker_%28Dryobates_minor%29.png",
+    "credit": "Wikimedia Commons"
+  },
+  "gyps fulvus": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/7/70/Griffon_Vulture_1.jpg",
+    "thumb": "https://upload.wikimedia.org/wikipedia/commons/7/70/Griffon_Vulture_1.jpg",
+    "credit": "Wikimedia Commons"
+  },
+  "larus michahellis": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/12831/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/12831/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "periparus ater": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/436734934/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/436734934/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "phoenicopterus roseus": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/187242272/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/187242272/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "turdus viscivorus": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/203268068/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/203268068/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "corvus corax": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/54389687/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/54389687/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "lanius collurio": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/127743790/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/127743790/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "motacilla cinerea": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/849468/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/849468/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "poecile palustris": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/436733670/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/436733670/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "phalacrocorax carbo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/141367445/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/141367445/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "phylloscopus trochilus": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/165631422/original.jpeg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/165631422/medium.jpeg",
+    "credit": "iNaturalist"
+  },
+  "aythya nyroca": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/6567260/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/6567260/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "anas crecca": {
+    "url": "https://static.inaturalist.org/photos/112626129/original.jpg",
+    "thumb": "https://static.inaturalist.org/photos/112626129/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "mareca penelope": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/476073225/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/476073225/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "spatula clypeata": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/336986640/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/336986640/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "tadorna tadorna": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/392382609/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/392382609/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "tachybaptus ruficollis": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/8/84/Little_grebe_Zwergtaucher.jpg",
+    "thumb": "https://upload.wikimedia.org/wikipedia/commons/8/84/Little_grebe_Zwergtaucher.jpg",
+    "credit": "Wikimedia Commons"
+  },
+  "columba oenas": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/b/b5/Pigeon_colombin_%28Colulmba_oenas%29%2C_Parc_de_Woluwe%2C_Bruxelles_%2851921513878%29.jpg",
+    "thumb": "https://upload.wikimedia.org/wikipedia/commons/b/b5/Pigeon_colombin_%28Colulmba_oenas%29%2C_Parc_de_Woluwe%2C_Bruxelles_%2851921513878%29.jpg",
+    "credit": "Wikimedia Commons"
+  },
+  "apus apus": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/d/d5/Common_Swift_2025_07_18_02_%28cropped%29.jpg",
+    "thumb": "https://upload.wikimedia.org/wikipedia/commons/d/d5/Common_Swift_2025_07_18_02_%28cropped%29.jpg",
+    "credit": "Wikimedia Commons"
+  },
+  "pavo cristatus": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/165318600/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/165318600/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "phasianus colchicus": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/176733796/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/176733796/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "gallinula chloropus": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/171773229/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/171773229/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "himantopus himantopus": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/20455456/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/20455456/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "burhinus oedicnemus": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/208423163/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/208423163/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "rallus aquaticus": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/118677610/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/118677610/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "columba livia": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/466776975/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/466776975/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "podiceps cristatus": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/556162413/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/556162413/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "calidris alpina": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/1/1c/Calidris_alpina_alpina%2C_Riga%2C_Latvia_1.jpg",
+    "thumb": "https://upload.wikimedia.org/wikipedia/commons/1/1c/Calidris_alpina_alpina%2C_Riga%2C_Latvia_1.jpg",
+    "credit": "Wikimedia Commons"
+  },
+  "tringa erythropus": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/347059364/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/347059364/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "actitis hypoleucos": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/405355875/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/405355875/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "tringa totanus": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/52766331/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/52766331/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "tringa glareola": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/323621890/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/323621890/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "tringa ochropus": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/262067607/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/262067607/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "chlidonias hybrida": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/1927693/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/1927693/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "sterna hirundo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/144056225/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/144056225/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "aix galericulata": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/171955255/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/171955255/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "porzana porzana": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/41827491/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/41827491/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "larus fuscus": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/111148495/original.jpeg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/111148495/medium.jpeg",
+    "credit": "iNaturalist"
+  },
+  "pandion haliaetus": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/6903515/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/6903515/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "calidris pugnax": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/277856852/original.jpeg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/277856852/medium.jpeg",
+    "credit": "iNaturalist"
+  },
+  "cairina moschata": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/b/b4/Muscovy_Duck_%28Cairina_moschata%29_male.jpg",
+    "thumb": "https://upload.wikimedia.org/wikipedia/commons/b/b4/Muscovy_Duck_%28Cairina_moschata%29_male.jpg",
+    "credit": "Wikimedia Commons"
+  },
+  "gallinago gallinago": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/c/c6/Common_snipe_%28Gallinago_gallinago%29_2022.jpg",
+    "thumb": "https://upload.wikimedia.org/wikipedia/commons/c/c6/Common_snipe_%28Gallinago_gallinago%29_2022.jpg",
+    "credit": "Wikimedia Commons"
+  },
+  "saxicola rubicola": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/393828349/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/393828349/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "emberiza cirlus": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/52767308/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/52767308/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "strix aluco": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/4/4c/Asleep_%2851116731229%29.jpg",
+    "thumb": "https://upload.wikimedia.org/wikipedia/commons/4/4c/Asleep_%2851116731229%29.jpg",
+    "credit": "Wikimedia Commons"
+  },
+  "motacilla alba": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/39786089/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/39786089/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "ardea cinerea": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/73516715/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/73516715/medium.jpg",
+    "credit": "iNaturalist"
+  },
+  "turdus philomelos": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/61267397/original.jpg",
+    "thumb": "https://inaturalist-open-data.s3.amazonaws.com/photos/61267397/medium.jpg",
+    "credit": "iNaturalist"
+  }
+}

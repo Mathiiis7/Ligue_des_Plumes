@@ -7351,6 +7351,23 @@ function _spPhotoCachePersist(){
   }, 2000);
 }
 const _spSoundCache = new Map();      // sci → url mp3 | null
+// Photos figees : dump du cache utilisateur validees, garanties stables (jamais re-fetch).
+// Chargement lazy la 1ere fois qu'on demande une photo. Contient ~100 especes actuellement,
+// on peut en ajouter en dumpant a nouveau (voir _perfDiag doc).
+let _frozenPhotos = null;
+let _frozenPhotosPromise = null;
+async function _loadFrozenPhotos(){
+  if(_frozenPhotos) return _frozenPhotos;
+  if(_frozenPhotosPromise) return _frozenPhotosPromise;
+  _frozenPhotosPromise = (async () => {
+    try{
+      const r = await fetch('data/frozen-photos.json?v=1');
+      _frozenPhotos = r.ok ? await r.json() : {};
+    }catch(_){ _frozenPhotos = {}; }
+    return _frozenPhotos;
+  })();
+  return _frozenPhotosPromise;
+}
 // Overrides manuels quand la photo par defaut est mauvaise (cropee, tete uniquement,
 // individu immature peu identifiable...). Force la recherche sur un titre Wikipedia
 // specifique dont l'article a une photo pleine longueur. Ajouter ici les especes
@@ -7474,6 +7491,32 @@ const PHOTO_OVERRIDE_WIKI = {
 };
 async function _fetchWikiPhoto(sci){
   const key = sci.toLowerCase();
+  // OVERRIDES prioritaires : verifies AVANT le cache pour que meme les utilisateurs
+  // qui ont deja une "mauvaise" photo cachee recuperent la version curee sans
+  // avoir a bumper _SP_PHOTO_CACHE_KEY (qui casserait aussi les non-overridees).
+  // Ordre : (1) PHOTO_OVERRIDE_WIKI (curation manuelle, gagne toujours),
+  //         (2) frozen-photos.json (dump utilisateur figes).
+  const _writeCacheIfChanged = (res) => {
+    if(!res) return;
+    const cached = _spPhotoCache.get(key);
+    if(!cached || JSON.stringify(cached) !== JSON.stringify(res)){
+      _spPhotoCache.set(key, res);
+      _spPhotoCachePersist();
+    }
+  };
+  const manualOvr = PHOTO_OVERRIDE_WIKI[key];
+  if(manualOvr && manualOvr.url){
+    const res = { url: manualOvr.url, thumb: manualOvr.thumb || manualOvr.url, credit: manualOvr.credit || 'Wikimedia Commons' };
+    _writeCacheIfChanged(res);
+    return res;
+  }
+  const frozen = await _loadFrozenPhotos();
+  const fz = frozen && frozen[key];
+  if(fz && fz.url){
+    const res = { url: fz.url, thumb: fz.thumb || fz.url, credit: fz.credit || 'Frozen' };
+    _writeCacheIfChanged(res);
+    return res;
+  }
   if(_spPhotoCache.has(key)) return _spPhotoCache.get(key);
   const frNm = FR_NAMES[key] || '';
   // iNaturalist : essaie sci name puis alias GBIF/SCI puis nom FR.
@@ -7522,13 +7565,12 @@ async function _fetchWikiPhoto(sci){
   };
   // Fallback aliases eBird<->GBIF (ex : cecropis rufula / cecropis daurica).
   const altSci = (typeof GBIF_SCI_ALIAS !== 'undefined' && GBIF_SCI_ALIAS[key]) || (typeof SCI_ALIAS !== 'undefined' && SCI_ALIAS[key]) || '';
-  // Override manuel prioritaire quand la photo iNat/Wiki par defaut est de mauvaise qualite.
-  // Deux formes : { lang, title } -> resolution via article wiki. { url } -> URL directe Commons.
+  // Override forme { lang, title } (resolution via article wiki) : traitee ici car
+  // necessite un fetch. La forme { url } est deja handled au debut de la fonction.
   const ovr = PHOTO_OVERRIDE_WIKI[key];
   let res = null;
-  if(ovr){
-    if(ovr.url) res = { url: ovr.url, thumb: ovr.thumb || ovr.url, credit: ovr.credit || 'Wikimedia Commons' };
-    else if(ovr.title) res = await tryWiki(ovr.lang, ovr.title);
+  if(ovr && !ovr.url && ovr.title){
+    res = await tryWiki(ovr.lang, ovr.title);
   }
   if(!res) res = await tryINat(sci);
   if(!res && altSci) res = await tryINat(altSci);
