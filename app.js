@@ -13162,3 +13162,44 @@ document.addEventListener('keydown', e => {
 });
 // PWA : installation sur l'écran d'accueil
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('service-worker.js').catch(()=>{}); }
+
+// Helper debug perf : expose les tailles des grosses structures depuis le module scope
+// (sinon invisibles depuis la console car app.js est <script type="module">).
+// Usage : _perfDiag() dans la console.
+window._perfDiag = () => {
+  const est = (obj) => {
+    if(!obj) return 0;
+    try{ return JSON.stringify(obj).length; }catch(_){ return -1; }
+  };
+  const lsPhotos = Object.keys(localStorage).filter(k => k.startsWith('mb-sp-photo'));
+  const lsSize = Object.keys(localStorage).reduce((s,k) => s + (localStorage.getItem(k)?.length||0), 0);
+  return {
+    heap_MB: performance.memory ? (performance.memory.usedJSHeapSize/1024/1024).toFixed(1) : 'n/a',
+    domNodes: document.querySelectorAll('*').length,
+    // Big inlined data
+    FR_NAMES_count: Object.keys(FR_NAMES||{}).length,
+    REDLIST_count: (typeof REDLIST==='object') ? Object.keys(REDLIST).length : 0,
+    HABITATS_count: (typeof HABITATS==='object') ? Object.keys(HABITATS).length : 0,
+    GENUS_FAMILY_count: (typeof GENUS_FAMILY==='object') ? Object.keys(GENUS_FAMILY).length : 0,
+    REAL_RARITY_count: (typeof REAL_RARITY==='object') ? Object.keys(REAL_RARITY).length : 0,
+    // Lazy-loaded data
+    AVONET_loaded: !!AVONET_TRAITS && Object.keys(AVONET_TRAITS).length,
+    speciesDescLoaded: !!_speciesDescCache && Object.keys(_speciesDescCache).length,
+    freqRegionsLoaded: Object.keys(REAL_FREQ_MONTHLY_BY_REGION_MULTI||{}),
+    // localStorage
+    localStorage_totalKB: (lsSize/1024)|0,
+    photoCache_count: lsPhotos.length,
+    photoCache_KB: (lsPhotos.reduce((s,k)=>s+localStorage.getItem(k).length, 0)/1024)|0,
+    // Users
+    peopleCount: state?.people?.length,
+    speciesPerPerson: state?.people?.map(p => ({name:p.name, sp:p.species?.size||0})),
+    // Firestore snapshot state
+    onlineCount: onlineMap.size,
+    chatMsgs: lastChatMsgs.length,
+    photosCount: photos.length,
+    votesMap_size: votesMap.size,
+    reactionsMap_size: reactionsMap.size,
+    commentsMap_size: commentsMap.size,
+    trophyEvents: trophyEventsList.length
+  };
+};
