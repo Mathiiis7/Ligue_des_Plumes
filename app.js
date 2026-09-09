@@ -8818,6 +8818,9 @@ function _renderSpeciesRarityCard(key){
       });
       // Rerender la card Habitat pour le nouveau pays
       _renderSpeciesHabitatCard(k, chosen);
+      // Rerender l'onglet Carte de la fiche : eBird zone + GBIF region + selects
+      // (nouveau pays = nouvelles regions dispo, nouvelle zone de recherche eBird)
+      try{ _renderSpeciesMap(k); }catch(_){}
     });
   }
   if(regPick){
@@ -9752,25 +9755,40 @@ function _smApplyFilterVisibility(){
   setVis('smGbifMonthLbl', isGbif);
   setVis('smGbifYearMinLbl', isGbif);
   setVis('smGbifYearMaxLbl', isGbif);
-  // Dept visible uniquement si une region est selectionnee (evite d'avoir un dropdown
-  // avec les 96 depts FR quand on n'a pas encore choisi de region).
+  // Dept visible uniquement si une region est selectionnee ET pays = FR (autres pays
+  // n'ont pas la granularite dept). Evite d'avoir un dropdown vide sur ES/IT/etc.
   const region = document.getElementById('smGbifRegion')?.value || '';
-  setVis('smGbifDeptLbl', (isEb || isGbif) && !!region);
+  const cc = document.getElementById('smRarityCountrySel')?.dataset?.cc || _globalCountry || 'FR';
+  setVis('smGbifDeptLbl', (isEb || isGbif) && !!region && cc === 'FR');
 }
-function _smInitGbifSelects(){
-  if(_smGbifSelectsInit) return;
+// Fait country-aware : reinitialise le dropdown region selon le pays selectionne dans
+// la fiche (via #smRarityCountrySel.dataset.cc). Depts uniquement pour la France.
+let _smLastGbifCountry = '';
+function _smInitGbifSelects(cc){
+  cc = cc || 'FR';
   const regSel = $('#smGbifRegion');
-  if(regSel){
-    for(const r of FR_REGIONS){
+  // Re-init si pays change ou pas encore init
+  if(regSel && (!_smGbifSelectsInit || _smLastGbifCountry !== cc)){
+    const prev = regSel.value;
+    regSel.innerHTML = `<option value="">tout le pays</option>`;
+    const regList = (typeof REGIONS_BY_COUNTRY === 'object' && REGIONS_BY_COUNTRY[cc]) || [];
+    for(const r of regList){
       const opt = document.createElement('option');
       opt.value = r.code; opt.textContent = r.name;
       regSel.appendChild(opt);
     }
+    // Garde ancienne selection si encore valide
+    if(prev && regList.some(r => r.code === prev)) regSel.value = prev; else regSel.value = '';
   }
-  _smPopulateGbifDepts('');
+  // Depts : uniquement pour FR (seul pays avec FR_DEPTS)
+  const deptLbl = $('#smGbifDeptLbl');
+  if(deptLbl) deptLbl.hidden = (cc !== 'FR');
+  if(cc === 'FR') _smPopulateGbifDepts('');
+  else { const sel = $('#smGbifDept'); if(sel) sel.innerHTML = '<option value="">tous</option>'; }
+  _smLastGbifCountry = cc;
   _smGbifSelectsInit = true;
 }
-// Peuple le dropdown Departement, filtre par region (vide = tous les depts).
+// Peuple le dropdown Departement, filtre par region (vide = tous les depts). FR only.
 function _smPopulateGbifDepts(regionCode){
   const sel = $('#smGbifDept'); if(!sel) return;
   const prev = sel.value;
@@ -10058,7 +10076,9 @@ async function _renderSpeciesMap(key){
   // Affiche / masque les controles selon le mode. Region+Dept visibles pour eBird ET GBIF,
   // Mois+Annee uniquement GBIF, Derniers uniquement eBird. Dept visible seulement si region.
   _smApplyFilterVisibility();
-  if(_smMapMode === 'ebird' || _smMapMode === 'gbif') _smInitGbifSelects();
+  // Pays courant = celui selectionne dans la fiche (via picker rarete), fallback global.
+  const smCC = $('#smRarityCountrySel')?.dataset.cc || _globalCountry || 'FR';
+  if(_smMapMode === 'ebird' || _smMapMode === 'gbif') _smInitGbifSelects(smCC);
   _smSetHint('… chargement');
   // Recolte les points selon le mode
   let points = [];
@@ -10081,14 +10101,18 @@ async function _renderSpeciesMap(key){
     const days = parseInt($('#smEbDays')?.value, 10) || 30;
     const regionCode = $('#smGbifRegion')?.value || '';
     const deptCode = $('#smGbifDept')?.value || '';
-    // Format eBird zone : FR / FR-XXX / FR-XXX-YY. Construit depuis FR_DEPTS[2] (region).
-    let zone = 'FR', zoneLbl = 'France';
-    if(deptCode){
+    // Format eBird zone : selon pays courant. FR + dept possible, autres pays region seule.
+    const cc = smCC;
+    const ccReg = COUNTRIES_REG?.[cc];
+    const ccName = ccReg?.name || cc;
+    let zone = cc, zoneLbl = ccName;
+    if(deptCode && cc === 'FR'){
       const d = FR_DEPTS.find(x => x[0] === deptCode);
       if(d){ zone = `${d[2]}-${d[0]}`; zoneLbl = d[1]; }
     } else if(regionCode){
       zone = regionCode;
-      const r = FR_REGIONS.find(x => x.code === regionCode);
+      const regList = (typeof REGIONS_BY_COUNTRY === 'object' && REGIONS_BY_COUNTRY[cc]) || [];
+      const r = regList.find(x => x.code === regionCode);
       if(r) zoneLbl = r.name;
     }
     const res = await _smFetchEbirdRecent(key, days, zone);
@@ -10105,19 +10129,25 @@ async function _renderSpeciesMap(key){
     const yMaxRaw = parseInt($('#smGbifYearMax')?.value, 10) || 2025;
     gbifYearMin = Math.min(yMinRaw, yMaxRaw);
     gbifYearMax = Math.max(yMinRaw, yMaxRaw);
-    // Portee geographique : dept > region > France entiere.
+    // Portee geographique : dept > region > pays entier.
     const regionCode = $('#smGbifRegion')?.value || '';
     const deptCode = $('#smGbifDept')?.value || '';
+    const cc = smCC;
+    const ccReg = COUNTRIES_REG?.[cc];
+    const ccName = ccReg?.name || cc;
     let bbox = null;
-    if(deptCode){
+    if(deptCode && cc === 'FR'){
       const d = FR_DEPTS.find(x => x[0] === deptCode);
       if(d){ bbox = [d[3], d[4], d[5], d[6]]; gbifScopeLabel = `dépt ${d[0]} ${d[1]}`; }
     } else if(regionCode){
       bbox = _bboxOfRegion(regionCode);
-      const r = FR_REGIONS.find(x => x.code === regionCode);
+      const regList = (typeof REGIONS_BY_COUNTRY === 'object' && REGIONS_BY_COUNTRY[cc]) || [];
+      const r = regList.find(x => x.code === regionCode);
       gbifScopeLabel = r ? r.name : regionCode;
     } else {
-      gbifScopeLabel = 'France';
+      // Pas de region : GBIF sans bbox (le pays est indicatif dans le label,
+      // pas de restriction bbox faute de bboxes pays definies)
+      gbifScopeLabel = ccName;
     }
     const rangeTxt = gbifYearMin===gbifYearMax ? gbifYearMin : `${gbifYearMin} → ${gbifYearMax}`;
     _smSetHint(`… chargement GBIF (${_SM_MONTH_NAMES[gbifMonth]} ${rangeTxt}, ${gbifScopeLabel})`);
@@ -10171,7 +10201,9 @@ async function _renderSpeciesMap(key){
   if(_smMapMode==='friends'){
     _smSetHint(`${points.length} obs de la ligue`);
   } else if(_smMapMode==='ebird'){
-    _smSetHint(`${points.length} obs eBird (30 derniers jours, France)`);
+    const ccLbl = (COUNTRIES_REG?.[smCC]?.name) || smCC || 'France';
+    const days = parseInt($('#smEbDays')?.value, 10) || 30;
+    _smSetHint(`${points.length} obs eBird (${days} derniers jours, ${ccLbl})`);
   } else {
     const rangeTxt = gbifYearMin===gbifYearMax ? gbifYearMin : `${gbifYearMin} → ${gbifYearMax}`;
     const truncTxt = (gbifTotal > points.length) ? ` sur ${gbifTotal.toLocaleString('fr-FR')} au total (tronqué)` : '';
@@ -10247,7 +10279,9 @@ document.addEventListener('click', e=>{
 document.addEventListener('change', e=>{
   const t = e.target; if(!t) return;
   if(t.id === 'smGbifRegion'){
-    _smPopulateGbifDepts(t.value);
+    // Depts uniquement pour FR (autres pays n'ont pas la granularite dept)
+    const cc = $('#smRarityCountrySel')?.dataset.cc || _globalCountry || 'FR';
+    if(cc === 'FR') _smPopulateGbifDepts(t.value);
     _smApplyFilterVisibility();   // dept visible / hidden selon si region choisie
     if((_smMapMode === 'gbif' || _smMapMode === 'ebird') && _smCurrentKey) _renderSpeciesMap(_smCurrentKey);
     return;
