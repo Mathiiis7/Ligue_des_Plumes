@@ -335,7 +335,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .cp-item { display:flex; align-items:center; gap:10px; padding:8px 10px; cursor:pointer; border-radius:8px; color:var(--ink); font-size:14px; }
   .cp-item:hover { background:var(--surface-2); }
   .cp-item.on { background:var(--surface-2); font-weight:700; }
-  .cp-item-flag { display:inline-flex; align-items:center; justify-content:center; width:28px; font-size:18px; line-height:1; }
+  .cp-item-flag { display:inline-flex; align-items:center; justify-content:center; width:28px; }
   .cp-btn-flag { display:inline-flex; align-items:center; }
   .cp-item-name { flex:1; }
   .cp-item-meta { font-size:11px; color:var(--ink-3); }
@@ -918,7 +918,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .req-del:hover { color:#c33; text-decoration:underline; }
   .map-controls { display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 10px; align-items:center; }
   .rar-chips { display:inline-flex; gap:3px; flex-wrap:wrap; }
-  .rar-chip { min-width:24px; height:24px; padding:0 5px; border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink-3); border-radius:6px; font:600 11px/1 system-ui; cursor:pointer; }
+  .rar-chip { display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:24px; padding:0 5px; border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink-3); border-radius:6px; font:600 11px/1 system-ui; cursor:pointer; }
   .rar-chip:hover { filter:brightness(0.97); }
   .rar-chip.on { color:#fff; border-color:transparent; box-shadow:inset 0 0 0 1px rgba(0,0,0,.2); }
   .rar-chip.rar-exo.on { background:#7e8a99; }
