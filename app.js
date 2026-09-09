@@ -9999,7 +9999,7 @@ function _gbifLocalityLooksReal(s){
 const GBIF_EXTRA_TAXONKEYS = {
   'cecropis rufula': [6085729],   // genre Cecropis (attrape les obs iNat 2023+ mal typees)
 };
-async function _smFetchGbif(sci, month, yearMin, yearMax, bbox){
+async function _smFetchGbif(sci, month, yearMin, yearMax, bbox, cc, onProgress){
   const key = await _sciToGbifKey(sci);
   if(!key) return { points:[], total:0, error:'taxonomy' };
   const yearParam = (yearMin===yearMax) ? String(yearMin) : `${yearMin},${yearMax}`;
@@ -10009,7 +10009,9 @@ async function _smFetchGbif(sci, month, yearMin, yearMax, bbox){
   const extraKeys = GBIF_EXTRA_TAXONKEYS[(sci||'').toLowerCase()] || [];
   const keysParam = [key, ...extraKeys].map(k => `taxonKey=${k}`).join('&');
   const bboxParam = bbox ? `&decimalLatitude=${bbox[0]},${bbox[1]}&decimalLongitude=${bbox[2]},${bbox[3]}` : '';
-  const mkUrl = (page) => `https://api.gbif.org/v1/occurrence/search?${keysParam}&country=FR&hasCoordinate=true&year=${encodeURIComponent(yearParam)}${monthParam}${bboxParam}&limit=300&offset=${page*300}`;
+  // Country param dynamique selon pays selectionne (FR, ES, IT, GB, PT, ME, ...).
+  const countryParam = cc ? `&country=${encodeURIComponent(cc)}` : '';
+  const mkUrl = (page) => `https://api.gbif.org/v1/occurrence/search?${keysParam}${countryParam}&hasCoordinate=true&year=${encodeURIComponent(yearParam)}${monthParam}${bboxParam}&limit=300&offset=${page*300}`;
   // Pagination parallele : 1er appel donne count, on lance les pages restantes en parallele.
   // Cap MAX_PAGES = 10 (3000 obs max). safeFetch tolere echec reseau isole.
   const MAX_PAGES = 10;
@@ -10024,9 +10026,12 @@ async function _smFetchGbif(sci, month, yearMin, yearMax, bbox){
     if(j0._err) throw new Error('network');
     const totalCount = j0.count || 0;
     let allResults = j0.results || [];
+    // Callback progress : 1er lot done
+    const nPagesTotal = Math.min(MAX_PAGES, Math.max(1, Math.ceil(totalCount / 300)));
+    let pagesDone = 1;
+    if(typeof onProgress === 'function') onProgress(pagesDone, nPagesTotal, allResults.length, totalCount);
     if(!j0.endOfRecords && allResults.length === 300 && totalCount > 300){
-      const nPages = Math.min(MAX_PAGES, Math.ceil(totalCount / 300));
-      const pages = Array.from({length: nPages - 1}, (_, i) => i + 1);
+      const pages = Array.from({length: nPagesTotal - 1}, (_, i) => i + 1);
       const POOL = 3;
       let cursor = 0;
       async function worker(){
@@ -10034,6 +10039,8 @@ async function _smFetchGbif(sci, month, yearMin, yearMax, bbox){
           const p = pages[cursor++];
           const j = await safeFetch(mkUrl(p));
           if(!j._err) allResults.push(...(j.results || []));
+          pagesDone++;
+          if(typeof onProgress === 'function') onProgress(pagesDone, nPagesTotal, allResults.length, totalCount);
         }
       }
       await Promise.all(Array.from({length: Math.min(POOL, pages.length)}, worker));
@@ -10167,7 +10174,13 @@ async function _renderSpeciesMap(key){
     }
     const rangeTxt = gbifYearMin===gbifYearMax ? gbifYearMin : `${gbifYearMin} → ${gbifYearMax}`;
     _smSetHint(`… chargement GBIF (${_SM_MONTH_NAMES[gbifMonth]} ${rangeTxt}, ${gbifScopeLabel})`);
-    const res = await _smFetchGbif(key, gbifMonth, gbifYearMin, gbifYearMax, bbox);
+    const onProg = (done, total, gotObs, totalCount) => {
+      // Aborter si l'user a change de mode/espece entre-temps
+      if(_smCurrentKey !== key || _smMapMode !== 'gbif') return;
+      const pct = Math.round(done / total * 100);
+      _smSetHint(`… chargement GBIF ${done}/${total} lots (${pct}%) · ${gotObs}/${totalCount} obs · ${gbifScopeLabel}`);
+    };
+    const res = await _smFetchGbif(key, gbifMonth, gbifYearMin, gbifYearMax, bbox, cc, onProg);
     if(_smCurrentKey !== key || _smMapMode !== 'gbif') return;
     points = res.points;
     gbifTotal = res.total;
