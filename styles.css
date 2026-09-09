@@ -1149,7 +1149,14 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .mcard.missing { opacity:.55; }
   /* ============ POKEDEX GRID ============ */
   .pkdx-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:10px; margin-top:6px; }
-  .pkdx-card { position:relative; border:2px solid var(--line-2); background:var(--surface); border-radius:12px; padding:8px 8px 10px; cursor:pointer; transition:transform .1s, box-shadow .1s; overflow:hidden;
+  .pkdx-card {
+    /* Virtualisation native : le navigateur skip completement le rendu (layout, paint,
+       style) des cards hors ecran. 597 cards mais seules ~30 sont reellement rendues.
+       contain-intrinsic-size reserve la place (aspect ratio ~1x1 + labels) pour que
+       la scrollbar reste stable. Fallback silencieux sur Safari <18 : rendu normal. */
+    content-visibility: auto;
+    contain-intrinsic-size: 140px 200px;
+    position:relative; border:2px solid var(--line-2); background:var(--surface); border-radius:12px; padding:8px 8px 10px; cursor:pointer; transition:transform .1s, box-shadow .1s; overflow:hidden;
     /* Virtualisation cote navigateur : ne paint/layout que les cartes visibles,
        reserve 220px pour eviter les sauts au scroll. Enorme gain sur 720 cartes. */
     content-visibility:auto; contain-intrinsic-size:220px; }

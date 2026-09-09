@@ -2665,13 +2665,25 @@ function startPresence(){
   presenceTimer = setInterval(presenceBeat, 25000);
   if(!presenceWired){ presenceWired=true; document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') presenceBeat(); }); }
 }
+let _presenceDebounceT = null;
 function subscribePresence(){
   if(unsubPresence){ unsubPresence(); unsubPresence=null; }
   unsubPresence = onSnapshot(collection(db,'leagues',leagueId,'presence'), snap=>{
     const now=Date.now(); const on=new Map();
     snap.forEach(d=>{ const v=d.data()||{}; const t=(v.lastSeen&&v.lastSeen.toMillis)?v.lastSeen.toMillis():0; if(now-t < 70000) on.set(d.id, v.name||'Invité'); });
-    onlineMap=on; renderOnline(); renderMembers(); renderResults();
-    if(lastChatMsgs.length) renderChat(lastChatMsgs);
+    onlineMap=on;
+    // renderOnline / renderMembers sont cheap (chip liste) : temps reel OK.
+    renderOnline(); renderMembers();
+    // renderResults + renderChat rebuild ~7000 nodes (board avec dot online + matrix).
+    // Presence beat toutes les 25s par user -> spam sur groupe actif. Debounce a 2s :
+    // pastille "en ligne" est deja instantanee via renderOnline/renderMembers, le reste
+    // n'a pas besoin d'etre temps reel.
+    if(_presenceDebounceT) clearTimeout(_presenceDebounceT);
+    _presenceDebounceT = setTimeout(() => {
+      _presenceDebounceT = null;
+      renderResults();
+      if(lastChatMsgs.length) renderChat(lastChatMsgs);
+    }, 2000);
   }, ()=>{});
 }
 function renderOnline(){
