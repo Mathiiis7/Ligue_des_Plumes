@@ -13368,3 +13368,60 @@ window._perfBench = (action = 'all', opts = {}) => {
   results.domNodes = document.querySelectorAll('*').length;
   return results;
 };
+
+// Preload photo cache : itere sur toutes les especes du catalogue de tous les pays
+// supportes et appelle _fetchWikiPhoto pour chacune. Ecrit dans localStorage au fur
+// et a mesure. Concurrence limitee a 4 en parallele pour ne pas casser iNat/Wiki.
+// Usage : await _preloadAllPhotos() dans la console, attendre ~5-10 min, puis dump.
+window._preloadAllPhotos = async (opts = {}) => {
+  const concurrency = opts.concurrency || 4;
+  const delayMs = opts.delayMs || 100;
+  // Collecte les especes uniques de tous les pays supportes.
+  const species = new Set();
+  const countries = Object.keys(COUNTRIES_REG || {});
+  for(const cc of countries){
+    const reg = COUNTRIES_REG[cc];
+    try{
+      for(const sci of Object.keys(reg.monthly?.() || {})) species.add(sci.toLowerCase());
+      for(const sci of Object.keys(reg.st?.() || {})) species.add(sci.toLowerCase());
+    }catch(_){}
+  }
+  const all = [...species];
+  const total = all.length;
+  console.log(`[preload] ${total} especes uniques a fetch (concurrence ${concurrency}, delay ${delayMs}ms)`);
+  let done = 0, ok = 0, fail = 0, skipped = 0;
+  const t0 = performance.now();
+  // Vide les entrees null du cache (echecs precedents) pour reessayer
+  for(const [k, v] of _spPhotoCache){
+    if(v === null) _spPhotoCache.delete(k);
+  }
+  // Worker : consomme la queue
+  const queue = [...all];
+  const worker = async () => {
+    while(queue.length){
+      const sci = queue.shift();
+      if(!sci) return;
+      try{
+        const cached = _spPhotoCache.get(sci);
+        if(cached && cached.url){ skipped++; done++; continue; }
+        const res = await _fetchWikiPhoto(sci);
+        if(res && res.url) ok++; else fail++;
+      }catch(_){ fail++; }
+      done++;
+      if(done % 50 === 0){
+        const pct = ((done/total)*100).toFixed(1);
+        const elapsedS = ((performance.now() - t0)/1000).toFixed(1);
+        console.log(`[preload] ${done}/${total} (${pct}%) · ok=${ok} skipped=${skipped} fail=${fail} · ${elapsedS}s`);
+      }
+      if(delayMs) await new Promise(r => setTimeout(r, delayMs));
+    }
+  };
+  const workers = [];
+  for(let i = 0; i < concurrency; i++) workers.push(worker());
+  await Promise.all(workers);
+  const elapsedS = ((performance.now() - t0)/1000).toFixed(1);
+  console.log(`[preload] TERMINE. ${done} traitees en ${elapsedS}s. ok=${ok} skipped=${skipped} fail=${fail}`);
+  // Force la persist finale
+  _spPhotoCachePersist();
+  return { total, ok, skipped, fail, elapsedS };
+};
