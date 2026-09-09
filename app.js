@@ -587,7 +587,10 @@ function _openCountryPicker(currentCode, opts = {}){
         for(const it of items){
           const cc = it.cc;
           const reg = COUNTRIES_REG[cc];
-          const flag = flagImg(cc);
+          // Emoji drapeau (regional-indicator symbols) au lieu du flagImg (img flagcdn).
+          // Sur Windows desktop le rendu emoji drapeau tombe en fallback "FR" en boite mais
+          // sur mobile/Mac/Linux c'est un vrai drapeau. Plus leger + coherent avec la demande.
+          const flag = countryFlag(cc);
           let meta = '';
           let dotHtml = '';
           if(focusSci){

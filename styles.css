@@ -335,7 +335,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .cp-item { display:flex; align-items:center; gap:10px; padding:8px 10px; cursor:pointer; border-radius:8px; color:var(--ink); font-size:14px; }
   .cp-item:hover { background:var(--surface-2); }
   .cp-item.on { background:var(--surface-2); font-weight:700; }
-  .cp-item-flag { display:inline-flex; align-items:center; justify-content:center; width:28px; }
+  .cp-item-flag { display:inline-flex; align-items:center; justify-content:center; width:28px; font-size:18px; line-height:1; }
   .cp-btn-flag { display:inline-flex; align-items:center; }
   .cp-item-name { flex:1; }
   .cp-item-meta { font-size:11px; color:var(--ink-3); }
