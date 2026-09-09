@@ -1634,16 +1634,63 @@ document.addEventListener('click', async e=>{
   }
 });
 
+// Flags "dirty" pour render lazy : quand renderResults est appele mais que la view
+// concernee est masquee, on met un flag et on rebuild uniquement au switch d'onglet.
+// Gain enorme : renderMatrix produit ~4900 nodes DOM (234 lignes x 13 col), renderBoard
+// ~2100. Sans ca, chaque Firestore live update (chat, presence, votes...) rebuildait
+// tout le classement meme quand invisible.
+let _rankingDirty = false, _trophiesDirty = false, _rrScheduled = false;
+function _isViewVisible(id){
+  const el = document.getElementById(id);
+  return el && el.style.display !== 'none';
+}
 function renderResults(){
+  // Coalesce plusieurs appels dans le meme frame (evite les rebuilds redondants
+  // quand plusieurs subscriptions Firestore rentrent en meme temps).
+  if(_rrScheduled) return;
+  _rrScheduled = true;
+  requestAnimationFrame(() => { _rrScheduled = false; _renderResultsImpl(); });
+}
+let _lastBuildData = null;
+function _renderResultsImpl(){
   const res=$('#results');
-  if(state.people.length===0){ res.classList.remove('show'); renderTrophies({N:0}); return; }
+  if(state.people.length===0){
+    res.classList.remove('show');
+    renderTrophies({N:0});   // etat vide = juste un message, cheap
+    return;
+  }
   res.classList.add('show');
   const data = build();
-  renderBoard(); renderMatrix(data); renderTrophies(data);
+  _lastBuildData = data;
+  // viewRanking : renderBoard + renderMatrix, ~7000 nodes. Skip si hidden.
+  if(_isViewVisible('viewRanking')){
+    renderBoard(); renderMatrix(data);
+    _rankingDirty = false;
+  } else {
+    _rankingDirty = true;
+  }
+  if(_isViewVisible('viewTrophies')){
+    renderTrophies(data);
+    _trophiesDirty = false;
+  } else {
+    _trophiesDirty = true;
+  }
   // Rafraichit les cibles seulement si l'onglet est visible (evite compute inutile
   // sinon : renderTargets est deja rappele quand on clique le tab).
-  const tv = document.getElementById('viewTargets');
-  if(tv && tv.style.display !== 'none') renderTargets();
+  if(_isViewVisible('viewTargets')) renderTargets();
+}
+// Appele au tab switch : si la view etait dirty, la rebuild maintenant.
+function _flushDirtyForView(viewName){
+  if(viewName === 'ranking' && _rankingDirty){
+    const data = _lastBuildData || build();
+    renderBoard(); renderMatrix(data);
+    _rankingDirty = false;
+  }
+  if(viewName === 'trophies' && _trophiesDirty){
+    const data = _lastBuildData || build();
+    renderTrophies(data);
+    _trophiesDirty = false;
+  }
 }
 
 function fmt(n){ return Math.round(n).toLocaleString('fr-FR'); }
@@ -6994,6 +7041,8 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   if(b.dataset.view==='pokedex') renderPokedex();
   if(b.dataset.view==='map') renderMap();
   if(b.dataset.view==='targets') renderTargets();
+  // Flush les renders differes pour ranking/trophies (voir renderResults + _rankingDirty).
+  if(b.dataset.view==='ranking' || b.dataset.view==='trophies') _flushDirtyForView(b.dataset.view);
   try{ localStorage.setItem('mb-last-tab', b.dataset.view); }catch(_){ }
 }));
 // Restaure l'onglet visité la dernière fois (par défaut Ma liste).
