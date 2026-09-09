@@ -13223,7 +13223,7 @@ window._perfBench = (action = 'all') => {
     const speciesMap = new Map();
     const shuffled = [...allSpecies].sort(() => Math.random() - 0.5).slice(0, nSpeciesPerUser);
     for(const sci of shuffled){
-      speciesMap.set(sci, { date: '2026-06-15', loc: 'Test', country: 'FR', obs: 1 });
+      speciesMap.set(sci, { sci, common: FR_NAMES[sci] || sci, date: '2026-06-15', loc: 'Test', country: 'FR', fr: true, obs: 1 });
     }
     const person = {
       id: 'fake-' + i,
@@ -13237,11 +13237,13 @@ window._perfBench = (action = 'all') => {
       dream: 'Condor',
     };
     realPeople.push(person);
+    // state.people partage aussi la species Map (build() itere sur .species via activeSpecies)
     state.people.push({
       id: person.id,
       name: person.name,
       isMe: person.isMe,
       si: person.si,
+      species: speciesMap,
       total: speciesMap.size,
       score: 100 + i * 20,
       scoreReal: 200 + i * 15,
