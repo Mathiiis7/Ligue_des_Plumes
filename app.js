@@ -13203,3 +13203,73 @@ window._perfDiag = () => {
     trophyEvents: trophyEventsList.length
   };
 };
+
+// Helper de bench perf : injecte un state fake (10 users, ~100 species chacun) pour
+// pouvoir mesurer sans etre logge. Attention : ecrase state.people / realPeople.
+// Usage :
+//   _perfBench()          -> injecte + bench toutes les actions cles
+//   _perfBench('render')  -> mesure juste renderResults()
+//   _perfBench('pkdx')    -> mesure _pkdxRender()
+window._perfBench = (action = 'all') => {
+  const nSpeciesPerUser = 100;
+  const nUsers = 10;
+  // Genere fake state : prend les 200 premieres especes de REAL_RARITY (species FR).
+  const allSpecies = Object.keys(REAL_RARITY || {}).slice(0, 200);
+  if(!allSpecies.length){ return { error: 'REAL_RARITY vide, attends que app.js finisse de charger' }; }
+  const fakeNames = ['Mathis','Clement','Sam','Olivier','Mael','Paul','Guillaume','Antonin','Genevieve','Dingovelos'];
+  realPeople.length = 0;
+  state.people = [];
+  for(let i = 0; i < nUsers; i++){
+    const speciesMap = new Map();
+    const shuffled = [...allSpecies].sort(() => Math.random() - 0.5).slice(0, nSpeciesPerUser);
+    for(const sci of shuffled){
+      speciesMap.set(sci, { date: '2026-06-15', loc: 'Test', country: 'FR', obs: 1 });
+    }
+    const person = {
+      id: 'fake-' + i,
+      name: fakeNames[i] || 'User' + i,
+      isMe: i === 0,
+      si: (i % 8) + 1,
+      species: speciesMap,
+      goal: '200',
+      fav: 'Merle noir',
+      rare: 'Aigle royal',
+      dream: 'Condor',
+    };
+    realPeople.push(person);
+    state.people.push({
+      id: person.id,
+      name: person.name,
+      isMe: person.isMe,
+      si: person.si,
+      total: speciesMap.size,
+      score: 100 + i * 20,
+      scoreReal: 200 + i * 15,
+      goal: person.goal, fav: person.fav, rare: person.rare, dream: person.dream,
+    });
+  }
+  myUid = 'fake-0';
+  const results = {};
+  const bench = (label, fn) => {
+    const t0 = performance.now();
+    fn();
+    const dt = performance.now() - t0;
+    results[label + '_ms'] = dt.toFixed(1);
+    return dt;
+  };
+  if(action === 'all' || action === 'render'){
+    bench('renderResults_cold', () => renderResults());
+    // Force le flush RAF pour mesurer la vraie synchro (renderResults est async debounced RAF)
+    // On mesure aussi les sous-fonctions directement
+    bench('renderBoard', () => renderBoard());
+    const data = build();
+    bench('renderMatrix', () => renderMatrix(data));
+    bench('renderTrophies', () => renderTrophies(data));
+  }
+  if(action === 'all' || action === 'pkdx'){
+    bench('pkdxRender', () => { if(typeof _pkdxRender === 'function') _pkdxRender(); });
+  }
+  results.heap_MB = performance.memory ? (performance.memory.usedJSHeapSize/1024/1024).toFixed(1) : 'n/a';
+  results.domNodes = document.querySelectorAll('*').length;
+  return results;
+};
