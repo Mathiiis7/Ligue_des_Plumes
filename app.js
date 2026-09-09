@@ -13246,10 +13246,14 @@ window._perfDiag = () => {
 //   _perfBench()          -> injecte + bench toutes les actions cles
 //   _perfBench('render')  -> mesure juste renderResults()
 //   _perfBench('pkdx')    -> mesure _pkdxRender()
-window._perfBench = (action = 'all') => {
+window._perfBench = (action = 'all', opts = {}) => {
+  const skipInject = opts.skipInject === true;
   const nSpeciesPerUser = 100;
   const nUsers = 10;
-  // Genere fake state : prend les 200 premieres especes de REAL_RARITY (species FR).
+  if(skipInject && state.people.length > 0){
+    // Reutilise le state existant : permet de tester la memoization sans regenerer.
+  } else {
+  // Genere fake state DETERMINISTE (seed base sur i) : hash reproductible entre appels.
   const allSpecies = Object.keys(REAL_RARITY || {}).slice(0, 200);
   if(!allSpecies.length){ return { error: 'REAL_RARITY vide, attends que app.js finisse de charger' }; }
   const fakeNames = ['Mathis','Clement','Sam','Olivier','Mael','Paul','Guillaume','Antonin','Genevieve','Dingovelos'];
@@ -13257,7 +13261,9 @@ window._perfBench = (action = 'all') => {
   state.people = [];
   for(let i = 0; i < nUsers; i++){
     const speciesMap = new Map();
-    const shuffled = [...allSpecies].sort(() => Math.random() - 0.5).slice(0, nSpeciesPerUser);
+    // Tri deterministe : prend les nSpecies premieres decalees de i*10 pour varier par user
+    // (evite Math.random qui casserait le hash memo entre appels).
+    const shuffled = allSpecies.slice(i * 10, i * 10 + nSpeciesPerUser);
     for(const sci of shuffled){
       speciesMap.set(sci, { sci, common: FR_NAMES[sci] || sci, date: '2026-06-15', loc: 'Test', country: 'FR', fr: true, obs: 1 });
     }
@@ -13287,6 +13293,7 @@ window._perfBench = (action = 'all') => {
     });
   }
   myUid = 'fake-0';
+  }   // fin du bloc "sinon injecte fake state"
   const results = {};
   const bench = (label, fn) => {
     const t0 = performance.now();
