@@ -8793,7 +8793,15 @@ function _renderSpeciesRarityCard(key){
   });
   _renderSpeciesFreqChart(k, initCountry);
   const sel = $('#smRarityCountrySel');
-  const mapSel = $('#smMapCountrySel');
+  // #smMapCountrySel est un noeud statique d'index.html (partage entre toutes les fiches).
+  // On le clone-and-replace pour dropper les handlers des ouvertures precedentes,
+  // sinon chaque clic empile N pickers avec N closures stales sur d'anciennes especes.
+  let mapSel = $('#smMapCountrySel');
+  if(mapSel && mapSel.parentNode){
+    const cloned = mapSel.cloneNode(true);
+    mapSel.parentNode.replaceChild(cloned, mapSel);
+    mapSel = cloned;
+  }
   // Fonction commune : appliquer un changement de pays (source de verite = smRarityCountrySel).
   // Utilisee par les 2 pickers (Rarete dans l'onglet Info + Carte & amis) pour rester sync.
   const applyCountryChange = (chosen) => {
