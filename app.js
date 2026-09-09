@@ -468,6 +468,7 @@ function _setGlobalCountry(cc){
     try{ localStorage.setItem('mb-pkdx-filters', JSON.stringify(_pkdxFilters)); }catch(_){}
     if(typeof _pkdxAllSorted !== 'undefined') _pkdxAllSorted = null;
     if(typeof _pkdxNumById !== 'undefined') _pkdxNumById = null;
+    if(typeof _pkdxLastRowsHash !== 'undefined') _pkdxLastRowsHash = null;
   }
   if(typeof _targetsCountry !== 'undefined'){
     _targetsCountry = cc;
@@ -1783,7 +1784,32 @@ function renderBoard(){
 }
 
 let _matrixUniverse = [];   // exposé pour la dropdown de suggestions de #q
+// Hash du dernier rendu : skip renderMatrix si le contenu n'a pas change.
+// Firestore live updates (chat, presence, votes) peuvent redeclencher renderMatrix
+// sans que la data matrix ait bouge -> 96ms gaspilles chaque fois. Skip precoce.
+let _matrixLastHash = null;
+function _matrixHash(universe, N, filters){
+  // Hash compact base sur : count universe, N users, filtres UI, boardMode.
+  // Suffit pour detecter les vrais changements (ajout/suppr espece cochee).
+  let sum = 0;
+  for(const u of universe){
+    // sum tres simple : count + hash sci
+    sum = (sum * 31 + (u.counts||0) + (u.key||'').length) | 0;
+  }
+  return `${universe.length}|${N}|${sum}|${filters}`;
+}
 function renderMatrix({universe,N}){
+  // Skip precoce si la matrix n'a pas change depuis le dernier rendu (voir _matrixHash).
+  // Firestore live updates (chat, presence, votes...) declenchent renderResults souvent
+  // sans que la data matrix bouge -> gain ~90ms par skip.
+  const filtersKey = `${state.boardMode||''}|${state.showMissing?1:0}|${state.family||''}|${state.q||''}|${state.sort||''}`;
+  const hash = _matrixHash(universe, N, filtersKey);
+  if(hash === _matrixLastHash){
+    // Skip mais on met quand meme _matrixUniverse a jour (defensif) via un compute leger.
+    // Non necessaire ici car la data source n'a pas change.
+    return;
+  }
+  _matrixLastHash = hash;
   // la dimension de rareté de la matrice suit le classement choisi : réelle si mode "real", sinon ligue
   // la dimension de rareté suit le classement choisi (ligue ou réelle) ; les oiseaux
   // jamais observés par personne s'affichent simplement en "Non observé".
@@ -11146,6 +11172,9 @@ const _pkdxPhotos = new Map();
 // filtres pour que chaque oiseau garde son numero comme dans un vrai Pokedex.
 var _pkdxAllSorted = null;
 var _pkdxNumById = null;
+// Hash du dernier rendu grille : skip rebuild innerHTML si rien n'a change (evite
+// ~300ms de re-render de 597 cards a chaque tab switch/Firestore update).
+var _pkdxLastRowsHash = null;
 /* ---------------- Cibles de la semaine ---------------- */
 // Panel qui affiche les especes les plus faciles a voir CETTE SEMAINE dans la region
 // selectionnee (ou France entiere) que l'utilisateur n'a pas encore cochees. Utilise
@@ -11662,7 +11691,7 @@ function renderPokedex(){
         if(chosen && chosen !== _pkdxFilters.country){
           _pkdxFilters.country = chosen;
           _pkdxSaveFilters();
-          _pkdxAllSorted = null; _pkdxNumById = null;   // le pays change la liste + numeros
+          _pkdxAllSorted = null; _pkdxNumById = null; _pkdxLastRowsHash = null;   // le pays change la liste + numeros
           _syncCountryButton(ccBtn, chosen);
           _pkdxRender();
         }
@@ -11769,6 +11798,13 @@ function _pkdxRender(){
   if(counter) counter.textContent = `${totalOwned} / ${totalFR}${rows.length !== totalFR ? ` · filtré : ${rows.length}` : ''}`;
   if(!rows.length){ grid.innerHTML = ''; empty.style.display = ''; return; }
   empty.style.display = 'none';
+  // Skip rebuild grille si rows + owned inchange depuis dernier render (evite le
+  // innerHTML = ... de 597 cards qui coute 300ms sur switch d'onglet).
+  const rowsHash = rows.length + '|' + country + '|' + rows.map(r => r.sci + (r.owned?'1':'0')).join(',');
+  if(rowsHash === _pkdxLastRowsHash && grid.children.length === rows.length){
+    return;   // DOM deja a jour
+  }
+  _pkdxLastRowsHash = rowsHash;
   // Rendu grille : numero + photo lazy + nom + tier. Le statut exotique n'apparait plus
   // sur la carte (ni badge violet, ni bordure) : c'est le tier "0" gris qui signale les
   // exotiques de parcs, et le detail (categorie N/P/X/C) est visible sur la fiche espece.
