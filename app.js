@@ -7384,6 +7384,9 @@ const PHOTO_OVERRIDE_WIKI = {
   'sylvia atricapilla': { url:'https://inaturalist-open-data.s3.amazonaws.com/photos/187041112/original.jpg', thumb:'https://inaturalist-open-data.s3.amazonaws.com/photos/187041112/medium.jpg', credit:'iNaturalist' },
   'certhia brachydactyla': { url:'https://inaturalist-open-data.s3.amazonaws.com/photos/6260571/original.jpg', thumb:'https://inaturalist-open-data.s3.amazonaws.com/photos/6260571/medium.jpg', credit:'iNaturalist' },
   'pica pica': { url:'https://inaturalist-open-data.s3.amazonaws.com/photos/103446096/original.jpg', thumb:'https://inaturalist-open-data.s3.amazonaws.com/photos/103446096/medium.jpg', credit:'iNaturalist' },
+  'hirundo rustica': { url:'https://inaturalist-open-data.s3.amazonaws.com/photos/122469139/original.jpg', thumb:'https://inaturalist-open-data.s3.amazonaws.com/photos/122469139/medium.jpg', credit:'iNaturalist' },
+  'delichon urbicum': { url:'https://inaturalist-open-data.s3.amazonaws.com/photos/370662370/original.jpg', thumb:'https://inaturalist-open-data.s3.amazonaws.com/photos/370662370/medium.jpg', credit:'iNaturalist' },
+  'parus major': { url:'https://inaturalist-open-data.s3.amazonaws.com/photos/340613122/original.jpg', thumb:'https://inaturalist-open-data.s3.amazonaws.com/photos/340613122/medium.jpg', credit:'iNaturalist' },
   'circus hudsonius': { url:'https://upload.wikimedia.org/wikipedia/commons/7/71/Male_Northern_Harrier_%2814364839779%29.jpg' },   // Busard des marais : male en vol, 4695x3259
   'branta bernicla': { url:'https://upload.wikimedia.org/wikipedia/commons/7/75/Branta_bernicla_bernicla_-_Brent_Goose.jpg' },
   'otis tarda': { url:'https://upload.wikimedia.org/wikipedia/commons/d/d8/Abetarda-comum%2C_macho%2C_concentrado_e_a_fazer_o_seu_melhor..%21_Great_Bustard%2C_male%2C_focused_and_doing_his_best..%21_%2854460360805%29.jpg' },
