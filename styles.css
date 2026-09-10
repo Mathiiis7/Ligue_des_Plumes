@@ -220,7 +220,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .pcard.is-me { background:color-mix(in srgb, var(--accent) 6%, var(--surface-2)); border-color:color-mix(in srgb, var(--accent) 30%, var(--line-2)); }
   .pcard.is-online { border-left:3px solid #2ecc71; }
   .pcard-avatar-wrap { position:relative; flex:0 0 auto; }
-  .pcard-avatar-wrap .user-avatar { width:44px !important; height:44px !important; font-size:22px !important; }
+  .pcard-avatar-wrap .user-avatar { width:44px !important; height:44px !important; font-size:22px !important; line-height:1; }
   .pcard-online-dot { position:absolute; bottom:-2px; right:-2px; width:12px; height:12px; border-radius:50%; background:#2ecc71; border:2px solid var(--surface-2); box-shadow:0 0 0 1px color-mix(in srgb, #2ecc71 30%, transparent); }
   .pcard-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
   .pcard-name { font-weight:700; font-size:14px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:flex; align-items:center; gap:6px; }
@@ -638,11 +638,12 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .msg-guest { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#fff;
     background:var(--ink-3); padding:1px 5px; border-radius:6px; vertical-align:middle; margin-left:4px; }
   .msg-status { font-size:10.5px; font-weight:400; color:var(--ink-3); font-style:italic; margin-left:6px; }
-  /* Avatar : bulle ronde emoji, initiale, ou image */
-  .user-avatar { display:inline-grid; place-items:center; border-radius:50%; background:var(--surface-2); border:1px solid var(--line-2); overflow:hidden; vertical-align:middle; flex:0 0 auto; }
+  /* Avatar : bulle ronde emoji, initiale, ou image. line-height:1 pour eviter le decalage
+     baseline qui decentre le glyphe verticalement. */
+  .user-avatar { display:inline-grid; place-items:center; border-radius:50%; background:var(--surface-2); border:1px solid var(--line-2); overflow:hidden; vertical-align:middle; flex:0 0 auto; line-height:1; text-align:center; }
   img.user-avatar { object-fit:cover; }
   .user-avatar-emoji { line-height:1; background:var(--surface); }
-  .user-avatar-initial { font-weight:700; color:var(--ink-2); background:color-mix(in srgb, var(--accent) 18%, var(--surface-2)); }
+  .user-avatar-initial { line-height:1; font-weight:700; color:var(--ink-2); background:color-mix(in srgb, var(--accent) 18%, var(--surface-2)); }
   /* Ligne entete du message : avatar + nom+status */
   .msg-header { display:flex; align-items:center; gap:8px; margin:0 0 6px 4px; }
   .msg.mine .msg-header { flex-direction:row-reverse; margin:0 4px 6px 0; }
@@ -655,8 +656,8 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .msg-deleted-content { opacity:.6; filter:grayscale(60%); }
   /* Profil : avatar picker */
   .prof-avatar-row { display:flex; align-items:center; gap:14px; margin-top:12px; padding-top:12px; border-top:1px solid var(--line); flex-wrap:wrap; }
-  .prof-avatar-preview { width:72px; height:72px; border-radius:50%; background:var(--surface-2); border:2px solid var(--line-2); overflow:hidden; display:grid; place-items:center; flex:0 0 auto; }
-  .prof-avatar-preview img.user-avatar, .prof-avatar-preview .user-avatar { width:72px !important; height:72px !important; border:none; font-size:38px !important; }
+  .prof-avatar-preview { width:72px; height:72px; border-radius:50%; background:var(--surface-2); border:2px solid var(--line-2); box-sizing:border-box; overflow:hidden; display:grid; place-items:center; flex:0 0 auto; }
+  .prof-avatar-preview .user-avatar, .prof-avatar-preview img.user-avatar { width:100% !important; height:100% !important; border:none !important; font-size:38px !important; line-height:1; border-radius:0 !important; }
   .prof-avatar-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .prof-avatar-label { font-size:11px; font-weight:700; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; width:100%; margin:0 0 4px; }
   /* Highlight quand @moi mentionne */
