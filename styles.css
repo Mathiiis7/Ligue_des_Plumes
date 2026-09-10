@@ -536,6 +536,18 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .gif-pop-inner { position:absolute; left:50%; bottom:18px; transform:translateX(-50%);
     background:var(--surface); border:1px solid var(--line-2); border-radius:16px; padding:12px;
     width:min(420px, 92vw); max-height:70vh; display:flex; flex-direction:column; box-shadow:0 12px 40px rgba(0,0,0,.3); }
+  body:has(#viewChat.fab-open) .gif-pop .gif-pop-inner,
+  body:has(#viewPhotos.fab-open) .gif-pop .gif-pop-inner,
+  body:has(#viewFeed.fab-open) .gif-pop .gif-pop-inner {
+    left:auto; right:20px; bottom:170px; transform:none;
+  }
+  @media (max-width:600px){
+    body:has(#viewChat.fab-open) .gif-pop .gif-pop-inner,
+    body:has(#viewPhotos.fab-open) .gif-pop .gif-pop-inner,
+    body:has(#viewFeed.fab-open) .gif-pop .gif-pop-inner {
+      right:10px; left:10px; bottom:150px; width:auto;
+    }
+  }
   .gif-pop-header { display:flex; gap:8px; margin-bottom:10px; }
   .gif-pop-header input { flex:1; padding:8px 12px; border:1px solid var(--line-2); border-radius:10px; font:inherit; background:var(--surface-2); color:var(--ink); }
   #gifPopClose { background:none; border:1px solid var(--line-2); border-radius:10px; padding:0 12px; font-size:16px; cursor:pointer; color:var(--ink-2); }
@@ -1137,6 +1149,20 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .emoji-pop.open { display:block; }
   .emoji-pop-inner { position:absolute; left:50%; bottom:18px; transform:translateX(-50%); background:var(--surface);
     border:1px solid var(--line-2); border-radius:14px; padding:8px; display:flex; gap:4px; flex-wrap:wrap; width:min(340px,92vw); max-height:50vh; overflow-y:auto; box-shadow:var(--shadow); }
+  /* Quand le chat/photos/feed FAB est ouvert, positionner le picker emoji aligne avec
+     le panneau flottant (au-dessus du compose form), pas centre au milieu de l'ecran. */
+  body:has(#viewChat.fab-open) .emoji-pop .emoji-pop-inner,
+  body:has(#viewPhotos.fab-open) .emoji-pop .emoji-pop-inner,
+  body:has(#viewFeed.fab-open) .emoji-pop .emoji-pop-inner {
+    left:auto; right:20px; bottom:170px; transform:none;
+  }
+  @media (max-width:600px){
+    body:has(#viewChat.fab-open) .emoji-pop .emoji-pop-inner,
+    body:has(#viewPhotos.fab-open) .emoji-pop .emoji-pop-inner,
+    body:has(#viewFeed.fab-open) .emoji-pop .emoji-pop-inner {
+      right:10px; left:10px; bottom:150px; width:auto;
+    }
+  }
   .emoji-opt { font-size:23px; background:none; border:none; cursor:pointer; padding:4px 5px; border-radius:9px; line-height:1; }
   .emoji-opt:hover { background:var(--surface-2); }
   .photo-upload { margin:4px 0 16px; }
