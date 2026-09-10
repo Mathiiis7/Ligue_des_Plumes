@@ -69,22 +69,49 @@ service cloud.firestore {
         allow read: if isMember(leagueId) || isAdmin();
         allow create: if isMember(leagueId)
           && request.resource.data.uid == request.auth.uid
-          && hasOnlyKeys(['uid', 'name', 'text', 'image', 'createdAt', 'replyTo'])
+          && hasOnlyKeys(['uid', 'name', 'text', 'image', 'voice', 'gif', 'createdAt', 'replyTo'])
           && (!('name' in request.resource.data) || isBoundedString(request.resource.data.name, 0, 30))
           && (
                (request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 500)
                || (request.resource.data.image is string && request.resource.data.image.size() > 0)
+               || (request.resource.data.voice is string && request.resource.data.voice.size() > 0)
+               || (request.resource.data.gif is string && request.resource.data.gif.size() > 0)
              )
           && (!('text' in request.resource.data)  || isBoundedString(request.resource.data.text, 0, 500))
-          && (!('image' in request.resource.data) || (request.resource.data.image is string && request.resource.data.image.size() <= 950000));
-        allow update: if false;
+          && (!('image' in request.resource.data) || (request.resource.data.image is string && request.resource.data.image.size() <= 950000))
+          && (!('voice' in request.resource.data) || (request.resource.data.voice is string && request.resource.data.voice.size() <= 950000))
+          && (!('gif' in request.resource.data)   || (request.resource.data.gif is string && request.resource.data.gif.size() <= 500));
+        // Update autorise : (1) auteur qui edite son propre message (text seulement, dans les 5 min),
+        // (2) auteur ou admin qui soft-delete (marque deleted:true + snapshot original).
+        allow update: if isMember(leagueId) && (
+          // Edit auteur : diff limite au champ text + editedAt
+          (resource.data.uid == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'editedAt'])
+            && (!('text' in request.resource.data) || isBoundedString(request.resource.data.text, 1, 500)))
+          ||
+          // Soft delete : par auteur ou admin, ajoute les champs deleted*
+          ((resource.data.uid == request.auth.uid || isAdmin())
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                 'deleted', 'deletedAt', 'deletedBy', 'deletedByName',
+                 'deletedOriginalText', 'deletedOriginalImage', 'deletedOriginalVoice', 'deletedOriginalGif'
+               ])
+            && request.resource.data.deleted == true)
+        );
+        // Delete hard : conserve pour compatibilite (invites ou messages tres anciens)
         allow delete: if isMember(leagueId) && (resource.data.uid == request.auth.uid || isAdmin());
+      }
+
+      // Indicateur "X ecrit..." : chaque user maj son doc avec updatedAt.
+      // Auto-expire cote client apres 5s (pas de rules d'expiration).
+      match /typing/{uid} {
+        allow read: if isMember(leagueId) || isAdmin();
+        allow write, delete: if isSelf(uid) && isMember(leagueId);
       }
 
       match /presence/{uid} {
         allow read: if isMember(leagueId) || isAdmin();
         allow write: if isSelf(uid) && isMember(leagueId)
-          && hasOnlyKeys(['at', 'name']);
+          && hasOnlyKeys(['at', 'lastSeen', 'name']);
       }
 
       // Votes trophees : requiert membre >= 7 jours (anti-manipulation coup rapide)
