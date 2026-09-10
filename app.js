@@ -2528,7 +2528,7 @@ function memberToPerson(id, data, si){
   }]));
   const regions = Array.isArray(data.regions) ? data.regions.filter(x=>/^FR-/i.test(x)) : [];
   return { id, name:data.name||'Joueur', filename:'', si, species, isMe:id===myUid,
-    goal:data.goal||'', fav:data.fav||'', dream:data.dream||'', rare:data.rare||'',
+    goal:data.goal||'', fav:data.fav||'', dream:data.dream||'', rare:data.rare||'', status:data.status||'',
     regionsFR: new Set(regions),                  // régions FR-XX visitées (issues du CSV)
     joinedAt: data.joinedAt?.seconds || 0,
     updatedAt: data.updatedAt?.toMillis ? data.updatedAt.toMillis() : 0 };
@@ -2728,8 +2728,33 @@ function renderOnline(){
 }
 function isOnline(uid){ return onlineMap.has(uid); }
 // Autolink URLs dans le texte (deja escape). Repere http(s):// et wrap en <a>.
+// Special : Wikipedia (fr/en) et YouTube -> chip enrichi.
 function _autoLink(escText){
   return escText.replace(/(https?:\/\/[^\s<]+)/g, url => {
+    // Detection Wikipedia : extraire le titre de l'article
+    const wpMatch = url.match(/^https?:\/\/([a-z]{2})\.wikipedia\.org\/wiki\/([^?#]+)/);
+    if(wpMatch){
+      const lang = wpMatch[1].toUpperCase();
+      const title = decodeURIComponent(wpMatch[2]).replace(/_/g, ' ');
+      return `<a class="msg-link msg-link-wp" href="${url}" target="_blank" rel="noopener" title="Wikipedia ${lang}"><span class="msg-link-icon">📖</span> ${esc(title)} <span class="msg-link-src">Wikipedia ${lang}</span></a>`;
+    }
+    // Detection YouTube
+    const ytMatch = url.match(/^https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    if(ytMatch){
+      const vid = ytMatch[1];
+      const thumb = `https://i.ytimg.com/vi/${vid}/mqdefault.jpg`;
+      return `<a class="msg-link msg-link-yt" href="${url}" target="_blank" rel="noopener" title="YouTube"><span class="msg-link-icon">▶️</span> Vidéo YouTube <span class="msg-link-src">youtube.com</span></a>`;
+    }
+    // Detection eBird
+    const ebMatch = url.match(/^https?:\/\/ebird\.org\/species\/([A-Za-z0-9-]+)/);
+    if(ebMatch){
+      return `<a class="msg-link msg-link-eb" href="${url}" target="_blank" rel="noopener" title="eBird"><span class="msg-link-icon">🐦</span> ${esc(ebMatch[1])} <span class="msg-link-src">eBird</span></a>`;
+    }
+    // Detection Xeno-Canto
+    if(/xeno-canto\.org/.test(url)){
+      return `<a class="msg-link msg-link-xc" href="${url}" target="_blank" rel="noopener" title="Xeno-Canto"><span class="msg-link-icon">🎵</span> Chant d'oiseau <span class="msg-link-src">xeno-canto.org</span></a>`;
+    }
+    // Fallback : lien generique
     const short = url.length > 50 ? url.slice(0, 47) + '…' : url;
     return `<a class="msg-link" href="${url}" target="_blank" rel="noopener">🔗 ${esc(short)}</a>`;
   });
@@ -2738,6 +2763,7 @@ function renderChat(msgs){
   const box=$('#chatMessages'); if(!box) return;
   lastChatMsgs = msgs;
   const byId = new Map(realPeople.map(p=>[p.id, p.name]));   // nom autoritatif par uid (anti-usurpation)
+  const statusById = new Map(realPeople.map(p=>[p.id, p.status || '']));
   const msgById = new Map(msgs.map(m => [m.id, m]));
   const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
   if(!msgs.length){ box.innerHTML='<div class="chat-empty">Aucun message. Lancez la conversation ! 🐦</div>'; return; }
@@ -2748,11 +2774,15 @@ function renderChat(msgs){
     const authoritative = byId.get(m.uid);
     const nm = authoritative || (m.name||'Invité');
     const guestTag = authoritative ? '' : ' <span class="msg-guest">invité</span>';
+    const statusText = statusById.get(m.uid) || '';
+    const statusTag = statusText ? ` <span class="msg-status">${esc(statusText)}</span>` : '';
     const t = m.createdAt && m.createdAt.toDate ? m.createdAt.toDate() : null;
     const time = t ? t.toLocaleString('fr-FR',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'}) : '…';
     const safeImg = (typeof m.image==='string' && /^data:image\//.test(m.image)) ? m.image.replace(/"/g,'%22') : '';
     const imgHtml = safeImg ? `<img class="msg-img" src="${safeImg}" alt="image partagée">` : '';
-    const emojiOnly = !safeImg && _isEmojiOnly(m.text);
+    const safeVoice = (typeof m.voice==='string' && /^data:audio\//.test(m.voice)) ? m.voice.replace(/"/g,'%22') : '';
+    const voiceHtml = safeVoice ? `<audio class="msg-voice" src="${safeVoice}" controls preload="metadata"></audio>` : '';
+    const emojiOnly = !safeImg && !safeVoice && _isEmojiOnly(m.text);
     const txtHtml = m.text ? `<div>${_autoLink(_renderMentions(esc(m.text), byId))}</div>` : '';
     // Reply : citation du message auquel on repond
     let replyHtml = '';
@@ -2767,14 +2797,14 @@ function renderChat(msgs){
     // "(modifié)" si editedAt existe
     const editedTag = m.editedAt ? ' <span class="msg-edited" title="Message modifié">(modifié)</span>' : '';
     // Actions : Répondre (tous), Éditer (mine + <5min + texte seul), Supprimer (mine OU admin)
-    const canEdit = mine && t && (now - t.getTime() < EDIT_WINDOW_MS) && !safeImg;
+    const canEdit = mine && t && (now - t.getTime() < EDIT_WINDOW_MS) && !safeImg && !safeVoice;
     const canDelete = mine || isAdmin();
     const replyBtn = `<button class="msg-act msg-reply" data-id="${esc(m.id)}" title="Répondre">↪</button>`;
     const editBtn = canEdit ? `<button class="msg-act msg-edit" data-id="${esc(m.id)}" title="Éditer">✏️</button>` : '';
     const delBtn = canDelete ? `<button class="msg-act msg-del" data-id="${esc(m.id)}" title="Supprimer">🗑️</button>` : '';
     return `<div class="msg${mine?' mine':''}" data-msg-id="${esc(m.id)}">
-      <div class="msg-name">${esc(nm)}${guestTag}</div>
-      <div class="msg-bubble${emojiOnly?' emoji-only':''}">${replyHtml}${imgHtml}${txtHtml}</div>
+      <div class="msg-name">${esc(nm)}${guestTag}${statusTag}</div>
+      <div class="msg-bubble${emojiOnly?' emoji-only':''}">${replyHtml}${imgHtml}${voiceHtml}${txtHtml}</div>
       ${reactionBar('chat:'+m.id)}
       <div class="msg-actions">${replyBtn}${editBtn}${delBtn}</div>
       <div class="msg-time">${esc(time)}${editedTag}</div>
@@ -6590,10 +6620,11 @@ function fillProfile(me){
   prof.style.display = me ? 'block' : 'none';
   const empty=$('#profilEmpty'); if(empty) empty.style.display = me ? 'none' : '';
   if(!me) return;
-  const g=$('#profGoal'), d=$('#profDream'), fav=$('#profFav'), rr=$('#profRare');
+  const g=$('#profGoal'), d=$('#profDream'), fav=$('#profFav'), rr=$('#profRare'), st=$('#profStatus');
   if(document.activeElement!==g) g.value=me.goal||'';
   if(document.activeElement!==d) d.value=me.dream||'';
   if(rr && document.activeElement!==rr) rr.value=me.rare||'';
+  if(st && document.activeElement!==st) st.value=me.status||'';
   if(document.activeElement!==fav){
     const names=[...me.species.values()].filter(v=>!isNonSpecies(v.common,v.sci))
       .map(v=>frName(v.sci,v.common)).sort((a,b)=>a.localeCompare(b,'fr'));
@@ -6782,6 +6813,7 @@ $('#profGoal').addEventListener('change',e=>saveProfile({goal:e.target.value.tri
 $('#profDream').addEventListener('change',e=>saveProfile({dream:e.target.value.trim()}));
 $('#profRare').addEventListener('change',e=>saveProfile({rare:e.target.value.trim()}));
 $('#profFav').addEventListener('change',e=>saveProfile({fav:e.target.value}));
+$('#profStatus')?.addEventListener('change',e=>saveProfile({status:e.target.value.trim().slice(0,30)}));
 $('#boardModes').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
   state.boardMode=b.dataset.mode; renderResults(); });
 
@@ -7152,6 +7184,92 @@ $('#chatImgInput')?.addEventListener('change', async e=>{
 });
 $('#chatPreviewRemove')?.addEventListener('click', ()=>{ pendingImage=null; $('#chatPreview').style.display='none'; $('#chatPreviewImg').src=''; });
 $('#chatName')?.addEventListener('change',e=>{ localStorage.setItem('mb-chatname', e.target.value.trim()); });
+// ============ VOICE NOTES ============
+// Enregistrement audio 15s max via MediaRecorder + base64 dans Firestore (limite 1 MB).
+// A 32 kbps webm : 15s = ~60 KB base64. Rentre largement.
+let _mediaRecorder = null, _voiceChunks = [], _voiceTimer = null, _voiceStartT = 0;
+let pendingVoiceB64 = null;
+const VOICE_MAX_SEC = 15;
+function _voiceMimeType(){
+  // Preferer opus (webm). Fallback mp4 pour Safari iOS.
+  const candidates = ['audio/webm;codecs=opus','audio/webm','audio/mp4;codecs=mp4a.40.2','audio/mp4'];
+  for(const t of candidates) if(MediaRecorder.isTypeSupported?.(t)) return t;
+  return '';
+}
+async function _startVoiceRecording(){
+  if(!navigator.mediaDevices?.getUserMedia){ showError(new Error('Enregistrement audio non supporté par ce navigateur.')); return; }
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mime = _voiceMimeType();
+    _voiceChunks = [];
+    _mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime, audioBitsPerSecond: 32000 } : { audioBitsPerSecond: 32000 });
+    _mediaRecorder.ondataavailable = e => { if(e.data && e.data.size > 0) _voiceChunks.push(e.data); };
+    _mediaRecorder.onstop = async () => {
+      try{ stream.getTracks().forEach(t => t.stop()); }catch(_){}
+      const blob = new Blob(_voiceChunks, { type: _mediaRecorder.mimeType || 'audio/webm' });
+      const b64 = await new Promise((res, rej) => {
+        const fr = new FileReader();
+        fr.onload = () => res(fr.result);
+        fr.onerror = () => rej(fr.error);
+        fr.readAsDataURL(blob);
+      });
+      pendingVoiceB64 = b64;
+      // Preview
+      const dur = ((Date.now() - _voiceStartT) / 1000).toFixed(1);
+      const prev = $('#chatVoicePreview');
+      if(prev){
+        prev.hidden = false;
+        prev.innerHTML = `<div class="voice-preview">
+          <audio src="${b64}" controls preload="metadata"></audio>
+          <span class="voice-duration">${dur}s</span>
+          <button type="button" class="voice-remove" title="Retirer">✕</button>
+        </div>`;
+      }
+      _updateVoiceUI(false);
+    };
+    _voiceStartT = Date.now();
+    _mediaRecorder.start();
+    _updateVoiceUI(true);
+    // Auto-stop apres VOICE_MAX_SEC
+    _voiceTimer = setInterval(() => {
+      const elapsed = (Date.now() - _voiceStartT) / 1000;
+      const timerEl = $('#chatVoiceTimer');
+      if(timerEl) timerEl.textContent = elapsed.toFixed(1) + 's / ' + VOICE_MAX_SEC + 's';
+      if(elapsed >= VOICE_MAX_SEC) _stopVoiceRecording();
+    }, 100);
+  }catch(err){ showError(new Error('Micro inaccessible : ' + (err.message || err))); _updateVoiceUI(false); }
+}
+function _stopVoiceRecording(){
+  clearInterval(_voiceTimer); _voiceTimer = null;
+  if(_mediaRecorder && _mediaRecorder.state !== 'inactive') _mediaRecorder.stop();
+}
+function _cancelVoiceRecording(){
+  clearInterval(_voiceTimer); _voiceTimer = null;
+  if(_mediaRecorder && _mediaRecorder.state !== 'inactive'){
+    _mediaRecorder.ondataavailable = null; _mediaRecorder.onstop = () => {
+      try{ _mediaRecorder.stream?.getTracks().forEach(t => t.stop()); }catch(_){}
+    };
+    _mediaRecorder.stop();
+  }
+  _voiceChunks = [];
+  _updateVoiceUI(false);
+}
+function _updateVoiceUI(recording){
+  const bar = $('#chatVoiceBar');
+  const btn = $('#chatVoiceBtn');
+  if(bar) bar.hidden = !recording;
+  if(btn) btn.hidden = recording;
+}
+document.addEventListener('click', e => {
+  if(e.target.closest('#chatVoiceBtn')){ _startVoiceRecording(); return; }
+  if(e.target.closest('#chatVoiceStop')){ _stopVoiceRecording(); return; }
+  if(e.target.closest('#chatVoiceCancel')){ _cancelVoiceRecording(); return; }
+  if(e.target.closest('.voice-remove')){
+    pendingVoiceB64 = null;
+    const prev = $('#chatVoicePreview'); if(prev){ prev.hidden = true; prev.innerHTML = ''; }
+    return;
+  }
+});
 // Etat de reponse : quand set, on cite le message dans le compose puis dans le payload envoye.
 let _replyingTo = null;
 function _setReplyingTo(target){
@@ -7209,7 +7327,7 @@ $('#chatForm')?.addEventListener('submit',async e=>{
     return;
   }
   if(!name){ $('#chatName').focus(); return; }
-  if(!text && !pendingImage && !_editingMsg) return;
+  if(!text && !pendingImage && !pendingVoiceB64 && !_editingMsg) return;
   // Mode edition : update le message existant
   if(_editingMsg){
     if(!text){ showError(new Error('Le message ne peut pas etre vide.')); return; }
@@ -7222,11 +7340,14 @@ $('#chatForm')?.addEventListener('submit',async e=>{
   }
   if(!_rateLimit('chat', 20)){ showError(new Error('Trop de messages en peu de temps (limite : 20/min). Attends un peu.')); return; }
   const img=pendingImage;
-  $('#chatText').value=''; pendingImage=null;
+  const voice = pendingVoiceB64;
+  $('#chatText').value=''; pendingImage=null; pendingVoiceB64=null;
   $('#chatPreview').style.display='none'; $('#chatPreviewImg').src='';
+  const vp = $('#chatVoicePreview'); if(vp){ vp.hidden=true; vp.innerHTML=''; }
   const payload={ uid:myUid, name, createdAt:serverTimestamp() };
   if(text) payload.text=text;
   if(img) payload.image=img;
+  if(voice) payload.voice=voice;
   if(_replyingTo) payload.replyTo = _replyingTo;
   const replyStore = _replyingTo;
   _setReplyingTo(null);
