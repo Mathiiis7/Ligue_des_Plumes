@@ -35,7 +35,7 @@
 <!-- Preload le module principal : le browser commence le fetch de app.js des le premier
      scan du <head>, en parallele du parsing HTML, au lieu d'attendre le <script> tout en
      bas (~1000 lignes plus loin). Gain ~200-400ms sur 3G/4G. -->
-<link rel="modulepreload" href="app.js?v=60">
+<link rel="modulepreload" href="app.js?v=61">
 <!-- Preload aussi le CSS principal (deja bloquant mais explicite ici). -->
 <link rel="preload" href="styles.css" as="style">
 <!-- Preconnect anticipe l'ouverture TCP+TLS vers les CDN critiques (Leaflet, Firebase, iNat, xeno-canto). -->
@@ -104,10 +104,19 @@
     </div>
   </nav>
   <!-- Menu hamburger : position:fixed (escape le overflow:auto de .tabs qui clippait le dropdown vertical). Position calculee au toggle. -->
-  <div id="hamburgerMenu" hidden style="position:fixed; background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.15); min-width:180px; padding:6px; z-index:1700;">
+  <div id="hamburgerMenu" hidden style="position:fixed; background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.15); min-width:220px; padding:6px; z-index:1700;">
     <button type="button" class="ham-item" data-view="profil">👤 Profil</button>
     <button type="button" class="ham-item" data-view="requests">💡 Requêtes</button>
     <button type="button" class="ham-item" data-view="about">ℹ️ À propos</button>
+    <div class="ham-divider"></div>
+    <div class="ham-account" id="hamAccount">
+      <div class="ham-account-info" id="hamAccountInfo" hidden>
+        <span class="ham-account-label">Connecté</span>
+        <span class="ham-account-email" id="hamAccountEmail"></span>
+      </div>
+      <button type="button" class="ham-item ham-signin" id="hamSignin" hidden>🔐 Se connecter</button>
+      <button type="button" class="ham-item ham-signout" id="hamSignout" hidden>🚪 Se déconnecter</button>
+    </div>
   </div>
   <!-- Boutons flottants Fil + Photos + Tchat, positionnes en bas a droite -->
   <div id="fabStack" style="position:fixed; right:20px; bottom:20px; display:flex; flex-direction:column; gap:10px; z-index:1600;">
@@ -121,6 +130,13 @@
     .ham-item { display:flex; align-items:center; gap:8px; width:100%; text-align:left; padding:8px 12px; background:transparent; border:none; border-radius:8px; font:600 13px system-ui; color:var(--ink); cursor:pointer; }
     .ham-item > span:first-child { flex:1; }
     .ham-item:hover { background:var(--surface-2); color:var(--accent-ink); }
+    /* Diviseur + section compte dans le menu hamburger */
+    .ham-divider { height:1px; background:var(--line); margin:6px 4px; }
+    .ham-account-info { padding:6px 12px 4px; display:flex; flex-direction:column; gap:2px; }
+    .ham-account-label { font-size:10px; font-weight:700; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; }
+    .ham-account-email { font-size:12.5px; color:var(--ink-2); word-break:break-all; }
+    .ham-signout { color:#c0392b; }
+    .ham-signout:hover { background:color-mix(in srgb, #c0392b 10%, transparent); color:#c0392b; }
     /* Pastille de notif : posee en top-right des FAB (position:absolute), en fin de ligne des items hamburger */
     .notif-badge { min-width:18px; height:18px; padding:0 5px; background:#d43a3a; color:#fff; font:700 11px/1 system-ui, -apple-system, sans-serif; border-radius:999px; display:grid; place-items:center; box-shadow:0 2px 4px rgba(0,0,0,.2); pointer-events:none; }
     .fab-badge { position:absolute; top:-4px; right:-4px; border:2px solid var(--surface, #fff); z-index:5; }
@@ -296,13 +312,6 @@
       </div>
     </details>
 
-    <!-- Titre section membres -->
-    <div class="section-head" style="margin-top:28px;">
-      <div>
-        <div class="eyebrow">Les birdes</div>
-        <h3 style="margin:2px 0 0; font-size:18px;">🐦 Membres de la ligue</h3>
-      </div>
-    </div>
 
     <!-- Modal pour choisir un lieu sur la carte -->
     <div id="pickMapModal" class="pick-map-modal" style="display:none;">
@@ -324,7 +333,8 @@
       </div>
     </div>
 
-    <div class="people" id="people"></div>
+    <!-- Liste des membres retiree de la page 'Ma liste' : redondant avec le Classement. -->
+    <div class="people" id="people" hidden></div>
 
     <div id="fbError"></div>
   </section>
@@ -1172,4 +1182,4 @@
   </footer>
 </div>
 
-<script type="module" src="app.js?v=60"></script>
+<script type="module" src="app.js?v=61"></script>

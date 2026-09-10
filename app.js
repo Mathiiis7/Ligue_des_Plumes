@@ -11330,11 +11330,28 @@ function authErr(e){
 function authMsg(txt, ok){ const el=$('#authMsg'); if(!el) return; el.textContent=txt||''; el.className='auth-msg'+(txt?(ok?' ok':' err'):''); }
 function updateAuthUI(user){
   const box=$('#authBox'); if(!box) return;
-  box.style.display='';
   const real=isRealAccount(user);
+  // Load page : garde le formulaire visible SEULEMENT si pas de compte reel.
+  // Une fois connecte, plus rien sur la load page - l'info + logout va dans le hamburger.
+  box.style.display = real ? 'none' : '';
   $('#authForm').style.display = real?'none':'';
-  $('#authInfo').style.display = real?'':'none';
-  if(real) $('#authWho').textContent = user.email||'';
+  $('#authInfo').style.display = 'none';   // deprecated, l'info va dans le hamburger
+  // Sync hamburger : email + boutons signin/signout selon etat
+  const info = $('#hamAccountInfo');
+  const emailEl = $('#hamAccountEmail');
+  const signin = $('#hamSignin');
+  const signout = $('#hamSignout');
+  if(real){
+    if(info) info.hidden = false;
+    if(emailEl) emailEl.textContent = user.email || '';
+    if(signin) signin.hidden = true;
+    if(signout) signout.hidden = false;
+  } else {
+    if(info) info.hidden = true;
+    if(emailEl) emailEl.textContent = '';
+    if(signin) signin.hidden = false;
+    if(signout) signout.hidden = true;
+  }
 }
 $('#authSignup')?.addEventListener('click', async ()=>{
   const email=$('#authEmail').value.trim(), pass=$('#authPass').value;
@@ -11361,6 +11378,23 @@ $('#authSignin')?.addEventListener('click', async ()=>{
   catch(e){ authMsg(authErr(e)); }
 });
 $('#authSignout')?.addEventListener('click', async ()=>{ try{ await signOut(auth); authMsg(''); }catch(e){ showError(e); } });
+// Hamburger : sign in -> scroll vers le formulaire de connexion sur la load page
+$('#hamSignin')?.addEventListener('click', () => {
+  // Ferme le menu hamburger
+  const menu = document.getElementById('hamburgerMenu'); if(menu) menu.hidden = true;
+  // Bascule sur l'onglet load/liste et met le focus sur email
+  const loadTab = document.querySelector('.tab[data-view="load"]');
+  if(loadTab) loadTab.click();
+  setTimeout(() => {
+    const box = $('#authBox'); if(box) box.scrollIntoView({behavior:'smooth', block:'center'});
+    $('#authEmail')?.focus();
+  }, 100);
+});
+// Hamburger : sign out -> meme comportement que #authSignout
+$('#hamSignout')?.addEventListener('click', async () => {
+  const menu = document.getElementById('hamburgerMenu'); if(menu) menu.hidden = true;
+  try{ await signOut(auth); authMsg(''); }catch(e){ showError(e); }
+});
 $('#authReset')?.addEventListener('click', async ()=>{
   const email=$('#authEmail').value.trim();
   if(!email){ authMsg('Entre ton email d\'abord, puis clique sur « Mot de passe oublié ».'); return; }
