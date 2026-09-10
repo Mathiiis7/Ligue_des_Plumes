@@ -35,7 +35,7 @@
 <!-- Preload le module principal : le browser commence le fetch de app.js des le premier
      scan du <head>, en parallele du parsing HTML, au lieu d'attendre le <script> tout en
      bas (~1000 lignes plus loin). Gain ~200-400ms sur 3G/4G. -->
-<link rel="modulepreload" href="app.js?v=47">
+<link rel="modulepreload" href="app.js?v=48">
 <!-- Preload aussi le CSS principal (deja bloquant mais explicite ici). -->
 <link rel="preload" href="styles.css" as="style">
 <!-- Preconnect anticipe l'ouverture TCP+TLS vers les CDN critiques (Leaflet, Firebase, iNat, xeno-canto). -->
@@ -680,6 +680,8 @@
         <img id="chatPreviewImg" alt="aperçu">
         <button type="button" id="chatPreviewRemove" title="Retirer l'image">✕</button>
       </div>
+      <div class="chat-reply-bar" id="chatReplyBar" hidden></div>
+      <div class="chat-reply-bar" id="chatEditBar" hidden></div>
       <form class="chat-compose" id="chatForm" autocomplete="off">
         <input id="chatName" class="chat-name" placeholder="Votre nom" maxlength="24">
         <label class="chat-imgbtn" title="Ajouter une image">🖼️<input type="file" id="chatImgInput" accept="image/*" hidden></label>
@@ -1105,4 +1107,4 @@
   </footer>
 </div>
 
-<script type="module" src="app.js?v=47"></script>
+<script type="module" src="app.js?v=48"></script>

@@ -2727,12 +2727,22 @@ function renderOnline(){
     : `<span class="online-dot off"></span> Personne en ligne pour le moment`;
 }
 function isOnline(uid){ return onlineMap.has(uid); }
+// Autolink URLs dans le texte (deja escape). Repere http(s):// et wrap en <a>.
+function _autoLink(escText){
+  return escText.replace(/(https?:\/\/[^\s<]+)/g, url => {
+    const short = url.length > 50 ? url.slice(0, 47) + '…' : url;
+    return `<a class="msg-link" href="${url}" target="_blank" rel="noopener">🔗 ${esc(short)}</a>`;
+  });
+}
 function renderChat(msgs){
   const box=$('#chatMessages'); if(!box) return;
   lastChatMsgs = msgs;
   const byId = new Map(realPeople.map(p=>[p.id, p.name]));   // nom autoritatif par uid (anti-usurpation)
+  const msgById = new Map(msgs.map(m => [m.id, m]));
   const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
   if(!msgs.length){ box.innerHTML='<div class="chat-empty">Aucun message. Lancez la conversation ! 🐦</div>'; return; }
+  const now = Date.now();
+  const EDIT_WINDOW_MS = 5 * 60 * 1000;   // 5 min pour editer son propre message
   box.innerHTML = msgs.map(m=>{
     const mine = m.uid===myUid;
     const authoritative = byId.get(m.uid);
@@ -2743,12 +2753,31 @@ function renderChat(msgs){
     const safeImg = (typeof m.image==='string' && /^data:image\//.test(m.image)) ? m.image.replace(/"/g,'%22') : '';
     const imgHtml = safeImg ? `<img class="msg-img" src="${safeImg}" alt="image partagée">` : '';
     const emojiOnly = !safeImg && _isEmojiOnly(m.text);
-    const txtHtml = m.text ? `<div>${_renderMentions(esc(m.text), byId)}</div>` : '';
-    return `<div class="msg${mine?' mine':''}">
+    const txtHtml = m.text ? `<div>${_autoLink(_renderMentions(esc(m.text), byId))}</div>` : '';
+    // Reply : citation du message auquel on repond
+    let replyHtml = '';
+    if(m.replyTo && m.replyTo.msgId){
+      const rNm = byId.get(m.replyTo.uid) || m.replyTo.name || 'Invité';
+      const rTxt = (m.replyTo.text || '').slice(0, 100);
+      replyHtml = `<div class="msg-reply-quote" data-scroll-to="${esc(m.replyTo.msgId)}">
+        <div class="msg-reply-name">↪ ${esc(rNm)}</div>
+        <div class="msg-reply-text">${esc(rTxt)}${m.replyTo.text && m.replyTo.text.length > 100 ? '…' : ''}</div>
+      </div>`;
+    }
+    // "(modifié)" si editedAt existe
+    const editedTag = m.editedAt ? ' <span class="msg-edited" title="Message modifié">(modifié)</span>' : '';
+    // Actions : Répondre (tous), Éditer (mine + <5min + texte seul), Supprimer (mine OU admin)
+    const canEdit = mine && t && (now - t.getTime() < EDIT_WINDOW_MS) && !safeImg;
+    const canDelete = mine || isAdmin();
+    const replyBtn = `<button class="msg-act msg-reply" data-id="${esc(m.id)}" title="Répondre">↪</button>`;
+    const editBtn = canEdit ? `<button class="msg-act msg-edit" data-id="${esc(m.id)}" title="Éditer">✏️</button>` : '';
+    const delBtn = canDelete ? `<button class="msg-act msg-del" data-id="${esc(m.id)}" title="Supprimer">🗑️</button>` : '';
+    return `<div class="msg${mine?' mine':''}" data-msg-id="${esc(m.id)}">
       <div class="msg-name">${esc(nm)}${guestTag}</div>
-      <div class="msg-bubble${emojiOnly?' emoji-only':''}">${imgHtml}${txtHtml}</div>
+      <div class="msg-bubble${emojiOnly?' emoji-only':''}">${replyHtml}${imgHtml}${txtHtml}</div>
       ${reactionBar('chat:'+m.id)}
-      <div class="msg-time">${esc(time)}${mine?` · <button class="msg-del" data-id="${esc(m.id)}">supprimer</button>`:''}</div>
+      <div class="msg-actions">${replyBtn}${editBtn}${delBtn}</div>
+      <div class="msg-time">${esc(time)}${editedTag}</div>
     </div>`;
   }).join('');
   if(nearBottom) box.scrollTop = box.scrollHeight;
@@ -7123,6 +7152,51 @@ $('#chatImgInput')?.addEventListener('change', async e=>{
 });
 $('#chatPreviewRemove')?.addEventListener('click', ()=>{ pendingImage=null; $('#chatPreview').style.display='none'; $('#chatPreviewImg').src=''; });
 $('#chatName')?.addEventListener('change',e=>{ localStorage.setItem('mb-chatname', e.target.value.trim()); });
+// Etat de reponse : quand set, on cite le message dans le compose puis dans le payload envoye.
+let _replyingTo = null;
+function _setReplyingTo(target){
+  _replyingTo = target;
+  const bar = $('#chatReplyBar');
+  if(bar){
+    if(target){
+      const rNm = (realPeople.find(p => p.id === target.uid)?.name) || target.name || 'Invité';
+      const rTxt = (target.text || '(message avec image ou audio)').slice(0, 80);
+      bar.innerHTML = `<div class="chat-reply-inner">
+        <div class="chat-reply-body">
+          <div class="chat-reply-name">↪ Répondre à ${esc(rNm)}</div>
+          <div class="chat-reply-text">${esc(rTxt)}</div>
+        </div>
+        <button type="button" class="chat-reply-cancel" title="Annuler">✕</button>
+      </div>`;
+      bar.hidden = false;
+      $('#chatText')?.focus();
+    } else {
+      bar.hidden = true; bar.innerHTML = '';
+    }
+  }
+}
+// Etat d'edition : quand set, le message envoye ecrase l'ancien texte via updateDoc.
+let _editingMsg = null;   // {id, originalText}
+function _setEditing(msg){
+  _editingMsg = msg;
+  const bar = $('#chatEditBar');
+  if(bar){
+    if(msg){
+      bar.innerHTML = `<div class="chat-reply-inner">
+        <div class="chat-reply-body">
+          <div class="chat-reply-name">✏️ Édition du message</div>
+          <div class="chat-reply-text">${esc((msg.originalText || '').slice(0, 80))}</div>
+        </div>
+        <button type="button" class="chat-edit-cancel" title="Annuler">✕</button>
+      </div>`;
+      bar.hidden = false;
+      const inp = $('#chatText');
+      if(inp){ inp.value = msg.originalText || ''; inp.focus(); }
+    } else {
+      bar.hidden = true; bar.innerHTML = '';
+    }
+  }
+}
 $('#chatForm')?.addEventListener('submit',async e=>{
   e.preventDefault();
   const text=$('#chatText').value.trim();
@@ -7135,23 +7209,64 @@ $('#chatForm')?.addEventListener('submit',async e=>{
     return;
   }
   if(!name){ $('#chatName').focus(); return; }
-  if(!text && !pendingImage) return;
+  if(!text && !pendingImage && !_editingMsg) return;
+  // Mode edition : update le message existant
+  if(_editingMsg){
+    if(!text){ showError(new Error('Le message ne peut pas etre vide.')); return; }
+    try{
+      await updateDoc(doc(db,'leagues',leagueId,'chat', _editingMsg.id), { text, editedAt: serverTimestamp() });
+      $('#chatText').value = '';
+      _setEditing(null);
+    }catch(err){ showError(err); }
+    return;
+  }
   if(!_rateLimit('chat', 20)){ showError(new Error('Trop de messages en peu de temps (limite : 20/min). Attends un peu.')); return; }
   const img=pendingImage;
-  $('#chatText').value=''; pendingImage=null; $('#chatPreview').style.display='none'; $('#chatPreviewImg').src='';
+  $('#chatText').value=''; pendingImage=null;
+  $('#chatPreview').style.display='none'; $('#chatPreviewImg').src='';
   const payload={ uid:myUid, name, createdAt:serverTimestamp() };
   if(text) payload.text=text;
   if(img) payload.image=img;
+  if(_replyingTo) payload.replyTo = _replyingTo;
+  const replyStore = _replyingTo;
+  _setReplyingTo(null);
   try{ await addDoc(collection(db,'leagues',leagueId,'chat'), payload); }
-  catch(err){ $('#chatText').value=text; if(img){ pendingImage=img; $('#chatPreviewImg').src=img; $('#chatPreview').style.display=''; } showError(err); }
+  catch(err){ $('#chatText').value=text; if(img){ pendingImage=img; $('#chatPreviewImg').src=img; $('#chatPreview').style.display=''; } if(replyStore) _setReplyingTo(replyStore); showError(err); }
 });
 $('#chatMessages')?.addEventListener('click', async e=>{
   const chip=e.target.closest('.react-chip'); if(chip){ toggleReaction(chip.dataset.target, chip.dataset.emoji); return; }
   const addb=e.target.closest('.react-add'); if(addb){ openEmojiPop({type:'react', target:addb.dataset.target}); return; }
+  const repBtn=e.target.closest('.msg-reply');
+  if(repBtn){
+    const id = repBtn.dataset.id;
+    const m = lastChatMsgs.find(x => x.id === id); if(!m) return;
+    _setReplyingTo({ msgId: m.id, uid: m.uid, name: m.name, text: m.text || '' });
+    return;
+  }
+  const editBtn=e.target.closest('.msg-edit');
+  if(editBtn){
+    const id = editBtn.dataset.id;
+    const m = lastChatMsgs.find(x => x.id === id); if(!m) return;
+    _setEditing({ id: m.id, originalText: m.text || '' });
+    return;
+  }
   const del=e.target.closest('.msg-del');
   if(del){ const id=del.dataset.id; if(!id) return; if(!confirm('Supprimer ce message ?')) return;
     try{ await deleteDoc(doc(db,'leagues',leagueId,'chat',id)); }catch(err){ showError(err); } return; }
+  // Clic sur citation reply -> scroll vers le message cite
+  const quote=e.target.closest('.msg-reply-quote');
+  if(quote){
+    const tid = quote.dataset.scrollTo;
+    const target = document.querySelector(`.msg[data-msg-id="${tid}"]`);
+    if(target){ target.scrollIntoView({behavior:'smooth', block:'center'}); target.classList.add('msg-flash'); setTimeout(()=>target.classList.remove('msg-flash'), 1200); }
+    return;
+  }
   const im=e.target.closest('.msg-img'); if(!im) return; $('#imgModalImg').src=im.src; $('#imgModal').classList.add('open');
+});
+// Cancel reply / edit
+document.addEventListener('click', e => {
+  if(e.target.closest('.chat-reply-cancel')){ _setReplyingTo(null); return; }
+  if(e.target.closest('.chat-edit-cancel')){ _setEditing(null); const inp=$('#chatText'); if(inp) inp.value=''; return; }
 });
 // ---- Requêtes : formulaire + interactions ----
 $('#reqForm')?.addEventListener('submit', async e=>{
