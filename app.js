@@ -11011,6 +11011,8 @@ function _quizSubscribeCloud(){
 function _quizRenderLeaderboard(){
   const el = document.getElementById('quizLeaderboard');
   if(!el) return;
+  // En mode Entrainement : pas de classement (c'est un travail perso, pas competitif).
+  if(_quizMode === 'train'){ el.hidden = true; el.innerHTML = ''; return; }
   const level = _quizCurrentLevel();
   const isInv = _quizIsInverse();
   const key = isInv ? 'byLevelInverse' : 'byLevel';
