@@ -35,7 +35,7 @@
 <!-- Preload le module principal : le browser commence le fetch de app.js des le premier
      scan du <head>, en parallele du parsing HTML, au lieu d'attendre le <script> tout en
      bas (~1000 lignes plus loin). Gain ~200-400ms sur 3G/4G. -->
-<link rel="modulepreload" href="app.js?v=67">
+<link rel="modulepreload" href="app.js?v=68">
 <!-- Preload aussi le CSS principal (deja bloquant mais explicite ici). -->
 <link rel="preload" href="styles.css" as="style">
 <!-- Preconnect anticipe l'ouverture TCP+TLS vers les CDN critiques (Leaflet, Firebase, iNat, xeno-canto). -->
@@ -275,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => { document.body.classList.ad
       <div class="import-step">
         <div class="import-step-num">1</div>
         <div class="import-step-body">
-          <div class="import-step-title">Ouvrir votre life list</div>
+          <div class="import-step-title">Ouvre</div>
           <a href="https://ebird.org/lifelist?r=world&time=life" target="_blank" rel="noopener" class="import-step-link">ebird.org/lifelist ↗</a>
         </div>
       </div>
@@ -283,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => { document.body.classList.ad
       <div class="import-step">
         <div class="import-step-num">2</div>
         <div class="import-step-body">
-          <div class="import-step-title">Cliquer <b>☁ Download (csv)</b></div>
+          <div class="import-step-title">Clique <b>Download (csv)</b></div>
           <div class="import-step-sub">Le fichier se télécharge sans email</div>
         </div>
       </div>
@@ -291,8 +291,8 @@ document.addEventListener('DOMContentLoaded', () => { document.body.classList.ad
       <div class="import-step">
         <div class="import-step-num">3</div>
         <div class="import-step-body">
-          <div class="import-step-title">Déposer ici en dessous ↓</div>
-          <div class="import-step-sub">Rejoignez la ligue automatiquement 🎉</div>
+          <div class="import-step-title">Dépose ici en dessous ↓</div>
+          <div class="import-step-sub">Tu rejoins la ligue automatiquement 🎉</div>
         </div>
       </div>
     </div>
@@ -1227,4 +1227,4 @@ document.addEventListener('DOMContentLoaded', () => { document.body.classList.ad
   </footer>
 </div>
 
-<script type="module" src="app.js?v=67"></script>
+<script type="module" src="app.js?v=68"></script>

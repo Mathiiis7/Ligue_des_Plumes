@@ -11426,7 +11426,7 @@ document.addEventListener('click', async e => {
   if(forgot){
     const email = $('#authGateEmail')?.value.trim();
     if(!email){ _authGateMsg('Entre ton email d\'abord.'); $('#authGateEmail')?.focus(); return; }
-    try{ await sendPasswordResetEmail(auth, email); _authGateMsg('Email de réinitialisation envoyé à ' + email, true); }
+    try{ await sendPasswordResetEmail(auth, email); _authGateMsg('Email envoyé à ' + email + ' · Pense à vérifier tes spams', true); }
     catch(err){ _authGateMsg(authErr(err)); }
     return;
   }
@@ -11483,7 +11483,7 @@ $('#hamSignout')?.addEventListener('click', async () => {
 $('#authReset')?.addEventListener('click', async ()=>{
   const email=$('#authEmail').value.trim();
   if(!email){ authMsg('Entre ton email d\'abord, puis clique sur « Mot de passe oublié ».'); return; }
-  try{ await sendPasswordResetEmail(auth, email); authMsg('Email de réinitialisation envoyé à '+email+' ✓', true); }
+  try{ await sendPasswordResetEmail(auth, email); authMsg('Email envoyé à '+email+' · Pense à vérifier tes spams ✓', true); }
   catch(e){ authMsg(authErr(e)); }
 });
 // Sync temps reel de la collection /admins vers ADMIN_UIDS. Boot une seule fois au
