@@ -4072,7 +4072,8 @@ async function renderMap(){
   // Panneau resultats : visible seulement en missing avec polygone actif ET resultats presents.
   const drawRes = $('#mapDrawResults');
   if(drawRes) drawRes.style.display = (mapMode==='missing' && ebFilter.polygon && drawRes.dataset.hasResults === '1') ? '' : 'none';
-  $('#mapTimeline').style.display = mine ? '' : 'none';
+  // Timeline retiree du mode "observations de la ligue" (peu utile, ajoute du bruit).
+  $('#mapTimeline').style.display = 'none';
   $('#mapStats').style.display = mine ? '' : 'none';
   $('#mapNote').style.display = 'none';
   // Cache toutes les couches ; le mode courant remet la sienne.
