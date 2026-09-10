@@ -1600,18 +1600,33 @@ function build(){
 function renderMembers(){
   const el=$('#people'); if(!el) return;
   if(!state.people.length){
-    el.innerHTML = '<span class="help" style="margin-top:0;">Personne n\'a encore chargé sa liste. Soyez le premier !</span>';
+    el.innerHTML = '<div class="pcards-empty">Personne n\'a encore chargé sa liste. Soyez le premier !</div>';
     return;
   }
   const admin = isAdmin();
-  el.innerHTML = state.people.map(p=>{
-    const adminTools = admin ? `<button class="pchip-admin" data-adm-rename="${esc(p.id)}" data-adm-name="${esc(p.name)}" title="Renommer (admin)">✎</button><button class="pchip-admin pchip-admin-del" data-adm-remove="${esc(p.id)}" data-adm-name="${esc(p.name)}" title="Retirer (admin)">✕</button>` : '';
-    return `<div class="pchip" style="--series:var(--s${p.si})">
-      <span class="dot"></span>
-      <span class="pname">${isOnline(p.id)?'<span class="pname-dot" title="en ligne"></span>':''}${esc(p.name)}${p.isMe?'<span class="youtag">vous</span>':''}</span>
-      <span class="n">${p.species.size} obs</span>${adminTools}
+  // Barre de progression : max espece dans la ligue = 100%
+  const maxSp = Math.max(...state.people.map(p => p.species.size || 0), 1);
+  el.innerHTML = '<div class="pcards">' + state.people.map(p=>{
+    const nb = p.species.size || 0;
+    const pct = Math.round((nb / maxSp) * 100);
+    const online = isOnline(p.id);
+    const statusLine = p.status ? `<div class="pcard-status">${esc(p.status)}</div>` : '';
+    const adminTools = admin && !p.isMe
+      ? `<div class="pcard-admin"><button class="pcard-admin-btn" data-adm-rename="${esc(p.id)}" data-adm-name="${esc(p.name)}" title="Renommer">✎</button><button class="pcard-admin-btn pcard-admin-del" data-adm-remove="${esc(p.id)}" data-adm-name="${esc(p.name)}" title="Retirer">✕</button></div>`
+      : '';
+    return `<div class="pcard${p.isMe?' is-me':''}${online?' is-online':''}" style="--series:var(--s${p.si})">
+      <div class="pcard-avatar-wrap">${_avatarHtml(p.avatar||'', p.name||'?', 44)}${online?'<span class="pcard-online-dot" title="en ligne"></span>':''}</div>
+      <div class="pcard-body">
+        <div class="pcard-name">${esc(p.name)}${p.isMe?'<span class="youtag">vous</span>':''}</div>
+        ${statusLine}
+        <div class="pcard-stats">
+          <span class="pcard-count">${nb}</span> <span class="pcard-unit">espèces</span>
+        </div>
+        <div class="pcard-progress"><div class="pcard-progress-fill" style="width:${pct}%"></div></div>
+      </div>
+      ${adminTools}
     </div>`;
-  }).join('');
+  }).join('') + '</div>';
 }
 // E : outils admin sur les chips membres (rename / retirer).
 document.addEventListener('click', async e=>{
@@ -2578,10 +2593,18 @@ function applySnapshot(snap){
   const nameInput=$('#myName');
   if(me && document.activeElement!==nameInput){ nameInput.value = me.name; }
   $('#myStatus').textContent = me ? `✓ Votre liste : ${me.species.size} espèces` : '';
+  const meSec = $('#meSecondary'); if(meSec) meSec.style.display = me ? '' : 'none';
   $('#removeMineBtn').style.display = me ? 'inline' : 'none';
   const ma=$('#manualAdd'); if(ma) ma.style.display = me ? '' : 'none';
   const obd=$('#onboarding'); if(obd) obd.style.display = me ? 'none' : '';
-  $('#dropBig').textContent = me ? 'Remplacer votre liste' : 'Déposez votre fichier eBird .csv ici';
+  // Etat drop zone : filled si liste chargee, vide sinon.
+  const dropEl = $('#drop');
+  if(dropEl){ if(me) dropEl.classList.add('filled'); else dropEl.classList.remove('filled'); }
+  $('#dropBig').innerHTML = me
+    ? `<span style="display:inline-flex;align-items:center;gap:8px;">✅ <span>${me.species.size} espèces chargées</span></span>`
+    : 'Déposez votre fichier eBird <code>.csv</code> ici';
+  const dropSmall = $('#dropSmall');
+  if(dropSmall) dropSmall.textContent = me ? 'Cliquez pour remplacer votre liste' : 'ou cliquez pour parcourir votre ordinateur';
   fillProfile(me);
   if(typeof _lockMyNameIfSet==='function') _lockMyNameIfSet();
   if(typeof _refreshChatWriteAccess==='function') _refreshChatWriteAccess();

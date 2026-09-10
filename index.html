@@ -35,7 +35,7 @@
 <!-- Preload le module principal : le browser commence le fetch de app.js des le premier
      scan du <head>, en parallele du parsing HTML, au lieu d'attendre le <script> tout en
      bas (~1000 lignes plus loin). Gain ~200-400ms sur 3G/4G. -->
-<link rel="modulepreload" href="app.js?v=56">
+<link rel="modulepreload" href="app.js?v=57">
 <!-- Preload aussi le CSS principal (deja bloquant mais explicite ici). -->
 <link rel="preload" href="styles.css" as="style">
 <!-- Preconnect anticipe l'ouverture TCP+TLS vers les CDN critiques (Leaflet, Firebase, iNat, xeno-canto). -->
@@ -191,58 +191,85 @@
   <section class="panel" id="leaguebar" style="display:none;">
     <div class="league-head">
       <div>
-        <h2>Ajoutez votre liste</h2>
+        <div class="eyebrow">La ligue</div>
+        <h2>🏠 Ma participation</h2>
       </div>
     </div>
 
-    <p class="tag" style="margin-top:8px;">Partagez cette page à vos amis pour qu'ils ajoutent la leur :</p>
-    <div class="linkbox">
-      <code id="shareLink"></code>
-      <button class="btn tiny" id="copyLinkBtn">🔗 Copier le lien</button>
-      <button class="btn tiny" id="inviteBtn">📨 Inviter</button>
+    <!-- Invite : compact card -->
+    <div class="invite-card">
+      <div class="invite-text">
+        <div class="invite-label">📨 Inviter des amis</div>
+        <code id="shareLink"></code>
+      </div>
+      <div class="invite-actions">
+        <button class="btn tiny" id="copyLinkBtn">🔗 Copier</button>
+        <button class="btn tiny" id="inviteBtn">📨 Envoyer</button>
+      </div>
     </div>
-    <details class="import-guide">
-      <summary>📥 Comment récupérer ma liste eBird ?</summary>
-      <p style="margin:8px 0 0;"><b>Le plus simple - sans email :</b></p>
-      <ol>
-        <li>Connectez-vous sur eBird (le compte lié à Merlin), puis ouvrez votre liste mondiale : <a href="https://ebird.org/lifelist?r=world&time=life" target="_blank" rel="noopener">ebird.org/lifelist</a> (région <b>« World / Monde »</b>).</li>
-        <li>En haut à droite, cliquez sur <b>☁ Download (csv)</b> : le fichier se télécharge <b>directement, sans email</b>.</li>
-        <li>Déposez ce fichier ci-dessous. 🎉</li>
-      </ol>
-      <p style="margin:8px 0 0; color:var(--ink-3); font-size:12px;">Ce fichier contient le <b>lieu de chaque espèce</b> (colonne <code>S/P</code>), donc la ligue reconnaît vos oiseaux <b>vus en France</b> et met à part ceux vus <b>à l'étranger</b> - le tout sans email.</p>
-      <p style="margin:6px 0 0; color:var(--ink-3); font-size:12px;">Variante complète (par email, avec les coordonnées GPS de chaque obs, nécessaire pour la carte 📍) : <a href="https://ebird.org/downloadMyData" target="_blank" rel="noopener">ebird.org/downloadMyData</a> → « Submit » → <code>MyEBirdData.csv</code>.</p>
+
+    <!-- Guide d'import : 3 etapes horizontales visuelles -->
+    <div class="import-steps">
+      <div class="import-step">
+        <div class="import-step-num">1</div>
+        <div class="import-step-body">
+          <div class="import-step-title">Ouvrir votre life list</div>
+          <a href="https://ebird.org/lifelist?r=world&time=life" target="_blank" rel="noopener" class="import-step-link">ebird.org/lifelist ↗</a>
+        </div>
+      </div>
+      <div class="import-step-arrow">→</div>
+      <div class="import-step">
+        <div class="import-step-num">2</div>
+        <div class="import-step-body">
+          <div class="import-step-title">Cliquer <b>☁ Download (csv)</b></div>
+          <div class="import-step-sub">Le fichier se télécharge sans email</div>
+        </div>
+      </div>
+      <div class="import-step-arrow">→</div>
+      <div class="import-step">
+        <div class="import-step-num">3</div>
+        <div class="import-step-body">
+          <div class="import-step-title">Déposer ici en dessous ↓</div>
+          <div class="import-step-sub">Rejoignez la ligue automatiquement 🎉</div>
+        </div>
+      </div>
+    </div>
+    <details class="import-guide-advanced">
+      <summary>💡 Variante avec GPS (nécessaire pour la carte 📍)</summary>
+      <p style="margin:8px 0 0; font-size:12.5px; color:var(--ink-2);">Par email : <a href="https://ebird.org/downloadMyData" target="_blank" rel="noopener">ebird.org/downloadMyData</a> → <b>« Submit »</b> → attendez l'email → <code>MyEBirdData.csv</code>. Ce fichier contient les coordonnées GPS de chaque observation, ce qui permet d'afficher vos oiseaux sur la carte.</p>
     </details>
 
     <div class="onboarding" id="onboarding" style="display:none;">
-      <h3>👋 Bienvenue dans la Ligue Merlin Bird</h3>
-      <ol>
-        <li>Entrez votre <b>prénom</b> ci-dessous (visible dans le classement).</li>
-        <li>Récupérez votre <b>life list eBird</b> : <a href="https://ebird.org/lifelist?r=world&time=life" target="_blank" rel="noopener">ebird.org/lifelist</a> → bouton <b>☁ Download (csv)</b>.</li>
-        <li><b>Déposez le fichier</b> dans la zone ci-dessous. Vous rejoignez la ligue automatiquement 🎉</li>
-      </ol>
-      <div class="obd-hint">Toutes les infos sont partagées avec les membres de votre ligue uniquement. Pas d'inscription obligatoire, mais créer un compte permet de retrouver votre liste sur tous vos appareils.</div>
+      <h3>👋 Bienvenue dans la Ligue</h3>
+      <p style="margin:4px 0 0; color:var(--ink-2);">Entrez votre prénom + suivez les 3 étapes ci-dessus. Toutes les infos restent entre les membres de votre ligue.</p>
     </div>
+
+    <!-- Panneau upload : etat vide vs rempli -->
     <div class="me-panel">
       <div class="me-name">
-        <label for="myName">Votre nom</label>
-        <input type="text" id="myName" placeholder="Votre prénom" maxlength="24">
+        <label for="myName">Votre prénom</label>
+        <input type="text" id="myName" placeholder="Votre prénom (visible dans la ligue)" maxlength="24">
       </div>
       <div class="drop" id="drop">
+        <div class="drop-icon">📥</div>
         <div class="big" id="dropBig">Déposez votre fichier eBird <code>.csv</code> ici</div>
-        <div class="small" id="dropSmall">ou cliquez pour parcourir - votre liste à vous</div>
+        <div class="small" id="dropSmall">ou cliquez pour parcourir votre ordinateur</div>
       </div>
       <input type="file" id="file" accept=".csv,text/csv" hidden>
       <div class="intake-actions">
         <button class="btn" id="browseBtn">＋ Charger ma liste</button>
         <span class="mystatus" id="myStatus"></span>
       </div>
-      <div style="font-size:12px;"><button class="linkbtn" id="removeMineBtn" style="display:none;">Retirer ma liste de la ligue</button></div>
+      <div class="me-secondary" style="display:none;" id="meSecondary">
+        <button class="linkbtn" id="removeMineBtn">Retirer ma liste de la ligue</button>
+      </div>
     </div>
 
+    <!-- Ajout manuel : bouton discret mais visible -->
     <details class="manual-add" id="manualAdd" style="display:none;">
       <summary>➕ Ajouter une espèce manuellement</summary>
       <div class="manual-body">
-        <p class="help" style="margin:6px 0 10px;">Utile pour un oiseau que vous avez vu mais pas encore dans votre export eBird. Tapez le nom (français ou scientifique) et choisissez dans la liste.</p>
+        <p class="help" style="margin:6px 0 10px;">Pour une espèce vue mais pas encore dans votre export eBird. Tapez son nom (français ou scientifique) et choisissez dans la liste.</p>
         <div class="manual-row">
           <div class="manual-search">
             <input type="text" id="manualSearch" placeholder="Ex. « merle noir », « aegithalos »…" autocomplete="off">
@@ -268,6 +295,14 @@
         <div id="manualMsg" class="manual-msg"></div>
       </div>
     </details>
+
+    <!-- Titre section membres -->
+    <div class="section-head" style="margin-top:28px;">
+      <div>
+        <div class="eyebrow">Les birdes</div>
+        <h3 style="margin:2px 0 0; font-size:18px;">🐦 Membres de la ligue</h3>
+      </div>
+    </div>
 
     <!-- Modal pour choisir un lieu sur la carte -->
     <div id="pickMapModal" class="pick-map-modal" style="display:none;">
@@ -1137,4 +1172,4 @@
   </footer>
 </div>
 
-<script type="module" src="app.js?v=56"></script>
+<script type="module" src="app.js?v=57"></script>
