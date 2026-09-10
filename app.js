@@ -10386,6 +10386,20 @@ function openSpeciesModal(sci){
   modal.hidden = false;
   // Bloque le scroll de la page en arriere-plan quand la fiche est ouverte.
   document.body.classList.add('species-modal-open');
+  // Redirige la molette vers la sm-scroll interne, meme si la souris est
+  // au-dessus du backdrop (cotes). Sinon la molette hors box ne fait rien.
+  if(!modal._wheelRedirect){
+    modal._wheelRedirect = e => {
+      const box = modal.querySelector('.sm-scroll');
+      if(!box) return;
+      // Si le curseur est deja dans un element scrollable de la fiche, on laisse
+      // le navigateur gerer nativement.
+      if(e.target.closest('.sm-scroll, .sm-map, audio, .sm-panel[data-sm-panel=map]')) return;
+      e.preventDefault();
+      box.scrollTop += e.deltaY;
+    };
+    modal.addEventListener('wheel', modal._wheelRedirect, { passive: false });
+  }
 }
 // Instance Leaflet dediee a la fiche espece + etat associe.
 let _smMapInstance = null, _smMapLayer = null;
