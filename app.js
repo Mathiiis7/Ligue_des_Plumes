@@ -2530,7 +2530,7 @@ function memberToPerson(id, data, si){
   }]));
   const regions = Array.isArray(data.regions) ? data.regions.filter(x=>/^FR-/i.test(x)) : [];
   return { id, name:data.name||'Joueur', filename:'', si, species, isMe:id===myUid,
-    goal:data.goal||'', fav:data.fav||'', dream:data.dream||'', rare:data.rare||'', status:data.status||'',
+    goal:data.goal||'', fav:data.fav||'', dream:data.dream||'', rare:data.rare||'', status:data.status||'', avatar:data.avatar||'',
     regionsFR: new Set(regions),                  // régions FR-XX visitées (issues du CSV)
     joinedAt: data.joinedAt?.seconds || 0,
     updatedAt: data.updatedAt?.toMillis ? data.updatedAt.toMillis() : 0 };
@@ -2801,6 +2801,7 @@ function renderChat(msgs){
   lastChatMsgs = msgs;
   const byId = new Map(realPeople.map(p=>[p.id, p.name]));   // nom autoritatif par uid (anti-usurpation)
   const statusById = new Map(realPeople.map(p=>[p.id, p.status || '']));
+  const avatarById = new Map(realPeople.map(p=>[p.id, p.avatar || '']));
   const msgById = new Map(msgs.map(m => [m.id, m]));
   const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
   if(!msgs.length){ box.innerHTML='<div class="chat-empty">Aucun message. Lancez la conversation ! 🐦</div>'; return; }
@@ -2821,17 +2822,27 @@ function renderChat(msgs){
     const guestTag = authoritative ? '' : ' <span class="msg-guest">invité</span>';
     const statusText = statusById.get(m.uid) || '';
     const statusTag = statusText ? ` <span class="msg-status">${esc(statusText)}</span>` : '';
+    const avatarHtml = _avatarHtml(avatarById.get(m.uid) || '', nm, 32);
     const t = m.createdAt && m.createdAt.toDate ? m.createdAt.toDate() : null;
     const time = t ? t.toLocaleString('fr-FR',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'}) : '…';
-    const safeImg = (typeof m.image==='string' && /^data:image\//.test(m.image)) ? m.image.replace(/"/g,'%22') : '';
-    const imgHtml = safeImg ? `<img class="msg-img" src="${safeImg}" alt="image partagée">` : '';
-    const safeVoice = (typeof m.voice==='string' && /^data:audio\//.test(m.voice)) ? m.voice.replace(/"/g,'%22') : '';
-    const voiceHtml = safeVoice ? `<audio class="msg-voice" src="${safeVoice}" controls preload="metadata"></audio>` : '';
-    // GIF Giphy : URL http (deja whitelist CSP media.giphy.com)
-    const safeGif = (typeof m.gif==='string' && /^https:\/\/(media\d?\.)?giphy\.com\//.test(m.gif)) ? m.gif.replace(/"/g,'%22') : '';
-    const gifHtml = safeGif ? `<img class="msg-gif" src="${safeGif}" alt="GIF" loading="lazy">` : '';
-    const emojiOnly = !safeImg && !safeVoice && !safeGif && _isEmojiOnly(m.text);
-    const txtHtml = m.text ? `<div>${_autoLink(_renderMentions(esc(m.text), byId))}</div>` : '';
+    // Message supprime : rendu special. Admin voit l'original en collapse ; les autres voient le tag.
+    const isDeleted = !!m.deleted;
+    // Champs a rendre : originaux si non supprime, ou original si admin, sinon rien
+    const showOriginal = !isDeleted || isAdmin();
+    const fieldImg = isDeleted ? m.deletedOriginalImage : m.image;
+    const fieldVoice = isDeleted ? m.deletedOriginalVoice : m.voice;
+    const fieldGif = isDeleted ? m.deletedOriginalGif : m.gif;
+    const fieldText = isDeleted ? m.deletedOriginalText : m.text;
+    const safeImg = (showOriginal && typeof fieldImg==='string' && /^data:image\//.test(fieldImg)) ? fieldImg.replace(/"/g,'%22') : '';
+    const imgHtml = safeImg ? `<img class="msg-img${isDeleted?' msg-deleted-content':''}" src="${safeImg}" alt="image partagée">` : '';
+    const safeVoice = (showOriginal && typeof fieldVoice==='string' && /^data:audio\//.test(fieldVoice)) ? fieldVoice.replace(/"/g,'%22') : '';
+    const voiceHtml = safeVoice ? `<audio class="msg-voice${isDeleted?' msg-deleted-content':''}" src="${safeVoice}" controls preload="metadata"></audio>` : '';
+    const safeGif = (showOriginal && typeof fieldGif==='string' && /^https:\/\/(media\d?\.)?giphy\.com\//.test(fieldGif)) ? fieldGif.replace(/"/g,'%22') : '';
+    const gifHtml = safeGif ? `<img class="msg-gif${isDeleted?' msg-deleted-content':''}" src="${safeGif}" alt="GIF" loading="lazy">` : '';
+    const emojiOnly = !safeImg && !safeVoice && !safeGif && !isDeleted && _isEmojiOnly(fieldText);
+    const txtHtml = (showOriginal && fieldText) ? `<div class="${isDeleted?'msg-deleted-content':''}">${_autoLink(_renderMentions(esc(fieldText), byId))}</div>` : '';
+    // Tag "message supprime" pour tout le monde (au-dessus du contenu original pour admin)
+    const deletedNote = isDeleted ? `<div class="msg-deleted-note">🗑️ Message supprimé${m.deletedByName ? ' par ' + esc(m.deletedByName) : ''}${isAdmin() ? ' <span class="msg-deleted-admin">(vue admin ci-dessous)</span>' : ''}</div>` : '';
     // Reply : citation du message auquel on repond
     let replyHtml = '';
     if(m.replyTo && m.replyTo.msgId){
@@ -2847,14 +2858,14 @@ function renderChat(msgs){
     // Detecte @moi dans le texte : met en highlight la bulle
     const mentionsMe = normName && m.text && new RegExp('@' + normName + '\\b', 'i').test((m.text||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^@a-z0-9]/g,''));
     // Actions : Répondre (tous), Éditer (mine + <5min + texte seul), Supprimer (mine OU admin)
-    const canEdit = mine && t && (now - t.getTime() < EDIT_WINDOW_MS) && !safeImg && !safeVoice && !safeGif;
-    const canDelete = mine || isAdmin();
+    const canEdit = mine && !isDeleted && t && (now - t.getTime() < EDIT_WINDOW_MS) && !safeImg && !safeVoice && !safeGif;
+    const canDelete = !isDeleted && (mine || isAdmin());
     const replyBtn = `<button class="msg-act msg-reply" data-id="${esc(m.id)}" title="Répondre">↪</button>`;
     const editBtn = canEdit ? `<button class="msg-act msg-edit" data-id="${esc(m.id)}" title="Éditer">✏️</button>` : '';
     const delBtn = canDelete ? `<button class="msg-act msg-del" data-id="${esc(m.id)}" title="Supprimer">🗑️</button>` : '';
-    return `<div class="msg${mine?' mine':''}${mentionsMe?' mentions-me':''}" data-msg-id="${esc(m.id)}">
-      <div class="msg-name">${esc(nm)}${guestTag}${statusTag}</div>
-      <div class="msg-bubble${emojiOnly?' emoji-only':''}">${replyHtml}${imgHtml}${voiceHtml}${gifHtml}${txtHtml}</div>
+    return `<div class="msg${mine?' mine':''}${mentionsMe?' mentions-me':''}${isDeleted?' msg-is-deleted':''}" data-msg-id="${esc(m.id)}">
+      <div class="msg-header">${avatarHtml}<div class="msg-name">${esc(nm)}${guestTag}${statusTag}</div></div>
+      <div class="msg-bubble${emojiOnly?' emoji-only':''}">${deletedNote}${replyHtml}${imgHtml}${voiceHtml}${gifHtml}${txtHtml}</div>
       ${reactionBar('chat:'+m.id)}
       <div class="msg-actions">${replyBtn}${editBtn}${delBtn}</div>
       <div class="msg-time">${esc(time)}${editedTag}</div>
@@ -6675,6 +6686,7 @@ function fillProfile(me){
   if(document.activeElement!==d) d.value=me.dream||'';
   if(rr && document.activeElement!==rr) rr.value=me.rare||'';
   if(st && document.activeElement!==st) st.value=me.status||'';
+  _renderAvatarPreview(me);
   if(document.activeElement!==fav){
     const names=[...me.species.values()].filter(v=>!isNonSpecies(v.common,v.sci))
       .map(v=>frName(v.sci,v.common)).sort((a,b)=>a.localeCompare(b,'fr'));
@@ -6864,6 +6876,49 @@ $('#profDream').addEventListener('change',e=>saveProfile({dream:e.target.value.t
 $('#profRare').addEventListener('change',e=>saveProfile({rare:e.target.value.trim()}));
 $('#profFav').addEventListener('change',e=>saveProfile({fav:e.target.value}));
 $('#profStatus')?.addEventListener('change',e=>saveProfile({status:e.target.value.trim().slice(0,30)}));
+
+// ============ AVATAR ============
+// Avatar : soit un emoji, soit une image compressee en base64 (max ~50 KB).
+// Rendu dans la fiche profil + a cote du nom dans le chat.
+function _renderAvatarPreview(person){
+  const el = $('#profAvatarPreview');
+  if(!el) return;
+  const av = person?.avatar || '';
+  el.innerHTML = _avatarHtml(av, person?.name || '?', 64);
+}
+// Rend un avatar (emoji ou image) avec fallback initiale du prenom.
+function _avatarHtml(av, name, size){
+  const dim = size || 28;
+  if(av && /^data:image\//.test(av)){
+    return `<img class="user-avatar" src="${av.replace(/"/g,'%22')}" alt="" style="width:${dim}px;height:${dim}px">`;
+  }
+  if(av && [...av].length <= 3 && !/\s/.test(av)){
+    // emoji ou 1-2 chars
+    return `<span class="user-avatar user-avatar-emoji" style="width:${dim}px;height:${dim}px;font-size:${Math.round(dim*.6)}px">${esc(av)}</span>`;
+  }
+  // Fallback initiale
+  const initial = (name||'?').trim().slice(0,1).toUpperCase();
+  return `<span class="user-avatar user-avatar-initial" style="width:${dim}px;height:${dim}px;font-size:${Math.round(dim*.45)}px">${esc(initial)}</span>`;
+}
+$('#profAvatarInput')?.addEventListener('change', async e => {
+  const f = e.target.files?.[0];
+  if(!f || !/^image\//.test(f.type)) return;
+  try{
+    // Petit avatar : 128 x 128 max, qualite 0.7 -> ~15-30 KB base64
+    const b64 = await compressImage(f, 128, 50000);
+    await saveProfile({ avatar: b64 });
+    const me = realPeople.find(p => p.id === myUid); if(me){ me.avatar = b64; _renderAvatarPreview(me); }
+  }catch(err){ showError(new Error('Impossible de traiter l\'image : ' + err.message)); }
+  e.target.value = '';
+});
+$('#profAvatarEmojiBtn')?.addEventListener('click', () => {
+  openEmojiPop({ type: 'avatar' });
+});
+$('#profAvatarReset')?.addEventListener('click', async () => {
+  if(!confirm('Réinitialiser l\'avatar ?')) return;
+  await saveProfile({ avatar: '' });
+  const me = realPeople.find(p => p.id === myUid); if(me){ me.avatar = ''; _renderAvatarPreview(me); }
+});
 $('#boardModes').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
   state.boardMode=b.dataset.mode; renderResults(); });
 
@@ -7536,7 +7591,22 @@ $('#chatMessages')?.addEventListener('click', async e=>{
   }
   const del=e.target.closest('.msg-del');
   if(del){ const id=del.dataset.id; if(!id) return; if(!confirm('Supprimer ce message ?')) return;
-    try{ await deleteDoc(doc(db,'leagues',leagueId,'chat',id)); }catch(err){ showError(err); } return; }
+    // Soft delete : conserve le doc + snapshot pour l'audit admin, marque deleted=true.
+    // Le rendu affiche "(message supprimé)" pour tout le monde, sauf admin qui voit l'original.
+    const m = lastChatMsgs.find(x => x.id === id);
+    if(!m){ try{ await deleteDoc(doc(db,'leagues',leagueId,'chat',id)); }catch(err){ showError(err); } return; }
+    try{
+      await updateDoc(doc(db,'leagues',leagueId,'chat',id), {
+        deleted: true,
+        deletedAt: serverTimestamp(),
+        deletedBy: myUid,
+        deletedByName: myMemberName() || 'Utilisateur',
+        deletedOriginalText: m.text || '',
+        deletedOriginalImage: m.image || '',
+        deletedOriginalVoice: m.voice || '',
+        deletedOriginalGif: m.gif || ''
+      });
+    }catch(err){ showError(err); } return; }
   // Clic sur citation reply -> scroll vers le message cite
   const quote=e.target.closest('.msg-reply-quote');
   if(quote){
@@ -7645,6 +7715,10 @@ $('#emojiPop')?.addEventListener('click', async e=>{
   const emoji=b.dataset.emoji;
   if(emojiContext?.type==='text'){ const ti=$('#chatText'); if(ti){ ti.value+=emoji; ti.focus(); } }
   else if(emojiContext?.type==='react'){ await toggleReaction(emojiContext.target, emoji); }
+  else if(emojiContext?.type==='avatar'){
+    await saveProfile({ avatar: emoji });
+    const me = realPeople.find(p => p.id === myUid); if(me){ me.avatar = emoji; _renderAvatarPreview(me); }
+  }
   closeEmojiPop();
 });
 // ---- Photos : upload + galerie ----

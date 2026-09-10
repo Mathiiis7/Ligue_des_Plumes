@@ -583,6 +583,26 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .msg-guest { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#fff;
     background:var(--ink-3); padding:1px 5px; border-radius:6px; vertical-align:middle; margin-left:4px; }
   .msg-status { font-size:10.5px; font-weight:400; color:var(--ink-3); font-style:italic; margin-left:6px; }
+  /* Avatar : bulle ronde emoji, initiale, ou image */
+  .user-avatar { display:inline-grid; place-items:center; border-radius:50%; background:var(--surface-2); border:1px solid var(--line-2); overflow:hidden; vertical-align:middle; flex:0 0 auto; }
+  img.user-avatar { object-fit:cover; }
+  .user-avatar-emoji { line-height:1; background:var(--surface); }
+  .user-avatar-initial { font-weight:700; color:var(--ink-2); background:color-mix(in srgb, var(--accent) 18%, var(--surface-2)); }
+  /* Ligne entete du message : avatar + nom+status */
+  .msg-header { display:flex; align-items:center; gap:6px; margin:0 0 2px 4px; }
+  .msg.mine .msg-header { flex-direction:row-reverse; margin:0 4px 2px 0; }
+  .msg-header .msg-name { margin:0; }
+  /* Message soft-deleted : contenu original masque et opacite reduite (visible admin only) */
+  .msg-is-deleted .msg-bubble { background:color-mix(in srgb, var(--ink-3) 8%, var(--surface)); border-style:dashed; border-color:var(--line-2); }
+  .msg-deleted-note { font-size:11.5px; color:var(--ink-3); font-style:italic; margin:0 0 4px; padding:2px 6px; background:color-mix(in srgb, #c0392b 12%, transparent); border-radius:6px; }
+  .msg-deleted-admin { color:var(--accent-ink); font-weight:600; font-style:normal; }
+  .msg-deleted-content { opacity:.6; filter:grayscale(60%); }
+  /* Profil : avatar picker */
+  .prof-avatar-row { display:flex; align-items:center; gap:14px; margin-top:12px; padding-top:12px; border-top:1px solid var(--line); flex-wrap:wrap; }
+  .prof-avatar-preview { width:72px; height:72px; border-radius:50%; background:var(--surface-2); border:2px solid var(--line-2); overflow:hidden; display:grid; place-items:center; flex:0 0 auto; }
+  .prof-avatar-preview img.user-avatar, .prof-avatar-preview .user-avatar { width:72px !important; height:72px !important; border:none; font-size:38px !important; }
+  .prof-avatar-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .prof-avatar-label { font-size:11px; font-weight:700; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; width:100%; margin:0 0 4px; }
   /* Highlight quand @moi mentionne */
   .msg.mentions-me .msg-bubble { background:color-mix(in srgb, #ffd54f 24%, var(--surface)); border-color:color-mix(in srgb, #ffd54f 60%, var(--line)); box-shadow:0 0 0 2px color-mix(in srgb, #ffd54f 30%, transparent); }
   .msg.mine.mentions-me .msg-bubble { background:color-mix(in srgb, #ffd54f 30%, color-mix(in srgb, var(--accent) 16%, var(--surface))); }
