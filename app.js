@@ -11338,11 +11338,14 @@ function updateAuthUI(user){
   const box=$('#authBox');
   const real=isRealAccount(user);
   // Gate d'auth : bloque tout l'acces a l'app tant que pas connecte avec un vrai compte.
+  // Etat via [data-auth] sur <html> : 'signed-in' | 'signed-out' | 'pending'.
+  document.documentElement.setAttribute('data-auth', real ? 'signed-in' : 'signed-out');
+  // Compat classes (a retirer eventuellement)
+  document.body.classList.toggle('auth-gated', !real);
+  document.documentElement.classList.toggle('auth-gated', !real);
   const gate = $('#authGate');
   if(gate){
     gate.hidden = !!real;
-    document.body.classList.toggle('auth-gated', !real);
-    document.documentElement.classList.toggle('auth-gated', !real);
     // Reset consent UI selon le tab courant
     _authGateSyncTab();
   }
