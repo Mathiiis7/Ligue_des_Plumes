@@ -2837,7 +2837,7 @@ function renderChat(msgs){
     const imgHtml = safeImg ? `<img class="msg-img${isDeleted?' msg-deleted-content':''}" src="${safeImg}" alt="image partagée">` : '';
     const safeVoice = (showOriginal && typeof fieldVoice==='string' && /^data:audio\//.test(fieldVoice)) ? fieldVoice.replace(/"/g,'%22') : '';
     const voiceHtml = safeVoice ? `<audio class="msg-voice${isDeleted?' msg-deleted-content':''}" src="${safeVoice}" controls preload="metadata"></audio>` : '';
-    const safeGif = (showOriginal && typeof fieldGif==='string' && /^https:\/\/(media\d?\.)?giphy\.com\//.test(fieldGif)) ? fieldGif.replace(/"/g,'%22') : '';
+    const safeGif = (showOriginal && typeof fieldGif==='string' && /^https:\/\/[a-z0-9-]+\.giphy\.com\//.test(fieldGif)) ? fieldGif.replace(/"/g,'%22') : '';
     const gifHtml = safeGif ? `<img class="msg-gif${isDeleted?' msg-deleted-content':''}" src="${safeGif}" alt="GIF" loading="lazy">` : '';
     const emojiOnly = !safeImg && !safeVoice && !safeGif && !isDeleted && _isEmojiOnly(fieldText);
     const txtHtml = (showOriginal && fieldText) ? `<div class="${isDeleted?'msg-deleted-content':''}">${_autoLink(_renderMentions(esc(fieldText), byId))}</div>` : '';
