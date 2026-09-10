@@ -600,11 +600,11 @@ function _openCountryPicker(currentCode, opts = {}){
             const tier = absent ? 10 : rarityForCountry(focusSci, cc);
             const col = realColor(tier);
             const lbl = absent ? 'absente' : ((typeof REAL_LABELS === 'object' && REAL_LABELS[tier]) || ('tier '+tier));
-            // Nouveau format : pas de rond gauche, a droite un chip rar-chip.on colore
-            // avec juste le numero + label texte (ex: [4] Peu commun). Absent = pas de chip.
+            // Nouveau format : label texte AVANT le chip numero pour que les chips
+            // soient tous alignes a droite (ex: "Rare [7]"). Absent = pas de chip.
             meta = absent
               ? '<span class="cp-item-meta">absente</span>'
-              : `<span class="rar-chip on" style="background:${col};" title="tier ${tier}">${tier}</span><span class="cp-item-meta">${esc(lbl)}</span>`;
+              : `<span class="cp-item-meta">${esc(lbl)}</span><span class="rar-chip on" style="background:${col};" title="tier ${tier}">${tier}</span>`;
           } else {
             const nSp = Object.keys(reg.st() || {}).length;
             meta = nSp > 0 ? `<span class="cp-item-meta">${nSp} espèces</span>` : '';
