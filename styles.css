@@ -91,12 +91,12 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .auth-splash { position:fixed; inset:0; z-index:9500;
     display:flex; align-items:center; justify-content:center;
     background:linear-gradient(135deg, color-mix(in srgb, var(--accent) 20%, var(--surface)) 0%, var(--surface-2) 60%); }
-  .auth-splash-logo { width:96px; height:96px; object-fit:contain; animation:auth-logo-bounce 1.4s ease-in-out infinite; }
+  .auth-splash-logo { width:96px; height:96px; object-fit:contain; animation:auth-logo-bounce 1.4s ease-in-out infinite; mix-blend-mode:multiply; }
   .auth-gate { position:fixed; inset:0; z-index:9000; display:flex; align-items:center; justify-content:center;
     background:linear-gradient(135deg, color-mix(in srgb, var(--accent) 20%, var(--surface)) 0%, var(--surface-2) 60%);
     overflow:hidden; padding:24px; box-sizing:border-box; }
   .auth-gate-bg { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
-  .auth-bird { position:absolute; opacity:.12; animation:auth-float 18s ease-in-out infinite; user-select:none; pointer-events:none; object-fit:contain; }
+  .auth-bird { position:absolute; opacity:.22; animation:auth-float 18s ease-in-out infinite; user-select:none; pointer-events:none; object-fit:contain; mix-blend-mode:multiply; }
   .auth-bird-1 { top:6%; left:8%; width:180px; height:180px; animation-delay:0s; }
   .auth-bird-2 { top:16%; right:10%; width:150px; height:150px; animation-delay:-4s; }
   .auth-bird-3 { bottom:14%; left:5%; width:200px; height:200px; animation-delay:-8s; }
@@ -113,7 +113,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
     width:min(440px, 100%); padding:32px 30px; box-shadow:0 24px 60px rgba(0,0,0,.18);
     max-height:calc(100vh - 48px); overflow-y:auto; z-index:1; }
   .auth-gate-brand { text-align:center; margin-bottom:22px; }
-  .auth-gate-logo { width:88px; height:88px; object-fit:contain; margin-bottom:8px; animation:auth-logo-bounce 3s ease-in-out infinite; display:block; margin-left:auto; margin-right:auto; }
+  .auth-gate-logo { width:88px; height:88px; object-fit:contain; margin-bottom:8px; animation:auth-logo-bounce 3s ease-in-out infinite; display:block; margin-left:auto; margin-right:auto; mix-blend-mode:multiply; }
   @keyframes auth-logo-bounce { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-6px); } }
   .auth-gate-brand h1 { font-size:24px; margin:0; color:var(--ink); font-weight:800; letter-spacing:-.02em; }
   .auth-gate-tag { margin:6px 0 0; font-size:13.5px; color:var(--ink-3); }
@@ -153,7 +153,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .mark { width:46px; height:46px; flex:none; border-radius:13px;
     background:var(--surface-2); display:grid; place-items:center;
     font-size:26px; box-shadow:var(--shadow); position:relative; cursor:pointer; overflow:hidden; }
-  .mark img.mark-emoji { position:absolute; inset:2px; width:calc(100% - 4px); height:calc(100% - 4px); object-fit:contain; }
+  .mark img.mark-emoji { position:absolute; inset:2px; width:calc(100% - 4px); height:calc(100% - 4px); object-fit:contain; mix-blend-mode:multiply; }
   .mark img#logoImg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:13px; }
   .mark .edit-hint { position:absolute; inset:0; display:grid; place-items:center; border-radius:13px;
     background:rgba(0,0,0,.42); color:#fff; font-size:15px; opacity:0; transition:opacity .12s; }
