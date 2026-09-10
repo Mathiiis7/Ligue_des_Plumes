@@ -164,7 +164,14 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .drop.filled { padding:16px 20px; border-style:solid; background:color-mix(in srgb, #2ecc71 8%, var(--surface-2)); border-color:color-mix(in srgb, #2ecc71 40%, var(--line-2)); }
   .drop.filled .drop-icon { display:none; }
   .drop.filled .big { color:var(--ink); }
-  .me-secondary { font-size:12.5px; margin-top:4px; }
+  .me-secondary { display:flex; justify-content:flex-end; margin-top:8px; }
+  /* Bouton "retirer ma liste" : ghost destructif, discret mais elegant */
+  .btn-remove-list { display:inline-flex; align-items:center; gap:8px; padding:8px 14px;
+    background:transparent; color:var(--ink-3); border:1px solid var(--line-2); border-radius:10px;
+    font:inherit; font-size:12.5px; font-weight:600; cursor:pointer;
+    transition:color .12s, border-color .12s, background .12s; }
+  .btn-remove-list:hover { color:#c0392b; border-color:#c0392b; background:color-mix(in srgb, #c0392b 6%, transparent); }
+  .btn-remove-icon { font-size:14px; line-height:1; }
 
   /* ---------- Invite card ---------- */
   .invite-card { display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:12px; margin-top:12px; flex-wrap:wrap; }
