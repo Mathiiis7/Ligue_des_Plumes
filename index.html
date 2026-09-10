@@ -35,7 +35,7 @@
 <!-- Preload le module principal : le browser commence le fetch de app.js des le premier
      scan du <head>, en parallele du parsing HTML, au lieu d'attendre le <script> tout en
      bas (~1000 lignes plus loin). Gain ~200-400ms sur 3G/4G. -->
-<link rel="modulepreload" href="app.js?v=41">
+<link rel="modulepreload" href="app.js?v=42">
 <!-- Preload aussi le CSS principal (deja bloquant mais explicite ici). -->
 <link rel="preload" href="styles.css" as="style">
 <!-- Preconnect anticipe l'ouverture TCP+TLS vers les CDN critiques (Leaflet, Firebase, iNat, xeno-canto). -->
@@ -142,6 +142,12 @@
       z-index:1500; padding:0; margin:0;
       animation:fab-slide-up .2s ease both;
     }
+    /* Chat en mode flottant : pas de double scroll (panneau + chat-box).
+       Le panneau devient flex-column full-height, la chat-box prend le flex:1 et
+       gere son propre scroll. L'entete et le formulaire d'envoi restent visibles. */
+    #viewChat.fab-open { display:flex !important; flex-direction:column; overflow:hidden; }
+    #viewChat.fab-open > section { flex:1; overflow:hidden; display:flex; flex-direction:column; min-height:0; }
+    #viewChat.fab-open .chat-box { flex:1; height:auto !important; min-height:150px; }
     /* Section interne du panneau : reduit la marge top+padding (adapte pour l'espace flottant) */
     #viewChat.fab-open > section, #viewPhotos.fab-open > section, #viewFeed.fab-open > section { margin-top:0 !important; }
     @keyframes fab-slide-up { from { opacity:0; transform:translateY(20px) scale(.96); } to { opacity:1; transform:translateY(0) scale(1); } }
@@ -1099,4 +1105,4 @@
   </footer>
 </div>
 
-<script type="module" src="app.js?v=41"></script>
+<script type="module" src="app.js?v=42"></script>
