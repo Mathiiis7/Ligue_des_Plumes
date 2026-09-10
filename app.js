@@ -2592,7 +2592,8 @@ function applySnapshot(snap){
   if(me && _isBlocked(me.name)){ _showBlockedScreen(); return; }
   const nameInput=$('#myName');
   if(me && document.activeElement!==nameInput){ nameInput.value = me.name; }
-  $('#myStatus').textContent = me ? `✓ Votre liste : ${me.species.size} espèces` : '';
+  // Le statut est deja visible dans le drop zone rempli - on ne repete pas ici.
+  $('#myStatus').textContent = '';
   const meSec = $('#meSecondary'); if(meSec) meSec.style.display = me ? '' : 'none';
   $('#removeMineBtn').style.display = me ? 'inline' : 'none';
   const ma=$('#manualAdd'); if(ma) ma.style.display = me ? '' : 'none';
@@ -6829,7 +6830,7 @@ async function handleFiles(fileList){
   catch(e){ showError(e); $('#myStatus').textContent=''; }
 }
 drop.addEventListener('click',()=>fileInput.click());
-$('#browseBtn').addEventListener('click',()=>fileInput.click());
+$('#browseBtn')?.addEventListener('click',()=>fileInput.click());
 fileInput.addEventListener('change',e=>{ handleFiles(e.target.files); fileInput.value=''; });
 ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag');}));
 ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag');}));
