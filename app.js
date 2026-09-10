@@ -7373,6 +7373,17 @@ async function _loadFrozenPhotos(){
 // specifique dont l'article a une photo pleine longueur. Ajouter ici les especes
 // probleatiques a la volee.
 const PHOTO_OVERRIDE_WIKI = {
+  // Batch changement photos utilisateur (2026-09-10) : remplace les photos wiki par defaut
+  // (contrepoint, mauvais angle, etc.) par des photos iNat actuelles de qualite.
+  'columba palumbus': { url:'https://inaturalist-open-data.s3.amazonaws.com/photos/108521205/original.jpg', thumb:'https://inaturalist-open-data.s3.amazonaws.com/photos/108521205/medium.jpg', credit:'iNaturalist' },
+  'aythya fuligula': { url:'https://inaturalist-open-data.s3.amazonaws.com/photos/187419966/original.jpg', thumb:'https://inaturalist-open-data.s3.amazonaws.com/photos/187419966/medium.jpg', credit:'iNaturalist' },
+  'anas platyrhynchos': { url:'https://inaturalist-open-data.s3.amazonaws.com/photos/95268822/original.jpg', thumb:'https://inaturalist-open-data.s3.amazonaws.com/photos/95268822/medium.jpg', credit:'iNaturalist' },
+  'sturnus vulgaris': { url:'https://inaturalist-open-data.s3.amazonaws.com/photos/32152001/original.jpg', thumb:'https://inaturalist-open-data.s3.amazonaws.com/photos/32152001/medium.jpg', credit:'iNaturalist' },
+  'chroicocephalus ridibundus': { url:'https://inaturalist-open-data.s3.amazonaws.com/photos/198109587/original.jpg', thumb:'https://inaturalist-open-data.s3.amazonaws.com/photos/198109587/medium.jpg', credit:'iNaturalist' },
+  'streptopelia decaocto': { url:'https://static.inaturalist.org/photos/61919353/original.jpeg', thumb:'https://static.inaturalist.org/photos/61919353/medium.jpeg', credit:'iNaturalist' },
+  'sylvia atricapilla': { url:'https://inaturalist-open-data.s3.amazonaws.com/photos/187041112/original.jpg', thumb:'https://inaturalist-open-data.s3.amazonaws.com/photos/187041112/medium.jpg', credit:'iNaturalist' },
+  'certhia brachydactyla': { url:'https://inaturalist-open-data.s3.amazonaws.com/photos/6260571/original.jpg', thumb:'https://inaturalist-open-data.s3.amazonaws.com/photos/6260571/medium.jpg', credit:'iNaturalist' },
+  'pica pica': { url:'https://inaturalist-open-data.s3.amazonaws.com/photos/103446096/original.jpg', thumb:'https://inaturalist-open-data.s3.amazonaws.com/photos/103446096/medium.jpg', credit:'iNaturalist' },
   'circus hudsonius': { url:'https://upload.wikimedia.org/wikipedia/commons/7/71/Male_Northern_Harrier_%2814364839779%29.jpg' },   // Busard des marais : male en vol, 4695x3259
   'branta bernicla': { url:'https://upload.wikimedia.org/wikipedia/commons/7/75/Branta_bernicla_bernicla_-_Brent_Goose.jpg' },
   'otis tarda': { url:'https://upload.wikimedia.org/wikipedia/commons/d/d8/Abetarda-comum%2C_macho%2C_concentrado_e_a_fazer_o_seu_melhor..%21_Great_Bustard%2C_male%2C_focused_and_doing_his_best..%21_%2854460360805%29.jpg' },
