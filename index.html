@@ -11,8 +11,8 @@
   default-src 'self';
   script-src 'self' 'unsafe-inline' https://www.gstatic.com https://unpkg.com;
   style-src 'self' 'unsafe-inline' https://unpkg.com;
-  img-src 'self' data: blob: https://upload.wikimedia.org https://thumb.wikimedia.org https://fr.wikipedia.org https://en.wikipedia.org https://static.inaturalist.org https://inaturalist-open-data.s3.amazonaws.com https://odata-inpn.mnhn.fr https://mathiiis7.github.io https://*.tile.openstreetmap.org https://server.arcgisonline.com https://flagcdn.com https://firebasestorage.googleapis.com https://xeno-canto.org https://cdn.download.ams.birds.cornell.edu https://base-prod.rspb-prod.magnolia-platform.com https://i.ytimg.com;
-  connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.firebaseio.com https://www.gstatic.com https://unpkg.com https://api.ebird.org https://ebird.org https://api.gbif.org https://api.inaturalist.org https://xeno-canto.org https://fr.wikipedia.org https://en.wikipedia.org https://*.wikipedia.org https://upload.wikimedia.org https://odata-inpn.mnhn.fr https://mathiiis7.github.io https://nominatim.openstreetmap.org https://*.tile.openstreetmap.org https://server.arcgisonline.com;
+  img-src 'self' data: blob: https://upload.wikimedia.org https://thumb.wikimedia.org https://fr.wikipedia.org https://en.wikipedia.org https://static.inaturalist.org https://inaturalist-open-data.s3.amazonaws.com https://odata-inpn.mnhn.fr https://mathiiis7.github.io https://*.tile.openstreetmap.org https://server.arcgisonline.com https://flagcdn.com https://firebasestorage.googleapis.com https://xeno-canto.org https://cdn.download.ams.birds.cornell.edu https://base-prod.rspb-prod.magnolia-platform.com https://i.ytimg.com https://media.giphy.com https://media0.giphy.com https://media1.giphy.com https://media2.giphy.com https://media3.giphy.com https://media4.giphy.com;
+  connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.firebaseio.com https://www.gstatic.com https://unpkg.com https://api.ebird.org https://ebird.org https://api.gbif.org https://api.inaturalist.org https://xeno-canto.org https://fr.wikipedia.org https://en.wikipedia.org https://*.wikipedia.org https://upload.wikimedia.org https://odata-inpn.mnhn.fr https://mathiiis7.github.io https://nominatim.openstreetmap.org https://*.tile.openstreetmap.org https://server.arcgisonline.com https://api.giphy.com;
   font-src 'self' data:;
   media-src 'self' data: blob: https://xeno-canto.org https://static.inaturalist.org;
   object-src 'none';
@@ -35,7 +35,7 @@
 <!-- Preload le module principal : le browser commence le fetch de app.js des le premier
      scan du <head>, en parallele du parsing HTML, au lieu d'attendre le <script> tout en
      bas (~1000 lignes plus loin). Gain ~200-400ms sur 3G/4G. -->
-<link rel="modulepreload" href="app.js?v=50">
+<link rel="modulepreload" href="app.js?v=51">
 <!-- Preload aussi le CSS principal (deja bloquant mais explicite ici). -->
 <link rel="preload" href="styles.css" as="style">
 <!-- Preconnect anticipe l'ouverture TCP+TLS vers les CDN critiques (Leaflet, Firebase, iNat, xeno-canto). -->
@@ -695,6 +695,7 @@
         <label class="chat-imgbtn" title="Ajouter une image">🖼️<input type="file" id="chatImgInput" accept="image/*" hidden></label>
         <button type="button" class="chat-imgbtn" id="chatEmojiBtn" title="Emoji">😊</button>
         <button type="button" class="chat-imgbtn" id="chatVoiceBtn" title="Note vocale (15s max)">🎤</button>
+        <button type="button" class="chat-imgbtn" id="chatGifBtn" title="GIF">🎬</button>
         <div class="chat-input-wrap">
           <input id="chatText" class="chat-input" placeholder="Votre message…" maxlength="500">
           <div id="chatMentionPop" class="mention-pop"></div>
@@ -993,6 +994,16 @@
   </div>
 
   <div id="emojiPop" class="emoji-pop"><div class="emoji-pop-inner"></div></div>
+  <div id="gifPop" class="gif-pop">
+    <div class="gif-pop-inner">
+      <div class="gif-pop-header">
+        <input type="search" id="gifSearch" placeholder="🔎 Rechercher un GIF…" autocomplete="off">
+        <button type="button" id="gifPopClose" title="Fermer">✕</button>
+      </div>
+      <div class="gif-pop-grid" id="gifPopGrid"><div class="gif-pop-empty">Chargement…</div></div>
+      <div class="gif-pop-footer">Powered by GIPHY</div>
+    </div>
+  </div>
   <!-- Modal image plein écran (photos, chat...). Doit être au niveau racine pour ne pas hériter du display:none des vues masquées. -->
   <div id="imgModal" class="img-modal"><img id="imgModalImg" alt=""></div>
   <!-- Modal fiche espèce : ouvert au clic sur un nom d'oiseau (data-sci="..."). Photo Wikipédia,
@@ -1116,4 +1127,4 @@
   </footer>
 </div>
 
-<script type="module" src="app.js?v=50"></script>
+<script type="module" src="app.js?v=51"></script>

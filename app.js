@@ -2807,7 +2807,10 @@ function renderChat(msgs){
     const imgHtml = safeImg ? `<img class="msg-img" src="${safeImg}" alt="image partagée">` : '';
     const safeVoice = (typeof m.voice==='string' && /^data:audio\//.test(m.voice)) ? m.voice.replace(/"/g,'%22') : '';
     const voiceHtml = safeVoice ? `<audio class="msg-voice" src="${safeVoice}" controls preload="metadata"></audio>` : '';
-    const emojiOnly = !safeImg && !safeVoice && _isEmojiOnly(m.text);
+    // GIF Giphy : URL http (deja whitelist CSP media.giphy.com)
+    const safeGif = (typeof m.gif==='string' && /^https:\/\/(media\d?\.)?giphy\.com\//.test(m.gif)) ? m.gif.replace(/"/g,'%22') : '';
+    const gifHtml = safeGif ? `<img class="msg-gif" src="${safeGif}" alt="GIF" loading="lazy">` : '';
+    const emojiOnly = !safeImg && !safeVoice && !safeGif && _isEmojiOnly(m.text);
     const txtHtml = m.text ? `<div>${_autoLink(_renderMentions(esc(m.text), byId))}</div>` : '';
     // Reply : citation du message auquel on repond
     let replyHtml = '';
@@ -2822,14 +2825,14 @@ function renderChat(msgs){
     // "(modifié)" si editedAt existe
     const editedTag = m.editedAt ? ' <span class="msg-edited" title="Message modifié">(modifié)</span>' : '';
     // Actions : Répondre (tous), Éditer (mine + <5min + texte seul), Supprimer (mine OU admin)
-    const canEdit = mine && t && (now - t.getTime() < EDIT_WINDOW_MS) && !safeImg && !safeVoice;
+    const canEdit = mine && t && (now - t.getTime() < EDIT_WINDOW_MS) && !safeImg && !safeVoice && !safeGif;
     const canDelete = mine || isAdmin();
     const replyBtn = `<button class="msg-act msg-reply" data-id="${esc(m.id)}" title="Répondre">↪</button>`;
     const editBtn = canEdit ? `<button class="msg-act msg-edit" data-id="${esc(m.id)}" title="Éditer">✏️</button>` : '';
     const delBtn = canDelete ? `<button class="msg-act msg-del" data-id="${esc(m.id)}" title="Supprimer">🗑️</button>` : '';
     return `<div class="msg${mine?' mine':''}" data-msg-id="${esc(m.id)}">
       <div class="msg-name">${esc(nm)}${guestTag}${statusTag}</div>
-      <div class="msg-bubble${emojiOnly?' emoji-only':''}">${replyHtml}${imgHtml}${voiceHtml}${txtHtml}</div>
+      <div class="msg-bubble${emojiOnly?' emoji-only':''}">${replyHtml}${imgHtml}${voiceHtml}${gifHtml}${txtHtml}</div>
       ${reactionBar('chat:'+m.id)}
       <div class="msg-actions">${replyBtn}${editBtn}${delBtn}</div>
       <div class="msg-time">${esc(time)}${editedTag}</div>
@@ -7209,6 +7212,69 @@ $('#chatImgInput')?.addEventListener('change', async e=>{
 });
 $('#chatPreviewRemove')?.addEventListener('click', ()=>{ pendingImage=null; $('#chatPreview').style.display='none'; $('#chatPreviewImg').src=''; });
 $('#chatName')?.addEventListener('change',e=>{ localStorage.setItem('mb-chatname', e.target.value.trim()); });
+// ============ GIF PICKER (Giphy) ============
+// Cle SDK gratuite. Rate limit dev ~100 req/h, largement suffisant pour un chat.
+const GIPHY_KEY = 'sXehu3Jemp8Ubq0Asz9CXC5uGJVhd1qS';
+let pendingGif = null;   // { url, preview } quand un GIF est selectionne pour envoi
+let _gifSearchTimer = null;
+async function _gifFetch(query){
+  const grid = $('#gifPopGrid');
+  if(grid) grid.innerHTML = '<div class="gif-pop-empty">Chargement…</div>';
+  try{
+    const endpoint = query.trim()
+      ? `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_KEY}&q=${encodeURIComponent(query)}&limit=24&rating=pg-13&lang=fr`
+      : `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_KEY}&limit=24&rating=pg-13`;
+    const r = await fetch(endpoint);
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    const items = j?.data || [];
+    if(!items.length){ if(grid) grid.innerHTML = '<div class="gif-pop-empty">Aucun GIF trouvé.</div>'; return; }
+    if(grid){
+      grid.innerHTML = items.map(g => {
+        const preview = g.images?.fixed_width_small?.url || g.images?.preview_gif?.url || g.images?.original?.url;
+        const full = g.images?.fixed_height?.url || g.images?.original?.url;
+        if(!preview || !full) return '';
+        return `<button type="button" class="gif-item" data-url="${esc(full)}" data-preview="${esc(preview)}" title="${esc(g.title||'')}"><img src="${esc(preview)}" alt="${esc(g.title||'gif')}" loading="lazy"></button>`;
+      }).join('');
+    }
+  }catch(err){
+    if(grid) grid.innerHTML = `<div class="gif-pop-empty">Erreur : ${esc(err.message)}</div>`;
+  }
+}
+function openGifPicker(){
+  const pop = $('#gifPop');
+  if(!pop) return;
+  pop.classList.add('open');
+  const inp = $('#gifSearch');
+  if(inp){ inp.value = ''; inp.focus(); }
+  _gifFetch('');   // charger tendances par defaut
+}
+function closeGifPicker(){ $('#gifPop')?.classList.remove('open'); }
+document.addEventListener('click', e => {
+  if(e.target.closest('#chatGifBtn')){ openGifPicker(); return; }
+  if(e.target.closest('#gifPopClose') || e.target === $('#gifPop')){ closeGifPicker(); return; }
+  const gifItem = e.target.closest('.gif-item');
+  if(gifItem){
+    pendingGif = { url: gifItem.dataset.url, preview: gifItem.dataset.preview };
+    closeGifPicker();
+    // Preview dans le compose (reutilise chatVoicePreview zone)
+    const prev = $('#chatVoicePreview');
+    if(prev){
+      prev.hidden = false;
+      prev.innerHTML = `<div class="gif-preview"><img src="${esc(pendingGif.url)}" alt="GIF"><button type="button" class="gif-remove" title="Retirer">✕</button></div>`;
+    }
+    return;
+  }
+  if(e.target.closest('.gif-remove')){
+    pendingGif = null;
+    const prev = $('#chatVoicePreview'); if(prev){ prev.hidden = true; prev.innerHTML = ''; }
+    return;
+  }
+});
+$('#gifSearch')?.addEventListener('input', e => {
+  clearTimeout(_gifSearchTimer);
+  _gifSearchTimer = setTimeout(() => _gifFetch(e.target.value), 350);
+});
 // ============ VOICE NOTES ============
 // Enregistrement audio 15s max via MediaRecorder + base64 dans Firestore (limite 1 MB).
 // A 32 kbps webm : 15s = ~60 KB base64. Rentre largement.
@@ -7352,7 +7418,7 @@ $('#chatForm')?.addEventListener('submit',async e=>{
     return;
   }
   if(!name){ $('#chatName').focus(); return; }
-  if(!text && !pendingImage && !pendingVoiceB64 && !_editingMsg) return;
+  if(!text && !pendingImage && !pendingVoiceB64 && !pendingGif && !_editingMsg) return;
   // Mode edition : update le message existant
   if(_editingMsg){
     if(!text){ showError(new Error('Le message ne peut pas etre vide.')); return; }
@@ -7366,13 +7432,15 @@ $('#chatForm')?.addEventListener('submit',async e=>{
   if(!_rateLimit('chat', 20)){ showError(new Error('Trop de messages en peu de temps (limite : 20/min). Attends un peu.')); return; }
   const img=pendingImage;
   const voice = pendingVoiceB64;
-  $('#chatText').value=''; pendingImage=null; pendingVoiceB64=null;
+  const gif = pendingGif ? pendingGif.url : null;
+  $('#chatText').value=''; pendingImage=null; pendingVoiceB64=null; pendingGif=null;
   $('#chatPreview').style.display='none'; $('#chatPreviewImg').src='';
   const vp = $('#chatVoicePreview'); if(vp){ vp.hidden=true; vp.innerHTML=''; }
   const payload={ uid:myUid, name, createdAt:serverTimestamp() };
   if(text) payload.text=text;
   if(img) payload.image=img;
   if(voice) payload.voice=voice;
+  if(gif) payload.gif=gif;
   if(_replyingTo) payload.replyTo = _replyingTo;
   const replyStore = _replyingTo;
   _setReplyingTo(null);

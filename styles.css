@@ -528,6 +528,30 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .voice-remove:hover { color:#c0392b; }
   .msg-voice { display:block; width:100%; max-width:260px; margin:2px 0; height:34px; }
   .msg.mine .msg-voice { margin-left:auto; }
+  /* GIF Giphy dans une bulle */
+  .msg-gif { display:block; max-width:260px; max-height:320px; border-radius:12px; margin:2px 0; }
+  /* GIF picker : panneau flottant plein ecran (comme emojiPop) */
+  .gif-pop { display:none; position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,.4); }
+  .gif-pop.open { display:block; }
+  .gif-pop-inner { position:absolute; left:50%; bottom:18px; transform:translateX(-50%);
+    background:var(--surface); border:1px solid var(--line-2); border-radius:16px; padding:12px;
+    width:min(420px, 92vw); max-height:70vh; display:flex; flex-direction:column; box-shadow:0 12px 40px rgba(0,0,0,.3); }
+  .gif-pop-header { display:flex; gap:8px; margin-bottom:10px; }
+  .gif-pop-header input { flex:1; padding:8px 12px; border:1px solid var(--line-2); border-radius:10px; font:inherit; background:var(--surface-2); color:var(--ink); }
+  #gifPopClose { background:none; border:1px solid var(--line-2); border-radius:10px; padding:0 12px; font-size:16px; cursor:pointer; color:var(--ink-2); }
+  #gifPopClose:hover { border-color:#c0392b; color:#c0392b; }
+  .gif-pop-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; overflow-y:auto; flex:1; padding-right:2px; }
+  .gif-pop-empty { grid-column:1/-1; text-align:center; color:var(--ink-3); padding:24px; font-size:13px; }
+  .gif-item { padding:0; border:none; border-radius:8px; overflow:hidden; cursor:pointer; background:var(--surface-2); aspect-ratio:1/1; }
+  .gif-item:hover { outline:2px solid var(--accent); }
+  .gif-item img { width:100%; height:100%; object-fit:cover; display:block; }
+  .gif-pop-footer { font-size:10px; color:var(--ink-3); text-align:center; margin-top:8px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; }
+  /* Preview du GIF selectionne dans le compose */
+  .gif-preview { display:inline-block; position:relative; margin-top:10px; }
+  .gif-preview img { max-width:140px; max-height:140px; border-radius:10px; border:1px solid var(--line); display:block; }
+  .gif-remove { position:absolute; top:-8px; right:-8px; width:22px; height:22px; border-radius:50%; border:none;
+    background:rgba(0,0,0,.7); color:#fff; font-size:12px; cursor:pointer; display:grid; place-items:center; }
+  .gif-remove:hover { background:#c0392b; }
   .mention { color:var(--accent-ink); font-weight:600; }
   .mention.self { background:color-mix(in srgb, #ffd54f 55%, transparent); padding:0 3px; border-radius:4px; }
   .chat-input-wrap { position:relative; flex:1; display:flex; }
