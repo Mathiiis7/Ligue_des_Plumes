@@ -91,23 +91,29 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .auth-splash { position:fixed; inset:0; z-index:9500;
     display:flex; align-items:center; justify-content:center;
     background:linear-gradient(135deg, color-mix(in srgb, var(--accent) 20%, var(--surface)) 0%, var(--surface-2) 60%); }
-  .auth-splash-logo { font-size:64px; line-height:1; animation:auth-logo-bounce 1.4s ease-in-out infinite; }
+  .auth-splash-logo { width:96px; height:96px; object-fit:contain; animation:auth-logo-bounce 1.4s ease-in-out infinite; }
   .auth-gate { position:fixed; inset:0; z-index:9000; display:flex; align-items:center; justify-content:center;
     background:linear-gradient(135deg, color-mix(in srgb, var(--accent) 20%, var(--surface)) 0%, var(--surface-2) 60%);
     overflow:hidden; padding:24px; box-sizing:border-box; }
   .auth-gate-bg { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
-  .auth-bird { position:absolute; font-size:80px; opacity:.08; animation:auth-float 18s ease-in-out infinite; user-select:none; }
-  .auth-bird-1 { top:8%; left:12%; animation-delay:0s; }
-  .auth-bird-2 { top:18%; right:14%; animation-delay:-4s; font-size:60px; }
-  .auth-bird-3 { bottom:22%; left:8%; animation-delay:-8s; font-size:70px; }
-  .auth-bird-4 { bottom:12%; right:10%; animation-delay:-12s; font-size:90px; }
-  .auth-bird-5 { top:52%; left:52%; animation-delay:-6s; font-size:55px; }
+  .auth-bird { position:absolute; opacity:.12; animation:auth-float 18s ease-in-out infinite; user-select:none; pointer-events:none; object-fit:contain; }
+  .auth-bird-1 { top:6%; left:8%; width:180px; height:180px; animation-delay:0s; }
+  .auth-bird-2 { top:16%; right:10%; width:150px; height:150px; animation-delay:-4s; }
+  .auth-bird-3 { bottom:14%; left:5%; width:200px; height:200px; animation-delay:-8s; }
+  .auth-bird-4 { bottom:8%; right:6%; width:170px; height:170px; animation-delay:-12s; }
+  @media (max-width:600px){
+    .auth-bird { opacity:.09; }
+    .auth-bird-1 { width:120px; height:120px; }
+    .auth-bird-2 { width:100px; height:100px; }
+    .auth-bird-3 { width:130px; height:130px; }
+    .auth-bird-4 { width:110px; height:110px; }
+  }
   @keyframes auth-float { 0%,100% { transform:translateY(0) rotate(-3deg); } 50% { transform:translateY(-16px) rotate(4deg); } }
   .auth-gate-card { position:relative; background:var(--surface); border:1px solid var(--line-2); border-radius:20px;
     width:min(440px, 100%); padding:32px 30px; box-shadow:0 24px 60px rgba(0,0,0,.18);
     max-height:calc(100vh - 48px); overflow-y:auto; z-index:1; }
   .auth-gate-brand { text-align:center; margin-bottom:22px; }
-  .auth-gate-logo { font-size:56px; line-height:1; margin-bottom:8px; animation:auth-logo-bounce 3s ease-in-out infinite; }
+  .auth-gate-logo { width:88px; height:88px; object-fit:contain; margin-bottom:8px; animation:auth-logo-bounce 3s ease-in-out infinite; display:block; margin-left:auto; margin-right:auto; }
   @keyframes auth-logo-bounce { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-6px); } }
   .auth-gate-brand h1 { font-size:24px; margin:0; color:var(--ink); font-weight:800; letter-spacing:-.02em; }
   .auth-gate-tag { margin:6px 0 0; font-size:13.5px; color:var(--ink-3); }
@@ -138,16 +144,17 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
     .auth-gate { padding:14px; }
     .auth-gate-card { padding:24px 22px; }
     .auth-gate-brand h1 { font-size:20px; }
-    .auth-gate-logo { font-size:44px; }
+    .auth-gate-logo { width:64px; height:64px; }
   }
 
   /* ---------- header ---------- */
   header.top { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; flex-wrap:wrap; }
   .brand { display:flex; gap:14px; align-items:center; }
   .mark { width:46px; height:46px; flex:none; border-radius:13px;
-    background:linear-gradient(150deg,var(--accent),var(--accent-2)); display:grid; place-items:center;
-    font-size:26px; box-shadow:var(--shadow); position:relative; cursor:pointer; }
-  .mark img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:13px; }
+    background:var(--surface-2); display:grid; place-items:center;
+    font-size:26px; box-shadow:var(--shadow); position:relative; cursor:pointer; overflow:hidden; }
+  .mark img.mark-emoji { position:absolute; inset:2px; width:calc(100% - 4px); height:calc(100% - 4px); object-fit:contain; }
+  .mark img#logoImg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:13px; }
   .mark .edit-hint { position:absolute; inset:0; display:grid; place-items:center; border-radius:13px;
     background:rgba(0,0,0,.42); color:#fff; font-size:15px; opacity:0; transition:opacity .12s; }
   .mark:hover .edit-hint { opacity:1; }

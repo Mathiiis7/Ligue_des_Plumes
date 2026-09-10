@@ -9,7 +9,7 @@
   "background_color": "#eef2f1",
   "theme_color": "#0b7c77",
   "icons": [
-    { "src": "logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+    { "src": "assets/logos/huppe.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/logos/huppe.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
   ]
 }
