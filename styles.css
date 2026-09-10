@@ -1027,7 +1027,9 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .cmt-send { font-size:13px; padding:5px 11px; border-radius:14px; border:1px solid var(--accent); background:var(--accent); color:#fff; cursor:pointer; }
   .cmt-send:hover { filter:brightness(.95); }
   .cmt-send:disabled { opacity:.6; cursor:not-allowed; }
-  .emoji-pop { display:none; position:fixed; inset:0; z-index:66; }
+  /* z-index au-dessus des FAB panneaux (chat/photos/feed a 1500) pour que les emojis
+     soient cliquables au lieu d'apparaitre en arriere-plan. */
+  .emoji-pop { display:none; position:fixed; inset:0; z-index:2000; }
   .emoji-pop.open { display:block; }
   .emoji-pop-inner { position:absolute; left:50%; bottom:18px; transform:translateX(-50%); background:var(--surface);
     border:1px solid var(--line-2); border-radius:14px; padding:8px; display:flex; gap:4px; flex-wrap:wrap; width:min(340px,92vw); max-height:50vh; overflow-y:auto; box-shadow:var(--shadow); }
