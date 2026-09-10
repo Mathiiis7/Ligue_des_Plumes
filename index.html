@@ -35,7 +35,7 @@
 <!-- Preload le module principal : le browser commence le fetch de app.js des le premier
      scan du <head>, en parallele du parsing HTML, au lieu d'attendre le <script> tout en
      bas (~1000 lignes plus loin). Gain ~200-400ms sur 3G/4G. -->
-<link rel="modulepreload" href="app.js?v=66">
+<link rel="modulepreload" href="app.js?v=67">
 <!-- Preload aussi le CSS principal (deja bloquant mais explicite ici). -->
 <link rel="preload" href="styles.css" as="style">
 <!-- Preconnect anticipe l'ouverture TCP+TLS vers les CDN critiques (Leaflet, Firebase, iNat, xeno-canto). -->
@@ -58,6 +58,52 @@
      tourne apres, donc L. est defini avant. -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" defer></script>
 <link rel="stylesheet" href="styles.css">
+
+<!-- Gate d'auth : visible tant que l'utilisateur n'est pas connecte avec un vrai compte.
+     Par defaut affiche (pas d'attribut hidden) pour eviter le flash de la wrap avant que
+     Firebase auth ne resolve. app.js.updateAuthUI() cache le gate une fois signed in. -->
+<script>document.documentElement.classList.add('auth-gated');
+document.addEventListener('DOMContentLoaded', () => { document.body.classList.add('auth-gated'); });</script>
+<div id="authGate" class="auth-gate">
+  <div class="auth-gate-bg" aria-hidden="true">
+    <span class="auth-bird auth-bird-1">🦅</span>
+    <span class="auth-bird auth-bird-2">🦢</span>
+    <span class="auth-bird auth-bird-3">🐦</span>
+    <span class="auth-bird auth-bird-4">🦜</span>
+    <span class="auth-bird auth-bird-5">🦉</span>
+  </div>
+  <div class="auth-gate-card">
+    <div class="auth-gate-brand">
+      <div class="auth-gate-logo">🐦</div>
+      <h1>Ligue Merlin Bird</h1>
+      <p class="auth-gate-tag">Comparez vos life lists entre birders</p>
+    </div>
+    <div class="auth-gate-tabs" role="tablist">
+      <button type="button" class="auth-gate-tab on" data-auth-tab="signin">Se connecter</button>
+      <button type="button" class="auth-gate-tab" data-auth-tab="signup">Créer un compte</button>
+    </div>
+    <form class="auth-gate-form" id="authGateForm" autocomplete="on" onsubmit="return false;">
+      <div class="auth-gate-field">
+        <label for="authGateEmail">Email</label>
+        <input type="email" id="authGateEmail" placeholder="vous@exemple.fr" autocomplete="email" required>
+      </div>
+      <div class="auth-gate-field">
+        <label for="authGatePass">Mot de passe</label>
+        <input type="password" id="authGatePass" placeholder="Au moins 6 caractères" autocomplete="current-password" minlength="6" required>
+      </div>
+      <label class="auth-gate-consent" id="authGateConsentWrap" hidden>
+        <input type="checkbox" id="authGateConsent">
+        <span>J'accepte que mes données (email, life list, messages, photos) soient stockées via Firebase pour l'usage de la ligue entre amis.</span>
+      </label>
+      <button type="button" class="auth-gate-cta" id="authGateSubmit">Se connecter</button>
+      <button type="button" class="auth-gate-forgot" id="authGateForgot">Mot de passe oublié ?</button>
+      <div class="auth-gate-msg" id="authGateMsg"></div>
+    </form>
+    <div class="auth-gate-footer">
+      Pas encore de compte ? <a href="#" class="auth-gate-switch" data-switch-to="signup">Créez-en un ici</a>
+    </div>
+  </div>
+</div>
 
 <div class="wrap">
   <header class="top">
@@ -1181,4 +1227,4 @@
   </footer>
 </div>
 
-<script type="module" src="app.js?v=66"></script>
+<script type="module" src="app.js?v=67"></script>

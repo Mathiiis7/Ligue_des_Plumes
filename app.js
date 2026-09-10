@@ -11335,13 +11335,21 @@ function authErr(e){
 }
 function authMsg(txt, ok){ const el=$('#authMsg'); if(!el) return; el.textContent=txt||''; el.className='auth-msg'+(txt?(ok?' ok':' err'):''); }
 function updateAuthUI(user){
-  const box=$('#authBox'); if(!box) return;
+  const box=$('#authBox');
   const real=isRealAccount(user);
-  // Load page : garde le formulaire visible SEULEMENT si pas de compte reel.
-  // Une fois connecte, plus rien sur la load page - l'info + logout va dans le hamburger.
-  box.style.display = real ? 'none' : '';
-  $('#authForm').style.display = real?'none':'';
-  $('#authInfo').style.display = 'none';   // deprecated, l'info va dans le hamburger
+  // Gate d'auth : bloque tout l'acces a l'app tant que pas connecte avec un vrai compte.
+  const gate = $('#authGate');
+  if(gate){
+    gate.hidden = !!real;
+    document.body.classList.toggle('auth-gated', !real);
+    document.documentElement.classList.toggle('auth-gated', !real);
+    // Reset consent UI selon le tab courant
+    _authGateSyncTab();
+  }
+  // Load page : masque l'ancien authBox (deprecated, remplace par le gate)
+  if(box) box.style.display = 'none';
+  const authForm = $('#authForm'); if(authForm) authForm.style.display = 'none';
+  const authInfo = $('#authInfo'); if(authInfo) authInfo.style.display = 'none';
   // Sync hamburger : email + boutons signin/signout selon etat
   const info = $('#hamAccountInfo');
   const emailEl = $('#hamAccountEmail');
@@ -11359,6 +11367,77 @@ function updateAuthUI(user){
     if(signout) signout.hidden = true;
   }
 }
+// ============ AUTH GATE handlers ============
+let _authGateMode = 'signin';   // 'signin' | 'signup'
+function _authGateSyncTab(){
+  document.querySelectorAll('.auth-gate-tab').forEach(b => b.classList.toggle('on', b.dataset.authTab === _authGateMode));
+  const cta = $('#authGateSubmit');
+  if(cta) cta.textContent = _authGateMode === 'signin' ? 'Se connecter' : 'Créer mon compte';
+  const consent = $('#authGateConsentWrap');
+  if(consent) consent.hidden = _authGateMode !== 'signup';
+  const passInput = $('#authGatePass');
+  if(passInput) passInput.setAttribute('autocomplete', _authGateMode === 'signin' ? 'current-password' : 'new-password');
+  const footer = document.querySelector('.auth-gate-footer');
+  if(footer){
+    footer.innerHTML = _authGateMode === 'signin'
+      ? 'Pas encore de compte ? <a href="#" class="auth-gate-switch" data-switch-to="signup">Créez-en un ici</a>'
+      : 'Déjà un compte ? <a href="#" class="auth-gate-switch" data-switch-to="signin">Connectez-vous</a>';
+  }
+  const msg = $('#authGateMsg'); if(msg){ msg.textContent = ''; msg.className = 'auth-gate-msg'; }
+}
+function _authGateMsg(txt, ok){
+  const el = $('#authGateMsg'); if(!el) return;
+  el.textContent = txt || '';
+  el.className = 'auth-gate-msg' + (txt ? (ok ? ' ok' : ' err') : '');
+}
+document.addEventListener('click', async e => {
+  const tab = e.target.closest('.auth-gate-tab');
+  if(tab){ _authGateMode = tab.dataset.authTab; _authGateSyncTab(); return; }
+  const sw = e.target.closest('.auth-gate-switch');
+  if(sw){ e.preventDefault(); _authGateMode = sw.dataset.switchTo; _authGateSyncTab(); return; }
+  const submit = e.target.closest('#authGateSubmit');
+  if(submit){
+    const email = $('#authGateEmail')?.value.trim();
+    const pass = $('#authGatePass')?.value;
+    if(!email || !pass){ _authGateMsg('Entre un email et un mot de passe.'); return; }
+    if(_authGateMode === 'signup'){
+      const consent = $('#authGateConsent')?.checked;
+      if(!consent){ _authGateMsg('Accepte les conditions de confidentialité pour continuer.'); return; }
+      submit.disabled = true; _authGateMsg('…', true);
+      try{
+        const cur = auth.currentUser;
+        if(cur && cur.isAnonymous){ await linkWithCredential(cur, EmailAuthProvider.credential(email, pass)); _authGateMsg('Compte créé - ta liste est conservée ✓', true); }
+        else { await createUserWithEmailAndPassword(auth, email, pass); _authGateMsg('Compte créé ✓', true); }
+        $('#authGatePass').value = ''; updateAuthUI(auth.currentUser);
+      }catch(err){ _authGateMsg(authErr(err)); }
+      submit.disabled = false;
+    } else {
+      submit.disabled = true; _authGateMsg('…', true);
+      try{
+        await signInWithEmailAndPassword(auth, email, pass);
+        $('#authGatePass').value = ''; _authGateMsg('Connecté ✓', true);
+        updateAuthUI(auth.currentUser);
+      }catch(err){ _authGateMsg(authErr(err)); }
+      submit.disabled = false;
+    }
+    return;
+  }
+  const forgot = e.target.closest('#authGateForgot');
+  if(forgot){
+    const email = $('#authGateEmail')?.value.trim();
+    if(!email){ _authGateMsg('Entre ton email d\'abord.'); $('#authGateEmail')?.focus(); return; }
+    try{ await sendPasswordResetEmail(auth, email); _authGateMsg('Email de réinitialisation envoyé à ' + email, true); }
+    catch(err){ _authGateMsg(authErr(err)); }
+    return;
+  }
+});
+// Entree dans un champ auth = submit
+document.addEventListener('keydown', e => {
+  if(e.key === 'Enter' && (e.target.id === 'authGateEmail' || e.target.id === 'authGatePass')){
+    e.preventDefault();
+    $('#authGateSubmit')?.click();
+  }
+});
 $('#authSignup')?.addEventListener('click', async ()=>{
   const email=$('#authEmail').value.trim(), pass=$('#authPass').value;
   if(!email||!pass){ authMsg('Entre un email et un mot de passe.'); return; }
