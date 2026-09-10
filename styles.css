@@ -70,6 +70,9 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans);
     line-height:1.5; -webkit-font-smoothing:antialiased; }
   .wrap { max-width:1560px; margin:0 auto; padding:28px 24px 80px; }
+  /* Bloque le scroll de la page quand la fiche espece est ouverte. La molette n'affecte
+     que le contenu de la fiche, peu importe la position de la souris. */
+  body.species-modal-open { overflow:hidden; }
 
   /* ---------- header ---------- */
   header.top { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; flex-wrap:wrap; }

@@ -10383,6 +10383,8 @@ function openSpeciesModal(sci){
     <a href="${xcUrl}" target="_blank" rel="noopener">🎵 xeno-canto</a>
   `;
   modal.hidden = false;
+  // Bloque le scroll de la page en arriere-plan quand la fiche est ouverte.
+  document.body.classList.add('species-modal-open');
 }
 // Instance Leaflet dediee a la fiche espece + etat associe.
 let _smMapInstance = null, _smMapLayer = null;
@@ -10985,6 +10987,8 @@ document.addEventListener('change', e=>{
 function closeSpeciesModal(){
   const modal = $('#speciesModal'); if(!modal) return;
   modal.hidden = true;
+  // Restore scroll de la page en arriere-plan.
+  document.body.classList.remove('species-modal-open');
   // Pause + purge tous les audios du registre (evite les accumulations entre fiches).
   if(typeof _xaAudios !== 'undefined'){
     for(const a of _xaAudios){ try{ a.pause(); a.src = ''; }catch(_){} }
