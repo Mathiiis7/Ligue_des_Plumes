@@ -435,7 +435,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .auth-msg.ok { color:var(--accent-ink); }
   .auth-msg.err { color:#c0392b; }
   .auth-info-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:4px; font-size:14px; color:var(--ink-2); }
-  .chat-box { display:flex; flex-direction:column; gap:8px; height:min(58vh,520px); overflow-y:auto;
+  .chat-box { display:flex; flex-direction:column; gap:8px; height:min(70vh,650px); overflow-y:auto;
     padding:14px; background:var(--surface-2); border:1px solid var(--line); border-radius:14px; margin-top:10px; }
   .chat-empty { margin:auto; color:var(--ink-3); font-size:14px; }
   .msg { max-width:78%; align-self:flex-start; }

@@ -35,7 +35,7 @@
 <!-- Preload le module principal : le browser commence le fetch de app.js des le premier
      scan du <head>, en parallele du parsing HTML, au lieu d'attendre le <script> tout en
      bas (~1000 lignes plus loin). Gain ~200-400ms sur 3G/4G. -->
-<link rel="modulepreload" href="app.js?v=40">
+<link rel="modulepreload" href="app.js?v=41">
 <!-- Preload aussi le CSS principal (deja bloquant mais explicite ici). -->
 <link rel="preload" href="styles.css" as="style">
 <!-- Preconnect anticipe l'ouverture TCP+TLS vers les CDN critiques (Leaflet, Firebase, iNat, xeno-canto). -->
@@ -135,7 +135,7 @@
     #viewChat.fab-open, #viewPhotos.fab-open, #viewFeed.fab-open {
       display:block !important; position:fixed;
       right:20px; bottom:92px;
-      width:min(440px, calc(100vw - 40px)); max-height:min(680px, calc(100vh - 120px));
+      width:min(440px, calc(100vw - 40px)); max-height:min(820px, calc(100vh - 100px));
       overflow-y:auto; overflow-x:hidden;
       background:var(--surface); border:1px solid var(--line); border-radius:16px;
       box-shadow:0 12px 40px rgba(0,0,0,.3);
@@ -149,7 +149,7 @@
     @media (max-width:600px){
       #fabStack { right:14px; bottom:14px; }
       #fabChat, #fabPhotos, #fabFeed { width:50px; height:50px; font-size:20px; }
-      #viewChat.fab-open, #viewPhotos.fab-open, #viewFeed.fab-open { right:10px; left:10px; bottom:80px; width:auto; max-height:80vh; }
+      #viewChat.fab-open, #viewPhotos.fab-open, #viewFeed.fab-open { right:10px; left:10px; bottom:80px; width:auto; max-height:88vh; }
     }
   </style>
 
@@ -1099,4 +1099,4 @@
   </footer>
 </div>
 
-<script type="module" src="app.js?v=40"></script>
+<script type="module" src="app.js?v=41"></script>
