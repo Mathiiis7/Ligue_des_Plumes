@@ -2610,6 +2610,9 @@ function subscribe(){
     renderResults();
   }, ()=>{});
   if(unsubChat){ unsubChat(); unsubChat=null; }
+  // Charge la taxonomie (code eBird -> sci) en fond pour resoudre les nom FR
+  // sur les liens eBird colles dans le chat.
+  if(!_taxMap) _loadTaxonomy().catch(()=>{});
   unsubChat = onSnapshot(query(collection(db,'leagues',leagueId,'chat'), orderBy('createdAt','desc'), limit(200)),
     snap=>{ const msgs=[]; snap.forEach(d=>msgs.push({id:d.id, ...d.data()})); msgs.reverse(); renderChat(msgs);
       chatLatest=msgs.reduce((m,x)=>Math.max(m, x.createdAt&&x.createdAt.toMillis?x.createdAt.toMillis():0),0); updateTabDots(); },
@@ -2727,8 +2730,21 @@ function renderOnline(){
     : `<span class="online-dot off"></span> Personne en ligne pour le moment`;
 }
 function isOnline(uid){ return onlineMap.has(uid); }
+// Helpers : resout un nom francais depuis un code eBird ou un slug XC "Genus-species".
+function _codeToFrName(code){
+  if(!code || !_taxMap) return null;
+  const sci = _taxMap[code];
+  if(!sci) return null;
+  return FR_NAMES[sci.toLowerCase()] || null;
+}
+function _xcSlugToFrName(slug){
+  if(!slug) return null;
+  // slug ex: "Turdus-merula" -> "turdus merula"
+  const sci = slug.replace(/-/g, ' ').toLowerCase();
+  return FR_NAMES[sci] || null;
+}
 // Autolink URLs dans le texte (deja escape). Repere http(s):// et wrap en <a>.
-// Special : Wikipedia (fr/en) et YouTube -> chip enrichi.
+// Special : Wikipedia, YouTube (+thumbnail), eBird (+nom FR), Xeno-Canto (+nom FR).
 function _autoLink(escText){
   return escText.replace(/(https?:\/\/[^\s<]+)/g, url => {
     // Detection Wikipedia : extraire le titre de l'article
@@ -2736,23 +2752,32 @@ function _autoLink(escText){
     if(wpMatch){
       const lang = wpMatch[1].toUpperCase();
       const title = decodeURIComponent(wpMatch[2]).replace(/_/g, ' ');
-      return `<a class="msg-link msg-link-wp" href="${url}" target="_blank" rel="noopener" title="Wikipedia ${lang}"><span class="msg-link-icon">📖</span> ${esc(title)} <span class="msg-link-src">Wikipedia ${lang}</span></a>`;
+      return `<a class="msg-link msg-link-wp" href="${url}" target="_blank" rel="noopener" title="Wikipedia ${lang}"><span class="msg-link-icon">📖</span> <span class="msg-link-title">${esc(title)}</span> <span class="msg-link-src">Wikipedia ${lang}</span></a>`;
     }
-    // Detection YouTube
+    // Detection YouTube : ajoute la miniature du video (i.ytimg.com)
     const ytMatch = url.match(/^https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
     if(ytMatch){
       const vid = ytMatch[1];
       const thumb = `https://i.ytimg.com/vi/${vid}/mqdefault.jpg`;
-      return `<a class="msg-link msg-link-yt" href="${url}" target="_blank" rel="noopener" title="YouTube"><span class="msg-link-icon">▶️</span> Vidéo YouTube <span class="msg-link-src">youtube.com</span></a>`;
+      return `<a class="msg-link msg-link-yt msg-link-media" href="${url}" target="_blank" rel="noopener" title="YouTube"><img class="msg-link-thumb" src="${thumb}" alt="miniature YouTube" loading="lazy"><span class="msg-link-body"><span class="msg-link-title">▶️ Vidéo YouTube</span> <span class="msg-link-src">youtube.com/${esc(vid)}</span></span></a>`;
     }
-    // Detection eBird
+    // Detection eBird : essaie de resoudre le nom francais depuis le code
     const ebMatch = url.match(/^https?:\/\/ebird\.org\/species\/([A-Za-z0-9-]+)/);
     if(ebMatch){
-      return `<a class="msg-link msg-link-eb" href="${url}" target="_blank" rel="noopener" title="eBird"><span class="msg-link-icon">🐦</span> ${esc(ebMatch[1])} <span class="msg-link-src">eBird</span></a>`;
+      const code = ebMatch[1];
+      const frNm = _codeToFrName(code);
+      const label = frNm || code;
+      return `<a class="msg-link msg-link-eb" href="${url}" target="_blank" rel="noopener" title="eBird"><span class="msg-link-icon">🐦</span> <span class="msg-link-title">${esc(label)}</span> <span class="msg-link-src">eBird</span></a>`;
     }
-    // Detection Xeno-Canto
+    // Detection Xeno-Canto : extrait le slug espece "Genus-species" et cherche le nom FR
+    const xcMatch = url.match(/^https?:\/\/(?:www\.)?xeno-canto\.org\/species\/([A-Za-z-]+)/);
+    if(xcMatch){
+      const slug = xcMatch[1];
+      const frNm = _xcSlugToFrName(slug) || slug.replace(/-/g, ' ');
+      return `<a class="msg-link msg-link-xc" href="${url}" target="_blank" rel="noopener" title="Xeno-Canto"><span class="msg-link-icon">🎵</span> <span class="msg-link-title">${esc(frNm)}</span> <span class="msg-link-src">xeno-canto.org</span></a>`;
+    }
     if(/xeno-canto\.org/.test(url)){
-      return `<a class="msg-link msg-link-xc" href="${url}" target="_blank" rel="noopener" title="Xeno-Canto"><span class="msg-link-icon">🎵</span> Chant d'oiseau <span class="msg-link-src">xeno-canto.org</span></a>`;
+      return `<a class="msg-link msg-link-xc" href="${url}" target="_blank" rel="noopener" title="Xeno-Canto"><span class="msg-link-icon">🎵</span> <span class="msg-link-title">Xeno-Canto</span> <span class="msg-link-src">xeno-canto.org</span></a>`;
     }
     // Fallback : lien generique
     const short = url.length > 50 ? url.slice(0, 47) + '…' : url;

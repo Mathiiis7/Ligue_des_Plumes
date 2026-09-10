@@ -485,13 +485,21 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
     display:inline-flex; align-items:center; gap:6px; padding:4px 10px; margin:2px 0;
     background:var(--surface-2); border:1px solid var(--line-2); border-radius:10px;
     color:var(--ink); text-decoration:none; font-size:13px; word-break:normal;
+    max-width:100%;
   }
   .msg-link-wp:hover, .msg-link-yt:hover, .msg-link-eb:hover, .msg-link-xc:hover {
     border-color:var(--accent); background:color-mix(in srgb, var(--accent) 8%, var(--surface));
     text-decoration:none;
   }
   .msg-link-icon { font-size:14px; flex:0 0 auto; }
-  .msg-link-src { font-size:10.5px; color:var(--ink-3); font-weight:600; text-transform:uppercase; letter-spacing:.03em; margin-left:auto; }
+  .msg-link-title { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .msg-link-src { font-size:10.5px; color:var(--ink-3); font-weight:600; text-transform:uppercase; letter-spacing:.03em; margin-left:auto; flex:0 0 auto; }
+  /* Chip enrichi avec miniature (YouTube) : image a gauche + body texte a droite */
+  .msg-link-media { display:flex; padding:0; overflow:hidden; align-items:stretch; }
+  .msg-link-thumb { width:96px; height:54px; object-fit:cover; flex:0 0 auto; display:block; background:var(--surface-2); }
+  .msg-link-body { display:flex; flex-direction:column; gap:2px; padding:8px 12px; min-width:0; flex:1; justify-content:center; }
+  .msg-link-body .msg-link-title { font-weight:600; }
+  .msg-link-body .msg-link-src { margin-left:0; text-align:left; text-transform:none; letter-spacing:0; font-size:11px; }
   /* Barres au-dessus du form d'envoi : reply / edit */
   .chat-reply-bar { background:var(--surface-2); border:1px solid var(--line-2); border-left:3px solid var(--accent);
     border-radius:8px; margin:10px 0 0; padding:6px 8px 6px 10px; }
