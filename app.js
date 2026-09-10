@@ -7361,7 +7361,7 @@ async function _loadFrozenPhotos(){
   if(_frozenPhotosPromise) return _frozenPhotosPromise;
   _frozenPhotosPromise = (async () => {
     try{
-      const r = await fetch('data/frozen-photos.json?v=1');
+      const r = await fetch('data/frozen-photos.json?v=2');
       _frozenPhotos = r.ok ? await r.json() : {};
     }catch(_){ _frozenPhotos = {}; }
     return _frozenPhotos;
