@@ -207,6 +207,9 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .btn.ghost:hover { border-color:var(--accent); }
   .btn.tiny { padding:5px 10px; font-size:12.5px; }
   .intake-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; align-items:center; }
+  /* Cache le container quand le status est vide (evite l'espace vertical inutile
+     entre la drop zone et le bouton "Retirer ma liste"). */
+  .intake-actions:has(#myStatus:empty) { display:none; }
   .help { font-size:12.5px; color:var(--ink-3); margin-top:14px; line-height:1.55; }
   .help b { color:var(--ink-2); font-weight:600; }
 
