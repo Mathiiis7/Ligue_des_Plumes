@@ -35,7 +35,7 @@
 <!-- Preload le module principal : le browser commence le fetch de app.js des le premier
      scan du <head>, en parallele du parsing HTML, au lieu d'attendre le <script> tout en
      bas (~1000 lignes plus loin). Gain ~200-400ms sur 3G/4G. -->
-<link rel="modulepreload" href="app.js?v=53">
+<link rel="modulepreload" href="app.js?v=54">
 <!-- Preload aussi le CSS principal (deja bloquant mais explicite ici). -->
 <link rel="preload" href="styles.css" as="style">
 <!-- Preconnect anticipe l'ouverture TCP+TLS vers les CDN critiques (Leaflet, Firebase, iNat, xeno-canto). -->
@@ -677,6 +677,7 @@
       </div>
       <div class="chat-online" id="chatOnline"></div>
       <div class="chat-box" id="chatMessages"><div class="chat-empty">Chargement…</div></div>
+      <div class="chat-typing-hint" id="chatTypingHint" hidden></div>
       <div class="chat-preview" id="chatPreview" style="display:none;">
         <img id="chatPreviewImg" alt="aperçu">
         <button type="button" id="chatPreviewRemove" title="Retirer l'image">✕</button>
@@ -1127,4 +1128,4 @@
   </footer>
 </div>
 
-<script type="module" src="app.js?v=53"></script>
+<script type="module" src="app.js?v=54"></script>

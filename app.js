@@ -27,6 +27,8 @@ const state = { people: [], onlySpecies: true, sort:'rarity',
 let lastFamKey = '', lastTierKey = '', lastPlayerKey = '', lastCountryKey = '';
 let myUid = null, leagueId = null, unsub = null, unsubLeague = null, iAmInLeague = false;
 let unsubChat = null, lastChatMsgs = [];
+let unsubTyping = null, typingMap = new Map(), _typingSelfTimer = null;
+let _chatLimit = 200;
 let unsubPresence = null, onlineMap = new Map(), presenceTimer = null, presenceWired = false;
 let unsubVotes = null, votesMap = new Map(), unsubFavs = null;
 let unsubReactions = null, reactionsMap = new Map(), unsubPhotos = null, photos = [];
@@ -2613,10 +2615,20 @@ function subscribe(){
   // Charge la taxonomie (code eBird -> sci) en fond pour resoudre les nom FR
   // sur les liens eBird colles dans le chat.
   if(!_taxMap) _loadTaxonomy().catch(()=>{});
-  unsubChat = onSnapshot(query(collection(db,'leagues',leagueId,'chat'), orderBy('createdAt','desc'), limit(200)),
-    snap=>{ const msgs=[]; snap.forEach(d=>msgs.push({id:d.id, ...d.data()})); msgs.reverse(); renderChat(msgs);
-      chatLatest=msgs.reduce((m,x)=>Math.max(m, x.createdAt&&x.createdAt.toMillis?x.createdAt.toMillis():0),0); updateTabDots(); },
-    err=>{ console.error(err); const box=$('#chatMessages'); if(box) box.innerHTML='<div class="chat-empty">Le tchat n\'est pas encore activé (règles Firebase).</div>'; });
+  _chatLimit = 200;   // pagination : "charger 100 plus anciens" incremente
+  _subscribeChatWithLimit();
+  // Subscribe typing indicator collection : chaque user a un doc updatedAt
+  if(unsubTyping){ unsubTyping(); unsubTyping=null; }
+  unsubTyping = onSnapshot(collection(db,'leagues',leagueId,'typing'), snap => {
+    const now = Date.now();
+    typingMap.clear();
+    snap.forEach(d => {
+      const v = d.data() || {};
+      const t = v.updatedAt?.toMillis?.() || 0;
+      if(now - t < 6000 && d.id !== myUid) typingMap.set(d.id, v.name || 'Invité');
+    });
+    _renderTypingIndicator();
+  }, ()=>{});
   subscribePresence();
   startPresence();
   if(unsubVotes){ unsubVotes(); unsubVotes=null; }
@@ -2794,7 +2806,15 @@ function renderChat(msgs){
   if(!msgs.length){ box.innerHTML='<div class="chat-empty">Aucun message. Lancez la conversation ! 🐦</div>'; return; }
   const now = Date.now();
   const EDIT_WINDOW_MS = 5 * 60 * 1000;   // 5 min pour editer son propre message
-  box.innerHTML = msgs.map(m=>{
+  // Load more en haut : visible si on a atteint la limite courante (potentiellement plus dispo)
+  const loadMoreBtn = msgs.length >= _chatLimit && _chatLimit < 1000
+    ? `<button type="button" class="chat-load-more" id="chatLoadMore">↑ Charger 100 messages plus anciens</button>`
+    : '';
+  // Detecte les messages qui mentionnent l'utilisateur courant (pour surligner la bulle)
+  const myName = myMemberName();
+  const myFirstName = (myName||'').split(/\s+/)[0];
+  const normName = (myFirstName||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,'');
+  box.innerHTML = loadMoreBtn + msgs.map(m=>{
     const mine = m.uid===myUid;
     const authoritative = byId.get(m.uid);
     const nm = authoritative || (m.name||'Invité');
@@ -2824,13 +2844,15 @@ function renderChat(msgs){
     }
     // "(modifié)" si editedAt existe
     const editedTag = m.editedAt ? ' <span class="msg-edited" title="Message modifié">(modifié)</span>' : '';
+    // Detecte @moi dans le texte : met en highlight la bulle
+    const mentionsMe = normName && m.text && new RegExp('@' + normName + '\\b', 'i').test((m.text||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^@a-z0-9]/g,''));
     // Actions : Répondre (tous), Éditer (mine + <5min + texte seul), Supprimer (mine OU admin)
     const canEdit = mine && t && (now - t.getTime() < EDIT_WINDOW_MS) && !safeImg && !safeVoice && !safeGif;
     const canDelete = mine || isAdmin();
     const replyBtn = `<button class="msg-act msg-reply" data-id="${esc(m.id)}" title="Répondre">↪</button>`;
     const editBtn = canEdit ? `<button class="msg-act msg-edit" data-id="${esc(m.id)}" title="Éditer">✏️</button>` : '';
     const delBtn = canDelete ? `<button class="msg-act msg-del" data-id="${esc(m.id)}" title="Supprimer">🗑️</button>` : '';
-    return `<div class="msg${mine?' mine':''}" data-msg-id="${esc(m.id)}">
+    return `<div class="msg${mine?' mine':''}${mentionsMe?' mentions-me':''}" data-msg-id="${esc(m.id)}">
       <div class="msg-name">${esc(nm)}${guestTag}${statusTag}</div>
       <div class="msg-bubble${emojiOnly?' emoji-only':''}">${replyHtml}${imgHtml}${voiceHtml}${gifHtml}${txtHtml}</div>
       ${reactionBar('chat:'+m.id)}
@@ -7111,8 +7133,12 @@ document.addEventListener('click', e => {
   const m = document.getElementById('hamburgerMenu');
   if(m && !m.hidden && !e.target.closest('#hamburgerMenu')) m.hidden = true;
   // Click sur backdrop ou hors panneau : ferme le panneau flottant.
+  // On NE ferme PAS si le click est dans les popups liees (emoji / gif / country pickers /
+  // fiche espece) car ce sont des UI enfants qui s'ouvrent AU-DESSUS du panneau et leur
+  // click ne doit pas etre interprete comme "hors panneau".
   const bd = document.getElementById('fabBackdrop');
-  if(bd && !bd.hidden && (e.target === bd || (!e.target.closest('#viewChat.fab-open') && !e.target.closest('#viewPhotos.fab-open') && !e.target.closest('#viewFeed.fab-open') && !e.target.closest('#fabStack')))){
+  const inPopup = e.target.closest('#emojiPop') || e.target.closest('#gifPop') || e.target.closest('.cp-modal-backdrop') || e.target.closest('#imgModal') || e.target.closest('#speciesModal');
+  if(bd && !bd.hidden && !inPopup && (e.target === bd || (!e.target.closest('#viewChat.fab-open') && !e.target.closest('#viewPhotos.fab-open') && !e.target.closest('#viewFeed.fab-open') && !e.target.closest('#fabStack')))){
     _closeFabPanel();
   }
 });
@@ -7212,6 +7238,7 @@ $('#chatImgInput')?.addEventListener('change', async e=>{
 });
 $('#chatPreviewRemove')?.addEventListener('click', ()=>{ pendingImage=null; $('#chatPreview').style.display='none'; $('#chatPreviewImg').src=''; });
 $('#chatName')?.addEventListener('change',e=>{ localStorage.setItem('mb-chatname', e.target.value.trim()); });
+$('#chatText')?.addEventListener('input', () => { _typingBeat(); });
 // ============ GIF PICKER (Giphy) ============
 // Cle SDK gratuite. Rate limit dev ~100 req/h, largement suffisant pour un chat.
 const GIPHY_KEY = 'sXehu3Jemp8Ubq0Asz9CXC5uGJVhd1qS';
@@ -7361,6 +7388,46 @@ document.addEventListener('click', e => {
     return;
   }
 });
+// Subscribe au chat avec une limite dynamique (pour pagination "charger plus").
+function _subscribeChatWithLimit(){
+  if(unsubChat){ unsubChat(); unsubChat=null; }
+  unsubChat = onSnapshot(query(collection(db,'leagues',leagueId,'chat'), orderBy('createdAt','desc'), limit(_chatLimit)),
+    snap=>{ const msgs=[]; snap.forEach(d=>msgs.push({id:d.id, ...d.data()})); msgs.reverse(); renderChat(msgs);
+      chatLatest=msgs.reduce((m,x)=>Math.max(m, x.createdAt&&x.createdAt.toMillis?x.createdAt.toMillis():0),0); updateTabDots(); },
+    err=>{ console.error(err); const box=$('#chatMessages'); if(box) box.innerHTML='<div class="chat-empty">Le tchat n\'est pas encore activé (règles Firebase).</div>'; });
+}
+function _loadMoreChat(){
+  _chatLimit = Math.min(_chatLimit + 100, 1000);
+  _subscribeChatWithLimit();
+}
+// Rend l'indicateur "X écrit…" sous la liste de messages
+function _renderTypingIndicator(){
+  const el = $('#chatTypingHint');
+  if(!el) return;
+  const names = [...typingMap.values()];
+  if(!names.length){ el.hidden = true; el.textContent = ''; return; }
+  el.hidden = false;
+  const label = names.length === 1
+    ? `${names[0]} écrit…`
+    : names.length === 2
+      ? `${names[0]} et ${names[1]} écrivent…`
+      : `${names.length} personnes écrivent…`;
+  el.textContent = '⌨ ' + label;
+}
+// Beat "j'ecris" : ecrit le doc typing/{uid} avec auto-cleanup 5s.
+let _typingActive = false;
+function _typingBeat(){
+  if(!myUid || !leagueId) return;
+  const nm = myMemberName() || $('#chatName')?.value.trim() || 'Invité';
+  setDoc(doc(db,'leagues',leagueId,'typing',myUid), { name:nm, updatedAt:serverTimestamp() }, {merge:true}).catch(()=>{});
+  _typingActive = true;
+  clearTimeout(_typingSelfTimer);
+  _typingSelfTimer = setTimeout(() => {
+    if(!_typingActive) return;
+    _typingActive = false;
+    deleteDoc(doc(db,'leagues',leagueId,'typing',myUid)).catch(()=>{});
+  }, 5000);
+}
 // Etat de reponse : quand set, on cite le message dans le compose puis dans le payload envoye.
 let _replyingTo = null;
 function _setReplyingTo(target){
@@ -7433,6 +7500,8 @@ $('#chatForm')?.addEventListener('submit',async e=>{
   const img=pendingImage;
   const voice = pendingVoiceB64;
   const gif = pendingGif ? pendingGif.url : null;
+  // Cleanup indicateur "j'ecris" (envoi = j'ai fini d'ecrire)
+  if(_typingActive){ _typingActive = false; clearTimeout(_typingSelfTimer); deleteDoc(doc(db,'leagues',leagueId,'typing',myUid)).catch(()=>{}); }
   $('#chatText').value=''; pendingImage=null; pendingVoiceB64=null; pendingGif=null;
   $('#chatPreview').style.display='none'; $('#chatPreviewImg').src='';
   const vp = $('#chatVoicePreview'); if(vp){ vp.hidden=true; vp.innerHTML=''; }
@@ -7448,6 +7517,7 @@ $('#chatForm')?.addEventListener('submit',async e=>{
   catch(err){ $('#chatText').value=text; if(img){ pendingImage=img; $('#chatPreviewImg').src=img; $('#chatPreview').style.display=''; } if(replyStore) _setReplyingTo(replyStore); showError(err); }
 });
 $('#chatMessages')?.addEventListener('click', async e=>{
+  const loadMore = e.target.closest('#chatLoadMore'); if(loadMore){ _loadMoreChat(); return; }
   const chip=e.target.closest('.react-chip'); if(chip){ toggleReaction(chip.dataset.target, chip.dataset.emoji); return; }
   const addb=e.target.closest('.react-add'); if(addb){ openEmojiPop({type:'react', target:addb.dataset.target}); return; }
   const repBtn=e.target.closest('.msg-reply');
