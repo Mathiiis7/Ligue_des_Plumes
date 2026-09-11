@@ -1824,7 +1824,13 @@ function renderMatrix({universe,N}){
   // Skip precoce si la matrix n'a pas change depuis le dernier rendu (voir _matrixHash).
   // Firestore live updates (chat, presence, votes...) declenchent renderResults souvent
   // sans que la data matrix bouge -> gain ~90ms par skip.
-  const filtersKey = `${state.boardMode||''}|${state.showMissing?1:0}|${state.family||''}|${state.q||''}|${state.sort||''}`;
+  // NB : le hash doit inclure state.playerMain + state.playerCompareSet + state.tierExcl +
+  // state.countryExcl + state.showSci sinon un clic dans les filtres change le state mais
+  // renderMatrix skip et l'utilisateur ne voit rien bouger (ni chips, ni table).
+  const cmpFilterKey = state.playerCompareSet ? [...state.playerCompareSet].sort().join(',') : '';
+  const tierFilterKey = state.tierExcl ? [...state.tierExcl].sort().join(',') : '';
+  const coFilterKey = state.countryExcl ? [...state.countryExcl].sort().join(',') : '';
+  const filtersKey = `${state.boardMode||''}|${state.showMissing?1:0}|${state.family||''}|${state.q||''}|${state.sort||''}|${state.playerMain||''}|${cmpFilterKey}|${tierFilterKey}|${coFilterKey}|${state.showSci?1:0}`;
   const hash = _matrixHash(universe, N, filtersKey);
   if(hash === _matrixLastHash){
     // Skip mais on met quand meme _matrixUniverse a jour (defensif) via un compute leger.
@@ -11267,10 +11273,20 @@ $('#playerMainChips')?.addEventListener('click', e=>{
   const b = e.target.closest('button[data-player]'); if(!b) return;
   const uid = b.dataset.player;
   state.playerMain = (state.playerMain === uid) ? '' : uid;
-  // Coherence : si le nouveau main etait deja coche en compare, on le retire du Set
-  // (il apparaitra deja en 1ere colonne comme reference, doublon inutile).
+  // Coherence : si le nouveau main etait deja coche en compare, on le retire du Set.
   if(state.playerMain) state.playerCompareSet.delete(state.playerMain);
-  lastPlayerKey = '';   // force la ré-écriture des deux groupes de chips
+  // Update chip visuals immediately (mirror compare's DOM-first approach). Autrefois on
+  // reposait sur renderResults + lastPlayerKey='' pour re-generer les chips, mais le
+  // check plKey!==lastPlayerKey pouvait skipper la re-generation dans certains cas ->
+  // le clic semblait sans effet. Ici on garantit le feedback visuel synchrone.
+  const boxMain = e.currentTarget;
+  for(const el of boxMain.querySelectorAll('button.person-chip')){
+    const active = (state.playerMain === el.dataset.player);
+    el.classList.toggle('on', active);
+    el.classList.toggle('main', active);
+  }
+  // Re-render aussi le panel compare (le main y est masque) et le tableau.
+  lastPlayerKey = '';
   renderResults();
 });
 // Chips "à comparer" : toggle du Set state.playerCompareSet.
