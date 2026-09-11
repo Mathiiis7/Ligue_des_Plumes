@@ -158,8 +158,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
      double bordure (carré blanc + rectangle arrondi interne). On zoome ~13% pour cropper
      les marges et n'afficher que l'artwork jusqu'au bord du badge. */
   .mark img.mark-emoji,
-  .mark img#logoImg { position:absolute; inset:-3px; width:calc(100% + 6px); height:calc(100% + 6px);
-    object-fit:contain; }
+  .mark img#logoImg { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; }
   /* Cas custom : photo uploadee par l'user -> zoom desactive (on veut voir sa photo entiere). */
   .mark.has-custom-logo img#logoImg { inset:0; width:100%; height:100%; object-fit:cover; border-radius:13px; }
   .mark .edit-hint { position:absolute; inset:0; display:grid; place-items:center; border-radius:13px;
