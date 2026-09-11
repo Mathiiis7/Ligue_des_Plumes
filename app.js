@@ -1918,7 +1918,15 @@ function renderMatrix({universe,N}){
     const boxMain=$('#playerMainChips'), boxCmp=$('#playerCompareChips');
     const chipHtml = (p, on, extraCls) => `<button type="button" class="person-chip${on?' on':''}${extraCls||''}" data-player="${esc(p.id)}" style="--series:var(--s${p.si})"><span class="dot"></span>${esc(p.name)}${p.isMe?' (vous)':''}</button>`;
     if(boxMain) boxMain.innerHTML = state.people.map(p=>chipHtml(p, state.playerMain===p.id, state.playerMain===p.id?' main':'')).join('');
-    if(boxCmp)  boxCmp.innerHTML  = state.people.map(p=>chipHtml(p, state.playerCompareSet.has(p.id))).join('');
+    // Panel « À comparer » : on masque la personne deja selectionnee comme principale
+    // (se comparer a soi-meme n'a pas de sens). Message vide si la principale est le
+    // seul joueur du groupe.
+    if(boxCmp){
+      const cmpPeople = state.people.filter(p => p.id !== state.playerMain);
+      boxCmp.innerHTML = cmpPeople.length
+        ? cmpPeople.map(p=>chipHtml(p, state.playerCompareSet.has(p.id))).join('')
+        : '<div class="fp-empty" style="color:var(--ink-3);font-size:13px;font-style:italic;padding:6px 2px;">Aucun autre joueur à comparer.</div>';
+    }
   }
 
   // remplit le menu des pays où des obs ont été faites (France + étranger)
@@ -11259,6 +11267,9 @@ $('#playerMainChips')?.addEventListener('click', e=>{
   const b = e.target.closest('button[data-player]'); if(!b) return;
   const uid = b.dataset.player;
   state.playerMain = (state.playerMain === uid) ? '' : uid;
+  // Coherence : si le nouveau main etait deja coche en compare, on le retire du Set
+  // (il apparaitra deja en 1ere colonne comme reference, doublon inutile).
+  if(state.playerMain) state.playerCompareSet.delete(state.playerMain);
   lastPlayerKey = '';   // force la ré-écriture des deux groupes de chips
   renderResults();
 });
