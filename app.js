@@ -10386,17 +10386,18 @@ function openSpeciesModal(sci){
   modal.hidden = false;
   // Bloque le scroll de la page en arriere-plan quand la fiche est ouverte.
   document.body.classList.add('species-modal-open');
-  // Redirige la molette vers la sm-scroll interne, meme si la souris est
-  // au-dessus du backdrop (cotes). Sinon la molette hors box ne fait rien.
+  // Redirige la molette vers la sm-scroll interne partout dans le modal (fiche + backdrop),
+  // avec un multiplicateur qui matche la vitesse native (sinon manuel scrollTop += deltaY
+  // sans acceleration navigateur = perceptu comme plus lent que quand on est sur la fiche).
   if(!modal._wheelRedirect){
     modal._wheelRedirect = e => {
       const box = modal.querySelector('.sm-scroll');
       if(!box) return;
-      // Si le curseur est deja dans un element scrollable de la fiche, on laisse
-      // le navigateur gerer nativement.
-      if(e.target.closest('.sm-scroll, .sm-map, audio, .sm-panel[data-sm-panel=map]')) return;
+      // Laisser le natif gerer sur la carte Leaflet et audio (zoom map, controles).
+      if(e.target.closest('.sm-map, audio, .sm-panel[data-sm-panel=map]')) return;
       e.preventDefault();
-      box.scrollTop += e.deltaY;
+      // Facteur 2 : compense l'absence d'acceleration/momentum sur scrollTop manuel.
+      box.scrollTop += e.deltaY * 2;
     };
     modal.addEventListener('wheel', modal._wheelRedirect, { passive: false });
   }
