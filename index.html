@@ -27,15 +27,15 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Ligue Plumes">
+<meta name="apple-mobile-web-app-title" content="BirdyLeague">
 <link rel="apple-touch-icon" href="assets/logos/huppe.svg">
 <link rel="icon" href="assets/logos/huppe.svg">
-<title>Ligue Merlin Bird</title>
+<title>BirdyLeague</title>
 <!-- Leaflet (carte OpenStreetMap) -->
 <!-- Preload le module principal : le browser commence le fetch de app.js des le premier
      scan du <head>, en parallele du parsing HTML, au lieu d'attendre le <script> tout en
      bas (~1000 lignes plus loin). Gain ~200-400ms sur 3G/4G. -->
-<link rel="modulepreload" href="app.js?v=87">
+<link rel="modulepreload" href="app.js?v=88">
 <!-- Preload aussi le CSS principal (deja bloquant mais explicite ici). -->
 <link rel="preload" href="styles.css" as="style">
 <!-- Preconnect anticipe l'ouverture TCP+TLS vers les CDN critiques (Leaflet, Firebase, iNat, xeno-canto). -->
@@ -66,7 +66,7 @@
 
 <!-- Splash pendant que Firebase resout l'etat auth (evite le flash de l'ecran de connexion) -->
 <div id="authSplash" class="auth-splash">
-  <img class="auth-splash-logo" src="assets/logos/huppe.svg" alt="Ligue Merlin Bird">
+  <img class="auth-splash-logo" src="assets/logos/huppe.svg" alt="BirdyLeague">
 </div>
 
 <div id="authGate" class="auth-gate">
@@ -78,8 +78,8 @@
   </div>
   <div class="auth-gate-card">
     <div class="auth-gate-brand">
-      <img class="auth-gate-logo" src="assets/logos/huppe.svg" alt="Ligue Merlin Bird">
-      <h1>Ligue Merlin Bird</h1>
+      <img class="auth-gate-logo" src="assets/logos/huppe.svg" alt="BirdyLeague">
+      <h1>BirdyLeague</h1>
       <p class="auth-gate-tag">Comparez vos life lists entre birders</p>
     </div>
     <div class="auth-gate-tabs" role="tablist">
@@ -110,13 +110,13 @@
   <header class="top">
     <div class="brand">
       <div class="mark" id="logoMark" title="Cliquez pour choisir votre logo">
-        <img class="mark-emoji" src="assets/logos/huppe.svg" alt="Ligue Merlin Bird">
+        <img class="mark-emoji" src="assets/logos/huppe.svg" alt="BirdyLeague">
         <img id="logoImg" alt="Logo" hidden>
         <span class="edit-hint">✎</span>
       </div>
       <input type="file" id="logoFile" accept="image/*" hidden>
       <div>
-        <h1>Ligue Merlin Bird</h1>
+        <h1>BirdyLeague</h1>
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:8px; margin-left:auto;">
@@ -914,7 +914,7 @@
   <div id="viewAbout" style="display:none;">
     <section class="panel" style="padding:24px; margin-top:22px; max-width:900px;">
       <div class="section-head">
-        <div><div class="eyebrow">Documentation</div><h2>ℹ️ À propos de la Ligue des Plumes</h2>
+        <div><div class="eyebrow">Documentation</div><h2>ℹ️ À propos de BirdyLeague</h2>
           <p class="help" style="margin-top:2px;">Comment ça marche, d'où viennent les données, comment lire les indicateurs.</p></div>
       </div>
       <div class="about-body" style="font-size:14px; line-height:1.6; color:var(--ink); margin-top:16px;">
@@ -1226,9 +1226,9 @@
   </div>
 
   <footer>
-    Ligue Merlin Bird · rareté calculée au sein de votre groupe · données <b>Merlin / eBird / eBird Status &amp; Trends</b>, propriété du Cornell Lab of Ornithology.<br>
+    BirdyLeague · rareté calculée au sein de votre groupe · données <b>Merlin / eBird / eBird Status &amp; Trends</b>, propriété du Cornell Lab of Ornithology.<br>
     Connexion anonyme · vos listes ne sont partagées qu'au sein de la ligue.
   </footer>
 </div>
 
-<script type="module" src="app.js?v=87"></script>
+<script type="module" src="app.js?v=88"></script>

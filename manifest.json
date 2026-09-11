@@ -1,6 +1,6 @@
 {
-  "name": "Ligue Merlin Bird",
-  "short_name": "Ligue Plumes",
+  "name": "BirdyLeague",
+  "short_name": "BirdyLeague",
   "description": "Comparez vos listes d'oiseaux eBird entre amis.",
   "start_url": "./",
   "scope": "./",
