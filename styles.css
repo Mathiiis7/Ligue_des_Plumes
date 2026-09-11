@@ -109,26 +109,26 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
     .auth-bird-4 { width:110px; height:110px; }
   }
   @keyframes auth-float { 0%,100% { transform:translateY(0) rotate(-3deg); } 50% { transform:translateY(-16px) rotate(4deg); } }
-  .auth-gate-card { position:relative; background:var(--surface); border:1px solid var(--line-2); border-radius:20px;
-    width:min(440px, 100%); padding:32px 30px; box-shadow:0 24px 60px rgba(0,0,0,.18);
+  .auth-gate-card { position:relative; background:var(--surface); border:1px solid var(--line-2); border-radius:22px;
+    width:min(520px, 100%); padding:40px 38px; box-shadow:0 24px 60px rgba(0,0,0,.18);
     max-height:calc(100vh - 48px); overflow-y:auto; z-index:1; }
   .auth-gate-brand { text-align:center; margin-bottom:22px; }
-  .auth-gate-logo { width:100px; height:100px; object-fit:contain; margin-bottom:10px; animation:auth-logo-bounce 3s ease-in-out infinite; display:block; margin-left:auto; margin-right:auto; border-radius:20px; box-shadow:0 6px 22px rgba(0,0,0,.12); background:#fff; }
+  .auth-gate-logo { width:120px; height:120px; object-fit:contain; margin-bottom:14px; animation:auth-logo-bounce 3s ease-in-out infinite; display:block; margin-left:auto; margin-right:auto; border-radius:24px; box-shadow:0 6px 22px rgba(0,0,0,.12); background:#fff; }
   @keyframes auth-logo-bounce { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-6px); } }
-  .auth-gate-brand h1 { font-size:24px; margin:0; color:var(--ink); font-weight:800; letter-spacing:-.02em; }
-  .auth-gate-tag { margin:6px 0 0; font-size:13.5px; color:var(--ink-3); }
+  .auth-gate-brand h1 { font-size:30px; margin:0; color:var(--ink); font-weight:800; letter-spacing:-.02em; }
+  .auth-gate-tag { margin:8px 0 0; font-size:15px; color:var(--ink-3); }
   .auth-gate-tabs { display:flex; gap:4px; background:var(--surface-2); border-radius:10px; padding:4px; margin-bottom:22px; }
-  .auth-gate-tab { flex:1; border:none; background:transparent; padding:9px 12px; font:600 13.5px system-ui; color:var(--ink-2); cursor:pointer; border-radius:8px; transition:all .12s; }
+  .auth-gate-tab { flex:1; border:none; background:transparent; padding:11px 14px; font:600 15px system-ui; color:var(--ink-2); cursor:pointer; border-radius:8px; transition:all .12s; }
   .auth-gate-tab:hover { color:var(--ink); }
   .auth-gate-tab.on { background:var(--surface); color:var(--accent-ink); box-shadow:0 1px 3px rgba(0,0,0,.06); }
   .auth-gate-form { display:flex; flex-direction:column; gap:14px; }
   .auth-gate-field { display:flex; flex-direction:column; gap:6px; }
-  .auth-gate-field label { font-size:12px; font-weight:700; color:var(--ink-2); text-transform:uppercase; letter-spacing:.4px; }
-  .auth-gate-field input { padding:12px 14px; border:1.5px solid var(--line-2); border-radius:10px; font:inherit; font-size:15px; background:var(--surface-2); color:var(--ink); transition:border-color .12s, background .12s; }
+  .auth-gate-field label { font-size:13px; font-weight:700; color:var(--ink-2); text-transform:uppercase; letter-spacing:.5px; }
+  .auth-gate-field input { padding:14px 16px; border:1.5px solid var(--line-2); border-radius:11px; font:inherit; font-size:16px; background:var(--surface-2); color:var(--ink); transition:border-color .12s, background .12s; }
   .auth-gate-field input:focus { outline:none; border-color:var(--accent); background:var(--surface); }
   .auth-gate-consent { display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--ink-3); line-height:1.4; cursor:pointer; }
   .auth-gate-consent input { flex:0 0 auto; margin-top:2px; }
-  .auth-gate-cta { padding:13px; border:none; background:var(--accent); color:#fff; border-radius:10px; font:800 15px system-ui; cursor:pointer; margin-top:4px; transition:filter .12s, transform .1s; }
+  .auth-gate-cta { padding:15px; border:none; background:var(--accent); color:#fff; border-radius:11px; font:800 16px system-ui; cursor:pointer; margin-top:6px; transition:filter .12s, transform .1s; }
   .auth-gate-cta:hover { filter:brightness(1.08); }
   .auth-gate-cta:active { transform:scale(.98); }
   .auth-gate-cta:disabled { opacity:.6; cursor:wait; }
