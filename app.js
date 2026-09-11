@@ -11397,6 +11397,8 @@ function _authGateSyncTab(){
   if(consent) consent.hidden = _authGateMode !== 'signup';
   const passInput = $('#authGatePass');
   if(passInput) passInput.setAttribute('autocomplete', _authGateMode === 'signin' ? 'current-password' : 'new-password');
+  const forgot = $('#authGateForgot');
+  if(forgot) forgot.hidden = _authGateMode !== 'signin';
   const msg = $('#authGateMsg'); if(msg){ msg.textContent = ''; msg.className = 'auth-gate-msg'; }
 }
 function _authGateMsg(txt, ok){
