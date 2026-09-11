@@ -28,14 +28,14 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Ligue Plumes">
-<link rel="apple-touch-icon" href="assets/logos/huppe.png">
-<link rel="icon" href="assets/logos/huppe.png">
+<link rel="apple-touch-icon" href="assets/logos/huppe.svg">
+<link rel="icon" href="assets/logos/huppe.svg">
 <title>Ligue Merlin Bird</title>
 <!-- Leaflet (carte OpenStreetMap) -->
 <!-- Preload le module principal : le browser commence le fetch de app.js des le premier
      scan du <head>, en parallele du parsing HTML, au lieu d'attendre le <script> tout en
      bas (~1000 lignes plus loin). Gain ~200-400ms sur 3G/4G. -->
-<link rel="modulepreload" href="app.js?v=76">
+<link rel="modulepreload" href="app.js?v=77">
 <!-- Preload aussi le CSS principal (deja bloquant mais explicite ici). -->
 <link rel="preload" href="styles.css" as="style">
 <!-- Preconnect anticipe l'ouverture TCP+TLS vers les CDN critiques (Leaflet, Firebase, iNat, xeno-canto). -->
@@ -66,7 +66,7 @@
 
 <!-- Splash pendant que Firebase resout l'etat auth (evite le flash de l'ecran de connexion) -->
 <div id="authSplash" class="auth-splash">
-  <img class="auth-splash-logo" src="assets/logos/huppe.png" alt="Ligue Merlin Bird">
+  <img class="auth-splash-logo" src="assets/logos/huppe.svg" alt="Ligue Merlin Bird">
 </div>
 
 <div id="authGate" class="auth-gate">
@@ -78,7 +78,7 @@
   </div>
   <div class="auth-gate-card">
     <div class="auth-gate-brand">
-      <img class="auth-gate-logo" src="assets/logos/huppe.png" alt="Ligue Merlin Bird">
+      <img class="auth-gate-logo" src="assets/logos/huppe.svg" alt="Ligue Merlin Bird">
       <h1>Ligue Merlin Bird</h1>
       <p class="auth-gate-tag">Comparez vos life lists entre birders</p>
     </div>
@@ -113,7 +113,7 @@
   <header class="top">
     <div class="brand">
       <div class="mark" id="logoMark" title="Cliquez pour choisir votre logo">
-        <img class="mark-emoji" src="assets/logos/huppe.png" alt="Ligue Merlin Bird">
+        <img class="mark-emoji" src="assets/logos/huppe.svg" alt="Ligue Merlin Bird">
         <img id="logoImg" alt="Logo" hidden>
         <span class="edit-hint">✎</span>
       </div>
@@ -1234,4 +1234,4 @@
   </footer>
 </div>
 
-<script type="module" src="app.js?v=76"></script>
+<script type="module" src="app.js?v=77"></script>
