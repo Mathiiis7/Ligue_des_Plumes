@@ -113,7 +113,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
     width:min(520px, 100%); padding:40px 38px; box-shadow:0 24px 60px rgba(0,0,0,.18);
     max-height:calc(100vh - 48px); overflow-y:auto; z-index:1; }
   .auth-gate-brand { text-align:center; margin-bottom:22px; }
-  .auth-gate-logo { width:120px; height:120px; object-fit:contain; margin-bottom:14px; animation:auth-logo-bounce 3s ease-in-out infinite; display:block; margin-left:auto; margin-right:auto; border-radius:24px; box-shadow:0 6px 22px rgba(0,0,0,.12); background:#fff; }
+  .auth-gate-logo { width:150px; height:150px; object-fit:contain; margin-bottom:14px; animation:auth-logo-bounce 3s ease-in-out infinite; display:block; margin-left:auto; margin-right:auto; mix-blend-mode:multiply; }
   @keyframes auth-logo-bounce { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-6px); } }
   .auth-gate-brand h1 { font-size:30px; margin:0; color:var(--ink); font-weight:800; letter-spacing:-.02em; }
   .auth-gate-tag { margin:8px 0 0; font-size:15px; color:var(--ink-3); }
