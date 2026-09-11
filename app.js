@@ -11284,8 +11284,8 @@ $('#showMissing').addEventListener('change',e=>{ state.showMissing=e.target.chec
 const LOGO_KEY='mb-logo';
 const logoMark=$('#logoMark'), logoFile=$('#logoFile'), logoImg=$('#logoImg'), markEmoji=$('.mark-emoji');
 function showLogo(url){
-  if(url){ logoImg.src=url; logoImg.hidden=false; markEmoji.style.display='none'; }
-  else { logoImg.hidden=true; logoImg.removeAttribute('src'); markEmoji.style.display=''; }
+  if(url){ logoImg.src=url; logoImg.hidden=false; markEmoji.style.display='none'; logoMark.classList.add('has-custom-logo'); }
+  else { logoImg.hidden=true; logoImg.removeAttribute('src'); markEmoji.style.display=''; logoMark.classList.remove('has-custom-logo'); }
 }
 logoMark.addEventListener('click',()=>logoFile.click());
 logoFile.addEventListener('change',e=>{
@@ -11308,6 +11308,8 @@ logoFile.addEventListener('change',e=>{
   rd.readAsDataURL(f);
 });
 function showDefaultLogo(){
+  // Default = huppe artwork (embarque son propre rectangle arrondi) -> pas de cadre wrapper.
+  logoMark.classList.remove('has-custom-logo');
   logoImg.onerror=()=>{ logoImg.onerror=null; logoImg.hidden=true; logoImg.removeAttribute('src'); markEmoji.style.display=''; };
   logoImg.src='logo.png'; logoImg.hidden=false; markEmoji.style.display='none';
 }

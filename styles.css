@@ -151,12 +151,17 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   header.top { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; flex-wrap:wrap; }
   .brand { display:flex; gap:14px; align-items:center; }
   .mark { width:54px; height:54px; flex:none; display:grid; place-items:center;
-    box-shadow:var(--shadow); position:relative; cursor:pointer; border-radius:14px;
-    background:#fff; overflow:hidden; }
-  /* Le SVG huppe a du padding blanc autour de l'oiseau : on zoome via inset negatif
-     (~15%) pour agrandir la huppe dans le badge. Le border-radius 14px de .mark reclippe. */
-  .mark img.mark-emoji { position:absolute; inset:-8px; width:calc(100% + 16px); height:calc(100% + 16px); object-fit:contain; }
-  .mark img#logoImg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:13px; }
+    position:relative; cursor:pointer; border-radius:14px;
+    background:transparent; overflow:visible; }
+  /* Le logo par defaut (huppe) embarque deja son propre rectangle arrondi blanc : on le laisse
+     porter l'identite visuelle du badge, pas de double bordure. Le drop-shadow reproduit
+     l'ombre douce du wrapper d'origine, calee sur la forme reelle du logo. */
+  .mark img.mark-emoji,
+  .mark img#logoImg { position:absolute; inset:0; width:100%; height:100%; object-fit:contain;
+    filter:drop-shadow(0 6px 18px rgba(11,124,119,.15)) drop-shadow(0 1px 2px rgba(0,0,0,.08)); }
+  /* Cas custom : l'utilisateur a uploade sa propre photo -> on remet le cadre blanc arrondi. */
+  .mark.has-custom-logo { background:#fff; box-shadow:var(--shadow); overflow:hidden; }
+  .mark.has-custom-logo img#logoImg { object-fit:cover; border-radius:13px; filter:none; }
   .mark .edit-hint { position:absolute; inset:0; display:grid; place-items:center; border-radius:13px;
     background:rgba(0,0,0,.42); color:#fff; font-size:15px; opacity:0; transition:opacity .12s; }
   .mark:hover .edit-hint { opacity:1; }
