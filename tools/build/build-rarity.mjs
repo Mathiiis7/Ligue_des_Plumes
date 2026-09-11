@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  build-rarity.mjs - Génère le barème de "rareté réelle" de BirdyLeague.
+  build-rarity.mjs - Génère le barème de "rareté réelle" de la Ligue des Birds.
 
   PRINCIPE
   --------

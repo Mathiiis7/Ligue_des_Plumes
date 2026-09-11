@@ -2579,7 +2579,7 @@ function rebuild(){
 const BLOCKED_NAMES = [];
 function _isBlocked(name){ return BLOCKED_NAMES.some(re => re.test((name||'').trim())); }
 function _showBlockedScreen(){
-  document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#fafafa;font-family:system-ui;text-align:center;color:#222;"><div style="max-width:420px;"><div style="font-size:48px;margin-bottom:16px;">🚧</div><h1 style="font-size:22px;margin:0 0 12px;">Accès temporairement suspendu</h1><p style="color:#666;line-height:1.5;">Ton accès à BirdyLeague est momentanément bloqué. Contacte Mathis pour en savoir plus.</p></div></div>';
+  document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#fafafa;font-family:system-ui;text-align:center;color:#222;"><div style="max-width:420px;"><div style="font-size:48px;margin-bottom:16px;">🚧</div><h1 style="font-size:22px;margin:0 0 12px;">Accès temporairement suspendu</h1><p style="color:#666;line-height:1.5;">Ton accès à la Ligue des Birds est momentanément bloqué. Contacte Mathis pour en savoir plus.</p></div></div>';
 }
 function applySnapshot(snap){
   hideError();
@@ -6691,8 +6691,8 @@ function _setBadge(host, className, n, hideIfEmpty){
 function markSeen(v){ try{ localStorage.setItem('mb-seen-'+v, String(Date.now())); }catch(_){ } updateTabDots(); }
 // ---- Inviter ----
 async function doInvite(){
-  const url=shareUrl(); const text='Rejoins-nous sur BirdyLeague 🐦 - compare tes listes d\'oiseaux avec nous !';
-  if(navigator.share){ try{ await navigator.share({title:'BirdyLeague', text, url}); return; }catch(_){ return; } }
+  const url=shareUrl(); const text='Rejoins-nous sur la Ligue des Birds 🐦 - compare tes listes d\'oiseaux avec nous !';
+  if(navigator.share){ try{ await navigator.share({title:'Ligue des Birds', text, url}); return; }catch(_){ return; } }
   try{ await navigator.clipboard.writeText(text+' '+url); const b=$('#inviteBtn'); if(b){ const t=b.textContent; b.textContent='✓ Copié !'; setTimeout(()=>b.textContent=t,1600); } }catch(_){ }
 }
 function updateChatIdentity(){
