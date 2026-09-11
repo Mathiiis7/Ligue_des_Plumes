@@ -152,11 +152,11 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .brand { display:flex; gap:14px; align-items:center; }
   .mark { width:54px; height:54px; flex:none; display:grid; place-items:center;
     position:relative; cursor:pointer; border-radius:14px;
-    background:#fff; overflow:hidden; box-shadow:var(--shadow); }
-  /* logo.png / huppe.svg ont ~4% de marge blanche autour du rectangle arrondi interne :
-     sans clip + zoom, ces marges dépassent le border-radius du wrapper et créent une
-     double bordure (carré blanc + rectangle arrondi interne). On zoome ~13% pour cropper
-     les marges et n'afficher que l'artwork jusqu'au bord du badge. */
+    background:#fff; overflow:hidden;
+    /* Meme ombre que .auth-splash-logo : un seul halo doux, pas de hairline (var(--shadow)
+       empile un 0 1px 2px qui lit comme un contour et donne l'impression d'une double
+       bordure avec le rectangle arrondi de l'artwork). */
+    box-shadow:0 8px 30px rgba(0,0,0,.15); }
   .mark img.mark-emoji,
   .mark img#logoImg { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; }
   /* Cas custom : photo uploadee par l'user -> zoom desactive (on veut voir sa photo entiere). */
