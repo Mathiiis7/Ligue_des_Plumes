@@ -11308,10 +11308,11 @@ logoFile.addEventListener('change',e=>{
   rd.readAsDataURL(f);
 });
 function showDefaultLogo(){
-  // Default = huppe artwork (embarque son propre rectangle arrondi) -> pas de cadre wrapper.
+  // Default = meme SVG que .auth-splash-logo pour que le header soit calibre pareil que
+  // l'ecran de chargement (memes proportions, meme dessin de la huppe en vol).
   logoMark.classList.remove('has-custom-logo');
-  logoImg.onerror=()=>{ logoImg.onerror=null; logoImg.hidden=true; logoImg.removeAttribute('src'); markEmoji.style.display=''; };
-  logoImg.src='logo.png'; logoImg.hidden=false; markEmoji.style.display='none';
+  logoImg.hidden=true; logoImg.removeAttribute('src');
+  markEmoji.style.display='';
 }
 try{ const saved=localStorage.getItem(LOGO_KEY); if(saved) showLogo(saved); else showDefaultLogo(); }catch(_){ showDefaultLogo(); }
 
