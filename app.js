@@ -2314,9 +2314,9 @@ const TROPHIES = [
   ...makeTierFamily({
     theme:'groupe', icon:ICONS.bearGrylls, family:'bearGrylls', baseName:'Bear Grylls',
     metric:s=>s.habCovered, thresholds:[3,5,8,10,12,14],
-    descTpl:'Cocher 10 % des espèces françaises dans {n} milieux différents',
+    descTpl:'Cocher 20 % des espèces françaises dans {n} milieux différents',
     list:s=>{
-      const habMin = c => Math.max(1, Math.ceil((HABITAT_TO_SCIS_FR(c)||[]).length * 0.10));
+      const habMin = c => Math.max(1, Math.ceil((HABITAT_TO_SCIS_FR(c)||[]).length * 0.20));
       const out = [];
       for(const c of HABITAT_CATS){
         const scis = HABITAT_TO_SCIS_FR(c) || [];
@@ -2332,7 +2332,7 @@ const TROPHIES = [
       }
       return out;
     },
-    note:s=>`${s.habCovered} milieu${s.habCovered>1?'x':''} validé${s.habCovered>1?'s':''} sur ${HABITAT_CATS.length} (seuil : 10 % des espèces françaises par milieu)`,
+    note:s=>`${s.habCovered} milieu${s.habCovered>1?'x':''} validé${s.habCovered>1?'s':''} sur ${HABITAT_CATS.length} (seuil : 20 % des espèces françaises par milieu)`,
   }),
   ...makeTierFamily({
     theme:'communaute', icon:ICONS.photo, family:'natGeo', baseName:'National Geographic',
@@ -2652,7 +2652,7 @@ function statsFor(me, N){
   // Seuil dynamique par milieu = 5 % des especes FRANCAISES de ce milieu (arrondi
   // superieur, min 1). Utilise HABITAT_TO_SCIS_FR (intersection HABITATS x REAL_RARITY FR)
   // au lieu du catalogue mondial : bien plus atteignable (Forest 6052 sp mondial -> ~200 FR).
-  const habMin = c => Math.max(1, Math.ceil((HABITAT_TO_SCIS_FR(c)||[]).length * 0.10));
+  const habMin = c => Math.max(1, Math.ceil((HABITAT_TO_SCIS_FR(c)||[]).length * 0.20));
   const habCovered = HABITAT_CATS.filter(c => habOwned[c].size >= habMin(c)).length;
   // Compte les photos de cette personne ayant ≥3 COEURS (bouton dédié type Instagram).
   // On ignore les autres emojis libres (seul le ❤️ compte) et le cœur que l'auteur
