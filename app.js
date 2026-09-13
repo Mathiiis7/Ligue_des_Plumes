@@ -2242,7 +2242,7 @@ const TROPHIES = [
         const observedInFr = [...s.habOwned[c]].filter(sci => scisSet.has(sci)).length;
         const seuil = habMin(c);
         const ok = s.habOwned[c].size >= seuil;
-        const sec = `${HABITAT_LABELS[c]} : ${observedInFr}/${scis.length} vues (seuil ${seuil}, 5 % des sp françaises) ${ok?'✅ validé':'⏳ à valider'}`;
+        const sec = `${HABITAT_LABELS[c]} : ${observedInFr}/${scis.length} vues (seuil ${seuil} espèce${seuil>1?'s':''}) ${ok?'✅ validé':'⏳ à valider'}`;
         for(const sci of scis) out.push({ name: frName(sci, sci), section: sec, owned: s.habOwned[c].has(sci) });
       }
       return out;
