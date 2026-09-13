@@ -2406,6 +2406,7 @@ const TROPHIES = [
   }),
   ...makeTierFamily({
     theme:'communaute', icon:ICONS.photo, family:'natGeo', category:'progression', baseName:'National Geographic',
+    imgDir:'assets/trophies/families/natgeo',
     metric:s=>s.hotPhotos||0, thresholds:[1,3,7,15,25,40],
     descTpl:'Poster {n} photos avec au moins 3 ❤️ chacune',
     info:s=>s.hotPhotos>0 ? `${s.hotPhotos} photo${s.hotPhotos>1?'s':''} qui claque${s.hotPhotos>1?'nt':''}` : '',
