@@ -2326,7 +2326,10 @@ const TROPHIES = [
         // "6/6" avec la liste affichee ci-dessous).
         const observedInFr = [...s.habOwned[c]].filter(sci => scisSet.has(sci)).length;
         const seuil = habMin(c);
-        const ok = s.habOwned[c].size >= seuil;
+        // Validation FR-only : ne compte que les especes de la liste France, cohérent
+        // avec l'affichage. Avant : .size global validait 'desert' avec un Traquet vu
+        // au Maroc alors qu'aucune des 3 espèces FR n'etait cochee.
+        const ok = observedInFr >= seuil;
         const sec = `${HABITAT_LABELS[c]} : ${observedInFr}/${scis.length} vues (seuil ${seuil} espèce${seuil>1?'s':''}) ${ok?'✅ validé':'⏳ à valider'}`;
         for(const sci of scis) out.push({ name: frName(sci, sci), section: sec, owned: s.habOwned[c].has(sci) });
       }
@@ -2653,7 +2656,14 @@ function statsFor(me, N){
   // superieur, min 1). Utilise HABITAT_TO_SCIS_FR (intersection HABITATS x REAL_RARITY FR)
   // au lieu du catalogue mondial : bien plus atteignable (Forest 6052 sp mondial -> ~200 FR).
   const habMin = c => Math.max(1, Math.ceil((HABITAT_TO_SCIS_FR(c)||[]).length * 0.20));
-  const habCovered = HABITAT_CATS.filter(c => habOwned[c].size >= habMin(c)).length;
+  // Validation FR-only : on compte uniquement les especes de la liste France, pas
+  // les obs globales. Sinon un ami qui a vu 1 Traquet cul-blanc au Maroc valide
+  // 'desert' alors qu'aucune des 3 especes FR n'a ete cochee.
+  const habCovered = HABITAT_CATS.filter(c => {
+    const frSet = new Set(HABITAT_TO_SCIS_FR(c) || []);
+    const observedInFr = [...habOwned[c]].filter(sci => frSet.has(sci)).length;
+    return observedInFr >= habMin(c);
+  }).length;
   // Compte les photos de cette personne ayant ≥3 COEURS (bouton dédié type Instagram).
   // On ignore les autres emojis libres (seul le ❤️ compte) et le cœur que l'auteur
   // se donne à lui-même (auto-like non compté).
