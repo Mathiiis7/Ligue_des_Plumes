@@ -2096,51 +2096,98 @@ const TROPHY_THEMES = {
   communaute:   { label:'Communauté',           desc:'Vote, photos, social' },
   localisation: { label:'Localisation',         desc:'Trophées liés à un lieu ou plusieurs lieux' },
 };
+// -----------------------------------------------------------------------------
+// Systeme de paliers cumulatifs (tiers).
+// -----------------------------------------------------------------------------
+// Bronze -> Argent -> Or -> Diamant -> Violet -> Emeraude (le rang ultime).
+// Une fois un palier atteint, il reste unlocke pour toujours. Zero notion de
+// competition entre joueurs : chacun progresse a son rythme.
+const TROPHY_TIERS = [
+  { key:'bronze',   label:'Bronze',   color:'#a97142', emoji:'🥉' },
+  { key:'argent',   label:'Argent',   color:'#a3a8b2', emoji:'🥈' },
+  { key:'or',       label:'Or',       color:'#e6b800', emoji:'🥇' },
+  { key:'diamant',  label:'Diamant',  color:'#7fd3ff', emoji:'💎' },
+  { key:'violet',   label:'Violet',   color:'#a06cff', emoji:'🔮' },
+  { key:'emeraude', label:'Émeraude', color:'#0fbf85', emoji:'💚' },
+];
+// Genere 6 trophees d'une meme famille (un par palier). Chaque palier partage
+// le meme icone/theme/list/note mais adapte son nom, seuil et prog en fonction
+// du tier. `desc` sert de gabarit avec {n} qui devient le seuil.
+function makeTierFamily(cfg){
+  const { theme, icon, baseName, metric, thresholds, descTpl, list, note, alwaysList=true, info } = cfg;
+  return TROPHY_TIERS.map((t, i) => {
+    const seuil = thresholds[i];
+    return {
+      theme, icon,
+      tier: t.key,
+      family: cfg.family || baseName,
+      name: `${baseName} ${t.label}`,
+      desc: descTpl.replace('{n}', seuil),
+      test: s => (metric(s) || 0) >= seuil,
+      prog: s => [metric(s) || 0, seuil],
+      ...(list ? { list, alwaysList } : {}),
+      ...(note ? { note } : {}),
+      ...(info ? { info } : {}),
+    };
+  });
+}
 const TROPHIES = [
-  { theme:'progression', icon:ICONS.medal, name:'Expert Merlin Bird', desc:'100 espèces (droit de porter le t-shirt Merlin)', test:s=>s.total>=100, prog:s=>[s.total,100] },
-  { theme:'communaute',  icon:ICONS.kimono, name:"T'ia mis le kimono", desc:"Faire une observation avec le T-shirt Merlin (preuve à l'appui)", special:'vote', voteId:'kimono', voteThreshold:3, test:s=>(s.kimonoVotes||0)>=3 },
-  { theme:'communaute',  icon:ICONS.photo, name:'National Geographic', desc:'Poster 3 photos qui recueillent chacune au moins 3 ❤️', test:s=>(s.hotPhotos||0)>=3, prog:s=>[s.hotPhotos||0,3], info:s=>s.hotPhotos>=3?`${s.hotPhotos} photo${s.hotPhotos>1?'s':''} qui claque${s.hotPhotos>1?'nt':''}`:'' },
-  { theme:'communaute',  icon:ICONS.mort, name:'Le Nécrophile', desc:'Observer un oiseau décédé #ripstayproud (preuve demandée)', special:'vote', voteId:'necrophile', voteThreshold:3, test:s=>(s.necrophileVotes||0)>=3 },
-  { theme:'classement',  icon:ICONS.cup, name:'Mike Horn', desc:'Avoir l’oiseau le plus rare de la ligue', test:s=>s.mikeHorn, info:s=>s.mikeHorn&&s.mikeBird?'🏅 '+s.mikeBird:'', tip:s=>s.mikeHorn&&s.mikeBird?'Oiseau le plus rare : '+s.mikeBird:'' },
-  { theme:'localisation',icon:ICONS.avion, name:'Marco Polo', desc:'Avoir observé des oiseaux dans le plus de pays différents de la ligue (2 pays minimum)', test:s=>s.globeTrotter, info:s=>s.globeTrotter?`✈️ ${s.countryCount} pays visités`:'', tip:s=>s.globeTrotter?`Champion des pays : ${s.countryCount}`:`${s.countryCount} pays observés` },
-  { theme:'progression', icon:ICONS.graal, name:'Le Saint-Graal', desc:'Observer un oiseau Exceptionnel, Ultra rare ou Très rare', test:s=>s.megaList.length>0, alwaysList:true, list:s=>MEGA_CATALOG.map(m=>({ name:m.name, section:m.w===10?'Exceptionnel':(m.w===9?'Ultra rare':'Très rare'), owned:s.megaOwnedSet.has(m.sci) })) },
-  { theme:'groupe',      icon:ICONS.woodpecker, name:'Pic noir', desc:'Observer le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker },
-  { theme:'communaute',  icon:ICONS.singe, name:'Le coup de Ruff', desc:'Ne pas avoir un oiseau qu’Enzo a vu #honteux', test:s=>s.lackEnzoBird },
-  { theme:'groupe',      icon:ICONS.aigle, name:'Armée d’aigles royaux', desc:'Voir au moins 5 rapaces diurnes', test:s=>s.raptors>=5, prog:s=>[s.raptors,5], alwaysList:true, list:s=>RAPTOR_CATALOG.map(m=>({ name:m.name, owned:s.raptorOwnedSet.has(m.sci) })) },
-  { theme:'localisation',icon:ICONS.huitre, name:'Bourriche d’huître', desc:'Observer un oiseau à La Teste-de-Buch', test:s=>s.locTeste },
-  { theme:'groupe',      icon:ICONS.bain, name:'Pistoche', desc:'15 oiseaux d’eau + le Martin-pêcheur', test:s=>s.water>=15 && s.hasKingfisher, prog:s=>[s.water,15], alwaysList:true,
-    list:s=>WATER_CATALOG.map(m=>({ name:m.name, owned:s.waterOwnedSet.has(m.sci) })),
-    note:s=>`${s.water} oiseau${s.water>1?'x':''} d’eau observé${s.water>1?'s':''} sur ${WATER_CATALOG.length} possibles${s.hasKingfisher?' · Martin-pêcheur ✓':' · Martin-pêcheur manquant'}` },
-  { theme:'groupe',      icon:ICONS.pingouin, name:'Happy feet', desc:'Observer un pingouin, un manchot ou un cousin (macareux, guillemot…)', test:s=>s.hasPenguin, alwaysList:true,
-    list:s=> ALCID_CATALOG.map(m=>({ name:m.name, section:'Alcidés (les « pingouins » de l’hémisphère nord)', owned:s.alcidOwnedSet.has(m.sci) }))
-      .concat(MANCHOT_CATALOG.map(m=>({ name:m.name, section:'Manchots (les vrais, hémisphère sud)', owned:(s.manchotOwnedSet&&s.manchotOwnedSet.has(m.sci)) }))),
-    note:s=>{ const o=s.alcidOwnedSet.size+(s.manchotOwnedSet?s.manchotOwnedSet.size:0); const tot=ALCID_CATALOG.length+MANCHOT_CATALOG.length; return o+' déjà observé'+(o>1?'s':'')+' sur '+tot; } },
-  { theme:'groupe',      icon:ICONS.kangourou, name:'Wallaby', desc:'Observer le Martin-chasseur à dos de feu', test:s=>s.hasFireKingfisher },
-  { theme:'groupe',      icon:ICONS.saisons, name:'Les 4 Saisons', desc:'Chope un oiseau spécifique à chaque saison tah Vivaldi', test:s=>s.seasonCount>=4, prog:s=>[s.seasonCount,4], alwaysList:true, list:s=>SEASON_CATALOG.map(m=>({ name:m.name, section:m.section, owned:s.seasonOwnedSet.has(m.sci) })), note:s=>`${s.seasonCount} saison${s.seasonCount>1?'s':''} validée${s.seasonCount>1?'s':''} sur 4` },
-  { theme:'localisation',icon:ICONS.regions, name:'Ma France, mes régions !', desc:'Faire un tour de France des birds (observer un oiseau dans 10 régions)', test:s=>s.regionsCount>=10, prog:s=>[s.regionsCount,10], alwaysList:true, list:s=>FR_REGIONS.map(r=>({ name:r.name, owned:s.regionsOwnedSet.has(r.code) })), note:s=>`${s.regionsCount} région${s.regionsCount>1?'s':''} visitée${s.regionsCount>1?'s':''} sur ${FR_REGIONS.length}` },
-  { theme:'communaute',  icon:ICONS.bebe, name:'Gros Bébé', desc:'Observer des oiseaux avec Samuel Fillion (preuve demandée)', special:'vote', voteId:'grosBebe', voteThreshold:3, voteSelfCheck:()=>/sam/i.test(myMemberName()||''), test:s=>(s.grosBebeVotes||0)>=3 },
-  // Badge "Naturaliste polyvalent" - cocher au moins 5 espèces dans N milieux différents.
-  // Milieux : forestier, zone humide, eau douce, océan, littoral, montagne, steppe, bocage, urbain, rocher.
-  { theme:'groupe',      icon:ICONS.bearGrylls, name:'Bear Grylls', desc:'Cocher 5 % des espèces francaises dans 8 milieux différents (sur 12)', test:s=>s.habCovered>=8, prog:s=>[s.habCovered,8], alwaysList:true, list:s=>{
-      // Une section par milieu, chaque section liste les espèces PRESENTES EN FRANCE
-      // pour ce milieu (base : HABITAT_TO_SCIS_FR). Le compteur (n/m) apparait auto.
-      // Seuil : 5 % des especes FR de ce milieu.
+  // -- Familles a paliers (6 tiers Bronze->Emeraude, cumulatifs a vie) --
+  ...makeTierFamily({
+    theme:'progression', icon:ICONS.medal, family:'ecologue', baseName:'Écologue',
+    metric:s=>s.total, thresholds:[50,100,150,200,300,500],
+    descTpl:'Observer {n} espèces différentes',
+  }),
+  ...makeTierFamily({
+    theme:'localisation', icon:ICONS.avion, family:'marcoPolo', baseName:'Marco Polo',
+    metric:s=>s.countryCount, thresholds:[2,5,10,20,35,50],
+    descTpl:'Observer des oiseaux dans {n} pays différents',
+    info:s=>s.countryCount ? `✈️ ${s.countryCount} pays visités` : '',
+  }),
+  ...makeTierFamily({
+    theme:'localisation', icon:ICONS.regions, family:'maFrance', baseName:'Ma France',
+    metric:s=>s.regionsCount, thresholds:[2,5,8,11,14,18],
+    descTpl:'Observer un oiseau dans {n} régions françaises',
+    list:s=>FR_REGIONS.map(r=>({ name:r.name, owned:s.regionsOwnedSet.has(r.code) })),
+    note:s=>`${s.regionsCount} région${s.regionsCount>1?'s':''} visitée${s.regionsCount>1?'s':''} sur ${FR_REGIONS.length}`,
+  }),
+  ...makeTierFamily({
+    theme:'groupe', icon:ICONS.bearGrylls, family:'bearGrylls', baseName:'Bear Grylls',
+    metric:s=>s.habCovered, thresholds:[2,4,6,8,10,12],
+    descTpl:'Cocher 5 % des espèces françaises dans {n} milieux différents',
+    list:s=>{
       const habMin = c => Math.max(1, Math.ceil((HABITAT_TO_SCIS_FR(c)||[]).length * 0.05));
       const out = [];
       for(const c of HABITAT_CATS){
         const scis = HABITAT_TO_SCIS_FR(c) || [];
         const seuil = habMin(c);
         const ok = s.habOwned[c].size >= seuil;
-        const sec = `${HABITAT_LABELS[c]} : ${s.habOwned[c].size}/${scis.length} vues (seuil ${seuil}, 5 % des sp francaises) ${ok?'✅ validé':'⏳ à valider'}`;
+        const sec = `${HABITAT_LABELS[c]} : ${s.habOwned[c].size}/${scis.length} vues (seuil ${seuil}, 5 % des sp françaises) ${ok?'✅ validé':'⏳ à valider'}`;
         for(const sci of scis) out.push({ name: frName(sci, sci), section: sec, owned: s.habOwned[c].has(sci) });
       }
       return out;
-    }, note:s=>`${s.habCovered} milieu${s.habCovered>1?'x':''} validé${s.habCovered>1?'s':''} sur ${HABITAT_CATS.length} (seuil : 5 % des espèces francaises par milieu)` },
-  { theme:'classement', icon:ICONS.crown, name:'Écologue originel', desc:'Être 1ᵉʳ du classement', test:s=>s.groupN>1 && s.rank===1 },
-  { theme:'classement', icon:ICONS.podium, name:'Écologue en chef', desc:'Dans le top 2', test:s=>s.groupN>1 && s.rank<=2 },
-  { theme:'classement', icon:ICONS.bronze, name:'Écologue chevronné', desc:'Dans le top 3', test:s=>s.groupN>1 && s.rank<=3 },
-  { theme:'classement', icon:ICONS.gem, name:'Apprenti écologue', desc:'Dans le top 5', test:s=>s.groupN>1 && s.rank<=5 },
-  { theme:'classement', icon:ICONS.binoculars, name:'Écologue du dimanche', desc:'Faire partie de la ligue', test:s=>s.groupN>1 },
+    },
+    note:s=>`${s.habCovered} milieu${s.habCovered>1?'x':''} validé${s.habCovered>1?'s':''} sur ${HABITAT_CATS.length} (seuil : 5 % des espèces françaises par milieu)`,
+  }),
+  ...makeTierFamily({
+    theme:'communaute', icon:ICONS.photo, family:'natGeo', baseName:'National Geographic',
+    metric:s=>s.hotPhotos||0, thresholds:[1,3,7,15,25,40],
+    descTpl:'Poster {n} photos avec au moins 3 ❤️ chacune',
+    info:s=>s.hotPhotos>0 ? `${s.hotPhotos} photo${s.hotPhotos>1?'s':''} qui claque${s.hotPhotos>1?'nt':''}` : '',
+  }),
+  // -- Trophees one-shot (binaires, pas de tiers) --
+  { theme:'communaute',  icon:ICONS.kimono, name:"T'ia mis le kimono", desc:"Faire une observation avec le T-shirt Merlin (preuve à l'appui)", special:'vote', voteId:'kimono', voteThreshold:3, test:s=>(s.kimonoVotes||0)>=3 },
+  { theme:'communaute',  icon:ICONS.mort, name:'Le Nécrophile', desc:'Observer un oiseau décédé #ripstayproud (preuve demandée)', special:'vote', voteId:'necrophile', voteThreshold:3, test:s=>(s.necrophileVotes||0)>=3 },
+  { theme:'classement',  icon:ICONS.cup, name:'Mike Horn', desc:'Avoir l’oiseau le plus rare de la ligue', test:s=>s.mikeHorn, info:s=>s.mikeHorn&&s.mikeBird?'🏅 '+s.mikeBird:'', tip:s=>s.mikeHorn&&s.mikeBird?'Oiseau le plus rare : '+s.mikeBird:'' },
+  { theme:'groupe',      icon:ICONS.woodpecker, name:'Pic noir', desc:'Observer le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker },
+  { theme:'communaute',  icon:ICONS.singe, name:'Le coup de Ruff', desc:'Ne pas avoir un oiseau qu’Enzo a vu #honteux', test:s=>s.lackEnzoBird },
+  { theme:'localisation',icon:ICONS.huitre, name:'Bourriche d’huître', desc:'Observer un oiseau à La Teste-de-Buch', test:s=>s.locTeste },
+  { theme:'groupe',      icon:ICONS.pingouin, name:'Happy feet', desc:'Observer un pingouin, un manchot ou un cousin (macareux, guillemot…)', test:s=>s.hasPenguin, alwaysList:true,
+    list:s=> ALCID_CATALOG.map(m=>({ name:m.name, section:'Alcidés (les « pingouins » de l’hémisphère nord)', owned:s.alcidOwnedSet.has(m.sci) }))
+      .concat(MANCHOT_CATALOG.map(m=>({ name:m.name, section:'Manchots (les vrais, hémisphère sud)', owned:(s.manchotOwnedSet&&s.manchotOwnedSet.has(m.sci)) }))),
+    note:s=>{ const o=s.alcidOwnedSet.size+(s.manchotOwnedSet?s.manchotOwnedSet.size:0); const tot=ALCID_CATALOG.length+MANCHOT_CATALOG.length; return o+' déjà observé'+(o>1?'s':'')+' sur '+tot; } },
+  { theme:'groupe',      icon:ICONS.kangourou, name:'Wallaby', desc:'Observer le Martin-chasseur à dos de feu', test:s=>s.hasFireKingfisher },
+  { theme:'communaute',  icon:ICONS.bebe, name:'Gros Bébé', desc:'Observer des oiseaux avec Samuel Fillion (preuve demandée)', special:'vote', voteId:'grosBebe', voteThreshold:3, voteSelfCheck:()=>/sam/i.test(myMemberName()||''), test:s=>(s.grosBebeVotes||0)>=3 },
 ];
 const OWL_G=/^(strix|otus|athene|asio|bubo|tyto|aegolius|glaucidium|surnia|ketupa)$/;
 const RAPTOR_G=/^(accipiter|astur|buteo|aquila|circus|milvus|falco|pernis|circaetus|pandion|haliaeetus|gyps|aegypius|gypaetus|neophron|clanga|hieraaetus|elanus|torgos)$/;
@@ -2509,7 +2556,14 @@ function renderTrophies(data){
         }
       }
     }
-    return `<div class="trophy ${ok?'on':'off'}${clic?' clic':''}"${clic?` data-detail="${detailIdx}"`:''}${tip?` title="${esc(tip)}"`:''}>
+    // Badge tier : petite pastille en haut a droite pour trophees a paliers.
+    const tierMeta = t.tier ? TROPHY_TIERS.find(x => x.key === t.tier) : null;
+    const tierBadge = tierMeta
+      ? `<div class="tier-badge tier-${t.tier}" style="--tier-color:${tierMeta.color}" title="${esc(tierMeta.label)}">${tierMeta.emoji}</div>`
+      : '';
+    const tierClass = t.tier ? ` tier-${t.tier}` : '';
+    return `<div class="trophy ${ok?'on':'off'}${clic?' clic':''}${tierClass}"${clic?` data-detail="${detailIdx}"`:''}${tip?` title="${esc(tip)}"`:''}>
+      ${tierBadge}
       <div class="tico">${t.icon}</div>
       <div class="tname">${esc(t.name)}</div>
       <div class="tdesc">${esc(t.desc)}</div>
@@ -3045,8 +3099,11 @@ let _feedPeopleKey = '';
 // Trophees "competitifs" : rangement classement (5 Ecologues) et prix unique (Mike Horn, Marco Polo).
 // Les 5 Ecologues sont ordonnes du meilleur au moins bon. Le TOP rang d'une personne = le
 // premier Ecologue qu'il detient dans cet ordre.
-const RANK_TROPHIES = ['Écologue originel','Écologue en chef','Écologue chevronné','Apprenti écologue','Écologue du dimanche'];
-const SINGLE_HOLDER_TROPHIES = new Set(['Mike Horn','Marco Polo']);
+// Les trophees cumulatifs (paliers de progression Ecologue/Marco Polo/etc.) ne sont
+// PLUS des rank/single-holder : une fois atteint, garde a vie. Seuls Mike Horn reste
+// competitif (un seul holder a la fois pour l'oiseau le plus rare).
+const RANK_TROPHIES = [];
+const SINGLE_HOLDER_TROPHIES = new Set(['Mike Horn']);
 // Etat competitif precedent (holders + top rang par joueur + trophees debloques) sauve entre renders.
 // Uniquement en localStorage : c'est le "point de comparaison" LOCAL a l'appareil qui detecte
 // les changements. Les evenements eux-memes sont dans Firestore (collection trophyEvents), donc

@@ -1400,6 +1400,22 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .trophy.on { border-color:color-mix(in srgb,var(--gold) 55%,var(--line));
     background:color-mix(in srgb,var(--gold) 9%,var(--surface-2)); }
   .trophy.off { opacity:.6; }
+  /* Trophees a paliers : border/background prend la couleur du tier au lieu de var(--gold),
+     et petite pastille en haut a droite avec l'emoji du palier. */
+  .trophy.on[class*="tier-"]:not(.tier-badge) { border-color:color-mix(in srgb,var(--tier-color, var(--gold)) 60%,var(--line));
+    background:color-mix(in srgb,var(--tier-color, var(--gold)) 10%,var(--surface-2)); }
+  .trophy.tier-bronze   { --tier-color:#a97142; }
+  .trophy.tier-argent   { --tier-color:#a3a8b2; }
+  .trophy.tier-or       { --tier-color:#e6b800; }
+  .trophy.tier-diamant  { --tier-color:#7fd3ff; }
+  .trophy.tier-violet   { --tier-color:#a06cff; }
+  .trophy.tier-emeraude { --tier-color:#0fbf85; }
+  .trophy .tier-badge { position:absolute; top:8px; right:8px; width:26px; height:26px;
+    display:grid; place-items:center; font-size:14px; border-radius:50%;
+    background:var(--tier-color); box-shadow:0 1px 3px rgba(0,0,0,.15); z-index:1; }
+  .trophy.off .tier-badge { filter:grayscale(.7); opacity:.7; }
+  .trophy { position:relative; }
+  .trophy.on[class*="tier-"] .tstate { color:var(--tier-color); }
   .tico { line-height:0; display:flex; justify-content:center; }
   .tico svg { width:54px; height:54px; }
   .trophy.off .tico { filter:grayscale(1); opacity:.5; }
