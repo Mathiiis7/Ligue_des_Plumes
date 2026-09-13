@@ -2397,6 +2397,14 @@ const TROPHIES = [
     note:s=>`${(s.raptorOwnedSet?.size)||0} rapace${((s.raptorOwnedSet?.size)||0)>1?'s':''} observé${((s.raptorOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
+    theme:'groupe', icon:ICONS.aigle, family:'nocturnes', category:'species', baseName:'Nocturne',
+    imgDir:'assets/trophies/families/nocturnes',
+    metric:s=>(s.owlOwnedSet?.size)||0, thresholds:[2,4,6,10,18,30],
+    descTpl:'Observer {n} rapaces nocturnes différents (chouettes, hiboux)',
+    list:s=>[...(s.owlOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>`${(s.owlOwnedSet?.size)||0} rapace${((s.owlOwnedSet?.size)||0)>1?'s':''} nocturne${((s.owlOwnedSet?.size)||0)>1?'s':''} observé${((s.owlOwnedSet?.size)||0)>1?'s':''}`,
+  }),
+  ...makeTierFamily({
     theme:'communaute', icon:ICONS.photo, family:'natGeo', category:'progression', baseName:'National Geographic',
     metric:s=>s.hotPhotos||0, thresholds:[1,3,7,15,25,40],
     descTpl:'Poster {n} photos avec au moins 3 ❤️ chacune',
@@ -2681,14 +2689,19 @@ function statsFor(me, N){
   let owls=0,raptors=0,water=0,sea=0,blackWoodpecker=false,locTeste=false,hasKingfisher=false,hasPenguin=false,hasFireKingfisher=false;
   const megaList=[]; const megaOwnedSet=new Set();
   const seasonHit={}; SEASON_ORDER.forEach(s=>seasonHit[s]=false); const seasonOwnedSet=new Set();
-  const raptorOwnedSet=new Set(), alcidOwnedSet=new Set(), manchotOwnedSet=new Set(), waterOwnedSet=new Set();
+  const raptorOwnedSet=new Set(), alcidOwnedSet=new Set(), manchotOwnedSet=new Set(), waterOwnedSet=new Set(), owlOwnedSet=new Set();
   // Milieux (habitats) : Set d'espèces par catégorie via HABITATS (source : famille eBird).
   const habOwned = Object.fromEntries(HABITAT_CATS.map(c=>[c, new Set()]));
   for(const v of me._active.values()){
     const sci=(v.sci||'').toLowerCase();
     const g=sci.split(' ')[0];
     const seas=SEASON_OF[sci]; if(seas){ seasonHit[seas]=true; seasonOwnedSet.add(sci); }
-    if(OWL_G.test(g)) owls++;
+    if(OWL_G.test(g)){ owls++; owlOwnedSet.add(sci); }
+    // Fallback taxo : couvre les strigides mondiaux hors OWL_G (megascops, ninox, etc.)
+    else {
+      const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+      if(fam === 'Effraies' || fam === 'Chouettes, hiboux') owlOwnedSet.add(sci);
+    }
     if(RAPTOR_G.test(g)){ raptors++; raptorOwnedSet.add(sci); }
     if(WATER_G.test(g)){ water++; waterOwnedSet.add(sci); }
     if(SEA_G.test(g)) sea++;
@@ -2735,7 +2748,7 @@ function statsFor(me, N){
     for(const uid of voters) if(uid !== me.id) hearts++;
     if(hearts >= 3) hotPhotos++;
   }
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
