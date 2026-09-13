@@ -1434,6 +1434,76 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .vote-note { margin-top:10px; font-size:11px; color:var(--ink-3); line-height:1.4; }
   .trophy.clic { cursor:pointer; }
   .trophy.clic:hover { border-color:color-mix(in srgb,var(--gold) 55%,var(--line)); }
+
+  /* ==== Nouveau layout trophees (v97+) ============================ */
+  .tro-showcase { display:flex; flex-direction:column; gap:22px; margin-top:16px; }
+  .tro-families { display:flex; flex-direction:column; gap:10px; }
+  .tro-family { display:flex; align-items:center; gap:18px; padding:14px 16px;
+    border:1px solid var(--line); border-radius:14px; background:var(--surface-2);
+    cursor:pointer; transition:transform .12s, border-color .12s, box-shadow .12s; }
+  .tro-family:hover { transform:translateY(-1px); box-shadow:var(--shadow);
+    border-color:color-mix(in srgb, var(--tier-color, var(--gold)) 45%, var(--line)); }
+  .tro-family.unlocked { background:color-mix(in srgb, var(--tier-color) 6%, var(--surface-2));
+    border-color:color-mix(in srgb, var(--tier-color) 30%, var(--line)); }
+  .tro-family.locked { opacity:.85; }
+  .tro-fam-cup { flex:0 0 auto; width:80px; height:80px; display:grid; place-items:center; }
+  .tro-fam-cup .tro-cup { width:80px; height:80px; object-fit:contain;
+    filter:drop-shadow(0 4px 12px color-mix(in srgb, var(--tier-color) 40%, transparent)); }
+  .tro-fam-cup .tro-cup.grayed { filter:grayscale(1) opacity(.5); }
+  .tro-fam-body { flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:5px; }
+  .tro-fam-title { font-size:16px; font-weight:700; color:var(--ink); display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; }
+  .tro-fam-tier { font-size:14px; font-weight:600; color:var(--tier-color); }
+  .tro-fam-tier-locked { color:var(--ink-3); font-style:italic; font-weight:500; }
+  .tro-fam-next { font-size:12.5px; color:var(--ink-3); }
+  .tro-fam-bar-outer { height:8px; border-radius:99px; background:color-mix(in srgb, var(--ink-3) 20%, var(--surface));
+    overflow:hidden; margin-top:2px; }
+  .tro-fam-bar-fill { height:100%; background:var(--tier-color); border-radius:99px;
+    transition:width .3s ease; box-shadow:0 0 8px color-mix(in srgb, var(--tier-color) 60%, transparent); }
+  .tro-fam-prog { font-size:11.5px; font-weight:700; color:var(--ink-2); font-variant-numeric:tabular-nums; letter-spacing:.02em; }
+
+  .tro-oneshots-section { border-top:1px dashed var(--line); padding-top:16px; }
+  .tro-oneshots-title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--ink-3); margin-bottom:10px; }
+  .tro-oneshots-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:10px; }
+  .tro-oneshot { display:flex; gap:12px; padding:11px 12px; border:1px solid var(--line);
+    border-radius:12px; background:var(--surface-2); align-items:flex-start; }
+  .tro-oneshot.on { border-color:color-mix(in srgb, var(--gold) 45%, var(--line));
+    background:color-mix(in srgb, var(--gold) 7%, var(--surface-2)); }
+  .tro-oneshot.off { opacity:.6; }
+  .tro-oneshot.clic { cursor:pointer; }
+  .tro-oneshot.clic:hover { transform:translateY(-1px); box-shadow:var(--shadow); }
+  .tro-os-ico { flex:0 0 auto; }
+  .tro-os-ico img, .tro-os-ico svg { width:40px; height:40px; border-radius:50%; object-fit:cover; }
+  .tro-oneshot.off .tro-os-ico { filter:grayscale(1); opacity:.55; }
+  .tro-os-body { flex:1 1 auto; min-width:0; }
+  .tro-os-name { font-size:13.5px; font-weight:700; color:var(--ink); }
+  .tro-os-desc { font-size:11.5px; color:var(--ink-3); margin-top:2px; line-height:1.4; }
+  .tro-os-state { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+    color:var(--ink-3); margin-top:4px; font-variant-numeric:tabular-nums; }
+  .tro-oneshot.on .tro-os-state { color:var(--gold); }
+  .tro-os-info { font-size:11.5px; font-weight:600; margin-top:4px; color:var(--ink); }
+  .vote-btn { margin-top:5px; padding:5px 10px; font-size:11.5px; font-weight:700; border-radius:8px;
+    border:1px solid var(--accent); background:var(--accent); color:#fff; cursor:pointer; }
+  .vote-btn.voted { background:var(--surface-2); color:var(--accent); }
+  .vote-note { margin-top:5px; font-size:11px; color:var(--ink-3); font-style:italic; }
+  .vote-voters { margin-top:4px; font-size:10.5px; color:var(--ink-3); }
+
+  /* Modal : gallerie des 6 paliers pour une famille */
+  .tmodal-tier-gallery { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:14px; margin-bottom:8px; }
+  .tmodal-tier { display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 6px;
+    border:1px solid var(--line); border-radius:12px; background:var(--surface-2);
+    text-align:center; }
+  .tmodal-tier.unlocked { border-color:color-mix(in srgb, var(--tier-color) 40%, var(--line));
+    background:color-mix(in srgb, var(--tier-color) 8%, var(--surface-2)); }
+  .tmodal-tier.locked { opacity:.7; }
+  .tmodal-tier-img { width:56px; height:56px; object-fit:contain; }
+  .tmodal-tier-img.grayed { filter:grayscale(1) opacity(.55); }
+  .tmodal-tier-label { font-size:12px; font-weight:700; color:var(--tier-color); }
+  .tmodal-tier.locked .tmodal-tier-label { color:var(--ink-3); }
+  .tmodal-tier-thresh { font-size:10.5px; color:var(--ink-2); line-height:1.35; }
+  .tmodal-tier-prog { font-size:10px; font-weight:700; color:var(--ink-3); font-variant-numeric:tabular-nums; }
+  .tmodal-sep { border:none; border-top:1px dashed var(--line); margin:12px 0; }
+
   .tmodal { display:none; position:fixed; inset:0; z-index:60; background:rgba(0,0,0,.5);
     align-items:center; justify-content:center; padding:20px; }
   .tmodal.open { display:flex; }

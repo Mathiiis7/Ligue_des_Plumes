@@ -2103,12 +2103,12 @@ const TROPHY_THEMES = {
 // Une fois un palier atteint, il reste unlocke pour toujours. Zero notion de
 // competition entre joueurs : chacun progresse a son rythme.
 const TROPHY_TIERS = [
-  { key:'bronze',   label:'Bronze',   color:'#a97142', emoji:'🥉' },
-  { key:'argent',   label:'Argent',   color:'#a3a8b2', emoji:'🥈' },
-  { key:'or',       label:'Or',       color:'#e6b800', emoji:'🥇' },
-  { key:'diamant',  label:'Diamant',  color:'#7fd3ff', emoji:'💎' },
-  { key:'violet',   label:'Violet',   color:'#a06cff', emoji:'🔮' },
-  { key:'emeraude', label:'Émeraude', color:'#0fbf85', emoji:'💚' },
+  { key:'bronze',   label:'Bronze',   color:'#a97142', img:'assets/trophies/bronze.png' },
+  { key:'argent',   label:'Argent',   color:'#a3a8b2', img:'assets/trophies/argent.png' },
+  { key:'or',       label:'Or',       color:'#e6b800', img:'assets/trophies/or.png' },
+  { key:'diamant',  label:'Diamant',  color:'#7fd3ff', img:'assets/trophies/diamant.png' },
+  { key:'violet',   label:'Violet',   color:'#d876ff', img:'assets/trophies/violet.png' },
+  { key:'emeraude', label:'Émeraude', color:'#0fbf85', img:'assets/trophies/emeraude.png' },
 ];
 // Genere 6 trophees d'une meme famille (un par palier). Chaque palier partage
 // le meme icone/theme/list/note mais adapte son nom, seuil et prog en fonction
@@ -2520,76 +2520,146 @@ function renderTrophies(data){
   let unlocked=0;
   trophyDetails={};
   // Rendu HTML d'un trophée. `detailIdx` = index unique dans trophyDetails pour le clic modal.
-  const renderTrophy = (t, detailIdx) => {
-    const ok=t.test(s); if(ok) unlocked++;
-    const p=t.prog?t.prog(s):null;
+  let detailIdx = 0;
+  // -------------------------------------------------------------------------
+  // Bloc 1 : familles a paliers (Ecologue, Marco Polo, Ma France, Bear Grylls,
+  // National Geographic). Chaque famille = 1 grosse carte horizontale avec le
+  // PNG du tier actuel a gauche + progression vers le suivant a droite. Les 6
+  // tiers detailles sont dans un modal accessible au clic.
+  // -------------------------------------------------------------------------
+  const familyMap = new Map();
+  const oneShots = [];
+  for(const t of TROPHIES){
+    if(t.tier && t.family){
+      if(!familyMap.has(t.family)) familyMap.set(t.family, []);
+      familyMap.get(t.family).push(t);
+    } else {
+      oneShots.push(t);
+    }
+  }
+  const familyBlocks = [];
+  for(const [familyKey, tiers] of familyMap){
+    // tiers ordre = ordre de TROPHY_TIERS (Bronze -> Emeraude), test par ordre.
+    const tiersSorted = [...tiers].sort((a,b) => TROPHY_TIERS.findIndex(x=>x.key===a.tier) - TROPHY_TIERS.findIndex(x=>x.key===b.tier));
+    let highestIdx = -1;
+    for(let i = 0; i < tiersSorted.length; i++){
+      if(tiersSorted[i].test(s)){ highestIdx = i; if(i === tiersSorted.length - 1) unlocked++; else unlocked++; }
+    }
+    // Prochaine cible : le tier juste au-dessus du plus haut atteint (ou Bronze si rien).
+    const nextTier = highestIdx < tiersSorted.length - 1 ? tiersSorted[highestIdx + 1] : null;
+    const currentTier = highestIdx >= 0 ? tiersSorted[highestIdx] : null;
+    const displayTier = currentTier || tiersSorted[0];   // fallback: montre Bronze grisé si rien débloqué
+    const displayMeta = TROPHY_TIERS.find(x => x.key === displayTier.tier);
+    const familyName = displayTier.name.replace(/ (Bronze|Argent|Or|Diamant|Violet|Émeraude)$/, '');
+    // Barre de progression : absolue (progNow / progTo), pas relative au palier precedent.
+    // Comme ca "100 / 150" affiche bien 66 % rempli plutot que 0 % (contre-intuitif car
+    // le user vient de valider Argent a 100 et voudrait voir sa progression globale).
+    let progTo = 1, progNow = 0;
+    if(nextTier){
+      const [now, cible] = nextTier.prog(s);
+      progNow = Math.max(0, Math.min(now, cible));
+      progTo = cible;
+    } else if(currentTier){
+      progTo = 1; progNow = 1;   // tout debloque -> barre pleine
+    }
+    const pct = Math.round((progNow / Math.max(1, progTo)) * 100);
+    const nextTierMeta = nextTier ? TROPHY_TIERS.find(x => x.key === nextTier.tier) : null;
+    const nextLine = nextTier
+      ? `Prochain palier : ${esc(nextTierMeta.label)} à ${nextTier.prog(s)[1]}`
+      : (currentTier ? '<b>Toutes les coupes débloquées 🏆</b>' : '');
+    const bigDetail = highestIdx >= 0 ? tiersSorted[Math.min(highestIdx + 1, tiersSorted.length - 1)] : tiersSorted[0];
+    // Detail modal pour cette famille = tous les tiers en gallerie.
+    trophyDetails[detailIdx] = {
+      kind: 'tierFamily',
+      family: familyKey,
+      familyName,
+      tiers: tiersSorted.map((t, i) => ({
+        tier: t.tier,
+        label: TROPHY_TIERS.find(x=>x.key===t.tier).label,
+        img: TROPHY_TIERS.find(x=>x.key===t.tier).img,
+        color: TROPHY_TIERS.find(x=>x.key===t.tier).color,
+        threshold: t.prog(s)[1],
+        current: t.prog(s)[0],
+        unlocked: i <= highestIdx,
+        desc: t.desc,
+      })),
+      // Pour Bear Grylls / Ma France, le prog list existe -> on peut aussi montrer la liste des elements a cocher.
+      itemList: displayTier.list ? displayTier.list(s) : null,
+      itemNote: displayTier.note ? displayTier.note(s) : '',
+    };
+    const familyDataIdx = detailIdx++;
+    const locked = highestIdx < 0;
+    familyBlocks.push(`
+      <div class="tro-family ${locked?'locked':'unlocked'} tier-${displayTier.tier}"
+           style="--tier-color:${displayMeta.color}"
+           data-detail="${familyDataIdx}">
+        <div class="tro-fam-cup">
+          <img src="${esc(displayMeta.img)}" alt="${esc(displayMeta.label)}" class="tro-cup${locked?' grayed':''}">
+        </div>
+        <div class="tro-fam-body">
+          <div class="tro-fam-title">
+            <span class="tro-fam-name">${esc(familyName)}</span>
+            ${currentTier ? `<span class="tro-fam-tier">· ${esc(displayMeta.label)}</span>` : `<span class="tro-fam-tier tro-fam-tier-locked">· à débloquer</span>`}
+          </div>
+          <div class="tro-fam-next">${nextLine}</div>
+          <div class="tro-fam-bar-outer">
+            <div class="tro-fam-bar-fill" style="width:${pct}%"></div>
+          </div>
+          <div class="tro-fam-prog">${progNow} / ${progTo}${nextTier?'':''}</div>
+        </div>
+      </div>`);
+  }
+  // -------------------------------------------------------------------------
+  // Bloc 2 : trophees one-shot (compact grid, style epure).
+  // -------------------------------------------------------------------------
+  const oneShotCards = oneShots.map(t => {
+    const ok = t.test(s); if(ok) unlocked++;
+    const p = t.prog ? t.prog(s) : null;
     const detail = t.list ? t.list(s) : null;
     const clic = detail && detail.length && (ok || t.alwaysList);
-    if(clic) trophyDetails[detailIdx]={ name:t.name, list:detail, note: t.note?t.note(s):'' };
+    if(clic) trophyDetails[detailIdx] = { kind:'oneshot', name:t.name, list:detail, note:t.note?t.note(s):'' };
+    const dataIdx = clic ? detailIdx++ : null;
     const prog = p ? `${Math.min(Math.round(p[0]),p[1])} / ${p[1]}` : 'À débloquer';
-    let stateTxt;
-    if(ok) stateTxt = clic ? 'Débloqué ✓ · voir la liste' : 'Débloqué ✓';
-    else stateTxt = clic ? prog+' · voir la liste' : prog;
-    const tip = t.tip ? t.tip(s) : '';
-    const info = (ok && t.info) ? t.info(s) : '';
-    let extra='';
-    if(t.special==='vote'){
+    let stateTxt = ok ? 'Débloqué ✓' : prog;
+    let extra = '';
+    if(t.special === 'vote'){
       const voteId = t.voteId || 'grosBebe';
       const threshold = t.voteThreshold || 2;
       const voterUids = votesMap.get(voteId)?.get(sel.id);
       const votes = voterUids?.size || 0;
       stateTxt = ok ? `Validé ✓ · ${votes} votes` : `${votes} / ${threshold} votes`;
       const canSelfVote = t.voteSelfCheck ? t.voteSelfCheck() : false;
-      if(sel.id===myUid && !canSelfVote){ extra = `<div class="vote-note">🗳️ Les autres votent pour vous (partagez la preuve dans le tchat)</div>`; }
+      if(sel.id === myUid && !canSelfVote){ extra = `<div class="vote-note">🗳️ Les autres votent pour vous</div>`; }
       else if(myMemberName()){
         const iVoted = voterUids?.has(myUid);
         extra = `<button class="vote-btn${iVoted?' voted':''}" data-vote-target="${esc(sel.id)}" data-vote-trophy="${esc(voteId)}">${iVoted?'✓ Voté - retirer':'Valider ✅'}</button>`;
-      } else { extra = `<div class="vote-note">Connecte-toi pour pouvoir voter</div>`; }
-      // Liste des votants (petit texte sous le bouton). Toujours visible, meme sans etre logge.
+      }
       if(voterUids && voterUids.size){
-        const names = [...voterUids]
-          .map(uid => state.people.find(p => p.id === uid)?.name || '?')
-          .filter(n => n && n !== '?')
-          .sort((a,b) => a.localeCompare(b, 'fr'));
-        if(names.length){
-          extra += `<div class="vote-voters" style="margin-top:6px; font-size:11px; color:var(--ink-3);">👥 ${names.join(', ')}</div>`;
-        }
+        const names = [...voterUids].map(uid => state.people.find(p => p.id === uid)?.name || '?').filter(n => n !== '?').sort();
+        if(names.length) extra += `<div class="vote-voters">👥 ${names.join(', ')}</div>`;
       }
     }
-    // Badge tier : petite pastille en haut a droite pour trophees a paliers.
-    const tierMeta = t.tier ? TROPHY_TIERS.find(x => x.key === t.tier) : null;
-    const tierBadge = tierMeta
-      ? `<div class="tier-badge tier-${t.tier}" style="--tier-color:${tierMeta.color}" title="${esc(tierMeta.label)}">${tierMeta.emoji}</div>`
-      : '';
-    const tierClass = t.tier ? ` tier-${t.tier}` : '';
-    return `<div class="trophy ${ok?'on':'off'}${clic?' clic':''}${tierClass}"${clic?` data-detail="${detailIdx}"`:''}${tip?` title="${esc(tip)}"`:''}>
-      ${tierBadge}
-      <div class="tico">${t.icon}</div>
-      <div class="tname">${esc(t.name)}</div>
-      <div class="tdesc">${esc(t.desc)}</div>
-      <div class="tstate">${stateTxt}</div>
-      ${info?`<div class="tinfo">${esc(info)}</div>`:''}
-      ${extra}
+    const info = (ok && t.info) ? t.info(s) : '';
+    return `<div class="tro-oneshot ${ok?'on':'off'}${clic?' clic':''}"${clic?` data-detail="${dataIdx}"`:''}>
+      <div class="tro-os-ico">${t.icon}</div>
+      <div class="tro-os-body">
+        <div class="tro-os-name">${esc(t.name)}</div>
+        <div class="tro-os-desc">${esc(t.desc)}</div>
+        <div class="tro-os-state">${stateTxt}</div>
+        ${info?`<div class="tro-os-info">${esc(info)}</div>`:''}
+        ${extra}
+      </div>
     </div>`;
-  };
-  // Regroupe les trophées par thème, dans l'ordre défini par TROPHY_THEMES. Chaque section a
-  // un en-tête (label + compteur "X/Y"), les trophées débloqués remontent en tête au sein d'une section.
-  const themeOrder = Object.keys(TROPHY_THEMES);
-  const buckets = new Map(themeOrder.map(id => [id, []]));
-  let detailIdx = 0;
-  TROPHIES.forEach(t => { const id = t.theme || 'progression'; if(!buckets.has(id)) buckets.set(id, []); buckets.get(id).push(t); });
-  const sections = [];
-  for(const id of themeOrder){
-    const arr = (buckets.get(id) || []).slice();   // ordre initial préservé
-    if(!arr.length) continue;
-    const okCount = arr.filter(t => t.test(s)).length;
-    const meta = TROPHY_THEMES[id];
-    sections.push(`<div class="trophy-theme-section">
-      <div class="tts-head"><span class="tts-title">${esc(meta.label)}</span><span class="tts-count">${okCount}/${arr.length}</span></div>
-      <div class="trophy-grid">${arr.map(t => renderTrophy(t, detailIdx++)).join('')}</div>
-    </div>`);
-  }
-  grid.innerHTML = sections.join('');
+  }).join('');
+  grid.innerHTML = `
+    <div class="tro-showcase">
+      <div class="tro-families">${familyBlocks.join('')}</div>
+      ${oneShotCards ? `
+      <div class="tro-oneshots-section">
+        <div class="tro-oneshots-title">Trophées spéciaux</div>
+        <div class="tro-oneshots-grid">${oneShotCards}</div>
+      </div>` : ''}
+    </div>`;
   const label = sel.isMe ? 'Vous avez' : esc(sel.name)+' a';
   summary.textContent = `${label} débloqué ${unlocked} trophée${unlocked>1?'s':''} sur ${TROPHIES.length}`;
 }
@@ -11188,30 +11258,60 @@ $('#trophyGrid').addEventListener('click',async e=>{
     catch(err){ showError(err); }
     return;
   }
-  const card=e.target.closest('.trophy.clic'); if(!card) return;
+  const card=e.target.closest('.tro-family, .tro-oneshot.clic'); if(!card) return;
   const d=trophyDetails[card.dataset.detail]; if(!d) return;
-  $('#tmodalTitle').textContent=d.name;
   let html;
-  if(d.list.length && typeof d.list[0]==='object'){
-    const owned=d.list.filter(x=>x.owned).length;
-    const noteTxt = d.note || (owned+' déjà observé'+(owned>1?'s':'')+' sur '+d.list.length+' possibles en France');
-    html='<p class="tmodal-note">'+esc(noteTxt)+'</p>';
-    const sections=[]; d.list.forEach(x=>{ if(!sections.includes(x.section)) sections.push(x.section); });
-    for(const sec of sections){
-      const items=d.list.filter(x=>x.section===sec);
-      const secOwned=items.filter(x=>x.owned).length;
-      html+=(sec?'<h4 class="tmodal-h">'+esc(sec)+' <span>('+secOwned+'/'+items.length+')</span></h4>':'')+'<ul class="tmodal-list mega">'+
-        items.map(x=>{
-          const sci = x.sci || _nameToSci(x.name);
-          const label = (x.owned?'✓ ':'')+(sci?`<span class="sp-link" data-sci="${esc(sci)}">${esc(x.name)}</span>`:esc(x.name));
-          return '<li class="'+(x.owned?'own':'')+'">'+label+'</li>';
-        }).join('')+'</ul>';
+  // Cas famille a paliers : gallerie des 6 coupes + optionnellement la liste des elements a cocher.
+  if(d.kind === 'tierFamily'){
+    $('#tmodalTitle').textContent = d.familyName;
+    html = '<div class="tmodal-tier-gallery">' + d.tiers.map(t => `
+      <div class="tmodal-tier ${t.unlocked?'unlocked':'locked'}" style="--tier-color:${t.color}">
+        <img src="${esc(t.img)}" alt="${esc(t.label)}" class="tmodal-tier-img${t.unlocked?'':' grayed'}">
+        <div class="tmodal-tier-label">${esc(t.label)}</div>
+        <div class="tmodal-tier-thresh">${esc(t.desc)}</div>
+        <div class="tmodal-tier-prog">${t.current} / ${t.threshold} ${t.unlocked?'· <b>débloqué ✓</b>':''}</div>
+      </div>`).join('') + '</div>';
+    // Si la famille a une liste d'items a cocher (Bear Grylls, Ma France), on l'ajoute en dessous.
+    if(d.itemList && d.itemList.length){
+      html += '<hr class="tmodal-sep">';
+      if(d.itemNote) html += `<p class="tmodal-note">${esc(d.itemNote)}</p>`;
+      const sections = [];
+      d.itemList.forEach(x => { if(!sections.includes(x.section||'')) sections.push(x.section||''); });
+      for(const sec of sections){
+        const items = d.itemList.filter(x => (x.section||'') === sec);
+        const secOwned = items.filter(x => x.owned).length;
+        html += (sec ? `<h4 class="tmodal-h">${esc(sec)} <span>(${secOwned}/${items.length})</span></h4>` : '') +
+          '<ul class="tmodal-list mega">' + items.map(x => {
+            const sci = x.sci || _nameToSci(x.name);
+            const lbl = (x.owned?'✓ ':'') + (sci?`<span class="sp-link" data-sci="${esc(sci)}">${esc(x.name)}</span>`:esc(x.name));
+            return `<li class="${x.owned?'own':''}">${lbl}</li>`;
+          }).join('') + '</ul>';
+      }
     }
   } else {
-    html='<ul class="tmodal-list">'+d.list.map(n=>{
-      const sci = _nameToSci(n);
-      return `<li>${sci?`<span class="sp-link" data-sci="${esc(sci)}">${esc(n)}</span>`:esc(n)}</li>`;
-    }).join('')+'</ul>';
+    // Cas one-shot classique.
+    $('#tmodalTitle').textContent = d.name;
+    if(d.list.length && typeof d.list[0]==='object'){
+      const owned = d.list.filter(x=>x.owned).length;
+      const noteTxt = d.note || (owned+' déjà observé'+(owned>1?'s':'')+' sur '+d.list.length+' possibles en France');
+      html = '<p class="tmodal-note">'+esc(noteTxt)+'</p>';
+      const sections=[]; d.list.forEach(x=>{ if(!sections.includes(x.section)) sections.push(x.section); });
+      for(const sec of sections){
+        const items = d.list.filter(x=>x.section===sec);
+        const secOwned = items.filter(x=>x.owned).length;
+        html += (sec?'<h4 class="tmodal-h">'+esc(sec)+' <span>('+secOwned+'/'+items.length+')</span></h4>':'') +
+          '<ul class="tmodal-list mega">' + items.map(x=>{
+            const sci = x.sci || _nameToSci(x.name);
+            const label = (x.owned?'✓ ':'')+(sci?`<span class="sp-link" data-sci="${esc(sci)}">${esc(x.name)}</span>`:esc(x.name));
+            return '<li class="'+(x.owned?'own':'')+'">'+label+'</li>';
+          }).join('') + '</ul>';
+      }
+    } else {
+      html = '<ul class="tmodal-list">' + d.list.map(n => {
+        const sci = _nameToSci(n);
+        return `<li>${sci?`<span class="sp-link" data-sci="${esc(sci)}">${esc(n)}</span>`:esc(n)}</li>`;
+      }).join('') + '</ul>';
+    }
   }
   $('#tmodalBody').innerHTML=html;
   $('#trophyModal').classList.add('open');
