@@ -724,6 +724,13 @@ const HABITAT_LABELS = {"forest":"🌲 Forêt","woodland":"🌳 Bois / savane ar
 // - AGRICOLE : especes fortement liees aux paysages agricoles (champs, bocage, vergers).
 // - Multi-habitat curated : cas frontieres ou une seule categorie AVONET est reductrice.
 // Merge dans habitatsOf() ci-dessous.
+// Overrides AVONET : cas ou la mono-classification AVONET est franchement fausse.
+// Contrairement a HABITAT_ADDITIONS (qui AJOUTE aux categories AVONET), les OVERRIDES
+// REMPLACENT entierement les habitats AVONET pour l'espece. Reserve aux vraies erreurs.
+const HABITAT_OVERRIDES = {
+  // Balbuzard pecheur : rapace piscivore de rivieres/lacs/estuaires, pas pelagique.
+  "pandion haliaetus":["riverine","coastal","wetland"],
+};
 const HABITAT_ADDITIONS = {
   // ----- MONTANE (montagne / altitude) -----
   "gypaetus barbatus":["montane"],"aquila chrysaetos":["montane"],
@@ -787,6 +794,9 @@ const HABITAT_ADDITIONS = {
 };
 function habitatsOf(sci){
   const key = (sci||"").trim().toLowerCase();
+  // Override total AVONET (cas ou la classification de base est fausse).
+  const override = HABITAT_OVERRIDES[key];
+  if(override) return override;
   const base = HABITATS[key];
   const add = HABITAT_ADDITIONS[key];
   if(!base && !add) return null;
