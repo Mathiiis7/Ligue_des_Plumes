@@ -2311,32 +2311,30 @@ const TROPHIES = [
     list:s=>FR_REGIONS.map(r=>({ name:r.name, owned:s.regionsOwnedSet.has(r.code) })),
     note:s=>`${s.regionsCount} région${s.regionsCount>1?'s':''} visitée${s.regionsCount>1?'s':''} sur ${FR_REGIONS.length}`,
   }),
-  ...makeTierFamily({
-    theme:'groupe', icon:ICONS.bearGrylls, family:'bearGrylls', baseName:'Bear Grylls',
-    metric:s=>s.habCovered, thresholds:[3,5,8,10,12,14],
-    descTpl:'Cocher 20 % des espèces françaises dans {n} milieux différents',
-    list:s=>{
-      const habMin = c => Math.max(1, Math.ceil((HABITAT_TO_SCIS_FR(c)||[]).length * 0.20));
-      const out = [];
-      for(const c of HABITAT_CATS){
-        const scis = HABITAT_TO_SCIS_FR(c) || [];
-        const scisSet = new Set(scis);
-        // Compteur = intersection observees x especes FR (pas le total mondial de
-        // s.habOwned[c] qui incluait des especes hors France et desalignait le header
-        // "6/6" avec la liste affichee ci-dessous).
-        const observedInFr = [...s.habOwned[c]].filter(sci => scisSet.has(sci)).length;
-        const seuil = habMin(c);
-        // Validation FR-only : ne compte que les especes de la liste France, cohérent
-        // avec l'affichage. Avant : .size global validait 'desert' avec un Traquet vu
-        // au Maroc alors qu'aucune des 3 espèces FR n'etait cochee.
-        const ok = observedInFr >= seuil;
-        const sec = `${HABITAT_LABELS[c]} : ${observedInFr}/${scis.length} vues (seuil ${seuil} espèce${seuil>1?'s':''}) ${ok?'✅ validé':'⏳ à valider'}`;
-        for(const sci of scis) out.push({ name: frName(sci, sci), section: sec, owned: s.habOwned[c].has(sci) });
-      }
-      return out;
-    },
-    note:s=>`${s.habCovered} milieu${s.habCovered>1?'x':''} validé${s.habCovered>1?'s':''} sur ${HABITAT_CATS.length} (seuil : 20 % des espèces françaises par milieu)`,
-  }),
+  // ----- 14 familles habitat evolutives (seuils absolus, seuil = nb d'especes obs
+  // dans ce milieu peu importe le pays -> scale a l'international sans distinction) --
+  ...([
+    ["forest",   "Forestier",   [5,10,20,35,50,75]],
+    ["woodland", "Bocager",     [3, 6,12,20,30,45]],
+    ["shrubland","Buissonnier", [3, 6,12,20,30,45]],
+    ["grassland","Steppique",   [3, 6,12,20,30,45]],
+    ["agricole", "Paysan",      [3, 6,12,20,30,45]],
+    ["wetland",  "Palustre",    [3, 6,12,20,30,45]],
+    ["riverine", "Piscivore",   [3, 6,12,20,30,45]],
+    ["marine",   "Pélagique",   [1, 2, 4, 7,12,18]],
+    ["coastal",  "Littoral",    [3, 6,12,20,30,45]],
+    ["rock",     "Rupestre",    [1, 3, 6,10,15,22]],
+    ["montane",  "Montagnard",  [2, 4, 8,13,20,28]],
+    ["desert",   "Saharien",    [1, 3, 6,10,15,22]],
+    ["humanmod", "Urbain",      [3, 8,15,25,40,60]],
+    ["aerial",   "Voltigeur",   [1, 3, 6,10,15,22]],
+  ].flatMap(([habKey, name, thresholds]) => makeTierFamily({
+    theme:'groupe', icon:ICONS.bearGrylls, family:'habitat_'+habKey, baseName:name,
+    metric:s=>(s.habOwned[habKey]?.size)||0, thresholds,
+    descTpl:`Observer {n} espèces différentes en ${HABITAT_LABELS[habKey].replace(/^[^\s]+ /,'').toLowerCase()}`,
+    list:s=>[...(s.habOwned[habKey]||[])].sort().map(sci=>({ name:frName(sci,sci), owned:true })),
+    note:s=>`${(s.habOwned[habKey]?.size)||0} espèce${((s.habOwned[habKey]?.size)||0)>1?'s':''} observée${((s.habOwned[habKey]?.size)||0)>1?'s':''} en ${HABITAT_LABELS[habKey]}`,
+  }))),
   ...makeTierFamily({
     theme:'communaute', icon:ICONS.photo, family:'natGeo', baseName:'National Geographic',
     metric:s=>s.hotPhotos||0, thresholds:[1,3,7,15,25,40],
