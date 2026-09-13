@@ -19,6 +19,11 @@
   .drop input { display:none; }
   .drop b { color:#0b7c77; }
   .row-btns { display:flex; gap:10px; flex-wrap:wrap; margin:14px 0; align-items:center; }
+  .style-chips { display:flex; gap:8px; flex-wrap:wrap; }
+  .style-chip { padding:8px 14px; font-size:13px; font-weight:600; border-radius:99px;
+    border:1px solid #cfd8d5; background:#fafcfb; color:#47534f; cursor:pointer; transition:all .12s; }
+  .style-chip:hover { border-color:#0b7c77; }
+  .style-chip.on { background:#0b7c77; color:#fff; border-color:#0b7c77; }
   .btn { background:#0b7c77; color:#fff; border:none; border-radius:10px; padding:9px 16px;
     font-size:13.5px; font-weight:600; cursor:pointer; }
   .btn:hover { filter:brightness(1.05); }
@@ -56,8 +61,13 @@
         Format 1024×1024 idéal.</div>
     </label>
 
+    <div id="styleRow" style="display:none; margin:14px 0 0;">
+      <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#556; margin-bottom:6px;">Style visuel</div>
+      <div class="style-chips" id="styleChips"></div>
+    </div>
+
     <div class="row-btns" id="controls" style="display:none;">
-      <button class="btn" id="downloadAll">⬇ Télécharger les 6 en zip</button>
+      <button class="btn" id="downloadAll">⬇ Télécharger les 6</button>
       <button class="btn ghost" id="reset">Recommencer</button>
     </div>
 
@@ -87,6 +97,56 @@
 // Definition des 6 paliers avec les parametres de shift HSL cibles.
 // hueShift = decalage a appliquer sur le H des pixels colores de la version doree (H≈45).
 // satMul, lightAdd = multiplicateur/offset pour ajuster la saturation / lightness.
+// Styles visuels appliques APRES le shift de couleur. Chaque style est une fonction
+// (ImageData in, ImageData out). Pour ajouter un nouveau style : ajoute une entree
+// dans STYLES avec un id, un label, et une fonction de transformation.
+const STYLES = {
+  original: { label:'Original', fn: data => data },
+  pixel: { label:'Pixel art', fn: data => pixelate(data, 32) },
+  // Placeholder pour futurs styles (base sur une image de reference fournie).
+  // Exemple : bordure, halo, etc.
+};
+
+// Pixelate : reduit l'image en blocs de NxN pixels (moyenne des couleurs par bloc).
+function pixelate(src, blockSize){
+  const w = src.width, h = src.height;
+  const out = new ImageData(w, h);
+  const sd = src.data, od = out.data;
+  for(let by = 0; by < h; by += blockSize){
+    for(let bx = 0; bx < w; bx += blockSize){
+      let r=0, g=0, b=0, a=0, n=0;
+      const xEnd = Math.min(bx + blockSize, w);
+      const yEnd = Math.min(by + blockSize, h);
+      for(let y = by; y < yEnd; y++){
+        for(let x = bx; x < xEnd; x++){
+          const idx = (y*w + x) * 4;
+          if(sd[idx+3] === 0) continue;
+          r += sd[idx]; g += sd[idx+1]; b += sd[idx+2]; a += sd[idx+3];
+          n++;
+        }
+      }
+      if(n === 0){
+        // Bloc entierement transparent : garde transparent
+        for(let y = by; y < yEnd; y++){
+          for(let x = bx; x < xEnd; x++){
+            const idx = (y*w + x) * 4;
+            od[idx]=0; od[idx+1]=0; od[idx+2]=0; od[idx+3]=0;
+          }
+        }
+        continue;
+      }
+      const avgR = Math.round(r/n), avgG = Math.round(g/n), avgB = Math.round(b/n), avgA = Math.round(a/n);
+      for(let y = by; y < yEnd; y++){
+        for(let x = bx; x < xEnd; x++){
+          const idx = (y*w + x) * 4;
+          od[idx] = avgR; od[idx+1] = avgG; od[idx+2] = avgB; od[idx+3] = avgA;
+        }
+      }
+    }
+  }
+  return out;
+}
+
 const TIERS = [
   { key:'bronze',   label:'Bronze',      color:'#a97142', targetH:26,  satMul:0.80, lightAdd:-8 },
   { key:'argent',   label:'Argent',      color:'#a3a8b2', targetH:220, satMul:0.10, lightAdd:+8 },
@@ -173,9 +233,27 @@ const msg = document.getElementById('msg');
 const controls = document.getElementById('controls');
 const downloadAllBtn = document.getElementById('downloadAll');
 const resetBtn = document.getElementById('reset');
+const styleRow = document.getElementById('styleRow');
+const styleChips = document.getElementById('styleChips');
 
 let sourceImage = null;
+let currentStyle = 'original';
 const generated = {};   // {tierKey: {blob, dataUrl}}
+
+// Genere les chips de selection de style au boot
+for(const [key, style] of Object.entries(STYLES)){
+  const chip = document.createElement('button');
+  chip.type = 'button';
+  chip.className = 'style-chip' + (key === currentStyle ? ' on' : '');
+  chip.dataset.style = key;
+  chip.textContent = style.label;
+  chip.addEventListener('click', () => {
+    currentStyle = key;
+    styleChips.querySelectorAll('.style-chip').forEach(c => c.classList.toggle('on', c === chip));
+    if(sourceImage) renderAll();
+  });
+  styleChips.appendChild(chip);
+}
 
 drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('dragover'); });
 drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
@@ -207,6 +285,7 @@ function handleFile(file){
 function renderAll(){
   tiles.innerHTML = '';
   controls.style.display = 'flex';
+  styleRow.style.display = 'block';
   // Extract ImageData from source image
   const srcCanvas = document.createElement('canvas');
   srcCanvas.width = sourceImage.naturalWidth;
@@ -217,8 +296,12 @@ function renderAll(){
 
   Object.keys(generated).forEach(k => delete generated[k]);
 
+  const styleFn = (STYLES[currentStyle] || STYLES.original).fn;
+
   for(const t of TIERS){
-    const outData = generateTier(srcData, t);
+    // Pipeline : shift couleur -> post-processing style
+    let outData = generateTier(srcData, t);
+    outData = styleFn(outData);
     const outCanvas = document.createElement('canvas');
     outCanvas.width = srcCanvas.width;
     outCanvas.height = srcCanvas.height;
