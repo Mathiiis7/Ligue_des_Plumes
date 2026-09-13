@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Générateur de trophées 6 paliers · Ligue des Birds</title>
+<style>
+  * { box-sizing:border-box; }
+  body { font-family:"Segoe UI", system-ui, -apple-system, sans-serif; background:#eef2f1; color:#15201e;
+    margin:0; padding:24px; line-height:1.5; }
+  h1 { font-size:24px; margin:0 0 6px; }
+  p.sub { color:#47534f; margin:0 0 18px; font-size:13.5px; }
+  .wrap { max-width:960px; margin:0 auto; }
+  .card { background:#fff; border:1px solid rgba(0,0,0,.08); border-radius:16px; padding:22px;
+    box-shadow:0 8px 28px rgba(0,0,0,.06); }
+  .drop { border:2px dashed #c9d3d0; border-radius:14px; padding:26px; text-align:center;
+    color:#556; cursor:pointer; background:#fafcfb; transition:border-color .12s, background .12s; }
+  .drop:hover, .drop.dragover { border-color:#0b7c77; background:#eefbf7; color:#0b7c77; }
+  .drop input { display:none; }
+  .drop b { color:#0b7c77; }
+  .row-btns { display:flex; gap:10px; flex-wrap:wrap; margin:14px 0; align-items:center; }
+  .btn { background:#0b7c77; color:#fff; border:none; border-radius:10px; padding:9px 16px;
+    font-size:13.5px; font-weight:600; cursor:pointer; }
+  .btn:hover { filter:brightness(1.05); }
+  .btn.ghost { background:#eef2f1; color:#15201e; border:1px solid #cfd8d5; }
+  .btn:disabled { opacity:.4; cursor:not-allowed; }
+  .grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; margin-top:16px; }
+  @media (max-width: 600px){ .grid { grid-template-columns:repeat(2, 1fr); } }
+  .tile { display:flex; flex-direction:column; align-items:center; gap:6px; padding:12px;
+    border:1px solid rgba(0,0,0,.08); border-radius:12px; background:#fafcfb; }
+  .tile canvas { width:100%; height:auto; max-width:180px; background:transparent; }
+  .tile .lbl { font-size:12.5px; font-weight:700; padding:3px 10px; border-radius:99px; color:#fff; }
+  .tile .tone { font-size:11px; color:#47534f; }
+  .tile a { font-size:11.5px; color:#0b7c77; text-decoration:none; font-weight:600; }
+  .tile a:hover { text-decoration:underline; }
+  .warn { background:#fff8dc; border:1px solid #e5d29a; color:#6b5000; padding:10px 12px;
+    border-radius:10px; font-size:12.5px; margin-top:14px; }
+  .warn.err { background:#fdecea; border-color:#e9b7b7; color:#8b1e1e; }
+  details { margin-top:14px; font-size:12.5px; color:#556; }
+  details summary { cursor:pointer; font-weight:600; }
+  details .body { margin-top:8px; line-height:1.7; }
+  code { background:#f2f5f4; padding:2px 6px; border-radius:6px; font-size:12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🏆 Générateur de trophées 6 paliers</h1>
+  <p class="sub">Dépose la version <b>dorée</b> d'un trophée, ça te sort les 5 autres couleurs
+    (bronze / argent / diamant / améthyste / émeraude) prêts à télécharger.</p>
+
+  <div class="card">
+    <label class="drop" id="drop">
+      <input type="file" id="file" accept="image/png,image/jpeg">
+      <div><b>📁 Choisir une image</b> ou glisser-déposer ici</div>
+      <div style="font-size:12px;color:#7c8783;margin-top:6px;">PNG avec fond transparent recommandé.
+        Format 1024×1024 idéal.</div>
+    </label>
+
+    <div class="row-btns" id="controls" style="display:none;">
+      <button class="btn" id="downloadAll">⬇ Télécharger les 6 en zip</button>
+      <button class="btn ghost" id="reset">Recommencer</button>
+    </div>
+
+    <div id="msg"></div>
+
+    <div class="grid" id="tiles"></div>
+
+    <details>
+      <summary>Comment ça marche ?</summary>
+      <div class="body">
+        L'image dorée est décomposée par pixel. Les pixels colorés (le corps de la coupe) sont
+        décalés en teinte HSL vers la couleur cible de chaque palier. Les pixels neutres (base
+        marron foncée, plaque, contours, ombres) sont préservés — leur saturation nulle les
+        rend insensibles au shift de teinte.<br><br>
+        <b>Résultat</b> : la coupe change de couleur mais le socle et les détails restent
+        identiques à la version originale. Compatible avec les PNG stylisés type Canva.<br><br>
+        Une fois téléchargés, place les 6 PNGs dans <code>assets/trophies/families/{nom}/</code>
+        avec les noms <code>bronze.png / argent.png / or.png / diamant.png / violet.png /
+        emeraude.png</code>, puis ajoute <code>imgDir:'assets/trophies/families/{nom}'</code>
+        dans la config du trophée dans <code>app.js</code>.
+      </div>
+    </details>
+  </div>
+</div>
+
+<script>
+// Definition des 6 paliers avec les parametres de shift HSL cibles.
+// hueShift = decalage a appliquer sur le H des pixels colores de la version doree (H≈45).
+// satMul, lightAdd = multiplicateur/offset pour ajuster la saturation / lightness.
+const TIERS = [
+  { key:'bronze',   label:'Bronze',    color:'#a97142', targetH:26,  satMul:0.80, lightAdd:-8 },
+  { key:'argent',   label:'Argent',    color:'#a3a8b2', targetH:220, satMul:0.10, lightAdd:+8 },
+  { key:'or',       label:'Or',        color:'#e6b800', targetH:45,  satMul:1.00, lightAdd:0   },
+  { key:'diamant',  label:'Diamant',   color:'#7fd3ff', targetH:195, satMul:0.95, lightAdd:+15 },
+  { key:'violet',   label:'Améthyste', color:'#d876ff', targetH:283, satMul:0.95, lightAdd:+8  },
+  { key:'emeraude', label:'Émeraude',  color:'#0fbf85', targetH:155, satMul:0.95, lightAdd:-2  },
+];
+
+function rgbToHsl(r,g,b){
+  r/=255; g/=255; b/=255;
+  const max=Math.max(r,g,b), min=Math.min(r,g,b);
+  let h=0, s=0; const l=(max+min)/2;
+  if(max !== min){
+    const d = max-min;
+    s = l>0.5 ? d/(2-max-min) : d/(max+min);
+    switch(max){
+      case r: h=(g-b)/d + (g<b?6:0); break;
+      case g: h=(b-r)/d + 2; break;
+      case b: h=(r-g)/d + 4; break;
+    }
+    h *= 60;
+  }
+  return [h, s, l];
+}
+
+function hslToRgb(h, s, l){
+  h = ((h % 360) + 360) % 360;
+  const c = (1 - Math.abs(2*l - 1)) * s;
+  const x = c * (1 - Math.abs(((h/60) % 2) - 1));
+  const m = l - c/2;
+  let r=0,g=0,b=0;
+  if(h<60){ r=c; g=x; }
+  else if(h<120){ r=x; g=c; }
+  else if(h<180){ g=c; b=x; }
+  else if(h<240){ g=x; b=c; }
+  else if(h<300){ r=x; b=c; }
+  else { r=c; b=x; }
+  return [Math.round((r+m)*255), Math.round((g+m)*255), Math.round((b+m)*255)];
+}
+
+function generateTier(sourceImageData, tier){
+  const src = sourceImageData;
+  const w = src.width, h = src.height;
+  const out = new ImageData(w, h);
+  const sd = src.data, od = out.data;
+  for(let i=0; i<sd.length; i+=4){
+    const r=sd[i], g=sd[i+1], b=sd[i+2], a=sd[i+3];
+    if(a === 0){ od[i]=0; od[i+1]=0; od[i+2]=0; od[i+3]=0; continue; }
+    const [srcH, srcS, srcL] = rgbToHsl(r,g,b);
+    // Pixels "neutres" (S faible) : on ne shift pas la teinte. Base marron foncee, plaque,
+    // ombres, contours restent identiques. Seuil 0.15 : au-dessous = considere neutre.
+    if(srcS < 0.15){
+      od[i]=r; od[i+1]=g; od[i+2]=b; od[i+3]=a;
+      continue;
+    }
+    // Pixels colores : remap teinte vers la couleur cible du palier, en preservant la
+    // structure lumineuse (highlights et ombres restent lisibles).
+    const newH = tier.targetH;
+    const newS = Math.max(0, Math.min(1, srcS * tier.satMul));
+    const newL = Math.max(0, Math.min(1, srcL + tier.lightAdd/100));
+    const [nr,ng,nb] = hslToRgb(newH, newS, newL);
+    od[i]=nr; od[i+1]=ng; od[i+2]=nb; od[i+3]=a;
+  }
+  return out;
+}
+
+const drop = document.getElementById('drop');
+const fileInput = document.getElementById('file');
+const tiles = document.getElementById('tiles');
+const msg = document.getElementById('msg');
+const controls = document.getElementById('controls');
+const downloadAllBtn = document.getElementById('downloadAll');
+const resetBtn = document.getElementById('reset');
+
+let sourceImage = null;
+const generated = {};   // {tierKey: {blob, dataUrl}}
+
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('dragover'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
+drop.addEventListener('drop', e => {
+  e.preventDefault(); drop.classList.remove('dragover');
+  const f = e.dataTransfer.files?.[0]; if(f) handleFile(f);
+});
+fileInput.addEventListener('change', e => { const f = e.target.files?.[0]; if(f) handleFile(f); });
+resetBtn.addEventListener('click', () => {
+  sourceImage = null; tiles.innerHTML = ''; msg.innerHTML = '';
+  fileInput.value = ''; controls.style.display = 'none';
+});
+downloadAllBtn.addEventListener('click', downloadAll);
+
+function handleFile(file){
+  msg.innerHTML = '';
+  if(!/^image\/(png|jpeg)$/.test(file.type)){
+    msg.innerHTML = '<div class="warn err">Merci de fournir un PNG ou JPG.</div>'; return;
+  }
+  const img = new Image();
+  img.onload = () => {
+    sourceImage = img;
+    renderAll();
+  };
+  img.onerror = () => { msg.innerHTML = '<div class="warn err">Impossible de lire cette image.</div>'; };
+  img.src = URL.createObjectURL(file);
+}
+
+function renderAll(){
+  tiles.innerHTML = '';
+  controls.style.display = 'flex';
+  // Extract ImageData from source image
+  const srcCanvas = document.createElement('canvas');
+  srcCanvas.width = sourceImage.naturalWidth;
+  srcCanvas.height = sourceImage.naturalHeight;
+  const srcCtx = srcCanvas.getContext('2d');
+  srcCtx.drawImage(sourceImage, 0, 0);
+  const srcData = srcCtx.getImageData(0, 0, srcCanvas.width, srcCanvas.height);
+
+  Object.keys(generated).forEach(k => delete generated[k]);
+
+  for(const t of TIERS){
+    const outData = generateTier(srcData, t);
+    const outCanvas = document.createElement('canvas');
+    outCanvas.width = srcCanvas.width;
+    outCanvas.height = srcCanvas.height;
+    outCanvas.getContext('2d').putImageData(outData, 0, 0);
+    outCanvas.toBlob(blob => {
+      generated[t.key] = { blob, name: t.key + '.png' };
+    }, 'image/png');
+    // Display tile
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    const dataUrl = outCanvas.toDataURL('image/png');
+    tile.innerHTML = `
+      <canvas width="${outCanvas.width}" height="${outCanvas.height}"></canvas>
+      <span class="lbl" style="background:${t.color}">${t.label}</span>
+      <span class="tone">${t.color}</span>
+      <a href="${dataUrl}" download="${t.key}.png">⬇ Télécharger ${t.key}.png</a>`;
+    const tileCv = tile.querySelector('canvas');
+    tileCv.getContext('2d').putImageData(outData, 0, 0);
+    tiles.appendChild(tile);
+  }
+}
+
+async function downloadAll(){
+  // Simple : declenche 6 download un par un. Pas de zip client-side pour rester leger.
+  for(const t of TIERS){
+    const gen = generated[t.key];
+    if(!gen) continue;
+    const url = URL.createObjectURL(gen.blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = gen.name; a.style.display = 'none';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    // Petit delai pour eviter que le navigateur bloque en cascade
+    await new Promise(r => setTimeout(r, 250));
+  }
+}
+</script>
+</body>
+</html>
