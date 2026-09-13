@@ -13,10 +13,10 @@
   .wrap { max-width:960px; margin:0 auto; }
   .card { background:#fff; border:1px solid rgba(0,0,0,.08); border-radius:16px; padding:22px;
     box-shadow:0 8px 28px rgba(0,0,0,.06); }
-  .drop { border:2px dashed #c9d3d0; border-radius:14px; padding:26px; text-align:center;
-    color:#556; cursor:pointer; background:#fafcfb; transition:border-color .12s, background .12s; }
+  .drop { display:block; border:2px dashed #c9d3d0; border-radius:14px; padding:26px; text-align:center;
+    color:#556; cursor:pointer; background:#fafcfb; transition:border-color .12s, background .12s; box-sizing:border-box; }
   .drop:hover, .drop.dragover { border-color:#0b7c77; background:#eefbf7; color:#0b7c77; }
-  .drop input { display:none; }
+  .drop input[type=file] { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; overflow:hidden; }
   .drop b { color:#0b7c77; }
   .row-btns { display:flex; gap:10px; flex-wrap:wrap; margin:14px 0; align-items:center; }
   .style-chips { display:flex; gap:8px; flex-wrap:wrap; }
@@ -101,11 +101,183 @@
 // (ImageData in, ImageData out). Pour ajouter un nouveau style : ajoute une entree
 // dans STYLES avec un id, un label, et une fonction de transformation.
 const STYLES = {
-  original: { label:'Original', fn: data => data },
-  pixel: { label:'Pixel art', fn: data => pixelate(data, 32) },
-  // Placeholder pour futurs styles (base sur une image de reference fournie).
-  // Exemple : bordure, halo, etc.
+  original:    { label:'🎨 Original',     fn: data => data },
+  pixel:       { label:'👾 Pixel art',     fn: data => pixelate(data, 32) },
+  cartoon:     { label:'🎞️ Cartoon',       fn: data => cartoonize(data) },
+  chrome:      { label:'✨ Chrome',         fn: data => chrome(data) },
+  sketch:      { label:'✏️ Sketch',         fn: data => sketch(data) },
+  halftone:    { label:'🔴 Halftone',       fn: data => halftone(data, 12) },
+  neon:        { label:'🌈 Néon',           fn: data => neon(data) },
+  sepia:       { label:'🕰️ Sépia',          fn: data => sepia(data) },
+  scrapbook:   { label:'📖 Scrapbooking',   fn: data => scrapbook(data) },
 };
+
+// ---- Helpers ImageData ----
+function cloneData(src){ const o = new ImageData(src.width, src.height); o.data.set(src.data); return o; }
+function iterate(src, cb){
+  const w=src.width, h=src.height, sd=src.data;
+  const o = new ImageData(w, h); const od = o.data;
+  for(let y=0; y<h; y++){
+    for(let x=0; x<w; x++){
+      const i = (y*w + x)*4;
+      const [r,g,b,a] = cb(sd[i], sd[i+1], sd[i+2], sd[i+3], x, y);
+      od[i]=r; od[i+1]=g; od[i+2]=b; od[i+3]=a;
+    }
+  }
+  return o;
+}
+
+// Cartoon : quantifie les couleurs en 5 niveaux par canal (posterisation).
+function cartoonize(src){
+  const levels = 5, step = 255 / (levels - 1);
+  return iterate(src, (r,g,b,a) => a === 0 ? [0,0,0,0]
+    : [Math.round(r/step)*step | 0, Math.round(g/step)*step | 0, Math.round(b/step)*step | 0, a]);
+}
+
+// Chrome : boost contraste + saturation, effet metallique brillant.
+function chrome(src){
+  return iterate(src, (r,g,b,a) => {
+    if(a === 0) return [0,0,0,0];
+    // Contraste : gamma 0.85 (accentue les extremes), pivot 128.
+    const gamma = 0.85;
+    const cr = 255 * Math.pow(r/255, gamma);
+    const cg = 255 * Math.pow(g/255, gamma);
+    const cb = 255 * Math.pow(b/255, gamma);
+    // Saturation +30% via mix vers max lumineux.
+    const lum = 0.299*cr + 0.587*cg + 0.114*cb;
+    const boost = 1.30;
+    let nr = lum + (cr - lum) * boost;
+    let ng = lum + (cg - lum) * boost;
+    let nb = lum + (cb - lum) * boost;
+    return [Math.max(0,Math.min(255,nr))|0, Math.max(0,Math.min(255,ng))|0, Math.max(0,Math.min(255,nb))|0, a];
+  });
+}
+
+// Sketch : Sobel edge detection, sortie = trait noir sur transparent.
+function sketch(src){
+  const w=src.width, h=src.height, sd=src.data;
+  const out = new ImageData(w, h); const od = out.data;
+  const lum = (i) => 0.299*sd[i] + 0.587*sd[i+1] + 0.114*sd[i+2];
+  for(let y=1; y<h-1; y++){
+    for(let x=1; x<w-1; x++){
+      const i = (y*w + x)*4;
+      if(sd[i+3] === 0){ od[i+3]=0; continue; }
+      // Sobel 3x3
+      const tl=lum(((y-1)*w+(x-1))*4), t=lum(((y-1)*w+x)*4), tr=lum(((y-1)*w+(x+1))*4);
+      const l =lum((y*w+(x-1))*4),                          r =lum((y*w+(x+1))*4);
+      const bl=lum(((y+1)*w+(x-1))*4), b=lum(((y+1)*w+x)*4), br=lum(((y+1)*w+(x+1))*4);
+      const gx = tr + 2*r + br - tl - 2*l - bl;
+      const gy = bl + 2*b + br - tl - 2*t - tr;
+      const mag = Math.sqrt(gx*gx + gy*gy);
+      const edge = Math.min(255, mag);
+      // Trait sombre proportionnel a l'edge (255 = full contour noir).
+      const alpha = edge > 30 ? Math.min(255, edge * 2) : 0;
+      od[i]=30; od[i+1]=30; od[i+2]=45; od[i+3]=alpha;
+    }
+  }
+  return out;
+}
+
+// Halftone : remplace les pixels par un motif de points de tailles variables selon la
+// luminosite locale. Cellules de size x size, disque plus grand = zone plus sombre.
+function halftone(src, cellSize){
+  const w=src.width, h=src.height, sd=src.data;
+  const out = new ImageData(w, h); const od = out.data;
+  for(let by=0; by<h; by+=cellSize){
+    for(let bx=0; bx<w; bx+=cellSize){
+      let sumL=0, sumR=0, sumG=0, sumB=0, sumA=0, n=0;
+      const xE = Math.min(bx+cellSize, w), yE = Math.min(by+cellSize, h);
+      for(let y=by; y<yE; y++){
+        for(let x=bx; x<xE; x++){
+          const i = (y*w+x)*4;
+          if(sd[i+3] === 0) continue;
+          sumR += sd[i]; sumG += sd[i+1]; sumB += sd[i+2]; sumA += sd[i+3];
+          sumL += (0.299*sd[i] + 0.587*sd[i+1] + 0.114*sd[i+2]);
+          n++;
+        }
+      }
+      if(n === 0) continue;
+      const avgR = sumR/n, avgG = sumG/n, avgB = sumB/n, avgA = sumA/n;
+      const avgL = sumL/n; // 0 = black, 255 = white
+      // Rayon proportionnel a l'obscurite : white -> 0, black -> cellSize/2.
+      const radius = (1 - avgL/255) * (cellSize/2) * 0.95;
+      const cx = bx + cellSize/2, cy = by + cellSize/2;
+      for(let y=by; y<yE; y++){
+        for(let x=bx; x<xE; x++){
+          const i = (y*w+x)*4;
+          const dx = x - cx, dy = y - cy;
+          if(dx*dx + dy*dy <= radius*radius){
+            od[i]=avgR|0; od[i+1]=avgG|0; od[i+2]=avgB|0; od[i+3]=avgA|0;
+          }
+        }
+      }
+    }
+  }
+  return out;
+}
+
+// Neon : glow effect. Applique le rendu original + halo lumineux autour des bords.
+function neon(src){
+  const w=src.width, h=src.height;
+  // Step 1 : boost saturation forte.
+  const sat = iterate(src, (r,g,b,a) => {
+    if(a === 0) return [0,0,0,0];
+    const lum = 0.299*r + 0.587*g + 0.114*b;
+    const boost = 1.6;
+    return [
+      Math.max(0,Math.min(255, lum + (r - lum) * boost))|0,
+      Math.max(0,Math.min(255, lum + (g - lum) * boost))|0,
+      Math.max(0,Math.min(255, lum + (b - lum) * boost))|0,
+      a
+    ];
+  });
+  // Step 2 : eclairci pixels satures pour effet lumineux.
+  return iterate(sat, (r,g,b,a) => {
+    if(a === 0) return [0,0,0,0];
+    return [
+      Math.min(255, r + 30)|0,
+      Math.min(255, g + 30)|0,
+      Math.min(255, b + 30)|0,
+      a
+    ];
+  });
+}
+
+// Sepia : ton chaud brun, desatura.
+function sepia(src){
+  return iterate(src, (r,g,b,a) => {
+    if(a === 0) return [0,0,0,0];
+    const tr = 0.393*r + 0.769*g + 0.189*b;
+    const tg = 0.349*r + 0.686*g + 0.168*b;
+    const tb = 0.272*r + 0.534*g + 0.131*b;
+    return [Math.min(255,tr)|0, Math.min(255,tg)|0, Math.min(255,tb)|0, a];
+  });
+}
+
+// Scrapbooking : desatura legerement + ajoute un grain paper-like + tint chaud subtil,
+// mime l'aspect print-sur-papier avec petite texture.
+function scrapbook(src){
+  return iterate(src, (r,g,b,a, x, y) => {
+    if(a === 0) return [0,0,0,0];
+    // Desat leger (85% saturation)
+    const lum = 0.299*r + 0.587*g + 0.114*b;
+    let nr = lum + (r - lum) * 0.75;
+    let ng = lum + (g - lum) * 0.75;
+    let nb = lum + (b - lum) * 0.75;
+    // Warm tint (+8 R, +4 G, -6 B)
+    nr += 8; ng += 4; nb -= 6;
+    // Grain paper : bruit deterministe base sur x, y (Math.random ne serait pas idempotent)
+    const noise = (Math.sin(x * 12.9898 + y * 78.233) * 43758.5453);
+    const grain = (noise - Math.floor(noise) - 0.5) * 24;   // ±12
+    nr += grain; ng += grain; nb += grain;
+    return [
+      Math.max(0,Math.min(255,nr))|0,
+      Math.max(0,Math.min(255,ng))|0,
+      Math.max(0,Math.min(255,nb))|0,
+      a
+    ];
+  });
+}
 
 // Pixelate : reduit l'image en blocs de NxN pixels (moyenne des couleurs par bloc).
 function pixelate(src, blockSize){
