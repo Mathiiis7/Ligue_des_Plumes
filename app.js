@@ -2389,15 +2389,15 @@ const TROPHIES = [
   }))),
   // -- Familles d'especes (paliers) --
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'rapaces', category:'species', baseName:'Rapace',
+    theme:'groupe', icon:ICONS.aigle, family:'rapaces', category:'species', baseName:'Rapaces diurnes',
     imgDir:'assets/trophies/families/rapace',
     metric:s=>(s.raptorOwnedSet?.size)||0, thresholds:[3,6,12,20,30,45],
-    descTpl:'Observer {n} rapaces diurnes différents',
+    descTpl:'Observer {n} rapaces diurnes différents (aigles, faucons, vautours…)',
     list:s=>[...(s.raptorOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.raptorOwnedSet?.size)||0} rapace${((s.raptorOwnedSet?.size)||0)>1?'s':''} observé${((s.raptorOwnedSet?.size)||0)>1?'s':''}`,
+    note:s=>`${(s.raptorOwnedSet?.size)||0} rapace${((s.raptorOwnedSet?.size)||0)>1?'s':''} diurne${((s.raptorOwnedSet?.size)||0)>1?'s':''} observé${((s.raptorOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'nocturnes', category:'species', baseName:'Nocturne',
+    theme:'groupe', icon:ICONS.aigle, family:'nocturnes', category:'species', baseName:'Rapaces nocturnes',
     imgDir:'assets/trophies/families/nocturnes',
     metric:s=>(s.owlOwnedSet?.size)||0, thresholds:[2,4,6,10,18,30],
     descTpl:'Observer {n} rapaces nocturnes différents (chouettes, hiboux)',
