@@ -3132,15 +3132,18 @@ function _detectTrophyEventsCore(){
       if(c && q){
         const ci = RANK_TROPHIES.indexOf(c), qi = RANK_TROPHIES.indexOf(q);
         if(ci > qi){
-          toWrite.push({ id:`demote__${p.id}__${_slug(q)}__to_${_slug(c)}`, data:{ kind:'demote', uid:p.id, name:p.name, fromTrophy:q, toTrophy:c } });
-        } else {
-          const prevOwnersOfC = prevHolders[c] || [];
-          const src = prevOwnersOfC.find(u => u !== p.id) || null;
-          toWrite.push({
-            id:`transfer_rk__${_slug(c)}__${p.id}__from_${src||'none'}`,
-            data:{ kind:'transfer', uid:p.id, name:p.name, fromUid:src||null, fromName:src?(nameByUid[src]||'quelqu\'un'):null, trophyName:c }
-          });
+          // Retrogradation ignoree : les rank trophies etant cascades, une fois qu'un
+          // joueur a atteint un tier (Ecologue en chef, etc.) il l'a "unlocke" pour
+          // toujours dans son historique. Descendre d'un cran n'est pas une perte,
+          // c'est juste un rearrangement du classement. On evite le spam feed.
+          continue;
         }
+        const prevOwnersOfC = prevHolders[c] || [];
+        const src = prevOwnersOfC.find(u => u !== p.id) || null;
+        toWrite.push({
+          id:`transfer_rk__${_slug(c)}__${p.id}__from_${src||'none'}`,
+          data:{ kind:'transfer', uid:p.id, name:p.name, fromUid:src||null, fromName:src?(nameByUid[src]||'quelqu\'un'):null, trophyName:c }
+        });
       } else if(c && !q){
         toWrite.push({ id:`unlock__${p.id}__${_slug(c)}`, data:{ kind:'unlock', uid:p.id, name:p.name, trophyName:c } });
       }
@@ -3214,6 +3217,11 @@ function renderFeed(){
   // On garde les 3 types : unlock (debloque), transfer (prend a X), demote (passe de A a B).
   if(feedMode==='new' && feedTier==='any'){
     for(const ev of _computeTrophyEvents()){
+      // Filtre les demote events historiques : les rank trophies etant "unlockes pour
+      // toujours" (une fois obtenu, jamais perdu dans l'historique du joueur), les
+      // retrogradations ne sont plus annoncees. Purge les vieux events Firestore de
+      // ce type au rendu.
+      if(ev.kind === 'demote') continue;
       // Le filtre "personne" affiche les evts ou cette personne est impliquee (uid OU fromUid).
       if(feedPerson !== 'any' && ev.uid !== feedPerson && ev.fromUid !== feedPerson) continue;
       items.push({ ...ev, ord:0, disp:'', addedAt:ev.at||ev.addedAt||0 });
@@ -6653,6 +6661,7 @@ function _countUnread(view, seen){
     try{
       const evts = _computeTrophyEvents ? _computeTrophyEvents() : [];
       for(const ev of evts){
+        if(ev.kind === 'demote') continue;   // Retrogradations ignorees (voir renderFeed)
         const at = ev.at || ev.addedAt || 0;
         if(ev.uid !== my && at > seen) n++;
       }
