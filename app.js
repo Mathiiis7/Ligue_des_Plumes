@@ -11556,17 +11556,29 @@ $('#trophyWho').addEventListener('click',e=>{
 function _renderSpeciesFamilyCountryList(mode, familyLabel, ownedSet, frFilter){
   const own = ownedSet instanceof Set ? ownedSet : new Set(ownedSet||[]);
   if(mode === 'fr'){
-    // Pool FR : parcourt REAL_ABUNDANCE_ST_FR, filtre les especes reellement presentes
-    // (a > 0) et matche par predicat de famille.
-    const frList = [];
+    // Pool FR : union de deux sources (comme pour les habitats).
+    //  1. REAL_ABUNDANCE_ST_FR (species avec a > 0) : couvre le gros des especes
+    //     modelisees eBird S&T.
+    //  2. REAL_RARITY tier < 10 : rattrape les especes FR reelles non modelisees par
+    //     S&T (ex : Faucon hobereau, Faucon kobez, certains rares). Sans ce fallback,
+    //     ces especes n'apparaissaient pas dans le pool FR alors qu'un birder FR peut
+    //     les cocher.
+    const frSet = new Set();
     if(typeof REAL_ABUNDANCE_ST_FR === 'object'){
       for(const sci in REAL_ABUNDANCE_ST_FR){
         const entry = REAL_ABUNDANCE_ST_FR[sci];
         if(!entry || (entry.a || 0) <= 0) continue;
-        if(frFilter(sci)) frList.push(sci);
+        if(frFilter(sci)) frSet.add(sci);
       }
     }
-    frList.sort((a,b) => frName(a,a).localeCompare(frName(b,b),'fr'));
+    if(typeof REAL_RARITY === 'object'){
+      for(const sci in REAL_RARITY){
+        if(REAL_RARITY[sci] >= 10) continue;
+        if(frSet.has(sci)) continue;
+        if(frFilter(sci)) frSet.add(sci);
+      }
+    }
+    const frList = [...frSet].sort((a,b) => frName(a,a).localeCompare(frName(b,b),'fr'));
     if(!frList.length){
       return '<p class="tmodal-note" style="font-style:italic;color:var(--ink-3);">Aucune espèce de cette famille n\'est présente en France.</p>';
     }
