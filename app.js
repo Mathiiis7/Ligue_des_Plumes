@@ -2807,6 +2807,12 @@ function renderTrophies(data){
       // Pour Bear Grylls / Ma France, le prog list existe -> on peut aussi montrer la liste des elements a cocher.
       itemList: displayTier.list ? displayTier.list(s) : null,
       itemNote: displayTier.note ? displayTier.note(s) : '',
+      // Habitat family : on stocke habKey + set des especes cochees pour permettre
+      // au modal de switcher entre "Monde" (especes que j'ai cochees) et "France"
+      // (le pool FR complet avec ma progression). Le selecteur de pays est ajoute
+      // dans le modal, cf renderTrophyModal.
+      habKey: familyKey.startsWith('habitat_') ? familyKey.slice(8) : null,
+      habOwnedSet: familyKey.startsWith('habitat_') ? new Set(s.habOwned[familyKey.slice(8)] || []) : null,
     };
     const familyDataIdx = detailIdx++;
     const locked = highestIdx < 0;
@@ -11464,6 +11470,36 @@ $('#trophyWho').addEventListener('click',e=>{
 // Rendu accordeon des sections de trophee : chaque milieu / region devient un
 // <details> depliant. Les sections deja validees sont pliees par defaut (rien a hunter),
 // les non-validees sont ouvertes pour aider l'utilisateur a savoir ou aller.
+// Genere la liste des especes d'un habitat pour un pays donne. Mode :
+//  - 'monde' : les especes que le user a cochees dans cet habitat (peu importe le pays).
+//  - 'fr'    : le pool complet des especes FR de cet habitat, marquees vues/pas vues.
+function _renderHabitatCountryList(mode, habKey, ownedSet){
+  const own = ownedSet instanceof Set ? ownedSet : new Set(ownedSet||[]);
+  if(mode === 'fr'){
+    const frList = HABITAT_TO_SCIS_FR(habKey) || [];
+    if(!frList.length){
+      return '<p class="tmodal-note" style="font-style:italic;color:var(--ink-3);">Aucune espèce de ce milieu n\'est présente en France.</p>';
+    }
+    const items = frList.map(sci => ({ name: frName(sci, sci), sci, owned: own.has(sci), section: '' }));
+    // Header simple : X/Y vues
+    const okCount = items.filter(x => x.owned).length;
+    const totalCount = items.length;
+    return `<p class="tmodal-note"><b>${okCount} / ${totalCount}</b> espèce${totalCount>1?'s':''} de ${esc(HABITAT_LABELS[habKey]||habKey)} vue${okCount>1?'s':''} en France.</p>` +
+      '<ul class="tmodal-list mega" style="columns:2;column-gap:24px;padding-left:20px;">' +
+      items.map(x => {
+        const lbl = (x.owned?'✓ ':'') + `<span class="sp-link" data-sci="${esc(x.sci)}">${esc(x.name)}</span>`;
+        return `<li class="${x.owned?'own':''}">${lbl}</li>`;
+      }).join('') + '</ul>';
+  }
+  // Mode 'monde' : liste des cochees.
+  const observed = [...own].sort((a,b) => frName(a,a).localeCompare(frName(b,b),'fr'));
+  if(!observed.length){
+    return '<p class="tmodal-note" style="font-style:italic;color:var(--ink-3);">Aucune espèce de ce milieu observée pour le moment. Ouvre l\'onglet France pour voir ce qui est chassable ici.</p>';
+  }
+  return `<p class="tmodal-note"><b>${observed.length}</b> espèce${observed.length>1?'s':''} observée${observed.length>1?'s':''} dans le monde en ${esc(HABITAT_LABELS[habKey]||habKey)}.</p>` +
+    '<ul class="tmodal-list mega" style="columns:2;column-gap:24px;padding-left:20px;">' +
+    observed.map(sci => `<li class="own">✓ <span class="sp-link" data-sci="${esc(sci)}">${esc(frName(sci,sci))}</span></li>`).join('') + '</ul>';
+}
 function _renderModalAccordion(items){
   if(!items || !items.length) return '';
   const sections = [];
@@ -11531,8 +11567,16 @@ $('#trophyGrid').addEventListener('click',async e=>{
         <div class="tmodal-tier-thresh">${esc(t.desc)}</div>
         <div class="tmodal-tier-prog">${t.current} / ${t.threshold} ${t.unlocked?'· <b>débloqué ✓</b>':''}</div>
       </div>`).join('') + '</div>';
-    // Si la famille a une liste d'items a cocher (Bear Grylls, Ma France), on l'ajoute en dessous.
-    if(d.itemList && d.itemList.length){
+    // Famille habitat : selecteur de pays (Monde / France) + liste dynamique.
+    if(d.habKey){
+      html += '<hr class="tmodal-sep">';
+      html += `<div class="tmodal-country-select" data-hab-key="${esc(d.habKey)}" data-detail="${esc(card.dataset.detail)}">
+        <button type="button" class="tro-cc-chip on" data-cc="monde">🌍 Monde (mes obs)</button>
+        <button type="button" class="tro-cc-chip" data-cc="fr">🇫🇷 France</button>
+      </div>`;
+      html += `<div class="tmodal-country-body">${_renderHabitatCountryList('monde', d.habKey, d.habOwnedSet)}</div>`;
+    } else if(d.itemList && d.itemList.length){
+      // Autres familles a paliers avec liste d'items (Ma France).
       html += '<hr class="tmodal-sep">';
       if(d.itemNote) html += `<p class="tmodal-note">${esc(d.itemNote)}</p>`;
       html += _renderModalAccordion(d.itemList);
@@ -11553,6 +11597,20 @@ $('#trophyGrid').addEventListener('click',async e=>{
   }
   $('#tmodalBody').innerHTML=html;
   $('#trophyModal').classList.add('open');
+});
+// Chip Monde / France dans le modal habitat : rebuild la liste en dessous.
+$('#tmodalBody').addEventListener('click', e => {
+  const chip = e.target.closest('.tmodal-country-select .tro-cc-chip');
+  if(!chip) return;
+  const wrap = chip.closest('.tmodal-country-select');
+  const habKey = wrap.dataset.habKey;
+  const detailIdx = wrap.dataset.detail;
+  const d = trophyDetails[detailIdx];
+  if(!d) return;
+  const mode = chip.dataset.cc;
+  wrap.querySelectorAll('.tro-cc-chip').forEach(c => c.classList.toggle('on', c === chip));
+  const body = wrap.parentElement.querySelector('.tmodal-country-body');
+  if(body) body.innerHTML = _renderHabitatCountryList(mode, habKey, d.habOwnedSet);
 });
 $('#tmodalX').addEventListener('click',()=>$('#trophyModal').classList.remove('open'));
 $('#trophyModal').addEventListener('click',e=>{ if(e.target.id==='trophyModal') $('#trophyModal').classList.remove('open'); });

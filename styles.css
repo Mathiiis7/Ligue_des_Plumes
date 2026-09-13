@@ -1504,6 +1504,21 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .tmodal-tier-prog { font-size:10px; font-weight:700; color:var(--ink-3); font-variant-numeric:tabular-nums; }
   .tmodal-sep { border:none; border-top:1px dashed var(--line); margin:12px 0; }
 
+  /* Selecteur pays dans le modal habitat */
+  .tmodal-country-select { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+  .tro-cc-chip { padding:6px 12px; font-size:12.5px; font-weight:600; border-radius:99px;
+    border:1px solid var(--line); background:var(--surface-2); color:var(--ink-2); cursor:pointer;
+    transition:background .12s, border-color .12s, color .12s; }
+  .tro-cc-chip:hover { border-color:var(--accent); }
+  .tro-cc-chip.on { background:color-mix(in srgb, var(--accent) 15%, var(--surface)); color:var(--accent);
+    border-color:color-mix(in srgb, var(--accent) 40%, var(--line)); }
+  .tmodal-country-body ul.tmodal-list.mega li { break-inside:avoid; }
+  .tmodal-country-body ul.tmodal-list.mega li.own { color:var(--ink); font-weight:600; }
+  .tmodal-country-body ul.tmodal-list.mega li:not(.own) { color:var(--ink-3); }
+  @media (max-width: 520px){
+    .tmodal-country-body ul.tmodal-list.mega { columns:1 !important; }
+  }
+
   /* Accordeon des sections dans le modal (Bear Grylls, Ma France, etc.) */
   .tmodal-acc { display:flex; flex-direction:column; gap:6px; }
   .tmodal-acc-item { border:1px solid var(--line); border-radius:10px; background:var(--surface-2); overflow:hidden; }
