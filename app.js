@@ -828,8 +828,18 @@ let _HABITAT_TO_SCIS_FR = null;
 function HABITAT_TO_SCIS_FR(cat){
   if(_HABITAT_TO_SCIS_FR) return _HABITAT_TO_SCIS_FR[cat] || [];
   const idx = Object.fromEntries(HABITAT_CATS.map(c=>[c, []]));
-  const inFR = sci => (typeof REAL_RARITY === 'object' && REAL_RARITY[sci])
-                    || (typeof REAL_ABUNDANCE_ST_FR === 'object' && REAL_ABUNDANCE_ST_FR[sci]);
+  // Filtre "presente en France" pour les trophees habitat : on exige une abondance
+  // annuelle > 0 dans le modele eBird S&T FR (`REAL_ABUNDANCE_ST_FR[sci].a > 0`).
+  // Fallback sur REAL_RARITY tier < 10 pour les especes non modelisees par S&T.
+  // Ecarte les vagrants exceptionnels (ex: Arlequin plongeur, canard nord-americain
+  // qui apparait 1 fois par decennie en France - il etait bug-liste avec tier 7 dans
+  // REAL_RARITY mais son a=0 dans S&T confirme qu'il n'est pas vraiment present).
+  const inFR = sci => {
+    const st = typeof REAL_ABUNDANCE_ST_FR === 'object' ? REAL_ABUNDANCE_ST_FR[sci] : null;
+    if(st){ return (st.a || 0) > 0; }
+    const rr = typeof REAL_RARITY === 'object' ? REAL_RARITY[sci] : null;
+    return rr && rr < 10;
+  };
   for(const sci in HABITATS){
     if(!inFR(sci)) continue;
     const cats = HABITATS[sci];
