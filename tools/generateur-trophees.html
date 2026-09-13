@@ -92,11 +92,11 @@ const TIERS = [
   { key:'argent',   label:'Argent',      color:'#a3a8b2', targetH:220, satMul:0.10, lightAdd:+8 },
   { key:'or',       label:'Or',          color:'#e6b800', targetH:45,  satMul:1.00, lightAdd:0   },
   { key:'diamant',  label:'Diamant',     color:'#7fd3ff', targetH:195, satMul:0.95, lightAdd:+15 },
-  // Prismatique : effet holographique / chrome multicolore. La teinte varie selon la
-  // position verticale du pixel (top -> pink, bottom -> cyan/vert), donnant un rendu
-  // iridescent. Preserve encore les pixels neutres (base, contours).
-  { key:'violet',   label:'Prismatique', color:'#d13cff', gradient:{ hueStart:310, hueEnd:190 }, satMul:1.05, lightAdd:+10 },
   { key:'emeraude', label:'Émeraude',    color:'#0fbf85', targetH:155, satMul:0.95, lightAdd:-2  },
+  // Prismatique = tier 6 ultime. Effet holographique / chrome multicolore : la teinte
+  // varie selon la position verticale (top -> pink, bottom -> cyan/vert). Preserve les
+  // pixels neutres (base, contours).
+  { key:'violet',   label:'Prismatique', color:'#d13cff', gradient:{ hueStart:310, hueEnd:190 }, satMul:1.05, lightAdd:+10 },
 ];
 
 function rgbToHsl(r,g,b){
