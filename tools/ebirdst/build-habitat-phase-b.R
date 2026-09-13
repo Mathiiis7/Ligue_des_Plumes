@@ -137,10 +137,19 @@ load_st_abundance <- function(species_code) {
   st_path <- file.path(EBIRDST_DIR, species_code, "weekly",
                        paste0(species_code, "_abundance_median_3km_2023.tif"))
   if (!file.exists(st_path)) return(NULL)
+  # Cache disque de la moyenne annuelle : app(r, fun="mean") sur 52 bandes est
+  # lent (~15 s par espece) et etait recalcule pour CHAQUE pays. Sauvegarde une
+  # fois dans annual/ pour reutilisation cross-pays -> gain massif au 2e run.
+  annual_dir <- file.path(EBIRDST_DIR, species_code, "annual")
+  annual_path <- file.path(annual_dir, "annual_mean.tif")
+  if (file.exists(annual_path)) {
+    return(tryCatch(rast(annual_path), error = function(e) NULL))
+  }
   tryCatch({
     r <- rast(st_path)
-    # Reduit les 52 semaines a la moyenne annuelle
     r_annual <- app(r, fun = "mean", na.rm = TRUE)
+    dir.create(annual_dir, showWarnings = FALSE, recursive = TRUE)
+    writeRaster(r_annual, annual_path, overwrite = TRUE, datatype = "FLT4S")
     return(r_annual)
   }, error = function(e) NULL)
 }

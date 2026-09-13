@@ -2308,12 +2308,12 @@ const TROPHY_THEMES = {
 // Une fois un palier atteint, il reste unlocke pour toujours. Zero notion de
 // competition entre joueurs : chacun progresse a son rythme.
 const TROPHY_TIERS = [
-  { key:'bronze',   label:'Bronze',   color:'#a97142', img:'assets/trophies/bronze.png' },
-  { key:'argent',   label:'Argent',   color:'#a3a8b2', img:'assets/trophies/argent.png' },
-  { key:'or',       label:'Or',       color:'#e6b800', img:'assets/trophies/or.png' },
-  { key:'diamant',  label:'Diamant',  color:'#7fd3ff', img:'assets/trophies/diamant.png' },
-  { key:'violet',   label:'Améthyste', color:'#d876ff', img:'assets/trophies/violet.png' },
-  { key:'emeraude', label:'Émeraude', color:'#0fbf85', img:'assets/trophies/emeraude.png' },
+  { key:'bronze',   label:'Bronze',   color:'#a97142', img:'assets/trophies/generic/bronze.png' },
+  { key:'argent',   label:'Argent',   color:'#a3a8b2', img:'assets/trophies/generic/argent.png' },
+  { key:'or',       label:'Or',       color:'#e6b800', img:'assets/trophies/generic/or.png' },
+  { key:'diamant',  label:'Diamant',  color:'#7fd3ff', img:'assets/trophies/generic/diamant.png' },
+  { key:'violet',   label:'Améthyste', color:'#d876ff', img:'assets/trophies/generic/violet.png' },
+  { key:'emeraude', label:'Émeraude', color:'#0fbf85', img:'assets/trophies/generic/emeraude.png' },
 ];
 // Genere 6 trophees d'une meme famille (un par palier). Chaque palier partage
 // le meme icone/theme/list/note mais adapte son nom, seuil et prog en fonction
@@ -2390,7 +2390,7 @@ const TROPHIES = [
   // -- Familles d'especes (paliers) --
   ...makeTierFamily({
     theme:'groupe', icon:ICONS.aigle, family:'rapaces', category:'species', baseName:'Rapace',
-    imgDir:'assets/trophies/rapace',
+    imgDir:'assets/trophies/families/rapace',
     metric:s=>(s.raptorOwnedSet?.size)||0, thresholds:[3,6,12,20,30,45],
     descTpl:'Observer {n} rapaces diurnes différents',
     list:s=>[...(s.raptorOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
