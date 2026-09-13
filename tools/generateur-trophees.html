@@ -88,12 +88,15 @@
 // hueShift = decalage a appliquer sur le H des pixels colores de la version doree (H≈45).
 // satMul, lightAdd = multiplicateur/offset pour ajuster la saturation / lightness.
 const TIERS = [
-  { key:'bronze',   label:'Bronze',    color:'#a97142', targetH:26,  satMul:0.80, lightAdd:-8 },
-  { key:'argent',   label:'Argent',    color:'#a3a8b2', targetH:220, satMul:0.10, lightAdd:+8 },
-  { key:'or',       label:'Or',        color:'#e6b800', targetH:45,  satMul:1.00, lightAdd:0   },
-  { key:'diamant',  label:'Diamant',   color:'#7fd3ff', targetH:195, satMul:0.95, lightAdd:+15 },
-  { key:'violet',   label:'Améthyste', color:'#d876ff', targetH:283, satMul:0.95, lightAdd:+8  },
-  { key:'emeraude', label:'Émeraude',  color:'#0fbf85', targetH:155, satMul:0.95, lightAdd:-2  },
+  { key:'bronze',   label:'Bronze',      color:'#a97142', targetH:26,  satMul:0.80, lightAdd:-8 },
+  { key:'argent',   label:'Argent',      color:'#a3a8b2', targetH:220, satMul:0.10, lightAdd:+8 },
+  { key:'or',       label:'Or',          color:'#e6b800', targetH:45,  satMul:1.00, lightAdd:0   },
+  { key:'diamant',  label:'Diamant',     color:'#7fd3ff', targetH:195, satMul:0.95, lightAdd:+15 },
+  // Prismatique : effet holographique / chrome multicolore. La teinte varie selon la
+  // position verticale du pixel (top -> pink, bottom -> cyan/vert), donnant un rendu
+  // iridescent. Preserve encore les pixels neutres (base, contours).
+  { key:'violet',   label:'Prismatique', color:'#d13cff', gradient:{ hueStart:310, hueEnd:190 }, satMul:1.05, lightAdd:+10 },
+  { key:'emeraude', label:'Émeraude',    color:'#0fbf85', targetH:155, satMul:0.95, lightAdd:-2  },
 ];
 
 function rgbToHsl(r,g,b){
@@ -145,7 +148,16 @@ function generateTier(sourceImageData, tier){
     }
     // Pixels colores : remap teinte vers la couleur cible du palier, en preservant la
     // structure lumineuse (highlights et ombres restent lisibles).
-    const newH = tier.targetH;
+    let newH;
+    if(tier.gradient){
+      // Mode gradient : teinte varie selon la position verticale du pixel (Y/height).
+      // top (y=0) -> hueStart, bottom (y=height) -> hueEnd. Effet iridescent.
+      const y = Math.floor((i/4) / w);
+      const t = y / Math.max(1, h - 1);   // 0 en haut, 1 en bas
+      newH = tier.gradient.hueStart + (tier.gradient.hueEnd - tier.gradient.hueStart) * t;
+    } else {
+      newH = tier.targetH;
+    }
     const newS = Math.max(0, Math.min(1, srcS * tier.satMul));
     const newL = Math.max(0, Math.min(1, srcL + tier.lightAdd/100));
     const [nr,ng,nb] = hslToRgb(newH, newS, newL);

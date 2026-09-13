@@ -2312,7 +2312,7 @@ const TROPHY_TIERS = [
   { key:'argent',   label:'Argent',   color:'#a3a8b2', img:'assets/trophies/generic/argent.png' },
   { key:'or',       label:'Or',       color:'#e6b800', img:'assets/trophies/generic/or.png' },
   { key:'diamant',  label:'Diamant',  color:'#7fd3ff', img:'assets/trophies/generic/diamant.png' },
-  { key:'violet',   label:'Améthyste', color:'#d876ff', img:'assets/trophies/generic/violet.png' },
+  { key:'violet',   label:'Prismatique', color:'#d13cff', img:'assets/trophies/generic/violet.png' },
   { key:'emeraude', label:'Émeraude', color:'#0fbf85', img:'assets/trophies/generic/emeraude.png' },
 ];
 // Genere 6 trophees d'une meme famille (un par palier). Chaque palier partage
@@ -2827,7 +2827,7 @@ function renderTrophies(data){
     const currentTier = highestIdx >= 0 ? tiersSorted[highestIdx] : null;
     const displayTier = currentTier || tiersSorted[0];   // fallback: montre Bronze grisé si rien débloqué
     const displayMeta = TROPHY_TIERS.find(x => x.key === displayTier.tier);
-    const familyName = displayTier.name.replace(/ (Bronze|Argent|Or|Diamant|Améthyste|Émeraude)$/, '');
+    const familyName = displayTier.name.replace(/ (Bronze|Argent|Or|Diamant|Prismatique|Améthyste|Émeraude)$/, '');
     // Barre de progression : absolue (progNow / progTo), pas relative au palier precedent.
     // Comme ca "100 / 150" affiche bien 66 % rempli plutot que 0 % (contre-intuitif car
     // le user vient de valider Argent a 100 et voudrait voir sa progression globale).
