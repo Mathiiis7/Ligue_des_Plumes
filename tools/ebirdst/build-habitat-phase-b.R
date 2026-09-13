@@ -27,6 +27,12 @@ EBIRDST_DIR <- "C:/Users/mathi/AppData/Roaming/R/data/R/ebirdst/2023"
 # Pays cibles supportes par l'app.
 # Extensible : ajouter code ISO + activation du compute.
 SUPPORTED_COUNTRIES <- c("FR", "ME", "ES", "IT", "GB", "PT")
+# Extension : traite tous les pays pour lesquels la Phase A a produit un cache_frac
+# (permet de couvrir la globalite du monde une fois la Phase A finie). Ordre alpha
+# stable pour reprise incrementale visible.
+cache_files <- list.files(CACHE_DIR, pattern = "_habitat_frac\\.tif$")
+SUPPORTED_COUNTRIES <- sort(unique(c(SUPPORTED_COUNTRIES,
+  sub("_habitat_frac\\.tif$", "", cache_files))))
 
 # AVONET habitat categories -> override fractions (indices L1 super-categories).
 # Structure : {"Marine": c("water"=0.9, "wetland"=0.1)} = force 90% eau + 10% humide.
@@ -127,7 +133,8 @@ apply_avonet_override <- function(l1_fractions, sci) {
 # Utilise l'abondance annuelle moyenne (moyenne des 52 semaines) pour Phase B.
 # ============================================================================
 load_st_abundance <- function(species_code) {
-  st_path <- file.path(EBIRDST_DIR, species_code,
+  # Le raster ebirdst est nested sous /weekly/ dans le dossier de l'espece.
+  st_path <- file.path(EBIRDST_DIR, species_code, "weekly",
                        paste0(species_code, "_abundance_median_3km_2023.tif"))
   if (!file.exists(st_path)) return(NULL)
   tryCatch({
