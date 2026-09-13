@@ -728,8 +728,29 @@ const HABITAT_LABELS = {"forest":"🌲 Forêt","woodland":"🌳 Bois / savane ar
 // Contrairement a HABITAT_ADDITIONS (qui AJOUTE aux categories AVONET), les OVERRIDES
 // REMPLACENT entierement les habitats AVONET pour l'espece. Reserve aux vraies erreurs.
 const HABITAT_OVERRIDES = {
+  // ----- Rapaces mal classes par AVONET -----
   // Balbuzard pecheur : rapace piscivore de rivieres/lacs/estuaires, pas pelagique.
   "pandion haliaetus":["riverine","coastal","wetland"],
+  // Buse variable : rapace le plus commun de France, TOUS milieux. AVONET dit "grassland".
+  "buteo buteo":["forest","woodland","agricole","montane"],
+  // Buse pattue : arctique, mais quand en France = agricole/prairies/marais.
+  "buteo lagopus":["agricole","grassland","wetland"],
+  // Faucon pelerin : falaises + villes (cathedrales) + cotes, pas prairies.
+  "falco peregrinus":["rock","coastal","humanmod","montane","aerial"],
+  // Pygargue a queue blanche : rapace piscivore, lacs + cotes + rivieres, pas rock/aerial.
+  "haliaeetus albicilla":["coastal","wetland","riverine"],
+  // Vautour fauve : falaises + montagne, chasse en zone ouverte mais pas classe "grassland".
+  "gyps fulvus":["montane","rock"],
+  // Vautour moine : forets de montagne + soar en montagne.
+  "aegypius monachus":["montane","forest"],
+  // Gypaete barbu : deja montane via ADDITIONS mais AVONET donne shrubland - override.
+  "gypaetus barbatus":["montane","rock"],
+  // Cormoran huppe : cotier, niche sur falaises et forage pres du rivage, pas pelagique.
+  "gulosus aristotelis":["coastal","rock"],
+  // Sterne pierregarin : cotiere/wetland, pas pelagique.
+  "sterna hirundo":["coastal","wetland","aerial"],
+  // Courlis cendre : wetland + coastal + prairies, pas juste grassland.
+  "numenius arquata":["wetland","coastal","grassland"],
 };
 const HABITAT_ADDITIONS = {
   // ----- MONTANE (montagne / altitude) -----
@@ -791,6 +812,50 @@ const HABITAT_ADDITIONS = {
   "corvus corax":["montane","rock"],
   "columba palumbus":["forest","humanmod","agricole"],
   "columba livia":["rock","humanmod"],
+  // ----- Additions supplementaires (verif AVONET post-v106) -----
+  // Grands goelands : cotier + urbain (colonies sur toits, poubelles).
+  "larus michahellis":["humanmod","coastal"],
+  "larus argentatus":["humanmod","coastal"],
+  "larus fuscus":["humanmod","coastal"],
+  "larus marinus":["humanmod","coastal"],
+  // Mouette rieuse : wetland + cotier + urbain (parcs, decharges).
+  "chroicocephalus ridibundus":["coastal","humanmod","agricole"],
+  // Herons cendres/blancs : wetland + riverine + cotier + agricole (chasse en champs).
+  "ardea cinerea":["riverine","coastal","agricole"],
+  "ardea alba":["riverine","coastal"],
+  "egretta garzetta":["riverine","coastal"],
+  "bubulcus ibis":["agricole","wetland"],
+  // Flamant rose : wetland + cotier (lagunes camarguaises).
+  "phoenicopterus roseus":["coastal"],
+  // Spatule blanche : wetland + cotier.
+  "platalea leucorodia":["coastal"],
+  // Grue cendree : wetland en migration + agricole (champs de maïs en hivernage).
+  "grus grus":["agricole"],
+  // Cormoran huppe deja override mais Grand cormoran seulement AVONET wetland - add cotier + riverine
+  "phalacrocorax carbo":["coastal","riverine"],
+  // Fous et pelagiques : deja marine, mais ajout aerial pour ceux qui manquent.
+  // (deja OK pour la plupart)
+  // Goelands rieurs / mouettes marines
+  "rissa tridactyla":["coastal"],   // niche sur falaises cotieres, pas juste pelagique
+  // Alcides : niche sur falaises cotieres, forage marine.
+  "fratercula arctica":["coastal","rock"],
+  "alca torda":["coastal","rock"],
+  "uria aalge":["coastal","rock"],
+  "cepphus grylle":["coastal","rock"],
+  // Sternes : nichent plages/wetland, forage marin/cotier.
+  "sterna paradisaea":["coastal"],
+  "sternula albifrons":["coastal","wetland"],
+  "thalasseus sandvicensis":["coastal","wetland"],
+  "chlidonias niger":["wetland","riverine"],
+  "chlidonias hybrida":["wetland","riverine"],
+  // Effraie / Chouette hulotte / Chevêche : rurales et agricoles.
+  "strix aluco":["forest","humanmod","agricole"],
+  "athene noctua":["agricole","humanmod"],   // deja agricole
+  // Traquet motteux, pipit spioncelle : montagne + agricole.
+  "oenanthe oenanthe":["grassland","montane","rock"],
+  "anthus spinoletta":["montane","grassland"],   // deja montane via ADDITIONS
+  // Rougequeue noir : rocher/falaise + urbain.
+  "phoenicurus ochruros":["rock","humanmod"],
 };
 function habitatsOf(sci){
   const key = (sci||"").trim().toLowerCase();
