@@ -1436,7 +1436,11 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .trophy.clic:hover { border-color:color-mix(in srgb,var(--gold) 55%,var(--line)); }
 
   /* ==== Nouveau layout trophees (v97+) ============================ */
-  .tro-showcase { display:flex; flex-direction:column; gap:22px; margin-top:16px; }
+  .tro-showcase { display:flex; flex-direction:column; gap:28px; margin-top:16px; }
+  .tro-cat-section { display:flex; flex-direction:column; gap:10px; }
+  .tro-cat-head { display:flex; flex-direction:column; gap:2px; padding:2px 4px 4px; border-bottom:1px solid var(--line); }
+  .tro-cat-title { font-family:var(--serif); font-weight:600; font-size:17px; color:var(--ink); }
+  .tro-cat-sub { font-size:11.5px; color:var(--ink-3); }
   .tro-families { display:flex; flex-direction:column; gap:10px; }
   .tro-family { display:flex; align-items:center; gap:18px; padding:14px 16px;
     border:1px solid var(--line); border-radius:14px; background:var(--surface-2);

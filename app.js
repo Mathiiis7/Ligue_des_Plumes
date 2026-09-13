@@ -2319,13 +2319,17 @@ const TROPHY_TIERS = [
 // le meme icone/theme/list/note mais adapte son nom, seuil et prog en fonction
 // du tier. `desc` sert de gabarit avec {n} qui devient le seuil.
 function makeTierFamily(cfg){
-  const { theme, icon, baseName, metric, thresholds, descTpl, list, note, alwaysList=true, info } = cfg;
+  const { theme, icon, baseName, metric, thresholds, descTpl, list, note, alwaysList=true, info, imgDir, category } = cfg;
   return TROPHY_TIERS.map((t, i) => {
     const seuil = thresholds[i];
     return {
       theme, icon,
       tier: t.key,
       family: cfg.family || baseName,
+      // Categorie de groupement dans le showcase : progression / habitat / species / one-shot.
+      category: category || 'progression',
+      // Override optionnel du PNG du palier (pour familles qui ont leur propre set d'images).
+      tierImg: imgDir ? `${imgDir}/${t.key === 'violet' ? 'violet' : t.key}.png` : null,
       name: `${baseName} ${t.label}`,
       desc: descTpl.replace('{n}', seuil),
       test: s => (metric(s) || 0) >= seuil,
@@ -2339,18 +2343,18 @@ function makeTierFamily(cfg){
 const TROPHIES = [
   // -- Familles a paliers (6 tiers Bronze->Emeraude, cumulatifs a vie) --
   ...makeTierFamily({
-    theme:'progression', icon:ICONS.medal, family:'ecologue', baseName:'Écologue',
+    theme:'progression', icon:ICONS.medal, family:'ecologue', category:'progression', baseName:'Écologue',
     metric:s=>s.total, thresholds:[50,100,150,200,300,500],
     descTpl:'Observer {n} espèces différentes',
   }),
   ...makeTierFamily({
-    theme:'localisation', icon:ICONS.avion, family:'marcoPolo', baseName:'Marco Polo',
+    theme:'localisation', icon:ICONS.avion, family:'marcoPolo', category:'progression', baseName:'Marco Polo',
     metric:s=>s.countryCount, thresholds:[2,4,7,12,20,30],
     descTpl:'Observer des oiseaux dans {n} pays différents',
     info:s=>s.countryCount ? `✈️ ${s.countryCount} pays visités` : '',
   }),
   ...makeTierFamily({
-    theme:'localisation', icon:ICONS.regions, family:'maFrance', baseName:'Ma France',
+    theme:'localisation', icon:ICONS.regions, family:'maFrance', category:'progression', baseName:'Ma France',
     metric:s=>s.regionsCount, thresholds:[2,5,8,11,14,18],
     descTpl:'Observer un oiseau dans {n} régions françaises',
     list:s=>FR_REGIONS.map(r=>({ name:r.name, owned:s.regionsOwnedSet.has(r.code) })),
@@ -2377,14 +2381,23 @@ const TROPHIES = [
     ["humanmod", "Urbain",       [3, 8,15,25,40,60]],
     ["aerial",   "Voltigeur",    [1, 3, 6,10,15,22]],
   ].flatMap(([habKey, name, thresholds]) => makeTierFamily({
-    theme:'groupe', icon:ICONS.bearGrylls, family:'habitat_'+habKey, baseName:name,
+    theme:'groupe', icon:ICONS.bearGrylls, family:'habitat_'+habKey, category:'habitat', baseName:name,
     metric:s=>(s.habOwned[habKey]?.size)||0, thresholds,
     descTpl:`Observer {n} espèces différentes en ${HABITAT_LABELS[habKey].replace(/^[^\s]+ /,'').toLowerCase()}`,
     list:s=>[...(s.habOwned[habKey]||[])].sort().map(sci=>({ name:frName(sci,sci), owned:true })),
     note:s=>`${(s.habOwned[habKey]?.size)||0} espèce${((s.habOwned[habKey]?.size)||0)>1?'s':''} observée${((s.habOwned[habKey]?.size)||0)>1?'s':''} en ${HABITAT_LABELS[habKey]}`,
   }))),
+  // -- Familles d'especes (paliers) --
   ...makeTierFamily({
-    theme:'communaute', icon:ICONS.photo, family:'natGeo', baseName:'National Geographic',
+    theme:'groupe', icon:ICONS.aigle, family:'rapaces', category:'species', baseName:'Rapace',
+    imgDir:'assets/trophies/rapace',
+    metric:s=>(s.raptorOwnedSet?.size)||0, thresholds:[3,6,12,20,30,45],
+    descTpl:'Observer {n} rapaces diurnes différents',
+    list:s=>[...(s.raptorOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>`${(s.raptorOwnedSet?.size)||0} rapace${((s.raptorOwnedSet?.size)||0)>1?'s':''} observé${((s.raptorOwnedSet?.size)||0)>1?'s':''}`,
+  }),
+  ...makeTierFamily({
+    theme:'communaute', icon:ICONS.photo, family:'natGeo', category:'progression', baseName:'National Geographic',
     metric:s=>s.hotPhotos||0, thresholds:[1,3,7,15,25,40],
     descTpl:'Poster {n} photos avec au moins 3 ❤️ chacune',
     info:s=>s.hotPhotos>0 ? `${s.hotPhotos} photo${s.hotPhotos>1?'s':''} qui claque${s.hotPhotos>1?'nt':''}` : '',
@@ -2758,7 +2771,8 @@ function renderTrophies(data){
       oneShots.push(t);
     }
   }
-  const familyBlocks = [];
+  // Groupement par categorie pour organiser le showcase.
+  const familyBlocksByCategory = { progression:[], species:[], habitat:[] };
   for(const [familyKey, tiers] of familyMap){
     // tiers ordre = ordre de TROPHY_TIERS (Bronze -> Emeraude), test par ordre.
     const tiersSorted = [...tiers].sort((a,b) => TROPHY_TIERS.findIndex(x=>x.key===a.tier) - TROPHY_TIERS.findIndex(x=>x.key===b.tier));
@@ -2797,7 +2811,7 @@ function renderTrophies(data){
       tiers: tiersSorted.map((t, i) => ({
         tier: t.tier,
         label: TROPHY_TIERS.find(x=>x.key===t.tier).label,
-        img: TROPHY_TIERS.find(x=>x.key===t.tier).img,
+        img: t.tierImg || TROPHY_TIERS.find(x=>x.key===t.tier).img,
         color: TROPHY_TIERS.find(x=>x.key===t.tier).color,
         threshold: t.prog(s)[1],
         current: t.prog(s)[0],
@@ -2816,12 +2830,14 @@ function renderTrophies(data){
     };
     const familyDataIdx = detailIdx++;
     const locked = highestIdx < 0;
-    familyBlocks.push(`
+    const cat = displayTier.category || 'progression';
+    if(!familyBlocksByCategory[cat]) familyBlocksByCategory[cat] = [];
+    familyBlocksByCategory[cat].push(`
       <div class="tro-family ${locked?'locked':'unlocked'} tier-${displayTier.tier}"
            style="--tier-color:${displayMeta.color}"
            data-detail="${familyDataIdx}">
         <div class="tro-fam-cup">
-          <img src="${esc(displayMeta.img)}" alt="${esc(displayMeta.label)}" class="tro-cup${locked?' grayed':''}">
+          <img src="${esc(displayTier.tierImg || displayMeta.img)}" alt="${esc(displayMeta.label)}" class="tro-cup${locked?' grayed':''}">
         </div>
         <div class="tro-fam-body">
           <div class="tro-fam-title">
@@ -2878,9 +2894,25 @@ function renderTrophies(data){
       </div>
     </div>`;
   }).join('');
+  // Section par categorie de trophees a paliers. Ordre : Progression -> Especes -> Habitats -> Speciaux.
+  const CATEGORY_META = [
+    { key:'progression', label:'Progression',           subtitle:'Repères de progression individuels' },
+    { key:'species',     label:"Familles d'espèces",    subtitle:'Groupes taxonomiques d\'oiseaux' },
+    { key:'habitat',     label:'Milieux & habitats',    subtitle:'Écosystèmes visités' },
+  ];
+  const catSections = CATEGORY_META
+    .filter(m => (familyBlocksByCategory[m.key] || []).length)
+    .map(m => `
+      <div class="tro-cat-section">
+        <div class="tro-cat-head">
+          <div class="tro-cat-title">${esc(m.label)}</div>
+          <div class="tro-cat-sub">${esc(m.subtitle)}</div>
+        </div>
+        <div class="tro-families">${familyBlocksByCategory[m.key].join('')}</div>
+      </div>`).join('');
   grid.innerHTML = `
     <div class="tro-showcase">
-      <div class="tro-families">${familyBlocks.join('')}</div>
+      ${catSections}
       ${oneShotCards ? `
       <div class="tro-oneshots-section">
         <div class="tro-oneshots-title">Trophées spéciaux</div>
