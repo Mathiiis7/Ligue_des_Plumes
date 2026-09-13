@@ -2426,6 +2426,28 @@ const TROPHIES = [
 ];
 const OWL_G=/^(strix|otus|athene|asio|bubo|tyto|aegolius|glaucidium|surnia|ketupa)$/;
 const RAPTOR_G=/^(accipiter|astur|buteo|aquila|circus|milvus|falco|pernis|circaetus|pandion|haliaeetus|gyps|aegypius|gypaetus|neophron|clanga|hieraaetus|elanus|torgos)$/;
+// Predicat de famille pour le modal des familles d'especes (bouton Monde/France).
+// Retourne true si l'espece appartient a la famille. Utilise pour filtrer le pool FR
+// via REAL_ABUNDANCE_ST_FR : intersection de (sci matche predicate) x (abondance FR > 0).
+const SPECIES_FAMILY_FILTERS = {
+  rapaces: sci => {
+    const g = (sci||'').split(' ')[0];
+    if(RAPTOR_G.test(g)) return true;
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Balbuzard' || fam === 'Rapaces (aigles, buses…)' || fam === 'Faucons' || fam === 'Vautours du Nouveau Monde';
+  },
+  nocturnes: sci => {
+    const g = (sci||'').split(' ')[0];
+    if(OWL_G.test(g)) return true;
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Effraies' || fam === 'Chouettes, hiboux';
+  },
+};
+// Labels pour le header du modal en mode France.
+const SPECIES_FAMILY_LABELS = {
+  rapaces: 'rapaces diurnes',
+  nocturnes: 'rapaces nocturnes',
+};
 // Alcidés = les "pingouins" de l'hémisphère nord (pingouins, macareux, mergule, guillemots)
 const ALCID_G=/^(alca|pinguinus|fratercula|alle|uria|cepphus)$/;
 const WATER_G=/^(anas|anser|branta|aythya|spatula|mareca|cygnus|tadorna|netta|bucephala|mergus|mergellus|clangula|somateria|melanitta|polysticta|ardea|egretta|ardeola|botaurus|nycticorax|fulica|gallinula|porphyrio|paragallinula|rallus|zapornia|crex|porzana|podiceps|tachybaptus|podilymbus|phalacrocorax|microcarbo|nannopterum|gulosus|platalea|plegadis|threskiornis|geronticus|ciconia|phoenicopterus|phoeniconaias|recurvirostra|himantopus|vanellus|charadrius|anarhynchus|pluvialis|eudromias|calidris|tringa|actitis|xenus|gallinago|numenius|limosa|arenaria|phalaropus|scolopax|lymnocryptes|bartramia|limnodromus|haematopus|burhinus|alcedo|megaceryle|ceryle|glareola|cursorius)$/;
@@ -2703,6 +2725,12 @@ function statsFor(me, N){
       if(fam === 'Effraies' || fam === 'Chouettes, hiboux') owlOwnedSet.add(sci);
     }
     if(RAPTOR_G.test(g)){ raptors++; raptorOwnedSet.add(sci); }
+    // Fallback taxo : couvre les rapaces mondiaux hors RAPTOR_G (Rupornis, Ictinia,
+    // Elanoides, Spizaetus, Buteogallus, Geranoaetus, etc.) via familyOf() Birdydex.
+    else if(typeof familyOf === 'function'){
+      const fam = familyOf(sci);
+      if(fam === 'Balbuzard' || fam === 'Rapaces (aigles, buses…)' || fam === 'Faucons' || fam === 'Vautours du Nouveau Monde') raptorOwnedSet.add(sci);
+    }
     if(WATER_G.test(g)){ water++; waterOwnedSet.add(sci); }
     if(SEA_G.test(g)) sea++;
     if(sci==='dryocopus martius') blackWoodpecker=true;
@@ -2840,6 +2868,14 @@ function renderTrophies(data){
       // dans le modal, cf renderTrophyModal.
       habKey: familyKey.startsWith('habitat_') ? familyKey.slice(8) : null,
       habOwnedSet: familyKey.startsWith('habitat_') ? new Set(s.habOwned[familyKey.slice(8)] || []) : null,
+      // Famille d'especes : stocke la cle pour permettre le switcher Monde/France
+      // dans le modal (via SPECIES_FAMILY_FILTERS / SPECIES_FAMILY_LABELS).
+      speciesFamilyKey: SPECIES_FAMILY_FILTERS[familyKey] ? familyKey : null,
+      speciesOwnedSet: (function(){
+        if(familyKey === 'rapaces') return new Set(s.raptorOwnedSet || []);
+        if(familyKey === 'nocturnes') return new Set(s.owlOwnedSet || []);
+        return null;
+      })(),
     };
     const familyDataIdx = detailIdx++;
     const locked = highestIdx < 0;
@@ -11515,6 +11551,43 @@ $('#trophyWho').addEventListener('click',e=>{
 // Rendu accordeon des sections de trophee : chaque milieu / region devient un
 // <details> depliant. Les sections deja validees sont pliees par defaut (rien a hunter),
 // les non-validees sont ouvertes pour aider l'utilisateur a savoir ou aller.
+// Genere la liste des especes d'une famille (habitat OU famille d'especes) pour un
+// pays donne. Utilise un predicat pour construire le pool FR quand mode='fr'.
+function _renderSpeciesFamilyCountryList(mode, familyLabel, ownedSet, frFilter){
+  const own = ownedSet instanceof Set ? ownedSet : new Set(ownedSet||[]);
+  if(mode === 'fr'){
+    // Pool FR : parcourt REAL_ABUNDANCE_ST_FR, filtre les especes reellement presentes
+    // (a > 0) et matche par predicat de famille.
+    const frList = [];
+    if(typeof REAL_ABUNDANCE_ST_FR === 'object'){
+      for(const sci in REAL_ABUNDANCE_ST_FR){
+        const entry = REAL_ABUNDANCE_ST_FR[sci];
+        if(!entry || (entry.a || 0) <= 0) continue;
+        if(frFilter(sci)) frList.push(sci);
+      }
+    }
+    frList.sort((a,b) => frName(a,a).localeCompare(frName(b,b),'fr'));
+    if(!frList.length){
+      return '<p class="tmodal-note" style="font-style:italic;color:var(--ink-3);">Aucune espèce de cette famille n\'est présente en France.</p>';
+    }
+    const okCount = frList.filter(sci => own.has(sci)).length;
+    return `<p class="tmodal-note"><b>${okCount} / ${frList.length}</b> ${esc(familyLabel)} vu${okCount>1?'s':''} en France.</p>` +
+      '<ul class="tmodal-list mega" style="columns:2;column-gap:24px;padding-left:20px;">' +
+      frList.map(sci => {
+        const isOwn = own.has(sci);
+        const lbl = (isOwn?'✓ ':'') + `<span class="sp-link" data-sci="${esc(sci)}">${esc(frName(sci,sci))}</span>`;
+        return `<li class="${isOwn?'own':''}">${lbl}</li>`;
+      }).join('') + '</ul>';
+  }
+  // Mode 'monde' : liste des cochees.
+  const observed = [...own].sort((a,b) => frName(a,a).localeCompare(frName(b,b),'fr'));
+  if(!observed.length){
+    return '<p class="tmodal-note" style="font-style:italic;color:var(--ink-3);">Aucune espèce de cette famille observée pour le moment. Ouvre l\'onglet France pour voir ce qui est chassable ici.</p>';
+  }
+  return `<p class="tmodal-note"><b>${observed.length}</b> ${esc(familyLabel)} observé${observed.length>1?'s':''} dans le monde.</p>` +
+    '<ul class="tmodal-list mega" style="columns:2;column-gap:24px;padding-left:20px;">' +
+    observed.map(sci => `<li class="own">✓ <span class="sp-link" data-sci="${esc(sci)}">${esc(frName(sci,sci))}</span></li>`).join('') + '</ul>';
+}
 // Genere la liste des especes d'un habitat pour un pays donne. Mode :
 //  - 'monde' : les especes que le user a cochees dans cet habitat (peu importe le pays).
 //  - 'fr'    : le pool complet des especes FR de cet habitat, marquees vues/pas vues.
@@ -11615,11 +11688,21 @@ $('#trophyGrid').addEventListener('click',async e=>{
     // Famille habitat : selecteur de pays (Monde / France) + liste dynamique.
     if(d.habKey){
       html += '<hr class="tmodal-sep">';
-      html += `<div class="tmodal-country-select" data-hab-key="${esc(d.habKey)}" data-detail="${esc(card.dataset.detail)}">
+      html += `<div class="tmodal-country-select" data-kind="habitat" data-hab-key="${esc(d.habKey)}" data-detail="${esc(card.dataset.detail)}">
         <button type="button" class="tro-cc-chip on" data-cc="monde">🌍 Monde (mes obs)</button>
         <button type="button" class="tro-cc-chip" data-cc="fr">🇫🇷 France</button>
       </div>`;
       html += `<div class="tmodal-country-body">${_renderHabitatCountryList('monde', d.habKey, d.habOwnedSet)}</div>`;
+    } else if(d.speciesFamilyKey){
+      // Famille d'especes : meme mecanique de selecteur.
+      html += '<hr class="tmodal-sep">';
+      html += `<div class="tmodal-country-select" data-kind="species" data-sp-key="${esc(d.speciesFamilyKey)}" data-detail="${esc(card.dataset.detail)}">
+        <button type="button" class="tro-cc-chip on" data-cc="monde">🌍 Monde (mes obs)</button>
+        <button type="button" class="tro-cc-chip" data-cc="fr">🇫🇷 France</button>
+      </div>`;
+      const label = SPECIES_FAMILY_LABELS[d.speciesFamilyKey] || d.familyName?.toLowerCase() || 'espèces';
+      const filter = SPECIES_FAMILY_FILTERS[d.speciesFamilyKey];
+      html += `<div class="tmodal-country-body">${_renderSpeciesFamilyCountryList('monde', label, d.speciesOwnedSet, filter)}</div>`;
     } else if(d.itemList && d.itemList.length){
       // Autres familles a paliers avec liste d'items (Ma France).
       html += '<hr class="tmodal-sep">';
@@ -11643,19 +11726,26 @@ $('#trophyGrid').addEventListener('click',async e=>{
   $('#tmodalBody').innerHTML=html;
   $('#trophyModal').classList.add('open');
 });
-// Chip Monde / France dans le modal habitat : rebuild la liste en dessous.
+// Chip Monde / France dans le modal (habitat OU famille d'especes) : rebuild la liste.
 $('#tmodalBody').addEventListener('click', e => {
   const chip = e.target.closest('.tmodal-country-select .tro-cc-chip');
   if(!chip) return;
   const wrap = chip.closest('.tmodal-country-select');
-  const habKey = wrap.dataset.habKey;
   const detailIdx = wrap.dataset.detail;
   const d = trophyDetails[detailIdx];
   if(!d) return;
   const mode = chip.dataset.cc;
   wrap.querySelectorAll('.tro-cc-chip').forEach(c => c.classList.toggle('on', c === chip));
   const body = wrap.parentElement.querySelector('.tmodal-country-body');
-  if(body) body.innerHTML = _renderHabitatCountryList(mode, habKey, d.habOwnedSet);
+  if(!body) return;
+  if(wrap.dataset.kind === 'species'){
+    const key = wrap.dataset.spKey;
+    const label = SPECIES_FAMILY_LABELS[key] || d.familyName?.toLowerCase() || 'espèces';
+    const filter = SPECIES_FAMILY_FILTERS[key];
+    body.innerHTML = _renderSpeciesFamilyCountryList(mode, label, d.speciesOwnedSet, filter);
+  } else {
+    body.innerHTML = _renderHabitatCountryList(mode, wrap.dataset.habKey, d.habOwnedSet);
+  }
 });
 $('#tmodalX').addEventListener('click',()=>$('#trophyModal').classList.remove('open'));
 $('#trophyModal').addEventListener('click',e=>{ if(e.target.id==='trophyModal') $('#trophyModal').classList.remove('open'); });
