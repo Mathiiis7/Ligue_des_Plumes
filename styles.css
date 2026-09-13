@@ -1504,6 +1504,41 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .tmodal-tier-prog { font-size:10px; font-weight:700; color:var(--ink-3); font-variant-numeric:tabular-nums; }
   .tmodal-sep { border:none; border-top:1px dashed var(--line); margin:12px 0; }
 
+  /* Accordeon des sections dans le modal (Bear Grylls, Ma France, etc.) */
+  .tmodal-acc { display:flex; flex-direction:column; gap:6px; }
+  .tmodal-acc-item { border:1px solid var(--line); border-radius:10px; background:var(--surface-2); overflow:hidden; }
+  .tmodal-acc-item.is-valid { border-color:color-mix(in srgb, var(--accent) 30%, var(--line));
+    background:color-mix(in srgb, var(--accent) 5%, var(--surface-2)); }
+  .tmodal-acc-item.is-todo { border-color:var(--line); }
+  .tmodal-acc-item.empty { opacity:.5; padding:8px 12px; }
+  .acc-summary { list-style:none; cursor:pointer; padding:10px 12px 10px 14px;
+    display:grid; grid-template-columns:1fr auto 60px; align-items:center; gap:10px;
+    font-size:13.5px; font-weight:600; color:var(--ink); user-select:none; }
+  .acc-summary::-webkit-details-marker { display:none; }
+  .acc-summary::before { content:'▸'; color:var(--ink-3); font-weight:400; margin-right:4px;
+    transition:transform .15s; grid-column:1; align-self:center; margin-left:-4px; }
+  details[open] > .acc-summary::before { transform:rotate(90deg); }
+  .acc-title { color:var(--ink); font-size:13.5px; }
+  .acc-badge { font-size:11px; font-weight:700; padding:2px 8px; border-radius:99px;
+    text-transform:uppercase; letter-spacing:.03em; }
+  .acc-badge.ok { background:color-mix(in srgb, var(--accent) 20%, var(--surface));
+    color:var(--accent); }
+  .acc-badge.todo { background:var(--surface); color:var(--ink-3); border:1px solid var(--line); }
+  .acc-bar-mini { height:6px; border-radius:99px; background:color-mix(in srgb, var(--ink-3) 20%, var(--surface));
+    overflow:hidden; }
+  .acc-bar-mini > span { display:block; height:100%; background:var(--accent);
+    transition:width .3s ease; border-radius:99px; }
+  .tmodal-acc-item.is-todo .acc-bar-mini > span { background:var(--gold); }
+  .tmodal-acc details > ul { margin:0; padding:8px 14px 12px 32px; list-style:disc;
+    columns:2; column-gap:24px; font-size:12.5px; color:var(--ink-2); }
+  .tmodal-acc details > ul > li { margin:3px 0; break-inside:avoid; }
+  .tmodal-acc details > ul > li.own { color:var(--ink); font-weight:600; }
+  .tmodal-acc details > ul > li.own::marker { color:var(--accent); }
+  @media (max-width: 520px){
+    .tmodal-acc details > ul { columns:1; padding-left:26px; }
+    .acc-summary { grid-template-columns:1fr auto 44px; padding:9px 10px; font-size:12.5px; }
+  }
+
   .tmodal { display:none; position:fixed; inset:0; z-index:60; background:rgba(0,0,0,.5);
     align-items:center; justify-content:center; padding:20px; }
   .tmodal.open { display:flex; }

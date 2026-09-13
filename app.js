@@ -11320,6 +11320,45 @@ $('#trophyWho').addEventListener('click',e=>{
   const b=e.target.closest('.whochip'); if(!b) return;
   trophyPlayerId=b.dataset.id; renderTrophies(trophyData);
 });
+// Rendu accordeon des sections de trophee : chaque milieu / region devient un
+// <details> depliant. Les sections deja validees sont pliees par defaut (rien a hunter),
+// les non-validees sont ouvertes pour aider l'utilisateur a savoir ou aller.
+function _renderModalAccordion(items){
+  if(!items || !items.length) return '';
+  const sections = [];
+  items.forEach(x => { if(!sections.includes(x.section||'')) sections.push(x.section||''); });
+  let html = '<div class="tmodal-acc">';
+  for(const sec of sections){
+    const it = items.filter(x => (x.section||'') === sec);
+    const owned = it.filter(x => x.owned).length;
+    const pct = it.length ? Math.round(owned / it.length * 100) : 0;
+    // Section validee si le compteur atteint son seuil (encodé dans le libelle avec "✅").
+    const validated = /✅/.test(sec);
+    // Trim le suffixe "✅ validé" / "⏳ à valider" pour un rendu plus propre dans le summary.
+    const rawTitle = sec.replace(/\s*[✅⏳]\s*(validé|à valider).*$/, '').trim();
+    const badge = validated
+      ? '<span class="acc-badge ok">Validé</span>'
+      : `<span class="acc-badge todo">${owned}/${it.length}</span>`;
+    // Section vide (aucune espece FR pour cette categorie) : desactive le depliant.
+    if(!it.length){
+      html += `<div class="tmodal-acc-item empty"><div class="acc-summary"><span class="acc-title">${esc(rawTitle||sec)}</span><span class="acc-badge todo">—</span></div></div>`;
+      continue;
+    }
+    html += `<details class="tmodal-acc-item ${validated?'is-valid':'is-todo'}"${validated?'':' open'}>
+      <summary class="acc-summary">
+        <span class="acc-title">${esc(rawTitle||sec)}</span>
+        ${badge}
+        <span class="acc-bar-mini"><span style="width:${pct}%"></span></span>
+      </summary>
+      <ul class="tmodal-list mega">${it.map(x => {
+        const sci = x.sci || _nameToSci(x.name);
+        const lbl = (x.owned?'✓ ':'') + (sci?`<span class="sp-link" data-sci="${esc(sci)}">${esc(x.name)}</span>`:esc(x.name));
+        return `<li class="${x.owned?'own':''}">${lbl}</li>`;
+      }).join('')}</ul>
+    </details>`;
+  }
+  return html + '</div>';
+}
 $('#trophyGrid').addEventListener('click',async e=>{
   const vb=e.target.closest('.vote-btn');
   if(vb){
@@ -11355,18 +11394,7 @@ $('#trophyGrid').addEventListener('click',async e=>{
     if(d.itemList && d.itemList.length){
       html += '<hr class="tmodal-sep">';
       if(d.itemNote) html += `<p class="tmodal-note">${esc(d.itemNote)}</p>`;
-      const sections = [];
-      d.itemList.forEach(x => { if(!sections.includes(x.section||'')) sections.push(x.section||''); });
-      for(const sec of sections){
-        const items = d.itemList.filter(x => (x.section||'') === sec);
-        const secOwned = items.filter(x => x.owned).length;
-        html += (sec ? `<h4 class="tmodal-h">${esc(sec)} <span>(${secOwned}/${items.length})</span></h4>` : '') +
-          '<ul class="tmodal-list mega">' + items.map(x => {
-            const sci = x.sci || _nameToSci(x.name);
-            const lbl = (x.owned?'✓ ':'') + (sci?`<span class="sp-link" data-sci="${esc(sci)}">${esc(x.name)}</span>`:esc(x.name));
-            return `<li class="${x.owned?'own':''}">${lbl}</li>`;
-          }).join('') + '</ul>';
-      }
+      html += _renderModalAccordion(d.itemList);
     }
   } else {
     // Cas one-shot classique.
@@ -11374,18 +11402,7 @@ $('#trophyGrid').addEventListener('click',async e=>{
     if(d.list.length && typeof d.list[0]==='object'){
       const owned = d.list.filter(x=>x.owned).length;
       const noteTxt = d.note || (owned+' déjà observé'+(owned>1?'s':'')+' sur '+d.list.length+' possibles en France');
-      html = '<p class="tmodal-note">'+esc(noteTxt)+'</p>';
-      const sections=[]; d.list.forEach(x=>{ if(!sections.includes(x.section)) sections.push(x.section); });
-      for(const sec of sections){
-        const items = d.list.filter(x=>x.section===sec);
-        const secOwned = items.filter(x=>x.owned).length;
-        html += (sec?'<h4 class="tmodal-h">'+esc(sec)+' <span>('+secOwned+'/'+items.length+')</span></h4>':'') +
-          '<ul class="tmodal-list mega">' + items.map(x=>{
-            const sci = x.sci || _nameToSci(x.name);
-            const label = (x.owned?'✓ ':'')+(sci?`<span class="sp-link" data-sci="${esc(sci)}">${esc(x.name)}</span>`:esc(x.name));
-            return '<li class="'+(x.owned?'own':'')+'">'+label+'</li>';
-          }).join('') + '</ul>';
-      }
+      html = '<p class="tmodal-note">'+esc(noteTxt)+'</p>' + _renderModalAccordion(d.list);
     } else {
       html = '<ul class="tmodal-list">' + d.list.map(n => {
         const sci = _nameToSci(n);
