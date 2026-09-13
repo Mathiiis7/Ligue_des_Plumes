@@ -1493,7 +1493,17 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .vote-voters { margin-top:4px; font-size:10.5px; color:var(--ink-3); }
 
   /* Modal : gallerie des 6 paliers pour une famille */
-  .tmodal-tier-gallery { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:14px; margin-bottom:8px; }
+  /* Toujours 3 colonnes x 2 lignes pour les 6 paliers, quelle que soit la largeur.
+     Sur mobile les cellules deviennent plus etroites mais gardent la grille 3x2. */
+  .tmodal-tier-gallery { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-bottom:8px; }
+  @media (max-width: 520px){
+    .tmodal-tier-gallery { gap:6px; }
+    .tmodal-tier { padding:8px 4px; }
+    .tmodal-tier-img { width:44px; height:44px; }
+    .tmodal-tier-label { font-size:11px; }
+    .tmodal-tier-thresh { font-size:9.5px; line-height:1.25; }
+    .tmodal-tier-prog { font-size:9px; }
+  }
   .tmodal-tier { display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 6px;
     border:1px solid var(--line); border-radius:12px; background:var(--surface-2);
     text-align:center; }

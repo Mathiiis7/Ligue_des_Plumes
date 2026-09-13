@@ -3,7 +3,7 @@
 //   puis rafraichit en background. Prochain reload = nouvelle version.
 // - Requetes cross-origin (Firestore, iNaturalist, xeno-canto, Wikipedia, etc.) : reseau seul.
 // - Bump CACHE_VERSION quand on veut invalider volontairement.
-const CACHE_VERSION = 'v120-2026-09-13-natgeo-custom-pngs';
+const CACHE_VERSION = 'v121-2026-09-13-tier-gallery-3-cols-forced';
 const CACHE_NAME = 'lmb-' + CACHE_VERSION;
 
 self.addEventListener('install', (e) => {
