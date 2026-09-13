@@ -2160,9 +2160,14 @@ const TROPHIES = [
       const out = [];
       for(const c of HABITAT_CATS){
         const scis = HABITAT_TO_SCIS_FR(c) || [];
+        const scisSet = new Set(scis);
+        // Compteur = intersection observees x especes FR (pas le total mondial de
+        // s.habOwned[c] qui incluait des especes hors France et desalignait le header
+        // "6/6" avec la liste affichee ci-dessous).
+        const observedInFr = [...s.habOwned[c]].filter(sci => scisSet.has(sci)).length;
         const seuil = habMin(c);
         const ok = s.habOwned[c].size >= seuil;
-        const sec = `${HABITAT_LABELS[c]} : ${s.habOwned[c].size}/${scis.length} vues (seuil ${seuil}, 5 % des sp françaises) ${ok?'✅ validé':'⏳ à valider'}`;
+        const sec = `${HABITAT_LABELS[c]} : ${observedInFr}/${scis.length} vues (seuil ${seuil}, 5 % des sp françaises) ${ok?'✅ validé':'⏳ à valider'}`;
         for(const sci of scis) out.push({ name: frName(sci, sci), section: sec, owned: s.habOwned[c].has(sci) });
       }
       return out;
