@@ -3377,7 +3377,13 @@ function renderTrophies(data){
         <div class="tro-fam-body">
           <div class="tro-fam-title">
             <span class="tro-fam-name">${esc(familyName)}</span>
-            ${currentTier ? `<span class="tro-fam-tier">· ${esc(displayMeta.label)}</span>` : `<span class="tro-fam-tier tro-fam-tier-locked">· à débloquer</span>`}
+            ${currentTier
+              ? (function(){
+                  // Affiche le nom perso du palier si defini via tierNames (ex 'Sac a dos', 'Idefix') sinon fallback tier label (Bronze/Argent...).
+                  const hasCustomName = displayTier.name && displayTier.name !== `${familyName} ${displayMeta.label}`;
+                  return `<span class="tro-fam-tier">· ${esc(hasCustomName ? displayTier.name : displayMeta.label)}</span>`;
+                })()
+              : `<span class="tro-fam-tier tro-fam-tier-locked">· à débloquer</span>`}
           </div>
           <div class="tro-fam-next">${nextLine}</div>
           <div class="tro-fam-bar-outer">
