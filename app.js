@@ -12086,7 +12086,7 @@ $('#trophyGrid').addEventListener('click',async e=>{
     $('#tmodalTitle').textContent = d.objectivePhrase ? '' : d.familyName;
     // Phrase d'objectif unique au-dessus de la gallerie (evite de repeter 'Observer X regions...' dans chaque case).
     const objectiveHtml = d.objectivePhrase
-      ? `<div class="tmodal-objective">🎯 ${esc(d.objectivePhrase)}</div>`
+      ? `<div class="tmodal-objective">${esc(d.objectivePhrase)}</div>`
       : '';
     html = objectiveHtml + '<div class="tmodal-tier-gallery">' + d.tiers.map(t => {
       // Titre affiche : nom perso du palier si defini (Idefix, Vercingetorix...) sinon fallback tier label (Bronze, Argent...).
