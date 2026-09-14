@@ -2370,7 +2370,8 @@ const TROPHIES = [
     info:s=>s.countryCount ? `✈️ ${s.countryCount} pays visités` : '',
   }),
   ...makeTierFamily({
-    theme:'localisation', icon:ICONS.regions, family:'maFrance', category:'progression', baseName:'Ma France',
+    theme:'localisation', icon:ICONS.regions, family:'maFrance', category:'progression', baseName:'Gaulois',
+    imgDir:'assets/trophies/families/gaulois',
     metric:s=>s.regionsCount, thresholds:[2,5,8,11,14,18],
     descTpl:'Observer un oiseau dans {n} régions françaises',
     list:s=>FR_REGIONS.map(r=>({ name:r.name, owned:s.regionsOwnedSet.has(r.code) })),
