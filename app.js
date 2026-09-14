@@ -2524,13 +2524,24 @@ const TROPHIES = [
     note:s=>`${(s.picidaeOwnedSet?.size)||0} pic${((s.picidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.picidaeOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'limicoles', category:'species', baseName:'Limicoles',
-    imgDir:'assets/trophies/families/limicoles',
-    // Pool FR ~40 (bécasseaux, chevaliers, courlis, gravelots, pluviers, huitrier, barges, bécassines, avocette, échasse, oedicnème…)
-    metric:s=>(s.limicoleOwnedSet?.size)||0, thresholds:[3,8,15,25,40,60],
-    descTpl:'Observer {n} limicoles différents (bécasseaux, chevaliers, pluviers…)',
-    list:s=>[...(s.limicoleOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.limicoleOwnedSet?.size)||0} limicole${((s.limicoleOwnedSet?.size)||0)>1?'s':''} observé${((s.limicoleOwnedSet?.size)||0)>1?'s':''}`,
+    theme:'groupe', icon:ICONS.aigle, family:'scolopacidae', category:'species', baseName:'Bécasseaux & chevaliers',
+    imgDir:'assets/trophies/families/scolopacidae',
+    // Pool FR ~25 (Scolopacidae : becasseaux, chevaliers, courlis, barges,
+    // phalaropes, becasses, becassines).
+    metric:s=>(s.scolopacidaeOwnedSet?.size)||0, thresholds:[2,5,10,17,25,40],
+    descTpl:'Observer {n} bécasseaux, chevaliers ou apparentés différents (barges, courlis, bécassines…)',
+    list:s=>[...(s.scolopacidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>`${(s.scolopacidaeOwnedSet?.size)||0} espèce${((s.scolopacidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.scolopacidaeOwnedSet?.size)||0)>1?'s':''}`,
+  }),
+  ...makeTierFamily({
+    theme:'groupe', icon:ICONS.aigle, family:'rivages', category:'species', baseName:'Pluviers & rivages',
+    imgDir:'assets/trophies/families/rivages',
+    // Pool FR ~15 (Charadriidae + Haematopodidae + Recurvirostridae + Burhinidae
+    // + Glareolidae + Rostratulidae + Jacanidae exotiques).
+    metric:s=>(s.rivagesOwnedSet?.size)||0, thresholds:[2,4,7,11,15,22],
+    descTpl:'Observer {n} espèces de rivage différentes (pluviers, vanneaux, huîtrier, avocette, échasse…)',
+    list:s=>[...(s.rivagesOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>`${(s.rivagesOwnedSet?.size)||0} espèce${((s.rivagesOwnedSet?.size)||0)>1?'s':''} observée${((s.rivagesOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
     theme:'groupe', icon:ICONS.aigle, family:'laridae', category:'species', baseName:'Goélands & mouettes',
@@ -2579,7 +2590,12 @@ const ARDEIDAE_G=/^(ardea|egretta|ardeola|botaurus|ixobrychus|nycticorax|bubulcu
 const COLUMBIDAE_G=/^(columba|streptopelia|spilopelia|patagioenas|zenaida|geopelia|macropygia|treron|ducula|ptilinopus|leptotila|geotrygon|zentrygon|columbina|claravis|metriopelia|zenaida|nesoenas|reinwardtoena|gymnophaps|hemiphaga|ectopistes|didunculus|caloenas|otidiphaps|goura|drepanoptila|alopecoenas|gallicolumba|starnoenas|geopelia|oena|turtur|chalcophaps|phapitreron|treron|phaps|geophaps|petrophassa)$/;
 const GALLIFORMES_G=/^(phasianus|alectoris|perdix|coturnix|tetrao|lyrurus|tetrastes|lagopus|bonasa|colinus|meleagris|pavo|gallus|syrmaticus|chrysolophus|tympanuchus|dendragapus|centrocercus|callipepla|falcipennis|lophura|argusianus|polyplectron|catreus|crossoptilon|pucrasia|ithaginis|tragopan|lophophorus|perdicula|arborophila|bambusicola|francolinus|pternistis|scleroptila|dendroperdix|ammoperdix|rhynchortyx|dactylortyx|philortyx|oreortyx|cyrtonyx|odontophorus|numida|guttera|acryllium|agelastes|lagopus|tetraogallus|ammoperdix|alectura|leipoa|megapodius|talegalla|aepypodius|macrocephalon|eulipoa|megacrex|melanoperdix)$/;
 const PICIDAE_G=/^(picus|dendrocopos|dryobates|dryocopus|jynx|picoides|leiopicus|colaptes|campephilus|melanerpes|sphyrapicus|piculus|celeus|dendropicos|campethera|geocolaptes|chrysocolaptes|blythipicus|micropternus|meiglyptes|hemicircus|reinwardtipicus|mulleripicus|gecinulus|xiphidiopicus|nesoctites|picumnus|verreauxia|sasia)$/;
-const LIMICOLE_G=/^(charadrius|pluvialis|vanellus|anarhynchus|eudromias|calidris|tringa|actitis|xenus|gallinago|numenius|limosa|arenaria|phalaropus|scolopax|lymnocryptes|bartramia|limnodromus|philomachus|haematopus|recurvirostra|himantopus|burhinus|glareola|cursorius|rostratula|jacana|hydrophasianus|actophilornis|irediparra|metopidius|microparra|pluvianellus|erythrogonys|pluvianus|dromas|prosobonia|catoptrophorus|heteroscelus|tryngites|elseyornis|thinornis|pluvianellus|attagis|thinocorus|ibidorhyncha|chionis|coenocorypha)$/;
+// Scolopacidae stricto : becasseaux, chevaliers, courlis, barges, phalaropes,
+// becasses, becassines. Sert au trophee 'Becasseaux & chevaliers'.
+const SCOLOPACIDAE_G=/^(calidris|tringa|actitis|xenus|gallinago|numenius|limosa|arenaria|phalaropus|scolopax|lymnocryptes|bartramia|limnodromus|philomachus|prosobonia|catoptrophorus|heteroscelus|tryngites|coenocorypha)$/;
+// Pluviers, vanneaux + petites familles de rivage : huitriers, avocettes/echasses,
+// oedicnemes, glareoles/courvites, jacanas, rhynchee. Trophee 'Pluviers & rivages'.
+const RIVAGES_G=/^(charadrius|pluvialis|vanellus|anarhynchus|eudromias|erythrogonys|elseyornis|thinornis|haematopus|recurvirostra|himantopus|burhinus|glareola|cursorius|rostratula|jacana|hydrophasianus|actophilornis|irediparra|metopidius|microparra|pluvianellus|pluvianus|dromas|attagis|thinocorus|ibidorhyncha|chionis)$/;
 const LARIDAE_G=/^(larus|ichthyaetus|chroicocephalus|hydrocoloeus|leucophaeus|rissa|xema|pagophila|rhodostethia|sterna|sternula|thalasseus|gelochelidon|hydroprogne|onychoprion|chlidonias|anous|gygis|creagrus|saundersilarus)$/;
 // Predicat de famille pour le modal des familles d'especes (bouton Monde/France).
 // Retourne true si l'espece appartient a la famille. Utilise pour filtrer le pool FR
@@ -2657,11 +2673,17 @@ const SPECIES_FAMILY_FILTERS = {
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
     return fam === 'Pics';
   },
-  limicoles: sci => {
+  scolopacidae: sci => {
     const g = (sci||'').split(' ')[0];
-    if(LIMICOLE_G.test(g)) return true;
+    if(SCOLOPACIDAE_G.test(g)) return true;
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
-    return fam === 'Chevaliers, bécasseaux' || fam === 'Bécasses, bécassines' || fam === 'Pluviers, vanneaux' || fam === 'Huîtriers' || fam === 'Avocettes, échasses' || fam === 'Œdicnèmes' || fam === 'Glaréoles, courvites' || fam === 'Rhynchée' || fam === 'Jacanas';
+    return fam === 'Chevaliers, bécasseaux' || fam === 'Bécasses, bécassines';
+  },
+  rivages: sci => {
+    const g = (sci||'').split(' ')[0];
+    if(RIVAGES_G.test(g)) return true;
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Pluviers, vanneaux' || fam === 'Huîtriers' || fam === 'Avocettes, échasses' || fam === 'Œdicnèmes' || fam === 'Glaréoles, courvites' || fam === 'Rhynchée' || fam === 'Jacanas';
   },
   laridae: sci => {
     const g = (sci||'').split(' ')[0];
@@ -2684,7 +2706,8 @@ const SPECIES_FAMILY_LABELS = {
   columbidae: 'pigeons & tourterelles',
   galliformes: 'galliformes',
   picidae: 'pics',
-  limicoles: 'limicoles',
+  scolopacidae: 'bécasseaux & chevaliers',
+  rivages: 'pluviers & rivages',
   laridae: 'goélands & mouettes',
 };
 // Alcidés = les "pingouins" de l'hémisphère nord (pingouins, macareux, mergule, guillemots)
@@ -2955,7 +2978,7 @@ function statsFor(me, N){
   const hirundoOwnedSet=new Set(), alaudaOwnedSet=new Set(), paridaeOwnedSet=new Set(),
         corvidaeOwnedSet=new Set(), alcediOwnedSet=new Set(), ardeidaeOwnedSet=new Set(),
         columbidaeOwnedSet=new Set(), galliformesOwnedSet=new Set(), picidaeOwnedSet=new Set(),
-        limicoleOwnedSet=new Set(), laridaeOwnedSet=new Set();
+        scolopacidaeOwnedSet=new Set(), rivagesOwnedSet=new Set(), laridaeOwnedSet=new Set();
   // Milieux (habitats) : Set d'espèces par catégorie via HABITATS (source : famille eBird).
   const habOwned = Object.fromEntries(HABITAT_CATS.map(c=>[c, new Set()]));
   for(const v of me._active.values()){
@@ -3002,8 +3025,10 @@ function statsFor(me, N){
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Faisans, perdrix, tétras'||f==='Colins'||f==='Pintades'||f==='Megapodes') galliformesOwnedSet.add(sci); }
     if(PICIDAE_G.test(g)) picidaeOwnedSet.add(sci);
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Pics') picidaeOwnedSet.add(sci); }
-    if(LIMICOLE_G.test(g)) limicoleOwnedSet.add(sci);
-    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Chevaliers, bécasseaux'||f==='Bécasses, bécassines'||f==='Pluviers, vanneaux'||f==='Huîtriers'||f==='Avocettes, échasses'||f==='Œdicnèmes'||f==='Glaréoles, courvites'||f==='Rhynchée'||f==='Jacanas') limicoleOwnedSet.add(sci); }
+    if(SCOLOPACIDAE_G.test(g)) scolopacidaeOwnedSet.add(sci);
+    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Chevaliers, bécasseaux'||f==='Bécasses, bécassines') scolopacidaeOwnedSet.add(sci); }
+    if(RIVAGES_G.test(g)) rivagesOwnedSet.add(sci);
+    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Pluviers, vanneaux'||f==='Huîtriers'||f==='Avocettes, échasses'||f==='Œdicnèmes'||f==='Glaréoles, courvites'||f==='Rhynchée'||f==='Jacanas') rivagesOwnedSet.add(sci); }
     if(LARIDAE_G.test(g)) laridaeOwnedSet.add(sci);
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Goélands, mouettes'||f==='Sternes'||f==='Laridés') laridaeOwnedSet.add(sci); }
     if(sci==='dryocopus martius') blackWoodpecker=true;
@@ -3049,7 +3074,7 @@ function statsFor(me, N){
     for(const uid of voters) if(uid !== me.id) hearts++;
     if(hearts >= 3) hotPhotos++;
   }
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, limicoleOwnedSet, laridaeOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
@@ -3157,7 +3182,8 @@ function renderTrophies(data){
         if(familyKey === 'columbidae') return new Set(s.columbidaeOwnedSet || []);
         if(familyKey === 'galliformes') return new Set(s.galliformesOwnedSet || []);
         if(familyKey === 'picidae') return new Set(s.picidaeOwnedSet || []);
-        if(familyKey === 'limicoles') return new Set(s.limicoleOwnedSet || []);
+        if(familyKey === 'scolopacidae') return new Set(s.scolopacidaeOwnedSet || []);
+        if(familyKey === 'rivages') return new Set(s.rivagesOwnedSet || []);
         if(familyKey === 'laridae') return new Set(s.laridaeOwnedSet || []);
         return null;
       })(),
