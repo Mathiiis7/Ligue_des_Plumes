@@ -2335,18 +2335,22 @@ const TROPHY_TIERS = [
 // le meme icone/theme/list/note mais adapte son nom, seuil et prog en fonction
 // du tier. `desc` sert de gabarit avec {n} qui devient le seuil.
 function makeTierFamily(cfg){
-  const { theme, icon, baseName, metric, thresholds, descTpl, list, note, alwaysList=true, info, imgDir, category } = cfg;
+  const { theme, icon, baseName, metric, thresholds, descTpl, list, note, alwaysList=true, info, imgDir, category, tierNames } = cfg;
   return TROPHY_TIERS.map((t, i) => {
     const seuil = thresholds[i];
+    // tierNames (optionnel) permet un titre unique par palier (ex : Ecologue -> 'Ornithologue du dimanche' pour Bronze, 'Apprenti ornithologue' pour Argent, etc.). Sinon fallback '${baseName} ${tier.label}'.
+    const tierName = (tierNames && tierNames[i]) ? tierNames[i] : `${baseName} ${t.label}`;
     return {
       theme, icon,
       tier: t.key,
       family: cfg.family || baseName,
+      // Nom du bloc famille dans le showcase (independant du nom du palier).
+      familyBaseName: baseName,
       // Categorie de groupement dans le showcase : progression / habitat / species / one-shot.
       category: category || 'progression',
       // Override optionnel du PNG du palier (pour familles qui ont leur propre set d'images).
       tierImg: imgDir ? `${imgDir}/${t.key === 'violet' ? 'violet' : t.key}.png` : null,
-      name: `${baseName} ${t.label}`,
+      name: tierName,
       desc: descTpl.replace('{n}', seuil),
       test: s => (metric(s) || 0) >= seuil,
       prog: s => [metric(s) || 0, seuil],
@@ -2361,6 +2365,9 @@ const TROPHIES = [
   ...makeTierFamily({
     theme:'progression', icon:ICONS.medal, family:'ecologue', category:'progression', baseName:'Écologue',
     imgDir:'assets/trophies/families/ecologue',
+    // Progression de titres 'Ornithologue' selon le palier (baseName 'Ecologue' garde
+    // pour le bloc famille dans le showcase et le titre du modal).
+    tierNames:['Ornithologue du dimanche','Apprenti ornithologue','Ornithologue confirmé','Ornithologue chevronné','Ornithologue expert','Ornithologue de légende'],
     metric:s=>s.total, thresholds:[50,100,150,200,300,500],
     descTpl:'Observer {n} espèces différentes',
   }),
@@ -3270,7 +3277,9 @@ function renderTrophies(data){
     const currentTier = highestIdx >= 0 ? tiersSorted[highestIdx] : null;
     const displayTier = currentTier || tiersSorted[0];   // fallback: montre Bronze grisé si rien débloqué
     const displayMeta = TROPHY_TIERS.find(x => x.key === displayTier.tier);
-    const familyName = displayTier.name.replace(/ (Bronze|Argent|Or|Diamant|Rubis|Prismatique|Améthyste|Émeraude)$/, '');
+    // Nom du bloc famille : utilise familyBaseName (defini par makeTierFamily via cfg.baseName),
+    // sinon fallback sur strip du suffixe tier du displayTier.name (ancien comportement).
+    const familyName = displayTier.familyBaseName || displayTier.name.replace(/ (Bronze|Argent|Or|Diamant|Rubis|Prismatique|Améthyste|Émeraude)$/, '');
     // Barre de progression : absolue (progNow / progTo), pas relative au palier precedent.
     // Comme ca "100 / 150" affiche bien 66 % rempli plutot que 0 % (contre-intuitif car
     // le user vient de valider Argent a 100 et voudrait voir sa progression globale).
