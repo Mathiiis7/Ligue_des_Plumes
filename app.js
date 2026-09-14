@@ -9526,6 +9526,8 @@ async function _loadHabitatByCountry(cc){
   return _habitatByCountryPromises[key];
 }
 // Rendu accordeon L1 -> L3 pour une espece dans un pays donne.
+// La carte s'affiche en click-to-open (collapsed par defaut). Country picker
+// dedie permet de switcher entre les 242 pays qui ont des donnees habitat.
 async function _renderSpeciesHabitatCard(sci, cc){
   const box = $('#smHabitatCard'); if(!box) return;
   box.hidden = true;
@@ -9534,80 +9536,136 @@ async function _renderSpeciesHabitatCard(sci, cc){
   const country = (cc || _globalCountry || 'FR');
   if(!key) return;
 
-  const [legends, byCountry] = await Promise.all([
-    _loadHabitatLegends(),
-    _loadHabitatByCountry(country)
-  ]);
-  if(!legends || !byCountry) return;
-  const entry = byCountry[key];
-  if(!entry || !entry.L1) return;
-
-  const dataset = entry.d;   // 'clc' ou 'cglc'
-  const l1Meta = legends.L1_super_categories;
-  const classes = legends[dataset]?.classes || {};
-
-  // Ordre L1 : par pourcentage decroissant (montre d'abord la super-cat dominante)
-  const l1Sorted = Object.entries(entry.L1).sort((a,b) => b[1] - a[1]);
-
-  // Pour L3 : trier decroissant, garder >=2%, agreger le reste en "Autres" par super-cat
-  const l3Entries = Object.entries(entry.L3).map(([code, pct]) => ({
-    code, pct: +pct, meta: classes[code], l1: (classes[code]||{}).l1
-  })).sort((a,b) => b.pct - a.pct);
-
-  const datasetLabel = dataset === 'clc'
-    ? `<span style="font-size:10px;color:var(--ink-3);background:var(--line-2);padding:2px 6px;border-radius:4px;font-weight:600;">EU · CLC ${legends.clc.class_count} classes</span>`
-    : `<span style="font-size:10px;color:var(--ink-3);background:var(--line-2);padding:2px 6px;border-radius:4px;font-weight:600;">Monde · CGLC ${legends.cglc.class_count} classes</span>`;
-
-  const rowsHtml = l1Sorted.map(([l1Key, l1Pct]) => {
-    const meta = l1Meta[l1Key];
-    if(!meta) return '';
-    const emoji = meta.emoji || '';
-    const name = meta.name_fr || l1Key;
-    const l3InCat = l3Entries.filter(e => e.l1 === l1Key && e.pct >= 0.5);
-    const hasDetail = l3InCat.length > 0;
-    const detailHtml = hasDetail ? l3InCat.map(e => {
-      const nm = e.meta?.name_fr || `Classe ${e.code}`;
-      const tip = e.meta?.tooltip_fr || '';
-      return `<div style="display:flex; justify-content:space-between; gap:8px; padding:2px 0 2px 26px; font-size:12.5px; color:var(--ink-2);">
-        <span title="${esc(tip)}" style="cursor:${tip?'help':'default'};">${esc(nm)}</span>
-        <span style="font-weight:600; color:var(--ink-3);">${e.pct.toFixed(1)}%</span>
-      </div>`;
-    }).join('') : '';
-    return `<details style="margin:0; padding:2px 0; ${hasDetail ? '' : 'pointer-events:none;'}">
-      <summary style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 4px; cursor:${hasDetail?'pointer':'default'}; list-style:none; border-bottom:1px solid var(--line-2);">
-        <span style="display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:600; color:var(--ink);">
-          <span style="width:16px; text-align:center;">${hasDetail ? '▸' : ' '}</span>
-          <span>${emoji} ${esc(name)}</span>
-        </span>
-        <span style="font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums;">${l1Pct.toFixed(1)}%</span>
-      </summary>
-      <div style="padding:4px 0 6px 0; background:var(--bg-1);">${detailHtml}</div>
-    </details>`;
-  }).join('');
-
-  const totalPct = l1Sorted.reduce((s,[,v]) => s + v, 0);
-  const otherPct = totalPct < 99.5 ? (100 - totalPct) : 0;
-  const otherHtml = otherPct > 0.5 ? `<div style="display:flex; justify-content:space-between; padding:6px 4px 2px 28px; font-size:12.5px; color:var(--ink-3);"><span>Autres milieux</span><span style="font-weight:600;">${otherPct.toFixed(1)}%</span></div>` : '';
-
+  // Rend d'abord le shell fermé avec un picker de pays. Le contenu (accordeon)
+  // est charge lazy quand l'utilisateur ouvre le details.
+  const flag = flagImg(country);
+  const cName = (COUNTRIES_REG[country] && COUNTRIES_REG[country].name) || country;
   box.innerHTML = `
-    <div class="sm-card-title" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-      <span>Habitat préféré</span>
-      ${datasetLabel}
-    </div>
-    <div style="margin-top:6px;">${rowsHtml}${otherHtml}</div>
-    <div style="font-size:10.5px; color:var(--ink-3); margin-top:8px; line-height:1.4;">
-      Croisement Cornell S&amp;T (abondance ${key}) × ${dataset==='clc' ? 'Corine Land Cover 2018' : 'Copernicus Global Land Cover 2019'}.
-      Pourcentages = fréquence pondérée d'occupation de chaque type de milieu là où l'espèce est présente.
-    </div>
+    <details class="sm-habitat-details" style="margin:0;">
+      <summary class="sm-card-title" style="display:flex; align-items:center; justify-content:space-between; gap:8px; cursor:pointer; list-style:none;">
+        <span style="display:flex; align-items:center; gap:8px;">
+          <span class="hab-caret" style="width:12px; display:inline-block; transition:transform .15s;">▸</span>
+          <span>Habitat préféré</span>
+        </span>
+        <span id="smHabitatDatasetBadge" style="font-size:10px; color:var(--ink-3); background:var(--line-2); padding:2px 6px; border-radius:4px; font-weight:600;">…</span>
+      </summary>
+      <div style="margin:10px 0 6px 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <span style="font-size:12px; color:var(--ink-3);">Pays :</span>
+        <button type="button" id="smHabitatCountrySel" class="cp-btn" data-cc="${esc(country)}" style="font-size:12px; padding:3px 8px;">
+          <span class="cp-btn-flag">${flag}</span>
+          <span class="cp-btn-label">${esc(cName)}</span>
+          <span class="cp-btn-arrow">▾</span>
+        </button>
+      </div>
+      <div id="smHabitatContent" style="margin-top:6px;"><div class="help" style="padding:12px 4px; text-align:center; color:var(--ink-3);">Chargement…</div></div>
+      <div style="font-size:10.5px; color:var(--ink-3); margin-top:10px; line-height:1.4;">
+        Croisement Cornell S&amp;T (abondance ${esc(key)}) × Corine Land Cover 2018 (Europe) / Copernicus Global Land Cover 2019 (monde). Pourcentages = fréquence pondérée d'occupation, pas préférence écologique intrinsèque.
+      </div>
+    </details>
   `;
   box.hidden = false;
-  // Style overrides pour les details deployes (fleche rotative)
-  box.querySelectorAll('details').forEach(d => {
-    d.addEventListener('toggle', () => {
-      const arrow = d.querySelector('summary > span > span');
-      if(arrow && arrow.textContent.trim() === '▸' && d.open) arrow.textContent = '▾';
-      else if(arrow && arrow.textContent.trim() === '▾' && !d.open) arrow.textContent = '▸';
+
+  const details = box.querySelector('.sm-habitat-details');
+  const caret = box.querySelector('.hab-caret');
+  const contentEl = box.querySelector('#smHabitatContent');
+  const badgeEl = box.querySelector('#smHabitatDatasetBadge');
+  const selBtn = box.querySelector('#smHabitatCountrySel');
+  let currentCC = country;
+  let loadedOnce = false;
+
+  // Charge et rend le contenu pour un pays donne.
+  const loadForCountry = async (targetCC) => {
+    contentEl.innerHTML = '<div class="help" style="padding:12px 4px; text-align:center; color:var(--ink-3);">Chargement…</div>';
+    const [legends, byCountry] = await Promise.all([
+      _loadHabitatLegends(),
+      _loadHabitatByCountry(targetCC)
+    ]);
+    if(!legends || !byCountry){
+      contentEl.innerHTML = '<div class="help" style="padding:12px 4px; text-align:center; color:var(--ink-3); font-style:italic;">Aucune donnée habitat pour ce pays.</div>';
+      badgeEl.textContent = '—';
+      return;
+    }
+    const entry = byCountry[key];
+    if(!entry || !entry.L1){
+      contentEl.innerHTML = '<div class="help" style="padding:12px 4px; text-align:center; color:var(--ink-3); font-style:italic;">Espèce absente ou non modélisée dans ce pays.</div>';
+      badgeEl.textContent = '—';
+      return;
+    }
+    const dataset = entry.d;
+    const l1Meta = legends.L1_super_categories;
+    const classes = legends[dataset]?.classes || {};
+    const l1Sorted = Object.entries(entry.L1).sort((a,b) => b[1] - a[1]);
+    const l3Entries = Object.entries(entry.L3).map(([code, pct]) => ({
+      code, pct: +pct, meta: classes[code], l1: (classes[code]||{}).l1
+    })).sort((a,b) => b.pct - a.pct);
+    badgeEl.textContent = dataset === 'clc'
+      ? `EU · CLC ${legends.clc.class_count} classes`
+      : `Monde · CGLC ${legends.cglc.class_count} classes`;
+    const rowsHtml = l1Sorted.map(([l1Key, l1Pct]) => {
+      const meta = l1Meta[l1Key];
+      if(!meta) return '';
+      const emoji = meta.emoji || '';
+      const name = meta.name_fr || l1Key;
+      const l3InCat = l3Entries.filter(e => e.l1 === l1Key && e.pct >= 0.5);
+      const hasDetail = l3InCat.length > 0;
+      const detailHtml = hasDetail ? l3InCat.map(e => {
+        const nm = e.meta?.name_fr || `Classe ${e.code}`;
+        const tip = e.meta?.tooltip_fr || '';
+        return `<div style="display:flex; justify-content:space-between; gap:8px; padding:2px 0 2px 26px; font-size:12.5px; color:var(--ink-2);">
+          <span title="${esc(tip)}" style="cursor:${tip?'help':'default'};">${esc(nm)}</span>
+          <span style="font-weight:600; color:var(--ink-3);">${e.pct.toFixed(1)}%</span>
+        </div>`;
+      }).join('') : '';
+      return `<details style="margin:0; padding:2px 0; ${hasDetail ? '' : 'pointer-events:none;'}">
+        <summary style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 4px; cursor:${hasDetail?'pointer':'default'}; list-style:none; border-bottom:1px solid var(--line-2);">
+          <span style="display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:600; color:var(--ink);">
+            <span style="width:16px; text-align:center;">${hasDetail ? '▸' : ' '}</span>
+            <span>${emoji} ${esc(name)}</span>
+          </span>
+          <span style="font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums;">${l1Pct.toFixed(1)}%</span>
+        </summary>
+        <div style="padding:4px 0 6px 0; background:var(--bg-1);">${detailHtml}</div>
+      </details>`;
+    }).join('');
+    const totalPct = l1Sorted.reduce((s,[,v]) => s + v, 0);
+    const otherPct = totalPct < 99.5 ? (100 - totalPct) : 0;
+    const otherHtml = otherPct > 0.5 ? `<div style="display:flex; justify-content:space-between; padding:6px 4px 2px 28px; font-size:12.5px; color:var(--ink-3);"><span>Autres milieux</span><span style="font-weight:600;">${otherPct.toFixed(1)}%</span></div>` : '';
+    contentEl.innerHTML = rowsHtml + otherHtml;
+    contentEl.querySelectorAll('details').forEach(d => {
+      d.addEventListener('toggle', () => {
+        const arrow = d.querySelector('summary > span > span');
+        if(arrow && arrow.textContent.trim() === '▸' && d.open) arrow.textContent = '▾';
+        else if(arrow && arrow.textContent.trim() === '▾' && !d.open) arrow.textContent = '▸';
+      });
     });
+  };
+
+  // Lazy load : ne charge le contenu qu'au 1er open du details.
+  details.addEventListener('toggle', async () => {
+    if(caret) caret.style.transform = details.open ? 'rotate(90deg)' : 'rotate(0)';
+    if(details.open && !loadedOnce){
+      loadedOnce = true;
+      await loadForCountry(currentCC);
+    }
+  });
+
+  // Country picker : ouvre modal avec les 242 pays qui ont data habitat.
+  selBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    // Ouvre un picker sur les pays disponibles (COUNTRIES_REG connus, les autres
+    // accessibles via _openCountryPicker si availableCodes non specifie).
+    const chosen = await _openCountryPicker(currentCC, {});
+    if(!chosen || chosen === currentCC) return;
+    currentCC = chosen;
+    // Sync visuel du bouton
+    const newName = (COUNTRIES_REG[chosen] && COUNTRIES_REG[chosen].name) || chosen;
+    selBtn.dataset.cc = chosen;
+    selBtn.querySelector('.cp-btn-flag').innerHTML = flagImg(chosen);
+    selBtn.querySelector('.cp-btn-label').textContent = newName;
+    // Force le details a etre ouvert et recharge
+    if(!details.open) details.open = true;
+    loadedOnce = true;
+    await loadForCountry(chosen);
   });
 }
 // Carte de repartition Cornell S&T (heatmap annuelle 9km). Lazy load du manifest global
