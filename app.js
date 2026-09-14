@@ -2335,11 +2335,13 @@ const TROPHY_TIERS = [
 // le meme icone/theme/list/note mais adapte son nom, seuil et prog en fonction
 // du tier. `desc` sert de gabarit avec {n} qui devient le seuil.
 function makeTierFamily(cfg){
-  const { theme, icon, baseName, metric, thresholds, descTpl, list, note, alwaysList=true, info, imgDir, category, tierNames } = cfg;
+  const { theme, icon, baseName, metric, thresholds, descTpl, list, note, alwaysList=true, info, imgDir, category, tierNames, tierRefs } = cfg;
   return TROPHY_TIERS.map((t, i) => {
     const seuil = thresholds[i];
-    // tierNames (optionnel) permet un titre unique par palier (ex : Ecologue -> 'Ornithologue du dimanche' pour Bronze, 'Apprenti ornithologue' pour Argent, etc.). Sinon fallback '${baseName} ${tier.label}'.
+    // tierNames (optionnel) : titre unique par palier (ex Ecologue -> 'Ornithologue du dimanche'). Sinon fallback baseName + t.label.
     const tierName = (tierNames && tierNames[i]) ? tierNames[i] : `${baseName} ${t.label}`;
+    // tierRefs (optionnel) : petite phrase de reference/clin d'oeil par palier (ex 'le chien qui decouvre le monde' pour Idefix).
+    const tierRef = (tierRefs && tierRefs[i]) ? tierRefs[i] : null;
     return {
       theme, icon,
       tier: t.key,
@@ -2351,6 +2353,7 @@ function makeTierFamily(cfg){
       // Override optionnel du PNG du palier (pour familles qui ont leur propre set d'images).
       tierImg: imgDir ? `${imgDir}/${t.key === 'violet' ? 'violet' : t.key}.png` : null,
       name: tierName,
+      tierRef,
       desc: descTpl.replace('{n}', seuil),
       test: s => (metric(s) || 0) >= seuil,
       prog: s => [metric(s) || 0, seuil],
@@ -2365,17 +2368,16 @@ const TROPHIES = [
   ...makeTierFamily({
     theme:'progression', icon:ICONS.medal, family:'ecologue', category:'progression', baseName:'Écologue',
     imgDir:'assets/trophies/families/ecologue',
-    // Progression de titres 'Ornithologue' selon le palier (baseName 'Ecologue' garde
-    // pour le bloc famille dans le showcase et le titre du modal).
     tierNames:['Ornithologue du dimanche','Apprenti ornithologue','Ornithologue confirmé','Ornithologue chevronné','Ornithologue expert','Ornithologue de légende'],
+    tierRefs:['tu commences à traîner tes jumelles','tu identifies les 3 mésanges du jardin','tu déchiffres les chants au printemps','tu traques les migrateurs en Camargue','tu ratisses la Bretagne aux pélagiques','ta life list dépasse celle des guides eBird'],
     metric:s=>s.total, thresholds:[50,100,150,200,300,500],
     descTpl:'Observer {n} espèces différentes',
   }),
   ...makeTierFamily({
     theme:'localisation', icon:ICONS.avion, family:'marcoPolo', category:'progression', baseName:'Marco Polo',
     imgDir:'assets/trophies/families/marcopolo',
-    // Progression 'voyageur' : baseName garde pour le bloc famille, tierNames titres par palier.
     tierNames:['Sac à dos','Grand voyageur','Aventurier','Explorateur','Globe-trotter','Marco Polo'],
+    tierRefs:['premier vol low-cost pour les vacances','tu poses tes jumelles dans un 4e pays','sac de couchage et carnet de notes toujours prêts','plus de tampons que de pages libres','tous les continents commencent à tomber','plus grand voyageur ornitho de la Ligue'],
     metric:s=>s.countryCount, thresholds:[2,4,7,12,20,30],
     descTpl:'Observer des oiseaux dans {n} pays différents',
     info:s=>s.countryCount ? `✈️ ${s.countryCount} pays visités` : '',
@@ -2383,8 +2385,9 @@ const TROPHIES = [
   ...makeTierFamily({
     theme:'localisation', icon:ICONS.regions, family:'maFrance', category:'progression', baseName:'Gaulois',
     imgDir:'assets/trophies/families/gaulois',
-    // Progression Asterix : titres par palier (baseName garde pour bloc famille).
-    tierNames:['Villageois','Chasseur de sanglier','Guerrier','Druide','Chef de village','Gaulois pur souche'],
+    // Progression Asterix + historique. baseName garde pour bloc famille.
+    tierNames:['Idéfix','Panoramix','Astérix','Obélix','Vercingétorix','Jules César'],
+    tierRefs:['le chien fidèle qui découvre son premier territoire','le druide sage qui connaît son coin','le petit malin qui bourlingue en Gaule','l\'invincible qui a couru dans tous les sens','le grand chef qui a rallié toutes les tribus','a conquis toute la Gaule, région par région'],
     // FR metropolitaine = 13 regions -> Prismatique atteint quand toutes sont visitees.
     metric:s=>s.regionsCount, thresholds:[2,4,6,8,11,13],
     descTpl:'Observer un oiseau dans {n} régions françaises',
@@ -3309,6 +3312,10 @@ function renderTrophies(data){
       tiers: tiersSorted.map((t, i) => ({
         tier: t.tier,
         label: TROPHY_TIERS.find(x=>x.key===t.tier).label,
+        // Nom personnalise du palier si defini via tierNames (ex 'Idefix'), sinon fallback nom generique.
+        name: t.name,
+        // Petite phrase de reference/clin d'oeil (ex 'le chien qui decouvre le monde' pour Idefix).
+        ref: t.tierRef,
         img: t.tierImg || TROPHY_TIERS.find(x=>x.key===t.tier).img,
         color: TROPHY_TIERS.find(x=>x.key===t.tier).color,
         threshold: t.prog(s)[1],
@@ -12048,13 +12055,23 @@ $('#trophyGrid').addEventListener('click',async e=>{
   // Cas famille a paliers : gallerie des 6 coupes + optionnellement la liste des elements a cocher.
   if(d.kind === 'tierFamily'){
     $('#tmodalTitle').textContent = d.familyName;
-    html = '<div class="tmodal-tier-gallery">' + d.tiers.map(t => `
+    html = '<div class="tmodal-tier-gallery">' + d.tiers.map(t => {
+      // Titre affiche : nom perso du palier si defini (Idefix, Vercingetorix...) sinon fallback tier label (Bronze, Argent...).
+      // Le tier label reste en dessous en petit pour reperage visuel.
+      const hasCustomName = t.name && t.name.trim() && t.name.trim() !== t.label && !t.name.endsWith(' '+t.label);
+      const title = hasCustomName ? t.name : t.label;
+      const subLabel = hasCustomName ? `<div class="tmodal-tier-sublabel">${esc(t.label)}</div>` : '';
+      const refLine = t.ref ? `<div class="tmodal-tier-ref">${esc(t.ref)}</div>` : '';
+      return `
       <div class="tmodal-tier ${t.unlocked?'unlocked':'locked'}" style="--tier-color:${t.color}">
         <img src="${esc(t.img)}" alt="${esc(t.label)}" class="tmodal-tier-img${t.unlocked?'':' grayed'}">
-        <div class="tmodal-tier-label">${esc(t.label)}</div>
+        <div class="tmodal-tier-label">${esc(title)}</div>
+        ${subLabel}
+        ${refLine}
         <div class="tmodal-tier-thresh">${esc(t.desc)}</div>
         <div class="tmodal-tier-prog">${t.current} / ${t.threshold} ${t.unlocked?'· <b>débloqué ✓</b>':''}</div>
-      </div>`).join('') + '</div>';
+      </div>`;
+    }).join('') + '</div>';
     // Famille habitat : selecteur de pays (Monde / France) + liste dynamique.
     if(d.habKey){
       html += '<hr class="tmodal-sep">';

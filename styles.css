@@ -1512,7 +1512,9 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .tmodal-tier.locked { opacity:.7; }
   .tmodal-tier-img { width:100px; height:100px; object-fit:contain; }
   .tmodal-tier-img.grayed { filter:grayscale(1) opacity(.55); }
-  .tmodal-tier-label { font-size:12px; font-weight:700; color:var(--tier-color); }
+  .tmodal-tier-label { font-size:12px; font-weight:700; color:var(--tier-color); line-height:1.2; }
+  .tmodal-tier-sublabel { font-size:10px; font-weight:600; color:var(--ink-3); text-transform:uppercase; letter-spacing:.05em; opacity:.75; margin-top:1px; }
+  .tmodal-tier-ref { font-size:10.5px; color:var(--ink-3); font-style:italic; line-height:1.35; margin-top:2px; padding:0 4px; }
   .tmodal-tier.locked .tmodal-tier-label { color:var(--ink-3); }
   .tmodal-tier-thresh { font-size:10.5px; color:var(--ink-2); line-height:1.35; }
   .tmodal-tier-prog { font-size:10px; font-weight:700; color:var(--ink-3); font-variant-numeric:tabular-nums; }
