@@ -2383,6 +2383,8 @@ const TROPHIES = [
   ...makeTierFamily({
     theme:'localisation', icon:ICONS.regions, family:'maFrance', category:'progression', baseName:'Gaulois',
     imgDir:'assets/trophies/families/gaulois',
+    // Progression Asterix : titres par palier (baseName garde pour bloc famille).
+    tierNames:['Villageois','Chasseur de sanglier','Guerrier','Druide','Chef de village','Gaulois pur souche'],
     // FR metropolitaine = 13 regions -> Prismatique atteint quand toutes sont visitees.
     metric:s=>s.regionsCount, thresholds:[2,4,6,8,11,13],
     descTpl:'Observer un oiseau dans {n} régions françaises',
