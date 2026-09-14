@@ -11318,8 +11318,9 @@ function openSpeciesModal(sci){
       // Laisser le natif gerer sur la carte Leaflet et audio (zoom map, controles).
       if(e.target.closest('.sm-map, audio, .sm-panel[data-sm-panel=map]')) return;
       e.preventDefault();
-      // Facteur 2 : compense l'absence d'acceleration/momentum sur scrollTop manuel.
-      box.scrollTop += e.deltaY * 2;
+      // Facteur 1.5 : compense l'absence d'acceleration/momentum sur scrollTop manuel,
+      // sans donner l'impression de scroll trop rapide (on etait a 2 avant).
+      box.scrollTop += e.deltaY * 1.5;
     };
     modal.addEventListener('wheel', modal._wheelRedirect, { passive: false });
   }
