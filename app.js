@@ -2313,10 +2313,10 @@ const TROPHY_TIERS = [
   // Prismatique iridescent en tier ultime. Le key 'emeraude' est garde pour compat
   // (le fichier PNG s'appelle toujours emeraude.png, c'est juste le label et la
   // couleur qui changent).
-  { key:'bronze',   label:'Bronze',      color:'#cd7f32', img:'assets/trophies/generic/bronze.png' },
-  { key:'argent',   label:'Argent',      color:'#c9d1d9', img:'assets/trophies/generic/argent.png' },
+  { key:'bronze',   label:'Bronze',      color:'#c4753a', img:'assets/trophies/generic/bronze.png' },
+  { key:'argent',   label:'Argent',      color:'#c0c8d3', img:'assets/trophies/generic/argent.png' },
   { key:'or',       label:'Or',          color:'#f5a623', img:'assets/trophies/generic/or.png' },
-  { key:'diamant',  label:'Diamant',     color:'#b8e4ff', img:'assets/trophies/generic/diamant.png' },
+  { key:'diamant',  label:'Diamant',     color:'#8fd0ff', img:'assets/trophies/generic/diamant.png' },
   { key:'emeraude', label:'Rubis',       color:'#c9184a', img:'assets/trophies/generic/emeraude.png' },
   { key:'violet',   label:'Prismatique', color:'#d13cff', img:'assets/trophies/generic/violet.png' },
 ];
