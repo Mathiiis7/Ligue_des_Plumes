@@ -61,11 +61,6 @@
         Format 1024×1024 idéal.</div>
     </label>
 
-    <div id="styleRow" style="display:none; margin:14px 0 0;">
-      <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#556; margin-bottom:6px;">Style visuel</div>
-      <div class="style-chips" id="styleChips"></div>
-    </div>
-
     <div class="row-btns" id="controls" style="display:none;">
       <button class="btn" id="downloadAll">⬇ Télécharger les 6</button>
       <button class="btn ghost" id="reset">Recommencer</button>
@@ -100,16 +95,11 @@
 // Styles visuels appliques APRES le shift de couleur. Chaque style est une fonction
 // (ImageData in, ImageData out). Pour ajouter un nouveau style : ajoute une entree
 // dans STYLES avec un id, un label, et une fonction de transformation.
+// Styles visuels desactives : les filtres algorithmiques donnaient un rendu decevant
+// vs des designs Canva soignes. Le user fait ses styles en Canva et depose la version
+// doree ici pour obtenir les 6 couleurs. On garde juste un no-op.
 const STYLES = {
-  original:    { label:'🎨 Original',     fn: data => data },
-  pixel:       { label:'👾 Pixel art',     fn: data => pixelate(data, 32) },
-  cartoon:     { label:'🎞️ Cartoon',       fn: data => cartoonize(data) },
-  chrome:      { label:'✨ Chrome',         fn: data => chrome(data) },
-  sketch:      { label:'✏️ Sketch',         fn: data => sketch(data) },
-  halftone:    { label:'🔴 Halftone',       fn: data => halftone(data, 12) },
-  neon:        { label:'🌈 Néon',           fn: data => neon(data) },
-  sepia:       { label:'🕰️ Sépia',          fn: data => sepia(data) },
-  scrapbook:   { label:'📖 Scrapbooking',   fn: data => scrapbook(data) },
+  original: { label:'Original', fn: data => data },
 };
 
 // ---- Helpers ImageData ----
@@ -439,27 +429,9 @@ const msg = document.getElementById('msg');
 const controls = document.getElementById('controls');
 const downloadAllBtn = document.getElementById('downloadAll');
 const resetBtn = document.getElementById('reset');
-const styleRow = document.getElementById('styleRow');
-const styleChips = document.getElementById('styleChips');
-
 let sourceImage = null;
-let currentStyle = 'original';
+const currentStyle = 'original';
 const generated = {};   // {tierKey: {blob, dataUrl}}
-
-// Genere les chips de selection de style au boot
-for(const [key, style] of Object.entries(STYLES)){
-  const chip = document.createElement('button');
-  chip.type = 'button';
-  chip.className = 'style-chip' + (key === currentStyle ? ' on' : '');
-  chip.dataset.style = key;
-  chip.textContent = style.label;
-  chip.addEventListener('click', () => {
-    currentStyle = key;
-    styleChips.querySelectorAll('.style-chip').forEach(c => c.classList.toggle('on', c === chip));
-    if(sourceImage) renderAll();
-  });
-  styleChips.appendChild(chip);
-}
 
 drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('dragover'); });
 drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
@@ -491,7 +463,6 @@ function handleFile(file){
 function renderAll(){
   tiles.innerHTML = '';
   controls.style.display = 'flex';
-  styleRow.style.display = 'block';
   // Extract ImageData from source image
   const srcCanvas = document.createElement('canvas');
   srcCanvas.width = sourceImage.naturalWidth;
