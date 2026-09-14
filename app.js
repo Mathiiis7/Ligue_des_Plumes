@@ -2425,6 +2425,14 @@ const TROPHIES = [
     note:s=>`${(s.owlOwnedSet?.size)||0} rapace${((s.owlOwnedSet?.size)||0)>1?'s':''} nocturne${((s.owlOwnedSet?.size)||0)>1?'s':''} observé${((s.owlOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
+    theme:'groupe', icon:ICONS.aigle, family:'anatidae', category:'species', baseName:'Palmipède',
+    imgDir:'assets/trophies/families/anatidae',
+    metric:s=>(s.anatidaeOwnedSet?.size)||0, thresholds:[3,6,12,20,30,45],
+    descTpl:'Observer {n} anatidés différents (canards, oies, cygnes, harles…)',
+    list:s=>[...(s.anatidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>`${(s.anatidaeOwnedSet?.size)||0} anatidé${((s.anatidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.anatidaeOwnedSet?.size)||0)>1?'s':''}`,
+  }),
+  ...makeTierFamily({
     theme:'communaute', icon:ICONS.photo, family:'natGeo', category:'progression', baseName:'National Geographic',
     imgDir:'assets/trophies/families/natgeo',
     metric:s=>s.hotPhotos||0, thresholds:[1,3,7,15,25,40],
@@ -2447,6 +2455,9 @@ const TROPHIES = [
 ];
 const OWL_G=/^(strix|otus|athene|asio|bubo|tyto|aegolius|glaucidium|surnia|ketupa)$/;
 const RAPTOR_G=/^(accipiter|astur|buteo|aquila|circus|milvus|falco|pernis|circaetus|pandion|haliaeetus|gyps|aegypius|gypaetus|neophron|clanga|hieraaetus|elanus|torgos)$/;
+// Anatidae strict : canards, oies, cygnes, tadornes, harles, fuligules, macreuses...
+// Sert au trophee 'Palmipedes' et exclut les grebes/cormorans/herons (contrairement a WATER_G).
+const ANATIDAE_G=/^(anas|anser|branta|aythya|spatula|mareca|cygnus|tadorna|netta|bucephala|mergus|mergellus|clangula|somateria|melanitta|polysticta|aix|oxyura|marmaronetta|sibirionetta|histrionicus|dendrocygna|alopochen|cairina|nomonyx|nettapus|amazonetta|callonetta|chenonetta|tachyeres|hymenolaimus|chloephaga|neochen|coscoroba|plectropterus|sarkidiornis|malacorhynchus|stictonetta|pteronetta|salvadorina|lophonetta|speculanas)$/;
 // Predicat de famille pour le modal des familles d'especes (bouton Monde/France).
 // Retourne true si l'espece appartient a la famille. Utilise pour filtrer le pool FR
 // via REAL_ABUNDANCE_ST_FR : intersection de (sci matche predicate) x (abondance FR > 0).
@@ -2463,11 +2474,18 @@ const SPECIES_FAMILY_FILTERS = {
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
     return fam === 'Effraies' || fam === 'Chouettes, hiboux';
   },
+  anatidae: sci => {
+    const g = (sci||'').split(' ')[0];
+    if(ANATIDAE_G.test(g)) return true;
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Canards, oies, cygnes';
+  },
 };
 // Labels pour le header du modal en mode France.
 const SPECIES_FAMILY_LABELS = {
   rapaces: 'rapaces diurnes',
   nocturnes: 'rapaces nocturnes',
+  anatidae: 'anatidés',
 };
 // Alcidés = les "pingouins" de l'hémisphère nord (pingouins, macareux, mergule, guillemots)
 const ALCID_G=/^(alca|pinguinus|fratercula|alle|uria|cepphus)$/;
@@ -2732,7 +2750,7 @@ function statsFor(me, N){
   let owls=0,raptors=0,water=0,sea=0,blackWoodpecker=false,locTeste=false,hasKingfisher=false,hasPenguin=false,hasFireKingfisher=false;
   const megaList=[]; const megaOwnedSet=new Set();
   const seasonHit={}; SEASON_ORDER.forEach(s=>seasonHit[s]=false); const seasonOwnedSet=new Set();
-  const raptorOwnedSet=new Set(), alcidOwnedSet=new Set(), manchotOwnedSet=new Set(), waterOwnedSet=new Set(), owlOwnedSet=new Set();
+  const raptorOwnedSet=new Set(), alcidOwnedSet=new Set(), manchotOwnedSet=new Set(), waterOwnedSet=new Set(), owlOwnedSet=new Set(), anatidaeOwnedSet=new Set();
   // Milieux (habitats) : Set d'espèces par catégorie via HABITATS (source : famille eBird).
   const habOwned = Object.fromEntries(HABITAT_CATS.map(c=>[c, new Set()]));
   for(const v of me._active.values()){
@@ -2754,6 +2772,11 @@ function statsFor(me, N){
     }
     if(WATER_G.test(g)){ water++; waterOwnedSet.add(sci); }
     if(SEA_G.test(g)) sea++;
+    if(ANATIDAE_G.test(g)) anatidaeOwnedSet.add(sci);
+    else {
+      const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+      if(fam === 'Canards, oies, cygnes') anatidaeOwnedSet.add(sci);
+    }
     if(sci==='dryocopus martius') blackWoodpecker=true;
     if(sci==='alcedo atthis') hasKingfisher=true;
     if(ALCID_SET.has(sci)){ hasPenguin=true; alcidOwnedSet.add(sci); }
@@ -2797,7 +2820,7 @@ function statsFor(me, N){
     for(const uid of voters) if(uid !== me.id) hearts++;
     if(hearts >= 3) hotPhotos++;
   }
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
@@ -2895,6 +2918,7 @@ function renderTrophies(data){
       speciesOwnedSet: (function(){
         if(familyKey === 'rapaces') return new Set(s.raptorOwnedSet || []);
         if(familyKey === 'nocturnes') return new Set(s.owlOwnedSet || []);
+        if(familyKey === 'anatidae') return new Set(s.anatidaeOwnedSet || []);
         return null;
       })(),
     };
