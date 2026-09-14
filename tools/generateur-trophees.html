@@ -328,11 +328,11 @@ function pixelate(src, blockSize){
 
 // TIERS actif : palette editable directement via les color pickers.
 let TIERS = [
-  { key:'bronze',   label:'Bronze',      color:'#a97142' },
-  { key:'argent',   label:'Argent',      color:'#a3a8b2' },
-  { key:'or',       label:'Or',          color:'#e6b800' },
-  { key:'diamant',  label:'Diamant',     color:'#7fd3ff' },
-  { key:'emeraude', label:'Émeraude',    color:'#0fbf85' },
+  { key:'bronze',   label:'Bronze',      color:'#cd7f32' },   // bronze cuivre plus chaud
+  { key:'argent',   label:'Argent',      color:'#c9d1d9' },   // argent plus brillant
+  { key:'or',       label:'Or',          color:'#f5c518' },   // or plus riche/vif
+  { key:'diamant',  label:'Diamant',     color:'#b8e4ff' },   // diamant plus glace/blanc-bleu
+  { key:'emeraude', label:'Rubis',       color:'#c9184a' },   // rubis rouge profond
   { key:'violet',   label:'Prismatique', color:'#d13cff', gradient:{ hueStart:310, hueEnd:190 } },
 ].map(t => enrichTier(t));
 
