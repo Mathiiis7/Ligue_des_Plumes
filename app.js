@@ -2360,6 +2360,7 @@ const TROPHIES = [
   // -- Familles a paliers (6 tiers Bronze->Emeraude, cumulatifs a vie) --
   ...makeTierFamily({
     theme:'progression', icon:ICONS.medal, family:'ecologue', category:'progression', baseName:'Écologue',
+    imgDir:'assets/trophies/families/ecologue',
     metric:s=>s.total, thresholds:[50,100,150,200,300,500],
     descTpl:'Observer {n} espèces différentes',
   }),
