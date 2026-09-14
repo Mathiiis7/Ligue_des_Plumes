@@ -2365,6 +2365,7 @@ const TROPHIES = [
   }),
   ...makeTierFamily({
     theme:'localisation', icon:ICONS.avion, family:'marcoPolo', category:'progression', baseName:'Marco Polo',
+    imgDir:'assets/trophies/families/marcopolo',
     metric:s=>s.countryCount, thresholds:[2,4,7,12,20,30],
     descTpl:'Observer des oiseaux dans {n} pays différents',
     info:s=>s.countryCount ? `✈️ ${s.countryCount} pays visités` : '',
