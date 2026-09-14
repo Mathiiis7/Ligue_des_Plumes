@@ -9516,7 +9516,7 @@ async function _loadHabitatByCountry(cc){
   if(_habitatByCountryPromises[key]) return _habitatByCountryPromises[key];
   _habitatByCountryPromises[key] = (async () => {
     try{
-      const r = await fetch('data/countries/'+key+'/habitat_by_species.json?v=20260903');
+      const r = await fetch('data/countries/'+key+'/habitat_by_species.json?v=20260914');
       if(!r.ok){ _habitatByCountryCache[key] = null; return null; }
       const d = await r.json();
       _habitatByCountryCache[key] = d;
