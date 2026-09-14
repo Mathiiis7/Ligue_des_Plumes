@@ -2380,26 +2380,29 @@ const TROPHIES = [
     list:s=>FR_REGIONS.map(r=>({ name:r.name, owned:s.regionsOwnedSet.has(r.code) })),
     note:s=>`${s.regionsCount} région${s.regionsCount>1?'s':''} visitée${s.regionsCount>1?'s':''} sur ${FR_REGIONS.length}`,
   }),
-  // ----- 14 familles habitat evolutives (seuils absolus, seuil = nb d'especes obs
-  // dans ce milieu peu importe le pays -> scale a l'international sans distinction) --
+  // ----- 17 familles habitat evolutives (seuils absolus, seuil = nb d'especes obs
+  // dans ce milieu peu importe le pays). Philo 'FR-first, voyage doux' :
+  // Diamant ~= 20-30% du pool FR (accessible bon birder FR), Emeraude/Prismatique
+  // atteignables avec un peu de voyage sans etre grand voyageur. Pools FR indiques
+  // pour chaque habitat en commentaire.
   ...([
-    ["forest",   "Forestier",    [5,10,20,35,50,75]],
-    ["woodland", "Bocager",      [3, 6,12,20,30,45]],
-    ["shrubland","Buissonnier",  [3, 6,12,20,30,45]],
-    ["grassland","Steppique",    [3, 6,12,20,30,45]],
-    ["tundra",   "Toundra",      [1, 3, 6,10,15,22]],
-    ["agricole", "Paysan",       [3, 6,12,20,30,45]],
-    ["wetland",  "Palustre",     [3, 6,12,20,30,45]],
-    ["riverine", "Piscivore",    [3, 6,12,20,30,45]],
-    ["mangrove", "Mangrovien",   [1, 2, 4, 7,12,18]],
-    ["marine",   "Pélagique",    [1, 2, 4, 7,12,18]],
-    ["coastal",  "Littoral",     [3, 6,12,20,30,45]],
-    ["rock",     "Rupestre",     [1, 3, 6,10,15,22]],
-    ["cave",     "Cavernicole",  [1, 1, 2, 3, 5, 8]],
-    ["montane",  "Montagnard",   [2, 4, 8,13,20,28]],
-    ["desert",   "Saharien",     [1, 3, 6,10,15,22]],
-    ["humanmod", "Urbain",       [3, 8,15,25,40,60]],
-    ["aerial",   "Voltigeur",    [1, 3, 6,10,15,22]],
+    ["forest",   "Forestier",    [4,12,25,45,70,100]],  // pool FR ~200 (super commun)
+    ["woodland", "Bocager",      [3, 8,16,30,45,70]],   // ~100
+    ["shrubland","Buissonnier",  [3, 6,12,20,30,45]],   // ~50
+    ["grassland","Steppique",    [3, 6,12,20,30,45]],   // ~50
+    ["tundra",   "Toundra",      [1, 2, 4, 6,10,15]],   // ~10 (Lagopede + Pluvier guignard alpin)
+    ["agricole", "Paysan",       [3, 7,13,22,35,55]],   // ~80
+    ["wetland",  "Palustre",     [4,10,20,40,60,90]],   // ~150 (super commun)
+    ["riverine", "Piscivore",    [3, 6,12,20,30,45]],   // ~50
+    ["mangrove", "Mangrovien",   [1, 2, 4, 7,12,18]],   // ~0 en FR, voyage obligatoire
+    ["marine",   "Pélagique",    [1, 3, 6,10,18,30]],   // ~40
+    ["coastal",  "Littoral",     [3, 7,13,22,35,55]],   // ~80
+    ["rock",     "Rupestre",     [1, 3, 6,10,15,22]],   // ~20 (Tichodrome, Craves, Traquets)
+    ["cave",     "Cavernicole",  [1, 1, 2, 3, 5, 8]],   // ~2 en FR (Guepier occasionnel, Martinet exotique)
+    ["montane",  "Montagnard",   [2, 4, 8,13,20,30]],   // ~25 (cf HABITAT_ADDITIONS)
+    ["desert",   "Saharien",     [1, 2, 4, 6,10,15]],   // ~5 en FR (Traquet du desert, Alouette du desert)
+    ["humanmod", "Urbain",       [3, 7,14,22,35,50]],   // ~60
+    ["aerial",   "Voltigeur",    [1, 2, 4, 6,10,15]],   // ~10 (Martinets, Hirondelles, Engoulevent)
   ].flatMap(([habKey, name, thresholds]) => makeTierFamily({
     theme:'groupe', icon:ICONS.bearGrylls, family:'habitat_'+habKey, category:'habitat', baseName:name,
     metric:s=>(s.habOwned[habKey]?.size)||0, thresholds,
