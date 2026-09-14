@@ -2355,6 +2355,8 @@ function makeTierFamily(cfg){
       name: tierName,
       tierRef,
       desc: descTpl.replace('{n}', seuil),
+      // Template original conserve pour construire une phrase d'objectif unique au dessus de la gallerie (au lieu de repeter la phrase avec le seuil dans chaque case).
+      descTpl,
       test: s => (metric(s) || 0) >= seuil,
       prog: s => [metric(s) || 0, seuil],
       ...(list ? { list, alwaysList } : {}),
@@ -3311,6 +3313,8 @@ function renderTrophies(data){
       kind: 'tierFamily',
       family: familyKey,
       familyName,
+      // Phrase d'objectif unique construite depuis le descTpl : '{n}' remplace par 'X' pour montrer la structure sans seuil precis. Affichee 1 fois au-dessus de la gallerie plutot que repetee dans chaque case.
+      objectivePhrase: (tiersSorted[0] && tiersSorted[0].descTpl) ? tiersSorted[0].descTpl.replace('{n}', 'X') : null,
       tiers: tiersSorted.map((t, i) => ({
         tier: t.tier,
         label: TROPHY_TIERS.find(x=>x.key===t.tier).label,
@@ -12070,20 +12074,26 @@ $('#trophyGrid').addEventListener('click',async e=>{
   // Cas famille a paliers : gallerie des 6 coupes + optionnellement la liste des elements a cocher.
   if(d.kind === 'tierFamily'){
     $('#tmodalTitle').textContent = d.familyName;
-    html = '<div class="tmodal-tier-gallery">' + d.tiers.map(t => {
+    // Phrase d'objectif unique au-dessus de la gallerie (evite de repeter 'Observer X regions...' dans chaque case).
+    const objectiveHtml = d.objectivePhrase
+      ? `<div class="tmodal-objective">🎯 ${esc(d.objectivePhrase)}</div>`
+      : '';
+    html = objectiveHtml + '<div class="tmodal-tier-gallery">' + d.tiers.map(t => {
       // Titre affiche : nom perso du palier si defini (Idefix, Vercingetorix...) sinon fallback tier label (Bronze, Argent...).
       // Le tier label reste en dessous en petit pour reperage visuel.
       const hasCustomName = t.name && t.name.trim() && t.name.trim() !== t.label && !t.name.endsWith(' '+t.label);
       const title = hasCustomName ? t.name : t.label;
       const subLabel = hasCustomName ? `<div class="tmodal-tier-sublabel">${esc(t.label)}</div>` : '';
       const refLine = t.ref ? `<div class="tmodal-tier-ref">${esc(t.ref)}</div>` : '';
+      // Si l'objectif est affiche au-dessus, on n'affiche plus la description complete dans chaque case ; le seuil est deja dans '${t.current} / ${t.threshold}'. On garde le desc en fallback pour les trophees sans objectivePhrase.
+      const threshLine = d.objectivePhrase ? '' : `<div class="tmodal-tier-thresh">${esc(t.desc)}</div>`;
       return `
       <div class="tmodal-tier ${t.unlocked?'unlocked':'locked'}" style="--tier-color:${t.color}">
         <img src="${esc(t.img)}" alt="${esc(t.label)}" class="tmodal-tier-img${t.unlocked?'':' grayed'}">
         <div class="tmodal-tier-label">${esc(title)}</div>
         ${subLabel}
         ${refLine}
-        <div class="tmodal-tier-thresh">${esc(t.desc)}</div>
+        ${threshLine}
         <div class="tmodal-tier-prog">${t.current} / ${t.threshold} ${t.unlocked?'· <b>débloqué ✓</b>':''}</div>
       </div>`;
     }).join('') + '</div>';

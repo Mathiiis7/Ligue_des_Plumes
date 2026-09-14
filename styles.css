@@ -1495,6 +1495,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   /* Modal : gallerie des 6 paliers pour une famille */
   /* Toujours 3 colonnes x 2 lignes pour les 6 paliers, quelle que soit la largeur.
      Sur mobile les cellules deviennent plus etroites mais gardent la grille 3x2. */
+  .tmodal-objective { font-size:13px; color:var(--ink); background:var(--surface-2); border-left:3px solid var(--accent); padding:8px 12px; border-radius:0 6px 6px 0; margin:0 0 12px; line-height:1.4; }
   .tmodal-tier-gallery { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-bottom:8px; }
   @media (max-width: 520px){
     .tmodal-tier-gallery { gap:6px; }
