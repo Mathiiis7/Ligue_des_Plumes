@@ -19,6 +19,11 @@
       ta: 16.3,              // Tarsus.Length (mm)
       tail: 51,              // Tail.Length (mm)
       hwi: 15.7,             // Hand-Wing.Index (dispersion)
+      hab: 'Wetland',        // Habitat (categoriel : Marine/Coastal/Riverine/Wetland/
+                             //          Forest/Woodland/Grassland/Shrubland/Rock/
+                             //          Human Modified/Desert). Sert au fallback R
+                             //          Phase B pour forcer les fractions sur les
+                             //          especes specialistes que S&T rate.
     }
 
   Usage : node tools/build-avonet-traits.mjs
@@ -28,8 +33,8 @@ import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 const __dir = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(__dir, '..');
-const XLSX_PATH = join(__dir, 'avonet.xlsx');
+const ROOT = join(__dir, '..', '..');
+const XLSX_PATH = join(ROOT, 'data', 'generated', 'avonet.xlsx');
 const OUT_PATH = join(ROOT, 'data', 'avonet_traits.json');
 
 console.log('[1] Lecture Avonet xlsx (AVONET2_eBird)...');
@@ -57,6 +62,10 @@ for (const r of rows) {
     ta: round1(Number(r['Tarsus.Length'])),
     tail: round1(Number(r['Tail.Length'])),
     hwi: round1(Number(r['Hand-Wing.Index'])),
+    // Habitat categoriel : chaine ou null. On garde tel quel (pas de mapping),
+    // valeurs possibles Marine/Coastal/Riverine/Wetland/Forest/Woodland/Grassland/
+    // Shrubland/Rock/Human Modified/Desert. NA -> null.
+    hab: (r.Habitat && r.Habitat !== 'NA') ? String(r.Habitat).trim() : null,
   };
   // Retire les cles null pour reduire la taille
   for (const k of Object.keys(rec)) if (rec[k] == null) delete rec[k];

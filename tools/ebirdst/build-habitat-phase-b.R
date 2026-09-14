@@ -73,7 +73,9 @@ cat(sprintf("[SETUP] AVONET : %d entrees\n", length(avonet)))
 avonet_habitat_of <- function(sci) {
   entry <- avonet[[sci]]
   if (is.null(entry)) return("")
-  h <- entry$Habitat
+  # Le champ est stocke en 'hab' dans le JSON compresse (cf build-avonet-traits.mjs).
+  # Ancien nom 'Habitat' garde en fallback pour les vieux fichiers avonet_traits.json.
+  h <- if (!is.null(entry$hab)) entry$hab else entry$Habitat
   if (is.null(h) || is.na(h) || h == "") return("")
   return(as.character(h))
 }
