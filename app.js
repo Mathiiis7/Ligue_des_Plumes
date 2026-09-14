@@ -2373,7 +2373,8 @@ const TROPHIES = [
   ...makeTierFamily({
     theme:'localisation', icon:ICONS.regions, family:'maFrance', category:'progression', baseName:'Gaulois',
     imgDir:'assets/trophies/families/gaulois',
-    metric:s=>s.regionsCount, thresholds:[2,5,8,11,14,18],
+    // FR metropolitaine = 13 regions -> Prismatique atteint quand toutes sont visitees.
+    metric:s=>s.regionsCount, thresholds:[2,4,6,8,11,13],
     descTpl:'Observer un oiseau dans {n} régions françaises',
     list:s=>FR_REGIONS.map(r=>({ name:r.name, owned:s.regionsOwnedSet.has(r.code) })),
     note:s=>`${s.regionsCount} région${s.regionsCount>1?'s':''} visitée${s.regionsCount>1?'s':''} sur ${FR_REGIONS.length}`,
