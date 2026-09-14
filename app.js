@@ -2387,9 +2387,9 @@ const TROPHIES = [
   ...makeTierFamily({
     theme:'localisation', icon:ICONS.regions, family:'maFrance', category:'progression', baseName:'Gaulois',
     imgDir:'assets/trophies/families/gaulois',
-    // Progression Asterix + historique. baseName garde pour bloc famille.
-    tierNames:['Idéfix','Panoramix','Vercingétorix','Obélix','Astérix','Jules César'],
-    tierRefs:['le chien fidèle qui découvre son premier territoire','le druide sage qui connaît son coin','le grand chef qui a rallié toutes les tribus','l\'invincible qui a couru dans tous les sens','le petit malin bien dosé à la potion magique','a conquis toute la Gaule, région par région'],
+    // Progression Asterix : chaque perso a son objet emblematique identifiable au 1er coup d'oeil.
+    tierNames:['Idéfix','Ordralfabétix','Panoramix','Obélix','Astérix','Jules César'],
+    tierRefs:['le chien fidèle qui découvre son premier territoire','le poissonnier qui livre sa région','le druide sage qui prépare la potion','l\'invincible qui porte son menhir partout','le petit malin bien dosé à la potion magique','a conquis toute la Gaule, région par région'],
     // FR metropolitaine = 13 regions -> Prismatique atteint quand toutes sont visitees.
     metric:s=>s.regionsCount, thresholds:[2,4,6,8,11,13],
     descTpl:'Observer un oiseau dans {n} régions françaises',
