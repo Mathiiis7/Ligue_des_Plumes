@@ -2411,7 +2411,9 @@ const TROPHIES = [
   ...makeTierFamily({
     theme:'groupe', icon:ICONS.aigle, family:'rapaces', category:'species', baseName:'Rapaces diurnes',
     imgDir:'assets/trophies/families/rapace',
-    metric:s=>(s.raptorOwnedSet?.size)||0, thresholds:[3,6,12,20,30,45],
+    // Pool FR ~30 (Buse, Milan, Circaete, Aigle, Vautour, Busards, Faucons...).
+    // Diamant = presque complet FR, Emeraude/Prismatique = FR + voyages.
+    metric:s=>(s.raptorOwnedSet?.size)||0, thresholds:[3,7,12,20,30,45],
     descTpl:'Observer {n} rapaces diurnes différents (aigles, faucons, vautours…)',
     list:s=>[...(s.raptorOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.raptorOwnedSet?.size)||0} rapace${((s.raptorOwnedSet?.size)||0)>1?'s':''} diurne${((s.raptorOwnedSet?.size)||0)>1?'s':''} observé${((s.raptorOwnedSet?.size)||0)>1?'s':''}`,
@@ -2419,7 +2421,10 @@ const TROPHIES = [
   ...makeTierFamily({
     theme:'groupe', icon:ICONS.aigle, family:'nocturnes', category:'species', baseName:'Rapaces nocturnes',
     imgDir:'assets/trophies/families/nocturnes',
-    metric:s=>(s.owlOwnedSet?.size)||0, thresholds:[2,4,6,10,18,30],
+    // Pool FR ~9 (Hulotte, Effraie, Chevechette, Grand-duc, Petit-duc, Tengmalm,
+    // Cheveche d'Athena, Moyen-duc, Hibou des marais). Diamant = quasi complet FR,
+    // Emeraude/Prismatique demandent voyages (Ninox australiens, Megascops NW, etc.).
+    metric:s=>(s.owlOwnedSet?.size)||0, thresholds:[1,2,4,6,10,18],
     descTpl:'Observer {n} rapaces nocturnes différents (chouettes, hiboux)',
     list:s=>[...(s.owlOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.owlOwnedSet?.size)||0} rapace${((s.owlOwnedSet?.size)||0)>1?'s':''} nocturne${((s.owlOwnedSet?.size)||0)>1?'s':''} observé${((s.owlOwnedSet?.size)||0)>1?'s':''}`,
@@ -2427,7 +2432,9 @@ const TROPHIES = [
   ...makeTierFamily({
     theme:'groupe', icon:ICONS.aigle, family:'anatidae', category:'species', baseName:'Palmipède',
     imgDir:'assets/trophies/families/anatidae',
-    metric:s=>(s.anatidaeOwnedSet?.size)||0, thresholds:[3,6,12,20,30,45],
+    // Pool FR ~40 (canards de surface + plongeurs, oies, cygnes, harles, tadornes).
+    // Diamant = presque complet FR, Emeraude/Prismatique = FR + voyages.
+    metric:s=>(s.anatidaeOwnedSet?.size)||0, thresholds:[3,8,15,25,40,60],
     descTpl:'Observer {n} anatidés différents (canards, oies, cygnes, harles…)',
     list:s=>[...(s.anatidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.anatidaeOwnedSet?.size)||0} anatidé${((s.anatidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.anatidaeOwnedSet?.size)||0)>1?'s':''}`,
