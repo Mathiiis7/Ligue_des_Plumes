@@ -12147,6 +12147,8 @@ $('#trophyGrid').addEventListener('click',async e=>{
   }
   $('#tmodalBody').innerHTML=html;
   $('#trophyModal').classList.add('open');
+  // Bloque le scroll du body/fond quand le modal est ouvert (evite de scroller la page derriere).
+  document.body.classList.add('trophy-modal-open');
 });
 // Chip Monde / France dans le modal (habitat OU famille d'especes) : rebuild la liste.
 $('#tmodalBody').addEventListener('click', e => {
@@ -12169,8 +12171,13 @@ $('#tmodalBody').addEventListener('click', e => {
     body.innerHTML = _renderHabitatCountryList(mode, wrap.dataset.habKey, d.habOwnedSet);
   }
 });
-$('#tmodalX').addEventListener('click',()=>$('#trophyModal').classList.remove('open'));
-$('#trophyModal').addEventListener('click',e=>{ if(e.target.id==='trophyModal') $('#trophyModal').classList.remove('open'); });
+// Helper : ferme le modal ET debloque le scroll de fond.
+function _closeTrophyModal(){
+  $('#trophyModal').classList.remove('open');
+  document.body.classList.remove('trophy-modal-open');
+}
+$('#tmodalX').addEventListener('click', _closeTrophyModal);
+$('#trophyModal').addEventListener('click', e => { if(e.target.id==='trophyModal') _closeTrophyModal(); });
 
 // ---- Dropdown de suggestions pour la recherche #q dans "Qui a vu quoi" ----
 // Alimenté par _matrixUniverse (posé dans renderMatrix). Le contenu suit l'option
