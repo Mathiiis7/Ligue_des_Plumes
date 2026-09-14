@@ -3276,6 +3276,12 @@ function renderTrophies(data){
   }
   // Groupement par categorie pour organiser le showcase.
   const familyBlocksByCategory = { progression:[], species:[], habitat:[] };
+  // Ordre taxonomique IOC/eBird pour les familles d'especes (trie du showcase Trophees > Groupes) :
+  // anatides -> galliformes -> pigeons -> rallides -> herons -> limicoles (Scolopacidae puis Rivages)
+  // -> larides -> chouettes -> rapaces diurnes -> martins-pecheurs -> pics -> corvides -> mesanges
+  // -> hirondelles+martinets -> alouettes -> pouillots/rousserolles -> fauvettes -> muscicapides
+  // -> grives -> bruants -> fringilles.
+  const SPECIES_TAX_RANK = { anatidae:10, galliformes:20, columbidae:30, rallidae:35, ardeidae:40, scolopacidae:50, rivages:55, laridae:60, nocturnes:70, rapaces:80, alcedinidae:90, picidae:100, corvidae:110, paridae:120, hirundinidae:130, alaudidae:140, phylloscopidae:150, sylviidae:160, muscicapidae:170, turdidae:180, emberizidae:190, fringillidae:200 };
   for(const [familyKey, tiers] of familyMap){
     // tiers ordre = ordre de TROPHY_TIERS (Bronze -> Emeraude), test par ordre.
     const tiersSorted = [...tiers].sort((a,b) => TROPHY_TIERS.findIndex(x=>x.key===a.tier) - TROPHY_TIERS.findIndex(x=>x.key===b.tier));
@@ -3371,7 +3377,10 @@ function renderTrophies(data){
     const locked = highestIdx < 0;
     const cat = displayTier.category || 'progression';
     if(!familyBlocksByCategory[cat]) familyBlocksByCategory[cat] = [];
-    familyBlocksByCategory[cat].push(`
+    // Ordre : familles d'especes -> ordre taxonomique IOC/eBird via SPECIES_TAX_RANK.
+    // Autres categories (progression, habitat, one-shot) -> ordre d'insertion dans TROPHIES.
+    const order = (cat === 'species') ? (SPECIES_TAX_RANK[familyKey] ?? 9999) : (familyBlocksByCategory[cat].length * 10);
+    familyBlocksByCategory[cat].push({ order, html: `
       <div class="tro-family ${locked?'locked':'unlocked'} tier-${displayTier.tier}"
            style="--tier-color:${displayMeta.color}"
            data-detail="${familyDataIdx}">
@@ -3402,7 +3411,7 @@ function renderTrophies(data){
           </div>
           <div class="tro-fam-prog">${progNow} / ${progTo}${nextTier?'':''}</div>
         </div>
-      </div>`);
+      </div>` });
   }
   // -------------------------------------------------------------------------
   // Bloc 2 : trophees one-shot (compact grid, style epure).
@@ -3460,7 +3469,7 @@ function renderTrophies(data){
           <div class="tro-cat-title">${esc(m.label)}</div>
           <div class="tro-cat-sub">${esc(m.subtitle)}</div>
         </div>
-        <div class="tro-families">${familyBlocksByCategory[m.key].join('')}</div>
+        <div class="tro-families">${familyBlocksByCategory[m.key].sort((a,b) => a.order - b.order).map(x => x.html).join('')}</div>
       </div>`).join('');
   grid.innerHTML = `
     <div class="tro-showcase">
@@ -12073,7 +12082,8 @@ $('#trophyGrid').addEventListener('click',async e=>{
   let html;
   // Cas famille a paliers : gallerie des 6 coupes + optionnellement la liste des elements a cocher.
   if(d.kind === 'tierFamily'){
-    $('#tmodalTitle').textContent = d.familyName;
+    // Titre du modal : masque quand on a une phrase d'objectif au-dessus (evite la redondance Ecologue + 'Observer X especes').
+    $('#tmodalTitle').textContent = d.objectivePhrase ? '' : d.familyName;
     // Phrase d'objectif unique au-dessus de la gallerie (evite de repeter 'Observer X regions...' dans chaque case).
     const objectiveHtml = d.objectivePhrase
       ? `<div class="tmodal-objective">🎯 ${esc(d.objectivePhrase)}</div>`
