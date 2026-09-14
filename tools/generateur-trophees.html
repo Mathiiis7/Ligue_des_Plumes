@@ -74,10 +74,7 @@
     </label>
 
     <div id="paletteEditor" style="display:none; margin:16px 0 0;">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
-        <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#556;">Palette 6 couleurs</div>
-        <div class="presets-row" id="presetsRow"></div>
-      </div>
+      <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#556; margin-bottom:8px;">Palette 6 couleurs</div>
       <div class="color-pickers" id="colorPickers"></div>
     </div>
 
@@ -329,56 +326,15 @@ function pixelate(src, blockSize){
   return out;
 }
 
-// Presets de palettes. Chaque preset = 6 couleurs cibles + noms editables.
-const PRESETS = {
-  actuel: {
-    label: 'Actuel',
-    tiers: [
-      { key:'bronze',   label:'Bronze',      color:'#a97142' },
-      { key:'argent',   label:'Argent',      color:'#a3a8b2' },
-      { key:'or',       label:'Or',          color:'#e6b800' },
-      { key:'diamant',  label:'Diamant',     color:'#7fd3ff' },
-      { key:'emeraude', label:'Émeraude',    color:'#0fbf85' },
-      { key:'violet',   label:'Prismatique', color:'#d13cff', gradient:{ hueStart:310, hueEnd:190 } },
-    ],
-  },
-  metaux: {
-    label: 'Métaux nobles',
-    tiers: [
-      { key:'bronze',   label:'Bronze',   color:'#a97142' },
-      { key:'argent',   label:'Argent',   color:'#c0c5cc' },
-      { key:'or',       label:'Or',       color:'#e6b800' },
-      { key:'platine',  label:'Platine',  color:'#c9d1d3' },
-      { key:'palladium',label:'Palladium',color:'#8fb0b8' },
-      { key:'iridium',  label:'Iridium',  color:'#d13cff', gradient:{ hueStart:310, hueEnd:190 } },
-    ],
-  },
-  ciel: {
-    label: 'Ciel',
-    tiers: [
-      { key:'terre',    label:'Terre',    color:'#8a6544' },
-      { key:'aube',     label:'Aube',     color:'#ff9d76' },
-      { key:'soleil',   label:'Soleil',   color:'#ffcb3c' },
-      { key:'azur',     label:'Azur',     color:'#4fb3ff' },
-      { key:'aurore',   label:'Aurore',   color:'#0fbf85' },
-      { key:'cosmos',   label:'Cosmos',   color:'#d13cff', gradient:{ hueStart:280, hueEnd:200 } },
-    ],
-  },
-  plumage: {
-    label: 'Plumage',
-    tiers: [
-      { key:'duvet',    label:'Duvet',    color:'#c9b89a' },
-      { key:'plume',    label:'Plume',    color:'#a3a8b2' },
-      { key:'doree',    label:'Dorée',    color:'#e6b800' },
-      { key:'celeste',  label:'Céleste',  color:'#7fd3ff' },
-      { key:'royale',   label:'Royale',   color:'#8b3ec2' },
-      { key:'paradis',  label:'Paradis',  color:'#d13cff', gradient:{ hueStart:340, hueEnd:180 } },
-    ],
-  },
-};
-
-// TIERS actif : on part du preset 'actuel' par defaut. Regenere via updateTiersFromPickers().
-let TIERS = PRESETS.actuel.tiers.map(t => enrichTier(t));
+// TIERS actif : palette editable directement via les color pickers.
+let TIERS = [
+  { key:'bronze',   label:'Bronze',      color:'#a97142' },
+  { key:'argent',   label:'Argent',      color:'#a3a8b2' },
+  { key:'or',       label:'Or',          color:'#e6b800' },
+  { key:'diamant',  label:'Diamant',     color:'#7fd3ff' },
+  { key:'emeraude', label:'Émeraude',    color:'#0fbf85' },
+  { key:'violet',   label:'Prismatique', color:'#d13cff', gradient:{ hueStart:310, hueEnd:190 } },
+].map(t => enrichTier(t));
 
 // Convertit une couleur hex vers HSL + parametres derives (targetH, satMul, lightAdd) pour
 // generateTier. La logique choisit satMul et lightAdd auto selon la saturation de la
@@ -515,28 +471,10 @@ const downloadAllBtn = document.getElementById('downloadAll');
 const resetBtn = document.getElementById('reset');
 const paletteEditor = document.getElementById('paletteEditor');
 const colorPickers = document.getElementById('colorPickers');
-const presetsRow = document.getElementById('presetsRow');
 
 let sourceImage = null;
-let currentPreset = 'actuel';
 const currentStyle = 'original';
 const generated = {};   // {tierKey: {blob, dataUrl}}
-
-// Genere les chips de preset
-for(const [key, preset] of Object.entries(PRESETS)){
-  const chip = document.createElement('button');
-  chip.type = 'button';
-  chip.className = 'preset-chip' + (key === currentPreset ? ' on' : '');
-  chip.textContent = preset.label;
-  chip.addEventListener('click', () => {
-    currentPreset = key;
-    presetsRow.querySelectorAll('.preset-chip').forEach(c => c.classList.toggle('on', c === chip));
-    TIERS = PRESETS[key].tiers.map(t => enrichTier(t));
-    renderPickers();
-    if(sourceImage) renderAll();
-  });
-  presetsRow.appendChild(chip);
-}
 
 // Genere les 6 color pickers dans la palette editor. Chaque cellule = label editable + color input.
 function renderPickers(){
