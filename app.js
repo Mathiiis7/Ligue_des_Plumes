@@ -2315,7 +2315,7 @@ const TROPHY_TIERS = [
   // couleur qui changent).
   { key:'bronze',   label:'Bronze',      color:'#cd7f32', img:'assets/trophies/generic/bronze.png' },
   { key:'argent',   label:'Argent',      color:'#c9d1d9', img:'assets/trophies/generic/argent.png' },
-  { key:'or',       label:'Or',          color:'#f5c518', img:'assets/trophies/generic/or.png' },
+  { key:'or',       label:'Or',          color:'#f5a623', img:'assets/trophies/generic/or.png' },
   { key:'diamant',  label:'Diamant',     color:'#b8e4ff', img:'assets/trophies/generic/diamant.png' },
   { key:'emeraude', label:'Rubis',       color:'#c9184a', img:'assets/trophies/generic/emeraude.png' },
   { key:'violet',   label:'Prismatique', color:'#d13cff', img:'assets/trophies/generic/violet.png' },
