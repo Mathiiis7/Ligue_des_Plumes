@@ -19,11 +19,23 @@
   .drop input[type=file] { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; overflow:hidden; }
   .drop b { color:#0b7c77; }
   .row-btns { display:flex; gap:10px; flex-wrap:wrap; margin:14px 0; align-items:center; }
-  .style-chips { display:flex; gap:8px; flex-wrap:wrap; }
-  .style-chip { padding:8px 14px; font-size:13px; font-weight:600; border-radius:99px;
-    border:1px solid #cfd8d5; background:#fafcfb; color:#47534f; cursor:pointer; transition:all .12s; }
-  .style-chip:hover { border-color:#0b7c77; }
-  .style-chip.on { background:#0b7c77; color:#fff; border-color:#0b7c77; }
+  .presets-row { display:flex; gap:6px; flex-wrap:wrap; }
+  .preset-chip { padding:5px 11px; font-size:11.5px; font-weight:600; border-radius:99px;
+    border:1px solid #cfd8d5; background:#fafcfb; color:#47534f; cursor:pointer; }
+  .preset-chip:hover { border-color:#0b7c77; color:#0b7c77; }
+  .preset-chip.on { background:#0b7c77; color:#fff; border-color:#0b7c77; }
+  .color-pickers { display:grid; grid-template-columns:repeat(6, 1fr); gap:8px; }
+  @media (max-width: 600px){ .color-pickers { grid-template-columns:repeat(3, 1fr); } }
+  .cp-cell { display:flex; flex-direction:column; align-items:center; gap:4px;
+    padding:8px 4px; border:1px solid #e0e5e2; border-radius:10px; background:#fafcfb; }
+  .cp-cell input[type=color] { width:100%; height:36px; border:none; border-radius:6px;
+    padding:0; background:transparent; cursor:pointer; }
+  .cp-cell input[type=color]::-webkit-color-swatch-wrapper { padding:0; }
+  .cp-cell input[type=color]::-webkit-color-swatch { border:1px solid #cfd8d5; border-radius:6px; }
+  .cp-cell input[type=text] { width:100%; font-size:11px; font-weight:600; text-align:center;
+    border:1px solid #d9e0dd; border-radius:5px; padding:2px 3px; background:#fff; color:#333; }
+  .cp-cell .cp-label { font-size:10.5px; font-weight:700; color:#47534f; text-transform:uppercase;
+    letter-spacing:.03em; text-align:center; line-height:1.1; }
   .btn { background:#0b7c77; color:#fff; border:none; border-radius:10px; padding:9px 16px;
     font-size:13.5px; font-weight:600; cursor:pointer; }
   .btn:hover { filter:brightness(1.05); }
@@ -60,6 +72,14 @@
       <div style="font-size:12px;color:#7c8783;margin-top:6px;">PNG avec fond transparent recommandé.
         Format 1024×1024 idéal.</div>
     </label>
+
+    <div id="paletteEditor" style="display:none; margin:16px 0 0;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
+        <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#556;">Palette 6 couleurs</div>
+        <div class="presets-row" id="presetsRow"></div>
+      </div>
+      <div class="color-pickers" id="colorPickers"></div>
+    </div>
 
     <div class="row-btns" id="controls" style="display:none;">
       <button class="btn" id="downloadAll">⬇ Télécharger les 6</button>
@@ -309,17 +329,81 @@ function pixelate(src, blockSize){
   return out;
 }
 
-const TIERS = [
-  { key:'bronze',   label:'Bronze',      color:'#a97142', targetH:26,  satMul:0.80, lightAdd:-8 },
-  { key:'argent',   label:'Argent',      color:'#a3a8b2', targetH:220, satMul:0.10, lightAdd:+8 },
-  { key:'or',       label:'Or',          color:'#e6b800', targetH:45,  satMul:1.00, lightAdd:0   },
-  { key:'diamant',  label:'Diamant',     color:'#7fd3ff', targetH:195, satMul:0.95, lightAdd:+15 },
-  { key:'emeraude', label:'Émeraude',    color:'#0fbf85', targetH:155, satMul:0.95, lightAdd:-2  },
-  // Prismatique = tier 6 ultime. Effet holographique / chrome multicolore : la teinte
-  // varie selon la position verticale (top -> pink, bottom -> cyan/vert). Preserve les
-  // pixels neutres (base, contours).
-  { key:'violet',   label:'Prismatique', color:'#d13cff', gradient:{ hueStart:310, hueEnd:190 }, satMul:1.05, lightAdd:+10 },
-];
+// Presets de palettes. Chaque preset = 6 couleurs cibles + noms editables.
+const PRESETS = {
+  actuel: {
+    label: 'Actuel',
+    tiers: [
+      { key:'bronze',   label:'Bronze',      color:'#a97142' },
+      { key:'argent',   label:'Argent',      color:'#a3a8b2' },
+      { key:'or',       label:'Or',          color:'#e6b800' },
+      { key:'diamant',  label:'Diamant',     color:'#7fd3ff' },
+      { key:'emeraude', label:'Émeraude',    color:'#0fbf85' },
+      { key:'violet',   label:'Prismatique', color:'#d13cff', gradient:{ hueStart:310, hueEnd:190 } },
+    ],
+  },
+  metaux: {
+    label: 'Métaux nobles',
+    tiers: [
+      { key:'bronze',   label:'Bronze',   color:'#a97142' },
+      { key:'argent',   label:'Argent',   color:'#c0c5cc' },
+      { key:'or',       label:'Or',       color:'#e6b800' },
+      { key:'platine',  label:'Platine',  color:'#c9d1d3' },
+      { key:'palladium',label:'Palladium',color:'#8fb0b8' },
+      { key:'iridium',  label:'Iridium',  color:'#d13cff', gradient:{ hueStart:310, hueEnd:190 } },
+    ],
+  },
+  ciel: {
+    label: 'Ciel',
+    tiers: [
+      { key:'terre',    label:'Terre',    color:'#8a6544' },
+      { key:'aube',     label:'Aube',     color:'#ff9d76' },
+      { key:'soleil',   label:'Soleil',   color:'#ffcb3c' },
+      { key:'azur',     label:'Azur',     color:'#4fb3ff' },
+      { key:'aurore',   label:'Aurore',   color:'#0fbf85' },
+      { key:'cosmos',   label:'Cosmos',   color:'#d13cff', gradient:{ hueStart:280, hueEnd:200 } },
+    ],
+  },
+  plumage: {
+    label: 'Plumage',
+    tiers: [
+      { key:'duvet',    label:'Duvet',    color:'#c9b89a' },
+      { key:'plume',    label:'Plume',    color:'#a3a8b2' },
+      { key:'doree',    label:'Dorée',    color:'#e6b800' },
+      { key:'celeste',  label:'Céleste',  color:'#7fd3ff' },
+      { key:'royale',   label:'Royale',   color:'#8b3ec2' },
+      { key:'paradis',  label:'Paradis',  color:'#d13cff', gradient:{ hueStart:340, hueEnd:180 } },
+    ],
+  },
+};
+
+// TIERS actif : on part du preset 'actuel' par defaut. Regenere via updateTiersFromPickers().
+let TIERS = PRESETS.actuel.tiers.map(t => enrichTier(t));
+
+// Convertit une couleur hex vers HSL + parametres derives (targetH, satMul, lightAdd) pour
+// generateTier. La logique choisit satMul et lightAdd auto selon la saturation de la
+// couleur cible : gris pale -> satMul faible, couleur vive -> satMul haut.
+function enrichTier(t){
+  if(t.gradient){
+    // Deja un gradient explicite : garde tel quel avec parametres par defaut.
+    return { ...t, satMul:1.05, lightAdd:+10 };
+  }
+  const rgb = hexToRgb(t.color);
+  const [h,s,l] = rgbToHsl(rgb.r, rgb.g, rgb.b);
+  // satMul reflete la saturation cible. Un cible tres desaturee (argent, platine) doit
+  // ramener les pixels a une saturation faible.
+  const satMul = Math.max(0.1, Math.min(1.3, s * 1.4));
+  // lightAdd centre autour de la lumiere cible vs 0.5.
+  const lightAdd = Math.round((l - 0.5) * 30);
+  return { ...t, targetH: h, satMul, lightAdd };
+}
+function hexToRgb(hex){
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return m ? { r:parseInt(m[1],16), g:parseInt(m[2],16), b:parseInt(m[3],16) } : { r:0,g:0,b:0 };
+}
+function rgbToHex(r,g,b){
+  return '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
+}
 
 function rgbToHsl(r,g,b){
   r/=255; g/=255; b/=255;
@@ -429,9 +513,57 @@ const msg = document.getElementById('msg');
 const controls = document.getElementById('controls');
 const downloadAllBtn = document.getElementById('downloadAll');
 const resetBtn = document.getElementById('reset');
+const paletteEditor = document.getElementById('paletteEditor');
+const colorPickers = document.getElementById('colorPickers');
+const presetsRow = document.getElementById('presetsRow');
+
 let sourceImage = null;
+let currentPreset = 'actuel';
 const currentStyle = 'original';
 const generated = {};   // {tierKey: {blob, dataUrl}}
+
+// Genere les chips de preset
+for(const [key, preset] of Object.entries(PRESETS)){
+  const chip = document.createElement('button');
+  chip.type = 'button';
+  chip.className = 'preset-chip' + (key === currentPreset ? ' on' : '');
+  chip.textContent = preset.label;
+  chip.addEventListener('click', () => {
+    currentPreset = key;
+    presetsRow.querySelectorAll('.preset-chip').forEach(c => c.classList.toggle('on', c === chip));
+    TIERS = PRESETS[key].tiers.map(t => enrichTier(t));
+    renderPickers();
+    if(sourceImage) renderAll();
+  });
+  presetsRow.appendChild(chip);
+}
+
+// Genere les 6 color pickers dans la palette editor. Chaque cellule = label editable + color input.
+function renderPickers(){
+  colorPickers.innerHTML = '';
+  TIERS.forEach((t, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'cp-cell';
+    cell.innerHTML = `
+      <div class="cp-label">Palier ${i+1}</div>
+      <input type="color" value="${t.color}" data-idx="${i}">
+      <input type="text" value="${t.label}" data-idx="${i}" maxlength="16">
+    `;
+    const colorInput = cell.querySelector('input[type=color]');
+    const textInput = cell.querySelector('input[type=text]');
+    colorInput.addEventListener('input', () => {
+      TIERS[i].color = colorInput.value;
+      TIERS[i] = enrichTier(TIERS[i]);
+      if(sourceImage) renderAll();
+    });
+    textInput.addEventListener('input', () => {
+      TIERS[i].label = textInput.value;
+      if(sourceImage) renderAll();
+    });
+    colorPickers.appendChild(cell);
+  });
+}
+renderPickers();
 
 drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('dragover'); });
 drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
@@ -443,6 +575,7 @@ fileInput.addEventListener('change', e => { const f = e.target.files?.[0]; if(f)
 resetBtn.addEventListener('click', () => {
   sourceImage = null; tiles.innerHTML = ''; msg.innerHTML = '';
   fileInput.value = ''; controls.style.display = 'none';
+  paletteEditor.style.display = 'none';
 });
 downloadAllBtn.addEventListener('click', downloadAll);
 
@@ -463,6 +596,7 @@ function handleFile(file){
 function renderAll(){
   tiles.innerHTML = '';
   controls.style.display = 'flex';
+  paletteEditor.style.display = 'block';
   // Extract ImageData from source image
   const srcCanvas = document.createElement('canvas');
   srcCanvas.width = sourceImage.naturalWidth;
