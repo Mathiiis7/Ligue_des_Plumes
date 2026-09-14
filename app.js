@@ -3376,14 +3376,21 @@ function renderTrophies(data){
         </div>
         <div class="tro-fam-body">
           <div class="tro-fam-title">
-            <span class="tro-fam-name">${esc(familyName)}</span>
-            ${currentTier
-              ? (function(){
-                  // Affiche le nom perso du palier si defini via tierNames (ex 'Sac a dos', 'Idefix') sinon fallback tier label (Bronze/Argent...).
-                  const hasCustomName = displayTier.name && displayTier.name !== `${familyName} ${displayMeta.label}`;
-                  return `<span class="tro-fam-tier">· ${esc(hasCustomName ? displayTier.name : displayMeta.label)}</span>`;
-                })()
-              : `<span class="tro-fam-tier tro-fam-tier-locked">· à débloquer</span>`}
+            ${(function(){
+              // Si un nom perso de palier existe (tierNames defini), il REMPLACE le nom de famille dans le showcase :
+              //   "Ornithologue du dimanche" au lieu de "Ecologue · Ornithologue du dimanche".
+              //   Le libelle generique du tier (Bronze/Argent...) reste comme suffixe discret.
+              // Sinon comportement classique : "Nom famille · Tier label".
+              const hasCustomName = currentTier && displayTier.name && displayTier.name !== `${familyName} ${displayMeta.label}`;
+              if(hasCustomName){
+                return `<span class="tro-fam-name">${esc(displayTier.name)}</span>
+                        <span class="tro-fam-tier">· ${esc(displayMeta.label)}</span>`;
+              }
+              return `<span class="tro-fam-name">${esc(familyName)}</span>
+                      ${currentTier
+                        ? `<span class="tro-fam-tier">· ${esc(displayMeta.label)}</span>`
+                        : `<span class="tro-fam-tier tro-fam-tier-locked">· à débloquer</span>`}`;
+            })()}
           </div>
           <div class="tro-fam-next">${nextLine}</div>
           <div class="tro-fam-bar-outer">
