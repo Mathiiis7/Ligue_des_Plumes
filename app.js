@@ -2316,8 +2316,8 @@ const TROPHY_TIERS = [
   { key:'bronze',   label:'Bronze',      color:'#c4753a', img:'assets/trophies/generic/bronze.png' },
   { key:'argent',   label:'Argent',      color:'#c0c8d3', img:'assets/trophies/generic/argent.png' },
   { key:'or',       label:'Or',          color:'#f5a623', img:'assets/trophies/generic/or.png' },
-  { key:'diamant',  label:'Diamant',     color:'#c9e6f2', img:'assets/trophies/generic/diamant.png' },
-  { key:'emeraude', label:'Émeraude',    color:'#008a5e', img:'assets/trophies/generic/emeraude.png' },
+  { key:'diamant',  label:'Diamant',     color:'#7dd3e5', img:'assets/trophies/generic/diamant.png' },
+  { key:'emeraude', label:'Émeraude',    color:'#22c53d', img:'assets/trophies/generic/emeraude.png' },
   { key:'violet',   label:'Prismatique', color:'#d13cff', img:'assets/trophies/generic/violet.png' },
 ];
 // Genere 6 trophees d'une meme famille (un par palier). Chaque palier partage

@@ -62,8 +62,9 @@
 <body>
 <div class="wrap">
   <h1>🏆 Générateur de trophées 6 paliers</h1>
-  <p class="sub">Dépose la version <b>dorée</b> d'un trophée, ça te sort les 5 autres couleurs
-    (bronze / argent / diamant / améthyste / émeraude) prêts à télécharger.</p>
+  <p class="sub">Le trophée doré actuel est chargé automatiquement. Dépose une autre image
+    pour l'utiliser comme source. La palette de droite définit les 6 tiers
+    (bronze / argent / or / diamant / émeraude / prismatique) — édite-la à la volée.</p>
 
   <div class="card">
     <label class="drop" id="drop">
@@ -331,8 +332,8 @@ let TIERS = [
   { key:'bronze',   label:'Bronze',      color:'#c4753a' },   // bronze cuivre chaud (H≈24, orange + brun)
   { key:'argent',   label:'Argent',      color:'#c0c8d3' },   // argent chrome (leger bleu cool)
   { key:'or',       label:'Or',          color:'#f5a623' },   // or ambre chaud (yellow + orange)
-  { key:'diamant',  label:'Diamant',     color:'#c9e6f2' },   // diamant blanc-glace (moins sature, plus 'colorless')
-  { key:'emeraude', label:'Émeraude',    color:'#008a5e' },   // emeraude vert profond (plus sature, effet gem)
+  { key:'diamant',  label:'Diamant',     color:'#7dd3e5' },   // cristal cyan brillant
+  { key:'emeraude', label:'Émeraude',    color:'#22c53d' },   // vert emeraude chaud (H=130, pas de bleu)
   { key:'violet',   label:'Prismatique', color:'#d13cff', gradient:{ hueStart:310, hueEnd:190 } },
 ].map(t => enrichTier(t));
 
@@ -445,14 +446,17 @@ function generateTier(sourceImageData, tier){
         newR=nr; newG=ng; newB=nb;
       }
     } else {
-      // Mode couleur : HSL shift classique (comportement d'avant).
+      // Mode couleur : HSL shift + contrast stretch.
       //  - Pixels neutres (S faible) : gardes tels quels (base, plaque, contours).
-      //  - Pixels colores : remap H vers la cible, ajuste S/L.
+      //  - Pixels colores : remap H vers la cible, ajuste S/L, et etire la luminance
+      //    autour de 0.5 pour creuser l'ecart entre les nuances (evite l'aplat).
       if(srcS < 0.15){
         newR = r; newG = g; newB = b;
       } else {
+        const contrastMul = 1.4;
+        const stretchedL = 0.5 + (srcL - 0.5) * contrastMul;
         const newS = Math.max(0, Math.min(1, srcS * tier.satMul));
-        const newL = Math.max(0, Math.min(1, srcL + tier.lightAdd/100));
+        const newL = Math.max(0, Math.min(1, stretchedL + tier.lightAdd/100));
         const [nr,ng,nb] = hslToRgb(targetH, newS, newL);
         newR=nr; newG=ng; newB=nb;
       }
@@ -516,6 +520,21 @@ resetBtn.addEventListener('click', () => {
   paletteEditor.style.display = 'none';
 });
 downloadAllBtn.addEventListener('click', downloadAll);
+
+// Auto-charge le trophee dore actuel (assets/trophies/generic/or.png) comme source
+// par defaut au demarrage. Comme ca on voit tout de suite l'etat courant, et un
+// drop utilisateur ecrase cette source.
+(async function loadDefaultSource(){
+  try {
+    // Cache-bust : sinon Chrome sert la vieille version cachee malgre le SW purge.
+    const res = await fetch('../assets/trophies/generic/or.png?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) return;
+    const blob = await res.blob();
+    const img = new Image();
+    img.onload = () => { sourceImage = img; renderAll(); };
+    img.src = URL.createObjectURL(blob);
+  } catch(e) { /* silencieux : l'utilisateur peut toujours drop */ }
+})();
 
 function handleFile(file){
   msg.innerHTML = '';
