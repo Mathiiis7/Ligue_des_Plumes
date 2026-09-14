@@ -2433,13 +2433,13 @@ const TROPHIES = [
     note:s=>`${(s.owlOwnedSet?.size)||0} rapace${((s.owlOwnedSet?.size)||0)>1?'s':''} nocturne${((s.owlOwnedSet?.size)||0)>1?'s':''} observé${((s.owlOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'anatidae', category:'species', baseName:'Anatidés',
+    theme:'groupe', icon:ICONS.aigle, family:'anatidae', category:'species', baseName:'Canards, oies & cygnes',
     imgDir:'assets/trophies/families/anatidae',
     // Pool FR ~40 (canards de surface + plongeurs, oies, cygnes, harles, tadornes).
     metric:s=>(s.anatidaeOwnedSet?.size)||0, thresholds:[3,8,15,25,40,60],
-    descTpl:'Observer {n} anatidés différents (canards, oies, cygnes, harles…)',
+    descTpl:'Observer {n} canards, oies ou cygnes différents (harles inclus)',
     list:s=>[...(s.anatidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.anatidaeOwnedSet?.size)||0} anatidé${((s.anatidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.anatidaeOwnedSet?.size)||0)>1?'s':''}`,
+    note:s=>`${(s.anatidaeOwnedSet?.size)||0} espèce${((s.anatidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.anatidaeOwnedSet?.size)||0)>1?'s':''}`,
   }),
   // -- 11 nouvelles familles d'especes (papier-craft Canva) --
   ...makeTierFamily({
@@ -2674,7 +2674,7 @@ const SPECIES_FAMILY_FILTERS = {
 const SPECIES_FAMILY_LABELS = {
   rapaces: 'rapaces diurnes',
   nocturnes: 'rapaces nocturnes',
-  anatidae: 'anatidés',
+  anatidae: 'canards, oies & cygnes',
   hirundinidae: 'hirondelles & martinets',
   alaudidae: 'alouettes',
   paridae: 'mésanges',
