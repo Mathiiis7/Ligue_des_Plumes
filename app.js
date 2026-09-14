@@ -9525,9 +9525,14 @@ async function _loadHabitatByCountry(cc){
   })();
   return _habitatByCountryPromises[key];
 }
+// Etat global partage entre les rebuilds de la carte 'Milieux frequentes' :
+// permet de garder le details ouvert quand l'utilisateur change de pays via
+// n'importe quel country picker (rarete OU habitat), sinon le rebuild collapse.
+let _smHabitatDetailsOpen = false;
 // Rendu accordeon L1 -> L3 pour une espece dans un pays donne.
 // La carte s'affiche en click-to-open (collapsed par defaut). Country picker
-// dedie permet de switcher entre les 242 pays qui ont des donnees habitat.
+// dedie qui reutilise la meme logique que le picker de rarete (memes availableCodes
+// species-specific, meme applyCountryChange global pour syncer toutes les cartes).
 async function _renderSpeciesHabitatCard(sci, cc){
   const box = $('#smHabitatCard'); if(!box) return;
   box.hidden = true;
@@ -9545,7 +9550,7 @@ async function _renderSpeciesHabitatCard(sci, cc){
       <summary class="sm-card-title" style="display:flex; align-items:center; justify-content:space-between; gap:8px; cursor:pointer; list-style:none;">
         <span style="display:flex; align-items:center; gap:8px;">
           <span class="hab-caret" style="width:12px; display:inline-block; transition:transform .15s;">▸</span>
-          <span>Habitat préféré</span>
+          <span>Milieux fréquentés</span>
         </span>
         <span id="smHabitatDatasetBadge" style="font-size:10px; color:var(--ink-3); background:var(--line-2); padding:2px 6px; border-radius:4px; font-weight:600;">…</span>
       </summary>
@@ -9640,32 +9645,49 @@ async function _renderSpeciesHabitatCard(sci, cc){
     });
   };
 
-  // Lazy load : ne charge le contenu qu'au 1er open du details.
+  // Restaure l'etat 'ouvert' si l'utilisateur avait deja deploye la carte
+  // pour l'espece courante avant un changement de pays qui a triggere un rebuild.
+  if(_smHabitatDetailsOpen){
+    details.open = true;
+    if(caret) caret.style.transform = 'rotate(90deg)';
+    loadedOnce = true;
+    loadForCountry(currentCC);
+  }
+
+  // Lazy load : ne charge le contenu qu'au 1er open du details, et memorise
+  // l'etat dans _smHabitatDetailsOpen pour survivre aux rebuilds.
   details.addEventListener('toggle', async () => {
     if(caret) caret.style.transform = details.open ? 'rotate(90deg)' : 'rotate(0)';
+    _smHabitatDetailsOpen = details.open;
     if(details.open && !loadedOnce){
       loadedOnce = true;
       await loadForCountry(currentCC);
     }
   });
 
-  // Country picker : ouvre modal avec les 242 pays qui ont data habitat.
+  // Country picker : reutilise la meme logique que le picker rarete (memes availableCodes
+  // species-specific), et delegue le changement a applyCountryChange globale pour synchroniser
+  // toutes les cartes de la fiche (rarete, freq, habitat, map).
   selBtn.addEventListener('click', async (e) => {
     e.preventDefault();
-    // Ouvre un picker sur les pays disponibles (COUNTRIES_REG connus, les autres
-    // accessibles via _openCountryPicker si availableCodes non specifie).
-    const chosen = await _openCountryPicker(currentCC, {});
+    // availableCodes : les pays de COUNTRIES_REG ou l'espece a de la data (comme rarete).
+    const availableCodes = Object.keys(COUNTRIES_REG).filter(c => _countryHasSpecies(c, key) || isExoticInCountry(key, c));
+    const chosen = await _openCountryPicker(currentCC, { availableCodes, sci: key });
     if(!chosen || chosen === currentCC) return;
-    currentCC = chosen;
-    // Sync visuel du bouton
-    const newName = (COUNTRIES_REG[chosen] && COUNTRIES_REG[chosen].name) || chosen;
-    selBtn.dataset.cc = chosen;
-    selBtn.querySelector('.cp-btn-flag').innerHTML = flagImg(chosen);
-    selBtn.querySelector('.cp-btn-label').textContent = newName;
-    // Force le details a etre ouvert et recharge
-    if(!details.open) details.open = true;
-    loadedOnce = true;
-    await loadForCountry(chosen);
+    // Si applyCountryChange globale existe (definie dans _renderSpeciesRarityCard), l'appelle
+    // pour syncer toutes les cartes. Sinon fallback : rebuild uniquement habitat.
+    if(typeof window._smApplyCountryChange === 'function'){
+      window._smApplyCountryChange(chosen);
+    } else {
+      currentCC = chosen;
+      selBtn.dataset.cc = chosen;
+      const newName = (COUNTRIES_REG[chosen] && COUNTRIES_REG[chosen].name) || chosen;
+      selBtn.querySelector('.cp-btn-flag').innerHTML = flagImg(chosen);
+      selBtn.querySelector('.cp-btn-label').textContent = newName;
+      if(!details.open) details.open = true;
+      loadedOnce = true;
+      await loadForCountry(chosen);
+    }
   });
 }
 // Carte de repartition Cornell S&T (heatmap annuelle 9km). Lazy load du manifest global
@@ -10436,6 +10458,17 @@ function _renderSpeciesRarityCard(key){
   const applyCountryChange = (chosen) => {
     if(!chosen) return;
     _syncCountryButton(sel, chosen);
+    // Sync visuel du picker de la carte 'Milieux frequentes' si present (fiche rebuild
+    // conserve le details.open via _smHabitatDetailsOpen mais le bouton pays a besoin
+    // d'etre resync explicitement quand le changement vient d'un autre picker).
+    const habSel = $('#smHabitatCountrySel');
+    if(habSel && habSel.dataset.cc !== chosen){
+      habSel.dataset.cc = chosen;
+      const habFlag = habSel.querySelector('.cp-btn-flag');
+      const habLabel = habSel.querySelector('.cp-btn-label');
+      if(habFlag) habFlag.innerHTML = flagImg(chosen);
+      if(habLabel) habLabel.textContent = (COUNTRIES_REG[chosen] && COUNTRIES_REG[chosen].name) || chosen;
+    }
     if(mapSel) _syncCountryButton(mapSel, chosen);
     renderLine(chosen);
     updateRegVisibility(chosen);
@@ -10456,6 +10489,9 @@ function _renderSpeciesRarityCard(key){
     _renderSpeciesHabitatCard(k, chosen);
     try{ _renderSpeciesMap(k); }catch(_){}
   };
+  // Expose applyCountryChange en global pour que la carte 'Milieux frequentes' puisse
+  // trigger la meme synchronisation qu'un click sur le picker rarete (source unique).
+  window._smApplyCountryChange = applyCountryChange;
   // Sync initial de #smMapCountrySel
   if(mapSel) _syncCountryButton(mapSel, initCountry);
   if(sel){
@@ -11273,7 +11309,10 @@ function openSpeciesModal(sci){
   _renderSpeciesRarityCard(key);
   // Traits Avonet (ecologie + morphologie), lazy fetch au 1er open
   _renderSpeciesTraitsCard(key);
-  // Habitat (CLC Europe / CGLC monde) : accordeon L1 -> L3, dynamique par pays
+  // Habitat (CLC Europe / CGLC monde) : accordeon L1 -> L3, dynamique par pays.
+  // Reset l'etat 'ouvert' quand on charge une nouvelle espece (evite d'heriter
+  // du state de l'espece precedente).
+  _smHabitatDetailsOpen = false;
   _renderSpeciesHabitatCard(sci, _globalCountry);
   // Card 'A ne pas confondre' : legere, calcul local instantane depuis
   // CONFUSION_GROUPS. Rendue direct.
