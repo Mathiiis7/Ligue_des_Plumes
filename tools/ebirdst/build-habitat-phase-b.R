@@ -159,6 +159,13 @@ load_st_abundance <- function(species_code) {
 # ============================================================================
 phase_b_country <- function(cc) {
   cat(sprintf("\n[%s]\n", cc))
+  # Skip si deja produit : evite de re-tourner sur les 229 pays deja faits quand
+  # on relance apres interruption.
+  out_file <- file.path(OUT_DIR, tolower(cc), "habitat_by_species.json")
+  if (file.exists(out_file)) {
+    cat(sprintf("  Deja produit, skip.\n"))
+    return(TRUE)
+  }
   cache_file <- file.path(CACHE_DIR, paste0(cc, "_habitat_frac.tif"))
   if (!file.exists(cache_file)) {
     cat(sprintf("  Phase A cache manquant, skip.\n"))
