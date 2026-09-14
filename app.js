@@ -921,10 +921,15 @@ function habitatsOf(sci){
 // Un consommateur peut re-trier par nom FR apres init si besoin.
 const HABITAT_TO_SCIS = (() => {
   const idx = Object.fromEntries(HABITAT_CATS.map(c=>[c, []]));
-  for(const sci in HABITATS){
-    const cats = HABITATS[sci];
-    for(const c of cats) if(idx[c]) idx[c].push(sci);
-  }
+  // Union des cles pour prendre en compte les especes uniquement classees par
+  // ADDITIONS/OVERRIDES (ex : Gypaete tagge "montane" hors AVONET).
+  const seen = new Set();
+  const push = sci => { if(seen.has(sci)) return; seen.add(sci);
+    const cats = habitatsOf(sci); if(!cats) return;
+    for(const c of cats) if(idx[c]) idx[c].push(sci); };
+  for(const sci in HABITATS) push(sci);
+  for(const sci in HABITAT_ADDITIONS) push(sci);
+  for(const sci in HABITAT_OVERRIDES) push(sci);
   for(const c of HABITAT_CATS) idx[c].sort();
   return idx;
 })();
@@ -950,11 +955,17 @@ function HABITAT_TO_SCIS_FR(cat){
     const rr = typeof REAL_RARITY === 'object' ? REAL_RARITY[sci] : null;
     return rr && rr < 10;
   };
-  for(const sci in HABITATS){
-    if(!inFR(sci)) continue;
-    const cats = HABITATS[sci];
-    for(const c of cats) if(idx[c]) idx[c].push(sci);
-  }
+  // Union des cles : HABITATS (AVONET base) + HABITAT_ADDITIONS + HABITAT_OVERRIDES.
+  // Avant on iterait juste sur HABITATS, ce qui ratait les especes dont la seule
+  // classification vient des ADDITIONS (ex: Gypaete, Aigle royal, Lagopede
+  // pour "montane"). Passe par habitatsOf() pour merger correctement.
+  const seen = new Set();
+  const push = sci => { if(seen.has(sci)) return; seen.add(sci); if(!inFR(sci)) return;
+    const cats = habitatsOf(sci); if(!cats) return;
+    for(const c of cats) if(idx[c]) idx[c].push(sci); };
+  for(const sci in HABITATS) push(sci);
+  for(const sci in HABITAT_ADDITIONS) push(sci);
+  for(const sci in HABITAT_OVERRIDES) push(sci);
   _HABITAT_TO_SCIS_FR = idx;
   return idx[cat] || [];
 }
