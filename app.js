@@ -2553,6 +2553,69 @@ const TROPHIES = [
     note:s=>`${(s.laridaeOwnedSet?.size)||0} espèce${((s.laridaeOwnedSet?.size)||0)>1?'s':''} observée${((s.laridaeOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
+    theme:'groupe', icon:ICONS.aigle, family:'turdidae', category:'species', baseName:'Grives & merles',
+    imgDir:'assets/trophies/families/turdidae',
+    // Pool FR ~6 (merle, grives musicienne/mauvis/litorne/draine + merle a plastron)
+    metric:s=>(s.turdidaeOwnedSet?.size)||0, thresholds:[1,2,4,6,10,15],
+    descTpl:'Observer {n} grives ou merles différents',
+    list:s=>[...(s.turdidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>`${(s.turdidaeOwnedSet?.size)||0} espèce${((s.turdidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.turdidaeOwnedSet?.size)||0)>1?'s':''}`,
+  }),
+  ...makeTierFamily({
+    theme:'groupe', icon:ICONS.aigle, family:'muscicapidae', category:'species', baseName:'Muscicapidés',
+    imgDir:'assets/trophies/families/muscicapidae',
+    // Pool FR ~9 (rossignol, gorgebleue, rougegorge, rougequeues, traquets, tariers, gobemouches)
+    metric:s=>(s.muscicapidaeOwnedSet?.size)||0, thresholds:[2,4,7,10,15,22],
+    descTpl:'Observer {n} muscicapidés différents (rossignols, rougequeues, traquets, gobemouches…)',
+    list:s=>[...(s.muscicapidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>`${(s.muscicapidaeOwnedSet?.size)||0} espèce${((s.muscicapidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.muscicapidaeOwnedSet?.size)||0)>1?'s':''}`,
+  }),
+  ...makeTierFamily({
+    theme:'groupe', icon:ICONS.aigle, family:'sylviidae', category:'species', baseName:'Fauvettes',
+    imgDir:'assets/trophies/families/sylviidae',
+    // Pool FR ~7 (Curruca : tetes noires, orphee, epervieres, passerinette, sarde, pitchou, cerinesque + Sylvia atricapilla)
+    metric:s=>(s.sylviidaeOwnedSet?.size)||0, thresholds:[1,2,4,6,10,15],
+    descTpl:'Observer {n} fauvettes différentes',
+    list:s=>[...(s.sylviidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>`${(s.sylviidaeOwnedSet?.size)||0} fauvette${((s.sylviidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.sylviidaeOwnedSet?.size)||0)>1?'s':''}`,
+  }),
+  ...makeTierFamily({
+    theme:'groupe', icon:ICONS.aigle, family:'phylloscopidae', category:'species', baseName:'Pouillots & rousserolles',
+    imgDir:'assets/trophies/families/phylloscopidae',
+    // Pool FR ~18 (Phyllosco 8 + Acroc 6 + Locust 3 + Cetti 1)
+    metric:s=>(s.phylloscopidaeOwnedSet?.size)||0, thresholds:[2,5,9,14,20,30],
+    descTpl:'Observer {n} pouillots, rousserolles, hypolaïs ou locustelles différents',
+    list:s=>[...(s.phylloscopidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>`${(s.phylloscopidaeOwnedSet?.size)||0} espèce${((s.phylloscopidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.phylloscopidaeOwnedSet?.size)||0)>1?'s':''}`,
+  }),
+  ...makeTierFamily({
+    theme:'groupe', icon:ICONS.aigle, family:'fringillidae', category:'species', baseName:'Fringilles',
+    imgDir:'assets/trophies/families/fringillidae',
+    // Pool FR ~15 (pinsons, chardonneret, verdier, tarins, linottes, bec-croises, bouvreuil, grosbec, roselins)
+    metric:s=>(s.fringillidaeOwnedSet?.size)||0, thresholds:[3,6,10,15,22,35],
+    descTpl:'Observer {n} fringilles différents (pinsons, chardonnerets, tarins, bouvreuils…)',
+    list:s=>[...(s.fringillidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>`${(s.fringillidaeOwnedSet?.size)||0} fringille${((s.fringillidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.fringillidaeOwnedSet?.size)||0)>1?'s':''}`,
+  }),
+  ...makeTierFamily({
+    theme:'groupe', icon:ICONS.aigle, family:'emberizidae', category:'species', baseName:'Bruants',
+    imgDir:'assets/trophies/families/emberizidae',
+    // Pool FR ~10 (jaune, zizi, cirl, ortolan, proyer, roseaux, fou, nain, lapon, neiges + bruants NW voyage)
+    metric:s=>(s.emberizidaeOwnedSet?.size)||0, thresholds:[2,4,7,10,15,22],
+    descTpl:'Observer {n} bruants différents',
+    list:s=>[...(s.emberizidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>`${(s.emberizidaeOwnedSet?.size)||0} bruant${((s.emberizidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.emberizidaeOwnedSet?.size)||0)>1?'s':''}`,
+  }),
+  ...makeTierFamily({
+    theme:'groupe', icon:ICONS.aigle, family:'rallidae', category:'species', baseName:'Rallidés',
+    imgDir:'assets/trophies/families/rallidae',
+    // Pool FR ~7 (foulque, gallinule, rale d'eau, rale des genets, marouettes, taleve)
+    metric:s=>(s.rallidaeOwnedSet?.size)||0, thresholds:[1,2,4,6,10,15],
+    descTpl:'Observer {n} rallidés différents (foulques, poules d\'eau, râles, marouettes…)',
+    list:s=>[...(s.rallidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>`${(s.rallidaeOwnedSet?.size)||0} rallidé${((s.rallidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.rallidaeOwnedSet?.size)||0)>1?'s':''}`,
+  }),
+  ...makeTierFamily({
     theme:'communaute', icon:ICONS.photo, family:'natGeo', category:'progression', baseName:'National Geographic',
     imgDir:'assets/trophies/families/natgeo',
     metric:s=>s.hotPhotos||0, thresholds:[1,3,7,15,25,40],
@@ -2596,6 +2659,23 @@ const SCOLOPACIDAE_G=/^(calidris|tringa|actitis|xenus|gallinago|numenius|limosa|
 // Pluviers, vanneaux + petites familles de rivage : huitriers, avocettes/echasses,
 // oedicnemes, glareoles/courvites, jacanas, rhynchee. Trophee 'Pluviers & rivages'.
 const RIVAGES_G=/^(charadrius|pluvialis|vanellus|anarhynchus|eudromias|erythrogonys|elseyornis|thinornis|haematopus|recurvirostra|himantopus|burhinus|glareola|cursorius|rostratula|jacana|hydrophasianus|actophilornis|irediparra|metopidius|microparra|pluvianellus|pluvianus|dromas|attagis|thinocorus|ibidorhyncha|chionis)$/;
+// Turdidae : grives, merles. Rockthrush (Monticola) est Muscicapidae en taxo moderne.
+const TURDIDAE_G=/^(turdus|catharus|hylocichla|ixoreus|ridgwayia|zoothera|geokichla|sialia|myadestes|neocossyphus|nesocichla|cataponera|psophocichla|cichlopsis|entomodestes|myioborus|chlamydochaera|cochoa|monticola)$/;
+// Muscicapidae : rossignols, rougegorge, rougequeues, traquets, tariers, gobemouches.
+const MUSCICAPIDAE_G=/^(luscinia|phoenicurus|oenanthe|saxicola|muscicapa|ficedula|erithacus|cyanecula|cercotrichas|copsychus|calliope|larvivora|brachypteryx|sheppardia|myrmecocichla|tarsiger|irania|myophonus|enicurus|culicicapa|niltava|cyornis|eumyias|melaenornis|bradornis|fraseria|dioptrornis|humblotia|myioparus|empidornis|namibornis|cassiornis|ficedulinae|rhinomyias|anthipes|erythrocichla|leonardina|kittacincla|trichixos|drymodes|trichastoma|monachella|monticoloides|myrmecocichla|thamnolaea|oenanthe|campicoloides|pinarornis|saxicoloides|lioparus|niltava|ficedula|muscicapella)$/;
+// Sylviidae strict : fauvettes (Sylvia, Curruca depuis split IOC 2020), parisoma.
+const SYLVIIDAE_G=/^(sylvia|curruca|parisoma|chamaea|myzornis|sylviaparinae|hornbillhrophaenicula|argus|sylvietta|rhopophilus)$/;
+// Pouillots (Phylloscopidae) + rousserolles/hypolais (Acrocephalidae) +
+// locustelles (Locustellidae) + bouscarles (Cettiidae). Groupes ensemble.
+const POUILLOTS_ROUSSEROLLES_G=/^(phylloscopus|seicercus|rhadina|abrornis|acrocephalus|hippolais|iduna|chloropeta|calamocichla|nesillas|locustella|bradypterus|robsonius|elaphrornis|cincloramphus|megalurus|schoenicola|helopsaltes|dromaeocercus|amphilais|cettia|horornis|urosphena|tesia|tickellia|abroscopus|phyllergates|hemitesia|erythrocercus|neomixis|scotocerca|hylia|pnoepyga)$/;
+// Fringillidae : pinsons, chardonnerets, verdiers, tarins, linottes, bec-croises,
+// bouvreuils, grosbecs, roselins.
+const FRINGILLIDAE_G=/^(fringilla|coccothraustes|carpodacus|chloris|serinus|linaria|spinus|carduelis|loxia|pyrrhula|bucanetes|rhodospiza|acanthis|chrysocorythus|rhodopechys|eremopsaltria|uragus|loxioides|palmeria|himatione|vestiaria|drepanis|loxops|hemignathus|telespiza|paroreomyza|pseudonestor|melamprosops|magumma|eophona|mycerobas|hesperiphona|pinicola|pyrrhoplectes|leucosticte|haemorhous|callacanthis|rhynchostruthus|spinus|linurgus|callanthis|linaria|carpodacus|callacanthis|neospiza|crithagra|serinus)$/;
+// Emberizidae + Passerellidae (bruants + sparrows NW) : bruants europeens et
+// sparrows americains ont ete regroupes traditionnellement.
+const EMBERIZIDAE_G=/^(emberiza|plectrophenax|calcarius|melophus|latoucheornis|schoeniclus|spizella|melospiza|ammodramus|chondestes|junco|zonotrichia|passerella|pipilo|aimophila|passerculus|calamospiza|amphispiza|artemisiospiza|spizelloides|peucaea|ammospiza|pooecetes|xenospiza|centronyx|arremon|arremonops|atlapetes|pselliophorus|melozone|torreornis|oriturus|rhynchospiza|piezorhina|tiaris)$/;
+// Rallidae : foulques, poules d'eau, rales, marouettes, taleves, gallinules.
+const RALLIDAE_G=/^(fulica|gallinula|rallus|zapornia|porzana|crex|porphyrio|paragallinula|amaurornis|aramides|neocrex|laterallus|coturnicops|micropygia|rallina|anurolimnas|sarothrura|himantornis|canirallus|dryolimnas|aramidopsis|eulabeornis|hypotaenidia|habroptila|cabalus|nesoclopeus|diaphorapteryx|aphanapteryx|gymnocrex|gallirallus|pardirallus|mundia|cyanolimnas|porphyrula|tribonyx|amaurolimnas|notornis|atlantisia|rougetius|habropteryx)$/;
 const LARIDAE_G=/^(larus|ichthyaetus|chroicocephalus|hydrocoloeus|leucophaeus|rissa|xema|pagophila|rhodostethia|sterna|sternula|thalasseus|gelochelidon|hydroprogne|onychoprion|chlidonias|anous|gygis|creagrus|saundersilarus)$/;
 // Predicat de famille pour le modal des familles d'especes (bouton Monde/France).
 // Retourne true si l'espece appartient a la famille. Utilise pour filtrer le pool FR
@@ -2685,6 +2765,48 @@ const SPECIES_FAMILY_FILTERS = {
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
     return fam === 'Pluviers, vanneaux' || fam === 'Huîtriers' || fam === 'Avocettes, échasses' || fam === 'Œdicnèmes' || fam === 'Glaréoles, courvites' || fam === 'Rhynchée' || fam === 'Jacanas';
   },
+  turdidae: sci => {
+    const g = (sci||'').split(' ')[0];
+    if(TURDIDAE_G.test(g)) return true;
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Grives, merles';
+  },
+  muscicapidae: sci => {
+    const g = (sci||'').split(' ')[0];
+    if(MUSCICAPIDAE_G.test(g)) return true;
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Gobemouches, rossignols, traquets' || fam === 'Rossignols, rougequeues' || fam === 'Gobemouches';
+  },
+  sylviidae: sci => {
+    const g = (sci||'').split(' ')[0];
+    if(SYLVIIDAE_G.test(g)) return true;
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Fauvettes';
+  },
+  phylloscopidae: sci => {
+    const g = (sci||'').split(' ')[0];
+    if(POUILLOTS_ROUSSEROLLES_G.test(g)) return true;
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Pouillots' || fam === 'Rousserolles, hypolaïs' || fam === 'Locustelles' || fam === 'Bouscarles';
+  },
+  fringillidae: sci => {
+    const g = (sci||'').split(' ')[0];
+    if(FRINGILLIDAE_G.test(g)) return true;
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Fringilles';
+  },
+  emberizidae: sci => {
+    const g = (sci||'').split(' ')[0];
+    if(EMBERIZIDAE_G.test(g)) return true;
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Bruants' || fam === 'Bruants du Nouveau Monde';
+  },
+  rallidae: sci => {
+    const g = (sci||'').split(' ')[0];
+    if(RALLIDAE_G.test(g)) return true;
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Râles, foulques';
+  },
   laridae: sci => {
     const g = (sci||'').split(' ')[0];
     if(LARIDAE_G.test(g)) return true;
@@ -2709,6 +2831,13 @@ const SPECIES_FAMILY_LABELS = {
   scolopacidae: 'bécasseaux & chevaliers',
   rivages: 'pluviers & rivages',
   laridae: 'goélands & mouettes',
+  turdidae: 'grives & merles',
+  muscicapidae: 'muscicapidés',
+  sylviidae: 'fauvettes',
+  phylloscopidae: 'pouillots & rousserolles',
+  fringillidae: 'fringilles',
+  emberizidae: 'bruants',
+  rallidae: 'rallidés',
 };
 // Alcidés = les "pingouins" de l'hémisphère nord (pingouins, macareux, mergule, guillemots)
 const ALCID_G=/^(alca|pinguinus|fratercula|alle|uria|cepphus)$/;
@@ -2978,7 +3107,10 @@ function statsFor(me, N){
   const hirundoOwnedSet=new Set(), alaudaOwnedSet=new Set(), paridaeOwnedSet=new Set(),
         corvidaeOwnedSet=new Set(), alcediOwnedSet=new Set(), ardeidaeOwnedSet=new Set(),
         columbidaeOwnedSet=new Set(), galliformesOwnedSet=new Set(), picidaeOwnedSet=new Set(),
-        scolopacidaeOwnedSet=new Set(), rivagesOwnedSet=new Set(), laridaeOwnedSet=new Set();
+        scolopacidaeOwnedSet=new Set(), rivagesOwnedSet=new Set(), laridaeOwnedSet=new Set(),
+        turdidaeOwnedSet=new Set(), muscicapidaeOwnedSet=new Set(), sylviidaeOwnedSet=new Set(),
+        phylloscopidaeOwnedSet=new Set(), fringillidaeOwnedSet=new Set(),
+        emberizidaeOwnedSet=new Set(), rallidaeOwnedSet=new Set();
   // Milieux (habitats) : Set d'espèces par catégorie via HABITATS (source : famille eBird).
   const habOwned = Object.fromEntries(HABITAT_CATS.map(c=>[c, new Set()]));
   for(const v of me._active.values()){
@@ -3029,6 +3161,20 @@ function statsFor(me, N){
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Chevaliers, bécasseaux'||f==='Bécasses, bécassines') scolopacidaeOwnedSet.add(sci); }
     if(RIVAGES_G.test(g)) rivagesOwnedSet.add(sci);
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Pluviers, vanneaux'||f==='Huîtriers'||f==='Avocettes, échasses'||f==='Œdicnèmes'||f==='Glaréoles, courvites'||f==='Rhynchée'||f==='Jacanas') rivagesOwnedSet.add(sci); }
+    if(TURDIDAE_G.test(g)) turdidaeOwnedSet.add(sci);
+    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Grives, merles') turdidaeOwnedSet.add(sci); }
+    if(MUSCICAPIDAE_G.test(g)) muscicapidaeOwnedSet.add(sci);
+    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Gobemouches, rossignols, traquets'||f==='Rossignols, rougequeues'||f==='Gobemouches') muscicapidaeOwnedSet.add(sci); }
+    if(SYLVIIDAE_G.test(g)) sylviidaeOwnedSet.add(sci);
+    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Fauvettes') sylviidaeOwnedSet.add(sci); }
+    if(POUILLOTS_ROUSSEROLLES_G.test(g)) phylloscopidaeOwnedSet.add(sci);
+    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Pouillots'||f==='Rousserolles, hypolaïs'||f==='Locustelles'||f==='Bouscarles') phylloscopidaeOwnedSet.add(sci); }
+    if(FRINGILLIDAE_G.test(g)) fringillidaeOwnedSet.add(sci);
+    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Fringilles') fringillidaeOwnedSet.add(sci); }
+    if(EMBERIZIDAE_G.test(g)) emberizidaeOwnedSet.add(sci);
+    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Bruants'||f==='Bruants du Nouveau Monde') emberizidaeOwnedSet.add(sci); }
+    if(RALLIDAE_G.test(g)) rallidaeOwnedSet.add(sci);
+    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Râles, foulques') rallidaeOwnedSet.add(sci); }
     if(LARIDAE_G.test(g)) laridaeOwnedSet.add(sci);
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Goélands, mouettes'||f==='Sternes'||f==='Laridés') laridaeOwnedSet.add(sci); }
     if(sci==='dryocopus martius') blackWoodpecker=true;
@@ -3074,7 +3220,7 @@ function statsFor(me, N){
     for(const uid of voters) if(uid !== me.id) hearts++;
     if(hearts >= 3) hotPhotos++;
   }
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
@@ -3185,6 +3331,13 @@ function renderTrophies(data){
         if(familyKey === 'scolopacidae') return new Set(s.scolopacidaeOwnedSet || []);
         if(familyKey === 'rivages') return new Set(s.rivagesOwnedSet || []);
         if(familyKey === 'laridae') return new Set(s.laridaeOwnedSet || []);
+        if(familyKey === 'turdidae') return new Set(s.turdidaeOwnedSet || []);
+        if(familyKey === 'muscicapidae') return new Set(s.muscicapidaeOwnedSet || []);
+        if(familyKey === 'sylviidae') return new Set(s.sylviidaeOwnedSet || []);
+        if(familyKey === 'phylloscopidae') return new Set(s.phylloscopidaeOwnedSet || []);
+        if(familyKey === 'fringillidae') return new Set(s.fringillidaeOwnedSet || []);
+        if(familyKey === 'emberizidae') return new Set(s.emberizidaeOwnedSet || []);
+        if(familyKey === 'rallidae') return new Set(s.rallidaeOwnedSet || []);
         return null;
       })(),
     };
