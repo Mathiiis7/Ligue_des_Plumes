@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Générateur de trophées 6 paliers · Ligue des Birds</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   * { box-sizing:border-box; }
   body { font-family:"Segoe UI", system-ui, -apple-system, sans-serif; background:#eef2f1; color:#15201e;
@@ -593,18 +594,26 @@ function renderAll(){
 }
 
 async function downloadAll(){
-  // Simple : declenche 6 download un par un. Pas de zip client-side pour rester leger.
+  // Groupe les 6 PNG dans un ZIP nomme par l'utilisateur. Gagne le temps de
+  // renommer le dossier apres extraction.
+  const defaultName = 'trophees';
+  const raw = window.prompt('Nom du dossier pour ce set de trophees ?', defaultName);
+  if(raw === null) return; // annule
+  // Nettoie : autorise lettres/chiffres/-/_ , remplace le reste par -
+  const folder = (raw.trim() || defaultName).replace(/[^\w\-]+/g, '-').replace(/^-+|-+$/g, '') || defaultName;
+  const zip = new JSZip();
+  const dir = zip.folder(folder);
   for(const t of TIERS){
     const gen = generated[t.key];
     if(!gen) continue;
-    const url = URL.createObjectURL(gen.blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = gen.name; a.style.display = 'none';
-    document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(url);
-    // Petit delai pour eviter que le navigateur bloque en cascade
-    await new Promise(r => setTimeout(r, 250));
+    dir.file(gen.name, gen.blob);
   }
+  const blob = await zip.generateAsync({ type:'blob' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = folder + '.zip'; a.style.display = 'none';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
 }
 </script>
 </body>
