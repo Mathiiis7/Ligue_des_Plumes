@@ -3573,7 +3573,7 @@ function renderTrophies(data){
            style="--tier-color:${displayMeta.color}"
            data-detail="${familyDataIdx}">
         <div class="tro-fam-cup">
-          <img src="${esc(displayTier.tierImg || displayMeta.img)}" alt="${esc(displayMeta.label)}" class="tro-cup${locked?' grayed':''}">
+          <img src="${esc(displayTier.tierImg || displayMeta.img)}" alt="${esc(displayMeta.label)}" class="tro-cup${locked?' grayed':''}" loading="lazy" decoding="async">
         </div>
         <div class="tro-fam-body">
           <div class="tro-fam-title">
@@ -12320,7 +12320,7 @@ $('#trophyGrid').addEventListener('click',async e=>{
       const threshLine = d.objectivePhrase ? '' : `<div class="tmodal-tier-thresh">${esc(t.desc)}</div>`;
       return `
       <div class="tmodal-tier ${t.unlocked?'unlocked':'locked'}" style="--tier-color:${t.color}">
-        <img src="${esc(t.img)}" alt="${esc(t.label)}" class="tmodal-tier-img${t.unlocked?'':' grayed'}">
+        <img src="${esc(t.img)}" alt="${esc(t.label)}" class="tmodal-tier-img${t.unlocked?'':' grayed'}" loading="lazy" decoding="async">
         <div class="tmodal-tier-label">${esc(title)}</div>
         ${subLabel}
         ${refLine}
