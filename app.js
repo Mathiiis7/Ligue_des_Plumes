@@ -12114,14 +12114,36 @@ function _renderSpeciesFamilyCountryList(mode, familyLabel, ownedSet, frFilter){
         return `<li class="${isOwn?'own':''}">${lbl}</li>`;
       }).join('') + '</ul>';
   }
-  // Mode 'monde' : liste des cochees.
-  const observed = [...own].sort((a,b) => frName(a,a).localeCompare(frName(b,b),'fr'));
-  if(!observed.length){
-    return '<p class="tmodal-note" style="font-style:italic;color:var(--ink-3);">Aucune espèce de cette famille observée pour le moment. Ouvre l\'onglet France pour voir ce qui est chassable ici.</p>';
+  // Mode 'monde' : pool complet des especes mondiales de la famille (via FR_NAMES filtre par
+  // frFilter), avec cases cochees pour celles observees. Dedup par sci canonique (SCI_ALIAS).
+  const canon = sci => (typeof SCI_ALIAS === 'object' && SCI_ALIAS[sci]) ? SCI_ALIAS[sci] : sci;
+  const worldMap = new Map();
+  const addWorld = sci => {
+    const c = canon(sci);
+    if(!worldMap.has(c)) worldMap.set(c, new Set());
+    worldMap.get(c).add(sci);
+    worldMap.get(c).add(c);
+  };
+  if(typeof FR_NAMES === 'object'){
+    for(const sci in FR_NAMES){
+      if(frFilter(sci)) addWorld(sci);
+    }
   }
-  return `<p class="tmodal-note"><b>${observed.length}</b> ${esc(familyLabel)} observé${observed.length>1?'s':''} dans le monde.</p>` +
+  // Rattrape les especes cochees par le user meme si absentes de FR_NAMES (bug data / sci exotique)
+  for(const sci of own){ if(!worldMap.has(canon(sci))) addWorld(sci); }
+  const worldList = [...worldMap.keys()].sort((a,b) => frName(a,a).localeCompare(frName(b,b),'fr'));
+  if(!worldList.length){
+    return '<p class="tmodal-note" style="font-style:italic;color:var(--ink-3);">Aucune espèce de cette famille dans la base.</p>';
+  }
+  const isOwnedW = sci => { for(const alt of worldMap.get(sci)) if(own.has(alt)) return true; return false; };
+  const okCountW = worldList.filter(isOwnedW).length;
+  return `<p class="tmodal-note"><b>${okCountW} / ${worldList.length}</b> ${esc(familyLabel)} vu${okCountW>1?'s':''} dans le monde.</p>` +
     '<ul class="tmodal-list mega" style="columns:2;column-gap:24px;padding-left:20px;">' +
-    observed.map(sci => `<li class="own">✓ <span class="sp-link" data-sci="${esc(sci)}">${esc(frName(sci,sci))}</span></li>`).join('') + '</ul>';
+    worldList.map(sci => {
+      const isOwn = isOwnedW(sci);
+      const lbl = (isOwn?'✓ ':'') + `<span class="sp-link" data-sci="${esc(sci)}">${esc(frName(sci,sci))}</span>`;
+      return `<li class="${isOwn?'own':''}">${lbl}</li>`;
+    }).join('') + '</ul>';
 }
 // Genere la liste des especes d'un habitat pour un pays donne. Mode :
 //  - 'monde' : les especes que le user a cochees dans cet habitat (peu importe le pays).
