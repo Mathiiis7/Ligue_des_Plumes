@@ -2459,13 +2459,22 @@ const TROPHIES = [
   }),
   // -- 11 nouvelles familles d'especes (papier-craft Canva) --
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'hirundinidae', category:'species', baseName:'Hirondelles & martinets',
+    theme:'groupe', icon:ICONS.aigle, family:'hirundinidae', category:'species', baseName:'Hirondelles',
     imgDir:'assets/trophies/families/hirundinidae',
-    // Pool FR ~8 (5 hirondelles + 3 martinets)
-    metric:s=>(s.hirundoOwnedSet?.size)||0, thresholds:[1,3,5,8,12,18],
-    descTpl:'Observer {n} hirondelles ou martinets différents',
+    // Pool FR ~5 hirondelles. Monde ~85.
+    metric:s=>(s.hirundoOwnedSet?.size)||0, thresholds:[1,2,4,6,10,15],
+    descTpl:'Observer {n} hirondelles différentes',
     list:s=>[...(s.hirundoOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.hirundoOwnedSet?.size)||0} espèce${((s.hirundoOwnedSet?.size)||0)>1?'s':''} observée${((s.hirundoOwnedSet?.size)||0)>1?'s':''}`,
+    note:s=>`${(s.hirundoOwnedSet?.size)||0} hirondelle${((s.hirundoOwnedSet?.size)||0)>1?'s':''} observée${((s.hirundoOwnedSet?.size)||0)>1?'s':''}`,
+  }),
+  ...makeTierFamily({
+    theme:'groupe', icon:ICONS.aigle, family:'martinets', category:'species', baseName:'Martinets',
+    imgDir:'assets/trophies/families/martinets',
+    // Pool FR ~3-4 martinets (noir, pale, alpin, unicolore). Monde ~110.
+    metric:s=>(s.martinetsOwnedSet?.size)||0, thresholds:[1,2,3,5,8,14],
+    descTpl:'Observer {n} martinets différents',
+    list:s=>[...(s.martinetsOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>`${(s.martinetsOwnedSet?.size)||0} martinet${((s.martinetsOwnedSet?.size)||0)>1?'s':''} observé${((s.martinetsOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
     theme:'groupe', icon:ICONS.aigle, family:'alaudidae', category:'species', baseName:'Alouettes',
@@ -2680,9 +2689,15 @@ const ANATIDAE_G=/^(anas|anser|branta|aythya|spatula|mareca|cygnus|tadorna|netta
 // Autres familles d'especes pour trophees dedies (papier-craft Canva).
 // Chaque regex vise le pool FR principal + les representants mondiaux du groupe.
 // Fallback taxonomique via familyOf() gere les cas hors regex.
-const HIRUNDO_G=/^(hirundo|delichon|riparia|cecropis|ptyonoprogne|tachycineta|progne|petrochelidon|psalidoprocne|phedina|neophedina|apus|tachymarptis|cypseloides|chaetura|aeronautes|streptoprocne|hemiprocne|collocalia|aerodramus|schoutedenapus|zoonavena|panyptila|cypsiurus|telacanthura|neafrapus|hydrochous)$/;
-const ALAUDA_G=/^(alauda|lullula|calandrella|galerida|melanocorypha|ammomanes|eremophila|mirafra|chersophilus|ramphocoris|pyrrhulauda|eremopterix|calendulauda|spizocorys|certhilauda|alaemon|heteromirafra|chersomanes|pinarocorys)$/;
-const PARIDAE_G=/^(parus|cyanistes|lophophanes|poecile|periparus|machlolophus|sittiparus|melaniparus|baeolophus|pardaliparus|cephalopyrus|sylviparus|aegithalos|psaltriparus|leptopoecile|panurus|remiz|anthoscopus)$/;
+// Hirondelles seules (Hirundinidae, Passeriformes). Les martinets sont dans MARTINETS_G.
+const HIRUNDO_G=/^(hirundo|delichon|riparia|cecropis|ptyonoprogne|tachycineta|progne|petrochelidon|psalidoprocne|phedina|neophedina|pseudochelidon|atticora|stelgidopteryx|neochelidon|alopochelidon|orochelidon|hirundapus|haplochelidon)$/;
+// Martinets (Apodidae, Apodiformes) : taxonomiquement plus proches des colibris que des hirondelles,
+// mais convergence evolutive vers le vol insectivore. Trophee separe.
+const MARTINETS_G=/^(apus|tachymarptis|cypseloides|chaetura|aeronautes|streptoprocne|hemiprocne|collocalia|aerodramus|schoutedenapus|zoonavena|panyptila|cypsiurus|telacanthura|neafrapus|hydrochous|mearnsia|hirundapus)$/;
+// Alouettes (Alaudidae) + Panuridae (Panure a moustaches : sœur taxonomique des alouettes).
+const ALAUDA_G=/^(alauda|lullula|calandrella|galerida|melanocorypha|ammomanes|eremophila|mirafra|chersophilus|ramphocoris|pyrrhulauda|eremopterix|calendulauda|spizocorys|certhilauda|alaemon|heteromirafra|chersomanes|pinarocorys|panurus)$/;
+// Mesanges vraies (Paridae) + longue queue (Aegithalidae) + remiz (Remizidae). Panure ecartee (voir ALAUDA_G).
+const PARIDAE_G=/^(parus|cyanistes|lophophanes|poecile|periparus|machlolophus|sittiparus|melaniparus|baeolophus|pardaliparus|cephalopyrus|sylviparus|aegithalos|psaltriparus|leptopoecile|remiz|anthoscopus)$/;
 const CORVIDAE_G=/^(corvus|pica|garrulus|nucifraga|pyrrhocorax|cyanopica|perisoreus|urocissa|cissa|dendrocitta|crypsirina|temnurus|zavattariornis|corcorax|struthidea|podoces|pseudopodoces|cyanocitta|aphelocoma|gymnorhinus|nucifraga|cyanocorax|calocitta|psilorhinus|cyanolyca|platylophus|platysmurus|ptilostomus)$/;
 const ALCEDI_G=/^(alcedo|ceryle|megaceryle|halcyon|todiramphus|dacelo|ceyx|tanysiptera|corythornis|ispidina|actenoides|caridonax|clytoceyx|cittura|lacedo|melidora|pelargopsis|syma|ceyx|corythornis|chloroceryle)$/;
 const ARDEIDAE_G=/^(ardea|egretta|ardeola|botaurus|ixobrychus|nycticorax|bubulcus|butorides|cochlearius|tigrisoma|gorsachius|syrigma|agamia|zebrilus|zonerodius|tigriornis|pilherodius|nyctanassa|dupetor|calherodias)$/;
@@ -2744,19 +2759,25 @@ const SPECIES_FAMILY_FILTERS = {
     const g = (sci||'').split(' ')[0];
     if(HIRUNDO_G.test(g)) return true;
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
-    return fam === 'Hirondelles' || fam === 'Martinets';
+    return fam === 'Hirondelles';
+  },
+  martinets: sci => {
+    const g = (sci||'').split(' ')[0];
+    if(MARTINETS_G.test(g)) return true;
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Martinets';
   },
   alaudidae: sci => {
     const g = (sci||'').split(' ')[0];
     if(ALAUDA_G.test(g)) return true;
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
-    return fam === 'Alouettes';
+    return fam === 'Alouettes' || fam === 'Panure';
   },
   paridae: sci => {
     const g = (sci||'').split(' ')[0];
     if(PARIDAE_G.test(g)) return true;
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
-    return fam === 'Mésanges' || fam === 'Mésanges à longue queue' || fam === 'Rémiz' || fam === 'Panure';
+    return fam === 'Mésanges' || fam === 'Mésanges à longue queue' || fam === 'Rémiz';
   },
   corvidae: sci => {
     const g = (sci||'').split(' ')[0];
@@ -2872,7 +2893,8 @@ const SPECIES_FAMILY_LABELS = {
   rapaces: 'rapaces diurnes',
   nocturnes: 'rapaces nocturnes',
   anatidae: 'canards, oies & cygnes',
-  hirundinidae: 'hirondelles & martinets',
+  hirundinidae: 'hirondelles',
+  martinets: 'martinets',
   alaudidae: 'alouettes',
   paridae: 'mésanges',
   corvidae: 'corvidés',
@@ -3159,7 +3181,7 @@ function statsFor(me, N){
   const seasonHit={}; SEASON_ORDER.forEach(s=>seasonHit[s]=false); const seasonOwnedSet=new Set();
   const raptorOwnedSet=new Set(), alcidOwnedSet=new Set(), manchotOwnedSet=new Set(), waterOwnedSet=new Set(), owlOwnedSet=new Set(), anatidaeOwnedSet=new Set();
   // 11 nouvelles familles d'especes (paridae inclut Aegithalos + Panurus + Remiz).
-  const hirundoOwnedSet=new Set(), alaudaOwnedSet=new Set(), paridaeOwnedSet=new Set(),
+  const hirundoOwnedSet=new Set(), martinetsOwnedSet=new Set(), alaudaOwnedSet=new Set(), paridaeOwnedSet=new Set(),
         corvidaeOwnedSet=new Set(), alcediOwnedSet=new Set(), ardeidaeOwnedSet=new Set(),
         columbidaeOwnedSet=new Set(), galliformesOwnedSet=new Set(), picidaeOwnedSet=new Set(),
         scolopacidaeOwnedSet=new Set(), rivagesOwnedSet=new Set(), laridaeOwnedSet=new Set(),
@@ -3196,11 +3218,13 @@ function statsFor(me, N){
     // Autres familles d'especes trophees dedies. Chaque genre est teste puis
     // fallback taxonomique via familyOf() pour les cas hors regex (Birdydex).
     if(HIRUNDO_G.test(g)) hirundoOwnedSet.add(sci);
-    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Hirondelles'||f==='Martinets') hirundoOwnedSet.add(sci); }
+    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Hirondelles') hirundoOwnedSet.add(sci); }
+    if(MARTINETS_G.test(g)) martinetsOwnedSet.add(sci);
+    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Martinets') martinetsOwnedSet.add(sci); }
     if(ALAUDA_G.test(g)) alaudaOwnedSet.add(sci);
-    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Alouettes') alaudaOwnedSet.add(sci); }
+    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Alouettes'||f==='Panure') alaudaOwnedSet.add(sci); }
     if(PARIDAE_G.test(g)) paridaeOwnedSet.add(sci);
-    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Mésanges'||f==='Mésanges à longue queue'||f==='Rémiz'||f==='Panure') paridaeOwnedSet.add(sci); }
+    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Mésanges'||f==='Mésanges à longue queue'||f==='Rémiz') paridaeOwnedSet.add(sci); }
     if(CORVIDAE_G.test(g)) corvidaeOwnedSet.add(sci);
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Corvidés'||f==='Corbeaux, geais, pies') corvidaeOwnedSet.add(sci); }
     if(ALCEDI_G.test(g)) alcediOwnedSet.add(sci);
@@ -3280,7 +3304,7 @@ function statsFor(me, N){
     for(const uid of voters) if(uid !== me.id) hearts++;
     if(hearts >= 3) hotPhotos++;
   }
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, motacillidaeOwnedSet, ciconiidaeOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, martinetsOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, motacillidaeOwnedSet, ciconiidaeOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
@@ -3323,7 +3347,7 @@ function renderTrophies(data){
   // -> larides -> chouettes -> rapaces diurnes -> martins-pecheurs -> pics -> corvides -> mesanges
   // -> hirondelles+martinets -> alouettes -> pouillots/rousserolles -> fauvettes -> muscicapides
   // -> grives -> bruants -> fringilles.
-  const SPECIES_TAX_RANK = { anatidae:10, galliformes:20, columbidae:30, rallidae:35, ciconiidae:38, ardeidae:40, scolopacidae:50, rivages:55, laridae:60, nocturnes:70, rapaces:80, alcedinidae:90, picidae:100, corvidae:110, paridae:120, hirundinidae:130, alaudidae:140, phylloscopidae:150, sylviidae:160, muscicapidae:170, turdidae:180, motacillidae:185, emberizidae:190, fringillidae:200 };
+  const SPECIES_TAX_RANK = { anatidae:10, galliformes:20, columbidae:30, martinets:33, rallidae:35, ciconiidae:38, ardeidae:40, scolopacidae:50, rivages:55, laridae:60, nocturnes:70, rapaces:80, alcedinidae:90, picidae:100, corvidae:110, paridae:120, hirundinidae:130, alaudidae:140, phylloscopidae:150, sylviidae:160, muscicapidae:170, turdidae:180, motacillidae:185, emberizidae:190, fringillidae:200 };
   for(const [familyKey, tiers] of familyMap){
     // tiers ordre = ordre de TROPHY_TIERS (Bronze -> Emeraude), test par ordre.
     const tiersSorted = [...tiers].sort((a,b) => TROPHY_TIERS.findIndex(x=>x.key===a.tier) - TROPHY_TIERS.findIndex(x=>x.key===b.tier));
@@ -3414,6 +3438,7 @@ function renderTrophies(data){
         if(familyKey === 'rallidae') return new Set(s.rallidaeOwnedSet || []);
         if(familyKey === 'motacillidae') return new Set(s.motacillidaeOwnedSet || []);
         if(familyKey === 'ciconiidae') return new Set(s.ciconiidaeOwnedSet || []);
+        if(familyKey === 'martinets') return new Set(s.martinetsOwnedSet || []);
         return null;
       })(),
     };
