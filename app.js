@@ -11956,30 +11956,41 @@ function _renderSpeciesFamilyCountryList(mode, familyLabel, ownedSet, frFilter){
     //     S&T (ex : Faucon hobereau, Faucon kobez, certains rares). Sans ce fallback,
     //     ces especes n'apparaissaient pas dans le pool FR alors qu'un birder FR peut
     //     les cocher.
-    const frSet = new Set();
+    // Certaines especes ont deux entrees (ancien + nouveau nom de genre) dans les datasets :
+    // ex Charadrius alexandrinus + Anarhynchus alexandrinus, Charadrius dubius + Thinornis dubius.
+    // On resout via SCI_ALIAS et on regroupe par nom canonique pour eviter les doublons visuels.
+    const canon = sci => (typeof SCI_ALIAS === 'object' && SCI_ALIAS[sci]) ? SCI_ALIAS[sci] : sci;
+    const frMap = new Map();  // canonical sci -> Set of all raw sci (pour verifier possession)
+    const addToPool = sci => {
+      const c = canon(sci);
+      if(!frMap.has(c)) frMap.set(c, new Set());
+      frMap.get(c).add(sci);
+      frMap.get(c).add(c);
+    };
     if(typeof REAL_ABUNDANCE_ST_FR === 'object'){
       for(const sci in REAL_ABUNDANCE_ST_FR){
         const entry = REAL_ABUNDANCE_ST_FR[sci];
         if(!entry || (entry.a || 0) <= 0) continue;
-        if(frFilter(sci)) frSet.add(sci);
+        if(frFilter(sci)) addToPool(sci);
       }
     }
     if(typeof REAL_RARITY === 'object'){
       for(const sci in REAL_RARITY){
         if(REAL_RARITY[sci] >= 10) continue;
-        if(frSet.has(sci)) continue;
-        if(frFilter(sci)) frSet.add(sci);
+        if(frFilter(sci)) addToPool(sci);
       }
     }
-    const frList = [...frSet].sort((a,b) => frName(a,a).localeCompare(frName(b,b),'fr'));
+    const frList = [...frMap.keys()].sort((a,b) => frName(a,a).localeCompare(frName(b,b),'fr'));
     if(!frList.length){
       return '<p class="tmodal-note" style="font-style:italic;color:var(--ink-3);">Aucune espèce de cette famille n\'est présente en France.</p>';
     }
-    const okCount = frList.filter(sci => own.has(sci)).length;
+    // Espece cochee si l'utilisateur a l'un des noms (ancien ou nouveau) dans ses obs.
+    const isOwned = sci => { for(const alt of frMap.get(sci)) if(own.has(alt)) return true; return false; };
+    const okCount = frList.filter(isOwned).length;
     return `<p class="tmodal-note"><b>${okCount} / ${frList.length}</b> ${esc(familyLabel)} vu${okCount>1?'s':''} en France.</p>` +
       '<ul class="tmodal-list mega" style="columns:2;column-gap:24px;padding-left:20px;">' +
       frList.map(sci => {
-        const isOwn = own.has(sci);
+        const isOwn = isOwned(sci);
         const lbl = (isOwn?'✓ ':'') + `<span class="sp-link" data-sci="${esc(sci)}">${esc(frName(sci,sci))}</span>`;
         return `<li class="${isOwn?'own':''}">${lbl}</li>`;
       }).join('') + '</ul>';
