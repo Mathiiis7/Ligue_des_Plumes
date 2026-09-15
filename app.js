@@ -2632,6 +2632,24 @@ const TROPHIES = [
     note:s=>`${(s.rallidaeOwnedSet?.size)||0} rallidé${((s.rallidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.rallidaeOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
+    theme:'groupe', icon:ICONS.aigle, family:'motacillidae', category:'species', baseName:'Bergeronnettes & pipits',
+    imgDir:'assets/trophies/families/motacillidae',
+    // Pool FR ~10 (M. alba, cinerea, flava, citreola + Anthus pratensis, spinoletta, trivialis, campestris, cervinus, richardi)
+    metric:s=>(s.motacillidaeOwnedSet?.size)||0, thresholds:[2,4,6,9,14,22],
+    descTpl:'Observer {n} bergeronnettes ou pipits différents',
+    list:s=>[...(s.motacillidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>`${(s.motacillidaeOwnedSet?.size)||0} bergeronnette${((s.motacillidaeOwnedSet?.size)||0)>1?'s':''} ou pipit${((s.motacillidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.motacillidaeOwnedSet?.size)||0)>1?'s':''}`,
+  }),
+  ...makeTierFamily({
+    theme:'groupe', icon:ICONS.aigle, family:'ciconiidae', category:'species', baseName:'Cigognes, ibis & spatules',
+    imgDir:'assets/trophies/families/ciconiidae',
+    // Pool FR ~5 (Cigogne blanche, Cigogne noire, Ibis falcinelle, Spatule blanche, Ibis sacre exotique)
+    metric:s=>(s.ciconiidaeOwnedSet?.size)||0, thresholds:[1,2,3,5,8,15],
+    descTpl:'Observer {n} grands échassiers à long bec (cigognes, ibis, spatules)',
+    list:s=>[...(s.ciconiidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>`${(s.ciconiidaeOwnedSet?.size)||0} cigogne${((s.ciconiidaeOwnedSet?.size)||0)>1?'s':''}, ibis ou spatule${((s.ciconiidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.ciconiidaeOwnedSet?.size)||0)>1?'s':''}`,
+  }),
+  ...makeTierFamily({
     theme:'communaute', icon:ICONS.photo, family:'natGeo', category:'progression', baseName:'National Geographic',
     imgDir:'assets/trophies/families/natgeo',
     tierNames:['Amateur','Naturaliste','Photographe animalier','Reporter','Grand reporter','National Geographic'],
@@ -2695,6 +2713,11 @@ const EMBERIZIDAE_G=/^(emberiza|plectrophenax|calcarius|melophus|latoucheornis|s
 // Rallidae : foulques, poules d'eau, rales, marouettes, taleves, gallinules.
 const RALLIDAE_G=/^(fulica|gallinula|rallus|zapornia|porzana|crex|porphyrio|paragallinula|amaurornis|aramides|neocrex|laterallus|coturnicops|micropygia|rallina|anurolimnas|sarothrura|himantornis|canirallus|dryolimnas|aramidopsis|eulabeornis|hypotaenidia|habroptila|cabalus|nesoclopeus|diaphorapteryx|aphanapteryx|gymnocrex|gallirallus|pardirallus|mundia|cyanolimnas|porphyrula|tribonyx|amaurolimnas|notornis|atlantisia|rougetius|habropteryx)$/;
 const LARIDAE_G=/^(larus|ichthyaetus|chroicocephalus|hydrocoloeus|leucophaeus|rissa|xema|pagophila|rhodostethia|sterna|sternula|thalasseus|gelochelidon|hydroprogne|onychoprion|chlidonias|anous|gygis|creagrus|saundersilarus)$/;
+// Motacillidae : bergeronnettes (Motacilla) + pipits (Anthus) + genres tropicaux.
+const MOTACILLIDAE_G=/^(motacilla|anthus|dendronanthus|tmetothylacus|macronyx|amaurocichla|hemimacronyx)$/;
+// Cigognes (Ciconiidae) + Ibis/spatules (Threskiornithidae) : grands echassiers a long bec.
+// Regroupement thematique/ecologique (les deux familles sont dans des ordres differents en taxo moderne).
+const ECHASSIERS_G=/^(ciconia|ephippiorhynchus|jabiru|leptoptilos|mycteria|anastomus|threskiornis|plegadis|platalea|bostrychia|geronticus|eudocimus|theristicus|pseudibis|mesembrinibis|cercibis|nipponia|lampribis|phimosus|lophotibis|pseudohydrornis)$/;
 // Predicat de famille pour le modal des familles d'especes (bouton Monde/France).
 // Retourne true si l'espece appartient a la famille. Utilise pour filtrer le pool FR
 // via REAL_ABUNDANCE_ST_FR : intersection de (sci matche predicate) x (abondance FR > 0).
@@ -2831,6 +2854,18 @@ const SPECIES_FAMILY_FILTERS = {
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
     return fam === 'Goélands, mouettes' || fam === 'Sternes' || fam === 'Laridés';
   },
+  motacillidae: sci => {
+    const g = (sci||'').split(' ')[0];
+    if(MOTACILLIDAE_G.test(g)) return true;
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Bergeronnettes, pipits';
+  },
+  ciconiidae: sci => {
+    const g = (sci||'').split(' ')[0];
+    if(ECHASSIERS_G.test(g)) return true;
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Cigognes' || fam === 'Ibis, spatules';
+  },
 };
 // Labels pour le header du modal en mode France.
 const SPECIES_FAMILY_LABELS = {
@@ -2856,6 +2891,8 @@ const SPECIES_FAMILY_LABELS = {
   fringillidae: 'fringilles',
   emberizidae: 'bruants',
   rallidae: 'rallidés',
+  motacillidae: 'bergeronnettes & pipits',
+  ciconiidae: 'cigognes, ibis & spatules',
 };
 // Alcidés = les "pingouins" de l'hémisphère nord (pingouins, macareux, mergule, guillemots)
 const ALCID_G=/^(alca|pinguinus|fratercula|alle|uria|cepphus)$/;
@@ -3128,7 +3165,8 @@ function statsFor(me, N){
         scolopacidaeOwnedSet=new Set(), rivagesOwnedSet=new Set(), laridaeOwnedSet=new Set(),
         turdidaeOwnedSet=new Set(), muscicapidaeOwnedSet=new Set(), sylviidaeOwnedSet=new Set(),
         phylloscopidaeOwnedSet=new Set(), fringillidaeOwnedSet=new Set(),
-        emberizidaeOwnedSet=new Set(), rallidaeOwnedSet=new Set();
+        emberizidaeOwnedSet=new Set(), rallidaeOwnedSet=new Set(),
+        motacillidaeOwnedSet=new Set(), ciconiidaeOwnedSet=new Set();
   // Milieux (habitats) : Set d'espèces par catégorie via HABITATS (source : famille eBird).
   const habOwned = Object.fromEntries(HABITAT_CATS.map(c=>[c, new Set()]));
   for(const v of me._active.values()){
@@ -3195,6 +3233,10 @@ function statsFor(me, N){
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Râles, foulques') rallidaeOwnedSet.add(sci); }
     if(LARIDAE_G.test(g)) laridaeOwnedSet.add(sci);
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Goélands, mouettes'||f==='Sternes'||f==='Laridés') laridaeOwnedSet.add(sci); }
+    if(MOTACILLIDAE_G.test(g)) motacillidaeOwnedSet.add(sci);
+    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Bergeronnettes, pipits') motacillidaeOwnedSet.add(sci); }
+    if(ECHASSIERS_G.test(g)) ciconiidaeOwnedSet.add(sci);
+    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Cigognes'||f==='Ibis, spatules') ciconiidaeOwnedSet.add(sci); }
     if(sci==='dryocopus martius') blackWoodpecker=true;
     if(sci==='alcedo atthis') hasKingfisher=true;
     if(ALCID_SET.has(sci)){ hasPenguin=true; alcidOwnedSet.add(sci); }
@@ -3238,7 +3280,7 @@ function statsFor(me, N){
     for(const uid of voters) if(uid !== me.id) hearts++;
     if(hearts >= 3) hotPhotos++;
   }
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, motacillidaeOwnedSet, ciconiidaeOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
@@ -3281,7 +3323,7 @@ function renderTrophies(data){
   // -> larides -> chouettes -> rapaces diurnes -> martins-pecheurs -> pics -> corvides -> mesanges
   // -> hirondelles+martinets -> alouettes -> pouillots/rousserolles -> fauvettes -> muscicapides
   // -> grives -> bruants -> fringilles.
-  const SPECIES_TAX_RANK = { anatidae:10, galliformes:20, columbidae:30, rallidae:35, ardeidae:40, scolopacidae:50, rivages:55, laridae:60, nocturnes:70, rapaces:80, alcedinidae:90, picidae:100, corvidae:110, paridae:120, hirundinidae:130, alaudidae:140, phylloscopidae:150, sylviidae:160, muscicapidae:170, turdidae:180, emberizidae:190, fringillidae:200 };
+  const SPECIES_TAX_RANK = { anatidae:10, galliformes:20, columbidae:30, rallidae:35, ciconiidae:38, ardeidae:40, scolopacidae:50, rivages:55, laridae:60, nocturnes:70, rapaces:80, alcedinidae:90, picidae:100, corvidae:110, paridae:120, hirundinidae:130, alaudidae:140, phylloscopidae:150, sylviidae:160, muscicapidae:170, turdidae:180, motacillidae:185, emberizidae:190, fringillidae:200 };
   for(const [familyKey, tiers] of familyMap){
     // tiers ordre = ordre de TROPHY_TIERS (Bronze -> Emeraude), test par ordre.
     const tiersSorted = [...tiers].sort((a,b) => TROPHY_TIERS.findIndex(x=>x.key===a.tier) - TROPHY_TIERS.findIndex(x=>x.key===b.tier));
@@ -3370,6 +3412,8 @@ function renderTrophies(data){
         if(familyKey === 'fringillidae') return new Set(s.fringillidaeOwnedSet || []);
         if(familyKey === 'emberizidae') return new Set(s.emberizidaeOwnedSet || []);
         if(familyKey === 'rallidae') return new Set(s.rallidaeOwnedSet || []);
+        if(familyKey === 'motacillidae') return new Set(s.motacillidaeOwnedSet || []);
+        if(familyKey === 'ciconiidae') return new Set(s.ciconiidaeOwnedSet || []);
         return null;
       })(),
     };
