@@ -2522,6 +2522,16 @@ const TROPHIES = [
     note:s=>`${(s.alcediOwnedSet?.size)||0} martin-pêcheur${((s.alcediOwnedSet?.size)||0)>1?'s':''} observé${((s.alcediOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
+    theme:'groupe', icon:ICONS.aigle, family:'suliformes', category:'species', baseName:'Cormorans, fous & frégates',
+    imgDir:'assets/trophies/families/suliformes',
+    // Ordre Suliformes complet : Phalacrocoracidae + Sulidae + Anhingidae + Fregatidae.
+    // FR ~5 (3 cormorans + fou de Bassan + fregate rare). Monde ~60.
+    metric:s=>(s.suliformesOwnedSet?.size)||0, thresholds:[1,2,4,6,10,18],
+    descTpl:'Observer {n} cormorans, fous, anhingas ou frégates',
+    list:s=>[...(s.suliformesOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>`${(s.suliformesOwnedSet?.size)||0} espèce${((s.suliformesOwnedSet?.size)||0)>1?'s':''} observée${((s.suliformesOwnedSet?.size)||0)>1?'s':''}`,
+  }),
+  ...makeTierFamily({
     theme:'groupe', icon:ICONS.aigle, family:'ardeidae', category:'species', baseName:'Hérons',
     imgDir:'assets/trophies/families/ardeidae',
     // Pool FR ~10 (cendre, pourpre, garde-boeufs, aigrettes, bihoreau, butors, crabier, blongios)
@@ -2748,6 +2758,10 @@ const ECHASSIERS_G=/^(ciconia|ephippiorhynchus|jabiru|leptoptilos|mycteria|anast
 // brachypterolles (Brachypteraciidae) + motmots (Momotidae) + todiers (Todidae).
 // Guepier & Rollier d'Europe presents en FR ; autres tropicaux.
 const CORACIIFORMES_G=/^(merops|nyctyornis|meropogon|coracias|eurystomus|brachypteracias|atelornis|uratelornis|geobiastes|hylomanes|aspatha|electron|eumomota|baryphthengus|momotus|todus)$/;
+// Ordre Suliformes complet : Phalacrocoracidae (cormorans) + Sulidae (fous) +
+// Anhingidae (anhingas) + Fregatidae (fregates). ~5 esp FR (3 cormorans + 1 fou de Bassan
+// + 1 fregate rare). Monde ~60. Pelicans exclus (Pelecaniformes moderne = herons+ibis+pelicans).
+const SULIFORMES_G=/^(phalacrocorax|microcarbo|nannopterum|gulosus|urile|leucocarbo|poikilocarbo|compsohalieus|sula|morus|papasula|anhinga|fregata|hypoleucos)$/;
 // Predicat de famille pour le modal des familles d'especes (bouton Monde/France).
 // Retourne true si l'espece appartient a la famille. Utilise pour filtrer le pool FR
 // via REAL_ABUNDANCE_ST_FR : intersection de (sci matche predicate) x (abondance FR > 0).
@@ -2896,6 +2910,12 @@ const SPECIES_FAMILY_FILTERS = {
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
     return fam === 'Guêpiers' || fam === 'Rolliers' || fam === 'Brachyptérolles' || fam === 'Motmots' || fam === 'Todiers';
   },
+  suliformes: sci => {
+    const g = (sci||'').split(' ')[0];
+    if(SULIFORMES_G.test(g)) return true;
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Cormorans' || fam === 'Fous' || fam === 'Anhingas' || fam === 'Frégates';
+  },
   motacillidae: sci => {
     const g = (sci||'').split(' ')[0];
     if(MOTACILLIDAE_G.test(g)) return true;
@@ -2937,6 +2957,7 @@ const SPECIES_FAMILY_LABELS = {
   motacillidae: 'bergeronnettes & pipits',
   ciconiidae: 'cigognes, ibis & spatules',
   coraciiformes: 'guêpiers, rolliers & cousins',
+  suliformes: 'cormorans, fous & frégates',
 };
 // Alcidés = les "pingouins" de l'hémisphère nord (pingouins, macareux, mergule, guillemots)
 const ALCID_G=/^(alca|pinguinus|fratercula|alle|uria|cepphus)$/;
@@ -3211,7 +3232,7 @@ function statsFor(me, N){
         phylloscopidaeOwnedSet=new Set(), fringillidaeOwnedSet=new Set(),
         emberizidaeOwnedSet=new Set(), rallidaeOwnedSet=new Set(),
         motacillidaeOwnedSet=new Set(), ciconiidaeOwnedSet=new Set(),
-        coraciiformesOwnedSet=new Set();
+        coraciiformesOwnedSet=new Set(), suliformesOwnedSet=new Set();
   // Milieux (habitats) : Set d'espèces par catégorie via HABITATS (source : famille eBird).
   const habOwned = Object.fromEntries(HABITAT_CATS.map(c=>[c, new Set()]));
   for(const v of me._active.values()){
@@ -3282,6 +3303,8 @@ function statsFor(me, N){
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Goélands, mouettes'||f==='Sternes'||f==='Laridés'||f==='Goélands, mouettes, sternes'||f==='Labbes') laridaeOwnedSet.add(sci); }
     if(CORACIIFORMES_G.test(g)) coraciiformesOwnedSet.add(sci);
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Guêpiers'||f==='Rolliers'||f==='Brachyptérolles'||f==='Motmots'||f==='Todiers') coraciiformesOwnedSet.add(sci); }
+    if(SULIFORMES_G.test(g)) suliformesOwnedSet.add(sci);
+    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Cormorans'||f==='Fous'||f==='Anhingas'||f==='Frégates') suliformesOwnedSet.add(sci); }
     if(MOTACILLIDAE_G.test(g)) motacillidaeOwnedSet.add(sci);
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Bergeronnettes, pipits') motacillidaeOwnedSet.add(sci); }
     if(ECHASSIERS_G.test(g)) ciconiidaeOwnedSet.add(sci);
@@ -3329,7 +3352,7 @@ function statsFor(me, N){
     for(const uid of voters) if(uid !== me.id) hearts++;
     if(hearts >= 3) hotPhotos++;
   }
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, martinetsOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, motacillidaeOwnedSet, ciconiidaeOwnedSet, coraciiformesOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, martinetsOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, motacillidaeOwnedSet, ciconiidaeOwnedSet, coraciiformesOwnedSet, suliformesOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
@@ -3372,7 +3395,7 @@ function renderTrophies(data){
   // -> larides -> chouettes -> rapaces diurnes -> martins-pecheurs -> pics -> corvides -> mesanges
   // -> hirondelles+martinets -> alouettes -> pouillots/rousserolles -> fauvettes -> muscicapides
   // -> grives -> bruants -> fringilles.
-  const SPECIES_TAX_RANK = { anatidae:10, galliformes:20, columbidae:30, martinets:33, rallidae:35, ciconiidae:38, ardeidae:40, scolopacidae:50, rivages:55, laridae:60, nocturnes:70, rapaces:80, coraciiformes:85, alcedinidae:90, picidae:100, corvidae:110, paridae:120, hirundinidae:130, alaudidae:140, phylloscopidae:150, sylviidae:160, muscicapidae:170, turdidae:180, motacillidae:185, emberizidae:190, fringillidae:200 };
+  const SPECIES_TAX_RANK = { anatidae:10, galliformes:20, columbidae:30, martinets:33, rallidae:35, ciconiidae:38, suliformes:39, ardeidae:40, scolopacidae:50, rivages:55, laridae:60, nocturnes:70, rapaces:80, coraciiformes:85, alcedinidae:90, picidae:100, corvidae:110, paridae:120, hirundinidae:130, alaudidae:140, phylloscopidae:150, sylviidae:160, muscicapidae:170, turdidae:180, motacillidae:185, emberizidae:190, fringillidae:200 };
   for(const [familyKey, tiers] of familyMap){
     // tiers ordre = ordre de TROPHY_TIERS (Bronze -> Emeraude), test par ordre.
     const tiersSorted = [...tiers].sort((a,b) => TROPHY_TIERS.findIndex(x=>x.key===a.tier) - TROPHY_TIERS.findIndex(x=>x.key===b.tier));
@@ -3465,6 +3488,7 @@ function renderTrophies(data){
         if(familyKey === 'ciconiidae') return new Set(s.ciconiidaeOwnedSet || []);
         if(familyKey === 'martinets') return new Set(s.martinetsOwnedSet || []);
         if(familyKey === 'coraciiformes') return new Set(s.coraciiformesOwnedSet || []);
+        if(familyKey === 'suliformes') return new Set(s.suliformesOwnedSet || []);
         return null;
       })(),
     };
