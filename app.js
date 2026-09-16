@@ -2765,6 +2765,7 @@ const TROPHIES = [
   { theme:'classement',  icon:ICONS.cup, name:'Mike Horn', desc:'Avoir l’oiseau le plus rare de la ligue', test:s=>s.mikeHorn, info:s=>s.mikeHorn&&s.mikeBird?'🏅 '+s.mikeBird:'', tip:s=>s.mikeHorn&&s.mikeBird?'Oiseau le plus rare : '+s.mikeBird:'' },
   { theme:'groupe',      icon:ICONS.picNoirBadge, name:'Pic noir', desc:'Observer le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker, exotic:true, speciesFamilyKey:'picNoir', list:s=>s.blackWoodpecker ? [{ name:frName('dryocopus martius','Pic noir'), sci:'dryocopus martius', owned:true }] : [] },
   { theme:'groupe',      icon:ICONS.pelagic,    name:'Oiseau pélagique',  desc:'Observer un albatros, un puffin, un pétrel ou un océanite (Procellariiformes)',      test:s=>s.hasPelagic,     exotic:true, speciesFamilyKey:'pelagics',     list:s=>[...(s.pelagicsSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
+  { theme:'groupe',      icon:ICONS.aigle,      name:'Jaseur',            desc:'Observer un jaseur (Bombycillidae) — boréal, d\'Amérique ou du Japon',                test:s=>s.hasWaxwing,     exotic:true, speciesFamilyKey:'waxwings',     list:s=>[...(s.waxwingsSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
   { theme:'groupe',      icon:ICONS.pieGrieche, name:'Pie-grièche',       desc:'Observer une pie-grièche (Laniidae)',                                                test:s=>s.hasShrike,      exotic:true, speciesFamilyKey:'shrikes',      list:s=>[...(s.shrikesSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
   { theme:'groupe',      icon:ICONS.colibri,   name:'Colibri',            desc:'Observer un colibri (Trochilidae)',                                                  test:s=>s.hasHummingbird, exotic:true, speciesFamilyKey:'hummingbirds', list:s=>[...(s.hummingbirdsSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
   { theme:'groupe',      icon:ICONS.ratite,    name:'Grand ratite',       desc:'Observer une autruche, un nandou, un casoar ou un émeu',                             test:s=>s.hasRatite,      exotic:true, speciesFamilyKey:'ratites',      list:s=>[...(s.ratitesSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
@@ -3109,6 +3110,10 @@ const SPECIES_FAMILY_FILTERS = {
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
     return fam === 'Pingouins, guillemots' || fam === 'Manchots';
   },
+  waxwings: sci => {
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Jaseurs';
+  },
   certhioidea: sci => {
     const g = (sci||'').split(' ')[0];
     if(CERTHIOIDEA_G.test(g)) return true;
@@ -3172,6 +3177,7 @@ const SPECIES_FAMILY_LABELS = {
   pelagics: 'oiseaux pélagiques (albatros, puffins, pétrels, océanites)',
   picNoir: 'Pic noir',
   penguins: 'pingouins & manchots',
+  waxwings: 'jaseurs',
   outardes_gangas: 'outardes & gangas',
   procellariiformes: 'oiseaux pélagiques',
 };
@@ -3436,8 +3442,8 @@ function statsFor(me, N){
   const ranked=[...state.people].sort((a,b)=>b.total-a.total);   // rang basé sur le nb d'espèces (classement principal)
   const rank=ranked.findIndex(p=>p.id===me.id)+1;
   let owls=0,raptors=0,water=0,sea=0,blackWoodpecker=false,locTeste=false,hasKingfisher=false,hasPenguin=false,hasFireKingfisher=false,
-      hasHummingbird=false,hasRatite=false,hasExoticParrot=false,hasToucan=false,hasHornbill=false,hasShrike=false,hasPelagic=false;
-  const hummingbirdsSet=new Set(), ratitesSet=new Set(), exoticParrotsSet=new Set(), toucansSet=new Set(), hornbillsSet=new Set(), shrikesSet=new Set(), pelagicsSet=new Set();
+      hasHummingbird=false,hasRatite=false,hasExoticParrot=false,hasToucan=false,hasHornbill=false,hasShrike=false,hasPelagic=false,hasWaxwing=false;
+  const hummingbirdsSet=new Set(), ratitesSet=new Set(), exoticParrotsSet=new Set(), toucansSet=new Set(), hornbillsSet=new Set(), shrikesSet=new Set(), pelagicsSet=new Set(), waxwingsSet=new Set();
   const megaList=[]; const megaOwnedSet=new Set();
   const seasonHit={}; SEASON_ORDER.forEach(s=>seasonHit[s]=false); const seasonOwnedSet=new Set();
   const raptorOwnedSet=new Set(), alcidOwnedSet=new Set(), manchotOwnedSet=new Set(), waterOwnedSet=new Set(), owlOwnedSet=new Set(), anatidaeOwnedSet=new Set();
@@ -3558,6 +3564,7 @@ function statsFor(me, N){
       if(fam === 'Calaos'){ hasHornbill = true; hornbillsSet.add(sci); }
       if(fam === 'Pies-grièches'){ hasShrike = true; shrikesSet.add(sci); }
       if(fam === 'Albatros' || fam === 'Puffins, pétrels' || fam === 'Océanites'){ hasPelagic = true; pelagicsSet.add(sci); }
+      if(fam === 'Jaseurs'){ hasWaxwing = true; waxwingsSet.add(sci); }
     }
     if(ALCID_SET.has(sci)){ hasPenguin=true; alcidOwnedSet.add(sci); }
     if(MANCHOT_SET.has(sci)){ hasPenguin=true; manchotOwnedSet.add(sci); }
@@ -3600,7 +3607,7 @@ function statsFor(me, N){
     for(const uid of voters) if(uid !== me.id) hearts++;
     if(hearts >= 3) hotPhotos++;
   }
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, hasHummingbird, hasRatite, hasExoticParrot, hasToucan, hasHornbill, hasShrike, hasPelagic, hummingbirdsSet, ratitesSet, exoticParrotsSet, toucansSet, hornbillsSet, shrikesSet, pelagicsSet, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, martinetsOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, motacillidaeOwnedSet, ciconiidaeOwnedSet, coraciiformesOwnedSet, suliformesOwnedSet, sturnoideaOwnedSet, passeridaeOwnedSet, certhioideaOwnedSet, podicipedidaeOwnedSet, cuculidaeOwnedSet, caprimulgiformesOwnedSet, outardesGangasOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, hasHummingbird, hasRatite, hasExoticParrot, hasToucan, hasHornbill, hasShrike, hasPelagic, hasWaxwing, hummingbirdsSet, ratitesSet, exoticParrotsSet, toucansSet, hornbillsSet, shrikesSet, pelagicsSet, waxwingsSet, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, martinetsOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, motacillidaeOwnedSet, ciconiidaeOwnedSet, coraciiformesOwnedSet, suliformesOwnedSet, sturnoideaOwnedSet, passeridaeOwnedSet, certhioideaOwnedSet, podicipedidaeOwnedSet, cuculidaeOwnedSet, caprimulgiformesOwnedSet, outardesGangasOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
