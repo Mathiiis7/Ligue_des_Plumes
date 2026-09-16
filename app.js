@@ -2774,12 +2774,12 @@ const TROPHIES = [
   { theme:'communaute',  icon:ICONS.mort, name:'Le Nécrophile', desc:'Observer un oiseau décédé #ripstayproud (preuve demandée)', special:'vote', voteId:'necrophile', voteThreshold:3, test:s=>(s.necrophileVotes||0)>=3 },
   { theme:'classement',  icon:ICONS.cup, name:'Mike Horn', desc:'Avoir l’oiseau le plus rare de la ligue', test:s=>s.mikeHorn, info:s=>s.mikeHorn&&s.mikeBird?'🏅 '+s.mikeBird:'', tip:s=>s.mikeHorn&&s.mikeBird?'Oiseau le plus rare : '+s.mikeBird:'' },
   { theme:'groupe',      icon:ICONS.woodpecker, name:'Pic noir', desc:'Observer le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker },
-  { theme:'groupe',      icon:ICONS.pieGrieche, name:'Pie-grièche',       desc:'Observer une pie-grièche (Laniidae)',                                                test:s=>s.hasShrike,      exotic:true, alwaysList:true, list:s=>[...(s.shrikesSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
-  { theme:'groupe',      icon:ICONS.colibri,   name:'Colibri',            desc:'Observer un colibri (Trochilidae)',                                                  test:s=>s.hasHummingbird, exotic:true, alwaysList:true, list:s=>[...(s.hummingbirdsSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
-  { theme:'groupe',      icon:ICONS.ratite,    name:'Grand ratite',       desc:'Observer une autruche, un nandou, un casoar ou un émeu',                             test:s=>s.hasRatite,      exotic:true, alwaysList:true, list:s=>[...(s.ratitesSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
-  { theme:'groupe',      icon:ICONS.perroquet, name:'Perroquet exotique', desc:'Observer un perroquet, une perruche ou un cacatoès (hors Perruche à collier férale)', test:s=>s.hasExoticParrot, exotic:true, alwaysList:true, list:s=>[...(s.exoticParrotsSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
-  { theme:'groupe',      icon:ICONS.toucan,    name:'Toucan',             desc:'Observer un toucan (Ramphastidae)',                                                  test:s=>s.hasToucan,      exotic:true, alwaysList:true, list:s=>[...(s.toucansSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
-  { theme:'groupe',      icon:ICONS.calao,     name:'Calao',              desc:'Observer un calao (Bucerotidae ou Bucorvidae)',                                      test:s=>s.hasHornbill,    exotic:true, alwaysList:true, list:s=>[...(s.hornbillsSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
+  { theme:'groupe',      icon:ICONS.pieGrieche, name:'Pie-grièche',       desc:'Observer une pie-grièche (Laniidae)',                                                test:s=>s.hasShrike,      exotic:true, speciesFamilyKey:'shrikes',      list:s=>[...(s.shrikesSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
+  { theme:'groupe',      icon:ICONS.colibri,   name:'Colibri',            desc:'Observer un colibri (Trochilidae)',                                                  test:s=>s.hasHummingbird, exotic:true, speciesFamilyKey:'hummingbirds', list:s=>[...(s.hummingbirdsSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
+  { theme:'groupe',      icon:ICONS.ratite,    name:'Grand ratite',       desc:'Observer une autruche, un nandou, un casoar ou un émeu',                             test:s=>s.hasRatite,      exotic:true, speciesFamilyKey:'ratites',      list:s=>[...(s.ratitesSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
+  { theme:'groupe',      icon:ICONS.perroquet, name:'Perroquet exotique', desc:'Observer un perroquet, une perruche ou un cacatoès (hors Perruche à collier férale)', test:s=>s.hasExoticParrot, exotic:true, speciesFamilyKey:'exoticParrots', list:s=>[...(s.exoticParrotsSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
+  { theme:'groupe',      icon:ICONS.toucan,    name:'Toucan',             desc:'Observer un toucan (Ramphastidae)',                                                  test:s=>s.hasToucan,      exotic:true, speciesFamilyKey:'toucans',      list:s=>[...(s.toucansSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
+  { theme:'groupe',      icon:ICONS.calao,     name:'Calao',              desc:'Observer un calao (Bucerotidae ou Bucorvidae)',                                      test:s=>s.hasHornbill,    exotic:true, speciesFamilyKey:'hornbills',    list:s=>[...(s.hornbillsSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
   { theme:'communaute',  icon:ICONS.singe, name:'Le coup de Ruff', desc:'Ne pas avoir un oiseau qu’Enzo a vu #honteux', test:s=>s.lackEnzoBird },
   { theme:'localisation',icon:ICONS.huitre, name:'Bourriche d’huître', desc:'Observer un oiseau à La Teste-de-Buch', test:s=>s.locTeste },
   { theme:'groupe',      icon:ICONS.pingouin, name:'Happy feet', desc:'Observer un pingouin, un manchot ou un cousin (macareux, guillemot…)', test:s=>s.hasPenguin, alwaysList:true,
@@ -3082,6 +3082,32 @@ const SPECIES_FAMILY_FILTERS = {
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
     return fam === 'Engoulevents' || fam === 'Ibijaux' || fam === 'Guacharo' || (fam && fam.startsWith('Podarges'));
   },
+  // Filtres pour les badges exotiques (utilises par le modal Monde/France).
+  hummingbirds: sci => {
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Colibris';
+  },
+  ratites: sci => {
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Autruches' || fam === 'Nandous' || fam === 'Casoars et Emeus';
+  },
+  exoticParrots: sci => {
+    if(sci === 'psittacula krameri') return false;
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Perroquets' || fam === 'Cacatoès' || fam === 'Perruches' || fam === 'Perroquets de Nouvelle-Zélande';
+  },
+  toucans: sci => {
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Toucans';
+  },
+  hornbills: sci => {
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Calaos';
+  },
+  shrikes: sci => {
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Pies-grièches';
+  },
   certhioidea: sci => {
     const g = (sci||'').split(' ')[0];
     if(CERTHIOIDEA_G.test(g)) return true;
@@ -3136,6 +3162,12 @@ const SPECIES_FAMILY_LABELS = {
   podicipedidae: 'grèbes',
   cuculidae: 'coucous',
   caprimulgiformes: 'engoulevents',
+  hummingbirds: 'colibris',
+  ratites: 'ratites',
+  exoticParrots: 'perroquets, perruches & cacatoès',
+  toucans: 'toucans',
+  hornbills: 'calaos',
+  shrikes: 'pies-grièches',
   outardes_gangas: 'outardes & gangas',
   procellariiformes: 'oiseaux pélagiques',
 };
@@ -3803,21 +3835,35 @@ function renderTrophies(data){
   };
   // Especes exotiques : rendu comme les familles a paliers (grande vignette PNG + titre + etat)
   // pour rester coherent visuellement avec le showcase. Cliquables comme les autres trophees :
-  // ouvre un modal one-shot avec la liste des especes observees de cette famille.
+  // ouvre un modal type famille avec 1 tier + liste Monde/France des especes.
   const renderExotic = t => {
     const ok = t.test(s); if(ok) unlocked++;
     // Extrait le chemin PNG de l'icone HTML (ICONS.toucan = '<img src="assets/icons/toucan.png" ...>').
     const srcMatch = /src="([^"]+)"/.exec(t.icon || '');
     const imgSrc = srcMatch ? srcMatch[1] : 'assets/icons/aigle.png';
     const stateTxt = ok ? 'Débloqué ✓' : 'À débloquer';
-    // Enregistre trophyDetails pour permettre le clic + modal one-shot.
-    const detail = t.list ? t.list(s) : null;
-    const clic = detail !== null;
-    const dataIdx = clic ? detailIdx++ : null;
-    if(clic){
-      trophyDetails[dataIdx] = { kind:'oneshot', name:t.name, desc:t.desc, list:detail, note: detail.length ? `${detail.length} espèce${detail.length>1?'s':''} observée${detail.length>1?'s':''}` : 'Aucune observée pour le moment' };
-    }
-    return `<div class="tro-family tro-exotic ${ok?'unlocked':'locked'}${clic?' clic':''}"${clic?` data-detail="${dataIdx}"`:''}>
+    // Enregistre trophyDetails avec kind:'tierFamily' mais 1 seul tier fictif, pour
+    // reutiliser le layout modal des familles (image + phrase + selecteur Monde/France).
+    const obs = t.list ? t.list(s) : [];
+    const speciesOwnedSet = new Set(obs.map(x => x.sci).filter(Boolean));
+    const dataIdx = detailIdx++;
+    trophyDetails[dataIdx] = {
+      kind: 'tierFamily',
+      familyName: t.name,
+      objectivePhrase: t.desc,
+      tiers: [{
+        img: imgSrc,
+        label: stateTxt,
+        color: 'var(--gold)',
+        unlocked: ok,
+        current: obs.length,
+        threshold: 1,
+        desc: t.desc,
+      }],
+      speciesFamilyKey: t.speciesFamilyKey || null,
+      speciesOwnedSet,
+    };
+    return `<div class="tro-family tro-exotic ${ok?'unlocked':'locked'} clic" data-detail="${dataIdx}">
       <div class="tro-fam-cup">
         <img src="${esc(imgSrc)}" alt="${esc(t.name)}" class="tro-cup${ok?'':' grayed'}" loading="lazy" decoding="async">
       </div>
