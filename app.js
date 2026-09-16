@@ -2461,7 +2461,7 @@ const TROPHIES = [
     theme:'groupe', icon:ICONS.aigle, family:'podicipedidae', category:'species', baseName:'Grèbes',
     imgDir:'assets/trophies/families/podicipedidae',
     // Podicipedidae. FR 5 (castagneux, huppe, jougris, oreillard, esclavon). Monde ~23.
-    metric:s=>(s.podicipedidaeOwnedSet?.size)||0, thresholds:[1,2,4,6,10,18],
+    metric:s=>(s.podicipedidaeOwnedSet?.size)||0, thresholds:[1,2,4,6,9,15],
     descTpl:'Observer {n} grèbes différents',
     list:s=>[...(s.podicipedidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.podicipedidaeOwnedSet?.size)||0} grèbe${((s.podicipedidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.podicipedidaeOwnedSet?.size)||0)>1?'s':''}`,
@@ -2537,7 +2537,7 @@ const TROPHIES = [
     theme:'groupe', icon:ICONS.aigle, family:'laniidae', category:'species', baseName:'Pies-grièches',
     imgDir:'assets/trophies/families/laniidae',
     // Famille Laniidae. FR ~5 (ecorcheur, grise, meridionale, rousse, isabelle rare). Monde ~30.
-    metric:s=>(s.laniidaeOwnedSet?.size)||0, thresholds:[1,2,3,5,10,18],
+    metric:s=>(s.laniidaeOwnedSet?.size)||0, thresholds:[1,2,3,5,9,15],
     descTpl:'Observer {n} pies-grièches différentes',
     list:s=>[...(s.laniidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.laniidaeOwnedSet?.size)||0} pie${((s.laniidaeOwnedSet?.size)||0)>1?'s':''}-grièche${((s.laniidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.laniidaeOwnedSet?.size)||0)>1?'s':''}`,
@@ -2763,7 +2763,7 @@ const TROPHIES = [
     imgDir:'assets/trophies/families/ciconiidae',
     // Ciconiidae seule (Ciconiiformes). FR 2 (blanche + noire) / monde ~20. Ibis/spatules
     // deplaces dans le trophee Pelecaniformes (Herons, ibis & pelicans).
-    metric:s=>(s.ciconiidaeOwnedSet?.size)||0, thresholds:[1,2,3,5,8,15],
+    metric:s=>(s.ciconiidaeOwnedSet?.size)||0, thresholds:[1,2,3,5,8,12],
     descTpl:'Observer {n} cigognes différentes',
     list:s=>[...(s.ciconiidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.ciconiidaeOwnedSet?.size)||0} cigogne${((s.ciconiidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.ciconiidaeOwnedSet?.size)||0)>1?'s':''}`,
