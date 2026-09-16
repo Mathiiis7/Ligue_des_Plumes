@@ -2773,10 +2773,11 @@ const TROPHIES = [
   { theme:'groupe',      icon:ICONS.calao,     name:'Calao',              desc:'Observer un calao (Bucerotidae ou Bucorvidae)',                                      test:s=>s.hasHornbill,    exotic:true, speciesFamilyKey:'hornbills',    list:s=>[...(s.hornbillsSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
   { theme:'communaute',  icon:ICONS.singe, name:'Le coup de Ruff', desc:'Ne pas avoir un oiseau qu’Enzo a vu #honteux', test:s=>s.lackEnzoBird },
   { theme:'localisation',icon:ICONS.huitre, name:'Bourriche d’huître', desc:'Observer un oiseau à La Teste-de-Buch', test:s=>s.locTeste },
-  { theme:'groupe',      icon:ICONS.pingouin, name:'Happy feet', desc:'Observer un pingouin, un manchot ou un cousin (macareux, guillemot…)', test:s=>s.hasPenguin, alwaysList:true,
-    list:s=> ALCID_CATALOG.map(m=>({ name:m.name, section:'Alcidés (les « pingouins » de l’hémisphère nord)', owned:s.alcidOwnedSet.has(m.sci) }))
-      .concat(MANCHOT_CATALOG.map(m=>({ name:m.name, section:'Manchots (les vrais, hémisphère sud)', owned:(s.manchotOwnedSet&&s.manchotOwnedSet.has(m.sci)) }))),
-    note:s=>{ const o=s.alcidOwnedSet.size+(s.manchotOwnedSet?s.manchotOwnedSet.size:0); const tot=ALCID_CATALOG.length+MANCHOT_CATALOG.length; return o+' déjà observé'+(o>1?'s':'')+' sur '+tot; } },
+  { theme:'groupe',      icon:ICONS.pingouin, name:'Happy feet', desc:'Observer un pingouin, un manchot ou un cousin (macareux, guillemot…)', test:s=>s.hasPenguin, exotic:true, speciesFamilyKey:'penguins',
+    list:s=> [
+      ...ALCID_CATALOG.filter(m=>s.alcidOwnedSet.has(m.sci)).map(m=>({ name:m.name, sci:m.sci, owned:true })),
+      ...MANCHOT_CATALOG.filter(m=>s.manchotOwnedSet && s.manchotOwnedSet.has(m.sci)).map(m=>({ name:m.name, sci:m.sci, owned:true })),
+    ] },
   { theme:'groupe',      icon:ICONS.kangourou, name:'Wallaby', desc:'Observer le Martin-chasseur à dos de feu', test:s=>s.hasFireKingfisher },
   { theme:'communaute',  icon:ICONS.bebe, name:'Gros Bébé', desc:'Observer des oiseaux avec Samuel Fillion (preuve demandée)', special:'vote', voteId:'grosBebe', voteThreshold:3, voteSelfCheck:()=>/sam/i.test(myMemberName()||''), test:s=>(s.grosBebeVotes||0)>=3 },
 ];
@@ -3104,6 +3105,10 @@ const SPECIES_FAMILY_FILTERS = {
     return fam === 'Albatros' || fam === 'Puffins, pétrels' || fam === 'Océanites';
   },
   picNoir: sci => sci === 'dryocopus martius',
+  penguins: sci => {
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Pingouins, guillemots' || fam === 'Manchots';
+  },
   certhioidea: sci => {
     const g = (sci||'').split(' ')[0];
     if(CERTHIOIDEA_G.test(g)) return true;
@@ -3166,6 +3171,7 @@ const SPECIES_FAMILY_LABELS = {
   shrikes: 'pies-grièches',
   pelagics: 'oiseaux pélagiques (albatros, puffins, pétrels, océanites)',
   picNoir: 'Pic noir',
+  penguins: 'pingouins & manchots',
   outardes_gangas: 'outardes & gangas',
   procellariiformes: 'oiseaux pélagiques',
 };
