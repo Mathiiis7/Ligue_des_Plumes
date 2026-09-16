@@ -1456,8 +1456,8 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .tro-family.unlocked { background:color-mix(in srgb, var(--tier-color) 6%, var(--surface-2));
     border-color:color-mix(in srgb, var(--tier-color) 30%, var(--line)); }
   .tro-family.locked { opacity:.85; }
-  .tro-fam-cup { flex:0 0 auto; width:260px; height:260px; display:grid; place-items:center; }
-  .tro-fam-cup .tro-cup { width:260px; height:260px; object-fit:contain;
+  .tro-fam-cup { flex:0 0 auto; width:180px; height:180px; display:grid; place-items:center; }
+  .tro-fam-cup .tro-cup { width:180px; height:180px; object-fit:contain;
     filter:drop-shadow(0 4px 12px color-mix(in srgb, var(--tier-color) 40%, transparent)); }
   .tro-fam-cup .tro-cup.grayed { filter:grayscale(.7) brightness(.9) opacity(.85); }
   /* Cartes exotiques (badges Colibri, Ratite, ...) : fond de carte neutre (surface-2).
