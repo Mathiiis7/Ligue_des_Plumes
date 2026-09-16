@@ -2302,7 +2302,7 @@ const iconEmoji = (emoji, bg='var(--surface-2)', alt='') => {
   const css = Array.isArray(bg) ? bgStripes(bg) : bg;
   return `<span role="img" aria-label="${alt||emoji}" style="width:60px;height:60px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:${css};font-size:34px;box-shadow:inset 0 -1px 0 rgba(0,0,0,.15);overflow:hidden">${emoji}</span>`;
 };
-const ICONS={"medal":"<img src=\"assets/icons/t-shirt.png\" alt=\"Expert Merlin Bird\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","cup":"<img src=\"assets/icons/etoile.png\" alt=\"Mike Horn\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","graal":"<img src=\"assets/icons/diamant.png\" alt=\"Le Saint-Graal\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","woodpecker":"<img src=\"assets/icons/pic-noir.png\" alt=\"Pic noir\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","aigle":"<img src=\"assets/icons/aigle.png\" alt=\"Aigles\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","huitre":"<img src=\"assets/icons/huitre.png\" alt=\"Huître\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bain":"<img src=\"assets/icons/bain.png\" alt=\"Pistoche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","pingouin":"<img src=\"assets/icons/pingouin.png\" alt=\"Happy feet\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","kangourou":"<img src=\"assets/icons/kangourou.png\" alt=\"Wallaby\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","singe":"<img src=\"assets/icons/singe.png\" alt=\"Le coup de Ruff\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","crown":"<img src=\"assets/icons/roi.png\" alt=\"Roi\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","podium":"<img src=\"assets/icons/argent.png\" alt=\"En chef\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bronze":"<img src=\"assets/icons/bronze.png\" alt=\"Chevronné\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","gem":"<img src=\"assets/icons/telescope.png\" alt=\"Apprenti écologue\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","binoculars":"<img src=\"assets/icons/loupe.png\" alt=\"Écologue du dimanche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","saisons":"<img src=\"assets/icons/son.png\" alt=\"Les 4 Saisons\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bebe":"<img src=\"assets/icons/bebe.png\" alt=\"Gros Bébé\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","regions":"<img src=\"assets/icons/france.png\" alt=\"Ma France, mes régions\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bearGrylls":"<img src=\"assets/icons/bear%20grills.png\" alt=\"Bear Grylls\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","kimono":"<img src=\"assets/icons/kimono.png\" alt=\"T'ia mis le kimono\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","photo":"<img src=\"assets/icons/photo.png\" alt=\"National Geographic\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","mort":"<img src=\"assets/icons/mort.png\" alt=\"Le Necrophile\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","avion":"<img src=\"assets/icons/avion.png\" alt=\"Globe-trotter\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","toucan":"<img src=\"assets/icons/toucan.png\" alt=\"Toucan\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","calao":"<img src=\"assets/icons/calao.png\" alt=\"Calao\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","perroquet":"<img src=\"assets/icons/perroquet.png\" alt=\"Perroquet\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","pieGrieche":"<img src=\"assets/icons/pie-grieche.png\" alt=\"Pie-grièche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","colibri":"<img src=\"assets/icons/colibri.png\" alt=\"Colibri\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","ratite":"<img src=\"assets/icons/ratite.png\" alt=\"Ratite\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">"};
+const ICONS={"medal":"<img src=\"assets/icons/t-shirt.png\" alt=\"Expert Merlin Bird\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","cup":"<img src=\"assets/icons/etoile.png\" alt=\"Mike Horn\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","graal":"<img src=\"assets/icons/diamant.png\" alt=\"Le Saint-Graal\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","woodpecker":"<img src=\"assets/icons/pic-noir.png\" alt=\"Pic noir\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","aigle":"<img src=\"assets/icons/aigle.png\" alt=\"Aigles\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","huitre":"<img src=\"assets/icons/huitre.png\" alt=\"Huître\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bain":"<img src=\"assets/icons/bain.png\" alt=\"Pistoche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","pingouin":"<img src=\"assets/icons/pingouin.png\" alt=\"Happy feet\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","kangourou":"<img src=\"assets/icons/kangourou.png\" alt=\"Wallaby\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","singe":"<img src=\"assets/icons/singe.png\" alt=\"Le coup de Ruff\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","crown":"<img src=\"assets/icons/roi.png\" alt=\"Roi\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","podium":"<img src=\"assets/icons/argent.png\" alt=\"En chef\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bronze":"<img src=\"assets/icons/bronze.png\" alt=\"Chevronné\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","gem":"<img src=\"assets/icons/telescope.png\" alt=\"Apprenti écologue\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","binoculars":"<img src=\"assets/icons/loupe.png\" alt=\"Écologue du dimanche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","saisons":"<img src=\"assets/icons/son.png\" alt=\"Les 4 Saisons\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bebe":"<img src=\"assets/icons/bebe.png\" alt=\"Gros Bébé\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","regions":"<img src=\"assets/icons/france.png\" alt=\"Ma France, mes régions\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","bearGrylls":"<img src=\"assets/icons/bear%20grills.png\" alt=\"Bear Grylls\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","kimono":"<img src=\"assets/icons/kimono.png\" alt=\"T'ia mis le kimono\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","photo":"<img src=\"assets/icons/photo.png\" alt=\"National Geographic\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","mort":"<img src=\"assets/icons/mort.png\" alt=\"Le Necrophile\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","avion":"<img src=\"assets/icons/avion.png\" alt=\"Globe-trotter\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","toucan":"<img src=\"assets/icons/toucan.png\" alt=\"Toucan\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","calao":"<img src=\"assets/icons/calao.png\" alt=\"Calao\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","perroquet":"<img src=\"assets/icons/perroquet.png\" alt=\"Perroquet\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","pieGrieche":"<img src=\"assets/icons/pie-grieche.png\" alt=\"Pie-grièche\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","colibri":"<img src=\"assets/icons/colibri.png\" alt=\"Colibri\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","ratite":"<img src=\"assets/icons/ratite.png\" alt=\"Ratite\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">","pelagic":"<img src=\"assets/icons/pelagic.png\" alt=\"Oiseau pélagique\" style=\"width:60px;height:60px;border-radius:50%;object-fit:cover\">"};
 // Thèmes de trophées (affichés en chips filtrables au-dessus de la grille).
 // L'ordre ci-dessous détermine l'ordre des chips.
 const TROPHY_THEMES = {
@@ -2561,16 +2561,6 @@ const TROPHIES = [
     note:s=>`${(s.alcediOwnedSet?.size)||0} martin-pêcheur${((s.alcediOwnedSet?.size)||0)>1?'s':''} observé${((s.alcediOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'procellariiformes', category:'species', baseName:'Oiseaux pélagiques',
-    imgDir:'assets/trophies/families/procellariiformes',
-    // Ordre Procellariiformes complet : Diomedeidae + Procellariidae + Hydrobatidae + Oceanitidae.
-    // 100% pelagiques. FR ~10 en mer / monde ~150.
-    metric:s=>(s.procellariiformesOwnedSet?.size)||0, thresholds:[1,2,4,7,12,25],
-    descTpl:'Observer {n} albatros, puffins, pétrels ou océanites',
-    list:s=>[...(s.procellariiformesOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.procellariiformesOwnedSet?.size)||0} espèce${((s.procellariiformesOwnedSet?.size)||0)>1?'s':''} observée${((s.procellariiformesOwnedSet?.size)||0)>1?'s':''}`,
-  }),
-  ...makeTierFamily({
     theme:'groupe', icon:ICONS.aigle, family:'suliformes', category:'species', baseName:'Cormorans, fous & frégates',
     imgDir:'assets/trophies/families/suliformes',
     // Ordre Suliformes complet : Phalacrocoracidae + Sulidae + Anhingidae + Fregatidae.
@@ -2774,6 +2764,7 @@ const TROPHIES = [
   { theme:'communaute',  icon:ICONS.mort, name:'Le Nécrophile', desc:'Observer un oiseau décédé #ripstayproud (preuve demandée)', special:'vote', voteId:'necrophile', voteThreshold:3, test:s=>(s.necrophileVotes||0)>=3 },
   { theme:'classement',  icon:ICONS.cup, name:'Mike Horn', desc:'Avoir l’oiseau le plus rare de la ligue', test:s=>s.mikeHorn, info:s=>s.mikeHorn&&s.mikeBird?'🏅 '+s.mikeBird:'', tip:s=>s.mikeHorn&&s.mikeBird?'Oiseau le plus rare : '+s.mikeBird:'' },
   { theme:'groupe',      icon:ICONS.woodpecker, name:'Pic noir', desc:'Observer le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker },
+  { theme:'groupe',      icon:ICONS.pelagic,    name:'Oiseau pélagique',  desc:'Observer un albatros, un puffin, un pétrel ou un océanite (Procellariiformes)',      test:s=>s.hasPelagic,     exotic:true, speciesFamilyKey:'pelagics',     list:s=>[...(s.pelagicsSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
   { theme:'groupe',      icon:ICONS.pieGrieche, name:'Pie-grièche',       desc:'Observer une pie-grièche (Laniidae)',                                                test:s=>s.hasShrike,      exotic:true, speciesFamilyKey:'shrikes',      list:s=>[...(s.shrikesSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
   { theme:'groupe',      icon:ICONS.colibri,   name:'Colibri',            desc:'Observer un colibri (Trochilidae)',                                                  test:s=>s.hasHummingbird, exotic:true, speciesFamilyKey:'hummingbirds', list:s=>[...(s.hummingbirdsSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
   { theme:'groupe',      icon:ICONS.ratite,    name:'Grand ratite',       desc:'Observer une autruche, un nandou, un casoar ou un émeu',                             test:s=>s.hasRatite,      exotic:true, speciesFamilyKey:'ratites',      list:s=>[...(s.ratitesSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
@@ -3108,6 +3099,10 @@ const SPECIES_FAMILY_FILTERS = {
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
     return fam === 'Pies-grièches';
   },
+  pelagics: sci => {
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Albatros' || fam === 'Puffins, pétrels' || fam === 'Océanites';
+  },
   certhioidea: sci => {
     const g = (sci||'').split(' ')[0];
     if(CERTHIOIDEA_G.test(g)) return true;
@@ -3168,6 +3163,7 @@ const SPECIES_FAMILY_LABELS = {
   toucans: 'toucans',
   hornbills: 'calaos',
   shrikes: 'pies-grièches',
+  pelagics: 'oiseaux pélagiques (albatros, puffins, pétrels, océanites)',
   outardes_gangas: 'outardes & gangas',
   procellariiformes: 'oiseaux pélagiques',
 };
@@ -3432,8 +3428,8 @@ function statsFor(me, N){
   const ranked=[...state.people].sort((a,b)=>b.total-a.total);   // rang basé sur le nb d'espèces (classement principal)
   const rank=ranked.findIndex(p=>p.id===me.id)+1;
   let owls=0,raptors=0,water=0,sea=0,blackWoodpecker=false,locTeste=false,hasKingfisher=false,hasPenguin=false,hasFireKingfisher=false,
-      hasHummingbird=false,hasRatite=false,hasExoticParrot=false,hasToucan=false,hasHornbill=false,hasShrike=false;
-  const hummingbirdsSet=new Set(), ratitesSet=new Set(), exoticParrotsSet=new Set(), toucansSet=new Set(), hornbillsSet=new Set(), shrikesSet=new Set();
+      hasHummingbird=false,hasRatite=false,hasExoticParrot=false,hasToucan=false,hasHornbill=false,hasShrike=false,hasPelagic=false;
+  const hummingbirdsSet=new Set(), ratitesSet=new Set(), exoticParrotsSet=new Set(), toucansSet=new Set(), hornbillsSet=new Set(), shrikesSet=new Set(), pelagicsSet=new Set();
   const megaList=[]; const megaOwnedSet=new Set();
   const seasonHit={}; SEASON_ORDER.forEach(s=>seasonHit[s]=false); const seasonOwnedSet=new Set();
   const raptorOwnedSet=new Set(), alcidOwnedSet=new Set(), manchotOwnedSet=new Set(), waterOwnedSet=new Set(), owlOwnedSet=new Set(), anatidaeOwnedSet=new Set();
@@ -3450,7 +3446,7 @@ function statsFor(me, N){
         sturnoideaOwnedSet=new Set(), passeridaeOwnedSet=new Set(),
         certhioideaOwnedSet=new Set(), podicipedidaeOwnedSet=new Set(),
         cuculidaeOwnedSet=new Set(), caprimulgiformesOwnedSet=new Set(),
-        outardesGangasOwnedSet=new Set(), procellariiformesOwnedSet=new Set();
+        outardesGangasOwnedSet=new Set();
   // Milieux (habitats) : Set d'espèces par catégorie via HABITATS (source : famille eBird).
   const habOwned = Object.fromEntries(HABITAT_CATS.map(c=>[c, new Set()]));
   for(const v of me._active.values()){
@@ -3537,8 +3533,6 @@ function statsFor(me, N){
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Engoulevents'||f==='Ibijaux'||f==='Guacharo'||(f&&f.startsWith('Podarges'))) caprimulgiformesOwnedSet.add(sci); }
     if(OUTARDES_GANGAS_G.test(g)) outardesGangasOwnedSet.add(sci);
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Outardes'||f==='Gangas') outardesGangasOwnedSet.add(sci); }
-    if(PROCELLARIIFORMES_G.test(g)) procellariiformesOwnedSet.add(sci);
-    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Albatros'||f==='Puffins, pétrels'||f==='Océanites') procellariiformesOwnedSet.add(sci); }
     if(MOTACILLIDAE_G.test(g)) motacillidaeOwnedSet.add(sci);
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Bergeronnettes, pipits') motacillidaeOwnedSet.add(sci); }
     if(ECHASSIERS_G.test(g)) ciconiidaeOwnedSet.add(sci);
@@ -3555,6 +3549,7 @@ function statsFor(me, N){
       if(fam === 'Toucans'){ hasToucan = true; toucansSet.add(sci); }
       if(fam === 'Calaos'){ hasHornbill = true; hornbillsSet.add(sci); }
       if(fam === 'Pies-grièches'){ hasShrike = true; shrikesSet.add(sci); }
+      if(fam === 'Albatros' || fam === 'Puffins, pétrels' || fam === 'Océanites'){ hasPelagic = true; pelagicsSet.add(sci); }
     }
     if(ALCID_SET.has(sci)){ hasPenguin=true; alcidOwnedSet.add(sci); }
     if(MANCHOT_SET.has(sci)){ hasPenguin=true; manchotOwnedSet.add(sci); }
@@ -3597,7 +3592,7 @@ function statsFor(me, N){
     for(const uid of voters) if(uid !== me.id) hearts++;
     if(hearts >= 3) hotPhotos++;
   }
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, hasHummingbird, hasRatite, hasExoticParrot, hasToucan, hasHornbill, hasShrike, hummingbirdsSet, ratitesSet, exoticParrotsSet, toucansSet, hornbillsSet, shrikesSet, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, martinetsOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, motacillidaeOwnedSet, ciconiidaeOwnedSet, coraciiformesOwnedSet, suliformesOwnedSet, sturnoideaOwnedSet, passeridaeOwnedSet, certhioideaOwnedSet, podicipedidaeOwnedSet, cuculidaeOwnedSet, caprimulgiformesOwnedSet, outardesGangasOwnedSet, procellariiformesOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, hasHummingbird, hasRatite, hasExoticParrot, hasToucan, hasHornbill, hasShrike, hasPelagic, hummingbirdsSet, ratitesSet, exoticParrotsSet, toucansSet, hornbillsSet, shrikesSet, pelagicsSet, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, martinetsOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, motacillidaeOwnedSet, ciconiidaeOwnedSet, coraciiformesOwnedSet, suliformesOwnedSet, sturnoideaOwnedSet, passeridaeOwnedSet, certhioideaOwnedSet, podicipedidaeOwnedSet, cuculidaeOwnedSet, caprimulgiformesOwnedSet, outardesGangasOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
@@ -3640,7 +3635,7 @@ function renderTrophies(data){
   // -> larides -> chouettes -> rapaces diurnes -> martins-pecheurs -> pics -> corvides -> mesanges
   // -> hirondelles+martinets -> alouettes -> pouillots/rousserolles -> fauvettes -> muscicapides
   // -> grives -> bruants -> fringilles.
-  const SPECIES_TAX_RANK = { anatidae:10, podicipedidae:12, galliformes:20, outardes_gangas:28, columbidae:30, cuculidae:31, caprimulgiformes:32, martinets:33, rallidae:35, procellariiformes:37, ciconiidae:38, suliformes:39, ardeidae:40, scolopacidae:50, rivages:55, laridae:60, nocturnes:70, rapaces:80, coraciiformes:85, alcedinidae:90, picidae:100, corvidae:110, paridae:120, hirundinidae:130, alaudidae:140, phylloscopidae:150, sylviidae:160, muscicapidae:170, sturnoidea:175, turdidae:180, certhioidea:182, passeridae:183, motacillidae:185, emberizidae:190, fringillidae:200 };
+  const SPECIES_TAX_RANK = { anatidae:10, podicipedidae:12, galliformes:20, outardes_gangas:28, columbidae:30, cuculidae:31, caprimulgiformes:32, martinets:33, rallidae:35, ciconiidae:38, suliformes:39, ardeidae:40, scolopacidae:50, rivages:55, laridae:60, nocturnes:70, rapaces:80, coraciiformes:85, alcedinidae:90, picidae:100, corvidae:110, paridae:120, hirundinidae:130, alaudidae:140, phylloscopidae:150, sylviidae:160, muscicapidae:170, sturnoidea:175, turdidae:180, certhioidea:182, passeridae:183, motacillidae:185, emberizidae:190, fringillidae:200 };
   for(const [familyKey, tiers] of familyMap){
     // tiers ordre = ordre de TROPHY_TIERS (Bronze -> Emeraude), test par ordre.
     const tiersSorted = [...tiers].sort((a,b) => TROPHY_TIERS.findIndex(x=>x.key===a.tier) - TROPHY_TIERS.findIndex(x=>x.key===b.tier));
@@ -3741,7 +3736,6 @@ function renderTrophies(data){
         if(familyKey === 'cuculidae') return new Set(s.cuculidaeOwnedSet || []);
         if(familyKey === 'caprimulgiformes') return new Set(s.caprimulgiformesOwnedSet || []);
         if(familyKey === 'outardes_gangas') return new Set(s.outardesGangasOwnedSet || []);
-        if(familyKey === 'procellariiformes') return new Set(s.procellariiformesOwnedSet || []);
         return null;
       })(),
     };
