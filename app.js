@@ -12356,7 +12356,7 @@ document.addEventListener('click', e=>{
     // Pool contextuel : depuis Birdydex, Cette semaine ou le Classement (tbody/cards),
     // on suit l'ordre DOM affiche (respecte tri + filtres en cours). Depuis les autres
     // contextes (popups carte, modal amis...), fallback sur ordre taxonomique global.
-    const contextEl = sp.closest('#viewPokedex, #targetsPanel, .pkdx-grid, #tbody, #matrixCards');
+    const contextEl = sp.closest('#viewPokedex, #targetsPanel, .pkdx-grid, #tbody, #matrixCards, #tmodalBody, .tmodal-list, .tmodal-country-body');
     if(contextEl){
       const siblings = Array.from(contextEl.querySelectorAll('.sp-link[data-sci]')).map(el => el.dataset.sci);
       setSpeciesNavPool([...new Set(siblings)], sp.dataset.sci);
