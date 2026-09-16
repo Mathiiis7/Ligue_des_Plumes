@@ -3721,14 +3721,15 @@ function renderTrophies(data){
         </div>
         <div class="tro-fam-body">
           ${(function(){
-            // Si un nom perso de palier existe (tierNames defini), on montre :
-            //   - une petite "eyebrow" avec le nom de famille (Ecologue, Marco Polo...) pour l'identification,
-            //   - le nom perso du palier en gros (Ornithologue du dimanche, Sac a dos...),
-            //   - le libelle generique du tier en suffixe (Bronze/Argent...).
+            // Si un nom perso de palier existe (tierNames defini), on affiche la description
+            // du trophee au-dessus (ex "Observer X espèces différentes") pour identifier
+            // le trophee sans le cliquer, puis le nom perso du palier + tier label.
             // Sinon comportement classique : "Nom famille · Tier label" sur une seule ligne.
             const hasCustomName = currentTier && displayTier.name && displayTier.name !== `${familyName} ${displayMeta.label}`;
             if(hasCustomName){
-              return `<div class="tro-fam-family">${esc(familyName)}</div>
+              const descTpl = displayTier.descTpl || '';
+              const objective = descTpl ? descTpl.replace('{n}', 'X') : familyName;
+              return `<div class="tro-fam-family">${esc(objective)}</div>
                       <div class="tro-fam-title">
                         <span class="tro-fam-name">${esc(displayTier.name)}</span>
                         <span class="tro-fam-tier">· ${esc(displayMeta.label)}</span>
