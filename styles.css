@@ -1511,6 +1511,10 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
      Sur mobile les cellules deviennent plus etroites mais gardent la grille 3x2. */
   .tmodal-objective { font-size:14px; color:var(--ink); margin:0 0 14px; line-height:1.4; text-align:center; font-weight:500; }
   .tmodal-tier-gallery { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-bottom:8px; }
+  /* Un seul tier (badges exotiques) : image centree et agrandie. */
+  .tmodal-tier-gallery.single { grid-template-columns:1fr; place-items:center; }
+  .tmodal-tier-gallery.single .tmodal-tier { max-width:340px; padding:12px; }
+  .tmodal-tier-gallery.single .tmodal-tier-img { width:240px; height:240px; }
   @media (max-width: 520px){
     .tmodal-tier-gallery { gap:6px; }
     .tmodal-tier { padding:8px 4px; }

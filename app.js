@@ -12547,7 +12547,7 @@ $('#trophyGrid').addEventListener('click',async e=>{
     const objectiveHtml = d.objectivePhrase
       ? `<div class="tmodal-objective">${esc(d.objectivePhrase)}</div>`
       : '';
-    html = objectiveHtml + '<div class="tmodal-tier-gallery">' + d.tiers.map(t => {
+    html = objectiveHtml + `<div class="tmodal-tier-gallery${d.tiers.length===1?' single':''}">` + d.tiers.map(t => {
       // Titre affiche : nom perso du palier si defini (Idefix, Vercingetorix...) sinon fallback tier label (Bronze, Argent...).
       // Le tier label reste en dessous en petit pour reperage visuel.
       const hasCustomName = t.name && t.name.trim() && t.name.trim() !== t.label && !t.name.endsWith(' '+t.label);
