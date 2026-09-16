@@ -12280,80 +12280,63 @@ $('#trophyWho').addEventListener('click',e=>{
 // pays donne. Utilise un predicat pour construire le pool FR quand mode='fr'.
 function _renderSpeciesFamilyCountryList(mode, familyLabel, ownedSet, frFilter){
   const own = ownedSet instanceof Set ? ownedSet : new Set(ownedSet||[]);
+  // Resolution alias : ancien -> nouveau nom scientifique (ex charadrius alexandrinus -> anarhynchus alexandrinus).
+  const canon = sci => (typeof SCI_ALIAS === 'object' && SCI_ALIAS[sci]) ? SCI_ALIAS[sci] : sci;
+  // Pre-canonicalise le set possede : marche que l'obs utilise ancien ou nouveau nom.
+  const ownCanon = new Set();
+  for(const o of own) ownCanon.add(canon(o));
+  const isOwnedCanon = sci => ownCanon.has(canon(sci));
   if(mode === 'fr'){
     // Pool FR : union de deux sources (comme pour les habitats).
-    //  1. REAL_ABUNDANCE_ST_FR (species avec a > 0) : couvre le gros des especes
-    //     modelisees eBird S&T.
-    //  2. REAL_RARITY tier < 10 : rattrape les especes FR reelles non modelisees par
-    //     S&T (ex : Faucon hobereau, Faucon kobez, certains rares). Sans ce fallback,
-    //     ces especes n'apparaissaient pas dans le pool FR alors qu'un birder FR peut
-    //     les cocher.
-    // Certaines especes ont deux entrees (ancien + nouveau nom de genre) dans les datasets :
-    // ex Charadrius alexandrinus + Anarhynchus alexandrinus, Charadrius dubius + Thinornis dubius.
-    // On resout via SCI_ALIAS et on regroupe par nom canonique pour eviter les doublons visuels.
-    const canon = sci => (typeof SCI_ALIAS === 'object' && SCI_ALIAS[sci]) ? SCI_ALIAS[sci] : sci;
-    const frMap = new Map();  // canonical sci -> Set of all raw sci (pour verifier possession)
-    const addToPool = sci => {
-      const c = canon(sci);
-      if(!frMap.has(c)) frMap.set(c, new Set());
-      frMap.get(c).add(sci);
-      frMap.get(c).add(c);
-    };
+    //  1. REAL_ABUNDANCE_ST_FR (species avec a > 0) : couvre le gros des especes modelisees S&T.
+    //  2. REAL_RARITY tier < 10 : rattrape les especes FR reelles non modelisees.
+    // Certaines especes ont deux entrees (ancien + nouveau nom de genre) dans les datasets ;
+    // on regroupe par nom canonique via SCI_ALIAS pour eviter les doublons visuels.
+    const frSet = new Set();
     if(typeof REAL_ABUNDANCE_ST_FR === 'object'){
       for(const sci in REAL_ABUNDANCE_ST_FR){
         const entry = REAL_ABUNDANCE_ST_FR[sci];
         if(!entry || (entry.a || 0) <= 0) continue;
-        if(frFilter(sci)) addToPool(sci);
+        if(frFilter(sci)) frSet.add(canon(sci));
       }
     }
     if(typeof REAL_RARITY === 'object'){
       for(const sci in REAL_RARITY){
         if(REAL_RARITY[sci] >= 10) continue;
-        if(frFilter(sci)) addToPool(sci);
+        if(frFilter(sci)) frSet.add(canon(sci));
       }
     }
-    const frList = [...frMap.keys()].sort((a,b) => frName(a,a).localeCompare(frName(b,b),'fr'));
+    const frList = [...frSet].sort((a,b) => frName(a,a).localeCompare(frName(b,b),'fr'));
     if(!frList.length){
       return '<p class="tmodal-note" style="font-style:italic;color:var(--ink-3);">Aucune espèce de cette famille n\'est présente en France.</p>';
     }
-    // Espece cochee si l'utilisateur a l'un des noms (ancien ou nouveau) dans ses obs.
-    const isOwned = sci => { for(const alt of frMap.get(sci)) if(own.has(alt)) return true; return false; };
-    const okCount = frList.filter(isOwned).length;
+    const okCount = frList.filter(isOwnedCanon).length;
     return `<p class="tmodal-note"><b>${okCount} / ${frList.length}</b> ${esc(familyLabel)} vu${okCount>1?'s':''} en France.</p>` +
       '<ul class="tmodal-list mega" style="columns:2;column-gap:24px;padding-left:20px;">' +
       frList.map(sci => {
-        const isOwn = isOwned(sci);
+        const isOwn = isOwnedCanon(sci);
         const lbl = (isOwn?'✓ ':'') + `<span class="sp-link" data-sci="${esc(sci)}">${esc(frName(sci,sci))}</span>`;
         return `<li class="${isOwn?'own':''}">${lbl}</li>`;
       }).join('') + '</ul>';
   }
-  // Mode 'monde' : pool complet des especes mondiales de la famille (via FR_NAMES filtre par
-  // frFilter), avec cases cochees pour celles observees. Dedup par sci canonique (SCI_ALIAS).
-  const canon = sci => (typeof SCI_ALIAS === 'object' && SCI_ALIAS[sci]) ? SCI_ALIAS[sci] : sci;
-  const worldMap = new Map();
-  const addWorld = sci => {
-    const c = canon(sci);
-    if(!worldMap.has(c)) worldMap.set(c, new Set());
-    worldMap.get(c).add(sci);
-    worldMap.get(c).add(c);
-  };
+  // Mode 'monde' : pool complet des especes mondiales via FR_NAMES filtre par frFilter.
+  // Dedup par sci canonique (SCI_ALIAS) et rattrape les obs user en dehors du pool.
+  const worldSet = new Set();
   if(typeof FR_NAMES === 'object'){
     for(const sci in FR_NAMES){
-      if(frFilter(sci)) addWorld(sci);
+      if(frFilter(sci)) worldSet.add(canon(sci));
     }
   }
-  // Rattrape les especes cochees par le user meme si absentes de FR_NAMES (bug data / sci exotique)
-  for(const sci of own){ if(!worldMap.has(canon(sci))) addWorld(sci); }
-  const worldList = [...worldMap.keys()].sort((a,b) => frName(a,a).localeCompare(frName(b,b),'fr'));
+  for(const sci of own){ worldSet.add(canon(sci)); }
+  const worldList = [...worldSet].sort((a,b) => frName(a,a).localeCompare(frName(b,b),'fr'));
   if(!worldList.length){
     return '<p class="tmodal-note" style="font-style:italic;color:var(--ink-3);">Aucune espèce de cette famille dans la base.</p>';
   }
-  const isOwnedW = sci => { for(const alt of worldMap.get(sci)) if(own.has(alt)) return true; return false; };
-  const okCountW = worldList.filter(isOwnedW).length;
+  const okCountW = worldList.filter(isOwnedCanon).length;
   return `<p class="tmodal-note"><b>${okCountW} / ${worldList.length}</b> ${esc(familyLabel)} vu${okCountW>1?'s':''} dans le monde.</p>` +
     '<ul class="tmodal-list mega" style="columns:2;column-gap:24px;padding-left:20px;">' +
     worldList.map(sci => {
-      const isOwn = isOwnedW(sci);
+      const isOwn = isOwnedCanon(sci);
       const lbl = (isOwn?'✓ ':'') + `<span class="sp-link" data-sci="${esc(sci)}">${esc(frName(sci,sci))}</span>`;
       return `<li class="${isOwn?'own':''}">${lbl}</li>`;
     }).join('') + '</ul>';
