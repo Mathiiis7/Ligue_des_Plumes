@@ -774,10 +774,10 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   #chatPreviewRemove { position:absolute; top:-8px; right:-8px; width:22px; height:22px; border-radius:50%; border:none;
     background:var(--ink); color:#fff; cursor:pointer; font-size:12px; line-height:1; }
   .msg-img { max-width:min(240px,60vw); max-height:300px; border-radius:12px; display:block; margin-top:2px; cursor:pointer; }
-  .img-modal { display:none; position:fixed; inset:0; z-index:70; background:rgba(0,0,0,.92); align-items:center; justify-content:center; padding:20px; cursor:zoom-out; }
+  .img-modal { display:none; position:fixed; inset:0; z-index:2500; background:rgba(0,0,0,.92); align-items:center; justify-content:center; padding:20px; cursor:zoom-out; }
   .img-modal.open { display:flex; }
   .img-modal img { max-width:96vw; max-height:92vh; border-radius:10px; cursor:default; }
-  .img-modal-close { position:fixed; top:16px; right:16px; z-index:71; width:40px; height:40px; border-radius:50%; border:none; background:rgba(255,255,255,.15); color:#fff; font-size:26px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; transition:background .15s; }
+  .img-modal-close { position:fixed; top:16px; right:16px; z-index:2501; width:40px; height:40px; border-radius:50%; border:none; background:rgba(255,255,255,.15); color:#fff; font-size:26px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; transition:background .15s; }
   .img-modal-close:hover { background:rgba(255,255,255,.28); }
   body.img-modal-open { overflow:hidden; }
   /* Modal fiche espèce (ouvert au clic sur un nom d'oiseau) */
