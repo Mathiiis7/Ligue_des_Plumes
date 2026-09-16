@@ -1109,7 +1109,10 @@
     </div>
   </div>
   <!-- Modal image plein écran (photos, chat...). Doit être au niveau racine pour ne pas hériter du display:none des vues masquées. -->
-  <div id="imgModal" class="img-modal"><img id="imgModalImg" alt=""></div>
+  <div id="imgModal" class="img-modal">
+    <button id="imgModalClose" class="img-modal-close" aria-label="Fermer">×</button>
+    <img id="imgModalImg" alt="">
+  </div>
   <!-- Modal fiche espèce : ouvert au clic sur un nom d'oiseau (data-sci="..."). Photo Wikipédia,
        son xeno-canto, liste des obs du groupe, liens externes. -->
   <div id="speciesModal" class="species-modal" hidden>

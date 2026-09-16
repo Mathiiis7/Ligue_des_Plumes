@@ -9105,7 +9105,7 @@ $('#photoGrid')?.addEventListener('click', async e=>{
     try{ await deleteDoc(doc(db,'leagues',leagueId,'comments',cdel.dataset.cmtDel)); }catch(err){ showError(err); } return; }
   const del=e.target.closest('.photo-del'); if(del){ if(!confirm('Supprimer cette photo ?')) return;
     try{ await deleteDoc(doc(db,'leagues',leagueId,'photos',del.dataset.id)); }catch(err){ showError(err); } return; }
-  const img=e.target.closest('.photo-img'); if(img){ $('#imgModalImg').src=img.src; $('#imgModal').classList.add('open'); }
+  const img=e.target.closest('.photo-img'); if(img){ $('#imgModalImg').src=img.src; $('#imgModal').classList.add('open'); document.body.classList.add('img-modal-open'); }
 });
 $('#feedList')?.addEventListener('click', async e=>{
   const chip=e.target.closest('.react-chip'); if(chip){ toggleReaction(chip.dataset.target, chip.dataset.emoji); return; }
@@ -9125,7 +9125,17 @@ document.addEventListener('submit', async e=>{
   if(input){ input.value = ''; }
   if(btn) btn.disabled = false;
 });
-$('#imgModal')?.addEventListener('click', ()=>{ $('#imgModal').classList.remove('open'); $('#imgModalImg').src=''; });
+// Fermeture de la modale image : clic sur le backdrop OU sur la croix. Un clic sur l'image
+// elle-meme ne ferme pas (pour permettre a l'utilisateur de la regarder / zoomer).
+function _closeImgModal(){
+  $('#imgModal').classList.remove('open');
+  $('#imgModalImg').src='';
+  document.body.classList.remove('img-modal-open');
+}
+$('#imgModal')?.addEventListener('click', e=>{
+  if(e.target.closest('.img-modal-close') || e.target.id === 'imgModal') _closeImgModal();
+});
+document.addEventListener('keydown', e=>{ if(e.key === 'Escape' && $('#imgModal')?.classList.contains('open')) _closeImgModal(); });
 
 // ---- Fiche espèce (modal ouvert au clic sur un nom d'oiseau) ----
 // Cache session pour éviter de refetcher Wikipédia / xeno-canto pour la même espèce.
