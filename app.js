@@ -3720,23 +3720,27 @@ function renderTrophies(data){
           <img src="${esc(displayTier.tierImg || displayMeta.img)}" alt="${esc(displayMeta.label)}" class="tro-cup${locked?' grayed':''}" loading="lazy" decoding="async">
         </div>
         <div class="tro-fam-body">
-          <div class="tro-fam-title">
-            ${(function(){
-              // Si un nom perso de palier existe (tierNames defini), il REMPLACE le nom de famille dans le showcase :
-              //   "Ornithologue du dimanche" au lieu de "Ecologue · Ornithologue du dimanche".
-              //   Le libelle generique du tier (Bronze/Argent...) reste comme suffixe discret.
-              // Sinon comportement classique : "Nom famille · Tier label".
-              const hasCustomName = currentTier && displayTier.name && displayTier.name !== `${familyName} ${displayMeta.label}`;
-              if(hasCustomName){
-                return `<span class="tro-fam-name">${esc(displayTier.name)}</span>
-                        <span class="tro-fam-tier">· ${esc(displayMeta.label)}</span>`;
-              }
-              return `<span class="tro-fam-name">${esc(familyName)}</span>
+          ${(function(){
+            // Si un nom perso de palier existe (tierNames defini), on montre :
+            //   - une petite "eyebrow" avec le nom de famille (Ecologue, Marco Polo...) pour l'identification,
+            //   - le nom perso du palier en gros (Ornithologue du dimanche, Sac a dos...),
+            //   - le libelle generique du tier en suffixe (Bronze/Argent...).
+            // Sinon comportement classique : "Nom famille · Tier label" sur une seule ligne.
+            const hasCustomName = currentTier && displayTier.name && displayTier.name !== `${familyName} ${displayMeta.label}`;
+            if(hasCustomName){
+              return `<div class="tro-fam-family">${esc(familyName)}</div>
+                      <div class="tro-fam-title">
+                        <span class="tro-fam-name">${esc(displayTier.name)}</span>
+                        <span class="tro-fam-tier">· ${esc(displayMeta.label)}</span>
+                      </div>`;
+            }
+            return `<div class="tro-fam-title">
+                      <span class="tro-fam-name">${esc(familyName)}</span>
                       ${currentTier
                         ? `<span class="tro-fam-tier">· ${esc(displayMeta.label)}</span>`
-                        : `<span class="tro-fam-tier tro-fam-tier-locked">· à débloquer</span>`}`;
-            })()}
-          </div>
+                        : `<span class="tro-fam-tier tro-fam-tier-locked">· à débloquer</span>`}
+                    </div>`;
+          })()}
           <div class="tro-fam-next">${nextLine}</div>
           <div class="tro-fam-bar-outer">
             <div class="tro-fam-bar-fill" style="width:${pct}%"></div>
