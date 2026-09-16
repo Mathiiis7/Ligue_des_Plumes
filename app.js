@@ -3755,18 +3755,21 @@ function renderTrophies(data){
         </div>
         <div class="tro-fam-body">
           ${(function(){
-            // Si un nom perso de palier existe (tierNames defini), on affiche la description
-            // du trophee au-dessus (ex "Observer X espèces différentes") pour identifier
-            // le trophee sans le cliquer, puis le nom perso du palier + tier label.
-            // Sinon comportement classique : "Nom famille · Tier label" sur une seule ligne.
-            const hasCustomName = currentTier && displayTier.name && displayTier.name !== `${familyName} ${displayMeta.label}`;
-            if(hasCustomName){
+            // Si la famille a des noms perso de palier (tierNames defini au niveau de la famille),
+            // on affiche la description du trophee au-dessus (ex "Observer X especes differentes")
+            // pour identifier le trophee sans le cliquer. Cas debloque : nom perso du palier + tier label.
+            // Cas verrouille : nom de la famille + "a debloquer" (SANS "Prochain palier" - la description
+            // au-dessus suffit).
+            const familyHasCustomNames = familyTiers[0] && familyTiers[0].name && familyTiers[0].name !== `${familyName} ${familyTiers[0].label}`;
+            if(familyHasCustomNames){
               const descTpl = displayTier.descTpl || '';
               const objective = descTpl ? descTpl.replace('{n}', 'X') : familyName;
-              return `<div class="tro-fam-title">
-                        <span class="tro-fam-name">${esc(displayTier.name)}</span>
-                        <span class="tro-fam-tier">· ${esc(displayMeta.label)}</span>
-                      </div>
+              const titleHtml = currentTier
+                ? `<span class="tro-fam-name">${esc(displayTier.name)}</span>
+                   <span class="tro-fam-tier">· ${esc(displayMeta.label)}</span>`
+                : `<span class="tro-fam-name">${esc(familyName)}</span>
+                   <span class="tro-fam-tier tro-fam-tier-locked">· à débloquer</span>`;
+              return `<div class="tro-fam-title">${titleHtml}</div>
                       <div class="tro-fam-family">${esc(objective)}</div>`;
             }
             return `<div class="tro-fam-title">
