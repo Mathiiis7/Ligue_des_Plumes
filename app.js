@@ -2590,13 +2590,14 @@ const TROPHIES = [
     note:s=>`${(s.suliformesOwnedSet?.size)||0} espèce${((s.suliformesOwnedSet?.size)||0)>1?'s':''} observée${((s.suliformesOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'ardeidae', category:'species', baseName:'Hérons & aigrettes',
+    theme:'groupe', icon:ICONS.aigle, family:'ardeidae', category:'species', baseName:'Hérons, ibis & pélicans',
     imgDir:'assets/trophies/families/ardeidae',
-    // Pool FR ~10 (cendre, pourpre, garde-boeufs, aigrettes, bihoreau, butors, crabier, blongios)
-    metric:s=>(s.ardeidaeOwnedSet?.size)||0, thresholds:[1,3,6,10,15,22],
-    descTpl:'Observer {n} hérons différents (aigrettes, butors inclus)',
+    // Ordre Pelecaniformes complet : Ardeidae + Threskiornithidae + Pelecanidae + Scopidae + Balaenicipitidae.
+    // FR ~18 (13 herons/aigrettes/butors + 3 ibis/spatules + 2 pelicans rares) / monde ~110.
+    metric:s=>(s.ardeidaeOwnedSet?.size)||0, thresholds:[2,5,9,14,20,30],
+    descTpl:'Observer {n} hérons, ibis, spatules ou pélicans',
     list:s=>[...(s.ardeidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.ardeidaeOwnedSet?.size)||0} héron${((s.ardeidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.ardeidaeOwnedSet?.size)||0)>1?'s':''}`,
+    note:s=>`${(s.ardeidaeOwnedSet?.size)||0} espèce${((s.ardeidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.ardeidaeOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
     theme:'groupe', icon:ICONS.aigle, family:'columbidae', category:'species', baseName:'Pigeons & tourterelles',
@@ -2758,13 +2759,14 @@ const TROPHIES = [
     note:s=>`${(s.motacillidaeOwnedSet?.size)||0} bergeronnette${((s.motacillidaeOwnedSet?.size)||0)>1?'s':''} ou pipit${((s.motacillidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.motacillidaeOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'ciconiidae', category:'species', baseName:'Cigognes, ibis & spatules',
+    theme:'groupe', icon:ICONS.aigle, family:'ciconiidae', category:'species', baseName:'Cigognes',
     imgDir:'assets/trophies/families/ciconiidae',
-    // Pool FR ~5 (Cigogne blanche, Cigogne noire, Ibis falcinelle, Spatule blanche, Ibis sacre exotique)
+    // Ciconiidae seule (Ciconiiformes). FR 2 (blanche + noire) / monde ~20. Ibis/spatules
+    // deplaces dans le trophee Pelecaniformes (Herons, ibis & pelicans).
     metric:s=>(s.ciconiidaeOwnedSet?.size)||0, thresholds:[1,2,3,5,8,15],
-    descTpl:'Observer {n} grands échassiers à long bec (cigognes, ibis, spatules)',
+    descTpl:'Observer {n} cigognes différentes',
     list:s=>[...(s.ciconiidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.ciconiidaeOwnedSet?.size)||0} cigogne${((s.ciconiidaeOwnedSet?.size)||0)>1?'s':''}, ibis ou spatule${((s.ciconiidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.ciconiidaeOwnedSet?.size)||0)>1?'s':''}`,
+    note:s=>`${(s.ciconiidaeOwnedSet?.size)||0} cigogne${((s.ciconiidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.ciconiidaeOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
     theme:'communaute', icon:ICONS.photo, family:'natGeo', category:'progression', baseName:'National Geographic',
@@ -2780,6 +2782,7 @@ const TROPHIES = [
   { theme:'communaute',  icon:ICONS.mort, name:'Le Nécrophile', desc:'Observer un oiseau décédé #ripstayproud (preuve demandée)', special:'vote', voteId:'necrophile', voteThreshold:3, test:s=>(s.necrophileVotes||0)>=3 },
   { theme:'classement',  icon:ICONS.cup, name:'Mike Horn', desc:'Avoir l’oiseau le plus rare de la ligue', test:s=>s.mikeHorn, info:s=>s.mikeHorn&&s.mikeBird?'🏅 '+s.mikeBird:'', tip:s=>s.mikeHorn&&s.mikeBird?'Oiseau le plus rare : '+s.mikeBird:'' },
   { theme:'groupe',      icon:ICONS.woodpecker, name:'Pic noir', desc:'Observer le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker },
+  { theme:'groupe',      icon:ICONS.aigle, name:'Flamant rose', desc:'Observer le Flamant rose', test:s=>s.hasFlamingo },
   { theme:'communaute',  icon:ICONS.singe, name:'Le coup de Ruff', desc:'Ne pas avoir un oiseau qu’Enzo a vu #honteux', test:s=>s.lackEnzoBird },
   { theme:'localisation',icon:ICONS.huitre, name:'Bourriche d’huître', desc:'Observer un oiseau à La Teste-de-Buch', test:s=>s.locTeste },
   { theme:'groupe',      icon:ICONS.pingouin, name:'Happy feet', desc:'Observer un pingouin, un manchot ou un cousin (macareux, guillemot…)', test:s=>s.hasPenguin, alwaysList:true,
@@ -2808,7 +2811,10 @@ const ALAUDA_G=/^(alauda|lullula|calandrella|galerida|melanocorypha|ammomanes|er
 const PARIDAE_G=/^(parus|cyanistes|lophophanes|poecile|periparus|machlolophus|sittiparus|melaniparus|baeolophus|pardaliparus|cephalopyrus|sylviparus|aegithalos|psaltriparus|leptopoecile|remiz|anthoscopus)$/;
 const CORVIDAE_G=/^(corvus|pica|garrulus|nucifraga|pyrrhocorax|cyanopica|perisoreus|urocissa|cissa|dendrocitta|crypsirina|temnurus|zavattariornis|corcorax|struthidea|podoces|pseudopodoces|cyanocitta|aphelocoma|gymnorhinus|nucifraga|cyanocorax|calocitta|psilorhinus|cyanolyca|platylophus|platysmurus|ptilostomus)$/;
 const ALCEDI_G=/^(alcedo|ceryle|megaceryle|halcyon|todiramphus|dacelo|ceyx|tanysiptera|corythornis|ispidina|actenoides|caridonax|clytoceyx|cittura|lacedo|melidora|pelargopsis|syma|ceyx|corythornis|chloroceryle)$/;
-const ARDEIDAE_G=/^(ardea|egretta|ardeola|botaurus|ixobrychus|nycticorax|bubulcus|butorides|cochlearius|tigrisoma|gorsachius|syrigma|agamia|zebrilus|zonerodius|tigriornis|pilherodius|nyctanassa|dupetor|calherodias)$/;
+// Pelecaniformes complet : Ardeidae (herons, aigrettes, butors) + Threskiornithidae (ibis, spatules)
+// + Pelecanidae (pelicans) + Scopidae (ombrette) + Balaenicipitidae (bec-en-sabot).
+// FR ~18 (herons/aigrettes ~13, ibis+spatules 3, pelicans 2 rares). Monde ~110.
+const ARDEIDAE_G=/^(ardea|egretta|ardeola|botaurus|ixobrychus|nycticorax|bubulcus|butorides|cochlearius|tigrisoma|gorsachius|syrigma|agamia|zebrilus|zonerodius|tigriornis|pilherodius|nyctanassa|dupetor|calherodias|threskiornis|plegadis|platalea|bostrychia|geronticus|eudocimus|theristicus|pseudibis|mesembrinibis|cercibis|nipponia|lampribis|phimosus|lophotibis|pseudohydrornis|pelecanus|scopus|balaeniceps)$/;
 const COLUMBIDAE_G=/^(columba|streptopelia|spilopelia|patagioenas|zenaida|geopelia|macropygia|treron|ducula|ptilinopus|leptotila|geotrygon|zentrygon|columbina|claravis|metriopelia|zenaida|nesoenas|reinwardtoena|gymnophaps|hemiphaga|ectopistes|didunculus|caloenas|otidiphaps|goura|drepanoptila|alopecoenas|gallicolumba|starnoenas|geopelia|oena|turtur|chalcophaps|phapitreron|treron|phaps|geophaps|petrophassa)$/;
 const GALLIFORMES_G=/^(phasianus|alectoris|perdix|coturnix|tetrao|lyrurus|tetrastes|lagopus|bonasa|colinus|meleagris|pavo|gallus|syrmaticus|chrysolophus|tympanuchus|dendragapus|centrocercus|callipepla|falcipennis|lophura|argusianus|polyplectron|catreus|crossoptilon|pucrasia|ithaginis|tragopan|lophophorus|perdicula|arborophila|bambusicola|francolinus|pternistis|scleroptila|dendroperdix|ammoperdix|rhynchortyx|dactylortyx|philortyx|oreortyx|cyrtonyx|odontophorus|numida|guttera|acryllium|agelastes|lagopus|tetraogallus|ammoperdix|alectura|leipoa|megapodius|talegalla|aepypodius|macrocephalon|eulipoa|megacrex|melanoperdix)$/;
 const PICIDAE_G=/^(picus|dendrocopos|dryobates|dryocopus|jynx|picoides|leiopicus|colaptes|campephilus|melanerpes|sphyrapicus|piculus|celeus|dendropicos|campethera|geocolaptes|chrysocolaptes|blythipicus|micropternus|meiglyptes|hemicircus|reinwardtipicus|mulleripicus|gecinulus|xiphidiopicus|nesoctites|picumnus|verreauxia|sasia)$/;
@@ -2842,7 +2848,9 @@ const LARIDAE_G=/^(larus|ichthyaetus|chroicocephalus|hydrocoloeus|leucophaeus|ri
 const MOTACILLIDAE_G=/^(motacilla|anthus|dendronanthus|tmetothylacus|macronyx|amaurocichla|hemimacronyx)$/;
 // Cigognes (Ciconiidae) + Ibis/spatules (Threskiornithidae) : grands echassiers a long bec.
 // Regroupement thematique/ecologique (les deux familles sont dans des ordres differents en taxo moderne).
-const ECHASSIERS_G=/^(ciconia|ephippiorhynchus|jabiru|leptoptilos|mycteria|anastomus|threskiornis|plegadis|platalea|bostrychia|geronticus|eudocimus|theristicus|pseudibis|mesembrinibis|cercibis|nipponia|lampribis|phimosus|lophotibis|pseudohydrornis)$/;
+// Cigognes seules (Ciconiidae, ordre Ciconiiformes). Ibis/spatules deplaces vers ARDEIDAE_G
+// (Pelecaniformes moderne). FR 2 (blanche + noire) / monde ~20.
+const ECHASSIERS_G=/^(ciconia|ephippiorhynchus|jabiru|leptoptilos|mycteria|anastomus)$/;
 // Coraciiformes hors martins-pecheurs : guepiers (Meropidae) + rolliers (Coraciidae) +
 // brachypterolles (Brachypteraciidae) + motmots (Momotidae) + todiers (Todidae).
 // Guepier & Rollier d'Europe presents en FR ; autres tropicaux.
@@ -2943,7 +2951,8 @@ const SPECIES_FAMILY_FILTERS = {
     const g = (sci||'').split(' ')[0];
     if(ARDEIDAE_G.test(g)) return true;
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
-    return fam === 'Hérons, aigrettes, butors';
+    // Ordre Pelecaniformes complet : Ardeidae + Threskiornithidae + Pelecanidae + Scopidae + Balaenicipitidae.
+    return fam === 'Hérons, aigrettes, butors' || fam === 'Hérons, aigrettes' || fam === 'Ibis, spatules' || fam === 'Pélicans' || fam === 'Ombrette' || fam === 'Bec-en-sabot du Nil';
   },
   columbidae: sci => {
     const g = (sci||'').split(' ')[0];
@@ -3099,7 +3108,7 @@ const SPECIES_FAMILY_FILTERS = {
     const g = (sci||'').split(' ')[0];
     if(ECHASSIERS_G.test(g)) return true;
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
-    return fam === 'Cigognes' || fam === 'Ibis, spatules';
+    return fam === 'Cigognes';
   },
 };
 // Labels pour le header du modal en mode France.
@@ -3113,7 +3122,7 @@ const SPECIES_FAMILY_LABELS = {
   paridae: 'mésanges',
   corvidae: 'corvidés',
   alcedinidae: 'martins-pêcheurs',
-  ardeidae: 'hérons & aigrettes',
+  ardeidae: 'hérons, ibis & pélicans',
   columbidae: 'pigeons & tourterelles',
   galliformes: 'galliformes',
   picidae: 'pics',
@@ -3128,7 +3137,7 @@ const SPECIES_FAMILY_LABELS = {
   emberizidae: 'bruants',
   rallidae: 'rallidés',
   motacillidae: 'bergeronnettes & pipits',
-  ciconiidae: 'cigognes, ibis & spatules',
+  ciconiidae: 'cigognes',
   coraciiformes: 'guêpiers & rolliers',
   suliformes: 'cormorans, fous & frégates',
   laniidae: 'pies-grièches',
@@ -3401,7 +3410,7 @@ const MANCHOT_SET = new Set(MANCHOT_CATALOG.map(m=>m.sci));
 function statsFor(me, N){
   const ranked=[...state.people].sort((a,b)=>b.total-a.total);   // rang basé sur le nb d'espèces (classement principal)
   const rank=ranked.findIndex(p=>p.id===me.id)+1;
-  let owls=0,raptors=0,water=0,sea=0,blackWoodpecker=false,locTeste=false,hasKingfisher=false,hasPenguin=false,hasFireKingfisher=false;
+  let owls=0,raptors=0,water=0,sea=0,blackWoodpecker=false,locTeste=false,hasKingfisher=false,hasPenguin=false,hasFireKingfisher=false,hasFlamingo=false;
   const megaList=[]; const megaOwnedSet=new Set();
   const seasonHit={}; SEASON_ORDER.forEach(s=>seasonHit[s]=false); const seasonOwnedSet=new Set();
   const raptorOwnedSet=new Set(), alcidOwnedSet=new Set(), manchotOwnedSet=new Set(), waterOwnedSet=new Set(), owlOwnedSet=new Set(), anatidaeOwnedSet=new Set();
@@ -3460,7 +3469,7 @@ function statsFor(me, N){
     if(ALCEDI_G.test(g)) alcediOwnedSet.add(sci);
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Martins-pêcheurs') alcediOwnedSet.add(sci); }
     if(ARDEIDAE_G.test(g)) ardeidaeOwnedSet.add(sci);
-    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Hérons, aigrettes, butors') ardeidaeOwnedSet.add(sci); }
+    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Hérons, aigrettes, butors'||f==='Hérons, aigrettes'||f==='Ibis, spatules'||f==='Pélicans'||f==='Ombrette'||f==='Bec-en-sabot du Nil') ardeidaeOwnedSet.add(sci); }
     if(COLUMBIDAE_G.test(g)) columbidaeOwnedSet.add(sci);
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Pigeons, tourterelles') columbidaeOwnedSet.add(sci); }
     if(GALLIFORMES_G.test(g)) galliformesOwnedSet.add(sci);
@@ -3512,9 +3521,10 @@ function statsFor(me, N){
     if(MOTACILLIDAE_G.test(g)) motacillidaeOwnedSet.add(sci);
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Bergeronnettes, pipits') motacillidaeOwnedSet.add(sci); }
     if(ECHASSIERS_G.test(g)) ciconiidaeOwnedSet.add(sci);
-    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Cigognes'||f==='Ibis, spatules') ciconiidaeOwnedSet.add(sci); }
+    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Cigognes') ciconiidaeOwnedSet.add(sci); }
     if(sci==='dryocopus martius') blackWoodpecker=true;
     if(sci==='alcedo atthis') hasKingfisher=true;
+    if(sci==='phoenicopterus roseus') hasFlamingo=true;
     if(ALCID_SET.has(sci)){ hasPenguin=true; alcidOwnedSet.add(sci); }
     if(MANCHOT_SET.has(sci)){ hasPenguin=true; manchotOwnedSet.add(sci); }
     if(sci==='todiramphus pyrrhopygius') hasFireKingfisher=true;
@@ -3556,7 +3566,7 @@ function statsFor(me, N){
     for(const uid of voters) if(uid !== me.id) hearts++;
     if(hearts >= 3) hotPhotos++;
   }
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, martinetsOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, motacillidaeOwnedSet, ciconiidaeOwnedSet, coraciiformesOwnedSet, suliformesOwnedSet, laniidaeOwnedSet, sturnoideaOwnedSet, passeridaeOwnedSet, certhioideaOwnedSet, podicipedidaeOwnedSet, cuculidaeOwnedSet, caprimulgiformesOwnedSet, outardesGangasOwnedSet, procellariiformesOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, hasFlamingo, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, martinetsOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, motacillidaeOwnedSet, ciconiidaeOwnedSet, coraciiformesOwnedSet, suliformesOwnedSet, laniidaeOwnedSet, sturnoideaOwnedSet, passeridaeOwnedSet, certhioideaOwnedSet, podicipedidaeOwnedSet, cuculidaeOwnedSet, caprimulgiformesOwnedSet, outardesGangasOwnedSet, procellariiformesOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
