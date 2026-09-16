@@ -2783,11 +2783,11 @@ const TROPHIES = [
   { theme:'communaute',  icon:ICONS.mort, name:'Le Nécrophile', desc:'Observer un oiseau décédé #ripstayproud (preuve demandée)', special:'vote', voteId:'necrophile', voteThreshold:3, test:s=>(s.necrophileVotes||0)>=3 },
   { theme:'classement',  icon:ICONS.cup, name:'Mike Horn', desc:'Avoir l’oiseau le plus rare de la ligue', test:s=>s.mikeHorn, info:s=>s.mikeHorn&&s.mikeBird?'🏅 '+s.mikeBird:'', tip:s=>s.mikeHorn&&s.mikeBird?'Oiseau le plus rare : '+s.mikeBird:'' },
   { theme:'groupe',      icon:ICONS.woodpecker, name:'Pic noir', desc:'Observer le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker },
-  { theme:'groupe',      icon:ICONS.aigle, name:'Colibri', desc:'Observer un colibri (Trochilidae)', test:s=>s.hasHummingbird },
-  { theme:'groupe',      icon:ICONS.aigle, name:'Ratite', desc:'Observer une autruche, un nandou, un émeu, un casoar, un kiwi ou un tinamou', test:s=>s.hasRatite },
-  { theme:'groupe',      icon:ICONS.perroquet, name:'Perroquet exotique', desc:'Observer un perroquet, une perruche ou un cacatoès (hors Perruche à collier férale)', test:s=>s.hasExoticParrot },
-  { theme:'groupe',      icon:ICONS.toucan, name:'Toucan', desc:'Observer un toucan (Ramphastidae)', test:s=>s.hasToucan },
-  { theme:'groupe',      icon:ICONS.calao, name:'Calao', desc:'Observer un calao (Bucerotidae ou Bucorvidae)', test:s=>s.hasHornbill },
+  { theme:'groupe',      icon:ICONS.aigle,     name:'Colibri',            desc:'Observer un colibri (Trochilidae)',                                                  test:s=>s.hasHummingbird, exotic:true },
+  { theme:'groupe',      icon:ICONS.aigle,     name:'Ratite',             desc:'Observer une autruche, un nandou, un émeu, un casoar, un kiwi ou un tinamou',        test:s=>s.hasRatite,      exotic:true },
+  { theme:'groupe',      icon:ICONS.perroquet, name:'Perroquet exotique', desc:'Observer un perroquet, une perruche ou un cacatoès (hors Perruche à collier férale)', test:s=>s.hasExoticParrot, exotic:true },
+  { theme:'groupe',      icon:ICONS.toucan,    name:'Toucan',             desc:'Observer un toucan (Ramphastidae)',                                                  test:s=>s.hasToucan,      exotic:true },
+  { theme:'groupe',      icon:ICONS.calao,     name:'Calao',              desc:'Observer un calao (Bucerotidae ou Bucorvidae)',                                      test:s=>s.hasHornbill,    exotic:true },
   { theme:'communaute',  icon:ICONS.singe, name:'Le coup de Ruff', desc:'Ne pas avoir un oiseau qu’Enzo a vu #honteux', test:s=>s.lackEnzoBird },
   { theme:'localisation',icon:ICONS.huitre, name:'Bourriche d’huître', desc:'Observer un oiseau à La Teste-de-Buch', test:s=>s.locTeste },
   { theme:'groupe',      icon:ICONS.pingouin, name:'Happy feet', desc:'Observer un pingouin, un manchot ou un cousin (macareux, guillemot…)', test:s=>s.hasPenguin, alwaysList:true,
@@ -3779,7 +3779,8 @@ function renderTrophies(data){
   // -------------------------------------------------------------------------
   // Bloc 2 : trophees one-shot (compact grid, style epure).
   // -------------------------------------------------------------------------
-  const oneShotCards = oneShots.map(t => {
+  // Fonction de rendu d'un one-shot en carte (utilisee 2 fois : exotiques + speciaux).
+  const renderOneShot = t => {
     const ok = t.test(s); if(ok) unlocked++;
     const p = t.prog ? t.prog(s) : null;
     const detail = t.list ? t.list(s) : null;
@@ -3817,7 +3818,9 @@ function renderTrophies(data){
         ${extra}
       </div>
     </div>`;
-  }).join('');
+  };
+  const exoticCards = oneShots.filter(t => t.exotic).map(renderOneShot).join('');
+  const oneShotCards = oneShots.filter(t => !t.exotic).map(renderOneShot).join('');
   // Section par categorie de trophees a paliers. Ordre : Progression -> Especes -> Habitats -> Speciaux.
   const CATEGORY_META = [
     { key:'progression', label:'Progression',           subtitle:'Repères de progression individuels' },
@@ -3837,6 +3840,12 @@ function renderTrophies(data){
   grid.innerHTML = `
     <div class="tro-showcase">
       ${catSections}
+      ${exoticCards ? `
+      <div class="tro-oneshots-section">
+        <div class="tro-oneshots-title">Espèces exotiques</div>
+        <div class="tro-oneshots-sub">Oiseaux à cocher lors d'un voyage lointain</div>
+        <div class="tro-oneshots-grid">${exoticCards}</div>
+      </div>` : ''}
       ${oneShotCards ? `
       <div class="tro-oneshots-section">
         <div class="tro-oneshots-title">Trophées spéciaux</div>
