@@ -2772,7 +2772,7 @@ const TROPHIES = [
     tierNames:['Amateur','Naturaliste','Photographe animalier','Reporter','Grand reporter','National Geographic'],
     tierRefs:['première photo qui capte 3 cœurs','tu commences à cadrer les rapaces','téléobjectif dans le sac à chaque sortie','tes clichés font le buzz du groupe','ton portfolio pourrait passer en expo','couverture jaune bordée, tu as tout compris'],
     metric:s=>s.hotPhotos||0, thresholds:[1,3,7,15,25,40],
-    descTpl:'Poster {n} photos avec au moins 3 ❤️ chacune',
+    descTpl:'Poster {n} photos avec 3+ ❤️',
     info:s=>s.hotPhotos>0 ? `${s.hotPhotos} photo${s.hotPhotos>1?'s':''} qui claque${s.hotPhotos>1?'nt':''}` : '',
   }),
   // -- Trophees one-shot (binaires, pas de tiers) --
