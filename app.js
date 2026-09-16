@@ -2328,7 +2328,7 @@ const TROPHY_TIERS = [
   { key:'argent',   label:'Argent',      color:'#c0c8d3', img:'assets/trophies/generic/argent.png' },
   { key:'or',       label:'Or',          color:'#f5a623', img:'assets/trophies/generic/or.png' },
   { key:'diamant',  label:'Diamant',     color:'#7dd3e5', img:'assets/trophies/generic/diamant.png' },
-  { key:'emeraude', label:'Émeraude',    color:'#22c53d', img:'assets/trophies/generic/emeraude.png' },
+  { key:'emeraude', label:'Onyx',        color:'#2a2a2a', img:'assets/trophies/generic/emeraude.png' },
   { key:'violet',   label:'Prismatique', color:'#d13cff', img:'assets/trophies/generic/violet.png' },
 ];
 // Genere 6 trophees d'une meme famille (un par palier). Chaque palier partage
@@ -3676,6 +3676,7 @@ function renderTrophies(data){
       kind: 'tierFamily',
       family: familyKey,
       familyName,
+      cat: displayTier.category || 'progression',
       // Phrase d'objectif unique construite depuis le descTpl : '{n}' remplace par 'X' pour montrer la structure sans seuil precis. Affichee 1 fois au-dessus de la gallerie plutot que repetee dans chaque case.
       objectivePhrase: (tiersSorted[0] && tiersSorted[0].descTpl) ? tiersSorted[0].descTpl.replace('{n}', 'X') : null,
       tiers: tiersSorted.map((t, i) => ({
@@ -3749,7 +3750,7 @@ function renderTrophies(data){
     // Autres categories (progression, habitat, one-shot) -> ordre d'insertion dans TROPHIES.
     const order = (cat === 'species') ? (SPECIES_TAX_RANK[familyKey] ?? 9999) : (familyBlocksByCategory[cat].length * 10);
     familyBlocksByCategory[cat].push({ order, html: `
-      <div class="tro-family ${locked?'locked':'unlocked'} tier-${displayTier.tier}"
+      <div class="tro-family ${locked?'locked':'unlocked'} tier-${displayTier.tier} cat-${cat}"
            style="--tier-color:${displayMeta.color}"
            data-detail="${familyDataIdx}">
         <div class="tro-fam-cup">
@@ -12557,7 +12558,7 @@ $('#trophyGrid').addEventListener('click',async e=>{
       // Si l'objectif est affiche au-dessus, on n'affiche plus la description complete dans chaque case ; le seuil est deja dans '${t.current} / ${t.threshold}'. On garde le desc en fallback pour les trophees sans objectivePhrase.
       const threshLine = d.objectivePhrase ? '' : `<div class="tmodal-tier-thresh">${esc(t.desc)}</div>`;
       return `
-      <div class="tmodal-tier ${t.unlocked?'unlocked':'locked'}" style="--tier-color:${t.color}">
+      <div class="tmodal-tier ${t.unlocked?'unlocked':'locked'} tier-${t.tier} cat-${d.cat||'progression'}" style="--tier-color:${t.color}">
         <img src="${esc(t.img)}" alt="${esc(t.label)}" class="tmodal-tier-img${t.unlocked?'':' grayed'}" loading="lazy" decoding="async">
         <div class="tmodal-tier-label">${esc(title)}</div>
         ${subLabel}

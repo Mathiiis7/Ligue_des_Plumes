@@ -1463,6 +1463,18 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .tro-fam-cup .tro-cup { width:220px; height:220px; object-fit:contain;
     filter:drop-shadow(0 4px 12px color-mix(in srgb, var(--tier-color) 40%, transparent)); }
   .tro-fam-cup .tro-cup.grayed { filter:grayscale(.7) brightness(.9) opacity(.85); }
+  /* Tier Onyx (anciennement Emeraude vert) : filtre grayscale + brightness sur les familles
+     d'especes/habitat pour transformer le vert de la papercraft en noir/anthracite.
+     Non applique aux categories progression (Ecologue/Gaulois/Marco Polo/NatGeo) qui ont
+     leur propre theme visuel dedie (Asterix, sac a dos, etc.). */
+  .tro-family.tier-emeraude.cat-species .tro-cup,
+  .tro-family.tier-emeraude.cat-habitat .tro-cup,
+  .tmodal-tier.tier-emeraude.cat-species .tmodal-tier-img,
+  .tmodal-tier.tier-emeraude.cat-habitat .tmodal-tier-img { filter:grayscale(1) brightness(.55) contrast(1.05); }
+  .tro-family.tier-emeraude.cat-species .tro-cup.grayed,
+  .tro-family.tier-emeraude.cat-habitat .tro-cup.grayed { filter:grayscale(1) brightness(.55) contrast(1.05) opacity(.7); }
+  .tmodal-tier.tier-emeraude.cat-species .tmodal-tier-img.grayed,
+  .tmodal-tier.tier-emeraude.cat-habitat .tmodal-tier-img.grayed { filter:grayscale(1) brightness(.5) opacity(.55); }
   /* Cartes exotiques (badges Colibri, Ratite, ...) : fond de carte neutre (surface-2).
      Quand debloque : legere teinte doree sur bordure + petite lueur pour valoriser la reussite,
      sans etre bling-bling. */
