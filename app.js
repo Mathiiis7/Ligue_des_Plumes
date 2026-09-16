@@ -2328,7 +2328,6 @@ const TROPHY_TIERS = [
   { key:'argent',   label:'Argent',      color:'#c0c8d3', img:'assets/trophies/generic/argent.png' },
   { key:'or',       label:'Or',          color:'#f5a623', img:'assets/trophies/generic/or.png' },
   { key:'diamant',  label:'Diamant',     color:'#7dd3e5', img:'assets/trophies/generic/diamant.png' },
-  { key:'emeraude', label:'Onyx',        color:'#2a2a2a', img:'assets/trophies/generic/emeraude.png' },
   { key:'violet',   label:'Prismatique', color:'#d13cff', img:'assets/trophies/generic/violet.png' },
 ];
 // Genere 6 trophees d'une meme famille (un par palier). Chaque palier partage
@@ -2370,17 +2369,17 @@ const TROPHIES = [
   ...makeTierFamily({
     theme:'progression', icon:ICONS.medal, family:'ecologue', category:'progression', baseName:'Écologue',
     imgDir:'assets/trophies/families/ecologue',
-    tierNames:['Ornithologue du dimanche','Apprenti ornithologue','Ornithologue confirmé','Ornithologue chevronné','Ornithologue expert','Ornithologue de légende'],
-    tierRefs:['tu commences à traîner tes jumelles','tu identifies les 3 mésanges du jardin','tu déchiffres les chants au printemps','tu traques les migrateurs en Camargue','tu ratisses la Bretagne aux pélagiques','ta life list dépasse celle des guides eBird'],
-    metric:s=>s.total, thresholds:[50,100,150,200,300,500],
+    tierNames:['Ornithologue du dimanche','Apprenti ornithologue','Ornithologue confirmé','Ornithologue chevronné','Ornithologue de légende'],
+    tierRefs:['tu commences à traîner tes jumelles','tu identifies les 3 mésanges du jardin','tu déchiffres les chants au printemps','tu traques les migrateurs en Camargue','ta life list dépasse celle des guides eBird'],
+    metric:s=>s.total, thresholds:[50,100,150,200,300],
     descTpl:'Observer {n} espèces différentes',
   }),
   ...makeTierFamily({
     theme:'localisation', icon:ICONS.avion, family:'marcoPolo', category:'progression', baseName:'Marco Polo',
     imgDir:'assets/trophies/families/marcopolo',
-    tierNames:['Sac à dos','Grand voyageur','Aventurier','Explorateur','Globe-trotter','Marco Polo'],
-    tierRefs:['premier vol low-cost pour les vacances','tu poses tes jumelles dans un 4e pays','sac de couchage et carnet de notes toujours prêts','plus de tampons que de pages libres','tous les continents commencent à tomber','plus grand voyageur ornitho de la Ligue'],
-    metric:s=>s.countryCount, thresholds:[2,4,7,12,20,30],
+    tierNames:['Sac à dos','Grand voyageur','Aventurier','Explorateur','Marco Polo'],
+    tierRefs:['premier vol low-cost pour les vacances','tu poses tes jumelles dans un 4e pays','sac de couchage et carnet de notes toujours prêts','plus de tampons que de pages libres','plus grand voyageur ornitho de la Ligue'],
+    metric:s=>s.countryCount, thresholds:[2,4,7,12,20],
     descTpl:'Observer des oiseaux dans {n} pays différents',
     info:s=>s.countryCount ? `✈️ ${s.countryCount} pays visités` : '',
   }),
@@ -2388,10 +2387,10 @@ const TROPHIES = [
     theme:'localisation', icon:ICONS.regions, family:'maFrance', category:'progression', baseName:'Gaulois',
     imgDir:'assets/trophies/families/gaulois',
     // Progression Asterix : chaque perso a son objet emblematique identifiable au 1er coup d'oeil.
-    tierNames:['Idéfix','Ordralfabétix','Panoramix','Obélix','Astérix','Jules César'],
-    tierRefs:['le chien fidèle qui découvre son premier territoire','le poissonnier qui livre sa région','le druide sage qui prépare la potion','l\'invincible qui porte son menhir partout','le petit malin bien dosé à la potion magique','a conquis toute la Gaule, région par région'],
+    tierNames:['Idéfix','Ordralfabétix','Panoramix','Obélix','Jules César'],
+    tierRefs:['le chien fidèle qui découvre son premier territoire','le poissonnier qui livre sa région','le druide sage qui prépare la potion','l\'invincible qui porte son menhir partout','a conquis toute la Gaule, région par région'],
     // FR metropolitaine = 13 regions -> Prismatique atteint quand toutes sont visitees.
-    metric:s=>s.regionsCount, thresholds:[2,4,6,8,11,13],
+    metric:s=>s.regionsCount, thresholds:[2,4,6,8,11],
     descTpl:'Observer un oiseau dans {n} régions françaises',
     list:s=>FR_REGIONS.map(r=>({ name:r.name, owned:s.regionsOwnedSet.has(r.code) })),
     note:s=>`${s.regionsCount} région${s.regionsCount>1?'s':''} visitée${s.regionsCount>1?'s':''} sur ${FR_REGIONS.length}`,
@@ -2432,7 +2431,7 @@ const TROPHIES = [
     imgDir:'assets/trophies/families/rapace',
     // Pool FR ~30 (Buse, Milan, Circaete, Aigle, Vautour, Busards, Faucons...).
     // Diamant = presque complet FR, Emeraude/Prismatique = FR + voyages.
-    metric:s=>(s.raptorOwnedSet?.size)||0, thresholds:[3,7,12,18,24,32],
+    metric:s=>(s.raptorOwnedSet?.size)||0, thresholds:[3,7,12,18,24],
     descTpl:'Observer {n} rapaces diurnes différents (aigles, faucons, vautours…)',
     list:s=>[...(s.raptorOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.raptorOwnedSet?.size)||0} rapace${((s.raptorOwnedSet?.size)||0)>1?'s':''} diurne${((s.raptorOwnedSet?.size)||0)>1?'s':''} observé${((s.raptorOwnedSet?.size)||0)>1?'s':''}`,
@@ -2443,7 +2442,7 @@ const TROPHIES = [
     // Pool FR ~9 (Hulotte, Effraie, Chevechette, Grand-duc, Petit-duc, Tengmalm,
     // Cheveche d'Athena, Moyen-duc, Hibou des marais). Diamant = quasi complet FR,
     // Emeraude/Prismatique demandent voyages (Ninox australiens, Megascops NW, etc.).
-    metric:s=>(s.owlOwnedSet?.size)||0, thresholds:[1,2,4,6,8,13],
+    metric:s=>(s.owlOwnedSet?.size)||0, thresholds:[1,2,4,6,8],
     descTpl:'Observer {n} rapaces nocturnes différents (chouettes, hiboux)',
     list:s=>[...(s.owlOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.owlOwnedSet?.size)||0} rapace${((s.owlOwnedSet?.size)||0)>1?'s':''} nocturne${((s.owlOwnedSet?.size)||0)>1?'s':''} observé${((s.owlOwnedSet?.size)||0)>1?'s':''}`,
@@ -2452,7 +2451,7 @@ const TROPHIES = [
     theme:'groupe', icon:ICONS.aigle, family:'anatidae', category:'species', baseName:'Canards, oies & cygnes',
     imgDir:'assets/trophies/families/anatidae',
     // Pool FR ~40 (canards de surface + plongeurs, oies, cygnes, harles, tadornes).
-    metric:s=>(s.anatidaeOwnedSet?.size)||0, thresholds:[3,8,15,22,30,42],
+    metric:s=>(s.anatidaeOwnedSet?.size)||0, thresholds:[3,8,15,22,30],
     descTpl:'Observer {n} canards, oies ou cygnes différents (harles inclus)',
     list:s=>[...(s.anatidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.anatidaeOwnedSet?.size)||0} espèce${((s.anatidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.anatidaeOwnedSet?.size)||0)>1?'s':''}`,
@@ -2461,7 +2460,7 @@ const TROPHIES = [
     theme:'groupe', icon:ICONS.aigle, family:'podicipedidae', category:'species', baseName:'Grèbes',
     imgDir:'assets/trophies/families/podicipedidae',
     // Podicipedidae. FR 5 (castagneux, huppe, jougris, oreillard, esclavon). Monde ~23.
-    metric:s=>(s.podicipedidaeOwnedSet?.size)||0, thresholds:[1,2,3,4,6,8],
+    metric:s=>(s.podicipedidaeOwnedSet?.size)||0, thresholds:[1,2,3,4,6],
     descTpl:'Observer {n} grèbes différents',
     list:s=>[...(s.podicipedidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.podicipedidaeOwnedSet?.size)||0} grèbe${((s.podicipedidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.podicipedidaeOwnedSet?.size)||0)>1?'s':''}`,
@@ -2471,7 +2470,7 @@ const TROPHIES = [
     theme:'groupe', icon:ICONS.aigle, family:'hirundinidae', category:'species', baseName:'Hirondelles',
     imgDir:'assets/trophies/families/hirundinidae',
     // Pool FR ~5 hirondelles. Monde ~85.
-    metric:s=>(s.hirundoOwnedSet?.size)||0, thresholds:[1,2,3,5,8,12],
+    metric:s=>(s.hirundoOwnedSet?.size)||0, thresholds:[1,2,3,5,8],
     descTpl:'Observer {n} hirondelles différentes',
     list:s=>[...(s.hirundoOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.hirundoOwnedSet?.size)||0} hirondelle${((s.hirundoOwnedSet?.size)||0)>1?'s':''} observée${((s.hirundoOwnedSet?.size)||0)>1?'s':''}`,
@@ -2482,7 +2481,7 @@ const TROPHIES = [
     // Otididae + Pteroclidae : 2 ordres distincts mais ecologie identique (oiseaux terrestres
     // cryptiques des plaines/steppes). FR 4 (Canepetiere, Grande Outarde, Gangas cata + unibande)
     // / monde ~42.
-    metric:s=>(s.outardesGangasOwnedSet?.size)||0, thresholds:[1,2,3,5,8,15],
+    metric:s=>(s.outardesGangasOwnedSet?.size)||0, thresholds:[1,2,3,5,8],
     descTpl:'Observer {n} outardes ou gangas',
     list:s=>[...(s.outardesGangasOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.outardesGangasOwnedSet?.size)||0} espèce${((s.outardesGangasOwnedSet?.size)||0)>1?'s':''} observée${((s.outardesGangasOwnedSet?.size)||0)>1?'s':''}`,
@@ -2491,7 +2490,7 @@ const TROPHIES = [
     theme:'groupe', icon:ICONS.aigle, family:'cuculidae', category:'species', baseName:'Coucous',
     imgDir:'assets/trophies/families/cuculidae',
     // Cuculidae. FR 2 (coucou gris, coucou geai) / monde ~150.
-    metric:s=>(s.cuculidaeOwnedSet?.size)||0, thresholds:[1,2,3,5,10,20],
+    metric:s=>(s.cuculidaeOwnedSet?.size)||0, thresholds:[1,2,3,5,10],
     descTpl:'Observer {n} coucous différents',
     list:s=>[...(s.cuculidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.cuculidaeOwnedSet?.size)||0} coucou${((s.cuculidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.cuculidaeOwnedSet?.size)||0)>1?'s':''}`,
@@ -2500,7 +2499,7 @@ const TROPHIES = [
     theme:'groupe', icon:ICONS.aigle, family:'martinets', category:'species', baseName:'Martinets',
     imgDir:'assets/trophies/families/martinets',
     // Pool FR ~3-4 martinets (noir, pale, alpin, unicolore). Monde ~110.
-    metric:s=>(s.martinetsOwnedSet?.size)||0, thresholds:[1,2,3,5,8,14],
+    metric:s=>(s.martinetsOwnedSet?.size)||0, thresholds:[1,2,3,5,8],
     descTpl:'Observer {n} martinets différents',
     list:s=>[...(s.martinetsOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.martinetsOwnedSet?.size)||0} martinet${((s.martinetsOwnedSet?.size)||0)>1?'s':''} observé${((s.martinetsOwnedSet?.size)||0)>1?'s':''}`,
@@ -2509,7 +2508,7 @@ const TROPHIES = [
     theme:'groupe', icon:ICONS.aigle, family:'alaudidae', category:'species', baseName:'Alouettes',
     imgDir:'assets/trophies/families/alaudidae',
     // Pool FR ~8
-    metric:s=>(s.alaudaOwnedSet?.size)||0, thresholds:[1,2,4,6,8,12],
+    metric:s=>(s.alaudaOwnedSet?.size)||0, thresholds:[1,2,4,6,8],
     descTpl:'Observer {n} alouettes différentes',
     list:s=>[...(s.alaudaOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.alaudaOwnedSet?.size)||0} alouette${((s.alaudaOwnedSet?.size)||0)>1?'s':''} observée${((s.alaudaOwnedSet?.size)||0)>1?'s':''}`,
@@ -2518,7 +2517,7 @@ const TROPHIES = [
     theme:'groupe', icon:ICONS.aigle, family:'paridae', category:'species', baseName:'Mésanges',
     imgDir:'assets/trophies/families/paridae',
     // Pool FR ~10 (Paridae + Aegithalidae + Panuridae + Remizidae)
-    metric:s=>(s.paridaeOwnedSet?.size)||0, thresholds:[1,3,5,7,10,14],
+    metric:s=>(s.paridaeOwnedSet?.size)||0, thresholds:[1,3,5,7,10],
     descTpl:'Observer {n} mésanges différentes',
     list:s=>[...(s.paridaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.paridaeOwnedSet?.size)||0} mésange${((s.paridaeOwnedSet?.size)||0)>1?'s':''} observée${((s.paridaeOwnedSet?.size)||0)>1?'s':''}`,
@@ -2527,7 +2526,7 @@ const TROPHIES = [
     theme:'groupe', icon:ICONS.aigle, family:'corvidae', category:'species', baseName:'Corvidés',
     imgDir:'assets/trophies/families/corvidae',
     // Pool FR ~10 (corneille, freux, grand corbeau, choucas, pie, geai, cassenoix, crave, chocard)
-    metric:s=>(s.corvidaeOwnedSet?.size)||0, thresholds:[2,4,6,8,11,15],
+    metric:s=>(s.corvidaeOwnedSet?.size)||0, thresholds:[2,4,6,8,11],
     descTpl:'Observer {n} corvidés différents (corneilles, geais, pies, corbeaux…)',
     list:s=>[...(s.corvidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.corvidaeOwnedSet?.size)||0} corvidé${((s.corvidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.corvidaeOwnedSet?.size)||0)>1?'s':''}`,
@@ -2536,7 +2535,7 @@ const TROPHIES = [
     theme:'groupe', icon:ICONS.aigle, family:'coraciiformes', category:'species', baseName:'Guêpiers & rolliers',
     imgDir:'assets/trophies/families/coraciiformes',
     // Coraciiformes hors martins-pecheurs. FR = 2 (Guepier + Rollier d'Europe). Monde ~63.
-    metric:s=>(s.coraciiformesOwnedSet?.size)||0, thresholds:[1,2,4,7,12,20],
+    metric:s=>(s.coraciiformesOwnedSet?.size)||0, thresholds:[1,2,4,7,12],
     descTpl:'Observer {n} guêpiers, rolliers, todiers, motmots ou brachyptérolles',
     list:s=>[...(s.coraciiformesOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.coraciiformesOwnedSet?.size)||0} espèce${((s.coraciiformesOwnedSet?.size)||0)>1?'s':''} observée${((s.coraciiformesOwnedSet?.size)||0)>1?'s':''}`,
@@ -2545,7 +2544,7 @@ const TROPHIES = [
     theme:'groupe', icon:ICONS.aigle, family:'alcedinidae', category:'species', baseName:'Martins-pêcheurs',
     imgDir:'assets/trophies/families/alcedinidae',
     // Pool FR = 1 (Martin-pecheur d'Europe uniquement). Seuils = voyage obligatoire.
-    metric:s=>(s.alcediOwnedSet?.size)||0, thresholds:[1,2,4,7,12,18],
+    metric:s=>(s.alcediOwnedSet?.size)||0, thresholds:[1,2,4,7,12],
     descTpl:'Observer {n} martins-pêcheurs différents',
     list:s=>[...(s.alcediOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.alcediOwnedSet?.size)||0} martin-pêcheur${((s.alcediOwnedSet?.size)||0)>1?'s':''} observé${((s.alcediOwnedSet?.size)||0)>1?'s':''}`,
@@ -2555,7 +2554,7 @@ const TROPHIES = [
     imgDir:'assets/trophies/families/suliformes',
     // Ordre Suliformes complet : Phalacrocoracidae + Sulidae + Anhingidae + Fregatidae.
     // FR ~5 (3 cormorans + fou de Bassan + fregate rare). Monde ~60.
-    metric:s=>(s.suliformesOwnedSet?.size)||0, thresholds:[1,2,4,6,8,13],
+    metric:s=>(s.suliformesOwnedSet?.size)||0, thresholds:[1,2,4,6,8],
     descTpl:'Observer {n} cormorans, fous, anhingas ou frégates',
     list:s=>[...(s.suliformesOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.suliformesOwnedSet?.size)||0} espèce${((s.suliformesOwnedSet?.size)||0)>1?'s':''} observée${((s.suliformesOwnedSet?.size)||0)>1?'s':''}`,
@@ -2565,7 +2564,7 @@ const TROPHIES = [
     imgDir:'assets/trophies/families/ardeidae',
     // Ordre Pelecaniformes complet : Ardeidae + Threskiornithidae + Pelecanidae + Scopidae + Balaenicipitidae.
     // FR ~18 (13 herons/aigrettes/butors + 3 ibis/spatules + 2 pelicans rares) / monde ~110.
-    metric:s=>(s.ardeidaeOwnedSet?.size)||0, thresholds:[2,5,9,13,17,22],
+    metric:s=>(s.ardeidaeOwnedSet?.size)||0, thresholds:[2,5,9,13,17],
     descTpl:'Observer {n} hérons, ibis, spatules ou pélicans',
     list:s=>[...(s.ardeidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.ardeidaeOwnedSet?.size)||0} espèce${((s.ardeidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.ardeidaeOwnedSet?.size)||0)>1?'s':''}`,
@@ -2574,7 +2573,7 @@ const TROPHIES = [
     theme:'groupe', icon:ICONS.aigle, family:'columbidae', category:'species', baseName:'Pigeons & tourterelles',
     imgDir:'assets/trophies/families/columbidae',
     // Pool FR ~7 (biset, colombin, ramier + 3-4 tourterelles)
-    metric:s=>(s.columbidaeOwnedSet?.size)||0, thresholds:[1,3,5,7,10,14],
+    metric:s=>(s.columbidaeOwnedSet?.size)||0, thresholds:[1,3,5,7,10],
     descTpl:'Observer {n} pigeons ou tourterelles différents',
     list:s=>[...(s.columbidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.columbidaeOwnedSet?.size)||0} espèce${((s.columbidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.columbidaeOwnedSet?.size)||0)>1?'s':''}`,
@@ -2583,7 +2582,7 @@ const TROPHIES = [
     theme:'groupe', icon:ICONS.aigle, family:'galliformes', category:'species', baseName:'Galliformes',
     imgDir:'assets/trophies/families/galliformes',
     // Pool FR ~10 (perdrix rouge/grise/bartavelle, faisan, caille, gelinotte, tetras lyre, grand tetras, lagopede, coq)
-    metric:s=>(s.galliformesOwnedSet?.size)||0, thresholds:[1,2,4,6,9,13],
+    metric:s=>(s.galliformesOwnedSet?.size)||0, thresholds:[1,2,4,6,9],
     descTpl:'Observer {n} galliformes différents (faisans, perdrix, tétras, cailles…)',
     list:s=>[...(s.galliformesOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.galliformesOwnedSet?.size)||0} galliforme${((s.galliformesOwnedSet?.size)||0)>1?'s':''} observé${((s.galliformesOwnedSet?.size)||0)>1?'s':''}`,
@@ -2592,7 +2591,7 @@ const TROPHIES = [
     theme:'groupe', icon:ICONS.aigle, family:'picidae', category:'species', baseName:'Pics',
     imgDir:'assets/trophies/families/picidae',
     // Pool FR ~10 (vert, epeiche, epeichette, noir, mar, tridactyle, cendre, torcol, a dos blanc)
-    metric:s=>(s.picidaeOwnedSet?.size)||0, thresholds:[2,4,6,8,11,15],
+    metric:s=>(s.picidaeOwnedSet?.size)||0, thresholds:[2,4,6,8,11],
     descTpl:'Observer {n} pics différents',
     list:s=>[...(s.picidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.picidaeOwnedSet?.size)||0} pic${((s.picidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.picidaeOwnedSet?.size)||0)>1?'s':''}`,
@@ -2602,7 +2601,7 @@ const TROPHIES = [
     imgDir:'assets/trophies/families/scolopacidae',
     // Pool FR ~25 (Scolopacidae : becasseaux, chevaliers, courlis, barges,
     // phalaropes, becasses, becassines).
-    metric:s=>(s.scolopacidaeOwnedSet?.size)||0, thresholds:[2,5,10,15,20,28],
+    metric:s=>(s.scolopacidaeOwnedSet?.size)||0, thresholds:[2,5,10,15,20],
     descTpl:'Observer {n} bécasseaux, chevaliers ou apparentés différents (barges, courlis, bécassines…)',
     list:s=>[...(s.scolopacidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.scolopacidaeOwnedSet?.size)||0} espèce${((s.scolopacidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.scolopacidaeOwnedSet?.size)||0)>1?'s':''}`,
@@ -2612,7 +2611,7 @@ const TROPHIES = [
     imgDir:'assets/trophies/families/rivages',
     // Pool FR ~15 (Charadriidae + Haematopodidae + Recurvirostridae + Burhinidae
     // + Glareolidae + Rostratulidae + Jacanidae exotiques).
-    metric:s=>(s.rivagesOwnedSet?.size)||0, thresholds:[2,4,7,10,13,17],
+    metric:s=>(s.rivagesOwnedSet?.size)||0, thresholds:[2,4,7,10,13],
     descTpl:'Observer {n} espèces de rivage différentes (pluviers, vanneaux, huîtrier, avocette, échasse…)',
     list:s=>[...(s.rivagesOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.rivagesOwnedSet?.size)||0} espèce${((s.rivagesOwnedSet?.size)||0)>1?'s':''} observée${((s.rivagesOwnedSet?.size)||0)>1?'s':''}`,
@@ -2621,7 +2620,7 @@ const TROPHIES = [
     theme:'groupe', icon:ICONS.aigle, family:'laridae', category:'species', baseName:'Goélands & mouettes',
     imgDir:'assets/trophies/families/laridae',
     // Pool FR ~15 (goelands + mouettes + sternes)
-    metric:s=>(s.laridaeOwnedSet?.size)||0, thresholds:[2,4,7,11,15,22],
+    metric:s=>(s.laridaeOwnedSet?.size)||0, thresholds:[2,4,7,11,15],
     descTpl:'Observer {n} goélands, mouettes ou sternes différents',
     list:s=>[...(s.laridaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.laridaeOwnedSet?.size)||0} espèce${((s.laridaeOwnedSet?.size)||0)>1?'s':''} observée${((s.laridaeOwnedSet?.size)||0)>1?'s':''}`,
@@ -2630,7 +2629,7 @@ const TROPHIES = [
     theme:'groupe', icon:ICONS.aigle, family:'turdidae', category:'species', baseName:'Grives & merles',
     imgDir:'assets/trophies/families/turdidae',
     // Pool FR ~6 (merle, grives musicienne/mauvis/litorne/draine + merle a plastron)
-    metric:s=>(s.turdidaeOwnedSet?.size)||0, thresholds:[1,2,4,6,8,12],
+    metric:s=>(s.turdidaeOwnedSet?.size)||0, thresholds:[1,2,4,6,8],
     descTpl:'Observer {n} grives ou merles différents',
     list:s=>[...(s.turdidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.turdidaeOwnedSet?.size)||0} espèce${((s.turdidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.turdidaeOwnedSet?.size)||0)>1?'s':''}`,
@@ -2639,7 +2638,7 @@ const TROPHIES = [
     theme:'groupe', icon:ICONS.aigle, family:'muscicapidae', category:'species', baseName:'Muscicapidés',
     imgDir:'assets/trophies/families/muscicapidae',
     // Pool FR ~9 (rossignol, gorgebleue, rougegorge, rougequeues, traquets, tariers, gobemouches)
-    metric:s=>(s.muscicapidaeOwnedSet?.size)||0, thresholds:[2,4,7,10,13,17],
+    metric:s=>(s.muscicapidaeOwnedSet?.size)||0, thresholds:[2,4,7,10,13],
     descTpl:'Observer {n} muscicapidés différents (rossignols, rougequeues, traquets, gobemouches…)',
     list:s=>[...(s.muscicapidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.muscicapidaeOwnedSet?.size)||0} espèce${((s.muscicapidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.muscicapidaeOwnedSet?.size)||0)>1?'s':''}`,
@@ -2648,7 +2647,7 @@ const TROPHIES = [
     theme:'groupe', icon:ICONS.aigle, family:'sylviidae', category:'species', baseName:'Fauvettes',
     imgDir:'assets/trophies/families/sylviidae',
     // Pool FR ~7 (Curruca : tetes noires, orphee, epervieres, passerinette, sarde, pitchou, cerinesque + Sylvia atricapilla)
-    metric:s=>(s.sylviidaeOwnedSet?.size)||0, thresholds:[1,2,4,6,8,12],
+    metric:s=>(s.sylviidaeOwnedSet?.size)||0, thresholds:[1,2,4,6,8],
     descTpl:'Observer {n} fauvettes différentes',
     list:s=>[...(s.sylviidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.sylviidaeOwnedSet?.size)||0} fauvette${((s.sylviidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.sylviidaeOwnedSet?.size)||0)>1?'s':''}`,
@@ -2657,7 +2656,7 @@ const TROPHIES = [
     theme:'groupe', icon:ICONS.aigle, family:'phylloscopidae', category:'species', baseName:'Pouillots & rousserolles',
     imgDir:'assets/trophies/families/phylloscopidae',
     // Pool FR ~18 (Phyllosco 8 + Acroc 6 + Locust 3 + Cetti 1)
-    metric:s=>(s.phylloscopidaeOwnedSet?.size)||0, thresholds:[2,5,9,13,17,22],
+    metric:s=>(s.phylloscopidaeOwnedSet?.size)||0, thresholds:[2,5,9,13,17],
     descTpl:'Observer {n} pouillots, rousserolles, hypolaïs ou locustelles différents',
     list:s=>[...(s.phylloscopidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.phylloscopidaeOwnedSet?.size)||0} espèce${((s.phylloscopidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.phylloscopidaeOwnedSet?.size)||0)>1?'s':''}`,
@@ -2666,7 +2665,7 @@ const TROPHIES = [
     theme:'groupe', icon:ICONS.aigle, family:'fringillidae', category:'species', baseName:'Fringilles',
     imgDir:'assets/trophies/families/fringillidae',
     // Pool FR ~15 (pinsons, chardonneret, verdier, tarins, linottes, bec-croises, bouvreuil, grosbec, roselins)
-    metric:s=>(s.fringillidaeOwnedSet?.size)||0, thresholds:[3,6,9,12,16,22],
+    metric:s=>(s.fringillidaeOwnedSet?.size)||0, thresholds:[3,6,9,12,16],
     descTpl:'Observer {n} fringilles différents (pinsons, chardonnerets, tarins, bouvreuils…)',
     list:s=>[...(s.fringillidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.fringillidaeOwnedSet?.size)||0} fringille${((s.fringillidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.fringillidaeOwnedSet?.size)||0)>1?'s':''}`,
@@ -2675,7 +2674,7 @@ const TROPHIES = [
     theme:'groupe', icon:ICONS.aigle, family:'emberizidae', category:'species', baseName:'Bruants',
     imgDir:'assets/trophies/families/emberizidae',
     // Pool FR ~10 (jaune, zizi, cirl, ortolan, proyer, roseaux, fou, nain, lapon, neiges + bruants NW voyage)
-    metric:s=>(s.emberizidaeOwnedSet?.size)||0, thresholds:[2,4,6,8,11,15],
+    metric:s=>(s.emberizidaeOwnedSet?.size)||0, thresholds:[2,4,6,8,11],
     descTpl:'Observer {n} bruants différents',
     list:s=>[...(s.emberizidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.emberizidaeOwnedSet?.size)||0} bruant${((s.emberizidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.emberizidaeOwnedSet?.size)||0)>1?'s':''}`,
@@ -2684,7 +2683,7 @@ const TROPHIES = [
     theme:'groupe', icon:ICONS.aigle, family:'rallidae', category:'species', baseName:'Rallidés',
     imgDir:'assets/trophies/families/rallidae',
     // Pool FR ~7 (foulque, gallinule, rale d'eau, rale des genets, marouettes, taleve)
-    metric:s=>(s.rallidaeOwnedSet?.size)||0, thresholds:[1,2,4,5,7,10],
+    metric:s=>(s.rallidaeOwnedSet?.size)||0, thresholds:[1,2,4,5,7],
     descTpl:'Observer {n} rallidés différents (foulques, poules d\'eau, râles, marouettes…)',
     list:s=>[...(s.rallidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.rallidaeOwnedSet?.size)||0} rallidé${((s.rallidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.rallidaeOwnedSet?.size)||0)>1?'s':''}`,
@@ -2694,7 +2693,7 @@ const TROPHIES = [
     imgDir:'assets/trophies/families/sturnoidea',
     // Superfamille Sturnoidea : Sturnidae + Mimidae + Buphagidae + Rhabdornithidae.
     // FR ~3 (etourneau sansonnet, unicolore, roselin exotique). Monde ~160.
-    metric:s=>(s.sturnoideaOwnedSet?.size)||0, thresholds:[1,2,4,7,12,22],
+    metric:s=>(s.sturnoideaOwnedSet?.size)||0, thresholds:[1,2,4,7,12],
     descTpl:'Observer {n} étourneaux, moqueurs ou piqueboeufs',
     list:s=>[...(s.sturnoideaOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.sturnoideaOwnedSet?.size)||0} espèce${((s.sturnoideaOwnedSet?.size)||0)>1?'s':''} observée${((s.sturnoideaOwnedSet?.size)||0)>1?'s':''}`,
@@ -2704,7 +2703,7 @@ const TROPHIES = [
     imgDir:'assets/trophies/families/certhioidea',
     // Superfamille Certhioidea : Sittidae + Certhiidae + Salpornithidae + Troglodytidae + Polioptilidae.
     // Petits explorateurs d'ecorce et de buissons. FR ~6 / monde ~140.
-    metric:s=>(s.certhioideaOwnedSet?.size)||0, thresholds:[1,3,5,7,10,15],
+    metric:s=>(s.certhioideaOwnedSet?.size)||0, thresholds:[1,3,5,7,10],
     descTpl:'Observer {n} sittelles, grimpereaux, troglodytes ou gobemoucherons',
     list:s=>[...(s.certhioideaOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.certhioideaOwnedSet?.size)||0} espèce${((s.certhioideaOwnedSet?.size)||0)>1?'s':''} observée${((s.certhioideaOwnedSet?.size)||0)>1?'s':''}`,
@@ -2715,7 +2714,7 @@ const TROPHIES = [
     // Passeridae (moineaux, 4 esp FR) + Prunellidae (accenteurs, 3 esp FR). Meme superfamille
     // Passeroidea, ecologiquement proches (petits granivores/insectivores brun-gris discrets).
     // Pool FR ~7. Monde ~55.
-    metric:s=>(s.passeridaeOwnedSet?.size)||0, thresholds:[1,2,4,5,7,10],
+    metric:s=>(s.passeridaeOwnedSet?.size)||0, thresholds:[1,2,4,5,7],
     descTpl:'Observer {n} moineaux ou accenteurs différents',
     list:s=>[...(s.passeridaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.passeridaeOwnedSet?.size)||0} espèce${((s.passeridaeOwnedSet?.size)||0)>1?'s':''} observée${((s.passeridaeOwnedSet?.size)||0)>1?'s':''}`,
@@ -2724,7 +2723,7 @@ const TROPHIES = [
     theme:'groupe', icon:ICONS.aigle, family:'motacillidae', category:'species', baseName:'Bergeronnettes & pipits',
     imgDir:'assets/trophies/families/motacillidae',
     // Pool FR ~10 (M. alba, cinerea, flava, citreola + Anthus pratensis, spinoletta, trivialis, campestris, cervinus, richardi)
-    metric:s=>(s.motacillidaeOwnedSet?.size)||0, thresholds:[2,4,6,8,11,15],
+    metric:s=>(s.motacillidaeOwnedSet?.size)||0, thresholds:[2,4,6,8,11],
     descTpl:'Observer {n} bergeronnettes ou pipits différents',
     list:s=>[...(s.motacillidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.motacillidaeOwnedSet?.size)||0} bergeronnette${((s.motacillidaeOwnedSet?.size)||0)>1?'s':''} ou pipit${((s.motacillidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.motacillidaeOwnedSet?.size)||0)>1?'s':''}`,
@@ -2735,7 +2734,7 @@ const TROPHIES = [
     // Ciconiidae (Ciconiiformes) + Gruidae (Gruiformes). Deux ordres mais grands migrateurs a cou
     // tendu, silhouette elancee, vol en V. FR 3 (Cigogne blanche + Cigogne noire + Grue cendree) /
     // monde ~35 (20 cigognes + 15 grues).
-    metric:s=>(s.ciconiidaeOwnedSet?.size)||0, thresholds:[1,2,3,5,7,12],
+    metric:s=>(s.ciconiidaeOwnedSet?.size)||0, thresholds:[1,2,3,5,7],
     descTpl:'Observer {n} cigognes ou grues',
     list:s=>[...(s.ciconiidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.ciconiidaeOwnedSet?.size)||0} espèce${((s.ciconiidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.ciconiidaeOwnedSet?.size)||0)>1?'s':''}`,
@@ -2743,9 +2742,9 @@ const TROPHIES = [
   ...makeTierFamily({
     theme:'communaute', icon:ICONS.photo, family:'natGeo', category:'progression', baseName:'National Geographic',
     imgDir:'assets/trophies/families/natgeo',
-    tierNames:['Amateur','Naturaliste','Photographe animalier','Reporter','Grand reporter','National Geographic'],
-    tierRefs:['première photo qui capte 3 cœurs','tu commences à cadrer les rapaces','téléobjectif dans le sac à chaque sortie','tes clichés font le buzz du groupe','ton portfolio pourrait passer en expo','couverture jaune bordée, tu as tout compris'],
-    metric:s=>s.hotPhotos||0, thresholds:[1,3,7,15,25,40],
+    tierNames:['Amateur','Naturaliste','Photographe animalier','Reporter','National Geographic'],
+    tierRefs:['première photo qui capte 3 cœurs','tu commences à cadrer les rapaces','téléobjectif dans le sac à chaque sortie','tes clichés font le buzz du groupe','couverture jaune bordée, tu as tout compris'],
+    metric:s=>s.hotPhotos||0, thresholds:[1,3,7,15,25],
     descTpl:'Poster {n} photos avec 3+ ❤️',
     info:s=>s.hotPhotos>0 ? `${s.hotPhotos} photo${s.hotPhotos>1?'s':''} qui claque${s.hotPhotos>1?'nt':''}` : '',
   }),
