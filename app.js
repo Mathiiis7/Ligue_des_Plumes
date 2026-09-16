@@ -2776,7 +2776,7 @@ const TROPHIES = [
   { theme:'groupe',      icon:ICONS.woodpecker, name:'Pic noir', desc:'Observer le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker },
   { theme:'groupe',      icon:ICONS.pieGrieche, name:'Pie-grièche',       desc:'Observer une pie-grièche (Laniidae)',                                                test:s=>s.hasShrike,      exotic:true },
   { theme:'groupe',      icon:ICONS.colibri,   name:'Colibri',            desc:'Observer un colibri (Trochilidae)',                                                  test:s=>s.hasHummingbird, exotic:true },
-  { theme:'groupe',      icon:ICONS.aigle,     name:'Ratite',             desc:'Observer une autruche, un nandou, un émeu, un casoar, un kiwi ou un tinamou',        test:s=>s.hasRatite,      exotic:true },
+  { theme:'groupe',      icon:ICONS.aigle,     name:'Ratite',             desc:'Observer une autruche, un nandou, un casoar ou un émeu',                             test:s=>s.hasRatite,      exotic:true },
   { theme:'groupe',      icon:ICONS.perroquet, name:'Perroquet exotique', desc:'Observer un perroquet, une perruche ou un cacatoès (hors Perruche à collier férale)', test:s=>s.hasExoticParrot, exotic:true },
   { theme:'groupe',      icon:ICONS.toucan,    name:'Toucan',             desc:'Observer un toucan (Ramphastidae)',                                                  test:s=>s.hasToucan,      exotic:true },
   { theme:'groupe',      icon:ICONS.calao,     name:'Calao',              desc:'Observer un calao (Bucerotidae ou Bucorvidae)',                                      test:s=>s.hasHornbill,    exotic:true },
@@ -3516,7 +3516,7 @@ function statsFor(me, N){
     if(typeof familyOf === 'function'){
       const fam = familyOf(sci);
       if(fam === 'Colibris') hasHummingbird = true;
-      if(fam === 'Autruches' || fam === 'Nandous' || fam === 'Casoars et Emeus' || fam === 'Kiwis' || fam === 'Tinamous') hasRatite = true;
+      if(fam === 'Autruches' || fam === 'Nandous' || fam === 'Casoars et Emeus') hasRatite = true;
       // Perroquet exotique : exclut Psittacula krameri (Perruche a collier ferale en IdF).
       if((fam === 'Perroquets' || fam === 'Cacatoès' || fam === 'Perruches' || fam === 'Perroquets de Nouvelle-Zélande') && sci !== 'psittacula krameri') hasExoticParrot = true;
       if(fam === 'Toucans') hasToucan = true;
