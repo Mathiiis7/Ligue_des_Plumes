@@ -2402,22 +2402,24 @@ const TROPHIES = [
   // pour chaque habitat en commentaire.
   ...([
     ["forest",   "Forestier",    [4,12,25,45,70,100]],  // pool FR ~200 (super commun)
-    ["woodland", "Bocager",      [3, 8,16,30,45,70]],   // ~100
-    ["shrubland","Buissonnier",  [3, 6,12,20,30,45]],   // ~50
-    ["grassland","Steppique",    [3, 6,12,20,30,45]],   // ~50
-    ["tundra",   "Toundra",      [1, 2, 4, 6,10,15]],   // ~10 (Lagopede + Pluvier guignard alpin)
-    ["agricole", "Paysan",       [3, 7,13,22,35,55]],   // ~80
-    ["wetland",  "Palustre",     [4,10,20,40,60,90]],   // ~150 (super commun)
-    ["riverine", "Piscivore",    [3, 6,12,20,30,45]],   // ~50
-    ["mangrove", "Mangrovien",   [1, 2, 4, 7,12,18]],   // ~0 en FR, voyage obligatoire
-    ["marine",   "Pélagique",    [1, 3, 6,10,18,30]],   // ~40
-    ["coastal",  "Littoral",     [3, 7,13,22,35,55]],   // ~80
-    ["rock",     "Rupestre",     [1, 3, 6,10,15,22]],   // ~20 (Tichodrome, Craves, Traquets)
-    ["cave",     "Cavernicole",  [1, 1, 2, 3, 5, 8]],   // ~2 en FR (Guepier occasionnel, Martinet exotique)
-    ["montane",  "Montagnard",   [2, 4, 8,13,20,30]],   // ~25 (cf HABITAT_ADDITIONS)
-    ["desert",   "Saharien",     [1, 2, 4, 6,10,15]],   // ~5 en FR (Traquet du desert, Alouette du desert)
-    ["humanmod", "Urbain",       [3, 7,14,22,35,50]],   // ~60
-    ["aerial",   "Voltigeur",    [1, 2, 4, 6,10,15]],   // ~10 (Martinets, Hirondelles, Engoulevent)
+    // 5 tiers : Bronze, Argent, Or, Diamant, Prismatique. Prismatique = objectif ~1.3x le pool FR
+    // (voyage exotique pour les habitats presents en FR, ou objectif dedie pour les habitats hors FR).
+    ["woodland", "Bocager",      [3, 8,16,30,50]],   // ~100 esp FR pool
+    ["shrubland","Buissonnier",  [3, 6,12,20,32]],   // ~50
+    ["grassland","Steppique",    [3, 6,12,20,32]],   // ~50
+    ["tundra",   "Toundra",      [1, 2, 4, 7,13]],   // ~10 (Lagopede + Pluvier guignard alpin)
+    ["agricole", "Paysan",       [3, 7,13,22,40]],   // ~80
+    ["wetland",  "Palustre",     [4,10,20,40,70]],   // ~150 (super commun)
+    ["riverine", "Piscivore",    [3, 6,12,20,32]],   // ~50
+    ["mangrove", "Mangrovien",   [1, 2, 4, 7,14]],   // ~0 en FR, voyage obligatoire
+    ["marine",   "Pélagique",    [1, 3, 6,10,20]],   // ~40
+    ["coastal",  "Littoral",     [3, 7,13,22,40]],   // ~80
+    ["rock",     "Rupestre",     [1, 3, 6,10,17]],   // ~20 (Tichodrome, Craves, Traquets)
+    ["cave",     "Cavernicole",  [1, 1, 2, 3, 6]],   // ~2 en FR (Guepier occasionnel, Martinet exotique)
+    ["montane",  "Montagnard",   [2, 4, 8,13,22]],   // ~25 (cf HABITAT_ADDITIONS)
+    ["desert",   "Saharien",     [1, 2, 4, 6,12]],   // ~5 en FR (Traquet du desert, Alouette du desert)
+    ["humanmod", "Urbain",       [3, 7,14,22,42]],   // ~60
+    ["aerial",   "Voltigeur",    [1, 2, 4, 7,13]],   // ~10 (Martinets, Hirondelles, Engoulevent)
   ].flatMap(([habKey, name, thresholds]) => makeTierFamily({
     theme:'groupe', icon:ICONS.bearGrylls, family:'habitat_'+habKey, category:'habitat', baseName:name,
     metric:s=>(s.habOwned[habKey]?.size)||0, thresholds,
