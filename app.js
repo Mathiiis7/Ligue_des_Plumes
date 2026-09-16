@@ -2774,12 +2774,12 @@ const TROPHIES = [
   { theme:'communaute',  icon:ICONS.mort, name:'Le Nécrophile', desc:'Observer un oiseau décédé #ripstayproud (preuve demandée)', special:'vote', voteId:'necrophile', voteThreshold:3, test:s=>(s.necrophileVotes||0)>=3 },
   { theme:'classement',  icon:ICONS.cup, name:'Mike Horn', desc:'Avoir l’oiseau le plus rare de la ligue', test:s=>s.mikeHorn, info:s=>s.mikeHorn&&s.mikeBird?'🏅 '+s.mikeBird:'', tip:s=>s.mikeHorn&&s.mikeBird?'Oiseau le plus rare : '+s.mikeBird:'' },
   { theme:'groupe',      icon:ICONS.woodpecker, name:'Pic noir', desc:'Observer le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker },
-  { theme:'groupe',      icon:ICONS.pieGrieche, name:'Pie-grièche',       desc:'Observer une pie-grièche (Laniidae)',                                                test:s=>s.hasShrike,      exotic:true },
-  { theme:'groupe',      icon:ICONS.colibri,   name:'Colibri',            desc:'Observer un colibri (Trochilidae)',                                                  test:s=>s.hasHummingbird, exotic:true },
-  { theme:'groupe',      icon:ICONS.ratite,    name:'Grand ratite',       desc:'Observer une autruche, un nandou, un casoar ou un émeu',                             test:s=>s.hasRatite,      exotic:true },
-  { theme:'groupe',      icon:ICONS.perroquet, name:'Perroquet exotique', desc:'Observer un perroquet, une perruche ou un cacatoès (hors Perruche à collier férale)', test:s=>s.hasExoticParrot, exotic:true },
-  { theme:'groupe',      icon:ICONS.toucan,    name:'Toucan',             desc:'Observer un toucan (Ramphastidae)',                                                  test:s=>s.hasToucan,      exotic:true },
-  { theme:'groupe',      icon:ICONS.calao,     name:'Calao',              desc:'Observer un calao (Bucerotidae ou Bucorvidae)',                                      test:s=>s.hasHornbill,    exotic:true },
+  { theme:'groupe',      icon:ICONS.pieGrieche, name:'Pie-grièche',       desc:'Observer une pie-grièche (Laniidae)',                                                test:s=>s.hasShrike,      exotic:true, alwaysList:true, list:s=>[...(s.shrikesSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
+  { theme:'groupe',      icon:ICONS.colibri,   name:'Colibri',            desc:'Observer un colibri (Trochilidae)',                                                  test:s=>s.hasHummingbird, exotic:true, alwaysList:true, list:s=>[...(s.hummingbirdsSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
+  { theme:'groupe',      icon:ICONS.ratite,    name:'Grand ratite',       desc:'Observer une autruche, un nandou, un casoar ou un émeu',                             test:s=>s.hasRatite,      exotic:true, alwaysList:true, list:s=>[...(s.ratitesSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
+  { theme:'groupe',      icon:ICONS.perroquet, name:'Perroquet exotique', desc:'Observer un perroquet, une perruche ou un cacatoès (hors Perruche à collier férale)', test:s=>s.hasExoticParrot, exotic:true, alwaysList:true, list:s=>[...(s.exoticParrotsSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
+  { theme:'groupe',      icon:ICONS.toucan,    name:'Toucan',             desc:'Observer un toucan (Ramphastidae)',                                                  test:s=>s.hasToucan,      exotic:true, alwaysList:true, list:s=>[...(s.toucansSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
+  { theme:'groupe',      icon:ICONS.calao,     name:'Calao',              desc:'Observer un calao (Bucerotidae ou Bucorvidae)',                                      test:s=>s.hasHornbill,    exotic:true, alwaysList:true, list:s=>[...(s.hornbillsSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
   { theme:'communaute',  icon:ICONS.singe, name:'Le coup de Ruff', desc:'Ne pas avoir un oiseau qu’Enzo a vu #honteux', test:s=>s.lackEnzoBird },
   { theme:'localisation',icon:ICONS.huitre, name:'Bourriche d’huître', desc:'Observer un oiseau à La Teste-de-Buch', test:s=>s.locTeste },
   { theme:'groupe',      icon:ICONS.pingouin, name:'Happy feet', desc:'Observer un pingouin, un manchot ou un cousin (macareux, guillemot…)', test:s=>s.hasPenguin, alwaysList:true,
@@ -3401,6 +3401,7 @@ function statsFor(me, N){
   const rank=ranked.findIndex(p=>p.id===me.id)+1;
   let owls=0,raptors=0,water=0,sea=0,blackWoodpecker=false,locTeste=false,hasKingfisher=false,hasPenguin=false,hasFireKingfisher=false,
       hasHummingbird=false,hasRatite=false,hasExoticParrot=false,hasToucan=false,hasHornbill=false,hasShrike=false;
+  const hummingbirdsSet=new Set(), ratitesSet=new Set(), exoticParrotsSet=new Set(), toucansSet=new Set(), hornbillsSet=new Set(), shrikesSet=new Set();
   const megaList=[]; const megaOwnedSet=new Set();
   const seasonHit={}; SEASON_ORDER.forEach(s=>seasonHit[s]=false); const seasonOwnedSet=new Set();
   const raptorOwnedSet=new Set(), alcidOwnedSet=new Set(), manchotOwnedSet=new Set(), waterOwnedSet=new Set(), owlOwnedSet=new Set(), anatidaeOwnedSet=new Set();
@@ -3515,13 +3516,13 @@ function statsFor(me, N){
     // Badges one-shot pour especes exotiques (aucune en FR). Detection via famille eBird.
     if(typeof familyOf === 'function'){
       const fam = familyOf(sci);
-      if(fam === 'Colibris') hasHummingbird = true;
-      if(fam === 'Autruches' || fam === 'Nandous' || fam === 'Casoars et Emeus') hasRatite = true;
+      if(fam === 'Colibris'){ hasHummingbird = true; hummingbirdsSet.add(sci); }
+      if(fam === 'Autruches' || fam === 'Nandous' || fam === 'Casoars et Emeus'){ hasRatite = true; ratitesSet.add(sci); }
       // Perroquet exotique : exclut Psittacula krameri (Perruche a collier ferale en IdF).
-      if((fam === 'Perroquets' || fam === 'Cacatoès' || fam === 'Perruches' || fam === 'Perroquets de Nouvelle-Zélande') && sci !== 'psittacula krameri') hasExoticParrot = true;
-      if(fam === 'Toucans') hasToucan = true;
-      if(fam === 'Calaos') hasHornbill = true;
-      if(fam === 'Pies-grièches') hasShrike = true;
+      if((fam === 'Perroquets' || fam === 'Cacatoès' || fam === 'Perruches' || fam === 'Perroquets de Nouvelle-Zélande') && sci !== 'psittacula krameri'){ hasExoticParrot = true; exoticParrotsSet.add(sci); }
+      if(fam === 'Toucans'){ hasToucan = true; toucansSet.add(sci); }
+      if(fam === 'Calaos'){ hasHornbill = true; hornbillsSet.add(sci); }
+      if(fam === 'Pies-grièches'){ hasShrike = true; shrikesSet.add(sci); }
     }
     if(ALCID_SET.has(sci)){ hasPenguin=true; alcidOwnedSet.add(sci); }
     if(MANCHOT_SET.has(sci)){ hasPenguin=true; manchotOwnedSet.add(sci); }
@@ -3564,7 +3565,7 @@ function statsFor(me, N){
     for(const uid of voters) if(uid !== me.id) hearts++;
     if(hearts >= 3) hotPhotos++;
   }
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, hasHummingbird, hasRatite, hasExoticParrot, hasToucan, hasHornbill, hasShrike, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, martinetsOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, motacillidaeOwnedSet, ciconiidaeOwnedSet, coraciiformesOwnedSet, suliformesOwnedSet, sturnoideaOwnedSet, passeridaeOwnedSet, certhioideaOwnedSet, podicipedidaeOwnedSet, cuculidaeOwnedSet, caprimulgiformesOwnedSet, outardesGangasOwnedSet, procellariiformesOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, hasHummingbird, hasRatite, hasExoticParrot, hasToucan, hasHornbill, hasShrike, hummingbirdsSet, ratitesSet, exoticParrotsSet, toucansSet, hornbillsSet, shrikesSet, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, martinetsOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, motacillidaeOwnedSet, ciconiidaeOwnedSet, coraciiformesOwnedSet, suliformesOwnedSet, sturnoideaOwnedSet, passeridaeOwnedSet, certhioideaOwnedSet, podicipedidaeOwnedSet, cuculidaeOwnedSet, caprimulgiformesOwnedSet, outardesGangasOwnedSet, procellariiformesOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
@@ -3801,14 +3802,22 @@ function renderTrophies(data){
     </div>`;
   };
   // Especes exotiques : rendu comme les familles a paliers (grande vignette PNG + titre + etat)
-  // pour rester coherent visuellement avec le showcase.
+  // pour rester coherent visuellement avec le showcase. Cliquables comme les autres trophees :
+  // ouvre un modal one-shot avec la liste des especes observees de cette famille.
   const renderExotic = t => {
     const ok = t.test(s); if(ok) unlocked++;
     // Extrait le chemin PNG de l'icone HTML (ICONS.toucan = '<img src="assets/icons/toucan.png" ...>').
     const srcMatch = /src="([^"]+)"/.exec(t.icon || '');
     const imgSrc = srcMatch ? srcMatch[1] : 'assets/icons/aigle.png';
     const stateTxt = ok ? 'Débloqué ✓' : 'À débloquer';
-    return `<div class="tro-family ${ok?'unlocked':'locked'}">
+    // Enregistre trophyDetails pour permettre le clic + modal one-shot.
+    const detail = t.list ? t.list(s) : null;
+    const clic = detail !== null;
+    const dataIdx = clic ? detailIdx++ : null;
+    if(clic){
+      trophyDetails[dataIdx] = { kind:'oneshot', name:t.name, desc:t.desc, list:detail, note: detail.length ? `${detail.length} espèce${detail.length>1?'s':''} observée${detail.length>1?'s':''}` : 'Aucune observée pour le moment' };
+    }
+    return `<div class="tro-family ${ok?'unlocked':'locked'}${clic?' clic':''}"${clic?` data-detail="${dataIdx}"`:''}>
       <div class="tro-fam-cup">
         <img src="${esc(imgSrc)}" alt="${esc(t.name)}" class="tro-cup${ok?'':' grayed'}" loading="lazy" decoding="async">
       </div>
@@ -3829,27 +3838,29 @@ function renderTrophies(data){
     { key:'species',     label:"Familles d'espèces",    subtitle:'Groupes taxonomiques d\'oiseaux' },
     { key:'habitat',     label:'Milieux & habitats',    subtitle:'Écosystèmes visités' },
   ];
-  const catSections = CATEGORY_META
-    .filter(m => (familyBlocksByCategory[m.key] || []).length)
-    .map(m => `
+  const renderCat = m => `
       <div class="tro-cat-section">
         <div class="tro-cat-head">
           <div class="tro-cat-title">${esc(m.label)}</div>
           <div class="tro-cat-sub">${esc(m.subtitle)}</div>
         </div>
         <div class="tro-families">${familyBlocksByCategory[m.key].sort((a,b) => a.order - b.order).map(x => x.html).join('')}</div>
-      </div>`).join('');
-  grid.innerHTML = `
-    <div class="tro-showcase">
-      ${catSections}
-      ${exoticCards ? `
+      </div>`;
+  const catSectionsBefore = CATEGORY_META.filter(m => m.key !== 'habitat' && (familyBlocksByCategory[m.key] || []).length).map(renderCat).join('');
+  const catSectionsAfter = CATEGORY_META.filter(m => m.key === 'habitat' && (familyBlocksByCategory[m.key] || []).length).map(renderCat).join('');
+  const exoticSection = exoticCards ? `
       <div class="tro-cat-section">
         <div class="tro-cat-head">
           <div class="tro-cat-title">Espèces exotiques</div>
           <div class="tro-cat-sub">Oiseaux à cocher lors d'un voyage lointain</div>
         </div>
         <div class="tro-families">${exoticCards}</div>
-      </div>` : ''}
+      </div>` : '';
+  grid.innerHTML = `
+    <div class="tro-showcase">
+      ${catSectionsBefore}
+      ${exoticSection}
+      ${catSectionsAfter}
       ${oneShotCards ? `
       <div class="tro-oneshots-section">
         <div class="tro-oneshots-title">Trophées spéciaux</div>
