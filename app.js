@@ -3762,7 +3762,8 @@ function renderTrophies(data){
             // pour identifier le trophee sans le cliquer. Cas debloque : nom perso du palier + tier label.
             // Cas verrouille : nom de la famille + "a debloquer" (SANS "Prochain palier" - la description
             // au-dessus suffit).
-            const familyHasCustomNames = familyTiers[0] && familyTiers[0].name && familyTiers[0].name !== `${familyName} ${familyTiers[0].label}`;
+            const firstTier = tiersSorted[0];
+            const familyHasCustomNames = firstTier && firstTier.name && firstTier.name !== `${familyName} ${(TROPHY_TIERS.find(x=>x.key===firstTier.tier)||{}).label}`;
             if(familyHasCustomNames){
               const descTpl = displayTier.descTpl || '';
               const objective = descTpl ? descTpl.replace('{n}', 'X') : familyName;
