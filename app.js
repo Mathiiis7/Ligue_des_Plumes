@@ -3740,7 +3740,8 @@ function renderTrophies(data){
                       ${currentTier
                         ? `<span class="tro-fam-tier">· ${esc(displayMeta.label)}</span>`
                         : `<span class="tro-fam-tier tro-fam-tier-locked">· à débloquer</span>`}
-                    </div>`;
+                    </div>
+                    ${nextTier ? `<div class="tro-fam-next">${nextLine}</div>` : ''}`;
           })()}
           <div class="tro-fam-bar-outer">
             <div class="tro-fam-bar-fill" style="width:${pct}%"></div>
