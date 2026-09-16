@@ -2497,7 +2497,7 @@ const TROPHIES = [
     note:s=>`${(s.cuculidaeOwnedSet?.size)||0} coucou${((s.cuculidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.cuculidaeOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'caprimulgiformes', category:'species', baseName:'Engoulevents & alliés nocturnes',
+    theme:'groupe', icon:ICONS.aigle, family:'caprimulgiformes', category:'species', baseName:'Engoulevents, podarges & ibijaux',
     imgDir:'assets/trophies/families/caprimulgiformes',
     // Caprimulgiformes elargi : Caprimulgidae + Nyctibiidae + Podargidae + Aegothelidae + Steatornithidae.
     // FR 2 (Engoulevent d'Europe + Engoulevent a collier roux) / monde ~140.
@@ -3137,7 +3137,7 @@ const SPECIES_FAMILY_LABELS = {
   certhioidea: 'sittelles, grimpereaux & troglodytes',
   podicipedidae: 'grèbes',
   cuculidae: 'coucous',
-  caprimulgiformes: 'engoulevents & alliés nocturnes',
+  caprimulgiformes: 'engoulevents, podarges & ibijaux',
   outardes_gangas: 'outardes & gangas',
   procellariiformes: 'albatros, puffins & océanites',
 };
