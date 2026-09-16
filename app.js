@@ -3729,11 +3729,11 @@ function renderTrophies(data){
             if(hasCustomName){
               const descTpl = displayTier.descTpl || '';
               const objective = descTpl ? descTpl.replace('{n}', 'X') : familyName;
-              return `<div class="tro-fam-family">${esc(objective)}</div>
-                      <div class="tro-fam-title">
+              return `<div class="tro-fam-title">
                         <span class="tro-fam-name">${esc(displayTier.name)}</span>
                         <span class="tro-fam-tier">· ${esc(displayMeta.label)}</span>
-                      </div>`;
+                      </div>
+                      <div class="tro-fam-family">${esc(objective)}</div>`;
             }
             return `<div class="tro-fam-title">
                       <span class="tro-fam-name">${esc(familyName)}</span>
