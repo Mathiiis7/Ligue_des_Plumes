@@ -12547,10 +12547,16 @@ $('#trophyGrid').addEventListener('click',async e=>{
   } else {
     // Cas one-shot classique.
     $('#tmodalTitle').textContent = d.name;
-    if(d.list.length && typeof d.list[0]==='object'){
+    // Liste vide : affiche la description + note (pour les badges exotiques pas encore debloques).
+    if(!d.list.length){
+      const descTxt = d.desc ? `<p class="tmodal-note">${esc(d.desc)}</p>` : '';
+      const noteTxt = d.note ? `<p class="tmodal-note" style="font-style:italic;color:var(--ink-3);">${esc(d.note)}</p>` : '';
+      html = descTxt + noteTxt;
+    } else if(typeof d.list[0]==='object'){
       const owned = d.list.filter(x=>x.owned).length;
       const noteTxt = d.note || (owned+' déjà observé'+(owned>1?'s':'')+' sur '+d.list.length+' possibles en France');
-      html = '<p class="tmodal-note">'+esc(noteTxt)+'</p>' + _renderModalAccordion(d.list);
+      const descTxt = d.desc ? `<p class="tmodal-note" style="font-style:italic;color:var(--ink-3);margin-top:4px;">${esc(d.desc)}</p>` : '';
+      html = '<p class="tmodal-note">'+esc(noteTxt)+'</p>' + descTxt + _renderModalAccordion(d.list);
     } else {
       html = '<ul class="tmodal-list">' + d.list.map(n => {
         const sci = _nameToSci(n);
