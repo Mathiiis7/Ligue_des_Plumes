@@ -3817,7 +3817,7 @@ function renderTrophies(data){
     if(clic){
       trophyDetails[dataIdx] = { kind:'oneshot', name:t.name, desc:t.desc, list:detail, note: detail.length ? `${detail.length} espèce${detail.length>1?'s':''} observée${detail.length>1?'s':''}` : 'Aucune observée pour le moment' };
     }
-    return `<div class="tro-family ${ok?'unlocked':'locked'}${clic?' clic':''}"${clic?` data-detail="${dataIdx}"`:''}>
+    return `<div class="tro-family tro-exotic ${ok?'unlocked':'locked'}${clic?' clic':''}"${clic?` data-detail="${dataIdx}"`:''}>
       <div class="tro-fam-cup">
         <img src="${esc(imgSrc)}" alt="${esc(t.name)}" class="tro-cup${ok?'':' grayed'}" loading="lazy" decoding="async">
       </div>

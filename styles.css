@@ -1460,6 +1460,12 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .tro-fam-cup .tro-cup { width:190px; height:190px; object-fit:contain;
     filter:drop-shadow(0 4px 12px color-mix(in srgb, var(--tier-color) 40%, transparent)); }
   .tro-fam-cup .tro-cup.grayed { filter:grayscale(.7) brightness(.9) opacity(.85); }
+  /* Cartes exotiques (badges Colibri, Ratite, ...) : fond de carte transparent pour laisser
+     voir la transparence du PNG. Drop-shadow adoucie. */
+  .tro-family.tro-exotic { background:transparent; }
+  .tro-family.tro-exotic.unlocked { background:transparent; }
+  .tro-family.tro-exotic .tro-fam-cup .tro-cup { filter:drop-shadow(0 2px 6px rgba(0,0,0,.12)); }
+  .tro-family.tro-exotic .tro-fam-cup .tro-cup.grayed { filter:grayscale(.7) brightness(.9) opacity(.85); }
   .tro-fam-body { flex:1 1 auto; min-width:0; width:100%; display:flex; flex-direction:column; gap:3px; align-items:center; }
   .tro-fam-title { font-size:14px; font-weight:700; color:var(--ink); display:flex; align-items:baseline; justify-content:center; gap:5px; flex-wrap:wrap; line-height:1.2; }
   .tro-fam-family { font-size:11.5px; font-weight:500; color:var(--ink-3); text-align:center; margin-top:3px; font-style:italic; line-height:1.25; }
