@@ -2497,16 +2497,6 @@ const TROPHIES = [
     note:s=>`${(s.cuculidaeOwnedSet?.size)||0} coucou${((s.cuculidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.cuculidaeOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'caprimulgiformes', category:'species', baseName:'Engoulevents',
-    imgDir:'assets/trophies/families/caprimulgiformes',
-    // Caprimulgiformes elargi : Caprimulgidae + Nyctibiidae + Podargidae + Aegothelidae + Steatornithidae.
-    // FR 2 (Engoulevent d'Europe + Engoulevent a collier roux) / monde ~140.
-    metric:s=>(s.caprimulgiformesOwnedSet?.size)||0, thresholds:[1,2,3,5,10,20],
-    descTpl:'Observer {n} engoulevents, ibijaux, podarges ou guacharos',
-    list:s=>[...(s.caprimulgiformesOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.caprimulgiformesOwnedSet?.size)||0} espèce${((s.caprimulgiformesOwnedSet?.size)||0)>1?'s':''} observée${((s.caprimulgiformesOwnedSet?.size)||0)>1?'s':''}`,
-  }),
-  ...makeTierFamily({
     theme:'groupe', icon:ICONS.aigle, family:'martinets', category:'species', baseName:'Martinets',
     imgDir:'assets/trophies/families/martinets',
     // Pool FR ~3-4 martinets (noir, pale, alpin, unicolore). Monde ~110.
@@ -2766,6 +2756,7 @@ const TROPHIES = [
   { theme:'groupe',      icon:ICONS.picNoirBadge, name:'Pic noir', desc:'Observer le Pic noir (Maël ne l’a pas)', test:s=>s.blackWoodpecker, exotic:true, speciesFamilyKey:'picNoir', list:s=>s.blackWoodpecker ? [{ name:frName('dryocopus martius','Pic noir'), sci:'dryocopus martius', owned:true }] : [] },
   { theme:'groupe',      icon:ICONS.pelagic,    name:'Oiseau pélagique',  desc:'Observer un albatros, un puffin, un pétrel ou un océanite (Procellariiformes)',      test:s=>s.hasPelagic,     exotic:true, speciesFamilyKey:'pelagics',     list:s=>[...(s.pelagicsSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
   { theme:'groupe',      icon:ICONS.jaseur,     name:'Jaseur',            desc:'Observer un jaseur (Bombycillidae) — boréal, d\'Amérique ou du Japon',                test:s=>s.hasWaxwing,     exotic:true, speciesFamilyKey:'waxwings',     list:s=>[...(s.waxwingsSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
+  { theme:'groupe',      icon:ICONS.aigle,      name:'Engoulevent & cousins', desc:'Observer un engoulevent, un ibijau, un podarge ou un guacharo',                 test:s=>s.hasNightjar,    exotic:true, speciesFamilyKey:'nightjars',    list:s=>[...(s.nightjarsSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
   { theme:'groupe',      icon:ICONS.pieGrieche, name:'Pie-grièche',       desc:'Observer une pie-grièche (Laniidae)',                                                test:s=>s.hasShrike,      exotic:true, speciesFamilyKey:'shrikes',      list:s=>[...(s.shrikesSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
   { theme:'groupe',      icon:ICONS.colibri,   name:'Colibri',            desc:'Observer un colibri (Trochilidae)',                                                  test:s=>s.hasHummingbird, exotic:true, speciesFamilyKey:'hummingbirds', list:s=>[...(s.hummingbirdsSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
   { theme:'groupe',      icon:ICONS.ratite,    name:'Grand ratite',       desc:'Observer une autruche, un nandou, un casoar ou un émeu',                             test:s=>s.hasRatite,      exotic:true, speciesFamilyKey:'ratites',      list:s=>[...(s.ratitesSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })) },
@@ -3069,12 +3060,6 @@ const SPECIES_FAMILY_FILTERS = {
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
     return fam === 'Coucous';
   },
-  caprimulgiformes: sci => {
-    const g = (sci||'').split(' ')[0];
-    if(CAPRIMULGIFORMES_G.test(g)) return true;
-    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
-    return fam === 'Engoulevents' || fam === 'Ibijaux' || fam === 'Guacharo' || (fam && fam.startsWith('Podarges'));
-  },
   // Filtres pour les badges exotiques (utilises par le modal Monde/France).
   hummingbirds: sci => {
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
@@ -3113,6 +3098,10 @@ const SPECIES_FAMILY_FILTERS = {
   waxwings: sci => {
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
     return fam === 'Jaseurs';
+  },
+  nightjars: sci => {
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Engoulevents' || fam === 'Ibijaux' || fam === 'Guacharo' || (fam && fam.startsWith('Podarges'));
   },
   certhioidea: sci => {
     const g = (sci||'').split(' ')[0];
@@ -3167,7 +3156,6 @@ const SPECIES_FAMILY_LABELS = {
   certhioidea: 'sittelles & grimpereaux',
   podicipedidae: 'grèbes',
   cuculidae: 'coucous',
-  caprimulgiformes: 'engoulevents',
   hummingbirds: 'colibris',
   ratites: 'ratites',
   exoticParrots: 'perroquets, perruches & cacatoès',
@@ -3178,6 +3166,7 @@ const SPECIES_FAMILY_LABELS = {
   picNoir: 'Pic noir',
   penguins: 'pingouins & manchots',
   waxwings: 'jaseurs',
+  nightjars: 'engoulevents, ibijaux, podarges & guacharos',
   outardes_gangas: 'outardes & gangas',
   procellariiformes: 'oiseaux pélagiques',
 };
@@ -3442,8 +3431,8 @@ function statsFor(me, N){
   const ranked=[...state.people].sort((a,b)=>b.total-a.total);   // rang basé sur le nb d'espèces (classement principal)
   const rank=ranked.findIndex(p=>p.id===me.id)+1;
   let owls=0,raptors=0,water=0,sea=0,blackWoodpecker=false,locTeste=false,hasKingfisher=false,hasPenguin=false,hasFireKingfisher=false,
-      hasHummingbird=false,hasRatite=false,hasExoticParrot=false,hasToucan=false,hasHornbill=false,hasShrike=false,hasPelagic=false,hasWaxwing=false;
-  const hummingbirdsSet=new Set(), ratitesSet=new Set(), exoticParrotsSet=new Set(), toucansSet=new Set(), hornbillsSet=new Set(), shrikesSet=new Set(), pelagicsSet=new Set(), waxwingsSet=new Set();
+      hasHummingbird=false,hasRatite=false,hasExoticParrot=false,hasToucan=false,hasHornbill=false,hasShrike=false,hasPelagic=false,hasWaxwing=false,hasNightjar=false;
+  const hummingbirdsSet=new Set(), ratitesSet=new Set(), exoticParrotsSet=new Set(), toucansSet=new Set(), hornbillsSet=new Set(), shrikesSet=new Set(), pelagicsSet=new Set(), waxwingsSet=new Set(), nightjarsSet=new Set();
   const megaList=[]; const megaOwnedSet=new Set();
   const seasonHit={}; SEASON_ORDER.forEach(s=>seasonHit[s]=false); const seasonOwnedSet=new Set();
   const raptorOwnedSet=new Set(), alcidOwnedSet=new Set(), manchotOwnedSet=new Set(), waterOwnedSet=new Set(), owlOwnedSet=new Set(), anatidaeOwnedSet=new Set();
@@ -3459,7 +3448,7 @@ function statsFor(me, N){
         coraciiformesOwnedSet=new Set(), suliformesOwnedSet=new Set(),
         sturnoideaOwnedSet=new Set(), passeridaeOwnedSet=new Set(),
         certhioideaOwnedSet=new Set(), podicipedidaeOwnedSet=new Set(),
-        cuculidaeOwnedSet=new Set(), caprimulgiformesOwnedSet=new Set(),
+        cuculidaeOwnedSet=new Set(),
         outardesGangasOwnedSet=new Set();
   // Milieux (habitats) : Set d'espèces par catégorie via HABITATS (source : famille eBird).
   const habOwned = Object.fromEntries(HABITAT_CATS.map(c=>[c, new Set()]));
@@ -3543,8 +3532,6 @@ function statsFor(me, N){
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Grèbes') podicipedidaeOwnedSet.add(sci); }
     if(CUCULIDAE_G.test(g)) cuculidaeOwnedSet.add(sci);
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Coucous') cuculidaeOwnedSet.add(sci); }
-    if(CAPRIMULGIFORMES_G.test(g)) caprimulgiformesOwnedSet.add(sci);
-    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Engoulevents'||f==='Ibijaux'||f==='Guacharo'||(f&&f.startsWith('Podarges'))) caprimulgiformesOwnedSet.add(sci); }
     if(OUTARDES_GANGAS_G.test(g)) outardesGangasOwnedSet.add(sci);
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Outardes'||f==='Gangas') outardesGangasOwnedSet.add(sci); }
     if(MOTACILLIDAE_G.test(g)) motacillidaeOwnedSet.add(sci);
@@ -3565,6 +3552,7 @@ function statsFor(me, N){
       if(fam === 'Pies-grièches'){ hasShrike = true; shrikesSet.add(sci); }
       if(fam === 'Albatros' || fam === 'Puffins, pétrels' || fam === 'Océanites'){ hasPelagic = true; pelagicsSet.add(sci); }
       if(fam === 'Jaseurs'){ hasWaxwing = true; waxwingsSet.add(sci); }
+      if(fam === 'Engoulevents' || fam === 'Ibijaux' || fam === 'Guacharo' || (fam && fam.startsWith('Podarges'))){ hasNightjar = true; nightjarsSet.add(sci); }
     }
     if(ALCID_SET.has(sci)){ hasPenguin=true; alcidOwnedSet.add(sci); }
     if(MANCHOT_SET.has(sci)){ hasPenguin=true; manchotOwnedSet.add(sci); }
@@ -3607,7 +3595,7 @@ function statsFor(me, N){
     for(const uid of voters) if(uid !== me.id) hearts++;
     if(hearts >= 3) hotPhotos++;
   }
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, hasHummingbird, hasRatite, hasExoticParrot, hasToucan, hasHornbill, hasShrike, hasPelagic, hasWaxwing, hummingbirdsSet, ratitesSet, exoticParrotsSet, toucansSet, hornbillsSet, shrikesSet, pelagicsSet, waxwingsSet, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, martinetsOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, motacillidaeOwnedSet, ciconiidaeOwnedSet, coraciiformesOwnedSet, suliformesOwnedSet, sturnoideaOwnedSet, passeridaeOwnedSet, certhioideaOwnedSet, podicipedidaeOwnedSet, cuculidaeOwnedSet, caprimulgiformesOwnedSet, outardesGangasOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, hasHummingbird, hasRatite, hasExoticParrot, hasToucan, hasHornbill, hasShrike, hasPelagic, hasWaxwing, hasNightjar, hummingbirdsSet, ratitesSet, exoticParrotsSet, toucansSet, hornbillsSet, shrikesSet, pelagicsSet, waxwingsSet, nightjarsSet, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, martinetsOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, motacillidaeOwnedSet, ciconiidaeOwnedSet, coraciiformesOwnedSet, suliformesOwnedSet, sturnoideaOwnedSet, passeridaeOwnedSet, certhioideaOwnedSet, podicipedidaeOwnedSet, cuculidaeOwnedSet, outardesGangasOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
@@ -3650,7 +3638,7 @@ function renderTrophies(data){
   // -> larides -> chouettes -> rapaces diurnes -> martins-pecheurs -> pics -> corvides -> mesanges
   // -> hirondelles+martinets -> alouettes -> pouillots/rousserolles -> fauvettes -> muscicapides
   // -> grives -> bruants -> fringilles.
-  const SPECIES_TAX_RANK = { anatidae:10, podicipedidae:12, galliformes:20, outardes_gangas:28, columbidae:30, cuculidae:31, caprimulgiformes:32, martinets:33, rallidae:35, ciconiidae:38, suliformes:39, ardeidae:40, scolopacidae:50, rivages:55, laridae:60, nocturnes:70, rapaces:80, coraciiformes:85, alcedinidae:90, picidae:100, corvidae:110, paridae:120, hirundinidae:130, alaudidae:140, phylloscopidae:150, sylviidae:160, muscicapidae:170, sturnoidea:175, turdidae:180, certhioidea:182, passeridae:183, motacillidae:185, emberizidae:190, fringillidae:200 };
+  const SPECIES_TAX_RANK = { anatidae:10, podicipedidae:12, galliformes:20, outardes_gangas:28, columbidae:30, cuculidae:31, martinets:33, rallidae:35, ciconiidae:38, suliformes:39, ardeidae:40, scolopacidae:50, rivages:55, laridae:60, nocturnes:70, rapaces:80, coraciiformes:85, alcedinidae:90, picidae:100, corvidae:110, paridae:120, hirundinidae:130, alaudidae:140, phylloscopidae:150, sylviidae:160, muscicapidae:170, sturnoidea:175, turdidae:180, certhioidea:182, passeridae:183, motacillidae:185, emberizidae:190, fringillidae:200 };
   for(const [familyKey, tiers] of familyMap){
     // tiers ordre = ordre de TROPHY_TIERS (Bronze -> Emeraude), test par ordre.
     const tiersSorted = [...tiers].sort((a,b) => TROPHY_TIERS.findIndex(x=>x.key===a.tier) - TROPHY_TIERS.findIndex(x=>x.key===b.tier));
@@ -3749,7 +3737,6 @@ function renderTrophies(data){
         if(familyKey === 'certhioidea') return new Set(s.certhioideaOwnedSet || []);
         if(familyKey === 'podicipedidae') return new Set(s.podicipedidaeOwnedSet || []);
         if(familyKey === 'cuculidae') return new Set(s.cuculidaeOwnedSet || []);
-        if(familyKey === 'caprimulgiformes') return new Set(s.caprimulgiformesOwnedSet || []);
         if(familyKey === 'outardes_gangas') return new Set(s.outardesGangasOwnedSet || []);
         return null;
       })(),

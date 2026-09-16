@@ -1460,11 +1460,17 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .tro-fam-cup .tro-cup { width:260px; height:260px; object-fit:contain;
     filter:drop-shadow(0 4px 12px color-mix(in srgb, var(--tier-color) 40%, transparent)); }
   .tro-fam-cup .tro-cup.grayed { filter:grayscale(.7) brightness(.9) opacity(.85); }
-  /* Cartes exotiques (badges Colibri, Ratite, ...) : fond de carte neutre (surface-2)
-     meme quand debloque, pas de tint tier-color. Drop-shadow adoucie et neutre. */
+  /* Cartes exotiques (badges Colibri, Ratite, ...) : fond de carte neutre (surface-2).
+     Quand debloque : legere teinte doree sur bordure + petite lueur pour valoriser la reussite,
+     sans etre bling-bling. */
   .tro-family.tro-exotic { background:var(--surface-2); }
-  .tro-family.tro-exotic.unlocked { background:var(--surface-2); }
+  .tro-family.tro-exotic.unlocked {
+    background:color-mix(in srgb, var(--gold) 5%, var(--surface-2));
+    border-color:color-mix(in srgb, var(--gold) 45%, var(--line));
+    box-shadow:0 0 0 1px color-mix(in srgb, var(--gold) 20%, transparent);
+  }
   .tro-family.tro-exotic .tro-fam-cup .tro-cup { filter:drop-shadow(0 2px 6px rgba(0,0,0,.12)); }
+  .tro-family.tro-exotic.unlocked .tro-fam-cup .tro-cup { filter:drop-shadow(0 3px 10px color-mix(in srgb, var(--gold) 35%, transparent)); }
   .tro-family.tro-exotic .tro-fam-cup .tro-cup.grayed { filter:grayscale(1) brightness(.85) opacity(.35); }
   .tro-fam-body { flex:1 1 auto; min-width:0; width:100%; display:flex; flex-direction:column; gap:3px; align-items:center; }
   .tro-fam-title { font-size:14px; font-weight:700; color:var(--ink); display:flex; align-items:baseline; justify-content:center; gap:5px; flex-wrap:wrap; line-height:1.2; }
