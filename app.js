@@ -2570,6 +2570,16 @@ const TROPHIES = [
     note:s=>`${(s.alcediOwnedSet?.size)||0} martin-pêcheur${((s.alcediOwnedSet?.size)||0)>1?'s':''} observé${((s.alcediOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
+    theme:'groupe', icon:ICONS.aigle, family:'procellariiformes', category:'species', baseName:'Albatros, puffins & océanites',
+    imgDir:'assets/trophies/families/procellariiformes',
+    // Ordre Procellariiformes complet : Diomedeidae + Procellariidae + Hydrobatidae + Oceanitidae.
+    // 100% pelagiques. FR ~10 en mer / monde ~150.
+    metric:s=>(s.procellariiformesOwnedSet?.size)||0, thresholds:[1,2,4,7,12,25],
+    descTpl:'Observer {n} albatros, puffins, pétrels ou océanites',
+    list:s=>[...(s.procellariiformesOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>`${(s.procellariiformesOwnedSet?.size)||0} espèce${((s.procellariiformesOwnedSet?.size)||0)>1?'s':''} observée${((s.procellariiformesOwnedSet?.size)||0)>1?'s':''}`,
+  }),
+  ...makeTierFamily({
     theme:'groupe', icon:ICONS.aigle, family:'suliformes', category:'species', baseName:'Cormorans, fous & frégates',
     imgDir:'assets/trophies/families/suliformes',
     // Ordre Suliformes complet : Phalacrocoracidae + Sulidae + Anhingidae + Fregatidae.
@@ -2851,6 +2861,11 @@ const STURNOIDEA_G=/^(sturnus|pastor|acridotheres|gracula|sturnia|saroglossa|apl
 const MOINEAUX_ACCENTEURS_G=/^(passer|petronia|carpospiza|pyrgilauda|onychostruthus|montifringilla|gymnoris|hypocryptadius|prunella)$/;
 // Grebes (Podicipedidae). FR 5 (castagneux, huppe, jougris, oreillard, esclavon) / monde ~23.
 const PODICIPEDIDAE_G=/^(podiceps|tachybaptus|podilymbus|aechmophorus|rollandia|poliocephalus)$/;
+// Procellariiformes complet : Diomedeidae (albatros) + Procellariidae (puffins, petrels,
+// fulmars, prions) + Hydrobatidae/Oceanitidae (oceanites nord/sud). 100% pelagiques.
+// FR ~10 (Puffin cendre, Puffin des Baleares, Puffin des Anglais, Puffin fuligineux, Fulmar boreal,
+// Petrel diablotin, Oceanite tempete, Oceanite culblanc, quelques rares...) / monde ~150.
+const PROCELLARIIFORMES_G=/^(diomedea|thalassarche|phoebastria|phoebetria|puffinus|ardenna|calonectris|procellaria|bulweria|pterodroma|fulmarus|macronectes|daption|halobaena|pachyptila|aphrodroma|pagodroma|thalassoica|lugensa|pseudobulweria|hydrobates|oceanodroma|oceanites|pelagodroma|fregetta|nesofregetta|garrodia)$/;
 // Outardes (Otididae, Otidiformes) + Gangas (Pteroclidae, Pteroclidiformes). Deux ordres
 // distincts mais ecologiquement identiques : oiseaux terrestres cryptiques des plaines et
 // steppes seches, silhouette compacte au sol, camouflage puis decollage bruyant.
@@ -3050,6 +3065,12 @@ const SPECIES_FAMILY_FILTERS = {
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
     return fam === 'Outardes' || fam === 'Gangas';
   },
+  procellariiformes: sci => {
+    const g = (sci||'').split(' ')[0];
+    if(PROCELLARIIFORMES_G.test(g)) return true;
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Albatros' || fam === 'Puffins, pétrels' || fam === 'Océanites';
+  },
   cuculidae: sci => {
     const g = (sci||'').split(' ')[0];
     if(CUCULIDAE_G.test(g)) return true;
@@ -3118,6 +3139,7 @@ const SPECIES_FAMILY_LABELS = {
   cuculidae: 'coucous',
   caprimulgiformes: 'engoulevents & alliés nocturnes',
   outardes_gangas: 'outardes & gangas',
+  procellariiformes: 'albatros, puffins & océanites',
 };
 // Alcidés = les "pingouins" de l'hémisphère nord (pingouins, macareux, mergule, guillemots)
 const ALCID_G=/^(alca|pinguinus|fratercula|alle|uria|cepphus)$/;
@@ -3396,7 +3418,7 @@ function statsFor(me, N){
         laniidaeOwnedSet=new Set(), sturnoideaOwnedSet=new Set(), passeridaeOwnedSet=new Set(),
         certhioideaOwnedSet=new Set(), podicipedidaeOwnedSet=new Set(),
         cuculidaeOwnedSet=new Set(), caprimulgiformesOwnedSet=new Set(),
-        outardesGangasOwnedSet=new Set();
+        outardesGangasOwnedSet=new Set(), procellariiformesOwnedSet=new Set();
   // Milieux (habitats) : Set d'espèces par catégorie via HABITATS (source : famille eBird).
   const habOwned = Object.fromEntries(HABITAT_CATS.map(c=>[c, new Set()]));
   for(const v of me._active.values()){
@@ -3485,6 +3507,8 @@ function statsFor(me, N){
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Engoulevents'||f==='Ibijaux'||f==='Guacharo'||(f&&f.startsWith('Podarges'))) caprimulgiformesOwnedSet.add(sci); }
     if(OUTARDES_GANGAS_G.test(g)) outardesGangasOwnedSet.add(sci);
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Outardes'||f==='Gangas') outardesGangasOwnedSet.add(sci); }
+    if(PROCELLARIIFORMES_G.test(g)) procellariiformesOwnedSet.add(sci);
+    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Albatros'||f==='Puffins, pétrels'||f==='Océanites') procellariiformesOwnedSet.add(sci); }
     if(MOTACILLIDAE_G.test(g)) motacillidaeOwnedSet.add(sci);
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Bergeronnettes, pipits') motacillidaeOwnedSet.add(sci); }
     if(ECHASSIERS_G.test(g)) ciconiidaeOwnedSet.add(sci);
@@ -3532,7 +3556,7 @@ function statsFor(me, N){
     for(const uid of voters) if(uid !== me.id) hearts++;
     if(hearts >= 3) hotPhotos++;
   }
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, martinetsOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, motacillidaeOwnedSet, ciconiidaeOwnedSet, coraciiformesOwnedSet, suliformesOwnedSet, laniidaeOwnedSet, sturnoideaOwnedSet, passeridaeOwnedSet, certhioideaOwnedSet, podicipedidaeOwnedSet, cuculidaeOwnedSet, caprimulgiformesOwnedSet, outardesGangasOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, martinetsOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, motacillidaeOwnedSet, ciconiidaeOwnedSet, coraciiformesOwnedSet, suliformesOwnedSet, laniidaeOwnedSet, sturnoideaOwnedSet, passeridaeOwnedSet, certhioideaOwnedSet, podicipedidaeOwnedSet, cuculidaeOwnedSet, caprimulgiformesOwnedSet, outardesGangasOwnedSet, procellariiformesOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
@@ -3575,7 +3599,7 @@ function renderTrophies(data){
   // -> larides -> chouettes -> rapaces diurnes -> martins-pecheurs -> pics -> corvides -> mesanges
   // -> hirondelles+martinets -> alouettes -> pouillots/rousserolles -> fauvettes -> muscicapides
   // -> grives -> bruants -> fringilles.
-  const SPECIES_TAX_RANK = { anatidae:10, podicipedidae:12, galliformes:20, outardes_gangas:28, columbidae:30, cuculidae:31, caprimulgiformes:32, martinets:33, rallidae:35, ciconiidae:38, suliformes:39, ardeidae:40, scolopacidae:50, rivages:55, laridae:60, nocturnes:70, rapaces:80, coraciiformes:85, alcedinidae:90, picidae:100, laniidae:105, corvidae:110, paridae:120, hirundinidae:130, alaudidae:140, phylloscopidae:150, sylviidae:160, muscicapidae:170, sturnoidea:175, turdidae:180, certhioidea:182, passeridae:183, motacillidae:185, emberizidae:190, fringillidae:200 };
+  const SPECIES_TAX_RANK = { anatidae:10, podicipedidae:12, galliformes:20, outardes_gangas:28, columbidae:30, cuculidae:31, caprimulgiformes:32, martinets:33, rallidae:35, procellariiformes:37, ciconiidae:38, suliformes:39, ardeidae:40, scolopacidae:50, rivages:55, laridae:60, nocturnes:70, rapaces:80, coraciiformes:85, alcedinidae:90, picidae:100, laniidae:105, corvidae:110, paridae:120, hirundinidae:130, alaudidae:140, phylloscopidae:150, sylviidae:160, muscicapidae:170, sturnoidea:175, turdidae:180, certhioidea:182, passeridae:183, motacillidae:185, emberizidae:190, fringillidae:200 };
   for(const [familyKey, tiers] of familyMap){
     // tiers ordre = ordre de TROPHY_TIERS (Bronze -> Emeraude), test par ordre.
     const tiersSorted = [...tiers].sort((a,b) => TROPHY_TIERS.findIndex(x=>x.key===a.tier) - TROPHY_TIERS.findIndex(x=>x.key===b.tier));
@@ -3677,6 +3701,7 @@ function renderTrophies(data){
         if(familyKey === 'cuculidae') return new Set(s.cuculidaeOwnedSet || []);
         if(familyKey === 'caprimulgiformes') return new Set(s.caprimulgiformesOwnedSet || []);
         if(familyKey === 'outardes_gangas') return new Set(s.outardesGangasOwnedSet || []);
+        if(familyKey === 'procellariiformes') return new Set(s.procellariiformesOwnedSet || []);
         return null;
       })(),
     };
