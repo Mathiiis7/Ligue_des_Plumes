@@ -3800,7 +3800,28 @@ function renderTrophies(data){
       </div>
     </div>`;
   };
-  const exoticCards = oneShots.filter(t => t.exotic).map(renderOneShot).join('');
+  // Especes exotiques : rendu comme les familles a paliers (grande vignette PNG + titre + etat)
+  // pour rester coherent visuellement avec le showcase.
+  const renderExotic = t => {
+    const ok = t.test(s); if(ok) unlocked++;
+    // Extrait le chemin PNG de l'icone HTML (ICONS.toucan = '<img src="assets/icons/toucan.png" ...>').
+    const srcMatch = /src="([^"]+)"/.exec(t.icon || '');
+    const imgSrc = srcMatch ? srcMatch[1] : 'assets/icons/aigle.png';
+    const stateTxt = ok ? 'Débloqué ✓' : 'À débloquer';
+    return `<div class="tro-family ${ok?'unlocked':'locked'}">
+      <div class="tro-fam-cup">
+        <img src="${esc(imgSrc)}" alt="${esc(t.name)}" class="tro-cup${ok?'':' grayed'}" loading="lazy" decoding="async">
+      </div>
+      <div class="tro-fam-body">
+        <div class="tro-fam-title">
+          <span class="tro-fam-name">${esc(t.name)}</span>
+          <span class="tro-fam-tier ${ok?'':'tro-fam-tier-locked'}">· ${esc(stateTxt)}</span>
+        </div>
+        <div class="tro-fam-family">${esc(t.desc)}</div>
+      </div>
+    </div>`;
+  };
+  const exoticCards = oneShots.filter(t => t.exotic).map(renderExotic).join('');
   const oneShotCards = oneShots.filter(t => !t.exotic).map(renderOneShot).join('');
   // Section par categorie de trophees a paliers. Ordre : Progression -> Especes -> Habitats -> Speciaux.
   const CATEGORY_META = [
@@ -3822,10 +3843,12 @@ function renderTrophies(data){
     <div class="tro-showcase">
       ${catSections}
       ${exoticCards ? `
-      <div class="tro-oneshots-section">
-        <div class="tro-oneshots-title">Espèces exotiques</div>
-        <div class="tro-oneshots-sub">Oiseaux à cocher lors d'un voyage lointain</div>
-        <div class="tro-oneshots-grid">${exoticCards}</div>
+      <div class="tro-cat-section">
+        <div class="tro-cat-head">
+          <div class="tro-cat-title">Espèces exotiques</div>
+          <div class="tro-cat-sub">Oiseaux à cocher lors d'un voyage lointain</div>
+        </div>
+        <div class="tro-families">${exoticCards}</div>
       </div>` : ''}
       ${oneShotCards ? `
       <div class="tro-oneshots-section">
