@@ -2497,7 +2497,7 @@ const TROPHIES = [
     note:s=>`${(s.cuculidaeOwnedSet?.size)||0} coucou${((s.cuculidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.cuculidaeOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'caprimulgiformes', category:'species', baseName:'Engoulevents, podarges & ibijaux',
+    theme:'groupe', icon:ICONS.aigle, family:'caprimulgiformes', category:'species', baseName:'Engoulevents',
     imgDir:'assets/trophies/families/caprimulgiformes',
     // Caprimulgiformes elargi : Caprimulgidae + Nyctibiidae + Podargidae + Aegothelidae + Steatornithidae.
     // FR 2 (Engoulevent d'Europe + Engoulevent a collier roux) / monde ~140.
@@ -2552,7 +2552,7 @@ const TROPHIES = [
     note:s=>`${(s.corvidaeOwnedSet?.size)||0} corvidé${((s.corvidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.corvidaeOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'coraciiformes', category:'species', baseName:'Guêpiers, rolliers & cousins',
+    theme:'groupe', icon:ICONS.aigle, family:'coraciiformes', category:'species', baseName:'Guêpiers & rolliers',
     imgDir:'assets/trophies/families/coraciiformes',
     // Coraciiformes hors martins-pecheurs. FR = 2 (Guepier + Rollier d'Europe). Monde ~63.
     metric:s=>(s.coraciiformesOwnedSet?.size)||0, thresholds:[1,2,4,7,12,20],
@@ -2570,7 +2570,7 @@ const TROPHIES = [
     note:s=>`${(s.alcediOwnedSet?.size)||0} martin-pêcheur${((s.alcediOwnedSet?.size)||0)>1?'s':''} observé${((s.alcediOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'procellariiformes', category:'species', baseName:'Albatros, puffins & océanites',
+    theme:'groupe', icon:ICONS.aigle, family:'procellariiformes', category:'species', baseName:'Oiseaux pélagiques',
     imgDir:'assets/trophies/families/procellariiformes',
     // Ordre Procellariiformes complet : Diomedeidae + Procellariidae + Hydrobatidae + Oceanitidae.
     // 100% pelagiques. FR ~10 en mer / monde ~150.
@@ -2590,7 +2590,7 @@ const TROPHIES = [
     note:s=>`${(s.suliformesOwnedSet?.size)||0} espèce${((s.suliformesOwnedSet?.size)||0)>1?'s':''} observée${((s.suliformesOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'ardeidae', category:'species', baseName:'Hérons',
+    theme:'groupe', icon:ICONS.aigle, family:'ardeidae', category:'species', baseName:'Hérons & aigrettes',
     imgDir:'assets/trophies/families/ardeidae',
     // Pool FR ~10 (cendre, pourpre, garde-boeufs, aigrettes, bihoreau, butors, crabier, blongios)
     metric:s=>(s.ardeidaeOwnedSet?.size)||0, thresholds:[1,3,6,10,15,22],
@@ -2718,7 +2718,7 @@ const TROPHIES = [
     note:s=>`${(s.rallidaeOwnedSet?.size)||0} rallidé${((s.rallidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.rallidaeOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'sturnoidea', category:'species', baseName:'Étourneaux, moqueurs & piqueboeufs',
+    theme:'groupe', icon:ICONS.aigle, family:'sturnoidea', category:'species', baseName:'Étourneaux & moqueurs',
     imgDir:'assets/trophies/families/sturnoidea',
     // Superfamille Sturnoidea : Sturnidae + Mimidae + Buphagidae + Rhabdornithidae.
     // FR ~3 (etourneau sansonnet, unicolore, roselin exotique). Monde ~160.
@@ -2728,7 +2728,7 @@ const TROPHIES = [
     note:s=>`${(s.sturnoideaOwnedSet?.size)||0} espèce${((s.sturnoideaOwnedSet?.size)||0)>1?'s':''} observée${((s.sturnoideaOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'certhioidea', category:'species', baseName:'Sittelles, grimpereaux & troglodytes',
+    theme:'groupe', icon:ICONS.aigle, family:'certhioidea', category:'species', baseName:'Sittelles & grimpereaux',
     imgDir:'assets/trophies/families/certhioidea',
     // Superfamille Certhioidea : Sittidae + Certhiidae + Salpornithidae + Troglodytidae + Polioptilidae.
     // Petits explorateurs d'ecorce et de buissons. FR ~6 / monde ~140.
@@ -3113,7 +3113,7 @@ const SPECIES_FAMILY_LABELS = {
   paridae: 'mésanges',
   corvidae: 'corvidés',
   alcedinidae: 'martins-pêcheurs',
-  ardeidae: 'hérons',
+  ardeidae: 'hérons & aigrettes',
   columbidae: 'pigeons & tourterelles',
   galliformes: 'galliformes',
   picidae: 'pics',
@@ -3129,17 +3129,17 @@ const SPECIES_FAMILY_LABELS = {
   rallidae: 'rallidés',
   motacillidae: 'bergeronnettes & pipits',
   ciconiidae: 'cigognes, ibis & spatules',
-  coraciiformes: 'guêpiers, rolliers & cousins',
+  coraciiformes: 'guêpiers & rolliers',
   suliformes: 'cormorans, fous & frégates',
   laniidae: 'pies-grièches',
-  sturnoidea: 'étourneaux, moqueurs & piqueboeufs',
+  sturnoidea: 'étourneaux & moqueurs',
   passeridae: 'moineaux & accenteurs',
-  certhioidea: 'sittelles, grimpereaux & troglodytes',
+  certhioidea: 'sittelles & grimpereaux',
   podicipedidae: 'grèbes',
   cuculidae: 'coucous',
-  caprimulgiformes: 'engoulevents, podarges & ibijaux',
+  caprimulgiformes: 'engoulevents',
   outardes_gangas: 'outardes & gangas',
-  procellariiformes: 'albatros, puffins & océanites',
+  procellariiformes: 'oiseaux pélagiques',
 };
 // Alcidés = les "pingouins" de l'hémisphère nord (pingouins, macareux, mergule, guillemots)
 const ALCID_G=/^(alca|pinguinus|fratercula|alle|uria|cepphus)$/;
