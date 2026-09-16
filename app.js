@@ -2476,6 +2476,16 @@ const TROPHIES = [
     list:s=>[...(s.toucansCalaosOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.toucansCalaosOwnedSet?.size)||0} espèce${((s.toucansCalaosOwnedSet?.size)||0)>1?'s':''} observée${((s.toucansCalaosOwnedSet?.size)||0)>1?'s':''}`,
   }),
+  ...makeTierFamily({
+    theme:'groupe', icon:ICONS.aigle, family:'psittaciformes', category:'species', baseName:'Perroquets, perruches & cacatoès',
+    imgDir:'assets/trophies/families/psittaciformes',
+    // Ordre Psittaciformes complet : Psittacidae + Cacatuidae + Strigopidae + Psittrichasidae.
+    // 0 FR natif (Perruche a collier ferale IdF peut compter). Monde ~400.
+    metric:s=>(s.psittaciformesOwnedSet?.size)||0, thresholds:[1,3,6,12,20,35],
+    descTpl:'Observer {n} perroquets, perruches ou cacatoès',
+    list:s=>[...(s.psittaciformesOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>`${(s.psittaciformesOwnedSet?.size)||0} espèce${((s.psittaciformesOwnedSet?.size)||0)>1?'s':''} observée${((s.psittaciformesOwnedSet?.size)||0)>1?'s':''}`,
+  }),
   // -- 11 nouvelles familles d'especes (papier-craft Canva) --
   ...makeTierFamily({
     theme:'groupe', icon:ICONS.aigle, family:'hirundinidae', category:'species', baseName:'Hirondelles',
@@ -2880,6 +2890,9 @@ const STURNOIDEA_G=/^(sturnus|pastor|acridotheres|gracula|sturnia|saroglossa|apl
 const MOINEAUX_ACCENTEURS_G=/^(passer|petronia|carpospiza|pyrgilauda|onychostruthus|montifringilla|gymnoris|hypocryptadius|prunella)$/;
 // Grebes (Podicipedidae). FR 5 (castagneux, huppe, jougris, oreillard, esclavon) / monde ~23.
 const PODICIPEDIDAE_G=/^(podiceps|tachybaptus|podilymbus|aechmophorus|rollandia|poliocephalus)$/;
+// Perroquets (ordre Psittaciformes complet) : Psittacidae + Cacatuidae + Strigopidae
+// + Psittrichasidae + Loriidae. 0 FR natif (perruche a collier ferale IdF). Monde ~400.
+const PSITTACIFORMES_G=/^(psittacus|amazona|ara|aratinga|psittacula|alexandrinus|barnardius|platycercus|neophema|pyrrhura|brotogeris|forpus|myiopsitta|agapornis|melopsittacus|trichoglossus|lorius|charmosyna|vini|phigys|chalcopsitta|eos|pseudeos|neopsittacus|glossopsitta|psitteuteles|oreopsittacus|nymphicus|cacatua|eolophus|callocephalon|calyptorhynchus|probosciger|lophochroa|zanda|strigops|nestor|psittrichas|coracopsis|poicephalus|psittacella|tanygnathus|alisterus|aprosmictus|polytelis|prosopeia|eclectus|geoffroyus|psittinus|cyclopsitta|purpureicephalus|cyanoramphus|neopsephotus|pezoporus|deroptyus|pionites|bolborhynchus|pyrilia|guaruba|cyanoliseus|enicognathus|psittacara|nandayus|ognorhynchus|leptosittaca|thectocercus|eupsittula|orthopsittaca|primolius|diopsittaca|cyanopsitta|anodorhynchus|hapalopsittaca|alipiopsitta|graydidascalus|pionus|pionopsitta|triclaria|micropsitta|coryllis|larius)$/;
 // Toucans (Ramphastidae, Piciformes) + Calaos (Bucerotidae + Bucorvidae, Bucerotiformes).
 // Ordres differents mais convergence evolutive celebre : gros becs colores, oiseaux tropicaux
 // forestiers frugivores. 0 FR / monde ~102 (~40 toucans + ~60 calaos + 2 calaos terrestres).
@@ -3089,6 +3102,12 @@ const SPECIES_FAMILY_FILTERS = {
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
     return fam === 'Toucans' || fam === 'Calaos';
   },
+  psittaciformes: sci => {
+    const g = (sci||'').split(' ')[0];
+    if(PSITTACIFORMES_G.test(g)) return true;
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Perroquets' || fam === 'Cacatoès' || fam === 'Perruches' || fam === 'Perroquets de Nouvelle-Zélande';
+  },
   outardes_gangas: sci => {
     const g = (sci||'').split(' ')[0];
     if(OUTARDES_GANGAS_G.test(g)) return true;
@@ -3167,6 +3186,7 @@ const SPECIES_FAMILY_LABELS = {
   certhioidea: 'sittelles & grimpereaux',
   podicipedidae: 'grèbes',
   toucans_calaos: 'toucans & calaos',
+  psittaciformes: 'perroquets, perruches & cacatoès',
   cuculidae: 'coucous',
   caprimulgiformes: 'engoulevents',
   outardes_gangas: 'outardes & gangas',
@@ -3450,7 +3470,7 @@ function statsFor(me, N){
         certhioideaOwnedSet=new Set(), podicipedidaeOwnedSet=new Set(),
         cuculidaeOwnedSet=new Set(), caprimulgiformesOwnedSet=new Set(),
         outardesGangasOwnedSet=new Set(), procellariiformesOwnedSet=new Set(),
-        toucansCalaosOwnedSet=new Set();
+        toucansCalaosOwnedSet=new Set(), psittaciformesOwnedSet=new Set();
   // Milieux (habitats) : Set d'espèces par catégorie via HABITATS (source : famille eBird).
   const habOwned = Object.fromEntries(HABITAT_CATS.map(c=>[c, new Set()]));
   for(const v of me._active.values()){
@@ -3535,6 +3555,8 @@ function statsFor(me, N){
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Grèbes') podicipedidaeOwnedSet.add(sci); }
     if(TOUCANS_CALAOS_G.test(g)) toucansCalaosOwnedSet.add(sci);
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Toucans'||f==='Calaos') toucansCalaosOwnedSet.add(sci); }
+    if(PSITTACIFORMES_G.test(g)) psittaciformesOwnedSet.add(sci);
+    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Perroquets'||f==='Cacatoès'||f==='Perruches'||f==='Perroquets de Nouvelle-Zélande') psittaciformesOwnedSet.add(sci); }
     if(CUCULIDAE_G.test(g)) cuculidaeOwnedSet.add(sci);
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Coucous') cuculidaeOwnedSet.add(sci); }
     if(CAPRIMULGIFORMES_G.test(g)) caprimulgiformesOwnedSet.add(sci);
@@ -3590,7 +3612,7 @@ function statsFor(me, N){
     for(const uid of voters) if(uid !== me.id) hearts++;
     if(hearts >= 3) hotPhotos++;
   }
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, martinetsOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, motacillidaeOwnedSet, ciconiidaeOwnedSet, coraciiformesOwnedSet, suliformesOwnedSet, laniidaeOwnedSet, sturnoideaOwnedSet, passeridaeOwnedSet, certhioideaOwnedSet, podicipedidaeOwnedSet, cuculidaeOwnedSet, caprimulgiformesOwnedSet, outardesGangasOwnedSet, procellariiformesOwnedSet, toucansCalaosOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, martinetsOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, motacillidaeOwnedSet, ciconiidaeOwnedSet, coraciiformesOwnedSet, suliformesOwnedSet, laniidaeOwnedSet, sturnoideaOwnedSet, passeridaeOwnedSet, certhioideaOwnedSet, podicipedidaeOwnedSet, cuculidaeOwnedSet, caprimulgiformesOwnedSet, outardesGangasOwnedSet, procellariiformesOwnedSet, toucansCalaosOwnedSet, psittaciformesOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
@@ -3633,7 +3655,7 @@ function renderTrophies(data){
   // -> larides -> chouettes -> rapaces diurnes -> martins-pecheurs -> pics -> corvides -> mesanges
   // -> hirondelles+martinets -> alouettes -> pouillots/rousserolles -> fauvettes -> muscicapides
   // -> grives -> bruants -> fringilles.
-  const SPECIES_TAX_RANK = { anatidae:10, podicipedidae:12, galliformes:20, outardes_gangas:28, columbidae:30, cuculidae:31, caprimulgiformes:32, martinets:33, toucans_calaos:95, rallidae:35, procellariiformes:37, ciconiidae:38, suliformes:39, ardeidae:40, scolopacidae:50, rivages:55, laridae:60, nocturnes:70, rapaces:80, coraciiformes:85, alcedinidae:90, picidae:100, laniidae:105, corvidae:110, paridae:120, hirundinidae:130, alaudidae:140, phylloscopidae:150, sylviidae:160, muscicapidae:170, sturnoidea:175, turdidae:180, certhioidea:182, passeridae:183, motacillidae:185, emberizidae:190, fringillidae:200 };
+  const SPECIES_TAX_RANK = { anatidae:10, podicipedidae:12, galliformes:20, outardes_gangas:28, columbidae:30, cuculidae:31, caprimulgiformes:32, martinets:33, toucans_calaos:95, rallidae:35, procellariiformes:37, ciconiidae:38, suliformes:39, ardeidae:40, scolopacidae:50, rivages:55, laridae:60, nocturnes:70, rapaces:80, coraciiformes:85, alcedinidae:90, picidae:100, psittaciformes:103, laniidae:105, corvidae:110, paridae:120, hirundinidae:130, alaudidae:140, phylloscopidae:150, sylviidae:160, muscicapidae:170, sturnoidea:175, turdidae:180, certhioidea:182, passeridae:183, motacillidae:185, emberizidae:190, fringillidae:200 };
   for(const [familyKey, tiers] of familyMap){
     // tiers ordre = ordre de TROPHY_TIERS (Bronze -> Emeraude), test par ordre.
     const tiersSorted = [...tiers].sort((a,b) => TROPHY_TIERS.findIndex(x=>x.key===a.tier) - TROPHY_TIERS.findIndex(x=>x.key===b.tier));
@@ -3733,6 +3755,7 @@ function renderTrophies(data){
         if(familyKey === 'certhioidea') return new Set(s.certhioideaOwnedSet || []);
         if(familyKey === 'podicipedidae') return new Set(s.podicipedidaeOwnedSet || []);
         if(familyKey === 'toucans_calaos') return new Set(s.toucansCalaosOwnedSet || []);
+        if(familyKey === 'psittaciformes') return new Set(s.psittaciformesOwnedSet || []);
         if(familyKey === 'cuculidae') return new Set(s.cuculidaeOwnedSet || []);
         if(familyKey === 'caprimulgiformes') return new Set(s.caprimulgiformesOwnedSet || []);
         if(familyKey === 'outardes_gangas') return new Set(s.outardesGangasOwnedSet || []);
