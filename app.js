@@ -2477,6 +2477,25 @@ const TROPHIES = [
     note:s=>`${(s.hirundoOwnedSet?.size)||0} hirondelle${((s.hirundoOwnedSet?.size)||0)>1?'s':''} observée${((s.hirundoOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
+    theme:'groupe', icon:ICONS.aigle, family:'cuculidae', category:'species', baseName:'Coucous',
+    imgDir:'assets/trophies/families/cuculidae',
+    // Cuculidae. FR 2 (coucou gris, coucou geai) / monde ~150.
+    metric:s=>(s.cuculidaeOwnedSet?.size)||0, thresholds:[1,2,3,5,10,20],
+    descTpl:'Observer {n} coucous différents',
+    list:s=>[...(s.cuculidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>`${(s.cuculidaeOwnedSet?.size)||0} coucou${((s.cuculidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.cuculidaeOwnedSet?.size)||0)>1?'s':''}`,
+  }),
+  ...makeTierFamily({
+    theme:'groupe', icon:ICONS.aigle, family:'caprimulgiformes', category:'species', baseName:'Engoulevents & alliés nocturnes',
+    imgDir:'assets/trophies/families/caprimulgiformes',
+    // Caprimulgiformes elargi : Caprimulgidae + Nyctibiidae + Podargidae + Aegothelidae + Steatornithidae.
+    // FR 2 (Engoulevent d'Europe + Engoulevent a collier roux) / monde ~140.
+    metric:s=>(s.caprimulgiformesOwnedSet?.size)||0, thresholds:[1,2,3,5,10,20],
+    descTpl:'Observer {n} engoulevents, ibijaux, podarges ou guacharos',
+    list:s=>[...(s.caprimulgiformesOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>`${(s.caprimulgiformesOwnedSet?.size)||0} espèce${((s.caprimulgiformesOwnedSet?.size)||0)>1?'s':''} observée${((s.caprimulgiformesOwnedSet?.size)||0)>1?'s':''}`,
+  }),
+  ...makeTierFamily({
     theme:'groupe', icon:ICONS.aigle, family:'martinets', category:'species', baseName:'Martinets',
     imgDir:'assets/trophies/families/martinets',
     // Pool FR ~3-4 martinets (noir, pale, alpin, unicolore). Monde ~110.
@@ -2821,6 +2840,11 @@ const STURNOIDEA_G=/^(sturnus|pastor|acridotheres|gracula|sturnia|saroglossa|apl
 const MOINEAUX_ACCENTEURS_G=/^(passer|petronia|carpospiza|pyrgilauda|onychostruthus|montifringilla|gymnoris|hypocryptadius|prunella)$/;
 // Grebes (Podicipedidae). FR 5 (castagneux, huppe, jougris, oreillard, esclavon) / monde ~23.
 const PODICIPEDIDAE_G=/^(podiceps|tachybaptus|podilymbus|aechmophorus|rollandia|poliocephalus)$/;
+// Coucous (Cuculidae). FR 2 (coucou gris, coucou geai) / monde ~150.
+const CUCULIDAE_G=/^(cuculus|clamator|coccyzus|chrysococcyx|cacomantis|hierococcyx|phaenicophaeus|cercococcyx|surniculus|eudynamys|urodynamis|scythrops|microdynamis|morococcyx|dromococcyx|tapera|geococcyx|neomorphus|crotophaga|guira|coua|centropus|carpococcyx|ceuthmochares|saurothera|hyetornis|piaya|pachycoccyx|chalcites|penthoceryx)$/;
+// Caprimulgiformes elargi : engoulevents + ibijaux + podarges + podarges d'Australasie
+// + guacharo. Tous nocturnes/crepusculaires, insectivores aeriens ou frugivores. FR 2 / monde ~140.
+const CAPRIMULGIFORMES_G=/^(caprimulgus|chordeiles|phalaenoptilus|siphonorhis|hydropsalis|uropsalis|macropsalis|nyctidromus|lyncornis|eurostopodus|gactornis|nyctipolus|eleothreptus|systellura|setopagis|nyctiphrynus|antrostomus|veles|nyctibius|podargus|batrachostomus|rigidipenna|aegotheles|steatornis)$/;
 // Superfamille Certhioidea : Sittidae (sittelles + tichodrome) + Certhiidae (grimpereaux) +
 // Salpornithidae (grimpereau tachete africain) + Troglodytidae (troglodyte + wrens NM) +
 // Polioptilidae (gobemoucherons). Petits explorateurs d'ecorce et de buissons.
@@ -3004,6 +3028,18 @@ const SPECIES_FAMILY_FILTERS = {
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
     return fam === 'Grèbes';
   },
+  cuculidae: sci => {
+    const g = (sci||'').split(' ')[0];
+    if(CUCULIDAE_G.test(g)) return true;
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Coucous';
+  },
+  caprimulgiformes: sci => {
+    const g = (sci||'').split(' ')[0];
+    if(CAPRIMULGIFORMES_G.test(g)) return true;
+    const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
+    return fam === 'Engoulevents' || fam === 'Ibijaux' || fam === 'Guacharo' || (fam && fam.startsWith('Podarges'));
+  },
   certhioidea: sci => {
     const g = (sci||'').split(' ')[0];
     if(CERTHIOIDEA_G.test(g)) return true;
@@ -3057,6 +3093,8 @@ const SPECIES_FAMILY_LABELS = {
   passeridae: 'moineaux & accenteurs',
   certhioidea: 'sittelles, grimpereaux & troglodytes',
   podicipedidae: 'grèbes',
+  cuculidae: 'coucous',
+  caprimulgiformes: 'engoulevents & alliés nocturnes',
 };
 // Alcidés = les "pingouins" de l'hémisphère nord (pingouins, macareux, mergule, guillemots)
 const ALCID_G=/^(alca|pinguinus|fratercula|alle|uria|cepphus)$/;
@@ -3333,7 +3371,8 @@ function statsFor(me, N){
         motacillidaeOwnedSet=new Set(), ciconiidaeOwnedSet=new Set(),
         coraciiformesOwnedSet=new Set(), suliformesOwnedSet=new Set(),
         laniidaeOwnedSet=new Set(), sturnoideaOwnedSet=new Set(), passeridaeOwnedSet=new Set(),
-        certhioideaOwnedSet=new Set(), podicipedidaeOwnedSet=new Set();
+        certhioideaOwnedSet=new Set(), podicipedidaeOwnedSet=new Set(),
+        cuculidaeOwnedSet=new Set(), caprimulgiformesOwnedSet=new Set();
   // Milieux (habitats) : Set d'espèces par catégorie via HABITATS (source : famille eBird).
   const habOwned = Object.fromEntries(HABITAT_CATS.map(c=>[c, new Set()]));
   for(const v of me._active.values()){
@@ -3416,6 +3455,10 @@ function statsFor(me, N){
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Sittelles'||f==='Tichodrome'||f==='Grimpereaux'||f==='Troglodytes'||f==='Gobemoucherons'||(f&&f.startsWith('Grimpereaux'))) certhioideaOwnedSet.add(sci); }
     if(PODICIPEDIDAE_G.test(g)) podicipedidaeOwnedSet.add(sci);
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Grèbes') podicipedidaeOwnedSet.add(sci); }
+    if(CUCULIDAE_G.test(g)) cuculidaeOwnedSet.add(sci);
+    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Coucous') cuculidaeOwnedSet.add(sci); }
+    if(CAPRIMULGIFORMES_G.test(g)) caprimulgiformesOwnedSet.add(sci);
+    else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Engoulevents'||f==='Ibijaux'||f==='Guacharo'||(f&&f.startsWith('Podarges'))) caprimulgiformesOwnedSet.add(sci); }
     if(MOTACILLIDAE_G.test(g)) motacillidaeOwnedSet.add(sci);
     else { const f=(typeof familyOf==='function')?familyOf(sci):null; if(f==='Bergeronnettes, pipits') motacillidaeOwnedSet.add(sci); }
     if(ECHASSIERS_G.test(g)) ciconiidaeOwnedSet.add(sci);
@@ -3463,7 +3506,7 @@ function statsFor(me, N){
     for(const uid of voters) if(uid !== me.id) hearts++;
     if(hearts >= 3) hotPhotos++;
   }
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, martinetsOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, motacillidaeOwnedSet, ciconiidaeOwnedSet, coraciiformesOwnedSet, suliformesOwnedSet, laniidaeOwnedSet, sturnoideaOwnedSet, passeridaeOwnedSet, certhioideaOwnedSet, podicipedidaeOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, locTeste, lackEnzoBird, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, martinetsOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, motacillidaeOwnedSet, ciconiidaeOwnedSet, coraciiformesOwnedSet, suliformesOwnedSet, laniidaeOwnedSet, sturnoideaOwnedSet, passeridaeOwnedSet, certhioideaOwnedSet, podicipedidaeOwnedSet, cuculidaeOwnedSet, caprimulgiformesOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
@@ -3506,7 +3549,7 @@ function renderTrophies(data){
   // -> larides -> chouettes -> rapaces diurnes -> martins-pecheurs -> pics -> corvides -> mesanges
   // -> hirondelles+martinets -> alouettes -> pouillots/rousserolles -> fauvettes -> muscicapides
   // -> grives -> bruants -> fringilles.
-  const SPECIES_TAX_RANK = { anatidae:10, podicipedidae:12, galliformes:20, columbidae:30, martinets:33, rallidae:35, ciconiidae:38, suliformes:39, ardeidae:40, scolopacidae:50, rivages:55, laridae:60, nocturnes:70, rapaces:80, coraciiformes:85, alcedinidae:90, picidae:100, laniidae:105, corvidae:110, paridae:120, hirundinidae:130, alaudidae:140, phylloscopidae:150, sylviidae:160, muscicapidae:170, sturnoidea:175, turdidae:180, certhioidea:182, passeridae:183, motacillidae:185, emberizidae:190, fringillidae:200 };
+  const SPECIES_TAX_RANK = { anatidae:10, podicipedidae:12, galliformes:20, columbidae:30, cuculidae:31, caprimulgiformes:32, martinets:33, rallidae:35, ciconiidae:38, suliformes:39, ardeidae:40, scolopacidae:50, rivages:55, laridae:60, nocturnes:70, rapaces:80, coraciiformes:85, alcedinidae:90, picidae:100, laniidae:105, corvidae:110, paridae:120, hirundinidae:130, alaudidae:140, phylloscopidae:150, sylviidae:160, muscicapidae:170, sturnoidea:175, turdidae:180, certhioidea:182, passeridae:183, motacillidae:185, emberizidae:190, fringillidae:200 };
   for(const [familyKey, tiers] of familyMap){
     // tiers ordre = ordre de TROPHY_TIERS (Bronze -> Emeraude), test par ordre.
     const tiersSorted = [...tiers].sort((a,b) => TROPHY_TIERS.findIndex(x=>x.key===a.tier) - TROPHY_TIERS.findIndex(x=>x.key===b.tier));
@@ -3605,6 +3648,8 @@ function renderTrophies(data){
         if(familyKey === 'passeridae') return new Set(s.passeridaeOwnedSet || []);
         if(familyKey === 'certhioidea') return new Set(s.certhioideaOwnedSet || []);
         if(familyKey === 'podicipedidae') return new Set(s.podicipedidaeOwnedSet || []);
+        if(familyKey === 'cuculidae') return new Set(s.cuculidaeOwnedSet || []);
+        if(familyKey === 'caprimulgiformes') return new Set(s.caprimulgiformesOwnedSet || []);
         return null;
       })(),
     };
