@@ -3744,12 +3744,18 @@ function renderTrophies(data){
             // au-dessus suffit).
             const firstTier = tiersSorted[0];
             const familyHasCustomNames = firstTier && firstTier.name && firstTier.name !== `${familyName} ${(TROPHY_TIERS.find(x=>x.key===firstTier.tier)||{}).label}`;
+            // Rendu du tier en etoiles : n filled + (5-n) empty. Bronze=1, Argent=2,
+            // Or=3, Diamant=4, Prismatique=5. La couleur des filled = la tier-color.
+            const tierIdx = currentTier ? TROPHY_TIERS.findIndex(x => x.key === displayTier.tier) : -1;
+            const starsCount = tierIdx >= 0 ? tierIdx + 1 : 0;
+            const starsHtml = starsCount > 0
+              ? `<span class="tro-fam-stars" title="${esc(displayMeta.label)}">${'★'.repeat(starsCount)}<span class="tro-fam-stars-empty">${'★'.repeat(5 - starsCount)}</span></span>`
+              : '';
             if(familyHasCustomNames){
               const descTpl = displayTier.descTpl || '';
               const objective = descTpl ? descTpl.replace('{n}', 'X') : familyName;
               const titleHtml = currentTier
-                ? `<span class="tro-fam-name">${esc(displayTier.name)}</span>
-                   <span class="tro-fam-tier">· ${esc(displayMeta.label)}</span>`
+                ? `<span class="tro-fam-name">${esc(displayTier.name)}</span> ${starsHtml}`
                 : `<span class="tro-fam-name">${esc(familyName)}</span>
                    <span class="tro-fam-tier tro-fam-tier-locked">· à débloquer</span>`;
               return `<div class="tro-fam-title">${titleHtml}</div>
@@ -3758,7 +3764,7 @@ function renderTrophies(data){
             return `<div class="tro-fam-title">
                       <span class="tro-fam-name">${esc(familyName)}</span>
                       ${currentTier
-                        ? `<span class="tro-fam-tier">· ${esc(displayMeta.label)}</span>`
+                        ? starsHtml
                         : `<span class="tro-fam-tier tro-fam-tier-locked">· à débloquer</span>`}
                     </div>
                     ${nextTier ? `<div class="tro-fam-next">${nextLine}</div>` : ''}`;
