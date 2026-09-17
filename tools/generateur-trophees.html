@@ -104,7 +104,7 @@
     <div id="protectEditor" style="display:none; margin:16px 0 0; padding:12px 14px; border:1px solid #e0e5e2; border-radius:10px; background:#fafcfb;">
       <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#556; margin-bottom:8px;">Zone socle préservée</div>
       <div style="font-size:11.5px; color:#7c8783; line-height:1.5;">
-        Zone protégée fixée à <b>70%</b> de la hauteur (bas) + couleur du socle fixée à
+        Zone protégée fixée à <b>70.5%</b> de la hauteur (bas) + couleur du socle fixée à
         <span style="display:inline-block; width:12px; height:12px; background:#3d211c; border:1px solid rgba(0,0,0,.2); border-radius:2px; vertical-align:middle; margin:0 3px;"></span>
         <code style="font-size:11px;">#3d211c</code>. Les pixels de cette teinte dans le bas de l'image sont préservés
         sur les 5 tiers, l'oiseau au-dessus est toujours retinté.
@@ -846,7 +846,7 @@ const sourcePreview = document.getElementById('sourcePreview');
 //  - PROTECT_COLOR : marron fonce du socle. Les pixels dans le rayon RGB de cette
 //    couleur ET dans la zone protegee sont laisses tels quels sur les 6 tiers.
 //  - PROTECT_TOL : rayon de tolerance RGB (distance euclidienne).
-const PROTECT_Y_RATIO = 0.70;
+const PROTECT_Y_RATIO = 0.705;
 const PROTECT_COLOR = { r: 0x3d, g: 0x21, b: 0x1c };   // #3d211c
 const PROTECT_TOL = 30;
 const PROTECT_TOL2 = PROTECT_TOL * PROTECT_TOL;
