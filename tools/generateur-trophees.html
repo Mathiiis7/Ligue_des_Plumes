@@ -994,11 +994,10 @@ function renderAll(){
     // n'est ni brun protege ni proche de la hue du tier ni desature (highlight) devient
     // transparent. Cible les bouts noirs / anti-aliases restants sur les bords du socle.
     outData = cleanupSocleEdges(outData, t);
-    // Opening morphologique sur le socle (erode -> dilate). Elimine les protrusions
-    // isolees des bords sans retrecir la silhouette (les bords droits sont eroded
-    // puis restaures par la dilation, mais les jaggies isoles sont perdus).
-    outData = erodeSocleEdges(outData, 5);
-    outData = dilateSocleEdges(outData, 3);
+    // Median filter sur l'alpha du socle : lisse les bords sans retrecir. Chaque
+    // pixel de la zone socle prend l'alpha median de son 3x3 -> les jaggies isolees
+    // (1-2 pixels sur 9) sont eliminees, les bords droits (5+ pixels alignes) restent.
+    outData = medianAlphaSocle(outData);
     const outCanvas = document.createElement('canvas');
     outCanvas.width = srcCanvas.width;
     outCanvas.height = srcCanvas.height;
@@ -1087,6 +1086,60 @@ function stripSocleOutlines(imgData){
       else if(x < w-1 && isProtectedOpaque((y*w + (x+1))*4)) hasBrownNeighbor = true;
       if(hasBrownNeighbor){
         od[i] = 0; od[i+1] = 0; od[i+2] = 0; od[i+3] = 0;
+      }
+    }
+  }
+  return new ImageData(od, w, h);
+}
+
+// Applique un filtre median sur l'alpha des pixels du socle (protected brown) ou
+// adjacents au socle. Pour chaque pixel, on regarde son voisinage 3x3 et on prend
+// l'alpha median. Les jaggies isolees (1-2 pixels bruns sur les 9 du voisinage) sont
+// vues comme du bruit et lissees. Les bords droits (5+ pixels bruns) restent solides.
+// Si un pixel devient brun (etait transparent), on copie la couleur d'un voisin brun.
+function medianAlphaSocle(imgData){
+  const w = imgData.width, h = imgData.height;
+  const d = imgData.data;
+  const od = new Uint8ClampedArray(d);
+  const yStart = Math.floor(h * PROTECT_Y_RATIO);
+  const isProtectedOpaque = (idx) => d[idx+3] > 0 && isProtected(d[idx], d[idx+1], d[idx+2]);
+  for(let y = Math.max(1, yStart); y < h - 1; y++){
+    for(let x = 1; x < w - 1; x++){
+      const i = (y*w + x)*4;
+      // Ne traite que les pixels bruns (protected) OU les transparents adjacents a
+      // du brun (candidat au fill par le filtre).
+      const centerIsBrown = isProtectedOpaque(i);
+      const centerIsTransparent = d[i+3] === 0;
+      if(!centerIsBrown && !centerIsTransparent) continue;   // pixel non-socle (plaque, bird), skip
+      // Compte les voisins bruns et transparents dans le 3x3 (avec le pixel central).
+      let brownCount = 0, transCount = 0;
+      let firstBrownIdx = -1;
+      for(let dy = -1; dy <= 1; dy++){
+        for(let dx = -1; dx <= 1; dx++){
+          const j = ((y+dy)*w + (x+dx))*4;
+          if(d[j+3] === 0) transCount++;
+          else if(isProtected(d[j], d[j+1], d[j+2])){
+            brownCount++;
+            if(firstBrownIdx < 0) firstBrownIdx = j;
+          }
+        }
+      }
+      // Le pixel doit etre brun ou transparent selon la majorite.
+      if(brownCount + transCount < 6) continue;   // pas assez de voisins socle-related
+      if(brownCount >= 5){
+        // Majorite brune -> le pixel devient brun.
+        if(centerIsTransparent && firstBrownIdx >= 0){
+          od[i] = d[firstBrownIdx];
+          od[i+1] = d[firstBrownIdx+1];
+          od[i+2] = d[firstBrownIdx+2];
+          od[i+3] = 255;
+        }
+        // Sinon deja brun, keep.
+      } else if(transCount >= 5){
+        // Majorite transparente -> le pixel devient transparent.
+        if(centerIsBrown){
+          od[i] = 0; od[i+1] = 0; od[i+2] = 0; od[i+3] = 0;
+        }
       }
     }
   }
