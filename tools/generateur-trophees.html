@@ -970,10 +970,11 @@ function renderAll(){
   for(const t of TIERS){
     let outData = generateTier(srcData, t);
     outData = styleFn(outData);
-    // Post-process : bouche les petits gaps transparents verticaux (typiquement
-    // entre le bas de l'oiseau et le haut du socle) avec la couleur du pixel du
-    // dessous. Sinon la transparence de la source apparait blanche sur la carte.
-    outData = closeVerticalGaps(outData, 30);
+    // Post-process : bouche uniquement les micro-gaps transparents (<= 5px) entre
+    // un pixel opaque et le brun du socle. Ferme les artefacts d'anti-aliasing au
+    // bord bird/socle sans creer de trainees brunes verticales sous les branches
+    // ou plumes flottantes au-dessus du socle.
+    outData = closeVerticalGaps(outData, 5);
     // Puis remplit les pattes qui traversent le socle : detection par run horizontal
     // (les runs courts de non-proteges dans une meme rangee = pattes).
     outData = fillLegCrossings(outData, 40);
