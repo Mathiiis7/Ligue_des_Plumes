@@ -951,9 +951,9 @@ function renderAll(){
     // entre le bas de l'oiseau et le haut du socle) avec la couleur du pixel du
     // dessous. Sinon la transparence de la source apparait blanche sur la carte.
     outData = closeVerticalGaps(outData, 30);
-    // Puis remplit les pattes qui traversent le socle : pixels coinces
-    // horizontalement entre deux pixels bruns proteges dans la zone socle.
-    outData = fillLegCrossings(outData, 25);
+    // Puis remplit les pattes qui traversent le socle : detection par run horizontal
+    // (les runs courts de non-proteges dans une meme rangee = pattes).
+    outData = fillLegCrossings(outData, 40);
     const outCanvas = document.createElement('canvas');
     outCanvas.width = srcCanvas.width;
     outCanvas.height = srcCanvas.height;
@@ -975,44 +975,62 @@ function renderAll(){
   }
 }
 
-// Rempli les "pattes qui traversent" : pixels non-proteges dans la zone socle qui
-// sont bordes a gauche ET a droite par un pixel protege dans un rayon horizontal
-// court (<= maxLegWidth). Sert typiquement aux pattes qui descendent en dessous du
-// bord haut du socle et prennent la couleur dark-shadow du tier a la place du brun.
-// Les pixels de la plaque metallique ne sont pas touches car leurs voisins non-proteges
-// s'etendent sur une longue distance horizontale (largeur de la plaque).
+// Rempli les "pattes qui traversent" le socle. Detection par run horizontal :
+// dans chaque rangee de la zone socle, on segmente en runs de pixels non-proteges.
+// Un run court (<= maxLegWidth px) = une patte -> fill avec la couleur protegee la
+// plus proche. Un run long (> maxLegWidth px) = interieur de plaque -> laisse intact.
+// Cette detection marche meme quand la patte traverse la plaque interne (bordee de
+// plaque metal + plaque metal, pas de brun proche horizontalement).
 function fillLegCrossings(imgData, maxLegWidth){
   const w = imgData.width, h = imgData.height;
   const d = imgData.data;
   const od = new Uint8ClampedArray(d);
   const yStart = Math.floor(h * PROTECT_Y_RATIO);
+  const MAX_SEARCH = 200;   // rayon max pour trouver une couleur brune de reference
   for(let y = yStart; y < h; y++){
-    for(let x = 0; x < w; x++){
-      const i = (y*w + x)*4;
-      if(d[i+3] === 0) continue;
-      if(isProtected(d[i], d[i+1], d[i+2])) continue;
-      // Cherche a gauche
-      let leftIdx = -1;
-      for(let dx = 1; dx <= maxLegWidth && x - dx >= 0; dx++){
-        const li = (y*w + (x - dx))*4;
-        if(d[li+3] === 0) break;
-        if(isProtected(d[li], d[li+1], d[li+2])){ leftIdx = li; break; }
+    // Segmente la rangee en runs de non-proteges (opaques). Chaque run est un
+    // segment continu de pixels non-transparents et non-proteges.
+    let x = 0;
+    while(x < w){
+      // Skip pixels qui ne sont pas des candidats a fill.
+      while(x < w){
+        const i = (y*w + x)*4;
+        if(d[i+3] > 0 && !isProtected(d[i], d[i+1], d[i+2])) break;
+        x++;
       }
-      if(leftIdx < 0) continue;
-      // Cherche a droite
-      let rightIdx = -1;
-      for(let dx = 1; dx <= maxLegWidth && x + dx < w; dx++){
-        const ri = (y*w + (x + dx))*4;
-        if(d[ri+3] === 0) break;
-        if(isProtected(d[ri], d[ri+1], d[ri+2])){ rightIdx = ri; break; }
+      if(x >= w) break;
+      // Trouve la fin du run.
+      const runStart = x;
+      while(x < w){
+        const i = (y*w + x)*4;
+        if(d[i+3] === 0 || isProtected(d[i], d[i+1], d[i+2])) break;
+        x++;
       }
-      if(rightIdx < 0) continue;
-      // Borde a G et D par du brun protege : c'est une patte qui traverse.
-      // Fill avec la moyenne des deux voisins proteges.
-      const fr = (d[leftIdx] + d[rightIdx]) >> 1;
-      const fg = (d[leftIdx+1] + d[rightIdx+1]) >> 1;
-      const fb = (d[leftIdx+2] + d[rightIdx+2]) >> 1;
-      od[i] = fr; od[i+1] = fg; od[i+2] = fb; od[i+3] = 255;
+      const runEnd = x - 1;
+      const runLen = runEnd - runStart + 1;
+      if(runLen > maxLegWidth) continue;   // c'est la plaque, on garde
+      // Trouve la couleur brune de reference : cherche a gauche puis a droite dans
+      // MAX_SEARCH px, saute par-dessus les runs non-proteges (autres pattes / plaque).
+      let refR = -1, refG = 0, refB = 0;
+      for(let dx = 1; dx <= MAX_SEARCH && runStart - dx >= 0; dx++){
+        const li = (y*w + (runStart - dx))*4;
+        if(d[li+3] > 0 && isProtected(d[li], d[li+1], d[li+2])){
+          refR = d[li]; refG = d[li+1]; refB = d[li+2]; break;
+        }
+      }
+      if(refR < 0){
+        for(let dx = 1; dx <= MAX_SEARCH && runEnd + dx < w; dx++){
+          const ri = (y*w + (runEnd + dx))*4;
+          if(d[ri+3] > 0 && isProtected(d[ri], d[ri+1], d[ri+2])){
+            refR = d[ri]; refG = d[ri+1]; refB = d[ri+2]; break;
+          }
+        }
+      }
+      if(refR < 0) continue;   // pas de brun de reference dans cette rangee
+      for(let fx = runStart; fx <= runEnd; fx++){
+        const j = (y*w + fx)*4;
+        od[j] = refR; od[j+1] = refG; od[j+2] = refB; od[j+3] = 255;
+      }
     }
   }
   return new ImageData(od, w, h);
