@@ -998,11 +998,20 @@ function closeVerticalGaps(imgData, maxGapPx){
       while(y < h && d[(y*w + x)*4 + 3] === 0) y++;
       const gapEnd = y - 1;
       if(gapStart <= gapEnd && y < h && (gapEnd - gapStart + 1) <= maxGapPx){
-        // Gap borde en bas par un pixel opaque a y : on remplit UNIQUEMENT si ce
-        // pixel est proche du brun socle. Sinon (bird interne), on laisse tel quel.
-        const fillIdx = (y*w + x)*4;
-        const fr = d[fillIdx], fg = d[fillIdx+1], fb = d[fillIdx+2];
-        if(isProtected(fr, fg, fb)){
+        // Verifie d'abord que le pixel a y est proche du brun socle : sinon
+        // (bird interne), on laisse le gap tel quel.
+        const firstIdx = (y*w + x)*4;
+        if(isProtected(d[firstIdx], d[firstIdx+1], d[firstIdx+2])){
+          // Sample la couleur de fill 5 pixels plus bas pour eviter le bord
+          // anti-aliase du socle (qui est plus sombre que son centre). Retombe
+          // sur le premier pixel si on depasse la hauteur ou si la sample n'est
+          // plus proche du brun socle.
+          const sampleY = Math.min(h - 1, y + 5);
+          const sampleIdx = (sampleY*w + x)*4;
+          let fr = d[sampleIdx], fg = d[sampleIdx+1], fb = d[sampleIdx+2];
+          if(d[sampleIdx+3] === 0 || !isProtected(fr, fg, fb)){
+            fr = d[firstIdx]; fg = d[firstIdx+1]; fb = d[firstIdx+2];
+          }
           for(let gy = gapStart; gy <= gapEnd; gy++){
             const j = (gy*w + x)*4;
             od[j] = fr; od[j+1] = fg; od[j+2] = fb; od[j+3] = 255;
