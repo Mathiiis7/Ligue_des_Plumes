@@ -976,10 +976,10 @@ function renderAll(){
   }
 }
 
-// Bouche les gaps transparents verticaux courts (<= maxGapPx pixels) coinces entre
-// deux pixels opaques dans la meme colonne. Utilise pour combler la bande de
-// transparence typique entre le pedestal de l'oiseau et le haut du socle dans les
-// designs Canva. Fill avec la couleur du pixel opaque du dessous.
+// Bouche uniquement les gaps transparents verticaux courts (<= maxGapPx pixels) OU
+// le pixel opaque du dessous est proche du brun socle (PROTECT_COLOR). Cible la
+// transition bird -> socle sans toucher aux gaps internes a l'oiseau (entre les
+// pattes, sous les ailes...). Fill avec la couleur du pixel opaque du dessous.
 function closeVerticalGaps(imgData, maxGapPx){
   const w = imgData.width, h = imgData.height;
   const d = imgData.data;
@@ -991,21 +991,22 @@ function closeVerticalGaps(imgData, maxGapPx){
       // Cherche le prochain pixel opaque.
       while(y < h && d[(y*w + x)*4 + 3] === 0) y++;
       if(y >= h) break;
-      const opaqueStart = y;
       // Trouve la fin du bloc opaque.
       while(y < h && d[(y*w + x)*4 + 3] > 0) y++;
-      const opaqueEnd = y - 1;
       // Cherche un gap transparent apres.
       const gapStart = y;
       while(y < h && d[(y*w + x)*4 + 3] === 0) y++;
       const gapEnd = y - 1;
       if(gapStart <= gapEnd && y < h && (gapEnd - gapStart + 1) <= maxGapPx){
-        // Gap borde en bas par un pixel opaque a y. On remplit avec la couleur de y.
+        // Gap borde en bas par un pixel opaque a y : on remplit UNIQUEMENT si ce
+        // pixel est proche du brun socle. Sinon (bird interne), on laisse tel quel.
         const fillIdx = (y*w + x)*4;
         const fr = d[fillIdx], fg = d[fillIdx+1], fb = d[fillIdx+2];
-        for(let gy = gapStart; gy <= gapEnd; gy++){
-          const j = (gy*w + x)*4;
-          od[j] = fr; od[j+1] = fg; od[j+2] = fb; od[j+3] = 255;
+        if(isProtected(fr, fg, fb)){
+          for(let gy = gapStart; gy <= gapEnd; gy++){
+            const j = (gy*w + x)*4;
+            od[j] = fr; od[j+1] = fg; od[j+2] = fb; od[j+3] = 255;
+          }
         }
       }
     }
