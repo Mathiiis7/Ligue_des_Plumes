@@ -1460,8 +1460,8 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .tro-family.unlocked { background:color-mix(in srgb, var(--tier-color) 6%, var(--surface-2));
     border-color:color-mix(in srgb, var(--tier-color) 30%, var(--line)); }
   .tro-family.locked { opacity:.85; }
-  .tro-fam-cup { flex:0 0 auto; width:220px; height:220px; display:grid; place-items:center; }
-  .tro-fam-cup .tro-cup { width:220px; height:220px; object-fit:contain;
+  .tro-fam-cup { flex:0 0 auto; width:245px; height:245px; display:grid; place-items:center; }
+  .tro-fam-cup .tro-cup { width:245px; height:245px; object-fit:contain;
     filter:url(#plaqueDim)
       drop-shadow(0 0 1px rgba(0,0,0,.45))
       drop-shadow(0 0 4px rgba(0,0,0,.22))
