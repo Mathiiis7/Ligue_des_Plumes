@@ -2325,7 +2325,7 @@ const TROPHY_TIERS = [
   // (le fichier PNG s'appelle toujours emeraude.png, c'est juste le label et la
   // couleur qui changent).
   { key:'bronze',   label:'Bronze',      color:'#c4753a', img:'assets/trophies/generic/bronze.png' },
-  { key:'argent',   label:'Argent',      color:'#c0c8d3', img:'assets/trophies/generic/argent.png' },
+  { key:'argent',   label:'Argent',      color:'#7ea3c8', img:'assets/trophies/generic/argent.png' },
   { key:'or',       label:'Or',          color:'#f5a623', img:'assets/trophies/generic/or.png' },
   { key:'diamant',  label:'Diamant',     color:'#7dd3e5', img:'assets/trophies/generic/diamant.png' },
   { key:'emeraude', label:'Émeraude',    color:'#22c53d', img:'assets/trophies/generic/emeraude.png' },
