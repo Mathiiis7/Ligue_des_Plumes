@@ -996,7 +996,9 @@ function renderAll(){
     outData = cleanupSocleEdges(outData, t);
     // Median filter sur l'alpha du socle : lisse les bords sans retrecir. Chaque
     // pixel de la zone socle prend l'alpha median de son 3x3 -> les jaggies isolees
-    // (1-2 pixels sur 9) sont eliminees, les bords droits (5+ pixels alignes) restent.
+    // sont eliminees, les bords droits restent. On applique 2 passes pour attraper
+    // aussi les jaggies plus larges (2px de haut / 2px de large).
+    outData = medianAlphaSocle(outData);
     outData = medianAlphaSocle(outData);
     const outCanvas = document.createElement('canvas');
     outCanvas.width = srcCanvas.width;
