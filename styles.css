@@ -1524,12 +1524,33 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
     box-shadow:0 3px 14px color-mix(in srgb, #a06cff 18%, transparent);
   }
   .tro-family.unlocked.tier-violet .tro-fam-cup .tro-cup {
-    filter:
+    animation:prismatic-iridescence 8s linear infinite;
+  }
+  @keyframes prismatic-iridescence {
+    0%   { filter:
       drop-shadow(0 1px 1px rgba(0,0,0,.18))
       drop-shadow(0 4px 8px rgba(0,0,0,.11))
       drop-shadow(-3px 2px 10px rgba(255,92,220,.32))
       drop-shadow(3px 2px 10px rgba(92,211,255,.32))
-      drop-shadow(0 -2px 10px rgba(160,108,255,.28));
+      drop-shadow(0 -2px 10px rgba(160,108,255,.28))
+      hue-rotate(0deg); }
+    100% { filter:
+      drop-shadow(0 1px 1px rgba(0,0,0,.18))
+      drop-shadow(0 4px 8px rgba(0,0,0,.11))
+      drop-shadow(-3px 2px 10px rgba(255,92,220,.32))
+      drop-shadow(3px 2px 10px rgba(92,211,255,.32))
+      drop-shadow(0 -2px 10px rgba(160,108,255,.28))
+      hue-rotate(360deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tro-family.unlocked.tier-violet .tro-fam-cup .tro-cup { animation:none;
+      filter:
+        drop-shadow(0 1px 1px rgba(0,0,0,.18))
+        drop-shadow(0 4px 8px rgba(0,0,0,.11))
+        drop-shadow(-3px 2px 10px rgba(255,92,220,.32))
+        drop-shadow(3px 2px 10px rgba(92,211,255,.32))
+        drop-shadow(0 -2px 10px rgba(160,108,255,.28));
+    }
   }
   .tro-family.tier-violet .tro-fam-bar-fill {
     background:linear-gradient(90deg, #ff5cdc, #a06cff, #5cd3ff, #7fffb5);
@@ -1647,12 +1668,33 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
     border-color:color-mix(in srgb, #a06cff 40%, var(--line));
   }
   .tmodal-tier.unlocked.tier-violet .tmodal-tier-img {
-    filter:
+    animation:prismatic-iridescence-modal 8s linear infinite;
+  }
+  @keyframes prismatic-iridescence-modal {
+    0%   { filter:
       drop-shadow(0 1px 1px rgba(0,0,0,.16))
       drop-shadow(0 4px 7px rgba(0,0,0,.10))
       drop-shadow(-2px 2px 9px rgba(255,92,220,.30))
       drop-shadow(2px 2px 9px rgba(92,211,255,.30))
-      drop-shadow(0 -2px 9px rgba(160,108,255,.26));
+      drop-shadow(0 -2px 9px rgba(160,108,255,.26))
+      hue-rotate(0deg); }
+    100% { filter:
+      drop-shadow(0 1px 1px rgba(0,0,0,.16))
+      drop-shadow(0 4px 7px rgba(0,0,0,.10))
+      drop-shadow(-2px 2px 9px rgba(255,92,220,.30))
+      drop-shadow(2px 2px 9px rgba(92,211,255,.30))
+      drop-shadow(0 -2px 9px rgba(160,108,255,.26))
+      hue-rotate(360deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tmodal-tier.unlocked.tier-violet .tmodal-tier-img { animation:none;
+      filter:
+        drop-shadow(0 1px 1px rgba(0,0,0,.16))
+        drop-shadow(0 4px 7px rgba(0,0,0,.10))
+        drop-shadow(-2px 2px 9px rgba(255,92,220,.30))
+        drop-shadow(2px 2px 9px rgba(92,211,255,.30))
+        drop-shadow(0 -2px 9px rgba(160,108,255,.26));
+    }
   }
   .tmodal-tier.locked { opacity:.7; }
   .tmodal-tier-img { width:150px; height:150px; object-fit:contain;
