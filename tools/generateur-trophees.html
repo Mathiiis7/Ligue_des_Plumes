@@ -104,10 +104,10 @@
     <div id="protectEditor" style="display:none; margin:16px 0 0; padding:12px 14px; border:1px solid #e0e5e2; border-radius:10px; background:#fafcfb;">
       <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#556; margin-bottom:8px;">Zone socle préservée</div>
       <div style="font-size:11.5px; color:#7c8783; line-height:1.5;">
-        Zone protégée fixée à <b>70%</b> de la hauteur (bas) + couleur du socle fixée à
+        Zone protégée fixée à <b>73%</b> de la hauteur (bas) + couleur du socle fixée à
         <span style="display:inline-block; width:12px; height:12px; background:#3d211c; border:1px solid rgba(0,0,0,.2); border-radius:2px; vertical-align:middle; margin:0 3px;"></span>
         <code style="font-size:11px;">#3d211c</code>. Les pixels de cette teinte dans le bas de l'image sont préservés
-        sur les 6 tiers, l'oiseau au-dessus est toujours retinté.
+        sur les 5 tiers, l'oiseau au-dessus est toujours retinté.
       </div>
       <div style="position:relative; margin-top:10px; display:inline-block;">
         <canvas id="sourcePreview" style="display:block; max-width:100%; width:auto; height:auto; max-height:280px; border:1px solid #cfd8d5; border-radius:8px; pointer-events:none;"></canvas>
@@ -602,10 +602,10 @@ function generateTier(sourceImageData, tier){
     if(lRange > 0.02){
       const spread = Math.max(lRange, 0.30);
       const centered = (srcL - avgL) / spread;
-      // Plancher a 0.45 : les pixels les plus sombres du bird tombent juste en
-      // dessous du stop mid (0.55) -> clairement bronze/argent/or, plus aucune
-      // apparence marron fonce indistinguable du socle brun.
-      normL = Math.max(0.45, Math.min(0.90, 0.55 + centered * 0.70));
+      // Plancher a 0.30 : les pixels les plus sombres du bird atterrissent sur le
+      // mid-shadow du gradient (dark tinted du tier), preserve le contraste sans
+      // tomber sur le deep-shadow quasi-noir.
+      normL = Math.max(0.30, Math.min(0.90, 0.55 + centered * 0.70));
     } else {
       normL = 0.55;
     }
@@ -842,7 +842,7 @@ const sourcePreview = document.getElementById('sourcePreview');
 //  - PROTECT_COLOR : marron fonce du socle. Les pixels dans le rayon RGB de cette
 //    couleur ET dans la zone protegee sont laisses tels quels sur les 6 tiers.
 //  - PROTECT_TOL : rayon de tolerance RGB (distance euclidienne).
-const PROTECT_Y_RATIO = 0.70;
+const PROTECT_Y_RATIO = 0.73;
 const PROTECT_COLOR = { r: 0x3d, g: 0x21, b: 0x1c };   // #3d211c
 const PROTECT_TOL = 30;
 const PROTECT_TOL2 = PROTECT_TOL * PROTECT_TOL;
