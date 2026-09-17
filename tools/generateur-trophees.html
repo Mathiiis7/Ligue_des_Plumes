@@ -1073,6 +1073,8 @@ function closeVerticalGaps(imgData, maxGapPx){
   const d = imgData.data;
   const out = new ImageData(new Uint8ClampedArray(d), w, h);
   const od = out.data;
+  const yProtectPx = Math.floor(h * PROTECT_Y_RATIO);
+  const yFillMax = yProtectPx + Math.floor(h * 0.03);   // bas du gap doit etre dans les 3% sous Y=70%
   for(let x = 0; x < w; x++){
     let y = 0;
     while(y < h){
@@ -1085,7 +1087,10 @@ function closeVerticalGaps(imgData, maxGapPx){
       const gapStart = y;
       while(y < h && d[(y*w + x)*4 + 3] === 0) y++;
       const gapEnd = y - 1;
-      if(gapStart <= gapEnd && y < h && (gapEnd - gapStart + 1) <= maxGapPx){
+      // On ne comble QUE si le bas du gap (position 'y' post-gap) est dans la bande
+      // 'debut du socle' - evite de faire descendre des trainees marrons depuis les
+      // elements du design qui sont loin au-dessus du socle (branches, queue longue).
+      if(gapStart <= gapEnd && y < h && (gapEnd - gapStart + 1) <= maxGapPx && y <= yFillMax){
         // Verifie d'abord que le pixel a y est proche du brun socle : sinon
         // (bird interne), on laisse le gap tel quel.
         const firstIdx = (y*w + x)*4;
