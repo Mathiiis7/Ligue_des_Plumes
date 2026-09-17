@@ -990,6 +990,10 @@ function renderAll(){
     // avec alpha moyen (100-150) qui apparaissaient comme des poussieres marron
     // autour du bird. Le trade-off est un peu plus d'aliasing sur les bords.
     outData = thresholdAlpha(outData, 150);
+    // Nettoie les residus non-tier autour du socle : tout pixel dans la zone socle qui
+    // n'est ni brun protege ni proche de la hue du tier ni desature (highlight) devient
+    // transparent. Cible les bouts noirs / anti-aliases restants sur les bords du socle.
+    outData = cleanupSocleEdges(outData, t);
     const outCanvas = document.createElement('canvas');
     outCanvas.width = srcCanvas.width;
     outCanvas.height = srcCanvas.height;
@@ -1024,11 +1028,38 @@ function thresholdAlpha(imgData, threshold){
   return new ImageData(od, imgData.width, imgData.height);
 }
 
-// Elimine les contours sombres retintes qui bordent le socle (outlines watercolor
-// du design source qui restent en dark bronze/silver/etc. apres retint et apparaissent
-// comme des bouts noirs sur les bords). Pour chaque pixel non-protege opaque dans la
-// zone socle, si sa luminance est basse ET qu'un voisin direct est protege brown,
-// on le rend transparent.
+// Nettoie les bords du socle : dans la zone protegee (bas de l'image), tout pixel qui
+// n'est ni brun socle NI matching la teinte du tier (via hue distance) devient
+// transparent. Objectif : eliminer les residus anti-aliases sombres qui apparaissent
+// comme des bouts noirs autour du socle sans toucher au vrai socle (brown) ni a la
+// plaque (colors du tier).
+function cleanupSocleEdges(imgData, tier){
+  const w = imgData.width, h = imgData.height;
+  const d = imgData.data;
+  const od = new Uint8ClampedArray(d);
+  const yStart = Math.floor(h * PROTECT_Y_RATIO);
+  const tierHue = tier.targetH || 0;
+  const HUE_TOL = 40;   // degres autour de la hue du tier acceptes comme "plaque"
+  for(let y = yStart; y < h; y++){
+    for(let x = 0; x < w; x++){
+      const i = (y*w + x)*4;
+      if(d[i+3] === 0) continue;
+      if(isProtected(d[i], d[i+1], d[i+2])) continue;   // socle brun -> keep
+      const [ph, ps, pl] = rgbToHsl(d[i], d[i+1], d[i+2]);
+      // Pixels tres desatures (near-white / near-gray) : keep (plaque highlight, specular).
+      if(ps < 0.12) continue;
+      // Hue proche du tier -> keep (plaque interior).
+      let dh = Math.abs(ph - tierHue);
+      if(dh > 180) dh = 360 - dh;
+      if(dh <= HUE_TOL) continue;
+      // Ni protege, ni tier-hue, ni tres desature -> artefact -> transparent.
+      od[i] = 0; od[i+1] = 0; od[i+2] = 0; od[i+3] = 0;
+    }
+  }
+  return new ImageData(od, w, h);
+}
+
+// Ancien stripSocleOutlines (deprecated).
 function stripSocleOutlines(imgData){
   const w = imgData.width, h = imgData.height;
   const d = imgData.data;
