@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Générateur de trophées 6 paliers · Ligue des Birds</title>
+<title>Générateur de trophées 5 paliers · Ligue des Birds</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   * { box-sizing:border-box; }
@@ -25,7 +25,7 @@
     border:1px solid #cfd8d5; background:#fafcfb; color:#47534f; cursor:pointer; }
   .preset-chip:hover { border-color:#0b7c77; color:#0b7c77; }
   .preset-chip.on { background:#0b7c77; color:#fff; border-color:#0b7c77; }
-  .color-pickers { display:grid; grid-template-columns:repeat(6, 1fr); gap:8px; }
+  .color-pickers { display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; }
   @media (max-width: 600px){ .color-pickers { grid-template-columns:repeat(3, 1fr); } }
   .cp-cell { display:flex; flex-direction:column; align-items:center; gap:4px;
     padding:8px 4px; border:1px solid #e0e5e2; border-radius:10px; background:#fafcfb; }
@@ -63,10 +63,10 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>🏆 Générateur de trophées 6 paliers</h1>
+  <h1>🏆 Générateur de trophées 5 paliers</h1>
   <p class="sub">Le trophée doré actuel est chargé automatiquement. Dépose une autre image
-    pour l'utiliser comme source. La palette de droite définit les 6 tiers
-    (bronze / argent / or / diamant / émeraude / prismatique) — édite-la à la volée.</p>
+    pour l'utiliser comme source. La palette de droite définit les 5 tiers
+    (bronze / argent / or / diamant / prismatique) — édite-la à la volée.</p>
 
   <div class="card">
     <label class="drop" id="drop">
@@ -81,52 +81,24 @@
       <div class="color-pickers" id="colorPickers"></div>
     </div>
 
-    <div id="socleOptions" style="display:none; margin:16px 0 0; padding:12px 14px; border:1px solid #e0e5e2; border-radius:10px; background:#fafcfb;">
-      <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#556; margin-bottom:8px;">Socle personnalisé (optionnel)</div>
-      <div style="font-size:11.5px; color:#8b1e1e; background:#fdecea; border:1px solid #e9b7b7; padding:6px 10px; border-radius:6px; margin-bottom:10px;">
-        ⚠ Le PNG à charger ici doit contenir <b>uniquement le socle</b> (avec sa plaque, transparent autour) — <b>sans l'oiseau</b>.
-      </div>
-      <label class="btn ghost" style="display:inline-block; padding:6px 14px; font-size:12.5px; cursor:pointer;">
-        📁 Choisir un PNG de socle
-        <input type="file" id="socleFile" accept="image/png" style="display:none;">
-      </label>
-      <button class="btn ghost" id="clearSocle" style="padding:6px 14px; font-size:12.5px; margin-left:6px; display:none;">Retirer</button>
-      <div id="socleStatus" style="font-size:11.5px; color:#7c8783; margin-top:8px; line-height:1.5;">
-        Le socle sera composé en bas de chaque tier (identique sur les 6). Si tu n'as pas d'image
-        socle séparée, laisse vide et utilise plutôt les <b>Zones à préserver</b> plus haut :
-        clique la couleur marron du socle sur ton PNG source, elle sera protégée sur les 6 tiers.
-      </div>
-    </div>
 
     <div id="protectEditor" style="display:none; margin:16px 0 0; padding:12px 14px; border:1px solid #e0e5e2; border-radius:10px; background:#fafcfb;">
-      <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#556; margin-bottom:8px;">Zones à préserver (socle, bois, contours)</div>
-      <div id="protectChips" style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;"></div>
-      <div style="font-size:12px; color:#47534f; margin-top:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-        Tolérance
-        <input type="range" id="protectTol" min="10" max="150" value="55" style="vertical-align:middle; flex:0 0 180px;">
-        <span id="protectTolVal" style="font-weight:700;">55</span>
-        <button class="btn ghost" id="clearProtect" style="padding:4px 10px; font-size:12px;">Vider</button>
-      </div>
-      <div style="font-size:12px; color:#47534f; margin-top:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-        Zone protégée à partir de&nbsp;
-        <input type="range" id="protectYMin" min="0" max="100" value="55" style="vertical-align:middle; flex:0 0 180px;">
-        <span id="protectYMinVal" style="font-weight:700;">55%</span>
-        &nbsp;de la hauteur (bas)
-      </div>
-      <div style="font-size:11.5px; color:#7c8783; margin-top:8px;">
-        Clique sur l'aperçu (dans la zone en surbrillance) pour ajouter une couleur à préserver.
-        La protection ne s'applique qu'en dessous de la ligne — au-dessus (partie oiseau) tout
-        est toujours retinté, même les pixels marron.
+      <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#556; margin-bottom:8px;">Zone socle préservée</div>
+      <div style="font-size:11.5px; color:#7c8783; line-height:1.5;">
+        Zone protégée fixée à <b>70%</b> de la hauteur (bas) + couleur du socle fixée à
+        <span style="display:inline-block; width:12px; height:12px; background:#3d211c; border:1px solid rgba(0,0,0,.2); border-radius:2px; vertical-align:middle; margin:0 3px;"></span>
+        <code style="font-size:11px;">#3d211c</code>. Les pixels de cette teinte dans le bas de l'image sont préservés
+        sur les 6 tiers, l'oiseau au-dessus est toujours retinté.
       </div>
       <div style="position:relative; margin-top:10px; display:inline-block;">
-        <canvas id="sourcePreview" style="display:block; max-width:100%; width:auto; height:auto; max-height:280px; border:1px solid #cfd8d5; border-radius:8px; cursor:crosshair;"></canvas>
+        <canvas id="sourcePreview" style="display:block; max-width:100%; width:auto; height:auto; max-height:280px; border:1px solid #cfd8d5; border-radius:8px; pointer-events:none;"></canvas>
         <div id="protectYMarker" style="position:absolute; left:0; right:0; height:2px; background:rgba(230, 80, 80, 0.85); pointer-events:none;"></div>
         <div id="protectYShade" style="position:absolute; left:0; right:0; bottom:0; background:rgba(230, 80, 80, 0.14); pointer-events:none;"></div>
       </div>
     </div>
 
     <div class="row-btns" id="controls" style="display:none;">
-      <button class="btn" id="downloadAll">⬇ Télécharger les 6</button>
+      <button class="btn" id="downloadAll">⬇ Télécharger les 5</button>
       <button class="btn ghost" id="reset">Recommencer</button>
     </div>
 
@@ -149,9 +121,9 @@
         pour garder le contraste avec la coupe.<br><br>
         Prismatique : le gradient map est recalculé par pixel avec un hue variant en diagonale
         (rose → violet → cyan → vert → jaune) pour un rendu iridescent.<br><br>
-        Une fois téléchargés, place les 6 PNGs dans <code>assets/trophies/families/{nom}/</code>
-        avec les noms <code>bronze.png / argent.png / or.png / diamant.png / violet.png /
-        emeraude.png</code>, puis ajoute <code>imgDir:'assets/trophies/families/{nom}'</code>
+        Une fois téléchargés, place les 5 PNGs dans <code>assets/trophies/families/{nom}/</code>
+        avec les noms <code>bronze.png / argent.png / or.png / diamant.png / violet.png</code>,
+        puis ajoute <code>imgDir:'assets/trophies/families/{nom}'</code>
         dans la config du trophée dans <code>app.js</code>.
       </div>
     </details>
@@ -379,13 +351,13 @@ function pixelate(src, blockSize){
   return out;
 }
 
-// TIERS actif : palette editable directement via les color pickers.
+// TIERS actif : palette editable directement via les color pickers. Emeraude
+// retire (5 tiers globaux dans l'app, sauf trophee Gaulois qui a son propre workflow).
 let TIERS = [
   { key:'bronze',   label:'Bronze',      color:'#d18855' },
   { key:'argent',   label:'Argent',      color:'#9ab8d0' },
   { key:'or',       label:'Or',          color:'#f0c033' },
   { key:'diamant',  label:'Diamant',     color:'#7dd3e5' },
-  { key:'emeraude', label:'Émeraude',    color:'#22c53d' },
   { key:'violet',   label:'Prismatique', color:'#d13cff', gradient:{ hueStart:320, hueEnd:60 } },
 ].map(t => enrichTier(t));
 
@@ -543,7 +515,7 @@ function generateTier(sourceImageData, tier){
 
   // Zone protegee : seulement en dessous de yProtectThresh (fraction 0..1 de la hauteur).
   // Au-dessus, tout est retinte peu importe le match couleur.
-  const yProtectThresh = protectYThreshold();
+  const yProtectThresh = PROTECT_Y_RATIO;
   const yProtectPx = Math.floor(h * yProtectThresh);
   // Pre-pass : trouve min/max luminance des pixels qui vont etre retintes (=
   // ceux qui ne sont ni protected ni quasi-noirs neutres).
@@ -552,7 +524,7 @@ function generateTier(sourceImageData, tier){
     if(sd[i+3] === 0) continue;
     const py = (i/4 / w) | 0;
     const r=sd[i], g=sd[i+1], b=sd[i+2];
-    if(PROTECTED.length && py >= yProtectPx && isProtected(r, g, b)) continue;
+    if(py >= yProtectPx && isProtected(r, g, b)) continue;
     const [srcH, srcS, srcL] = rgbToHsl(r, g, b);
     if(srcL < 0.10 && srcS < 0.30) continue;
     if(srcL < minL) minL = srcL;
@@ -572,7 +544,7 @@ function generateTier(sourceImageData, tier){
     // = socle). Au-dessus, tout est retinte meme si la couleur matche - utile pour ne
     // pas figer les zones marron qui sont sur l'oiseau.
     const py = (i/4 / w) | 0;
-    if(PROTECTED.length && py >= yProtectPx && isProtected(r, g, b)){
+    if(py >= yProtectPx && isProtected(r, g, b)){
       od[i]=r; od[i+1]=g; od[i+2]=b; od[i+3]=a;
       continue;
     }
@@ -803,97 +775,34 @@ const resetBtn = document.getElementById('reset');
 const paletteEditor = document.getElementById('paletteEditor');
 const colorPickers = document.getElementById('colorPickers');
 const protectEditor = document.getElementById('protectEditor');
-const protectChips = document.getElementById('protectChips');
-const protectTol = document.getElementById('protectTol');
-const protectTolVal = document.getElementById('protectTolVal');
-const clearProtectBtn = document.getElementById('clearProtect');
 const sourcePreview = document.getElementById('sourcePreview');
-const socleOptions = document.getElementById('socleOptions');
-const socleFile = document.getElementById('socleFile');
-const socleStatus = document.getElementById('socleStatus');
-const clearSocleBtn = document.getElementById('clearSocle');
-let socleImage = null;   // Image du socle personnalise, ou null
 
-socleFile.addEventListener('change', (e) => {
-  const f = e.target.files?.[0]; if(!f) return;
-  const img = new Image();
-  img.onload = () => {
-    socleImage = img;
-    socleStatus.textContent = `✔ Socle chargé (${img.naturalWidth}×${img.naturalHeight}). Il remplace le bas de chaque tier.`;
-    clearSocleBtn.style.display = 'inline-block';
-    if(sourceImage) renderAll();
-  };
-  img.onerror = () => { socleStatus.textContent = 'Impossible de lire le fichier.'; };
-  img.src = URL.createObjectURL(f);
-});
-clearSocleBtn.addEventListener('click', () => {
-  socleImage = null; socleFile.value = '';
-  socleStatus.textContent = 'Fournis un PNG contenant juste ton socle (avec sa plaque, transparence autour) : il sera composé sous chaque tier à la place du bas du PNG source. Laisser vide pour utiliser l\'image source telle quelle.';
-  clearSocleBtn.style.display = 'none';
-  if(sourceImage) renderAll();
-});
-
-// Liste des couleurs a preserver (en RGB). Chaque pixel dans le rayon `tol` (distance
-// euclidienne RGB) autour de l'une de ces couleurs est laisse tel quel par le gradient
-// map, MAIS uniquement si le pixel est dans la zone protegee (bas de l'image, definie
-// par protectYMin en % de la hauteur). Les pixels au-dessus sont toujours retintes,
-// meme s'ils matchent une couleur protegee - utile pour ne pas figer les zones marron
-// qui sont sur l'oiseau alors qu'on veut proteger le socle.
-let PROTECTED = [];   // Array de {r,g,b}
-const protectYMin = document.getElementById('protectYMin');
-const protectYMinVal = document.getElementById('protectYMinVal');
+// Zone de protection : constantes hardcodees.
+//  - PROTECT_Y_RATIO : ligne horizontale au-dessus de laquelle rien n'est protege
+//    (l'oiseau se trouve toujours au-dessus). Regle a 70% = bas 30% de l'image.
+//  - PROTECT_COLOR : marron fonce du socle. Les pixels dans le rayon RGB de cette
+//    couleur ET dans la zone protegee sont laisses tels quels sur les 6 tiers.
+//  - PROTECT_TOL : rayon de tolerance RGB (distance euclidienne).
+const PROTECT_Y_RATIO = 0.70;
+const PROTECT_COLOR = { r: 0x3d, g: 0x21, b: 0x1c };   // #3d211c
+const PROTECT_TOL = 55;
+const PROTECT_TOL2 = PROTECT_TOL * PROTECT_TOL;
 const protectYMarker = document.getElementById('protectYMarker');
 const protectYShade = document.getElementById('protectYShade');
-function protectTolerance(){ return parseInt(protectTol.value, 10); }
-function protectYThreshold(){ return parseInt(protectYMin.value, 10) / 100; }   // 0..1
 function isProtected(r, g, b){
-  const tol = protectTolerance();
-  const tol2 = tol * tol;
-  for(const p of PROTECTED){
-    const dr = r - p.r, dg = g - p.g, db = b - p.b;
-    if(dr*dr + dg*dg + db*db <= tol2) return true;
-  }
-  return false;
+  const dr = r - PROTECT_COLOR.r, dg = g - PROTECT_COLOR.g, db = b - PROTECT_COLOR.b;
+  return dr*dr + dg*dg + db*db <= PROTECT_TOL2;
 }
 function updateProtectYVisual(){
-  protectYMinVal.textContent = protectYMin.value + '%';
   const cv = sourcePreview;
   if(!cv || !cv.width) return;
   const rect = cv.getBoundingClientRect();
-  const yPx = rect.height * (parseInt(protectYMin.value, 10) / 100);
+  const yPx = rect.height * PROTECT_Y_RATIO;
   protectYMarker.style.top = yPx + 'px';
   protectYShade.style.top = yPx + 'px';
   protectYShade.style.height = (rect.height - yPx) + 'px';
 }
-protectYMin.addEventListener('input', () => {
-  updateProtectYVisual();
-  if(sourceImage) renderAll();
-});
 window.addEventListener('resize', updateProtectYVisual);
-function renderProtectChips(){
-  protectChips.innerHTML = '';
-  if(PROTECTED.length === 0){
-    const p = document.createElement('span');
-    p.style.cssText = 'font-size:12px; color:#7c8783; font-style:italic;';
-    p.textContent = 'Aucune couleur préservée — clique sur l\'aperçu ci-dessous.';
-    protectChips.appendChild(p);
-    return;
-  }
-  PROTECTED.forEach((c, idx) => {
-    const hex = rgbToHex(c.r, c.g, c.b);
-    const chip = document.createElement('span');
-    chip.style.cssText = `display:inline-flex; align-items:center; gap:4px; padding:3px 8px 3px 5px;
-      border:1px solid #cfd8d5; border-radius:99px; background:#fff; font-size:11.5px; font-weight:600;
-      font-family:ui-monospace, "SF Mono", Consolas, monospace;`;
-    chip.innerHTML = `<span style="width:14px; height:14px; border-radius:50%; border:1px solid rgba(0,0,0,.15); background:${hex};"></span>
-      <span>${hex}</span>
-      <button title="Retirer" style="border:none; background:none; cursor:pointer; color:#8b1e1e; font-size:14px; padding:0 2px;">×</button>`;
-    chip.querySelector('button').addEventListener('click', () => {
-      PROTECTED.splice(idx, 1); renderProtectChips(); if(sourceImage) renderAll();
-    });
-    protectChips.appendChild(chip);
-  });
-}
 function updateSourcePreview(){
   if(!sourceImage) return;
   const sw = sourceImage.naturalWidth, sh = sourceImage.naturalHeight;
@@ -904,26 +813,6 @@ function updateSourcePreview(){
   // On defere le calcul du marker au layout suivant (le canvas vient d'etre resized).
   requestAnimationFrame(updateProtectYVisual);
 }
-sourcePreview.addEventListener('click', (e) => {
-  if(!sourceImage) return;
-  const rect = sourcePreview.getBoundingClientRect();
-  const sx = Math.floor((e.clientX - rect.left) * sourcePreview.width / rect.width);
-  const sy = Math.floor((e.clientY - rect.top) * sourcePreview.height / rect.height);
-  const cx = sourcePreview.getContext('2d');
-  const px = cx.getImageData(sx, sy, 1, 1).data;
-  if(px[3] === 0) return; // pixel transparent, on ignore
-  PROTECTED.push({ r:px[0], g:px[1], b:px[2] });
-  renderProtectChips();
-  renderAll();
-});
-protectTol.addEventListener('input', () => {
-  protectTolVal.textContent = protectTol.value;
-  if(sourceImage && PROTECTED.length) renderAll();
-});
-clearProtectBtn.addEventListener('click', () => {
-  PROTECTED = []; renderProtectChips(); if(sourceImage) renderAll();
-});
-renderProtectChips();
 
 let sourceImage = null;
 const currentStyle = 'original';
@@ -968,9 +857,6 @@ resetBtn.addEventListener('click', () => {
   fileInput.value = ''; controls.style.display = 'none';
   paletteEditor.style.display = 'none';
   protectEditor.style.display = 'none';
-  socleOptions.style.display = 'none';
-  socleImage = null; socleFile.value = ''; clearSocleBtn.style.display = 'none';
-  PROTECTED = []; renderProtectChips();
 });
 downloadAllBtn.addEventListener('click', downloadAll);
 
@@ -1008,7 +894,6 @@ function renderAll(){
   controls.style.display = 'flex';
   paletteEditor.style.display = 'block';
   protectEditor.style.display = 'block';
-  socleOptions.style.display = 'block';
   updateSourcePreview();
   // Extract ImageData from source image
   const srcCanvas = document.createElement('canvas');
@@ -1022,39 +907,13 @@ function renderAll(){
 
   const styleFn = (STYLES[currentStyle] || STYLES.original).fn;
 
-  // Si un socle personnalise est fourni, on va l'ecraser sur la moitie basse de
-  // chaque tier apres la generation.
-  const useSocle = !!socleImage;
-  // Position/taille : le socle prend 70% de la largeur du canvas, hauteur proportionnelle.
-  // Un socle-only wide (aspect > 1.5) atterrira ~15-25% de la hauteur. Un full trophee
-  // upload par erreur remplirait 70%+ -> l'utilisateur voit tout de suite le probleme.
-  let socleDrawInfo = null;
-  if(useSocle){
-    const cw = srcCanvas.width, ch = srcCanvas.height;
-    const socleAspect = socleImage.naturalWidth / socleImage.naturalHeight;
-    const socleFinalW = cw * 0.70;
-    const socleFinalH = socleFinalW / socleAspect;
-    const socleX = (cw - socleFinalW) / 2;
-    const socleY = ch - socleFinalH - ch * 0.02;
-    socleDrawInfo = { x:socleX, y:socleY, w:socleFinalW, h:socleFinalH };
-  }
-
   for(const t of TIERS){
-    // Pipeline : shift couleur -> post-processing style
     let outData = generateTier(srcData, t);
     outData = styleFn(outData);
     const outCanvas = document.createElement('canvas');
     outCanvas.width = srcCanvas.width;
     outCanvas.height = srcCanvas.height;
-    const outCtx = outCanvas.getContext('2d');
-    outCtx.putImageData(outData, 0, 0);
-    // Si un socle personnalise est charge, on efface la zone du bas et on colle
-    // le socle par-dessus. Meme socle sur les 6 tiers -> l'oiseau (partie haute)
-    // change de couleur, le socle reste identique.
-    if(useSocle && socleDrawInfo){
-      outCtx.clearRect(0, socleDrawInfo.y - 4, outCanvas.width, socleDrawInfo.h + 8);
-      outCtx.drawImage(socleImage, socleDrawInfo.x, socleDrawInfo.y, socleDrawInfo.w, socleDrawInfo.h);
-    }
+    outCanvas.getContext('2d').putImageData(outData, 0, 0);
     outCanvas.toBlob(blob => {
       generated[t.key] = { blob, name: t.key + '.png' };
     }, 'image/png');
@@ -1067,19 +926,13 @@ function renderAll(){
       <span class="lbl" style="background:${t.color}">${t.label}</span>
       <span class="tone">${t.color}</span>
       <a href="${dataUrl}" download="${t.key}.png">⬇ Télécharger ${t.key}.png</a>`;
-    const tileCv = tile.querySelector('canvas');
-    const tileCtx = tileCv.getContext('2d');
-    tileCtx.putImageData(outData, 0, 0);
-    if(useSocle && socleDrawInfo){
-      tileCtx.clearRect(0, socleDrawInfo.y - 4, tileCv.width, socleDrawInfo.h + 8);
-      tileCtx.drawImage(socleImage, socleDrawInfo.x, socleDrawInfo.y, socleDrawInfo.w, socleDrawInfo.h);
-    }
+    tile.querySelector('canvas').getContext('2d').putImageData(outData, 0, 0);
     tiles.appendChild(tile);
   }
 }
 
 async function downloadAll(){
-  // Groupe les 6 PNG dans un ZIP nomme par l'utilisateur. Gagne le temps de
+  // Groupe les 5 PNG dans un ZIP nomme par l'utilisateur. Gagne le temps de
   // renommer le dossier apres extraction.
   const defaultName = 'trophees';
   const raw = window.prompt('Nom du dossier pour ce set de trophees ?', defaultName);
