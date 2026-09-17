@@ -1009,8 +1009,13 @@ function fillLegCrossings(imgData, maxLegWidth){
   const d = imgData.data;
   const od = new Uint8ClampedArray(d);
   const yStart = Math.floor(h * PROTECT_Y_RATIO);
+  // Limite verticale : on ne fille que dans une bande etroite juste sous le bord haut
+  // du socle (typiquement les pattes qui traversent le tout debut du marron). Au-dela,
+  // les parties d'oiseau qui descendent volontairement (queue longue, plumes tombantes)
+  // sont laissees tranquille.
+  const yEnd = Math.min(h, yStart + Math.floor(h * 0.04));   // bande de 4% de la hauteur
   const MAX_SEARCH = 200;   // rayon max pour trouver une couleur brune de reference
-  for(let y = yStart; y < h; y++){
+  for(let y = yStart; y < yEnd; y++){
     // Segmente la rangee en runs de non-proteges (opaques). Chaque run est un
     // segment continu de pixels non-transparents et non-proteges.
     let x = 0;
