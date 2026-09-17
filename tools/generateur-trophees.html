@@ -562,18 +562,28 @@ function generateTier(sourceImageData, tier){
     } else {
       normL = 0.55;
     }
-    // Sur les sources vraiment plates, on ajoute un shading synthetique base sur la
-    // position dans l'image : diagonale haut-gauche brillante, bas-droite sombre.
-    // Simule une lumiere directionnelle -> le metal capte un vrai bump 3D.
+    // Reflets synthetiques position-based : rajoutes par-dessus la normalisation source
+    // pour que meme les aplats aient des zones brillantes qui font "metal poli".
+    //   - Bande specular diagonale (lumiere touchant le metal, streak fin)
+    //   - Petit gradient global top->bottom
+    // Positif seulement (n'assombrit jamais) -> preserve la plaque et les ombres
+    // definies par la source.
+    const px = (i/4) % w, py = ((i/4) / w) | 0;
+    const nx = px / w, ny = py / h;
+    // Anti-diagonale : distance a la ligne y=1-x (0 sur la diagonale haut-droite -> bas-gauche).
+    const diagDist = Math.abs(nx - (1 - ny));
+    const specStreak = Math.max(0, 0.18 - diagDist) * 3.5;   // ~0..0.63 dans une bande fine
+    // Top plus clair que bottom (light incidente).
+    const topLight = (1 - ny) * 0.12;
+    // Boost specular final (max additif ~0.35).
+    const specBoost = Math.min(0.30, specStreak * 0.35 + topLight);
+    // Sur les sources vraiment plates, on remplace la luminance normalisee par un
+    // shading synthetique complet base sur la position.
     if(flatSource){
-      const px = (i/4) % w, py = ((i/4) / w) | 0;
-      const nx = px / w, ny = py / h;
-      // Facteur 0..1 : coin haut-gauche = 1.0, coin bas-droit = 0.0.
       const posLight = Math.max(0, Math.min(1, 1 - (nx * 0.55 + ny * 0.55)));
-      // Petit specular en bande diagonale (contribution supplementaire au top-left).
-      const diag = Math.abs(nx - ny);
-      const specBand = Math.max(0, 0.35 - diag) * 1.5;
-      normL = 0.25 + posLight * 0.55 + specBand * 0.12;
+      normL = 0.25 + posLight * 0.55 + specStreak * 0.12;
+    } else {
+      normL = Math.min(0.95, normL + specBoost);
     }
     // Courbe en S plus douce (k=2.8) : donne du relief mais evite d'ecraser les
     // mid-tones vers les extremes. Suffisant pour un rendu metallique lisible.
