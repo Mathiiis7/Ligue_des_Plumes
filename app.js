@@ -3744,9 +3744,21 @@ function renderTrophies(data){
     const locked = highestIdx < 0;
     const cat = displayTier.category || 'progression';
     if(!familyBlocksByCategory[cat]) familyBlocksByCategory[cat] = [];
-    // Ordre : familles d'especes -> ordre taxonomique IOC/eBird via SPECIES_TAX_RANK.
-    // Autres categories (progression, habitat, one-shot) -> ordre d'insertion dans TROPHIES.
-    const order = (cat === 'species') ? (SPECIES_TAX_RANK[familyKey] ?? 9999) : (familyBlocksByCategory[cat].length * 10);
+    // Ordre pour les familles d'especes : (1) plus haut tier atteint en premier
+    // (Prismatique -> Bronze -> Verrouille), (2) fallback ordre taxonomique en cas
+    // d'egalite de tier. Autres categories : ordre d'insertion dans TROPHIES.
+    let order;
+    if(cat === 'species'){
+      // tierRank 1..5 pour bronze..violet, 0 pour verrouille.
+      const tierRank = currentTier
+        ? (TROPHY_TIERS.findIndex(x => x.key === currentTier.tier) + 1)
+        : 0;
+      // Multiplie par -10000 pour que la valeur soit dominante ; ajoute le taxRank pour
+      // trier alphabetiquement (par ordre taxo) a l'interieur d'un meme tier.
+      order = -tierRank * 10000 + (SPECIES_TAX_RANK[familyKey] ?? 9999);
+    } else {
+      order = familyBlocksByCategory[cat].length * 10;
+    }
     familyBlocksByCategory[cat].push({ order, html: `
       <div class="tro-family ${locked?'locked':'unlocked'} tier-${displayTier.tier} cat-${cat}"
            style="--tier-color:${displayMeta.color}"
