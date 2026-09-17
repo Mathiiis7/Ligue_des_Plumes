@@ -3789,7 +3789,7 @@ function renderTrophies(data){
           <div class="tro-fam-bar-outer">
             <div class="tro-fam-bar-fill" style="width:${pct}%"></div>
           </div>
-          <div class="tro-fam-prog">${progNow} / ${progTo}${nextTier?'':''}</div>
+          ${nextTier ? `<div class="tro-fam-prog">${progNow} / ${progTo}</div>` : ''}
         </div>
       </div>` });
   }
