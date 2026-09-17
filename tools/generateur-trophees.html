@@ -632,17 +632,14 @@ function generateTier(sourceImageData, tier){
     if(py <= yProtectPx - transitionH) plaqueness = 0;
     else if(py >= yProtectPx + transitionH) plaqueness = 1;
     else plaqueness = (py - (yProtectPx - transitionH)) / (2 * transitionH);
-    // Bande specular : sur le bird, plus etroite mais plus intense (eclat fin
-    // diagonal visible sans laver les zones claires). Sur la plaque, plus large.
-    const bandWidth = 0.08 + plaqueness * (0.32 - 0.08);
-    const bandMul   = 7.0  + plaqueness * (5.5  - 7.0);   // bird plus intense !
+    const bandWidth = 0.18 + plaqueness * (0.32 - 0.18);
+    const bandMul   = 3.5  + plaqueness * (5.5  - 3.5);
     const specStreak = Math.max(0, bandWidth - diagDist) * bandMul;
     // Top plus clair que bottom (light incidente).
     const topLight = (1 - ny) * 0.12;
-    // Boost specular final. Cap plus haut sur la plaque mais aussi remonte sur le
-    // bird (0.30 -> 0.45) pour permettre un vrai eclat visible.
-    const specCap = 0.45 + plaqueness * (0.55 - 0.45);
-    const streakContrib = 0.50 + plaqueness * (0.60 - 0.50);
+    // Boost specular final (cap plus haut sur la plaque, interpolation lisse).
+    const specCap = 0.30 + plaqueness * (0.55 - 0.30);
+    const streakContrib = 0.35 + plaqueness * (0.60 - 0.35);
     const specBoost = Math.min(specCap, specStreak * streakContrib + topLight);
     const isPlaque = plaqueness > 0.5;
     // Sur les sources vraiment plates, on remplace la luminance normalisee par un
