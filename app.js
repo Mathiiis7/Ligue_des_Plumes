@@ -3900,8 +3900,8 @@ function renderTrophies(data){
   const exoticSection = exoticCards ? `
       <div class="tro-cat-section">
         <div class="tro-cat-head">
-          <div class="tro-cat-title">Espèces exotiques</div>
-          <div class="tro-cat-sub">Oiseaux à cocher lors d'un voyage lointain</div>
+          <div class="tro-cat-title">Trophées uniques</div>
+          <div class="tro-cat-sub">Une espèce ou un petit groupe à cocher une seule fois</div>
         </div>
         <div class="tro-families">${exoticCards}</div>
       </div>` : '';
