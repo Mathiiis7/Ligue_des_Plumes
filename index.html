@@ -106,6 +106,27 @@
   </div>
 </div>
 
+<!-- SVG filter 'plaqueDim' : assombrit uniquement les 35% du bas de l'image (zone
+     plaque) via un masque gradient, sans toucher a la partie haute (oiseau). Applique
+     via CSS filter:url(#plaqueDim) sur .tro-cup. -->
+<svg width="0" height="0" style="position:absolute; pointer-events:none;" aria-hidden="true">
+  <defs>
+    <filter id="plaqueDim" x="0" y="0" width="1" height="1" primitiveUnits="objectBoundingBox">
+      <!-- 1. Version darkened : reduit la luminance de 15% -->
+      <feColorMatrix in="SourceGraphic" values="0.85 0 0 0 0  0 0.85 0 0 0  0 0 0.85 0 0  0 0 0 1 0" result="darkened"/>
+      <!-- 2. Masque gradient : transparent en haut, opaque en bas (35% du bas) -->
+      <feImage href="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='none' viewBox='0 0 1 1'%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0.60' stop-color='black' stop-opacity='0'/%3E%3Cstop offset='0.72' stop-color='black' stop-opacity='1'/%3E%3Cstop offset='1' stop-color='black' stop-opacity='1'/%3E%3C/linearGradient%3E%3Crect width='1' height='1' fill='url(%23g)'/%3E%3C/svg%3E" x="0" y="0" width="1" height="1" preserveAspectRatio="none" result="dimMask"/>
+      <!-- 3. Compose : partie darkened dans le masque, source originale hors masque -->
+      <feComposite in="darkened" in2="dimMask" operator="in" result="dimmedBottom"/>
+      <feComposite in="SourceGraphic" in2="dimMask" operator="out" result="brightTop"/>
+      <feMerge>
+        <feMergeNode in="brightTop"/>
+        <feMergeNode in="dimmedBottom"/>
+      </feMerge>
+    </filter>
+  </defs>
+</svg>
+
 <!-- Chip de version : timestamp de derniere modif d'app.js. Visible uniquement pour
      les admins (via .style.display toggle depuis subscribeAdmins). -->
 <div id="adminBuildStamp" style="display:none; position:fixed; bottom:8px; left:8px;

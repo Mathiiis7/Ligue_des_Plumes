@@ -1498,17 +1498,9 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
       transparent 70%);
     background-size:220% 100%; background-position:100% 0;
   }
-  .tro-fam-cup { flex:0 0 auto; width:220px; height:220px; display:grid; place-items:center;
-    position:relative; }
+  .tro-fam-cup { flex:0 0 auto; width:220px; height:220px; display:grid; place-items:center; }
   .tro-fam-cup .tro-cup { width:220px; height:220px; object-fit:contain;
-    filter:drop-shadow(0 1px 1px rgba(0,0,0,.18)) drop-shadow(0 4px 8px rgba(0,0,0,.11)); }
-  /* Overlay adoucissant sur la moitie basse de l'image = zone plaque. Reduit la
-     brillance speculaire de la plaque sans toucher a l'oiseau au-dessus. */
-  .tro-fam-cup::after {
-    content:""; position:absolute; left:0; right:0; bottom:0; height:35%;
-    background:linear-gradient(to bottom, rgba(15,20,25,0) 0%, rgba(15,20,25,.11) 60%, rgba(15,20,25,.14) 100%);
-    pointer-events:none; border-radius:8px;
-  }
+    filter:url(#plaqueDim) drop-shadow(0 1px 1px rgba(0,0,0,.18)) drop-shadow(0 4px 8px rgba(0,0,0,.11)); }
   .tro-fam-cup .tro-cup.grayed { filter:grayscale(.7) brightness(.9) opacity(.85) drop-shadow(0 1px 1px rgba(0,0,0,.14)) drop-shadow(0 4px 7px rgba(0,0,0,.09)); }
   /* Cartes exotiques (badges Colibri, Ratite, ...) : fond de carte neutre (surface-2).
      Quand debloque : legere teinte doree sur bordure + petite lueur pour valoriser la reussite,
