@@ -1136,10 +1136,29 @@ function cleanRectSocle(imgData){
     else if(x > rMaxX && y < rMinY){ cx = rMaxX; cy = rMinY; }
     else if(x < rMinX && y > rMaxY){ cx = rMinX; cy = rMaxY; }
     else if(x > rMaxX && y > rMaxY){ cx = rMaxX; cy = rMaxY; }
-    else return true;   // pas dans un coin
+    else return true;
     const dx = x - cx, dy = y - cy;
     return dx*dx + dy*dy <= r2;
   };
+  // Detecte le bbox de la plaque (pixels non-protege opaques dans la zone socle).
+  let pMinX = w, pMaxX = -1, pMinY = h, pMaxY = -1;
+  for(let y = yStart; y < h; y++){
+    for(let x = 0; x < w; x++){
+      const i = (y*w + x)*4;
+      if(d[i+3] > 0 && !isProtected(d[i], d[i+1], d[i+2])){
+        if(x < pMinX) pMinX = x;
+        if(x > pMaxX) pMaxX = x;
+        if(y < pMinY) pMinY = y;
+        if(y > pMaxY) pMaxY = y;
+      }
+    }
+  }
+  // Shrink la plaque bbox de 8px vers l'interieur -> la bordure marron mange 8px
+  // dans le contour de la plaque, effacant les concavites et residus blancs.
+  const shrink = 8;
+  const spMinX = pMinX + shrink, spMaxX = pMaxX - shrink;
+  const spMinY = pMinY + shrink, spMaxY = pMaxY - shrink;
+  const inShrunkPlaque = (x, y) => (x >= spMinX && x <= spMaxX && y >= spMinY && y <= spMaxY);
   for(let y = yStart; y < h; y++){
     for(let x = 0; x < w; x++){
       const i = (y*w + x)*4;
@@ -1147,7 +1166,8 @@ function cleanRectSocle(imgData){
       const wasBrown = d[i+3] > 0 && isProtected(d[i], d[i+1], d[i+2]);
       const wasOpaqueNonBrown = d[i+3] > 0 && !isProtected(d[i], d[i+1], d[i+2]);
       if(inside){
-        if(wasOpaqueNonBrown) continue;   // plaque intacte
+        // La plaque n'est preservee que dans son bbox shrinke -> le contour prend du brun.
+        if(wasOpaqueNonBrown && inShrunkPlaque(x, y)) continue;
         od[i] = avgR; od[i+1] = avgG; od[i+2] = avgB; od[i+3] = 255;
       } else if(wasBrown){
         od[i] = 0; od[i+1] = 0; od[i+2] = 0; od[i+3] = 0;
