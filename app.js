@@ -3853,6 +3853,7 @@ function renderTrophies(data){
     trophyDetails[dataIdx] = {
       kind: 'tierFamily',
       familyName: t.name,
+      cat: 'exotic',
       objectivePhrase: t.desc,
       tiers: [{
         img: imgSrc,
