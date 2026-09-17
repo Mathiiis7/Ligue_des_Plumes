@@ -42,9 +42,20 @@
   .btn:hover { filter:brightness(1.05); }
   .btn.ghost { background:#eef2f1; color:#15201e; border:1px solid #cfd8d5; }
   .btn:disabled { opacity:.4; cursor:not-allowed; }
-  .grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:18px; margin-top:16px; }
-  @media (max-width: 900px){ .grid { grid-template-columns:repeat(2, 1fr); } }
-  @media (max-width: 500px){ .grid { grid-template-columns:1fr; } }
+  /* Grille 5 tiers : 6 colonnes fictives, chaque tile span 2, ce qui permet de
+     centrer les 2 tiles de la 2e ligne (Diamant + Prismatique) sur les colonnes 2 et 4. */
+  .grid { display:grid; grid-template-columns:repeat(6, 1fr); gap:18px; margin-top:16px; }
+  .grid .tile { grid-column:span 2; }
+  .grid .tile:nth-child(4) { grid-column:2 / span 2; }
+  .grid .tile:nth-child(5) { grid-column:4 / span 2; }
+  @media (max-width: 900px){
+    .grid { grid-template-columns:repeat(2, 1fr); }
+    .grid .tile, .grid .tile:nth-child(4), .grid .tile:nth-child(5) { grid-column:auto; }
+  }
+  @media (max-width: 500px){
+    .grid { grid-template-columns:1fr; }
+    .grid .tile, .grid .tile:nth-child(4), .grid .tile:nth-child(5) { grid-column:auto; }
+  }
   .tile { display:flex; flex-direction:column; align-items:center; gap:8px; padding:16px;
     border:1px solid rgba(0,0,0,.08); border-radius:12px; background:#fafcfb; }
   .tile canvas { width:100%; height:auto; max-width:360px; background:transparent; }
