@@ -1499,7 +1499,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
       drop-shadow(0 4px 8px rgba(0,0,0,.11));
   }
   .tro-family.tier-violet .tro-fam-bar-fill {
-    background:linear-gradient(90deg, #ff5cdc, #a06cff, #5cd3ff, #7fffb5);
+    background:linear-gradient(90deg, #ff5cdc, #a06cff, #7fb5ff, #5cd3ff);
     box-shadow:0 0 8px color-mix(in srgb, #a06cff 55%, transparent);
   }
   .tro-fam-body { flex:1 1 auto; min-width:0; width:100%; display:flex; flex-direction:column; gap:3px; align-items:center; }
