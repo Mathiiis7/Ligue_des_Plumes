@@ -602,10 +602,10 @@ function generateTier(sourceImageData, tier){
     if(lRange > 0.02){
       const spread = Math.max(lRange, 0.30);
       const centered = (srcL - avgL) / spread;
-      // Plancher a 0.30 : les pixels les plus sombres du bird atterrissent sur le
-      // mid-shadow du gradient (dark tinted du tier) plutot que sur le deep-shadow
-      // quasi-noir (L=9% pour bronze = marron fonce indistinguable du socle brun).
-      normL = Math.max(0.30, Math.min(0.90, 0.55 + centered * 0.70));
+      // Plancher a 0.45 : les pixels les plus sombres du bird tombent juste en
+      // dessous du stop mid (0.55) -> clairement bronze/argent/or, plus aucune
+      // apparence marron fonce indistinguable du socle brun.
+      normL = Math.max(0.45, Math.min(0.90, 0.55 + centered * 0.70));
     } else {
       normL = 0.55;
     }
