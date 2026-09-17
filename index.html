@@ -106,6 +106,17 @@
   </div>
 </div>
 
+<!-- Chip de version : timestamp de derniere modif d'app.js. Visible uniquement pour
+     les admins (via .style.display toggle depuis subscribeAdmins). -->
+<div id="adminBuildStamp" style="display:none; position:fixed; bottom:8px; left:8px;
+  z-index:2000; padding:4px 10px; font-size:11px; font-weight:600;
+  font-family:ui-monospace, 'SF Mono', Consolas, monospace;
+  background:rgba(15, 32, 30, 0.72); color:#b8e3d8; border:1px solid rgba(184, 227, 216, 0.25);
+  border-radius:99px; backdrop-filter:blur(6px); pointer-events:none;">
+  <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#0b7c77; margin-right:6px; vertical-align:middle;"></span>
+  <span id="adminBuildStampText">…</span>
+</div>
+
 <div class="wrap">
   <header class="top">
     <div class="brand">

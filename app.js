@@ -13013,7 +13013,23 @@ function subscribeAdmins(){
       ADMIN_UIDS.clear();
       ADMIN_UIDS.add('pCf1HuUeIkNJTXC0wujsX04UsFs2');
       snap.forEach(d => { if(d.id) ADMIN_UIDS.add(d.id); });
+      _updateAdminBuildStamp();
     }, ()=>{});
+  }catch(_){}
+}
+// Chip 'Version YYYY-MM-DD HH:MM' fixed bottom-left, visible seulement pour admin.
+// Utilise document.lastModified de la page HTML (auto-actualise a chaque deploy).
+function _updateAdminBuildStamp(){
+  const el = document.getElementById('adminBuildStamp');
+  const txtEl = document.getElementById('adminBuildStampText');
+  if(!el || !txtEl) return;
+  if(!isAdmin()){ el.style.display = 'none'; return; }
+  try{
+    const dt = new Date(document.lastModified);
+    if(isNaN(dt.getTime())){ el.style.display = 'none'; return; }
+    const pad = n => String(n).padStart(2, '0');
+    txtEl.textContent = `Version ${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+    el.style.display = 'block';
   }catch(_){}
 }
 // Restaure la preference du rendu des overlays raster (net/flou) au boot
