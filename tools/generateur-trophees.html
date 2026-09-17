@@ -528,9 +528,12 @@ function generateTier(sourceImageData, tier){
   // Au-dessus, tout est retinte peu importe le match couleur.
   const yProtectThresh = PROTECT_Y_RATIO;
   const yProtectPx = Math.floor(h * yProtectThresh);
-  // Pre-pass : trouve min/max luminance des pixels qui vont etre retintes (=
-  // ceux qui ne sont ni protected ni quasi-noirs neutres).
-  let minL = 1, maxL = 0, nRetint = 0;
+  // Pre-pass : trouve min/max/moyenne luminance des pixels qui vont etre retintes.
+  // La moyenne sert d'ancre pour centrer la normalisation - un oiseau clair (moyenne
+  // > 0.6) ne verra pas ses hautes lumieres pousses vers le blanc pur (effet
+  // "washed out"), un oiseau sombre (moyenne < 0.4) ne verra pas ses mid-tones
+  // pousses dans le deep-shadow.
+  let minL = 1, maxL = 0, sumL = 0, nRetint = 0;
   for(let i=0; i<sd.length; i+=4){
     if(sd[i+3] === 0) continue;
     const py = (i/4 / w) | 0;
@@ -540,9 +543,11 @@ function generateTier(sourceImageData, tier){
     if(srcL < 0.10 && srcS < 0.30) continue;
     if(srcL < minL) minL = srcL;
     if(srcL > maxL) maxL = srcL;
+    sumL += srcL;
     nRetint++;
   }
   const lRange = maxL - minL;
+  const avgL = nRetint > 0 ? sumL / nRetint : 0.5;
   // Si la plage est <15%, la source est "plate" : on active la lumiere position.
   const flatSource = nRetint > 0 && lRange < 0.15;
 
@@ -569,14 +574,20 @@ function generateTier(sourceImageData, tier){
       continue;
     }
 
-    // Normalise la luminance dans la plage effective des pixels retintes, mais avec
-    // des bornes de securite [0.20, 0.92] : meme le pixel le plus sombre de la source
-    // n'atteint pas le "deep-shadow" absolu, ce qui evite que les zones un peu foncees
-    // du PNG (plaque, ombres douces) deviennent noires/brunes dans le rendu final.
+    // Normalise la luminance autour de la moyenne source (ancre a 0.55) au lieu de
+    // stretch brut. Un oiseau clair (avgL=0.8) verra ses pixels centres a 0.55 -> le
+    // gradient map reste dans les mid-tones et n'atteint jamais le blanc pur. Un
+    // oiseau sombre (avgL=0.3) sera pareillement centre. Le spread controle a quel
+    // point les variations autour de la moyenne sont conservees.
     let normL;
     if(lRange > 0.02){
-      const t = (srcL - minL) / lRange;
-      normL = 0.20 + t * 0.72;   // stretch dans [0.20, 0.92]
+      // Spread effectif : max(lRange, 0.30). Sources plates -> ecart artificiel de 0.30
+      // pour eviter d'aplatir les micro-variations. Sources larges -> lRange conservee.
+      const spread = Math.max(lRange, 0.30);
+      // (srcL - avgL) est dans [-spread/2 .. +spread/2] approx. On mappe sur [-0.35, +0.35]
+      // -> pixel median = 0.55 (le "mid" du gradient), extremes clamp sur [0.15, 0.90].
+      const centered = (srcL - avgL) / spread;
+      normL = Math.max(0.15, Math.min(0.90, 0.55 + centered * 0.70));
     } else {
       normL = 0.55;
     }
@@ -609,7 +620,10 @@ function generateTier(sourceImageData, tier){
       const posLight = Math.max(0, Math.min(1, 1 - (nx * 0.55 + ny * 0.55)));
       normL = 0.25 + posLight * 0.55 + specStreak * 0.12;
     } else {
-      normL = Math.min(0.95, normL + specBoost);
+      // Cap final : la plaque peut monter jusqu'a 0.95 (specular metal), la partie
+      // haute (oiseau) plafonne a 0.86 pour ne pas laver les oiseaux clairs vers le blanc.
+      const finalCap = isPlaque ? 0.95 : 0.86;
+      normL = Math.min(finalCap, normL + specBoost);
     }
     // Courbe en S plus douce (k=2.8) : donne du relief mais evite d'ecraser les
     // mid-tones vers les extremes. Suffisant pour un rendu metallique lisible.
