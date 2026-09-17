@@ -590,11 +590,19 @@ function generateTier(sourceImageData, tier){
     const nx = px / w, ny = py / h;
     // Anti-diagonale : distance a la ligne y=1-x (0 sur la diagonale haut-droite -> bas-gauche).
     const diagDist = Math.abs(nx - (1 - ny));
-    const specStreak = Math.max(0, 0.18 - diagDist) * 3.5;   // ~0..0.63 dans une bande fine
+    // Sur la plaque (py >= yProtectPx = zone du socle), on accentue le reflet :
+    // bande plus large + multiplicateur plus fort + cap plus haut, pour que le
+    // metal de la plaque brille vraiment au lieu d'un simple aplat teinte.
+    const isPlaque = py >= yProtectPx;
+    const bandWidth = isPlaque ? 0.32 : 0.18;
+    const bandMul   = isPlaque ? 5.5  : 3.5;
+    const specStreak = Math.max(0, bandWidth - diagDist) * bandMul;
     // Top plus clair que bottom (light incidente).
     const topLight = (1 - ny) * 0.12;
-    // Boost specular final (max additif ~0.35).
-    const specBoost = Math.min(0.30, specStreak * 0.35 + topLight);
+    // Boost specular final (cap plus haut sur la plaque).
+    const specCap = isPlaque ? 0.55 : 0.30;
+    const streakContrib = isPlaque ? 0.60 : 0.35;
+    const specBoost = Math.min(specCap, specStreak * streakContrib + topLight);
     // Sur les sources vraiment plates, on remplace la luminance normalisee par un
     // shading synthetique complet base sur la position.
     if(flatSource){
