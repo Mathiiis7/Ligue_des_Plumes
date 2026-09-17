@@ -1496,7 +1496,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   }
   .tro-fam-cup { flex:0 0 auto; width:220px; height:220px; display:grid; place-items:center; }
   .tro-fam-cup .tro-cup { width:220px; height:220px; object-fit:contain;
-    filter:drop-shadow(0 1px 1px rgba(0,0,0,.18)) drop-shadow(0 4px 8px rgba(0,0,0,.11)) drop-shadow(0 4px 14px color-mix(in srgb, var(--tier-color) 40%, transparent)); }
+    filter:drop-shadow(0 1px 1px rgba(0,0,0,.18)) drop-shadow(0 4px 8px rgba(0,0,0,.11)); }
   .tro-fam-cup .tro-cup.grayed { filter:grayscale(.7) brightness(.9) opacity(.85) drop-shadow(0 1px 1px rgba(0,0,0,.14)) drop-shadow(0 4px 7px rgba(0,0,0,.09)); }
   /* Cartes exotiques (badges Colibri, Ratite, ...) : fond de carte neutre (surface-2).
      Quand debloque : legere teinte doree sur bordure + petite lueur pour valoriser la reussite,
@@ -1508,7 +1508,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
     box-shadow:0 3px 14px color-mix(in srgb, var(--gold) 18%, transparent);
   }
   .tro-family.tro-exotic .tro-fam-cup .tro-cup { filter:drop-shadow(0 1px 1px rgba(0,0,0,.18)) drop-shadow(0 4px 8px rgba(0,0,0,.11)); }
-  .tro-family.tro-exotic.unlocked .tro-fam-cup .tro-cup { filter:drop-shadow(0 1px 1px rgba(0,0,0,.18)) drop-shadow(0 4px 8px rgba(0,0,0,.11)) drop-shadow(0 3px 12px color-mix(in srgb, var(--gold) 42%, transparent)); }
+  .tro-family.tro-exotic.unlocked .tro-fam-cup .tro-cup { filter:drop-shadow(0 1px 1px rgba(0,0,0,.18)) drop-shadow(0 4px 8px rgba(0,0,0,.11)); }
   .tro-family.tro-exotic .tro-fam-cup .tro-cup.grayed { filter:grayscale(1) brightness(.85) opacity(.35) drop-shadow(0 1px 1px rgba(0,0,0,.14)) drop-shadow(0 4px 7px rgba(0,0,0,.09)); }
   /* Tier Prismatique : rendu iridescent (fond degrade multicolore subtil, halo arc-en-ciel
      sur le trophee, barre de progression rainbow). Le PNG lui-meme est deja multicolore ;
@@ -1526,10 +1526,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .tro-family.unlocked.tier-violet .tro-fam-cup .tro-cup {
     filter:
       drop-shadow(0 1px 1px rgba(0,0,0,.18))
-      drop-shadow(0 4px 8px rgba(0,0,0,.11))
-      drop-shadow(-3px 2px 10px rgba(255,92,220,.32))
-      drop-shadow(3px 2px 10px rgba(92,211,255,.32))
-      drop-shadow(0 -2px 10px rgba(160,108,255,.28));
+      drop-shadow(0 4px 8px rgba(0,0,0,.11));
   }
   .tro-family.tier-violet .tro-fam-bar-fill {
     background:linear-gradient(90deg, #ff5cdc, #a06cff, #5cd3ff, #7fffb5);
@@ -1635,7 +1632,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
     border-color:color-mix(in srgb, var(--gold) 37%, var(--line));
     box-shadow:0 3px 14px color-mix(in srgb, var(--gold) 18%, transparent);
   }
-  .tmodal-tier.unlocked.cat-exotic .tmodal-tier-img { filter:drop-shadow(0 1px 1px rgba(0,0,0,.18)) drop-shadow(0 4px 7px rgba(0,0,0,.11)) drop-shadow(0 3px 12px color-mix(in srgb, var(--gold) 42%, transparent)); }
+  .tmodal-tier.unlocked.cat-exotic .tmodal-tier-img { filter:drop-shadow(0 1px 1px rgba(0,0,0,.18)) drop-shadow(0 4px 7px rgba(0,0,0,.11)); }
   /* Prismatique dans le modal : meme habillage iridescent que sur les cartes. */
   .tmodal-tier.unlocked.tier-violet {
     background:
@@ -1649,10 +1646,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .tmodal-tier.unlocked.tier-violet .tmodal-tier-img {
     filter:
       drop-shadow(0 1px 1px rgba(0,0,0,.16))
-      drop-shadow(0 4px 7px rgba(0,0,0,.10))
-      drop-shadow(-2px 2px 9px rgba(255,92,220,.30))
-      drop-shadow(2px 2px 9px rgba(92,211,255,.30))
-      drop-shadow(0 -2px 9px rgba(160,108,255,.26));
+      drop-shadow(0 4px 7px rgba(0,0,0,.10));
   }
   .tmodal-tier.locked { opacity:.7; }
   .tmodal-tier-img { width:150px; height:150px; object-fit:contain;
