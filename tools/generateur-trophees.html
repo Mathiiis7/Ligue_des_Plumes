@@ -621,8 +621,10 @@ function generateTier(sourceImageData, tier){
       normL = 0.25 + posLight * 0.55 + specStreak * 0.12;
     } else {
       // Cap final : la plaque peut monter jusqu'a 0.95 (specular metal), la partie
-      // haute (oiseau) plafonne a 0.86 pour ne pas laver les oiseaux clairs vers le blanc.
-      const finalCap = isPlaque ? 0.95 : 0.86;
+      // haute (oiseau) plafonne a 0.78 - reste en dessous du stop mid-highlight (0.82)
+      // pour ne jamais tendre vers le blanc. Les elements clairs (pedestals, ventre
+      // blanc d'un oiseau) restent color-tinted au lieu de blanchir.
+      const finalCap = isPlaque ? 0.95 : 0.78;
       normL = Math.min(finalCap, normL + specBoost);
     }
     // Courbe en S plus douce (k=2.8) : donne du relief mais evite d'ecraser les
