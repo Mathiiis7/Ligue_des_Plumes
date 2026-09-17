@@ -951,6 +951,10 @@ function renderAll(){
   for(const t of TIERS){
     let outData = generateTier(srcData, t);
     outData = styleFn(outData);
+    // Post-process : bouche les petits gaps transparents verticaux (typiquement
+    // entre le bas de l'oiseau et le haut du socle) avec la couleur du pixel du
+    // dessous. Sinon la transparence de la source apparait blanche sur la carte.
+    outData = closeVerticalGaps(outData, 30);
     const outCanvas = document.createElement('canvas');
     outCanvas.width = srcCanvas.width;
     outCanvas.height = srcCanvas.height;
@@ -970,6 +974,43 @@ function renderAll(){
     tile.querySelector('canvas').getContext('2d').putImageData(outData, 0, 0);
     tiles.appendChild(tile);
   }
+}
+
+// Bouche les gaps transparents verticaux courts (<= maxGapPx pixels) coinces entre
+// deux pixels opaques dans la meme colonne. Utilise pour combler la bande de
+// transparence typique entre le pedestal de l'oiseau et le haut du socle dans les
+// designs Canva. Fill avec la couleur du pixel opaque du dessous.
+function closeVerticalGaps(imgData, maxGapPx){
+  const w = imgData.width, h = imgData.height;
+  const d = imgData.data;
+  const out = new ImageData(new Uint8ClampedArray(d), w, h);
+  const od = out.data;
+  for(let x = 0; x < w; x++){
+    let y = 0;
+    while(y < h){
+      // Cherche le prochain pixel opaque.
+      while(y < h && d[(y*w + x)*4 + 3] === 0) y++;
+      if(y >= h) break;
+      const opaqueStart = y;
+      // Trouve la fin du bloc opaque.
+      while(y < h && d[(y*w + x)*4 + 3] > 0) y++;
+      const opaqueEnd = y - 1;
+      // Cherche un gap transparent apres.
+      const gapStart = y;
+      while(y < h && d[(y*w + x)*4 + 3] === 0) y++;
+      const gapEnd = y - 1;
+      if(gapStart <= gapEnd && y < h && (gapEnd - gapStart + 1) <= maxGapPx){
+        // Gap borde en bas par un pixel opaque a y. On remplit avec la couleur de y.
+        const fillIdx = (y*w + x)*4;
+        const fr = d[fillIdx], fg = d[fillIdx+1], fb = d[fillIdx+2];
+        for(let gy = gapStart; gy <= gapEnd; gy++){
+          const j = (gy*w + x)*4;
+          od[j] = fr; od[j+1] = fg; od[j+2] = fb; od[j+3] = 255;
+        }
+      }
+    }
+  }
+  return out;
 }
 
 async function downloadAll(){
