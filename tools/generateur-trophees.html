@@ -82,14 +82,16 @@
     </div>
 
     <div id="socleOptions" style="display:none; margin:16px 0 0; padding:12px 14px; border:1px solid #e0e5e2; border-radius:10px; background:#fafcfb;">
-      <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:#15201e; cursor:pointer;">
-        <input type="checkbox" id="autoSocle" style="width:16px; height:16px; cursor:pointer;">
-        Socle automatique (dessiné en dur, plaque métallique par tier)
+      <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#556; margin-bottom:8px;">Socle personnalisé (optionnel)</div>
+      <label class="btn ghost" style="display:inline-block; padding:6px 14px; font-size:12.5px; cursor:pointer;">
+        📁 Choisir un PNG de socle
+        <input type="file" id="socleFile" accept="image/png" style="display:none;">
       </label>
-      <div style="font-size:11.5px; color:#7c8783; margin-top:6px; line-height:1.5;">
-        Coché : le bas de l'image est remplacé par un socle marron foncé + plaque métallique
-        (couleur du tier avec dégradé et 2 barres décoratives). Tu peux fournir juste l'oiseau,
-        le socle est identique sur les 6 tiers, seule la plaque change de couleur.
+      <button class="btn ghost" id="clearSocle" style="padding:6px 14px; font-size:12.5px; margin-left:6px; display:none;">Retirer</button>
+      <div id="socleStatus" style="font-size:11.5px; color:#7c8783; margin-top:8px; line-height:1.5;">
+        Fournis un PNG contenant juste ton socle (avec sa plaque, transparence autour) : il sera
+        composé sous chaque tier à la place du bas du PNG source. Résultat : 6 tiers avec exactement
+        le même socle, l'oiseau au-dessus change de couleur. Laisser vide pour utiliser l'image source telle quelle.
       </div>
     </div>
 
@@ -786,8 +788,29 @@ const protectTolVal = document.getElementById('protectTolVal');
 const clearProtectBtn = document.getElementById('clearProtect');
 const sourcePreview = document.getElementById('sourcePreview');
 const socleOptions = document.getElementById('socleOptions');
-const autoSocleCheckbox = document.getElementById('autoSocle');
-autoSocleCheckbox.addEventListener('change', () => { if(sourceImage) renderAll(); });
+const socleFile = document.getElementById('socleFile');
+const socleStatus = document.getElementById('socleStatus');
+const clearSocleBtn = document.getElementById('clearSocle');
+let socleImage = null;   // Image du socle personnalise, ou null
+
+socleFile.addEventListener('change', (e) => {
+  const f = e.target.files?.[0]; if(!f) return;
+  const img = new Image();
+  img.onload = () => {
+    socleImage = img;
+    socleStatus.textContent = `✔ Socle chargé (${img.naturalWidth}×${img.naturalHeight}). Il remplace le bas de chaque tier.`;
+    clearSocleBtn.style.display = 'inline-block';
+    if(sourceImage) renderAll();
+  };
+  img.onerror = () => { socleStatus.textContent = 'Impossible de lire le fichier.'; };
+  img.src = URL.createObjectURL(f);
+});
+clearSocleBtn.addEventListener('click', () => {
+  socleImage = null; socleFile.value = '';
+  socleStatus.textContent = 'Fournis un PNG contenant juste ton socle (avec sa plaque, transparence autour) : il sera composé sous chaque tier à la place du bas du PNG source. Laisser vide pour utiliser l\'image source telle quelle.';
+  clearSocleBtn.style.display = 'none';
+  if(sourceImage) renderAll();
+});
 
 // Liste des couleurs a preserver (en RGB). Chaque pixel dans le rayon `tol` (distance
 // euclidienne RGB) autour de l'une de ces couleurs est laisse tel quel par le gradient
@@ -900,7 +923,7 @@ resetBtn.addEventListener('click', () => {
   paletteEditor.style.display = 'none';
   protectEditor.style.display = 'none';
   socleOptions.style.display = 'none';
-  autoSocleCheckbox.checked = false;
+  socleImage = null; socleFile.value = ''; clearSocleBtn.style.display = 'none';
   PROTECTED = []; renderProtectChips();
 });
 downloadAllBtn.addEventListener('click', downloadAll);
@@ -953,7 +976,25 @@ function renderAll(){
 
   const styleFn = (STYLES[currentStyle] || STYLES.original).fn;
 
-  const autoSocle = autoSocleCheckbox.checked;
+  // Si un socle personnalise est fourni, on va l'ecraser sur la moitie basse de
+  // chaque tier apres la generation. La zone du socle sur la source (dessin
+  // d'origine) est ignoree ; on garde la source seulement pour la partie sujet.
+  const useSocle = !!socleImage;
+  // Position/taille : le socle est colle en bas, centre horizontalement, ~50%
+  // de la hauteur (l'image socle etant typiquement plus large que haute).
+  let socleDrawInfo = null;
+  if(useSocle){
+    const cw = srcCanvas.width, ch = srcCanvas.height;
+    const socleAspect = socleImage.naturalWidth / socleImage.naturalHeight;
+    const targetH = ch * 0.28;
+    const targetW = targetH * socleAspect;
+    const socleFinalW = Math.min(targetW, cw * 0.90);
+    const socleFinalH = socleFinalW / socleAspect;
+    const socleX = (cw - socleFinalW) / 2;
+    const socleY = ch - socleFinalH - ch * 0.02;
+    socleDrawInfo = { x:socleX, y:socleY, w:socleFinalW, h:socleFinalH };
+  }
+
   for(const t of TIERS){
     // Pipeline : shift couleur -> post-processing style
     let outData = generateTier(srcData, t);
@@ -963,10 +1004,12 @@ function renderAll(){
     outCanvas.height = srcCanvas.height;
     const outCtx = outCanvas.getContext('2d');
     outCtx.putImageData(outData, 0, 0);
-    // Si le socle auto est active, on redessine le bas de l'image par-dessus la
-    // source retintee. Le socle est dessine pour chaque tier avec sa propre plaque.
-    if(autoSocle){
-      drawSocle(outCtx, outCanvas.width, outCanvas.height, t);
+    // Si un socle personnalise est charge, on efface la zone du bas et on colle
+    // le socle par-dessus. Meme socle sur les 6 tiers -> l'oiseau (partie haute)
+    // change de couleur, le socle reste identique.
+    if(useSocle && socleDrawInfo){
+      outCtx.clearRect(0, socleDrawInfo.y - 4, outCanvas.width, socleDrawInfo.h + 8);
+      outCtx.drawImage(socleImage, socleDrawInfo.x, socleDrawInfo.y, socleDrawInfo.w, socleDrawInfo.h);
     }
     outCanvas.toBlob(blob => {
       generated[t.key] = { blob, name: t.key + '.png' };
@@ -983,7 +1026,10 @@ function renderAll(){
     const tileCv = tile.querySelector('canvas');
     const tileCtx = tileCv.getContext('2d');
     tileCtx.putImageData(outData, 0, 0);
-    if(autoSocle) drawSocle(tileCtx, tileCv.width, tileCv.height, t);
+    if(useSocle && socleDrawInfo){
+      tileCtx.clearRect(0, socleDrawInfo.y - 4, tileCv.width, socleDrawInfo.h + 8);
+      tileCtx.drawImage(socleImage, socleDrawInfo.x, socleDrawInfo.y, socleDrawInfo.w, socleDrawInfo.h);
+    }
     tiles.appendChild(tile);
   }
 }
