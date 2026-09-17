@@ -601,19 +601,25 @@ function generateTier(sourceImageData, tier){
     const nx = px / w, ny = py / h;
     // Anti-diagonale : distance a la ligne y=1-x (0 sur la diagonale haut-droite -> bas-gauche).
     const diagDist = Math.abs(nx - (1 - ny));
-    // Sur la plaque (py >= yProtectPx = zone du socle), on accentue le reflet :
-    // bande plus large + multiplicateur plus fort + cap plus haut, pour que le
-    // metal de la plaque brille vraiment au lieu d'un simple aplat teinte.
-    const isPlaque = py >= yProtectPx;
-    const bandWidth = isPlaque ? 0.32 : 0.18;
-    const bandMul   = isPlaque ? 5.5  : 3.5;
+    // Transition douce entre zone oiseau et zone plaque : au lieu d'un cut hard a
+    // Y=70% (qui creait une bande claire visible), on ramp 'plaqueness' de 0 a 1
+    // sur une transition de +/-8% autour de yProtectPx. Les params (bandWidth,
+    // multiplicateurs, caps) sont interpolees selon plaqueness.
+    const transitionH = h * 0.08;   // 8% de la hauteur d'image
+    let plaqueness;
+    if(py <= yProtectPx - transitionH) plaqueness = 0;
+    else if(py >= yProtectPx + transitionH) plaqueness = 1;
+    else plaqueness = (py - (yProtectPx - transitionH)) / (2 * transitionH);
+    const bandWidth = 0.18 + plaqueness * (0.32 - 0.18);
+    const bandMul   = 3.5  + plaqueness * (5.5  - 3.5);
     const specStreak = Math.max(0, bandWidth - diagDist) * bandMul;
     // Top plus clair que bottom (light incidente).
     const topLight = (1 - ny) * 0.12;
-    // Boost specular final (cap plus haut sur la plaque).
-    const specCap = isPlaque ? 0.55 : 0.30;
-    const streakContrib = isPlaque ? 0.60 : 0.35;
+    // Boost specular final (cap plus haut sur la plaque, interpolation lisse).
+    const specCap = 0.30 + plaqueness * (0.55 - 0.30);
+    const streakContrib = 0.35 + plaqueness * (0.60 - 0.35);
     const specBoost = Math.min(specCap, specStreak * streakContrib + topLight);
+    const isPlaque = plaqueness > 0.5;   // pour le finalCap plus bas
     // Sur les sources vraiment plates, on remplace la luminance normalisee par un
     // shading synthetique complet base sur la position.
     if(flatSource){
