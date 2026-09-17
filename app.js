@@ -3745,11 +3745,13 @@ function renderTrophies(data){
             const firstTier = tiersSorted[0];
             const familyHasCustomNames = firstTier && firstTier.name && firstTier.name !== `${familyName} ${(TROPHY_TIERS.find(x=>x.key===firstTier.tier)||{}).label}`;
             // Rendu du tier en etoiles : n filled + (5-n) empty. Bronze=1, Argent=2,
-            // Or=3, Diamant=4, Prismatique=5. La couleur des filled = la tier-color.
-            const tierIdx = currentTier ? TROPHY_TIERS.findIndex(x => x.key === displayTier.tier) : -1;
-            const starsCount = tierIdx >= 0 ? tierIdx + 1 : 0;
+            // Or=3, Diamant=4, Prismatique=5. Emeraude (Gaulois uniquement) = 5 aussi.
+            // Le mapping explicite evite l'index -1/negatif de String.repeat().
+            const STAR_ORDER = { bronze:1, argent:2, or:3, diamant:4, emeraude:5, violet:5 };
+            const starsCount = currentTier ? (STAR_ORDER[displayTier.tier] || 0) : 0;
+            const emptyCount = Math.max(0, 5 - starsCount);
             const starsHtml = starsCount > 0
-              ? `<span class="tro-fam-stars" title="${esc(displayMeta.label)}">${'★'.repeat(starsCount)}<span class="tro-fam-stars-empty">${'★'.repeat(5 - starsCount)}</span></span>`
+              ? `<span class="tro-fam-stars" title="${esc(displayMeta.label)}">${'★'.repeat(starsCount)}<span class="tro-fam-stars-empty">${'★'.repeat(emptyCount)}</span></span>`
               : '';
             if(familyHasCustomNames){
               const descTpl = displayTier.descTpl || '';
