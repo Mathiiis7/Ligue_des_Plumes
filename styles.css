@@ -1457,8 +1457,8 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
     position:relative; overflow:hidden; }
   .tro-family:hover { transform:translateY(-1px); box-shadow:var(--shadow);
     border-color:color-mix(in srgb, var(--tier-color, var(--gold)) 45%, var(--line)); }
-  .tro-family.unlocked { background:color-mix(in srgb, var(--tier-color) 6%, var(--surface-2));
-    border-color:color-mix(in srgb, var(--tier-color) 30%, var(--line)); }
+  .tro-family.unlocked { background:var(--surface-2);
+    border-color:color-mix(in srgb, var(--tier-color) 55%, var(--line)); }
   .tro-family.locked { opacity:.85; }
   .tro-fam-cup { flex:0 0 auto; width:245px; height:245px; display:grid; place-items:center; }
   .tro-fam-cup .tro-cup { width:245px; height:245px; object-fit:contain;
@@ -1484,14 +1484,8 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
      sur le trophee, barre de progression rainbow). Le PNG lui-meme est deja multicolore ;
      on habille sa carte pour que le mot 'prismatique' se lise dans l'UI aussi. */
   .tro-family.unlocked.tier-violet {
-    background:
-      linear-gradient(135deg,
-        color-mix(in srgb, #ff5cdc 10%, transparent),
-        color-mix(in srgb, #a06cff 10%, transparent) 50%,
-        color-mix(in srgb, #5cd3ff 10%, transparent)),
-      var(--surface-2);
-    border-color:color-mix(in srgb, #a06cff 38%, var(--line));
-    box-shadow:0 3px 14px color-mix(in srgb, #a06cff 18%, transparent);
+    background:var(--surface-2);
+    border-color:color-mix(in srgb, #a06cff 55%, var(--line));
   }
   .tro-family.unlocked.tier-violet .tro-fam-cup .tro-cup {
     filter:
