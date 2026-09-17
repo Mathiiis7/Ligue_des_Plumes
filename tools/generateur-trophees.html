@@ -994,6 +994,10 @@ function renderAll(){
     // n'est ni brun protege ni proche de la hue du tier ni desature (highlight) devient
     // transparent. Cible les bouts noirs / anti-aliases restants sur les bords du socle.
     outData = cleanupSocleEdges(outData, t);
+    // Erode legerement les bords du socle : un pixel brun avec moins de 4 voisins bruns
+    // (jaggies isoles, protrusions single-pixel) devient transparent. Les bords droits
+    // (5+ voisins) restent intacts.
+    outData = erodeSocleEdges(outData, 4);
     const outCanvas = document.createElement('canvas');
     outCanvas.width = srcCanvas.width;
     outCanvas.height = srcCanvas.height;
