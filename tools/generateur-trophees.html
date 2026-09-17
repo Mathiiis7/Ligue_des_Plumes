@@ -1040,7 +1040,6 @@ function fillLegCrossings(imgData, maxLegWidth){
   // les parties d'oiseau qui descendent volontairement (queue longue, plumes tombantes)
   // sont laissees tranquille.
   const yEnd = Math.min(h, yStart + Math.floor(h * 0.04));   // bande de 4% de la hauteur
-  const MAX_SEARCH = 200;   // rayon max pour trouver une couleur brune de reference
   for(let y = yStart; y < yEnd; y++){
     // Segmente la rangee en runs de non-proteges (opaques). Chaque run est un
     // segment continu de pixels non-transparents et non-proteges.
@@ -1063,24 +1062,24 @@ function fillLegCrossings(imgData, maxLegWidth){
       const runEnd = x - 1;
       const runLen = runEnd - runStart + 1;
       if(runLen > maxLegWidth) continue;   // c'est la plaque, on garde
-      // Trouve la couleur brune de reference : cherche a gauche puis a droite dans
-      // MAX_SEARCH px, saute par-dessus les runs non-proteges (autres pattes / plaque).
+      // Trouve la couleur brune de reference : cherche a gauche puis a droite. On
+      // s'arrete au premier pixel non-continu (transparent OU non-protege) - le brun
+      // doit etre ADJACENT au run pour eviter de traiter comme "patte" un bird qui
+      // deborde du cote du socle (bordé de transparent, socle brown seulement plus loin).
       let refR = -1, refG = 0, refB = 0;
-      for(let dx = 1; dx <= MAX_SEARCH && runStart - dx >= 0; dx++){
-        const li = (y*w + (runStart - dx))*4;
+      if(runStart > 0){
+        const li = (y*w + (runStart - 1))*4;
         if(d[li+3] > 0 && isProtected(d[li], d[li+1], d[li+2])){
-          refR = d[li]; refG = d[li+1]; refB = d[li+2]; break;
+          refR = d[li]; refG = d[li+1]; refB = d[li+2];
         }
       }
-      if(refR < 0){
-        for(let dx = 1; dx <= MAX_SEARCH && runEnd + dx < w; dx++){
-          const ri = (y*w + (runEnd + dx))*4;
-          if(d[ri+3] > 0 && isProtected(d[ri], d[ri+1], d[ri+2])){
-            refR = d[ri]; refG = d[ri+1]; refB = d[ri+2]; break;
-          }
+      if(refR < 0 && runEnd < w - 1){
+        const ri = (y*w + (runEnd + 1))*4;
+        if(d[ri+3] > 0 && isProtected(d[ri], d[ri+1], d[ri+2])){
+          refR = d[ri]; refG = d[ri+1]; refB = d[ri+2];
         }
       }
-      if(refR < 0) continue;   // pas de brun de reference dans cette rangee
+      if(refR < 0) continue;   // pas de brun adjacent -> pas une patte, on laisse
       for(let fx = runStart; fx <= runEnd; fx++){
         const j = (y*w + fx)*4;
         od[j] = refR; od[j+1] = refG; od[j+2] = refB; od[j+3] = 255;
