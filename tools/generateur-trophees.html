@@ -81,6 +81,18 @@
       <div class="color-pickers" id="colorPickers"></div>
     </div>
 
+    <div id="socleOptions" style="display:none; margin:16px 0 0; padding:12px 14px; border:1px solid #e0e5e2; border-radius:10px; background:#fafcfb;">
+      <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:#15201e; cursor:pointer;">
+        <input type="checkbox" id="autoSocle" style="width:16px; height:16px; cursor:pointer;">
+        Socle automatique (dessiné en dur, plaque métallique par tier)
+      </label>
+      <div style="font-size:11.5px; color:#7c8783; margin-top:6px; line-height:1.5;">
+        Coché : le bas de l'image est remplacé par un socle marron foncé + plaque métallique
+        (couleur du tier avec dégradé et 2 barres décoratives). Tu peux fournir juste l'oiseau,
+        le socle est identique sur les 6 tiers, seule la plaque change de couleur.
+      </div>
+    </div>
+
     <div id="protectEditor" style="display:none; margin:16px 0 0; padding:12px 14px; border:1px solid #e0e5e2; border-radius:10px; background:#fafcfb;">
       <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#556; margin-bottom:8px;">Zones à préserver (socle, bois, contours)</div>
       <div id="protectChips" style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;"></div>
@@ -622,6 +634,97 @@ function generateTier(sourceImageData, tier){
   return out;
 }
 
+// Dessine un socle procedural (marron fonce + plaque metallique + 2 barres) dans
+// la moitie basse du canvas. Les couleurs de la plaque proviennent des stops du tier
+// (mid-highlight en haut -> mid -> mid-shadow en bas = gradient metallique canonique).
+function drawSocle(ctx, canvasW, canvasH, tier){
+  // Zone du socle : bas 30% du canvas.
+  const socleTopRatio = 0.72;
+  const socleTop = canvasH * socleTopRatio;
+  const socleH = canvasH - socleTop;
+  const socleW = canvasW * 0.68;
+  const socleX = (canvasW - socleW) / 2;
+  const socleR = socleH * 0.10;
+
+  // Efface la zone du socle (les pixels de la source y sont supprimes).
+  ctx.clearRect(0, socleTop - 4, canvasW, socleH + 8);
+
+  const roundRect = (x, y, w, h, r) => {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  };
+
+  // Base marron fonce.
+  const baseGrad = ctx.createLinearGradient(0, socleTop, 0, socleTop + socleH);
+  baseGrad.addColorStop(0, '#4a2f1d');
+  baseGrad.addColorStop(0.5, '#3a2418');
+  baseGrad.addColorStop(1, '#2a1810');
+  ctx.fillStyle = baseGrad;
+  roundRect(socleX, socleTop, socleW, socleH, socleR);
+  ctx.fill();
+  // Reflet superieur discret.
+  ctx.fillStyle = 'rgba(255, 235, 200, 0.10)';
+  roundRect(socleX, socleTop, socleW, socleH * 0.20, socleR);
+  ctx.fill();
+
+  // Plaque metallique centree.
+  const plaqueW = socleW * 0.62;
+  const plaqueH = socleH * 0.58;
+  const plaqueX = socleX + (socleW - plaqueW) / 2;
+  const plaqueY = socleTop + (socleH - plaqueH) / 2;
+  const plaqueR = Math.min(6, plaqueH * 0.12);
+
+  const stops = tier.stops || [
+    { r:80, g:80, b:80 }, { r:120, g:120, b:120 },
+    { r:180, g:180, b:180 }, { r:220, g:220, b:220 },
+    { r:250, g:250, b:250 },
+  ];
+  // Fond de plaque : gradient vertical mid-highlight -> mid -> mid-shadow (metal poli).
+  const plaqueGrad = ctx.createLinearGradient(plaqueX, plaqueY, plaqueX, plaqueY + plaqueH);
+  plaqueGrad.addColorStop(0.00, `rgb(${stops[3].r},${stops[3].g},${stops[3].b})`);
+  plaqueGrad.addColorStop(0.45, `rgb(${stops[2].r},${stops[2].g},${stops[2].b})`);
+  plaqueGrad.addColorStop(1.00, `rgb(${stops[1].r},${stops[1].g},${stops[1].b})`);
+  ctx.fillStyle = plaqueGrad;
+  roundRect(plaqueX, plaqueY, plaqueW, plaqueH, plaqueR);
+  ctx.fill();
+
+  // Bordure fine sombre autour de la plaque (contraste avec le socle).
+  ctx.strokeStyle = 'rgba(30, 18, 10, 0.55)';
+  ctx.lineWidth = Math.max(1, plaqueH * 0.03);
+  roundRect(plaqueX, plaqueY, plaqueW, plaqueH, plaqueR);
+  ctx.stroke();
+
+  // Specular : demi-band clair sur le haut de la plaque.
+  const specGrad = ctx.createLinearGradient(plaqueX, plaqueY, plaqueX, plaqueY + plaqueH * 0.5);
+  specGrad.addColorStop(0, `rgba(${stops[4].r},${stops[4].g},${stops[4].b},0.55)`);
+  specGrad.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = specGrad;
+  roundRect(plaqueX, plaqueY, plaqueW, plaqueH * 0.55, plaqueR);
+  ctx.fill();
+
+  // Deux barres decoratives (marron fonce) au centre de la plaque.
+  const barH = plaqueH * 0.14;
+  const barGap = plaqueH * 0.10;
+  const barsTotalH = barH * 2 + barGap;
+  const barY0 = plaqueY + (plaqueH - barsTotalH) / 2;
+  const barX = plaqueX + plaqueW * 0.16;
+  const barW = plaqueW * 0.68;
+  ctx.fillStyle = 'rgba(35, 20, 12, 0.85)';
+  roundRect(barX, barY0, barW, barH, barH * 0.35);
+  ctx.fill();
+  roundRect(barX, barY0 + barH + barGap, barW, barH, barH * 0.35);
+  ctx.fill();
+}
+
 const drop = document.getElementById('drop');
 const fileInput = document.getElementById('file');
 const tiles = document.getElementById('tiles');
@@ -637,6 +740,9 @@ const protectTol = document.getElementById('protectTol');
 const protectTolVal = document.getElementById('protectTolVal');
 const clearProtectBtn = document.getElementById('clearProtect');
 const sourcePreview = document.getElementById('sourcePreview');
+const socleOptions = document.getElementById('socleOptions');
+const autoSocleCheckbox = document.getElementById('autoSocle');
+autoSocleCheckbox.addEventListener('change', () => { if(sourceImage) renderAll(); });
 
 // Liste des couleurs a preserver (en RGB). Chaque pixel dans le rayon `tol` (distance
 // euclidienne RGB) autour de l'une de ces couleurs est laisse tel quel par le gradient
@@ -748,6 +854,8 @@ resetBtn.addEventListener('click', () => {
   fileInput.value = ''; controls.style.display = 'none';
   paletteEditor.style.display = 'none';
   protectEditor.style.display = 'none';
+  socleOptions.style.display = 'none';
+  autoSocleCheckbox.checked = false;
   PROTECTED = []; renderProtectChips();
 });
 downloadAllBtn.addEventListener('click', downloadAll);
@@ -786,6 +894,7 @@ function renderAll(){
   controls.style.display = 'flex';
   paletteEditor.style.display = 'block';
   protectEditor.style.display = 'block';
+  socleOptions.style.display = 'block';
   updateSourcePreview();
   // Extract ImageData from source image
   const srcCanvas = document.createElement('canvas');
@@ -799,6 +908,7 @@ function renderAll(){
 
   const styleFn = (STYLES[currentStyle] || STYLES.original).fn;
 
+  const autoSocle = autoSocleCheckbox.checked;
   for(const t of TIERS){
     // Pipeline : shift couleur -> post-processing style
     let outData = generateTier(srcData, t);
@@ -806,7 +916,13 @@ function renderAll(){
     const outCanvas = document.createElement('canvas');
     outCanvas.width = srcCanvas.width;
     outCanvas.height = srcCanvas.height;
-    outCanvas.getContext('2d').putImageData(outData, 0, 0);
+    const outCtx = outCanvas.getContext('2d');
+    outCtx.putImageData(outData, 0, 0);
+    // Si le socle auto est active, on redessine le bas de l'image par-dessus la
+    // source retintee. Le socle est dessine pour chaque tier avec sa propre plaque.
+    if(autoSocle){
+      drawSocle(outCtx, outCanvas.width, outCanvas.height, t);
+    }
     outCanvas.toBlob(blob => {
       generated[t.key] = { blob, name: t.key + '.png' };
     }, 'image/png');
@@ -820,7 +936,9 @@ function renderAll(){
       <span class="tone">${t.color}</span>
       <a href="${dataUrl}" download="${t.key}.png">⬇ Télécharger ${t.key}.png</a>`;
     const tileCv = tile.querySelector('canvas');
-    tileCv.getContext('2d').putImageData(outData, 0, 0);
+    const tileCtx = tileCv.getContext('2d');
+    tileCtx.putImageData(outData, 0, 0);
+    if(autoSocle) drawSocle(tileCtx, tileCv.width, tileCv.height, t);
     tiles.appendChild(tile);
   }
 }
