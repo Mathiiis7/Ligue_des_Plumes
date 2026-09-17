@@ -80,7 +80,7 @@
       font-size:11.5px; font-weight:600; font-family:ui-monospace, 'SF Mono', Consolas, monospace;
       background:#eefbf7; color:#0b5c58; border:1px solid #b8e3d8; border-radius:99px;">
       <span style="width:6px; height:6px; border-radius:50%; background:#0b7c77;"></span>
-      Version 2026-09-17 16:20
+      <span id="buildStampText">…</span>
     </span>
   </div>
   <p class="sub">Le trophée doré actuel est chargé automatiquement. Dépose une autre image
@@ -150,6 +150,21 @@
 </div>
 
 <script>
+// Chip de version : affiche la date de derniere modification du fichier HTML
+// (via document.lastModified, l'header HTTP Last-Modified). Auto-update sans que
+// personne n'ait a bumper une valeur en dur.
+(function(){
+  const lm = document.lastModified;
+  if(!lm) return;
+  // lm est au format "MM/DD/YYYY HH:MM:SS" (locale US) ou similaire.
+  const dt = new Date(lm);
+  if(isNaN(dt.getTime())) return;
+  const pad = n => String(n).padStart(2, '0');
+  const stamp = `Version ${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+  const el = document.getElementById('buildStampText');
+  if(el) el.textContent = stamp;
+})();
+
 // Definition des 6 paliers avec les parametres de shift HSL cibles.
 // hueShift = decalage a appliquer sur le H des pixels colores de la version doree (H≈45).
 // satMul, lightAdd = multiplicateur/offset pour ajuster la saturation / lightness.
