@@ -970,10 +970,9 @@ function renderAll(){
   for(const t of TIERS){
     let outData = generateTier(srcData, t);
     outData = styleFn(outData);
-    // Post-process : bouche uniquement les micro-gaps transparents (<= 2px) entre
-    // un pixel opaque et le brun du socle. Assez restrictif pour ne pas laisser de
-    // trainees visibles depuis un element flottant au-dessus du socle.
-    outData = closeVerticalGaps(outData, 2);
+    // Post-process : etend le pixel bird jusqu'au socle sur les gaps <= 15px (bird
+    // color, pas socle brown -> plus de trainee marron sur les pointes de queue/pattes).
+    outData = closeVerticalGaps(outData, 15);
     // Puis remplit les pattes qui traversent le socle : detection par run horizontal
     // (les runs courts de non-proteges dans une meme rangee = pattes).
     outData = fillLegCrossings(outData, 40);
@@ -1084,13 +1083,17 @@ function fillLegCrossings(imgData, maxLegWidth){
 // le pixel opaque du dessous est proche du brun socle (PROTECT_COLOR). Cible la
 // transition bird -> socle sans toucher aux gaps internes a l'oiseau (entre les
 // pattes, sous les ailes...). Fill avec la couleur du pixel opaque du dessous.
+// Bouche les micro-gaps verticaux entre un pixel bird (au-dessus) et le brun socle
+// (en dessous) - mais fill avec la couleur du BIRD (pixel au-dessus du gap), pas
+// le brun. Comme ca la pointe du tail/patte etend sa propre couleur retintee jusqu'au
+// socle au lieu de generer une trainee marron.
 function closeVerticalGaps(imgData, maxGapPx){
   const w = imgData.width, h = imgData.height;
   const d = imgData.data;
   const out = new ImageData(new Uint8ClampedArray(d), w, h);
   const od = out.data;
   const yProtectPx = Math.floor(h * PROTECT_Y_RATIO);
-  const yFillMax = yProtectPx + Math.floor(h * 0.03);   // bas du gap doit etre dans les 3% sous Y=70%
+  const yFillMax = yProtectPx + Math.floor(h * 0.03);
   for(let x = 0; x < w; x++){
     let y = 0;
     while(y < h){
@@ -1099,28 +1102,17 @@ function closeVerticalGaps(imgData, maxGapPx){
       if(y >= h) break;
       // Trouve la fin du bloc opaque.
       while(y < h && d[(y*w + x)*4 + 3] > 0) y++;
-      // Cherche un gap transparent apres.
+      const topEndIdx = ((y - 1)*w + x)*4;   // dernier pixel opaque avant le gap
       const gapStart = y;
       while(y < h && d[(y*w + x)*4 + 3] === 0) y++;
       const gapEnd = y - 1;
-      // On ne comble QUE si le bas du gap (position 'y' post-gap) est dans la bande
-      // 'debut du socle' - evite de faire descendre des trainees marrons depuis les
-      // elements du design qui sont loin au-dessus du socle (branches, queue longue).
       if(gapStart <= gapEnd && y < h && (gapEnd - gapStart + 1) <= maxGapPx && y <= yFillMax){
-        // Verifie d'abord que le pixel a y est proche du brun socle : sinon
-        // (bird interne), on laisse le gap tel quel.
         const firstIdx = (y*w + x)*4;
+        // Ne fille que si le pixel EN DESSOUS est brun socle (transition bird -> socle).
         if(isProtected(d[firstIdx], d[firstIdx+1], d[firstIdx+2])){
-          // Sample la couleur de fill 5 pixels plus bas pour eviter le bord
-          // anti-aliase du socle (qui est plus sombre que son centre). Retombe
-          // sur le premier pixel si on depasse la hauteur ou si la sample n'est
-          // plus proche du brun socle.
-          const sampleY = Math.min(h - 1, y + 5);
-          const sampleIdx = (sampleY*w + x)*4;
-          let fr = d[sampleIdx], fg = d[sampleIdx+1], fb = d[sampleIdx+2];
-          if(d[sampleIdx+3] === 0 || !isProtected(fr, fg, fb)){
-            fr = d[firstIdx]; fg = d[firstIdx+1]; fb = d[firstIdx+2];
-          }
+          // Fill avec la couleur du pixel AU-DESSUS du gap (bird) plutot que le brun.
+          // La pointe du bird garde sa teinte de tier au lieu de virer marron.
+          const fr = d[topEndIdx], fg = d[topEndIdx+1], fb = d[topEndIdx+2];
           for(let gy = gapStart; gy <= gapEnd; gy++){
             const j = (gy*w + x)*4;
             od[j] = fr; od[j+1] = fg; od[j+2] = fb; od[j+3] = 255;
