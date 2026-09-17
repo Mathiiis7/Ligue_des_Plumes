@@ -994,12 +994,11 @@ function renderAll(){
     // n'est ni brun protege ni proche de la hue du tier ni desature (highlight) devient
     // transparent. Cible les bouts noirs / anti-aliases restants sur les bords du socle.
     outData = cleanupSocleEdges(outData, t);
-    // Median filter sur l'alpha du socle : lisse les bords sans retrecir. Chaque
-    // pixel de la zone socle prend l'alpha median de son 3x3 -> les jaggies isolees
-    // sont eliminees, les bords droits restent. On applique 2 passes pour attraper
-    // aussi les jaggies plus larges (2px de haut / 2px de large).
-    outData = medianAlphaSocle(outData);
-    outData = medianAlphaSocle(outData);
+    // Remplace la silhouette du socle par un rectangle arrondi geometrique propre :
+    // bbox detecte des pixels bruns, tout ce qui etait brun a l'interieur devient
+    // brun uniforme, ce qui etait a l'exterieur devient transparent. La plaque est
+    // preservee.
+    outData = cleanRectSocle(outData);
     const outCanvas = document.createElement('canvas');
     outCanvas.width = srcCanvas.width;
     outCanvas.height = srcCanvas.height;
@@ -1087,6 +1086,70 @@ function stripSocleOutlines(imgData){
       else if(x > 0 && isProtectedOpaque((y*w + (x-1))*4)) hasBrownNeighbor = true;
       else if(x < w-1 && isProtectedOpaque((y*w + (x+1))*4)) hasBrownNeighbor = true;
       if(hasBrownNeighbor){
+        od[i] = 0; od[i+1] = 0; od[i+2] = 0; od[i+3] = 0;
+      }
+    }
+  }
+  return new ImageData(od, w, h);
+}
+
+// Remplace la silhouette du socle par un rectangle arrondi geometrique propre.
+// (1) Detecte le bbox et la couleur moyenne des pixels bruns dans la zone socle.
+// (2) Calcule un rayon d'arrondi adaptatif (min(15% hauteur, 5% largeur)).
+// (3) Pour chaque pixel de la zone : inside rounded rect + brun-avant -> brun uniforme,
+//     inside rounded rect + non-brun opaque -> keep (plaque), outside -> transparent.
+function cleanRectSocle(imgData){
+  const w = imgData.width, h = imgData.height;
+  const d = imgData.data;
+  const od = new Uint8ClampedArray(d);
+  const yStart = Math.floor(h * PROTECT_Y_RATIO);
+  // Bbox du socle brun.
+  let minX = w, maxX = -1, minY = h, maxY = -1;
+  let sumR = 0, sumG = 0, sumB = 0, count = 0;
+  for(let y = yStart; y < h; y++){
+    for(let x = 0; x < w; x++){
+      const i = (y*w + x)*4;
+      if(d[i+3] > 0 && isProtected(d[i], d[i+1], d[i+2])){
+        if(x < minX) minX = x;
+        if(x > maxX) maxX = x;
+        if(y < minY) minY = y;
+        if(y > maxY) maxY = y;
+        sumR += d[i]; sumG += d[i+1]; sumB += d[i+2];
+        count++;
+      }
+    }
+  }
+  if(count < 20) return imgData;   // pas de socle detecte
+  const avgR = (sumR / count) | 0;
+  const avgG = (sumG / count) | 0;
+  const avgB = (sumB / count) | 0;
+  const socleW = maxX - minX + 1;
+  const socleH = maxY - minY + 1;
+  const radius = Math.round(Math.min(socleH * 0.18, socleW * 0.06));
+  const rMinX = minX + radius, rMaxX = maxX - radius;
+  const rMinY = minY + radius, rMaxY = maxY - radius;
+  const r2 = radius * radius;
+  const isInRoundedRect = (x, y) => {
+    if(x < minX || x > maxX || y < minY || y > maxY) return false;
+    let cx = x, cy = y;
+    if(x < rMinX && y < rMinY){ cx = rMinX; cy = rMinY; }
+    else if(x > rMaxX && y < rMinY){ cx = rMaxX; cy = rMinY; }
+    else if(x < rMinX && y > rMaxY){ cx = rMinX; cy = rMaxY; }
+    else if(x > rMaxX && y > rMaxY){ cx = rMaxX; cy = rMaxY; }
+    else return true;   // pas dans un coin
+    const dx = x - cx, dy = y - cy;
+    return dx*dx + dy*dy <= r2;
+  };
+  for(let y = yStart; y < h; y++){
+    for(let x = 0; x < w; x++){
+      const i = (y*w + x)*4;
+      const inside = isInRoundedRect(x, y);
+      const wasBrown = d[i+3] > 0 && isProtected(d[i], d[i+1], d[i+2]);
+      const wasOpaqueNonBrown = d[i+3] > 0 && !isProtected(d[i], d[i+1], d[i+2]);
+      if(inside){
+        if(wasOpaqueNonBrown) continue;   // plaque intacte
+        od[i] = avgR; od[i+1] = avgG; od[i+2] = avgB; od[i+3] = 255;
+      } else if(wasBrown){
         od[i] = 0; od[i+1] = 0; od[i+2] = 0; od[i+3] = 0;
       }
     }
