@@ -990,9 +990,6 @@ function renderAll(){
     // avec alpha moyen (100-150) qui apparaissaient comme des poussieres marron
     // autour du bird. Le trade-off est un peu plus d'aliasing sur les bords.
     outData = thresholdAlpha(outData, 150);
-    // Erode les bords du socle : elimine les jaggies et extensions isolees de la
-    // silhouette du socle sans toucher au bird (qui est en zone non-protegee).
-    outData = erodeSocleEdges(outData, 5);
     const outCanvas = document.createElement('canvas');
     outCanvas.width = srcCanvas.width;
     outCanvas.height = srcCanvas.height;
