@@ -617,20 +617,20 @@ function generateTier(sourceImageData, tier){
 
     let stops;
     if(isPrismatic){
-      // Prismatique : hue varie en diagonale, 5 stops recalcules par pixel pour garder
-      // le meme feeling metal-brillant que les autres tiers.
-      const y = (i/4 / w) | 0;
-      const x = (i/4) % w;
-      const t = (x/w + y/h) / 2;
-      const hueStart = tier.gradient.hueStart;
-      const hueEnd = tier.gradient.hueEnd;
-      const delta = hueEnd - hueStart;
-      const hue = ((hueStart + delta * t) % 360 + 360) % 360;
-      const [ds_r,ds_g,ds_b] = hslToRgb(hue, 0.85, 0.16);
-      const [ms_r,ms_g,ms_b] = hslToRgb(hue, 0.85, 0.35);
-      const [m_r,m_g,m_b]    = hslToRgb(hue, 0.95, 0.55);
-      const [mh_r,mh_g,mh_b] = hslToRgb(hue, 0.55, 0.82);
-      const [sp_r,sp_g,sp_b] = hslToRgb(hue, 0.25, 0.97);
+      // Prismatique holographique : hue calcule via 2 ondes sinusoidales
+      // overlappantes (flux organique iridescent, comme film hologrammique / oil
+      // slick) + palette pastel (luminance haute, saturation moyenne). Le stop
+      // "specular" est quasi blanc pour eclat holographique.
+      const wave1 = Math.sin((nx * 3.2 + ny * 1.8) * Math.PI);   // -1..1 slow
+      const wave2 = Math.cos((nx * 1.6 - ny * 3.4) * Math.PI * 0.9);   // -1..1 orthogonal
+      const hueField = wave1 * 75 + wave2 * 55 + srcL * 35;
+      const hue = ((280 + hueField) % 360 + 360) % 360;   // base violet-rose, module
+      // Palette pastel : sat 30-55% (pas de couleur pure), L etale sur [0.45 .. 0.98].
+      const [ds_r,ds_g,ds_b] = hslToRgb(hue, 0.45, 0.48);   // ombre coloree pastel
+      const [ms_r,ms_g,ms_b] = hslToRgb(hue, 0.50, 0.62);
+      const [m_r,m_g,m_b]    = hslToRgb(hue, 0.55, 0.78);   // couleur pleine pastel
+      const [mh_r,mh_g,mh_b] = hslToRgb(hue, 0.40, 0.90);
+      const [sp_r,sp_g,sp_b] = hslToRgb(hue, 0.15, 0.99);   // eclat holographique quasi-blanc
       stops = [
         { L:0.00, r:ds_r, g:ds_g, b:ds_b },
         { L:0.30, r:ms_r, g:ms_g, b:ms_b },
