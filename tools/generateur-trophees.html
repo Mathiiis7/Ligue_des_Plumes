@@ -994,10 +994,11 @@ function renderAll(){
     // n'est ni brun protege ni proche de la hue du tier ni desature (highlight) devient
     // transparent. Cible les bouts noirs / anti-aliases restants sur les bords du socle.
     outData = cleanupSocleEdges(outData, t);
-    // Erode legerement les bords du socle : un pixel brun avec moins de 4 voisins bruns
-    // (jaggies isoles, protrusions single-pixel) devient transparent. Les bords droits
-    // (5+ voisins) restent intacts.
-    outData = erodeSocleEdges(outData, 4);
+    // Opening morphologique sur le socle (erode -> dilate). Elimine les protrusions
+    // isolees des bords sans retrecir la silhouette (les bords droits sont eroded
+    // puis restaures par la dilation, mais les jaggies isoles sont perdus).
+    outData = erodeSocleEdges(outData, 5);
+    outData = dilateSocleEdges(outData, 3);
     const outCanvas = document.createElement('canvas');
     outCanvas.width = srcCanvas.width;
     outCanvas.height = srcCanvas.height;
@@ -1086,6 +1087,41 @@ function stripSocleOutlines(imgData){
       else if(x < w-1 && isProtectedOpaque((y*w + (x+1))*4)) hasBrownNeighbor = true;
       if(hasBrownNeighbor){
         od[i] = 0; od[i+1] = 0; od[i+2] = 0; od[i+3] = 0;
+      }
+    }
+  }
+  return new ImageData(od, w, h);
+}
+
+// Dilate le socle : pour chaque pixel transparent adjacent a >= minNeighbors pixels
+// bruns, on le rend brun (moyenne des voisins). Utilise apres une erosion pour
+// implementer un morphological opening : elimine les protrusions sans retrecir la
+// silhouette.
+function dilateSocleEdges(imgData, minNeighbors){
+  const w = imgData.width, h = imgData.height;
+  const d = imgData.data;
+  const od = new Uint8ClampedArray(d);
+  const isProtectedOpaque = (idx) => d[idx+3] > 0 && isProtected(d[idx], d[idx+1], d[idx+2]);
+  for(let y = 1; y < h - 1; y++){
+    for(let x = 1; x < w - 1; x++){
+      const i = (y*w + x)*4;
+      if(d[i+3] > 0) continue;   // deja opaque, skip
+      let count = 0, sumR = 0, sumG = 0, sumB = 0;
+      for(let dy = -1; dy <= 1; dy++){
+        for(let dx = -1; dx <= 1; dx++){
+          if(dx === 0 && dy === 0) continue;
+          const j = ((y+dy)*w + (x+dx))*4;
+          if(isProtectedOpaque(j)){
+            count++;
+            sumR += d[j]; sumG += d[j+1]; sumB += d[j+2];
+          }
+        }
+      }
+      if(count >= minNeighbors){
+        od[i] = Math.round(sumR / count);
+        od[i+1] = Math.round(sumG / count);
+        od[i+2] = Math.round(sumB / count);
+        od[i+3] = 255;
       }
     }
   }
