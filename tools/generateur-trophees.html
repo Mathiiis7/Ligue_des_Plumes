@@ -540,7 +540,6 @@ function generateTier(sourceImageData, tier){
     const r=sd[i], g=sd[i+1], b=sd[i+2];
     if(py >= yProtectPx && isProtected(r, g, b)) continue;
     const [srcH, srcS, srcL] = rgbToHsl(r, g, b);
-    if(srcL < 0.10 && srcS < 0.30) continue;
     if(srcL < minL) minL = srcL;
     if(srcL > maxL) maxL = srcL;
     sumL += srcL;
@@ -566,13 +565,10 @@ function generateTier(sourceImageData, tier){
     }
 
     const [srcH, srcS, srcL] = rgbToHsl(r,g,b);
-
-    // Preserve les pixels quasi-noirs neutres (contours, ombres profondes) :
-    // ils doivent rester noirs quel que soit le tier pour garder le contraste.
-    if(srcL < 0.10 && srcS < 0.30){
-      od[i]=r; od[i+1]=g; od[i+2]=b; od[i+3]=a;
-      continue;
-    }
+    // Note : plus de "preserve quasi-noir neutre" ici. Les vrais pixels tres sombres
+    // (details de plumage, ombres profondes) prennent le stop deep-shadow du gradient
+    // (deja tres fonce, juste teinte du tier). Ca evite les zones noires artefacts
+    // sur les designs avec beaucoup de details noirs (motifs de plumes, contours epais).
 
     // Normalise la luminance autour de la moyenne source (ancre a 0.55) au lieu de
     // stretch brut. Un oiseau clair (avgL=0.8) verra ses pixels centres a 0.55 -> le
