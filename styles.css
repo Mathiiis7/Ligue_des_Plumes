@@ -1461,8 +1461,8 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .tro-family.locked { opacity:.85; }
   .tro-fam-cup { flex:0 0 auto; width:220px; height:220px; display:grid; place-items:center; }
   .tro-fam-cup .tro-cup { width:220px; height:220px; object-fit:contain;
-    filter:drop-shadow(0 1px 1px rgba(0,0,0,.28)) drop-shadow(0 6px 10px rgba(0,0,0,.18)) drop-shadow(0 4px 14px color-mix(in srgb, var(--tier-color) 40%, transparent)); }
-  .tro-fam-cup .tro-cup.grayed { filter:grayscale(.7) brightness(.9) opacity(.85) drop-shadow(0 1px 1px rgba(0,0,0,.22)) drop-shadow(0 5px 9px rgba(0,0,0,.15)); }
+    filter:drop-shadow(0 1px 1px rgba(0,0,0,.18)) drop-shadow(0 4px 8px rgba(0,0,0,.11)) drop-shadow(0 4px 14px color-mix(in srgb, var(--tier-color) 40%, transparent)); }
+  .tro-fam-cup .tro-cup.grayed { filter:grayscale(.7) brightness(.9) opacity(.85) drop-shadow(0 1px 1px rgba(0,0,0,.14)) drop-shadow(0 4px 7px rgba(0,0,0,.09)); }
   /* Cartes exotiques (badges Colibri, Ratite, ...) : fond de carte neutre (surface-2).
      Quand debloque : legere teinte doree sur bordure + petite lueur pour valoriser la reussite,
      sans etre bling-bling. */
@@ -1472,9 +1472,9 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
     border-color:color-mix(in srgb, var(--gold) 37%, var(--line));
     box-shadow:0 3px 14px color-mix(in srgb, var(--gold) 18%, transparent);
   }
-  .tro-family.tro-exotic .tro-fam-cup .tro-cup { filter:drop-shadow(0 1px 1px rgba(0,0,0,.28)) drop-shadow(0 6px 10px rgba(0,0,0,.18)); }
-  .tro-family.tro-exotic.unlocked .tro-fam-cup .tro-cup { filter:drop-shadow(0 1px 1px rgba(0,0,0,.28)) drop-shadow(0 6px 10px rgba(0,0,0,.18)) drop-shadow(0 3px 12px color-mix(in srgb, var(--gold) 42%, transparent)); }
-  .tro-family.tro-exotic .tro-fam-cup .tro-cup.grayed { filter:grayscale(1) brightness(.85) opacity(.35) drop-shadow(0 1px 1px rgba(0,0,0,.22)) drop-shadow(0 5px 9px rgba(0,0,0,.15)); }
+  .tro-family.tro-exotic .tro-fam-cup .tro-cup { filter:drop-shadow(0 1px 1px rgba(0,0,0,.18)) drop-shadow(0 4px 8px rgba(0,0,0,.11)); }
+  .tro-family.tro-exotic.unlocked .tro-fam-cup .tro-cup { filter:drop-shadow(0 1px 1px rgba(0,0,0,.18)) drop-shadow(0 4px 8px rgba(0,0,0,.11)) drop-shadow(0 3px 12px color-mix(in srgb, var(--gold) 42%, transparent)); }
+  .tro-family.tro-exotic .tro-fam-cup .tro-cup.grayed { filter:grayscale(1) brightness(.85) opacity(.35) drop-shadow(0 1px 1px rgba(0,0,0,.14)) drop-shadow(0 4px 7px rgba(0,0,0,.09)); }
   .tro-fam-body { flex:1 1 auto; min-width:0; width:100%; display:flex; flex-direction:column; gap:3px; align-items:center; }
   .tro-fam-title { font-size:14px; font-weight:700; color:var(--ink); display:flex; align-items:baseline; justify-content:center; gap:5px; flex-wrap:wrap; line-height:1.2; }
   .tro-fam-family { font-size:11.5px; font-weight:500; color:var(--ink-3); text-align:center; margin-top:3px; font-style:italic; line-height:1.25; }
@@ -1548,11 +1548,11 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
     border-color:color-mix(in srgb, var(--gold) 37%, var(--line));
     box-shadow:0 3px 14px color-mix(in srgb, var(--gold) 18%, transparent);
   }
-  .tmodal-tier.unlocked.cat-exotic .tmodal-tier-img { filter:drop-shadow(0 1px 1px rgba(0,0,0,.28)) drop-shadow(0 5px 9px rgba(0,0,0,.18)) drop-shadow(0 3px 12px color-mix(in srgb, var(--gold) 42%, transparent)); }
+  .tmodal-tier.unlocked.cat-exotic .tmodal-tier-img { filter:drop-shadow(0 1px 1px rgba(0,0,0,.18)) drop-shadow(0 4px 7px rgba(0,0,0,.11)) drop-shadow(0 3px 12px color-mix(in srgb, var(--gold) 42%, transparent)); }
   .tmodal-tier.locked { opacity:.7; }
   .tmodal-tier-img { width:150px; height:150px; object-fit:contain;
-    filter:drop-shadow(0 1px 1px rgba(0,0,0,.26)) drop-shadow(0 5px 9px rgba(0,0,0,.16)); }
-  .tmodal-tier-img.grayed { filter:grayscale(1) opacity(.55) drop-shadow(0 1px 1px rgba(0,0,0,.2)) drop-shadow(0 4px 7px rgba(0,0,0,.13)); }
+    filter:drop-shadow(0 1px 1px rgba(0,0,0,.16)) drop-shadow(0 4px 7px rgba(0,0,0,.1)); }
+  .tmodal-tier-img.grayed { filter:grayscale(1) opacity(.55) drop-shadow(0 1px 1px rgba(0,0,0,.13)) drop-shadow(0 3px 6px rgba(0,0,0,.08)); }
   .tmodal-tier-label { font-size:12px; font-weight:700; color:var(--tier-color); line-height:1.2; }
   .tmodal-tier-sublabel { font-size:10px; font-weight:600; color:var(--ink-3); text-transform:uppercase; letter-spacing:.05em; opacity:.75; margin-top:1px; }
   .tmodal-tier-ref { font-size:10.5px; color:var(--ink-3); font-style:italic; line-height:1.35; margin-top:2px; padding:0 4px; }
