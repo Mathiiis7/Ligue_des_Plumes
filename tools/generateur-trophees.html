@@ -845,7 +845,7 @@ const sourcePreview = document.getElementById('sourcePreview');
 //  - PROTECT_TOL : rayon de tolerance RGB (distance euclidienne).
 const PROTECT_Y_RATIO = 0.70;
 const PROTECT_COLOR = { r: 0x3d, g: 0x21, b: 0x1c };   // #3d211c
-const PROTECT_TOL = 55;
+const PROTECT_TOL = 30;
 const PROTECT_TOL2 = PROTECT_TOL * PROTECT_TOL;
 const protectYMarker = document.getElementById('protectYMarker');
 const protectYShade = document.getElementById('protectYShade');
@@ -970,9 +970,10 @@ function renderAll(){
   for(const t of TIERS){
     let outData = generateTier(srcData, t);
     outData = styleFn(outData);
-    // Post-process : etend le pixel bird jusqu'au socle sur les gaps <= 15px (bird
-    // color, pas socle brown -> plus de trainee marron sur les pointes de queue/pattes).
-    outData = closeVerticalGaps(outData, 15);
+    // Post-process : etend le pixel bird jusqu'au socle sur les micro-gaps <= 4px
+    // (bird color, pas socle brown). Assez petit pour ne pas prolonger visiblement
+    // chaque petit detail du design vers le socle.
+    outData = closeVerticalGaps(outData, 4);
     // Puis remplit les pattes qui traversent le socle : detection par run horizontal
     // (les runs courts de non-proteges dans une meme rangee = pattes).
     outData = fillLegCrossings(outData, 40);
