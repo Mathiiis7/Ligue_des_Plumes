@@ -977,10 +977,9 @@ function renderAll(){
     // Puis remplit les pattes qui traversent le socle : detection par run horizontal
     // (les runs courts de non-proteges dans une meme rangee = pattes).
     outData = fillLegCrossings(outData, 40);
-    // Enfin, nettoie les micro-pixels anti-aliasing residuels (alpha < 60) qui
-    // apparaissent comme des trainees floues sur les extremites de branches, pointes
-    // de plumes, etc. Seuil un peu plus haut pour trancher net.
-    outData = thresholdAlpha(outData, 60);
+    // Enfin, binarise l'alpha au seuil 100 : plus aucun pixel semi-transparent, edges
+    // crispes partout (bird, socle, plaque). Elimine tous les halos et trainees floues.
+    outData = thresholdAlpha(outData, 100);
     const outCanvas = document.createElement('canvas');
     outCanvas.width = srcCanvas.width;
     outCanvas.height = srcCanvas.height;
@@ -1002,15 +1001,15 @@ function renderAll(){
   }
 }
 
-// Applique un seuil sur l'alpha : tous les pixels avec alpha < threshold deviennent
-// totalement transparents. Nettoie les micro-extensions anti-aliasees qui apparaissent
-// comme des trainees floues sur les extremites de design (bouts de branches, pointes
-// de plumes...) sans casser l'anti-aliasing normal (alpha >= 30 conserve).
+// Applique un seuil binaire sur l'alpha : tous les pixels < threshold deviennent
+// totalement transparents, tous les pixels >= threshold deviennent totalement opaques.
+// Elimine completement l'anti-aliasing residuel : plus aucun pixel semi-transparent
+// qui pourrait apparaitre comme un halo/trainee. Bords crispes.
 function thresholdAlpha(imgData, threshold){
   const d = imgData.data;
   const od = new Uint8ClampedArray(d);
   for(let i = 3; i < od.length; i += 4){
-    if(od[i] < threshold) od[i] = 0;
+    od[i] = od[i] < threshold ? 0 : 255;
   }
   return new ImageData(od, imgData.width, imgData.height);
 }
