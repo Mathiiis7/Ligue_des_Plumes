@@ -83,15 +83,18 @@
 
     <div id="socleOptions" style="display:none; margin:16px 0 0; padding:12px 14px; border:1px solid #e0e5e2; border-radius:10px; background:#fafcfb;">
       <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#556; margin-bottom:8px;">Socle personnalisé (optionnel)</div>
+      <div style="font-size:11.5px; color:#8b1e1e; background:#fdecea; border:1px solid #e9b7b7; padding:6px 10px; border-radius:6px; margin-bottom:10px;">
+        ⚠ Le PNG à charger ici doit contenir <b>uniquement le socle</b> (avec sa plaque, transparent autour) — <b>sans l'oiseau</b>.
+      </div>
       <label class="btn ghost" style="display:inline-block; padding:6px 14px; font-size:12.5px; cursor:pointer;">
         📁 Choisir un PNG de socle
         <input type="file" id="socleFile" accept="image/png" style="display:none;">
       </label>
       <button class="btn ghost" id="clearSocle" style="padding:6px 14px; font-size:12.5px; margin-left:6px; display:none;">Retirer</button>
       <div id="socleStatus" style="font-size:11.5px; color:#7c8783; margin-top:8px; line-height:1.5;">
-        Fournis un PNG contenant juste ton socle (avec sa plaque, transparence autour) : il sera
-        composé sous chaque tier à la place du bas du PNG source. Résultat : 6 tiers avec exactement
-        le même socle, l'oiseau au-dessus change de couleur. Laisser vide pour utiliser l'image source telle quelle.
+        Le socle sera composé en bas de chaque tier (identique sur les 6). Si tu n'as pas d'image
+        socle séparée, laisse vide et utilise plutôt les <b>Zones à préserver</b> plus haut :
+        clique la couleur marron du socle sur ton PNG source, elle sera protégée sur les 6 tiers.
       </div>
     </div>
 
@@ -977,18 +980,16 @@ function renderAll(){
   const styleFn = (STYLES[currentStyle] || STYLES.original).fn;
 
   // Si un socle personnalise est fourni, on va l'ecraser sur la moitie basse de
-  // chaque tier apres la generation. La zone du socle sur la source (dessin
-  // d'origine) est ignoree ; on garde la source seulement pour la partie sujet.
+  // chaque tier apres la generation.
   const useSocle = !!socleImage;
-  // Position/taille : le socle est colle en bas, centre horizontalement, ~50%
-  // de la hauteur (l'image socle etant typiquement plus large que haute).
+  // Position/taille : le socle prend 70% de la largeur du canvas, hauteur proportionnelle.
+  // Un socle-only wide (aspect > 1.5) atterrira ~15-25% de la hauteur. Un full trophee
+  // upload par erreur remplirait 70%+ -> l'utilisateur voit tout de suite le probleme.
   let socleDrawInfo = null;
   if(useSocle){
     const cw = srcCanvas.width, ch = srcCanvas.height;
     const socleAspect = socleImage.naturalWidth / socleImage.naturalHeight;
-    const targetH = ch * 0.28;
-    const targetW = targetH * socleAspect;
-    const socleFinalW = Math.min(targetW, cw * 0.90);
+    const socleFinalW = cw * 0.70;
     const socleFinalH = socleFinalW / socleAspect;
     const socleX = (cw - socleFinalW) / 2;
     const socleY = ch - socleFinalH - ch * 0.02;
