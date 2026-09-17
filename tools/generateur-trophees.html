@@ -92,12 +92,18 @@
     <details>
       <summary>Comment ça marche ?</summary>
       <div class="body">
-        L'image dorée est décomposée par pixel. Les pixels colorés (le corps de la coupe) sont
-        décalés en teinte HSL vers la couleur cible de chaque palier. Les pixels neutres (base
-        marron foncée, plaque, contours, ombres) sont préservés — leur saturation nulle les
-        rend insensibles au shift de teinte.<br><br>
-        <b>Résultat</b> : la coupe change de couleur mais le socle et les détails restent
-        identiques à la version originale. Compatible avec les PNG stylisés type Canva.<br><br>
+        Chaque tier définit un <b>gradient map</b> à 3 stops (ombre / mid-tone / reflet) auto-dérivé
+        de sa couleur : le mid-tone est la couleur choisie, l'ombre est une version très sombre et
+        légèrement moins saturée (profondeur), le reflet est une version très claire tirant vers le
+        blanc (brillance métallique).<br><br>
+        Pour chaque pixel du PNG source, la luminance décide où l'on tombe dans ce gradient : les
+        zones sombres du trophée prennent l'ombre, les zones moyennes prennent la couleur choisie,
+        les reflets prennent la couleur claire. <b>Résultat</b> : rendu métallique cohérent au lieu
+        d'un teintage plat — ombres réellement sombres, reflets vraiment brillants.<br><br>
+        Les pixels très sombres et neutres (base, socle, contours noirs) sont préservés tels quels
+        pour garder le contraste avec la coupe.<br><br>
+        Prismatique : le gradient map est recalculé par pixel avec un hue variant en diagonale
+        (rose → violet → cyan → vert → jaune) pour un rendu iridescent.<br><br>
         Une fois téléchargés, place les 6 PNGs dans <code>assets/trophies/families/{nom}/</code>
         avec les noms <code>bronze.png / argent.png / or.png / diamant.png / violet.png /
         emeraude.png</code>, puis ajoute <code>imgDir:'assets/trophies/families/{nom}'</code>
@@ -330,30 +336,55 @@ function pixelate(src, blockSize){
 
 // TIERS actif : palette editable directement via les color pickers.
 let TIERS = [
-  { key:'bronze',   label:'Bronze',      color:'#c4753a' },   // bronze cuivre chaud (H≈24, orange + brun)
-  { key:'argent',   label:'Argent',      color:'#c0c8d3' },   // argent chrome (leger bleu cool)
-  { key:'or',       label:'Or',          color:'#f5a623' },   // or ambre chaud (yellow + orange)
-  { key:'diamant',  label:'Diamant',     color:'#7dd3e5' },   // cristal cyan brillant
-  { key:'emeraude', label:'Émeraude',    color:'#22c53d' },   // vert emeraude chaud (H=130, pas de bleu)
-  { key:'violet',   label:'Prismatique', color:'#d13cff', gradient:{ hueStart:310, hueEnd:190 } },
+  { key:'bronze',   label:'Bronze',      color:'#d18855' },
+  { key:'argent',   label:'Argent',      color:'#9ab8d0' },
+  { key:'or',       label:'Or',          color:'#f0c033' },
+  { key:'diamant',  label:'Diamant',     color:'#7dd3e5' },
+  { key:'emeraude', label:'Émeraude',    color:'#22c53d' },
+  { key:'violet',   label:'Prismatique', color:'#d13cff', gradient:{ hueStart:320, hueEnd:60 } },
 ].map(t => enrichTier(t));
 
-// Convertit une couleur hex vers HSL + parametres derives (targetH, satMul, lightAdd) pour
-// generateTier. La logique choisit satMul et lightAdd auto selon la saturation de la
-// couleur cible : gris pale -> satMul faible, couleur vive -> satMul haut.
+// Convertit une couleur hex vers un jeu de 3 stops (shadow / mid / highlight) qui
+// definit le gradient map applique en fonction de la luminance. C'est la technique
+// standard pour recolorier du metal / du minerai de facon photorealiste : les zones
+// sombres du PNG source prennent la teinte "shadow" (profondeur), le mid-tone prend
+// la couleur choisie, et les zones lumineuses prennent le "highlight" (reflet vif).
+// Auto-derive shadow et highlight depuis la couleur choisie.
 function enrichTier(t){
-  if(t.gradient){
-    // Deja un gradient explicite : garde tel quel avec parametres par defaut.
-    return { ...t, satMul:1.05, lightAdd:+10 };
-  }
   const rgb = hexToRgb(t.color);
   const [h,s,l] = rgbToHsl(rgb.r, rgb.g, rgb.b);
-  // satMul reflete la saturation cible. Un cible tres desaturee (argent, platine) doit
-  // ramener les pixels a une saturation faible.
+  // Shadow : version tres foncee, satu conservee ou legerement baissee (metal sombre
+  // garde sa teinte, alors qu'un plastique clair perdrait la sienne dans l'ombre).
+  const shadowL = l * 0.28;
+  const shadowS = Math.min(1, s * 0.85);
+  const [sr, sg, sb] = hslToRgb(h, shadowS, shadowL);
+  // Highlight : version tres claire, desaturation vers le blanc (les reflets metalliques
+  // tirent vers le blanc, jamais vers la couleur pure).
+  const highlightL = Math.min(0.96, l + (1 - l) * 0.80);
+  const highlightS = Math.max(0, s * 0.45);
+  const [hr, hg, hb] = hslToRgb(h, highlightS, highlightL);
+  // On garde targetH/satMul/lightAdd pour retrocompat (au cas ou un ancien code les
+  // regarde), mais le pipeline actif utilise shadow/mid/highlight.
   const satMul = Math.max(0.1, Math.min(1.3, s * 1.4));
-  // lightAdd centre autour de la lumiere cible vs 0.5.
   const lightAdd = Math.round((l - 0.5) * 30);
-  return { ...t, targetH: h, satMul, lightAdd };
+  return {
+    ...t,
+    targetH: h, satMul, lightAdd,
+    shadow: { r:sr, g:sg, b:sb },
+    mid:    { r:rgb.r, g:rgb.g, b:rgb.b },
+    highlight: { r:hr, g:hg, b:hb },
+  };
+}
+
+// Interpolation lineaire dans le gradient map a 3 stops : 0 = shadow, 0.5 = mid, 1 = highlight.
+function gradientMap(L, shadow, mid, highlight){
+  const lerp = (a, b, t) => (a + (b - a) * t) | 0;
+  if(L <= 0.5){
+    const t = L * 2;
+    return [lerp(shadow.r, mid.r, t), lerp(shadow.g, mid.g, t), lerp(shadow.b, mid.b, t)];
+  }
+  const t = (L - 0.5) * 2;
+  return [lerp(mid.r, highlight.r, t), lerp(mid.g, highlight.g, t), lerp(mid.b, highlight.b, t)];
 }
 function hexToRgb(hex){
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -414,55 +445,55 @@ function generateTier(sourceImageData, tier){
   const w = src.width, h = src.height;
   const out = new ImageData(w, h);
   const sd = src.data, od = out.data;
-  // Auto-detection : image monochrome/N&B/silhouette ? -> mode colorize par luminance.
-  // Sinon (image doree ou coloree) -> mode HSL shift habituel.
-  const mono = isMonochrome(src);
+  // Pipeline gradient map : chaque pixel est reclasse par sa luminance dans le
+  // triple (shadow, mid, highlight) du tier. On preserve les pixels tres sombres
+  // (base/plaque/contours noirs) et l'alpha d'origine.
+  //  - Contrast stretch autour de 0.5 avant mapping (accentue les reliefs).
+  //  - Prismatique : les stops sont recalcules par pixel via la position (degrade
+  //    diagonal de hue) pour l'iridescence.
+  const isPrismatic = !!tier.gradient;
   for(let i=0; i<sd.length; i+=4){
     const r=sd[i], g=sd[i+1], b=sd[i+2], a=sd[i+3];
     if(a === 0){ od[i]=0; od[i+1]=0; od[i+2]=0; od[i+3]=0; continue; }
     const [srcH, srcS, srcL] = rgbToHsl(r,g,b);
-    // Calcule la teinte cible (fixe ou degradee).
-    let targetH;
-    if(tier.gradient){
-      const y = Math.floor((i/4) / w);
-      const t = y / Math.max(1, h - 1);
-      targetH = tier.gradient.hueStart + (tier.gradient.hueEnd - tier.gradient.hueStart) * t;
-    } else {
-      targetH = tier.targetH;
+
+    // Preserve les pixels quasi-noirs neutres (base foncee, socle, contours) :
+    // ils doivent rester noirs quel que soit le tier pour garder le contraste
+    // avec la coupe qui, elle, change de couleur.
+    if(srcL < 0.10 && srcS < 0.30){
+      od[i]=r; od[i+1]=g; od[i+2]=b; od[i+3]=a;
+      continue;
     }
-    let newR, newG, newB;
-    if(mono){
-      // Mode monochrome : colorize par luminance.
-      //  - Pixels tres sombres (L < 0.20) : gardes tels quels (base, contours, ombres).
-      //  - Sinon : remap vers la teinte cible avec saturation ~0.65, garde la structure
-      //    lumineuse. Argent (satMul=0.10) devient naturellement gris pale.
-      if(srcL < 0.20){
-        newR = r; newG = g; newB = b;
-      } else {
-        const baseSat = 0.65;
-        const newS = Math.max(0, Math.min(1, baseSat * tier.satMul * 1.4));   // amplifie car pas d'input color
-        // Preserve la luminance originale + micro ajustement du palier.
-        const newL = Math.max(0, Math.min(1, srcL + tier.lightAdd/100 * 0.5));
-        const [nr,ng,nb] = hslToRgb(targetH, newS, newL);
-        newR=nr; newG=ng; newB=nb;
-      }
+
+    // Contrast stretch : accentue les zones lumineuses et sombres du PNG source
+    // pour que le gradient map exprime bien ses 3 stops (evite le rendu "aplati").
+    const stretchedL = Math.max(0, Math.min(1, 0.5 + (srcL - 0.5) * 1.35));
+
+    let shadow, mid, highlight;
+    if(isPrismatic){
+      // Prismatique : hue varie en diagonale, on genere les 3 stops par pixel.
+      const y = (i/4 / w) | 0;
+      const x = (i/4) % w;
+      const t = (x/w + y/h) / 2;
+      const hueStart = tier.gradient.hueStart;
+      const hueEnd = tier.gradient.hueEnd;
+      // Passage rose->violet->cyan->vert->jaune via -260 deg si hueStart=320, hueEnd=60.
+      let delta = hueEnd - hueStart;
+      // Force le sens court le plus "spectral" : diff normalisee.
+      if(Math.abs(delta) < 180) { /* garde */ }
+      const hue = ((hueStart + delta * t) % 360 + 360) % 360;
+      const [sr,sg,sb] = hslToRgb(hue, 0.85, 0.18);
+      const [mr,mg,mb] = hslToRgb(hue, 0.95, 0.55);
+      const [hr,hg,hb] = hslToRgb(hue, 0.50, 0.86);
+      shadow = { r:sr, g:sg, b:sb };
+      mid    = { r:mr, g:mg, b:mb };
+      highlight = { r:hr, g:hg, b:hb };
     } else {
-      // Mode couleur : HSL shift + contrast stretch.
-      //  - Pixels neutres (S faible) : gardes tels quels (base, plaque, contours).
-      //  - Pixels colores : remap H vers la cible, ajuste S/L, et etire la luminance
-      //    autour de 0.5 pour creuser l'ecart entre les nuances (evite l'aplat).
-      if(srcS < 0.15){
-        newR = r; newG = g; newB = b;
-      } else {
-        const contrastMul = 1.4;
-        const stretchedL = 0.5 + (srcL - 0.5) * contrastMul;
-        const newS = Math.max(0, Math.min(1, srcS * tier.satMul));
-        const newL = Math.max(0, Math.min(1, stretchedL + tier.lightAdd/100));
-        const [nr,ng,nb] = hslToRgb(targetH, newS, newL);
-        newR=nr; newG=ng; newB=nb;
-      }
+      shadow = tier.shadow; mid = tier.mid; highlight = tier.highlight;
     }
-    od[i]=newR; od[i+1]=newG; od[i+2]=newB; od[i+3]=a;
+
+    const [nr, ng, nb] = gradientMap(stretchedL, shadow, mid, highlight);
+    od[i]=nr; od[i+1]=ng; od[i+2]=nb; od[i+3]=a;
   }
   return out;
 }
