@@ -2328,14 +2328,17 @@ const TROPHY_TIERS = [
   { key:'argent',   label:'Argent',      color:'#c0c8d3', img:'assets/trophies/generic/argent.png' },
   { key:'or',       label:'Or',          color:'#f5a623', img:'assets/trophies/generic/or.png' },
   { key:'diamant',  label:'Diamant',     color:'#7dd3e5', img:'assets/trophies/generic/diamant.png' },
+  { key:'emeraude', label:'Émeraude',    color:'#22c53d', img:'assets/trophies/generic/emeraude.png' },
   { key:'violet',   label:'Prismatique', color:'#d13cff', img:'assets/trophies/generic/violet.png' },
 ];
 // Genere 6 trophees d'une meme famille (un par palier). Chaque palier partage
 // le meme icone/theme/list/note mais adapte son nom, seuil et prog en fonction
 // du tier. `desc` sert de gabarit avec {n} qui devient le seuil.
 function makeTierFamily(cfg){
-  const { theme, icon, baseName, metric, thresholds, descTpl, list, note, alwaysList=true, info, imgDir, category, tierNames, tierRefs } = cfg;
-  return TROPHY_TIERS.map((t, i) => {
+  // skipTiers : liste des cles de tiers a exclure (par defaut Emeraude, seul Gaulois l'utilise).
+  const { theme, icon, baseName, metric, thresholds, descTpl, list, note, alwaysList=true, info, imgDir, category, tierNames, tierRefs, skipTiers = ['emeraude'] } = cfg;
+  const activeTiers = TROPHY_TIERS.filter(t => !skipTiers.includes(t.key));
+  return activeTiers.map((t, i) => {
     const seuil = thresholds[i];
     // tierNames (optionnel) : titre unique par palier (ex Ecologue -> 'Ornithologue du dimanche'). Sinon fallback baseName + t.label.
     const tierName = (tierNames && tierNames[i]) ? tierNames[i] : `${baseName} ${t.label}`;
@@ -2387,10 +2390,12 @@ const TROPHIES = [
     theme:'localisation', icon:ICONS.regions, family:'maFrance', category:'progression', baseName:'Gaulois',
     imgDir:'assets/trophies/families/gaulois',
     // Progression Asterix : chaque perso a son objet emblematique identifiable au 1er coup d'oeil.
-    tierNames:['Idéfix','Ordralfabétix','Panoramix','Obélix','Jules César'],
-    tierRefs:['le chien fidèle qui découvre son premier territoire','le poissonnier qui livre sa région','le druide sage qui prépare la potion','l\'invincible qui porte son menhir partout','a conquis toute la Gaule, région par région'],
+    // Gaulois est le seul trophee qui garde les 6 tiers (incluant Emeraude/Asterix avec sa potion).
+    skipTiers:[],
+    tierNames:['Idéfix','Ordralfabétix','Panoramix','Obélix','Astérix','Jules César'],
+    tierRefs:['le chien fidèle qui découvre son premier territoire','le poissonnier qui livre sa région','le druide sage qui prépare la potion','l\'invincible qui porte son menhir partout','le petit malin bien dosé à la potion magique','a conquis toute la Gaule, région par région'],
     // FR metropolitaine = 13 regions -> Prismatique atteint quand toutes sont visitees.
-    metric:s=>s.regionsCount, thresholds:[2,4,6,8,11],
+    metric:s=>s.regionsCount, thresholds:[2,4,6,8,11,13],
     descTpl:'Observer un oiseau dans {n} régions françaises',
     list:s=>FR_REGIONS.map(r=>({ name:r.name, owned:s.regionsOwnedSet.has(r.code) })),
     note:s=>`${s.regionsCount} région${s.regionsCount>1?'s':''} visitée${s.regionsCount>1?'s':''} sur ${FR_REGIONS.length}`,
@@ -12545,7 +12550,7 @@ $('#trophyGrid').addEventListener('click',async e=>{
     const objectiveHtml = d.objectivePhrase
       ? `<div class="tmodal-objective">${esc(d.objectivePhrase)}</div>`
       : '';
-    html = objectiveHtml + `<div class="tmodal-tier-gallery${d.tiers.length===1?' single':''}">` + d.tiers.map(t => {
+    html = objectiveHtml + `<div class="tmodal-tier-gallery${d.tiers.length===1?' single':''} count-${d.tiers.length}">` + d.tiers.map(t => {
       // Titre affiche : nom perso du palier si defini (Idefix, Vercingetorix...) sinon fallback tier label (Bronze, Argent...).
       // Le tier label reste en dessous en petit pour reperage visuel.
       const hasCustomName = t.name && t.name.trim() && t.name.trim() !== t.label && !t.name.endsWith(' '+t.label);

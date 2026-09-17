@@ -1524,6 +1524,11 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .tmodal-tier-gallery.single { grid-template-columns:1fr; place-items:center; }
   .tmodal-tier-gallery.single .tmodal-tier { max-width:440px; padding:14px; }
   .tmodal-tier-gallery.single .tmodal-tier-img { width:340px; height:340px; }
+  /* 5 tiers : grille sur 6 colonnes (chaque tier = 2 col), 3 items en haut, 2 items centres en bas. */
+  .tmodal-tier-gallery.count-5 { grid-template-columns:repeat(6, 1fr); }
+  .tmodal-tier-gallery.count-5 .tmodal-tier { grid-column:span 2; }
+  .tmodal-tier-gallery.count-5 .tmodal-tier:nth-child(4) { grid-column:2 / span 2; }
+  .tmodal-tier-gallery.count-5 .tmodal-tier:nth-child(5) { grid-column:4 / span 2; }
   @media (max-width: 520px){
     .tmodal-tier-gallery { gap:6px; }
     .tmodal-tier { padding:8px 4px; }
