@@ -3434,7 +3434,7 @@ function statsFor(me, N){
         coraciiformesOwnedSet=new Set(), suliformesOwnedSet=new Set(),
         sturnoideaOwnedSet=new Set(), passeridaeOwnedSet=new Set(),
         certhioideaOwnedSet=new Set(), podicipedidaeOwnedSet=new Set(),
-        cuculidaeOwnedSet=new Set(),
+        cuculidaeOwnedSet=new Set();
   // Milieux (habitats) : Set d'espèces par catégorie via HABITATS (source : famille eBird).
   const habOwned = Object.fromEntries(HABITAT_CATS.map(c=>[c, new Set()]));
   for(const v of me._active.values()){
