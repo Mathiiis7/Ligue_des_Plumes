@@ -951,6 +951,9 @@ function renderAll(){
     // entre le bas de l'oiseau et le haut du socle) avec la couleur du pixel du
     // dessous. Sinon la transparence de la source apparait blanche sur la carte.
     outData = closeVerticalGaps(outData, 30);
+    // Puis remplit les pattes qui traversent le socle : pixels coinces
+    // horizontalement entre deux pixels bruns proteges dans la zone socle.
+    outData = fillLegCrossings(outData, 25);
     const outCanvas = document.createElement('canvas');
     outCanvas.width = srcCanvas.width;
     outCanvas.height = srcCanvas.height;
@@ -970,6 +973,49 @@ function renderAll(){
     tile.querySelector('canvas').getContext('2d').putImageData(outData, 0, 0);
     tiles.appendChild(tile);
   }
+}
+
+// Rempli les "pattes qui traversent" : pixels non-proteges dans la zone socle qui
+// sont bordes a gauche ET a droite par un pixel protege dans un rayon horizontal
+// court (<= maxLegWidth). Sert typiquement aux pattes qui descendent en dessous du
+// bord haut du socle et prennent la couleur dark-shadow du tier a la place du brun.
+// Les pixels de la plaque metallique ne sont pas touches car leurs voisins non-proteges
+// s'etendent sur une longue distance horizontale (largeur de la plaque).
+function fillLegCrossings(imgData, maxLegWidth){
+  const w = imgData.width, h = imgData.height;
+  const d = imgData.data;
+  const od = new Uint8ClampedArray(d);
+  const yStart = Math.floor(h * PROTECT_Y_RATIO);
+  for(let y = yStart; y < h; y++){
+    for(let x = 0; x < w; x++){
+      const i = (y*w + x)*4;
+      if(d[i+3] === 0) continue;
+      if(isProtected(d[i], d[i+1], d[i+2])) continue;
+      // Cherche a gauche
+      let leftIdx = -1;
+      for(let dx = 1; dx <= maxLegWidth && x - dx >= 0; dx++){
+        const li = (y*w + (x - dx))*4;
+        if(d[li+3] === 0) break;
+        if(isProtected(d[li], d[li+1], d[li+2])){ leftIdx = li; break; }
+      }
+      if(leftIdx < 0) continue;
+      // Cherche a droite
+      let rightIdx = -1;
+      for(let dx = 1; dx <= maxLegWidth && x + dx < w; dx++){
+        const ri = (y*w + (x + dx))*4;
+        if(d[ri+3] === 0) break;
+        if(isProtected(d[ri], d[ri+1], d[ri+2])){ rightIdx = ri; break; }
+      }
+      if(rightIdx < 0) continue;
+      // Borde a G et D par du brun protege : c'est une patte qui traverse.
+      // Fill avec la moyenne des deux voisins proteges.
+      const fr = (d[leftIdx] + d[rightIdx]) >> 1;
+      const fg = (d[leftIdx+1] + d[rightIdx+1]) >> 1;
+      const fb = (d[leftIdx+2] + d[rightIdx+2]) >> 1;
+      od[i] = fr; od[i+1] = fg; od[i+2] = fb; od[i+3] = 255;
+    }
+  }
+  return new ImageData(od, w, h);
 }
 
 // Bouche uniquement les gaps transparents verticaux courts (<= maxGapPx pixels) OU
