@@ -551,14 +551,16 @@ function generateTier(sourceImageData, tier){
       continue;
     }
 
-    // Normalise la luminance dans la plage effective des pixels retintes. Une source
-    // dont les couleurs a retinter vont de L=0.45 a L=0.60 (aplat) se voit etalee sur
-    // 0-1 pour que les 5 stops metalliques soient tous exploites.
+    // Normalise la luminance dans la plage effective des pixels retintes, mais avec
+    // des bornes de securite [0.20, 0.92] : meme le pixel le plus sombre de la source
+    // n'atteint pas le "deep-shadow" absolu, ce qui evite que les zones un peu foncees
+    // du PNG (plaque, ombres douces) deviennent noires/brunes dans le rendu final.
     let normL;
     if(lRange > 0.02){
-      normL = Math.max(0, Math.min(1, (srcL - minL) / lRange));
+      const t = (srcL - minL) / lRange;
+      normL = 0.20 + t * 0.72;   // stretch dans [0.20, 0.92]
     } else {
-      normL = 0.5;
+      normL = 0.55;
     }
     // Sur les sources vraiment plates, on ajoute un shading synthetique base sur la
     // position dans l'image : diagonale haut-gauche brillante, bas-droite sombre.
@@ -571,10 +573,11 @@ function generateTier(sourceImageData, tier){
       // Petit specular en bande diagonale (contribution supplementaire au top-left).
       const diag = Math.abs(nx - ny);
       const specBand = Math.max(0, 0.35 - diag) * 1.5;
-      normL = 0.15 + posLight * 0.70 + specBand * 0.15;
+      normL = 0.25 + posLight * 0.55 + specBand * 0.12;
     }
-    // Courbe en S : creuse les ombres, eclate les reflets. Le "punch" metallique.
-    const shapedL = sCurve(normL, 4);
+    // Courbe en S plus douce (k=2.8) : donne du relief mais evite d'ecraser les
+    // mid-tones vers les extremes. Suffisant pour un rendu metallique lisible.
+    const shapedL = sCurve(normL, 2.8);
 
     let stops;
     if(isPrismatic){
