@@ -990,9 +990,12 @@ function renderAll(){
     // avec alpha moyen (100-150) qui apparaissaient comme des poussieres marron
     // autour du bird. Le trade-off est un peu plus d'aliasing sur les bords.
     outData = thresholdAlpha(outData, 150);
+    // Elimine les contours sombres retintes qui bordent le socle (outlines watercolor
+    // devenus dark bronze/silver qui apparaissent comme des bouts noirs sur les bords).
+    outData = stripSocleOutlines(outData);
     // Erode les bords du socle : elimine les jaggies et extensions isolees de la
     // silhouette du socle sans toucher au bird (qui est en zone non-protegee).
-    outData = erodeSocleEdges(outData, 5);
+    outData = erodeSocleEdges(outData, 6);
     const outCanvas = document.createElement('canvas');
     outCanvas.width = srcCanvas.width;
     outCanvas.height = srcCanvas.height;
@@ -1025,6 +1028,39 @@ function thresholdAlpha(imgData, threshold){
     od[i] = od[i] < threshold ? 0 : 255;
   }
   return new ImageData(od, imgData.width, imgData.height);
+}
+
+// Elimine les contours sombres retintes qui bordent le socle (outlines watercolor
+// du design source qui restent en dark bronze/silver/etc. apres retint et apparaissent
+// comme des bouts noirs sur les bords). Pour chaque pixel non-protege opaque dans la
+// zone socle, si sa luminance est basse ET qu'un voisin direct est protege brown,
+// on le rend transparent.
+function stripSocleOutlines(imgData){
+  const w = imgData.width, h = imgData.height;
+  const d = imgData.data;
+  const od = new Uint8ClampedArray(d);
+  const yStart = Math.floor(h * PROTECT_Y_RATIO);
+  const isProtectedOpaque = (idx) => d[idx+3] > 0 && isProtected(d[idx], d[idx+1], d[idx+2]);
+  for(let y = yStart; y < h; y++){
+    for(let x = 0; x < w; x++){
+      const i = (y*w + x)*4;
+      if(d[i+3] === 0) continue;
+      if(isProtected(d[i], d[i+1], d[i+2])) continue;
+      // Luminance simple : moyenne R+G+B / 3.
+      const lum = (d[i] + d[i+1] + d[i+2]) / 3;
+      if(lum > 100) continue;   // pas assez sombre, garde tel quel
+      // Verifie voisins 4-connexes pour la proximite au socle.
+      let hasBrownNeighbor = false;
+      if(y > 0 && isProtectedOpaque(((y-1)*w + x)*4)) hasBrownNeighbor = true;
+      else if(y < h-1 && isProtectedOpaque(((y+1)*w + x)*4)) hasBrownNeighbor = true;
+      else if(x > 0 && isProtectedOpaque((y*w + (x-1))*4)) hasBrownNeighbor = true;
+      else if(x < w-1 && isProtectedOpaque((y*w + (x+1))*4)) hasBrownNeighbor = true;
+      if(hasBrownNeighbor){
+        od[i] = 0; od[i+1] = 0; od[i+2] = 0; od[i+3] = 0;
+      }
+    }
+  }
+  return new ImageData(od, w, h);
 }
 
 // Erode les bords du socle (pixels proteges) : chaque pixel brun n'est conserve que
