@@ -887,6 +887,17 @@ let sourceImage = null;
 const currentStyle = 'original';
 const generated = {};   // {tierKey: {blob, dataUrl}}
 
+// Debounce simple : n'appelle renderAll qu'une fois apres 150ms de calme, meme si
+// on recoit 30+ events 'input' d'affilee depuis un color picker qui drag.
+let _renderDebounce = null;
+function renderAllDebounced(){
+  if(_renderDebounce !== null) clearTimeout(_renderDebounce);
+  _renderDebounce = setTimeout(() => {
+    _renderDebounce = null;
+    if(sourceImage) renderAll();
+  }, 150);
+}
+
 // Genere les 6 color pickers dans la palette editor. Chaque cellule = label editable + color input.
 function renderPickers(){
   colorPickers.innerHTML = '';
@@ -903,11 +914,11 @@ function renderPickers(){
     colorInput.addEventListener('input', () => {
       TIERS[i].color = colorInput.value;
       TIERS[i] = enrichTier(TIERS[i]);
-      if(sourceImage) renderAll();
+      renderAllDebounced();
     });
     textInput.addEventListener('input', () => {
       TIERS[i].label = textInput.value;
-      if(sourceImage) renderAll();
+      renderAllDebounced();
     });
     colorPickers.appendChild(cell);
   });
