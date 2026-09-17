@@ -600,13 +600,12 @@ function generateTier(sourceImageData, tier){
     // point les variations autour de la moyenne sont conservees.
     let normL;
     if(lRange > 0.02){
-      // Spread effectif : max(lRange, 0.30). Sources plates -> ecart artificiel de 0.30
-      // pour eviter d'aplatir les micro-variations. Sources larges -> lRange conservee.
       const spread = Math.max(lRange, 0.30);
-      // (srcL - avgL) est dans [-spread/2 .. +spread/2] approx. On mappe sur [-0.35, +0.35]
-      // -> pixel median = 0.55 (le "mid" du gradient), extremes clamp sur [0.15, 0.90].
       const centered = (srcL - avgL) / spread;
-      normL = Math.max(0.15, Math.min(0.90, 0.55 + centered * 0.70));
+      // Plancher a 0.30 : les pixels les plus sombres du bird atterrissent sur le
+      // mid-shadow du gradient (dark tinted du tier) plutot que sur le deep-shadow
+      // quasi-noir (L=9% pour bronze = marron fonce indistinguable du socle brun).
+      normL = Math.max(0.30, Math.min(0.90, 0.55 + centered * 0.70));
     } else {
       normL = 0.55;
     }
