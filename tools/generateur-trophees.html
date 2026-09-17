@@ -107,11 +107,22 @@
         <span id="protectTolVal" style="font-weight:700;">55</span>
         <button class="btn ghost" id="clearProtect" style="padding:4px 10px; font-size:12px;">Vider</button>
       </div>
-      <div style="font-size:11.5px; color:#7c8783; margin-top:8px;">
-        Clique sur l'aperçu pour ajouter une couleur à préserver. Les pixels dans le rayon
-        (RGB) autour de chaque couleur listée restent tels quels dans les 6 tiers.
+      <div style="font-size:12px; color:#47534f; margin-top:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        Zone protégée à partir de&nbsp;
+        <input type="range" id="protectYMin" min="0" max="100" value="55" style="vertical-align:middle; flex:0 0 180px;">
+        <span id="protectYMinVal" style="font-weight:700;">55%</span>
+        &nbsp;de la hauteur (bas)
       </div>
-      <canvas id="sourcePreview" style="display:block; margin-top:10px; max-width:100%; width:auto; height:auto; max-height:280px; border:1px solid #cfd8d5; border-radius:8px; cursor:crosshair;"></canvas>
+      <div style="font-size:11.5px; color:#7c8783; margin-top:8px;">
+        Clique sur l'aperçu (dans la zone en surbrillance) pour ajouter une couleur à préserver.
+        La protection ne s'applique qu'en dessous de la ligne — au-dessus (partie oiseau) tout
+        est toujours retinté, même les pixels marron.
+      </div>
+      <div style="position:relative; margin-top:10px; display:inline-block;">
+        <canvas id="sourcePreview" style="display:block; max-width:100%; width:auto; height:auto; max-height:280px; border:1px solid #cfd8d5; border-radius:8px; cursor:crosshair;"></canvas>
+        <div id="protectYMarker" style="position:absolute; left:0; right:0; height:2px; background:rgba(230, 80, 80, 0.85); pointer-events:none;"></div>
+        <div id="protectYShade" style="position:absolute; left:0; right:0; bottom:0; background:rgba(230, 80, 80, 0.14); pointer-events:none;"></div>
+      </div>
     </div>
 
     <div class="row-btns" id="controls" style="display:none;">
@@ -530,13 +541,18 @@ function generateTier(sourceImageData, tier){
   //    diagonal de hue) pour l'iridescence.
   const isPrismatic = !!tier.gradient;
 
+  // Zone protegee : seulement en dessous de yProtectThresh (fraction 0..1 de la hauteur).
+  // Au-dessus, tout est retinte peu importe le match couleur.
+  const yProtectThresh = protectYThreshold();
+  const yProtectPx = Math.floor(h * yProtectThresh);
   // Pre-pass : trouve min/max luminance des pixels qui vont etre retintes (=
   // ceux qui ne sont ni protected ni quasi-noirs neutres).
   let minL = 1, maxL = 0, nRetint = 0;
   for(let i=0; i<sd.length; i+=4){
     if(sd[i+3] === 0) continue;
+    const py = (i/4 / w) | 0;
     const r=sd[i], g=sd[i+1], b=sd[i+2];
-    if(PROTECTED.length && isProtected(r, g, b)) continue;
+    if(PROTECTED.length && py >= yProtectPx && isProtected(r, g, b)) continue;
     const [srcH, srcS, srcL] = rgbToHsl(r, g, b);
     if(srcL < 0.10 && srcS < 0.30) continue;
     if(srcL < minL) minL = srcL;
@@ -552,9 +568,11 @@ function generateTier(sourceImageData, tier){
     if(a === 0){ od[i]=0; od[i+1]=0; od[i+2]=0; od[i+3]=0; continue; }
 
     // Preserve les pixels dans une tolerance RGB des couleurs "protegees" definies par
-    // l'utilisateur (socle marron fonce, bois, plaque du fond...). Passe avant tout
-    // autre traitement pour verrouiller ces zones.
-    if(PROTECTED.length && isProtected(r, g, b)){
+    // l'utilisateur MAIS UNIQUEMENT en dessous de la ligne de protection (bas de l'image
+    // = socle). Au-dessus, tout est retinte meme si la couleur matche - utile pour ne
+    // pas figer les zones marron qui sont sur l'oiseau.
+    const py = (i/4 / w) | 0;
+    if(PROTECTED.length && py >= yProtectPx && isProtected(r, g, b)){
       od[i]=r; od[i+1]=g; od[i+2]=b; od[i+3]=a;
       continue;
     }
@@ -585,7 +603,7 @@ function generateTier(sourceImageData, tier){
     //   - Petit gradient global top->bottom
     // Positif seulement (n'assombrit jamais) -> preserve la plaque et les ombres
     // definies par la source.
-    const px = (i/4) % w, py = ((i/4) / w) | 0;
+    const px = (i/4) % w;
     const nx = px / w, ny = py / h;
     // Anti-diagonale : distance a la ligne y=1-x (0 sur la diagonale haut-droite -> bas-gauche).
     const diagDist = Math.abs(nx - (1 - ny));
@@ -817,9 +835,17 @@ clearSocleBtn.addEventListener('click', () => {
 
 // Liste des couleurs a preserver (en RGB). Chaque pixel dans le rayon `tol` (distance
 // euclidienne RGB) autour de l'une de ces couleurs est laisse tel quel par le gradient
-// map. Sert typiquement a proteger le socle marron fonce + les elements en bois.
+// map, MAIS uniquement si le pixel est dans la zone protegee (bas de l'image, definie
+// par protectYMin en % de la hauteur). Les pixels au-dessus sont toujours retintes,
+// meme s'ils matchent une couleur protegee - utile pour ne pas figer les zones marron
+// qui sont sur l'oiseau alors qu'on veut proteger le socle.
 let PROTECTED = [];   // Array de {r,g,b}
+const protectYMin = document.getElementById('protectYMin');
+const protectYMinVal = document.getElementById('protectYMinVal');
+const protectYMarker = document.getElementById('protectYMarker');
+const protectYShade = document.getElementById('protectYShade');
 function protectTolerance(){ return parseInt(protectTol.value, 10); }
+function protectYThreshold(){ return parseInt(protectYMin.value, 10) / 100; }   // 0..1
 function isProtected(r, g, b){
   const tol = protectTolerance();
   const tol2 = tol * tol;
@@ -829,6 +855,21 @@ function isProtected(r, g, b){
   }
   return false;
 }
+function updateProtectYVisual(){
+  protectYMinVal.textContent = protectYMin.value + '%';
+  const cv = sourcePreview;
+  if(!cv || !cv.width) return;
+  const rect = cv.getBoundingClientRect();
+  const yPx = rect.height * (parseInt(protectYMin.value, 10) / 100);
+  protectYMarker.style.top = yPx + 'px';
+  protectYShade.style.top = yPx + 'px';
+  protectYShade.style.height = (rect.height - yPx) + 'px';
+}
+protectYMin.addEventListener('input', () => {
+  updateProtectYVisual();
+  if(sourceImage) renderAll();
+});
+window.addEventListener('resize', updateProtectYVisual);
 function renderProtectChips(){
   protectChips.innerHTML = '';
   if(PROTECTED.length === 0){
@@ -860,6 +901,8 @@ function updateSourcePreview(){
   const cx = sourcePreview.getContext('2d');
   cx.clearRect(0, 0, sw, sh);
   cx.drawImage(sourceImage, 0, 0);
+  // On defere le calcul du marker au layout suivant (le canvas vient d'etre resized).
+  requestAnimationFrame(updateProtectYVisual);
 }
 sourcePreview.addEventListener('click', (e) => {
   if(!sourceImage) return;
