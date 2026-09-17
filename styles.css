@@ -1410,9 +1410,9 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
      et petite pastille en haut a droite avec l'emoji du palier. */
   .trophy.on[class*="tier-"]:not(.tier-badge) { border-color:color-mix(in srgb,var(--tier-color, var(--gold)) 60%,var(--line));
     background:color-mix(in srgb,var(--tier-color, var(--gold)) 10%,var(--surface-2)); }
-  .trophy.tier-bronze   { --tier-color:#a97142; }
+  .trophy.tier-bronze   { --tier-color:#d18855; }
   .trophy.tier-argent   { --tier-color:#9ab8d0; }
-  .trophy.tier-or       { --tier-color:#e6b800; }
+  .trophy.tier-or       { --tier-color:#f0c033; }
   .trophy.tier-diamant  { --tier-color:#7fd3ff; }
   .trophy.tier-violet   { --tier-color:#a06cff; }
   .trophy.tier-emeraude { --tier-color:#0fbf85; }
