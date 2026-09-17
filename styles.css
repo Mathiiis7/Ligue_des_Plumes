@@ -1464,6 +1464,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
      (statique, discret) + balayage anime au survol pour un feeling verre poli. */
   .tro-family.unlocked::before {
     content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    z-index:0;
     background:linear-gradient(115deg,
       transparent 30%,
       rgba(255,255,255,.09) 45%,
@@ -1473,6 +1474,9 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
     background-size:220% 100%; background-position:100% 0;
     transition:background-position .7s ease;
   }
+  /* Contenu de la carte (image + textes) au-dessus de l'overlay reflet verre poli
+     pour ne pas laver l'image du trophee. */
+  .tro-family.unlocked > * { position:relative; z-index:1; }
   .tro-family.unlocked:hover::before { background-position:-20% 0; }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) .tro-family.unlocked::before {
