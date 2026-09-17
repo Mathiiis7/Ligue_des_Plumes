@@ -501,13 +501,35 @@ function generateTier(sourceImageData, tier){
   const w = src.width, h = src.height;
   const out = new ImageData(w, h);
   const sd = src.data, od = out.data;
-  // Pipeline gradient map : chaque pixel est reclasse par sa luminance dans le
-  // triple (shadow, mid, highlight) du tier. On preserve les pixels tres sombres
-  // (base/plaque/contours noirs) et l'alpha d'origine.
-  //  - Contrast stretch autour de 0.5 avant mapping (accentue les reliefs).
+  // Pipeline gradient map : chaque pixel est reclasse par sa luminance dans les
+  // 5 stops (deep-shadow, mid-shadow, mid, mid-highlight, specular) du tier.
+  //  - Pre-pass : histogramme sur les pixels a retinter -> normalise la plage
+  //    tonale (source flat -> etaless sur 0-1 pour que les stops soient exploites).
+  //  - Sur les sources vraiment plates (variance quasi-nulle), on ajoute une
+  //    fausse lumiere position-based (top-left brillant, bottom-right sombre)
+  //    pour faire ressortir un relief metallique la ou il n'y en avait pas.
+  //  - Courbe en S sur la luminance normalisee.
   //  - Prismatique : les stops sont recalcules par pixel via la position (degrade
   //    diagonal de hue) pour l'iridescence.
   const isPrismatic = !!tier.gradient;
+
+  // Pre-pass : trouve min/max luminance des pixels qui vont etre retintes (=
+  // ceux qui ne sont ni protected ni quasi-noirs neutres).
+  let minL = 1, maxL = 0, nRetint = 0;
+  for(let i=0; i<sd.length; i+=4){
+    if(sd[i+3] === 0) continue;
+    const r=sd[i], g=sd[i+1], b=sd[i+2];
+    if(PROTECTED.length && isProtected(r, g, b)) continue;
+    const [srcH, srcS, srcL] = rgbToHsl(r, g, b);
+    if(srcL < 0.10 && srcS < 0.30) continue;
+    if(srcL < minL) minL = srcL;
+    if(srcL > maxL) maxL = srcL;
+    nRetint++;
+  }
+  const lRange = maxL - minL;
+  // Si la plage est <15%, la source est "plate" : on active la lumiere position.
+  const flatSource = nRetint > 0 && lRange < 0.15;
+
   for(let i=0; i<sd.length; i+=4){
     const r=sd[i], g=sd[i+1], b=sd[i+2], a=sd[i+3];
     if(a === 0){ od[i]=0; od[i+1]=0; od[i+2]=0; od[i+3]=0; continue; }
@@ -529,10 +551,30 @@ function generateTier(sourceImageData, tier){
       continue;
     }
 
-    // Courbe en S sur la luminance : creuse les ombres, eclate les reflets. C'est ce
-    // qui donne le "punch" metallique - un aplat colore reste plat, un metal a une
-    // plage tonale tres large avec des blancs presque purs et des noirs presque purs.
-    const shapedL = sCurve(srcL, 4);
+    // Normalise la luminance dans la plage effective des pixels retintes. Une source
+    // dont les couleurs a retinter vont de L=0.45 a L=0.60 (aplat) se voit etalee sur
+    // 0-1 pour que les 5 stops metalliques soient tous exploites.
+    let normL;
+    if(lRange > 0.02){
+      normL = Math.max(0, Math.min(1, (srcL - minL) / lRange));
+    } else {
+      normL = 0.5;
+    }
+    // Sur les sources vraiment plates, on ajoute un shading synthetique base sur la
+    // position dans l'image : diagonale haut-gauche brillante, bas-droite sombre.
+    // Simule une lumiere directionnelle -> le metal capte un vrai bump 3D.
+    if(flatSource){
+      const px = (i/4) % w, py = ((i/4) / w) | 0;
+      const nx = px / w, ny = py / h;
+      // Facteur 0..1 : coin haut-gauche = 1.0, coin bas-droit = 0.0.
+      const posLight = Math.max(0, Math.min(1, 1 - (nx * 0.55 + ny * 0.55)));
+      // Petit specular en bande diagonale (contribution supplementaire au top-left).
+      const diag = Math.abs(nx - ny);
+      const specBand = Math.max(0, 0.35 - diag) * 1.5;
+      normL = 0.15 + posLight * 0.70 + specBand * 0.15;
+    }
+    // Courbe en S : creuse les ombres, eclate les reflets. Le "punch" metallique.
+    const shapedL = sCurve(normL, 4);
 
     let stops;
     if(isPrismatic){
