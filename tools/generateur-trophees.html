@@ -976,9 +976,10 @@ function renderAll(){
     // Puis remplit les pattes qui traversent le socle : detection par run horizontal
     // (les runs courts de non-proteges dans une meme rangee = pattes).
     outData = fillLegCrossings(outData, 40);
-    // Enfin, binarise l'alpha au seuil 100 : plus aucun pixel semi-transparent, edges
-    // crispes partout (bird, socle, plaque). Elimine tous les halos et trainees floues.
-    outData = thresholdAlpha(outData, 100);
+    // Enfin, binarise l'alpha au seuil 150 : elimine les pixels anti-aliases meme
+    // avec alpha moyen (100-150) qui apparaissaient comme des poussieres marron
+    // autour du bird. Le trade-off est un peu plus d'aliasing sur les bords.
+    outData = thresholdAlpha(outData, 150);
     const outCanvas = document.createElement('canvas');
     outCanvas.width = srcCanvas.width;
     outCanvas.height = srcCanvas.height;
