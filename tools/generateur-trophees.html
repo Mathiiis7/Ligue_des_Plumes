@@ -634,15 +634,15 @@ function generateTier(sourceImageData, tier){
   return out;
 }
 
-// Dessine un socle procedural (marron fonce + plaque metallique + 2 barres) dans
-// la moitie basse du canvas. Les couleurs de la plaque proviennent des stops du tier
-// (mid-highlight en haut -> mid -> mid-shadow en bas = gradient metallique canonique).
+// Dessine un socle procedural qui imite le design de reference : rectangle marron
+// fonce arrondi + plaque au centre avec forme de certificat (concavites arrondies
+// sur les cotes) + 2 barres decoratives. Seule la plaque prend la couleur du tier.
 function drawSocle(ctx, canvasW, canvasH, tier){
-  // Zone du socle : bas 30% du canvas.
+  // Zone du socle : bas 28% du canvas.
   const socleTopRatio = 0.72;
   const socleTop = canvasH * socleTopRatio;
   const socleH = canvasH - socleTop;
-  const socleW = canvasW * 0.68;
+  const socleW = canvasW * 0.70;
   const socleX = (canvasW - socleW) / 2;
   const socleR = socleH * 0.10;
 
@@ -663,7 +663,36 @@ function drawSocle(ctx, canvasW, canvasH, tier){
     ctx.closePath();
   };
 
-  // Base marron fonce.
+  // Forme de plaque "certificat" : rounded rectangle avec deux concavites
+  // arrondies au milieu des cotes gauche et droit.
+  const plaqueShape = (x, y, w, h, r, notchR) => {
+    const midY = y + h / 2;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    // Top edge
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    // Right edge to notch
+    ctx.lineTo(x + w, midY - notchR);
+    // Right notch : arc concave (courbe rentrant)
+    ctx.arcTo(x + w - notchR * 0.7, midY, x + w, midY + notchR, notchR);
+    ctx.lineTo(x + w, y + h - r);
+    // Bottom-right corner
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    // Bottom edge
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    // Left edge to notch
+    ctx.lineTo(x, midY + notchR);
+    // Left notch
+    ctx.arcTo(x + notchR * 0.7, midY, x, midY - notchR, notchR);
+    ctx.lineTo(x, y + r);
+    // Top-left corner
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  };
+
+  // Base marron fonce (rounded rect).
   const baseGrad = ctx.createLinearGradient(0, socleTop, 0, socleTop + socleH);
   baseGrad.addColorStop(0, '#4a2f1d');
   baseGrad.addColorStop(0.5, '#3a2418');
@@ -676,49 +705,65 @@ function drawSocle(ctx, canvasW, canvasH, tier){
   roundRect(socleX, socleTop, socleW, socleH * 0.20, socleR);
   ctx.fill();
 
-  // Plaque metallique centree.
-  const plaqueW = socleW * 0.62;
-  const plaqueH = socleH * 0.58;
+  // Plaque au centre.
+  const plaqueW = socleW * 0.68;
+  const plaqueH = socleH * 0.62;
   const plaqueX = socleX + (socleW - plaqueW) / 2;
   const plaqueY = socleTop + (socleH - plaqueH) / 2;
-  const plaqueR = Math.min(6, plaqueH * 0.12);
+  const plaqueR = Math.min(8, plaqueH * 0.15);
+  const notchR = plaqueH * 0.22;
 
   const stops = tier.stops || [
     { r:80, g:80, b:80 }, { r:120, g:120, b:120 },
     { r:180, g:180, b:180 }, { r:220, g:220, b:220 },
     { r:250, g:250, b:250 },
   ];
-  // Fond de plaque : gradient vertical mid-highlight -> mid -> mid-shadow (metal poli).
+
+  // Bordure sombre exterieure (agrandit legerement la forme).
+  const frameOffset = Math.max(1.5, plaqueH * 0.02);
+  ctx.fillStyle = 'rgba(30, 18, 10, 0.85)';
+  plaqueShape(plaqueX - frameOffset, plaqueY - frameOffset,
+    plaqueW + 2 * frameOffset, plaqueH + 2 * frameOffset,
+    plaqueR + frameOffset, notchR + frameOffset * 0.5);
+  ctx.fill();
+
+  // Fond de plaque : gradient vertical mid-highlight -> mid -> mid-shadow.
   const plaqueGrad = ctx.createLinearGradient(plaqueX, plaqueY, plaqueX, plaqueY + plaqueH);
   plaqueGrad.addColorStop(0.00, `rgb(${stops[3].r},${stops[3].g},${stops[3].b})`);
   plaqueGrad.addColorStop(0.45, `rgb(${stops[2].r},${stops[2].g},${stops[2].b})`);
   plaqueGrad.addColorStop(1.00, `rgb(${stops[1].r},${stops[1].g},${stops[1].b})`);
   ctx.fillStyle = plaqueGrad;
-  roundRect(plaqueX, plaqueY, plaqueW, plaqueH, plaqueR);
+  plaqueShape(plaqueX, plaqueY, plaqueW, plaqueH, plaqueR, notchR);
   ctx.fill();
 
-  // Bordure fine sombre autour de la plaque (contraste avec le socle).
-  ctx.strokeStyle = 'rgba(30, 18, 10, 0.55)';
-  ctx.lineWidth = Math.max(1, plaqueH * 0.03);
-  roundRect(plaqueX, plaqueY, plaqueW, plaqueH, plaqueR);
-  ctx.stroke();
-
-  // Specular : demi-band clair sur le haut de la plaque.
-  const specGrad = ctx.createLinearGradient(plaqueX, plaqueY, plaqueX, plaqueY + plaqueH * 0.5);
+  // Specular : demi-band clair sur le haut (clipping sur la shape).
+  ctx.save();
+  plaqueShape(plaqueX, plaqueY, plaqueW, plaqueH, plaqueR, notchR);
+  ctx.clip();
+  const specGrad = ctx.createLinearGradient(plaqueX, plaqueY, plaqueX, plaqueY + plaqueH * 0.55);
   specGrad.addColorStop(0, `rgba(${stops[4].r},${stops[4].g},${stops[4].b},0.55)`);
   specGrad.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = specGrad;
-  roundRect(plaqueX, plaqueY, plaqueW, plaqueH * 0.55, plaqueR);
-  ctx.fill();
+  ctx.fillRect(plaqueX, plaqueY, plaqueW, plaqueH * 0.55);
+  ctx.restore();
 
-  // Deux barres decoratives (marron fonce) au centre de la plaque.
+  // Fine ligne interne (~2px du bord) pour un effet 'certificat encadre'.
+  const innerInset = Math.max(2, plaqueH * 0.06);
+  ctx.strokeStyle = `rgba(${stops[0].r},${stops[0].g},${stops[0].b},0.55)`;
+  ctx.lineWidth = 1;
+  plaqueShape(plaqueX + innerInset, plaqueY + innerInset,
+    plaqueW - 2 * innerInset, plaqueH - 2 * innerInset,
+    Math.max(2, plaqueR - innerInset), Math.max(2, notchR - innerInset));
+  ctx.stroke();
+
+  // Deux barres decoratives (couleur mid-shadow du tier) au centre de la plaque.
   const barH = plaqueH * 0.14;
-  const barGap = plaqueH * 0.10;
+  const barGap = plaqueH * 0.08;
   const barsTotalH = barH * 2 + barGap;
   const barY0 = plaqueY + (plaqueH - barsTotalH) / 2;
-  const barX = plaqueX + plaqueW * 0.16;
-  const barW = plaqueW * 0.68;
-  ctx.fillStyle = 'rgba(35, 20, 12, 0.85)';
+  const barX = plaqueX + plaqueW * 0.22;
+  const barW = plaqueW * 0.56;
+  ctx.fillStyle = `rgba(${stops[1].r},${stops[1].g},${stops[1].b},0.90)`;
   roundRect(barX, barY0, barW, barH, barH * 0.35);
   ctx.fill();
   roundRect(barX, barY0 + barH + barGap, barW, barH, barH * 0.35);
