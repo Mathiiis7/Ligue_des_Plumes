@@ -1463,7 +1463,8 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .tro-fam-cup { flex:0 0 auto; width:220px; height:220px; display:grid; place-items:center; }
   .tro-fam-cup .tro-cup { width:220px; height:220px; object-fit:contain;
     filter:url(#plaqueDim)
-      drop-shadow(0 0 1.5px rgba(0,0,0,.35))
+      drop-shadow(0 0 1px rgba(0,0,0,.45))
+      drop-shadow(0 0 4px rgba(0,0,0,.22))
       drop-shadow(0 1px 1px rgba(0,0,0,.18))
       drop-shadow(0 4px 8px rgba(0,0,0,.11)); }
   .tro-fam-cup .tro-cup.grayed { filter:grayscale(.7) brightness(.9) opacity(.85) drop-shadow(0 1px 1px rgba(0,0,0,.14)) drop-shadow(0 4px 7px rgba(0,0,0,.09)); }
