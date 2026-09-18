@@ -3799,7 +3799,7 @@ function renderTrophies(data){
                         ? starsHtml
                         : `<span class="tro-fam-tier tro-fam-tier-locked">· à débloquer</span>`}
                     </div>
-                    ${nextTier ? `<div class="tro-fam-next">${nextLine}</div>` : ''}`;
+                    `;
           })()}
           <div class="tro-fam-bar-outer">
             <div class="tro-fam-bar-fill" style="width:${pct}%"></div>
