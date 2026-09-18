@@ -1348,10 +1348,15 @@ function sciColorForCountry(sci, country){
     }
     return '#7e8a99';
   }
+  // Utilise rarityForCountry qui merge S&T + bar chart + REDLIST (meme source que
+  // le popup et la pastille du tier affiches sur la fiche). Sans ca, la couleur du
+  // marker basee sur le bar chart brut (ex Avocette elegante = 4) differait du tier
+  // affiche dans le popup (= 5 apres merge S&T).
+  const tier = rarityForCountry(sci, c);
+  if(tier > 0) return realColor(tier);
+  // Fallback quand rarityForCountry renvoie 0 (pas de calibration pour ce pays).
   const table = c === 'ME' ? REAL_RARITY_ME_EBIRD : REAL_RARITY;
   if(table[k]) return realColor(table[k]);
-  // FR : convention absent = tier 1 sauf si presente uniquement a l'etranger -> tier 9.
-  // Etranger : gris inconnue.
   if(c === 'FR') return realColor(_isForeignOnly(k) ? 9 : 1);
   return '#94a3b8';
 }
