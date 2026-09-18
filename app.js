@@ -13043,6 +13043,7 @@ $('#authReset')?.addEventListener('click', async ()=>{
 // Sync temps reel de la collection /admins vers ADMIN_UIDS. Boot une seule fois au
 // premier login. Le UID hardcode reste toujours dedans (bootstrap si /admins vide).
 let _unsubAdmins = null;
+let _lastKnownIsAdmin = null;
 function subscribeAdmins(){
   if(_unsubAdmins) return;
   try{
@@ -13052,9 +13053,13 @@ function subscribeAdmins(){
       ADMIN_UIDS.add('pCf1HuUeIkNJTXC0wujsX04UsFs2');
       snap.forEach(d => { if(d.id) ADMIN_UIDS.add(d.id); });
       _updateAdminBuildStamp();
-      // Re-render la page trophees si visible : la logique du gate maintenance
-      // depend de isAdmin() qui vient d'etre hydrate.
-      try{ if(trophyData) renderTrophies(trophyData); }catch(_){}
+      // Re-render la page trophees UNIQUEMENT si le statut admin de l'utilisateur
+      // a change (evite un render redondant a chaque snapshot Firestore).
+      const nowAdmin = isAdmin();
+      if(_lastKnownIsAdmin !== nowAdmin){
+        _lastKnownIsAdmin = nowAdmin;
+        try{ if(trophyData) renderTrophies(trophyData); }catch(_){}
+      }
     }, ()=>{});
   }catch(_){}
 }
