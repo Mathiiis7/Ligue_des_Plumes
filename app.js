@@ -5343,7 +5343,9 @@ function _spreadGroup(group){
   }
 }
 function _mapMarker(pt, groupSize){
-  const color = sciColor(pt.sci);
+  // Utilise la rarete DU PAYS d'observation (pt.cc), pas la rarete FR par defaut.
+  // Un oiseau vu en ES a la couleur de son tier ES, pas de son tier FR.
+  const color = sciColorForCountry(pt.sci, pt.cc);
   const m = L.circleMarker([pt.dispLat, pt.dispLon], { radius:6, weight:1.5, color:'#fff', fillColor:color, fillOpacity:.85, opacity:1 });
   const date = pt.date ? ` · ${esc(pt.date)}` : '';
   const cc = pt.cc ? ` · ${esc(countryLabel(pt.cc))}` : '';
@@ -5874,8 +5876,9 @@ function _renderAbHotspots(){
   for(const o of _abHotspotsData.obs){
     if(typeof o.lat!=='number' || typeof o.lng!=='number') continue;
     if(!bounds.contains([o.lat, o.lng])) continue;
-    // Couleur = rareté de l'espèce (comme sur les autres cartes), pour cohérence visuelle.
-    const c = sciColor(_abHotspotsData.sci);
+    // Couleur = rareté de l'espèce DANS LE PAYS ACTIF (les hotspots affiches
+    // appartiennent au pays selectionne globalement).
+    const c = sciColorForCountry(_abHotspotsData.sci, _globalCountry);
     const m = L.circleMarker([o.lat, o.lng], { radius:5, weight:1.5, color:'#fff', fillColor:c, fillOpacity:0.9, opacity:1 });
     const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
     const eb = o.locId ? `<a href="https://ebird.org/hotspot/${esc(o.locId)}" target="_blank" rel="noopener" class="p-link">🐦 eBird</a>` : '';
