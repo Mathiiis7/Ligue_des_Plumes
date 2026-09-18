@@ -812,31 +812,16 @@ const HABITAT_ADDITIONS = {
   "corvus corax":["montane","rock"],
   "columba palumbus":["forest","humanmod","agricole"],
   "columba livia":["rock","humanmod"],
-  // ----- TUNDRA vraie (arctique stricte, jamais observees hors Grand Nord) -----
-  "lagopus muta":["tundra"],"lagopus lagopus":["tundra"],
+  // ----- TUNDRA (correction AVONET qui n'a pas cette categorie) -----
+  // AVONET classe les tetras arctiques + Harfang en 'Grassland' (= agricole/steppe
+  // chez nous), ce qui est faux. On les remet en tundra + montane pour refleter
+  // leur ecologie reelle (hautes latitudes/altitudes, milieu ouvert froid).
+  "lagopus muta":["tundra","montane","rock"],
+  "lagopus lagopus":["tundra"],
   "bubo scandiacus":["tundra"],"nyctea scandiaca":["tundra"],
-  // ----- LITTORAL : limicoles/canards/plongeons arctiques hivernant sur nos cotes -----
-  // (nichent en tundra mais on ne les voit qu'en littoral en France : plus coherent
-  // que 'tundra' inaccessible)
-  "anser brachyrhynchus":["coastal"],"anser albifrons":["coastal"],
-  "anser fabalis":["coastal"],"branta bernicla":["coastal"],
-  "branta leucopsis":["coastal"],"branta ruficollis":["coastal"],
-  "somateria mollissima":["coastal"],"somateria spectabilis":["marine"],
-  "clangula hyemalis":["marine"],"melanitta nigra":["coastal"],
-  "calidris canutus":["coastal"],"calidris alba":["coastal"],
-  "calidris minuta":["coastal"],"calidris temminckii":["coastal"],
-  "calidris ferruginea":["coastal"],"calidris alpina":["coastal"],
-  "calidris melanotos":["coastal"],"calidris bairdii":["coastal"],
-  "calidris pusilla":["coastal"],"calidris mauri":["coastal"],
-  "phalaropus fulicarius":["coastal"],"phalaropus lobatus":["coastal"],
-  "arenaria interpres":["coastal"],"anthus cervinus":["coastal"],
-  "calcarius lapponicus":["coastal"],"plectrophenax nivalis":["coastal"],
-  "eremophila alpestris":["coastal"],"pluvialis apricaria":["coastal"],
-  "pluvialis fulva":["coastal"],"pluvialis dominica":["coastal"],
-  "pluvialis squatarola":["coastal"],"stercorarius parasiticus":["marine"],
-  "stercorarius longicaudus":["marine"],"stercorarius pomarinus":["marine"],
-  "gavia stellata":["marine"],"gavia arctica":["marine"],
-  "gavia immer":["marine"],"gavia adamsii":["marine"],
+  // Pour tout le reste (Calidris, Labbes, Plongeons, Bernaches, Eiders, Pluviers,
+  // Bruants des neiges, Alouette hausse-col, etc.) on laisse AVONET decider :
+  // Coastal / Marine / Wetland selon le cas. AVONET fait le bon choix contextuel.
   // ----- MANGROVE (IUCN cat 1.7) -----
   "egretta gularis":["mangrove","coastal"],
   "todiramphus chloris":["mangrove"],"todiramphus sanctus":["mangrove"],
