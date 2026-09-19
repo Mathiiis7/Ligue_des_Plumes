@@ -2420,22 +2420,15 @@ const TROPHIES = [
     note:s=>`${(s.owlOwnedSet?.size)||0} rapace${((s.owlOwnedSet?.size)||0)>1?'s':''} nocturne${((s.owlOwnedSet?.size)||0)>1?'s':''} observé${((s.owlOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'anatidae', category:'species', baseName:'Canards, oies & cygnes',
+    theme:'groupe', icon:ICONS.aigle, family:'anatidae', category:'species', baseName:'Canards, oies, cygnes & grèbes',
     imgDir:'assets/trophies/families/anatidae',
-    // Pool FR ~40 (canards de surface + plongeurs, oies, cygnes, harles, tadornes).
-    metric:s=>(s.anatidaeOwnedSet?.size)||0, thresholds:[3,8,15,22,30],
-    descTpl:'Observer {n} canards, oies ou cygnes différents (harles inclus)',
-    list:s=>[...(s.anatidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.anatidaeOwnedSet?.size)||0} espèce${((s.anatidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.anatidaeOwnedSet?.size)||0)>1?'s':''}`,
-  }),
-  ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'podicipedidae', category:'species', baseName:'Grèbes',
-    imgDir:'assets/trophies/families/podicipedidae',
-    // Podicipedidae. FR 5 (castagneux, huppe, jougris, oreillard, esclavon). Monde ~23.
-    metric:s=>(s.podicipedidaeOwnedSet?.size)||0, thresholds:[1,2,3,4,6],
-    descTpl:'Observer {n} grèbes différents',
-    list:s=>[...(s.podicipedidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.podicipedidaeOwnedSet?.size)||0} grèbe${((s.podicipedidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.podicipedidaeOwnedSet?.size)||0)>1?'s':''}`,
+    // Fusion Anatidae + Podicipedidae. Pas taxo (ordres differents) mais meme habitat
+    // plan d'eau. FR ~45 (40 anatides + 5 grebes). Monde ~180.
+    metric:s=>new Set([...(s.anatidaeOwnedSet||[]), ...(s.podicipedidaeOwnedSet||[])]).size,
+    thresholds:[4,10,17,25,34],
+    descTpl:'Observer {n} oiseaux de plan d\'eau (canards, oies, cygnes, harles, grèbes…)',
+    list:s=>[...new Set([...(s.anatidaeOwnedSet||[]), ...(s.podicipedidaeOwnedSet||[])])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>{ const n = new Set([...(s.anatidaeOwnedSet||[]), ...(s.podicipedidaeOwnedSet||[])]).size; return `${n} espèce${n>1?'s':''} observée${n>1?'s':''}`; },
   }),
   // -- 11 nouvelles familles d'especes (papier-craft Canva) --
   ...makeTierFamily({
@@ -2450,13 +2443,16 @@ const TROPHIES = [
     note:s=>{ const n = new Set([...(s.hirundoOwnedSet||[]), ...(s.martinetsOwnedSet||[])]).size; return `${n} espèce${n>1?'s':''} observée${n>1?'s':''}`; },
   }),
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'paridae', category:'species', baseName:'Mésanges',
+    theme:'groupe', icon:ICONS.aigle, family:'paridae', category:'species', baseName:'Mésanges, sittelles & grimpereaux',
     imgDir:'assets/trophies/families/paridae',
-    // Pool FR ~10 (Paridae + Aegithalidae + Panuridae + Remizidae)
-    metric:s=>(s.paridaeOwnedSet?.size)||0, thresholds:[1,3,5,7,10],
-    descTpl:'Observer {n} mésanges différentes',
-    list:s=>[...(s.paridaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.paridaeOwnedSet?.size)||0} mésange${((s.paridaeOwnedSet?.size)||0)>1?'s':''} observée${((s.paridaeOwnedSet?.size)||0)>1?'s':''}`,
+    // Fusion Paridae/Aegithalidae/Panuridae/Remizidae + Certhioidea (Sittidae, Certhiidae,
+    // Troglodytidae, Polioptilidae, Salpornithidae). Petits passereaux forestiers/arboricoles
+    // en rondes mixtes hivernales. FR ~16 / monde ~430.
+    metric:s=>new Set([...(s.paridaeOwnedSet||[]), ...(s.certhioideaOwnedSet||[])]).size,
+    thresholds:[2,6,10,14,20],
+    descTpl:'Observer {n} petits passereaux forestiers (mésanges, sittelles, grimpereaux, troglodytes…)',
+    list:s=>[...new Set([...(s.paridaeOwnedSet||[]), ...(s.certhioideaOwnedSet||[])])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>{ const n = new Set([...(s.paridaeOwnedSet||[]), ...(s.certhioideaOwnedSet||[])]).size; return `${n} espèce${n>1?'s':''} observée${n>1?'s':''}`; },
   }),
   ...makeTierFamily({
     theme:'groupe', icon:ICONS.aigle, family:'corvidae', category:'species', baseName:'Corvidés',
@@ -2570,22 +2566,15 @@ const TROPHIES = [
     note:s=>{ const n = new Set([...(s.sylviidaeOwnedSet||[]), ...(s.phylloscopidaeOwnedSet||[])]).size; return `${n} espèce${n>1?'s':''} observée${n>1?'s':''}`; },
   }),
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'fringillidae', category:'species', baseName:'Fringilles',
-    imgDir:'assets/trophies/families/fringillidae',
-    // Pool FR ~15 (pinsons, chardonneret, verdier, tarins, linottes, bec-croises, bouvreuil, grosbec, roselins)
-    metric:s=>(s.fringillidaeOwnedSet?.size)||0, thresholds:[3,6,9,12,16],
-    descTpl:'Observer {n} fringilles différents (pinsons, chardonnerets, tarins, bouvreuils…)',
-    list:s=>[...(s.fringillidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.fringillidaeOwnedSet?.size)||0} fringille${((s.fringillidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.fringillidaeOwnedSet?.size)||0)>1?'s':''}`,
-  }),
-  ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'emberizidae', category:'species', baseName:'Bruants',
+    theme:'groupe', icon:ICONS.aigle, family:'emberizidae', category:'species', baseName:'Bruants & fringilles',
     imgDir:'assets/trophies/families/emberizidae',
-    // Pool FR ~10 (jaune, zizi, cirl, ortolan, proyer, roseaux, fou, nain, lapon, neiges + bruants NW voyage)
-    metric:s=>(s.emberizidaeOwnedSet?.size)||0, thresholds:[2,4,6,8,11],
-    descTpl:'Observer {n} bruants différents',
-    list:s=>[...(s.emberizidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.emberizidaeOwnedSet?.size)||0} bruant${((s.emberizidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.emberizidaeOwnedSet?.size)||0)>1?'s':''}`,
+    // Fusion Emberizidae + Fringillidae. Historiquement une meme famille (petits passereaux
+    // granivores a bec conique). Meme milieu (champs, lisieres, montagne). FR ~25 / monde ~400.
+    metric:s=>new Set([...(s.emberizidaeOwnedSet||[]), ...(s.fringillidaeOwnedSet||[])]).size,
+    thresholds:[5,10,15,20,27],
+    descTpl:'Observer {n} bruants ou fringilles (pinsons, chardonnerets, bouvreuils, ortolans…)',
+    list:s=>[...new Set([...(s.emberizidaeOwnedSet||[]), ...(s.fringillidaeOwnedSet||[])])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>{ const n = new Set([...(s.emberizidaeOwnedSet||[]), ...(s.fringillidaeOwnedSet||[])]).size; return `${n} espèce${n>1?'s':''} observée${n>1?'s':''}`; },
   }),
   ...makeTierFamily({
     theme:'groupe', icon:ICONS.aigle, family:'rallidae', category:'species', baseName:'Rallidés',
@@ -2605,16 +2594,6 @@ const TROPHIES = [
     descTpl:'Observer {n} étourneaux, moqueurs ou piqueboeufs',
     list:s=>[...(s.sturnoideaOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.sturnoideaOwnedSet?.size)||0} espèce${((s.sturnoideaOwnedSet?.size)||0)>1?'s':''} observée${((s.sturnoideaOwnedSet?.size)||0)>1?'s':''}`,
-  }),
-  ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'certhioidea', category:'species', baseName:'Sittelles & grimpereaux',
-    imgDir:'assets/trophies/families/certhioidea',
-    // Superfamille Certhioidea : Sittidae + Certhiidae + Salpornithidae + Troglodytidae + Polioptilidae.
-    // Petits explorateurs d'ecorce et de buissons. FR ~6 / monde ~140.
-    metric:s=>(s.certhioideaOwnedSet?.size)||0, thresholds:[1,3,5,7,10],
-    descTpl:'Observer {n} sittelles, grimpereaux, troglodytes ou gobemoucherons',
-    list:s=>[...(s.certhioideaOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.certhioideaOwnedSet?.size)||0} espèce${((s.certhioideaOwnedSet?.size)||0)>1?'s':''} observée${((s.certhioideaOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
     theme:'groupe', icon:ICONS.aigle, family:'passeridae', category:'species', baseName:'Moineaux & accenteurs',
@@ -2782,9 +2761,9 @@ const SPECIES_FAMILY_FILTERS = {
   },
   anatidae: sci => {
     const g = (sci||'').split(' ')[0];
-    if(ANATIDAE_G.test(g)) return true;
+    if(ANATIDAE_G.test(g) || PODICIPEDIDAE_G.test(g)) return true;
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
-    return fam === 'Canards, oies, cygnes';
+    return fam === 'Canards, oies, cygnes' || fam === 'Grèbes';
   },
   hirundinidae: sci => {
     const g = (sci||'').split(' ')[0];
@@ -2806,9 +2785,10 @@ const SPECIES_FAMILY_FILTERS = {
   },
   paridae: sci => {
     const g = (sci||'').split(' ')[0];
-    if(PARIDAE_G.test(g)) return true;
+    if(PARIDAE_G.test(g) || CERTHIOIDEA_G.test(g)) return true;
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
-    return fam === 'Mésanges' || fam === 'Mésanges à longue queue' || fam === 'Rémiz';
+    return fam === 'Mésanges' || fam === 'Mésanges à longue queue' || fam === 'Rémiz'
+      || fam === 'Sittelles' || fam === 'Tichodrome' || fam === 'Grimpereaux' || fam === 'Troglodytes' || fam === 'Gobemoucherons' || (fam && fam.startsWith('Grimpereaux'));
   },
   corvidae: sci => {
     const g = (sci||'').split(' ')[0];
@@ -2891,9 +2871,9 @@ const SPECIES_FAMILY_FILTERS = {
   },
   emberizidae: sci => {
     const g = (sci||'').split(' ')[0];
-    if(EMBERIZIDAE_G.test(g)) return true;
+    if(EMBERIZIDAE_G.test(g) || FRINGILLIDAE_G.test(g)) return true;
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
-    return fam === 'Bruants' || fam === 'Bruants du Nouveau Monde';
+    return fam === 'Bruants' || fam === 'Bruants du Nouveau Monde' || fam === 'Fringilles';
   },
   rallidae: sci => {
     const g = (sci||'').split(' ')[0];
@@ -3015,11 +2995,11 @@ const SPECIES_FAMILY_FILTERS = {
 const SPECIES_FAMILY_LABELS = {
   rapaces: 'rapaces diurnes',
   nocturnes: 'rapaces nocturnes',
-  anatidae: 'canards, oies & cygnes',
+  anatidae: 'canards, oies, cygnes & grèbes',
   hirundinidae: 'hirondelles & martinets',
   martinets: 'martinets',
   alaudidae: 'alouettes',
-  paridae: 'mésanges',
+  paridae: 'mésanges, sittelles & grimpereaux',
   corvidae: 'corvidés',
   alcedinidae: 'martins-pêcheurs',
   ardeidae: 'grands échassiers (hérons, cigognes, grues…)',
@@ -3034,7 +3014,7 @@ const SPECIES_FAMILY_LABELS = {
   sylviidae: 'fauvettes',
   phylloscopidae: 'fauvettes, pouillots & rousserolles',
   fringillidae: 'fringilles',
-  emberizidae: 'bruants',
+  emberizidae: 'bruants & fringilles',
   rallidae: 'rallidés',
   motacillidae: 'bergeronnettes, pipits & alouettes',
   ciconiidae: 'cigognes & grues',
@@ -3609,12 +3589,13 @@ function renderTrophies(data){
       speciesOwnedSet: (function(){
         if(familyKey === 'rapaces') return new Set(s.raptorOwnedSet || []);
         if(familyKey === 'nocturnes') return new Set(s.owlOwnedSet || []);
-        if(familyKey === 'anatidae') return new Set(s.anatidaeOwnedSet || []);
-        // Fusions : hirondelles+martinets, ardeidae+cigognes/grues, grives+gobemouches,
-        // fauvettes+pouillots/rousserolles, bergeronnettes/pipits+alouettes.
+        // Fusions : anatidae+grebes, hirondelles+martinets, ardeidae+cigognes/grues,
+        // grives+gobemouches, fauvettes+pouillots/rousserolles, bergeronnettes/pipits+alouettes,
+        // mesanges+sittelles/grimpereaux, bruants+fringilles.
+        if(familyKey === 'anatidae') return new Set([...(s.anatidaeOwnedSet || []), ...(s.podicipedidaeOwnedSet || [])]);
         if(familyKey === 'hirundinidae') return new Set([...(s.hirundoOwnedSet || []), ...(s.martinetsOwnedSet || [])]);
         if(familyKey === 'alaudidae') return new Set(s.alaudaOwnedSet || []);
-        if(familyKey === 'paridae') return new Set(s.paridaeOwnedSet || []);
+        if(familyKey === 'paridae') return new Set([...(s.paridaeOwnedSet || []), ...(s.certhioideaOwnedSet || [])]);
         if(familyKey === 'corvidae') return new Set(s.corvidaeOwnedSet || []);
         if(familyKey === 'alcedinidae') return new Set(s.alcediOwnedSet || []);
         if(familyKey === 'ardeidae') return new Set([...(s.ardeidaeOwnedSet || []), ...(s.ciconiidaeOwnedSet || [])]);
@@ -3629,7 +3610,7 @@ function renderTrophies(data){
         if(familyKey === 'sylviidae') return new Set(s.sylviidaeOwnedSet || []);
         if(familyKey === 'phylloscopidae') return new Set([...(s.sylviidaeOwnedSet || []), ...(s.phylloscopidaeOwnedSet || [])]);
         if(familyKey === 'fringillidae') return new Set(s.fringillidaeOwnedSet || []);
-        if(familyKey === 'emberizidae') return new Set(s.emberizidaeOwnedSet || []);
+        if(familyKey === 'emberizidae') return new Set([...(s.emberizidaeOwnedSet || []), ...(s.fringillidaeOwnedSet || [])]);
         if(familyKey === 'rallidae') return new Set(s.rallidaeOwnedSet || []);
         if(familyKey === 'motacillidae') return new Set([...(s.motacillidaeOwnedSet || []), ...(s.alaudaOwnedSet || [])]);
         if(familyKey === 'ciconiidae') return new Set(s.ciconiidaeOwnedSet || []);
