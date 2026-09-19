@@ -2788,9 +2788,9 @@ const SPECIES_FAMILY_FILTERS = {
   },
   hirundinidae: sci => {
     const g = (sci||'').split(' ')[0];
-    if(HIRUNDO_G.test(g)) return true;
+    if(HIRUNDO_G.test(g) || MARTINETS_G.test(g)) return true;
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
-    return fam === 'Hirondelles';
+    return fam === 'Hirondelles' || fam === 'Martinets';
   },
   martinets: sci => {
     const g = (sci||'').split(' ')[0];
@@ -2824,10 +2824,10 @@ const SPECIES_FAMILY_FILTERS = {
   },
   ardeidae: sci => {
     const g = (sci||'').split(' ')[0];
-    if(ARDEIDAE_G.test(g)) return true;
+    if(ARDEIDAE_G.test(g) || ECHASSIERS_G.test(g)) return true;
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
-    // Ordre Pelecaniformes complet : Ardeidae + Threskiornithidae + Pelecanidae + Scopidae + Balaenicipitidae.
-    return fam === 'Hérons, aigrettes, butors' || fam === 'Hérons, aigrettes' || fam === 'Ibis, spatules' || fam === 'Pélicans' || fam === 'Ombrette' || fam === 'Bec-en-sabot du Nil';
+    // Grands echassiers = Pelecaniformes (herons, ibis, pelicans...) + Ciconiiformes (cigognes) + Gruiformes (grues).
+    return fam === 'Hérons, aigrettes, butors' || fam === 'Hérons, aigrettes' || fam === 'Ibis, spatules' || fam === 'Pélicans' || fam === 'Ombrette' || fam === 'Bec-en-sabot du Nil' || fam === 'Cigognes' || fam === 'Grues';
   },
   columbidae: sci => {
     const g = (sci||'').split(' ')[0];
@@ -2861,9 +2861,9 @@ const SPECIES_FAMILY_FILTERS = {
   },
   turdidae: sci => {
     const g = (sci||'').split(' ')[0];
-    if(TURDIDAE_G.test(g)) return true;
+    if(TURDIDAE_G.test(g) || MUSCICAPIDAE_G.test(g)) return true;
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
-    return fam === 'Grives, merles' || fam === 'Jaseurs';
+    return fam === 'Grives, merles' || fam === 'Jaseurs' || fam === 'Gobemouches, rossignols, traquets' || fam === 'Rossignols, rougequeues' || fam === 'Gobemouches';
   },
   muscicapidae: sci => {
     const g = (sci||'').split(' ')[0];
@@ -2879,9 +2879,9 @@ const SPECIES_FAMILY_FILTERS = {
   },
   phylloscopidae: sci => {
     const g = (sci||'').split(' ')[0];
-    if(POUILLOTS_ROUSSEROLLES_G.test(g)) return true;
+    if(POUILLOTS_ROUSSEROLLES_G.test(g) || SYLVIIDAE_G.test(g)) return true;
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
-    return fam === 'Pouillots' || fam === 'Rousserolles, hypolaïs' || fam === 'Locustelles' || fam === 'Bouscarles';
+    return fam === 'Pouillots' || fam === 'Rousserolles, hypolaïs' || fam === 'Locustelles' || fam === 'Bouscarles' || fam === 'Fauvettes';
   },
   fringillidae: sci => {
     const g = (sci||'').split(' ')[0];
@@ -3000,9 +3000,9 @@ const SPECIES_FAMILY_FILTERS = {
   },
   motacillidae: sci => {
     const g = (sci||'').split(' ')[0];
-    if(MOTACILLIDAE_G.test(g)) return true;
+    if(MOTACILLIDAE_G.test(g) || ALAUDA_G.test(g)) return true;
     const fam = (typeof familyOf === 'function') ? familyOf(sci) : null;
-    return fam === 'Bergeronnettes, pipits';
+    return fam === 'Bergeronnettes, pipits' || fam === 'Alouettes' || fam === 'Panure';
   },
   ciconiidae: sci => {
     const g = (sci||'').split(' ')[0];
@@ -3016,27 +3016,27 @@ const SPECIES_FAMILY_LABELS = {
   rapaces: 'rapaces diurnes',
   nocturnes: 'rapaces nocturnes',
   anatidae: 'canards, oies & cygnes',
-  hirundinidae: 'hirondelles',
+  hirundinidae: 'hirondelles & martinets',
   martinets: 'martinets',
   alaudidae: 'alouettes',
   paridae: 'mésanges',
   corvidae: 'corvidés',
   alcedinidae: 'martins-pêcheurs',
-  ardeidae: 'hérons, ibis & pélicans',
+  ardeidae: 'grands échassiers (hérons, cigognes, grues…)',
   columbidae: 'pigeons & tourterelles',
   galliformes: 'galliformes',
   picidae: 'pics',
   scolopacidae: 'bécasseaux & chevaliers',
   rivages: 'pluviers & rivages',
   laridae: 'goélands & mouettes',
-  turdidae: 'grives & merles',
+  turdidae: 'grives, merles & gobemouches',
   muscicapidae: 'muscicapidés',
   sylviidae: 'fauvettes',
-  phylloscopidae: 'pouillots & rousserolles',
+  phylloscopidae: 'fauvettes, pouillots & rousserolles',
   fringillidae: 'fringilles',
   emberizidae: 'bruants',
   rallidae: 'rallidés',
-  motacillidae: 'bergeronnettes & pipits',
+  motacillidae: 'bergeronnettes, pipits & alouettes',
   ciconiidae: 'cigognes & grues',
   coraciiformes: 'guêpiers & rolliers',
   suliformes: 'cormorans, fous & frégates',
@@ -3610,26 +3610,28 @@ function renderTrophies(data){
         if(familyKey === 'rapaces') return new Set(s.raptorOwnedSet || []);
         if(familyKey === 'nocturnes') return new Set(s.owlOwnedSet || []);
         if(familyKey === 'anatidae') return new Set(s.anatidaeOwnedSet || []);
-        if(familyKey === 'hirundinidae') return new Set(s.hirundoOwnedSet || []);
+        // Fusions : hirondelles+martinets, ardeidae+cigognes/grues, grives+gobemouches,
+        // fauvettes+pouillots/rousserolles, bergeronnettes/pipits+alouettes.
+        if(familyKey === 'hirundinidae') return new Set([...(s.hirundoOwnedSet || []), ...(s.martinetsOwnedSet || [])]);
         if(familyKey === 'alaudidae') return new Set(s.alaudaOwnedSet || []);
         if(familyKey === 'paridae') return new Set(s.paridaeOwnedSet || []);
         if(familyKey === 'corvidae') return new Set(s.corvidaeOwnedSet || []);
         if(familyKey === 'alcedinidae') return new Set(s.alcediOwnedSet || []);
-        if(familyKey === 'ardeidae') return new Set(s.ardeidaeOwnedSet || []);
+        if(familyKey === 'ardeidae') return new Set([...(s.ardeidaeOwnedSet || []), ...(s.ciconiidaeOwnedSet || [])]);
         if(familyKey === 'columbidae') return new Set(s.columbidaeOwnedSet || []);
         if(familyKey === 'galliformes') return new Set(s.galliformesOwnedSet || []);
         if(familyKey === 'picidae') return new Set(s.picidaeOwnedSet || []);
         if(familyKey === 'scolopacidae') return new Set(s.scolopacidaeOwnedSet || []);
         if(familyKey === 'rivages') return new Set(s.rivagesOwnedSet || []);
         if(familyKey === 'laridae') return new Set(s.laridaeOwnedSet || []);
-        if(familyKey === 'turdidae') return new Set(s.turdidaeOwnedSet || []);
+        if(familyKey === 'turdidae') return new Set([...(s.turdidaeOwnedSet || []), ...(s.muscicapidaeOwnedSet || [])]);
         if(familyKey === 'muscicapidae') return new Set(s.muscicapidaeOwnedSet || []);
         if(familyKey === 'sylviidae') return new Set(s.sylviidaeOwnedSet || []);
-        if(familyKey === 'phylloscopidae') return new Set(s.phylloscopidaeOwnedSet || []);
+        if(familyKey === 'phylloscopidae') return new Set([...(s.sylviidaeOwnedSet || []), ...(s.phylloscopidaeOwnedSet || [])]);
         if(familyKey === 'fringillidae') return new Set(s.fringillidaeOwnedSet || []);
         if(familyKey === 'emberizidae') return new Set(s.emberizidaeOwnedSet || []);
         if(familyKey === 'rallidae') return new Set(s.rallidaeOwnedSet || []);
-        if(familyKey === 'motacillidae') return new Set(s.motacillidaeOwnedSet || []);
+        if(familyKey === 'motacillidae') return new Set([...(s.motacillidaeOwnedSet || []), ...(s.alaudaOwnedSet || [])]);
         if(familyKey === 'ciconiidae') return new Set(s.ciconiidaeOwnedSet || []);
         if(familyKey === 'martinets') return new Set(s.martinetsOwnedSet || []);
         if(familyKey === 'coraciiformes') return new Set(s.coraciiformesOwnedSet || []);
