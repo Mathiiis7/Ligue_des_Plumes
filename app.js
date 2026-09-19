@@ -6475,18 +6475,33 @@ async function _showSpeciesDetailGbif(sciName){
     // Swap : cree la nouvelle couche puis remplace les vieux markers d'un coup (evite le
     // flash "carte vide" pendant le fetch, sensible sur reseau lent).
     const newMarkers = [];
+    // Dedup par lieu (coord arrondie a 4 decimales = ~10m). Plusieurs obs de la meme
+    // espece au meme point -> un seul marker avec un badge "xN" et la liste des dates.
+    const dedup = new Map();
     for(const o of obs){
       if(typeof o.decimalLatitude !== 'number' || typeof o.decimalLongitude !== 'number') continue;
-      const dot = L.circleMarker([o.decimalLatitude, o.decimalLongitude], { radius:7, weight:2, color:'#fff', fillColor:color, fillOpacity:.9, opacity:1 });
-      const commune = o.gadm && o.gadm.level3 && o.gadm.level3.name || '';
-      const dept = o.gadm && o.gadm.level2 && o.gadm.level2.name || '';
-      const loc = o.locality || commune || dept || 'lieu';
-      const cntObs = (typeof o.individualCount === 'number' && o.individualCount > 0) ? o.individualCount : null;
-      const gm = `<a href="https://www.google.com/maps?q=${o.decimalLatitude},${o.decimalLongitude}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
-      const gbifLink = o.gbifID ? `<a href="https://www.gbif.org/occurrence/${esc(o.gbifID)}" target="_blank" rel="noopener" class="p-link">🌍 GBIF</a> · ` : '';
-      dot.bindPopup(`<b class="sp-link" data-sci="${esc(sciName)}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;">${esc(nm)}</b> <span class="p-sci">${esc(sciName)}</span>`+
+      const k = o.decimalLatitude.toFixed(4) + ',' + o.decimalLongitude.toFixed(4);
+      if(!dedup.has(k)) dedup.set(k, []);
+      dedup.get(k).push(o);
+    }
+    for(const group of dedup.values()){
+      const first = group[0];
+      const commune = first.gadm && first.gadm.level3 && first.gadm.level3.name || '';
+      const dept = first.gadm && first.gadm.level2 && first.gadm.level2.name || '';
+      const loc = first.locality || commune || dept || 'lieu';
+      const nGroup = group.length;
+      const dates = [...new Set(group.map(o => (o.eventDate||'').slice(0,10)).filter(Boolean))].sort().reverse();
+      const dateLine = nGroup === 1
+        ? `<span class="p-meta">${esc(dates[0]||'')}${((typeof first.individualCount === 'number' && first.individualCount > 0)?' · '+first.individualCount+' individus':'')}</span>`
+        : `<span class="p-meta">${nGroup} obs · derniere ${esc(dates[0]||'?')}${dates.length > 1 ? ` (${dates.length} dates distinctes)` : ''}</span>`;
+      const countBadge = nGroup > 1 ? ` <span style="display:inline-block;background:#0b7c77;color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;margin-left:4px;">×${nGroup}</span>` : '';
+      const gm = `<a href="https://www.google.com/maps?q=${first.decimalLatitude},${first.decimalLongitude}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
+      const gbifLink = first.gbifID ? `<a href="https://www.gbif.org/occurrence/${esc(first.gbifID)}" target="_blank" rel="noopener" class="p-link">🌍 GBIF</a> · ` : '';
+      const radius = nGroup > 1 ? Math.min(10, 7 + Math.log2(nGroup)) : 7;
+      const dot = L.circleMarker([first.decimalLatitude, first.decimalLongitude], { radius, weight:2, color:'#fff', fillColor:color, fillOpacity:.9, opacity:1 });
+      dot.bindPopup(`<b class="sp-link" data-sci="${esc(sciName)}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;">${esc(nm)}</b>${countBadge} <span class="p-sci">${esc(sciName)}</span>`+
         `<span class="p-meta">📍 ${esc(loc)}</span>`+
-        `<span class="p-meta">${esc((o.eventDate||'').slice(0,10))}${cntObs?' · '+cntObs+' individus':''}</span>`+
+        dateLine +
         `<span class="p-meta">${_rarityBadge(w, country, sciName)}</span><span class="p-meta">${gbifLink}${gm}</span>`);
       dot._sciName = sciName;
       newMarkers.push(dot);
