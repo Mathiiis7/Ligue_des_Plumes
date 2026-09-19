@@ -6437,12 +6437,12 @@ async function _showSpeciesDetailGbif(sciName){
     // Swap : cree la nouvelle couche puis remplace les vieux markers d'un coup (evite le
     // flash "carte vide" pendant le fetch, sensible sur reseau lent).
     const newMarkers = [];
-    // Dedup par lieu (coord arrondie a 4 decimales = ~10m). Plusieurs obs de la meme
-    // espece au meme point -> un seul marker avec un badge "xN" et la liste des dates.
+    // Dedup par lieu (coord arrondie a 3 decimales = ~110m). Beaucoup d'obs d'un meme
+    // hotspot ont un GPS legerement different (submitters differents), 3 dec groupe bien.
     const dedup = new Map();
     for(const o of obs){
       if(typeof o.decimalLatitude !== 'number' || typeof o.decimalLongitude !== 'number') continue;
-      const k = o.decimalLatitude.toFixed(4) + ',' + o.decimalLongitude.toFixed(4);
+      const k = o.decimalLatitude.toFixed(3) + ',' + o.decimalLongitude.toFixed(3);
       if(!dedup.has(k)) dedup.set(k, []);
       dedup.get(k).push(o);
     }
@@ -6457,10 +6457,13 @@ async function _showSpeciesDetailGbif(sciName){
         ? `<span class="p-meta">${esc(dates[0]||'')}${((typeof first.individualCount === 'number' && first.individualCount > 0)?' · '+first.individualCount+' individus':'')}</span>`
         : `<span class="p-meta">${nGroup} obs · derniere ${esc(dates[0]||'?')}${dates.length > 1 ? ` (${dates.length} dates distinctes)` : ''}</span>`;
       const countBadge = nGroup > 1 ? ` <span style="display:inline-block;background:#0b7c77;color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;margin-left:4px;">×${nGroup}</span>` : '';
-      const gm = `<a href="https://www.google.com/maps?q=${first.decimalLatitude},${first.decimalLongitude}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
+      // Coord d'affichage : moyenne pour placer le point au centre du cluster reel.
+      const avgLat = group.reduce((s,o)=>s+o.decimalLatitude,0)/nGroup;
+      const avgLon = group.reduce((s,o)=>s+o.decimalLongitude,0)/nGroup;
+      const gm = `<a href="https://www.google.com/maps?q=${avgLat},${avgLon}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
       const gbifLink = first.gbifID ? `<a href="https://www.gbif.org/occurrence/${esc(first.gbifID)}" target="_blank" rel="noopener" class="p-link">🌍 GBIF</a> · ` : '';
-      const radius = nGroup > 1 ? Math.min(10, 7 + Math.log2(nGroup)) : 7;
-      const dot = L.circleMarker([first.decimalLatitude, first.decimalLongitude], { radius, weight:2, color:'#fff', fillColor:color, fillOpacity:.9, opacity:1 });
+      const radius = nGroup > 1 ? Math.min(12, 7 + Math.log2(nGroup) * 1.2) : 7;
+      const dot = L.circleMarker([avgLat, avgLon], { radius, weight:2, color:'#fff', fillColor:color, fillOpacity:.9, opacity:1 });
       dot.bindPopup(`<b class="sp-link" data-sci="${esc(sciName)}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;">${esc(nm)}</b>${countBadge} <span class="p-sci">${esc(sciName)}</span>`+
         `<span class="p-meta">📍 ${esc(loc)}</span>`+
         dateLine +
@@ -6528,16 +6531,33 @@ async function _showSpeciesDetail(sciName, speciesCode){
     if(_lyrMissing && _map.hasLayer(_lyrMissing)) _map.removeLayer(_lyrMissing);
     // Swap : construit les nouveaux markers puis remplace en un coup (evite le flash "vide").
     const newMarkers = [];
+    // Dedup par hotspot (coord ~110m). Groupe les obs eBird du meme hotspot pour eviter
+    // 5-10 markers stackes au meme endroit.
+    const dedupEB = new Map();
     for(const o of data){
       if(typeof o.lat!=='number'||typeof o.lng!=='number') continue;
-      // Couleur = rareté de l'espèce (gris pour exotique), taille légèrement plus grosse que la couche missing.
-      const dot = L.circleMarker([o.lat,o.lng], { radius:7, weight:2, color:'#fff', fillColor:color, fillOpacity:.9, opacity:1 });
-      const gm = `<a href="https://www.google.com/maps?q=${o.lat},${o.lng}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
-      dot.bindPopup(`<b class="sp-link" data-sci="${esc(sciName||'')}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;">${esc(nm)}</b> <span class="p-sci">${esc(sciName||'')}</span>`+
-        `<span class="p-meta">📍 ${esc(o.locName||'?')}</span>`+
-        `<span class="p-meta">${esc((o.obsDt||'').slice(0,10))}${o.howMany?' · '+o.howMany+' individus':''}</span>`+
+      const k = o.lat.toFixed(3) + ',' + o.lng.toFixed(3);
+      if(!dedupEB.has(k)) dedupEB.set(k, []);
+      dedupEB.get(k).push(o);
+    }
+    for(const group of dedupEB.values()){
+      const first = group[0];
+      const nGroup = group.length;
+      const avgLat = group.reduce((s,o)=>s+o.lat,0)/nGroup;
+      const avgLon = group.reduce((s,o)=>s+o.lng,0)/nGroup;
+      const dates = [...new Set(group.map(o => (o.obsDt||'').slice(0,10)).filter(Boolean))].sort().reverse();
+      const dateLine = nGroup === 1
+        ? `<span class="p-meta">${esc((first.obsDt||'').slice(0,10))}${first.howMany?' · '+first.howMany+' individus':''}</span>`
+        : `<span class="p-meta">${nGroup} obs · derniere ${esc(dates[0]||'?')}${dates.length > 1 ? ` (${dates.length} dates distinctes)` : ''}</span>`;
+      const countBadge = nGroup > 1 ? ` <span style="display:inline-block;background:#0b7c77;color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;margin-left:4px;">×${nGroup}</span>` : '';
+      const radius = nGroup > 1 ? Math.min(12, 7 + Math.log2(nGroup) * 1.2) : 7;
+      const dot = L.circleMarker([avgLat, avgLon], { radius, weight:2, color:'#fff', fillColor:color, fillOpacity:.9, opacity:1 });
+      const gm = `<a href="https://www.google.com/maps?q=${avgLat},${avgLon}" target="_blank" rel="noopener" class="p-link">🗺️ Google Maps</a>`;
+      dot.bindPopup(`<b class="sp-link" data-sci="${esc(sciName||'')}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;">${esc(nm)}</b>${countBadge} <span class="p-sci">${esc(sciName||'')}</span>`+
+        `<span class="p-meta">📍 ${esc(first.locName||'?')}</span>`+
+        dateLine +
         `<span class="p-meta">${_rarityBadge(w, (ebFilter && ebFilter.country) || "FR", sciName)}</span><span class="p-meta">${gm}</span>`);
-      dot._q = _mapNorm(nm+' '+(sciName||'')+' '+(o.locName||''));
+      dot._q = _mapNorm(nm+' '+(sciName||'')+' '+(first.locName||''));
       dot._sciName = sciName; dot._speciesCode = speciesCode;
       newMarkers.push(dot);
     }
