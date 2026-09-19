@@ -2457,15 +2457,6 @@ const TROPHIES = [
     note:s=>`${(s.martinetsOwnedSet?.size)||0} martinet${((s.martinetsOwnedSet?.size)||0)>1?'s':''} observé${((s.martinetsOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'alaudidae', category:'species', baseName:'Alouettes',
-    imgDir:'assets/trophies/families/alaudidae',
-    // Pool FR ~8
-    metric:s=>(s.alaudaOwnedSet?.size)||0, thresholds:[1,2,4,6,8],
-    descTpl:'Observer {n} alouettes différentes',
-    list:s=>[...(s.alaudaOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.alaudaOwnedSet?.size)||0} alouette${((s.alaudaOwnedSet?.size)||0)>1?'s':''} observée${((s.alaudaOwnedSet?.size)||0)>1?'s':''}`,
-  }),
-  ...makeTierFamily({
     theme:'groupe', icon:ICONS.aigle, family:'paridae', category:'species', baseName:'Mésanges',
     imgDir:'assets/trophies/families/paridae',
     // Pool FR ~10 (Paridae + Aegithalidae + Panuridae + Remizidae)
@@ -2512,14 +2503,16 @@ const TROPHIES = [
     note:s=>`${(s.suliformesOwnedSet?.size)||0} espèce${((s.suliformesOwnedSet?.size)||0)>1?'s':''} observée${((s.suliformesOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'ardeidae', category:'species', baseName:'Hérons, ibis & pélicans',
+    theme:'groupe', icon:ICONS.aigle, family:'ardeidae', category:'species', baseName:'Grands échassiers',
     imgDir:'assets/trophies/families/ardeidae',
-    // Ordre Pelecaniformes complet : Ardeidae + Threskiornithidae + Pelecanidae + Scopidae + Balaenicipitidae.
-    // FR ~18 (13 herons/aigrettes/butors + 3 ibis/spatules + 2 pelicans rares) / monde ~110.
-    metric:s=>(s.ardeidaeOwnedSet?.size)||0, thresholds:[2,5,9,13,17],
-    descTpl:'Observer {n} hérons, ibis, spatules ou pélicans',
-    list:s=>[...(s.ardeidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.ardeidaeOwnedSet?.size)||0} espèce${((s.ardeidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.ardeidaeOwnedSet?.size)||0)>1?'s':''}`,
+    // Fusion Ardeidae (Pelecaniformes complet) + Ciconiidae + Gruidae : grands echassiers
+    // des zones humides (herons, aigrettes, butors, ibis, spatules, pelicans, cigognes, grues).
+    // FR ~21 (18 pelecaniformes + 3 cigognes/grues) / monde ~145.
+    metric:s=>new Set([...(s.ardeidaeOwnedSet||[]), ...(s.ciconiidaeOwnedSet||[])]).size,
+    thresholds:[2,6,11,16,22],
+    descTpl:'Observer {n} grands échassiers (hérons, ibis, spatules, pélicans, cigognes, grues)',
+    list:s=>[...new Set([...(s.ardeidaeOwnedSet||[]), ...(s.ciconiidaeOwnedSet||[])])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>{ const n = new Set([...(s.ardeidaeOwnedSet||[]), ...(s.ciconiidaeOwnedSet||[])]).size; return `${n} espèce${n>1?'s':''} observée${n>1?'s':''}`; },
   }),
   ...makeTierFamily({
     theme:'groupe', icon:ICONS.aigle, family:'columbidae', category:'species', baseName:'Pigeons & tourterelles',
@@ -2672,24 +2665,15 @@ const TROPHIES = [
     note:s=>`${(s.passeridaeOwnedSet?.size)||0} espèce${((s.passeridaeOwnedSet?.size)||0)>1?'s':''} observée${((s.passeridaeOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'motacillidae', category:'species', baseName:'Bergeronnettes & pipits',
+    theme:'groupe', icon:ICONS.aigle, family:'motacillidae', category:'species', baseName:'Bergeronnettes, pipits & alouettes',
     imgDir:'assets/trophies/families/motacillidae',
-    // Pool FR ~10 (M. alba, cinerea, flava, citreola + Anthus pratensis, spinoletta, trivialis, campestris, cervinus, richardi)
-    metric:s=>(s.motacillidaeOwnedSet?.size)||0, thresholds:[2,4,6,8,11],
-    descTpl:'Observer {n} bergeronnettes ou pipits différents',
-    list:s=>[...(s.motacillidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.motacillidaeOwnedSet?.size)||0} bergeronnette${((s.motacillidaeOwnedSet?.size)||0)>1?'s':''} ou pipit${((s.motacillidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.motacillidaeOwnedSet?.size)||0)>1?'s':''}`,
-  }),
-  ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'ciconiidae', category:'species', baseName:'Cigognes & grues',
-    imgDir:'assets/trophies/families/ciconiidae',
-    // Ciconiidae (Ciconiiformes) + Gruidae (Gruiformes). Deux ordres mais grands migrateurs a cou
-    // tendu, silhouette elancee, vol en V. FR 3 (Cigogne blanche + Cigogne noire + Grue cendree) /
-    // monde ~35 (20 cigognes + 15 grues).
-    metric:s=>(s.ciconiidaeOwnedSet?.size)||0, thresholds:[1,2,3,5,7],
-    descTpl:'Observer {n} cigognes ou grues',
-    list:s=>[...(s.ciconiidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.ciconiidaeOwnedSet?.size)||0} espèce${((s.ciconiidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.ciconiidaeOwnedSet?.size)||0)>1?'s':''}`,
+    // Fusion Motacillidae + Alaudidae : passereaux terrestres marchant au sol.
+    // FR ~18 (10 bergeronnettes/pipits + 8 alouettes) / monde ~180.
+    metric:s=>new Set([...(s.motacillidaeOwnedSet||[]), ...(s.alaudaOwnedSet||[])]).size,
+    thresholds:[3,6,10,14,18],
+    descTpl:'Observer {n} bergeronnettes, pipits ou alouettes différents',
+    list:s=>[...new Set([...(s.motacillidaeOwnedSet||[]), ...(s.alaudaOwnedSet||[])])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>{ const n = new Set([...(s.motacillidaeOwnedSet||[]), ...(s.alaudaOwnedSet||[])]).size; return `${n} espèce${n>1?'s':''} observée${n>1?'s':''}`; },
   }),
   ...makeTierFamily({
     theme:'communaute', icon:ICONS.photo, family:'natGeo', category:'progression', baseName:'National Geographic',
