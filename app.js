@@ -2439,22 +2439,15 @@ const TROPHIES = [
   }),
   // -- 11 nouvelles familles d'especes (papier-craft Canva) --
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'hirundinidae', category:'species', baseName:'Hirondelles',
+    theme:'groupe', icon:ICONS.aigle, family:'hirundinidae', category:'species', baseName:'Hirondelles & martinets',
     imgDir:'assets/trophies/families/hirundinidae',
-    // Pool FR ~5 hirondelles. Monde ~85.
-    metric:s=>(s.hirundoOwnedSet?.size)||0, thresholds:[1,2,3,5,8],
-    descTpl:'Observer {n} hirondelles différentes',
-    list:s=>[...(s.hirundoOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.hirundoOwnedSet?.size)||0} hirondelle${((s.hirundoOwnedSet?.size)||0)>1?'s':''} observée${((s.hirundoOwnedSet?.size)||0)>1?'s':''}`,
-  }),
-  ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'martinets', category:'species', baseName:'Martinets',
-    imgDir:'assets/trophies/families/martinets',
-    // Pool FR ~3-4 martinets (noir, pale, alpin, unicolore). Monde ~110.
-    metric:s=>(s.martinetsOwnedSet?.size)||0, thresholds:[1,2,3,5,8],
-    descTpl:'Observer {n} martinets différents',
-    list:s=>[...(s.martinetsOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.martinetsOwnedSet?.size)||0} martinet${((s.martinetsOwnedSet?.size)||0)>1?'s':''} observé${((s.martinetsOwnedSet?.size)||0)>1?'s':''}`,
+    // Fusion Hirundinidae + Apodidae. FR ~8-9 (5 hirondelles + 3-4 martinets) / monde ~200.
+    // Convergence evolutive : petits voltigeurs aeriens insectivores, aile pointue.
+    metric:s=>new Set([...(s.hirundoOwnedSet||[]), ...(s.martinetsOwnedSet||[])]).size,
+    thresholds:[2,4,7,10,15],
+    descTpl:'Observer {n} hirondelles ou martinets différents',
+    list:s=>[...new Set([...(s.hirundoOwnedSet||[]), ...(s.martinetsOwnedSet||[])])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>{ const n = new Set([...(s.hirundoOwnedSet||[]), ...(s.martinetsOwnedSet||[])]).size; return `${n} espèce${n>1?'s':''} observée${n>1?'s':''}`; },
   }),
   ...makeTierFamily({
     theme:'groupe', icon:ICONS.aigle, family:'paridae', category:'species', baseName:'Mésanges',
@@ -2473,24 +2466,6 @@ const TROPHIES = [
     descTpl:'Observer {n} corvidés différents (corneilles, geais, pies, corbeaux…)',
     list:s=>[...(s.corvidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
     note:s=>`${(s.corvidaeOwnedSet?.size)||0} corvidé${((s.corvidaeOwnedSet?.size)||0)>1?'s':''} observé${((s.corvidaeOwnedSet?.size)||0)>1?'s':''}`,
-  }),
-  ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'coraciiformes', category:'species', baseName:'Guêpiers & rolliers',
-    imgDir:'assets/trophies/families/coraciiformes',
-    // Coraciiformes hors martins-pecheurs. FR = 2 (Guepier + Rollier d'Europe). Monde ~63.
-    metric:s=>(s.coraciiformesOwnedSet?.size)||0, thresholds:[1,2,4,7,12],
-    descTpl:'Observer {n} guêpiers, rolliers, todiers, motmots ou brachyptérolles',
-    list:s=>[...(s.coraciiformesOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.coraciiformesOwnedSet?.size)||0} espèce${((s.coraciiformesOwnedSet?.size)||0)>1?'s':''} observée${((s.coraciiformesOwnedSet?.size)||0)>1?'s':''}`,
-  }),
-  ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'alcedinidae', category:'species', baseName:'Martins-pêcheurs',
-    imgDir:'assets/trophies/families/alcedinidae',
-    // Pool FR = 1 (Martin-pecheur d'Europe uniquement). Seuils = voyage obligatoire.
-    metric:s=>(s.alcediOwnedSet?.size)||0, thresholds:[1,2,4,7,12],
-    descTpl:'Observer {n} martins-pêcheurs différents',
-    list:s=>[...(s.alcediOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.alcediOwnedSet?.size)||0} martin-pêcheur${((s.alcediOwnedSet?.size)||0)>1?'s':''} observé${((s.alcediOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
     theme:'groupe', icon:ICONS.aigle, family:'suliformes', category:'species', baseName:'Cormorans, fous & frégates',
@@ -2571,40 +2546,28 @@ const TROPHIES = [
     note:s=>`${(s.laridaeOwnedSet?.size)||0} espèce${((s.laridaeOwnedSet?.size)||0)>1?'s':''} observée${((s.laridaeOwnedSet?.size)||0)>1?'s':''}`,
   }),
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'turdidae', category:'species', baseName:'Grives & merles',
+    theme:'groupe', icon:ICONS.aigle, family:'turdidae', category:'species', baseName:'Grives, merles & gobemouches',
     imgDir:'assets/trophies/families/turdidae',
-    // Pool FR ~6 (merle, grives musicienne/mauvis/litorne/draine + merle a plastron)
-    metric:s=>(s.turdidaeOwnedSet?.size)||0, thresholds:[1,2,4,6,8],
-    descTpl:'Observer {n} grives ou merles différents',
-    list:s=>[...(s.turdidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.turdidaeOwnedSet?.size)||0} espèce${((s.turdidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.turdidaeOwnedSet?.size)||0)>1?'s':''}`,
+    // Fusion Turdidae + Muscicapidae (superfamille Muscicapoidea). FR ~15 sp / monde ~500.
+    // Passereaux insectivores/frugivores des sous-bois : grives, merles, rossignols, rougequeues,
+    // traquets, tariers, gobemouches. Ecologie et morphologie tres proches.
+    metric:s=>new Set([...(s.turdidaeOwnedSet||[]), ...(s.muscicapidaeOwnedSet||[])]).size,
+    thresholds:[3,6,10,14,18],
+    descTpl:'Observer {n} grives, merles, gobemouches, rossignols, rougequeues ou traquets',
+    list:s=>[...new Set([...(s.turdidaeOwnedSet||[]), ...(s.muscicapidaeOwnedSet||[])])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>{ const n = new Set([...(s.turdidaeOwnedSet||[]), ...(s.muscicapidaeOwnedSet||[])]).size; return `${n} espèce${n>1?'s':''} observée${n>1?'s':''}`; },
   }),
   ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'muscicapidae', category:'species', baseName:'Muscicapidés',
-    imgDir:'assets/trophies/families/muscicapidae',
-    // Pool FR ~9 (rossignol, gorgebleue, rougegorge, rougequeues, traquets, tariers, gobemouches)
-    metric:s=>(s.muscicapidaeOwnedSet?.size)||0, thresholds:[2,4,7,10,13],
-    descTpl:'Observer {n} muscicapidés différents (rossignols, rougequeues, traquets, gobemouches…)',
-    list:s=>[...(s.muscicapidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.muscicapidaeOwnedSet?.size)||0} espèce${((s.muscicapidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.muscicapidaeOwnedSet?.size)||0)>1?'s':''}`,
-  }),
-  ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'sylviidae', category:'species', baseName:'Fauvettes',
-    imgDir:'assets/trophies/families/sylviidae',
-    // Pool FR ~7 (Curruca : tetes noires, orphee, epervieres, passerinette, sarde, pitchou, cerinesque + Sylvia atricapilla)
-    metric:s=>(s.sylviidaeOwnedSet?.size)||0, thresholds:[1,2,4,6,8],
-    descTpl:'Observer {n} fauvettes différentes',
-    list:s=>[...(s.sylviidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.sylviidaeOwnedSet?.size)||0} fauvette${((s.sylviidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.sylviidaeOwnedSet?.size)||0)>1?'s':''}`,
-  }),
-  ...makeTierFamily({
-    theme:'groupe', icon:ICONS.aigle, family:'phylloscopidae', category:'species', baseName:'Pouillots & rousserolles',
+    theme:'groupe', icon:ICONS.aigle, family:'phylloscopidae', category:'species', baseName:'Fauvettes, pouillots & rousserolles',
     imgDir:'assets/trophies/families/phylloscopidae',
-    // Pool FR ~18 (Phyllosco 8 + Acroc 6 + Locust 3 + Cetti 1)
-    metric:s=>(s.phylloscopidaeOwnedSet?.size)||0, thresholds:[2,5,9,13,17],
-    descTpl:'Observer {n} pouillots, rousserolles, hypolaïs ou locustelles différents',
-    list:s=>[...(s.phylloscopidaeOwnedSet||[])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
-    note:s=>`${(s.phylloscopidaeOwnedSet?.size)||0} espèce${((s.phylloscopidaeOwnedSet?.size)||0)>1?'s':''} observée${((s.phylloscopidaeOwnedSet?.size)||0)>1?'s':''}`,
+    // Fusion Sylviidae + Phylloscopidae + Acrocephalidae + Cettiidae + Locustellidae
+    // (superfamille Sylvioidea). FR ~25 sp / monde ~350. Petits passereaux insectivores
+    // arbustifs/palustres, souvent confondus (silhouettes, chants), meme guilde ecologique.
+    metric:s=>new Set([...(s.sylviidaeOwnedSet||[]), ...(s.phylloscopidaeOwnedSet||[])]).size,
+    thresholds:[3,7,12,18,25],
+    descTpl:'Observer {n} fauvettes, pouillots, rousserolles, hypolaïs, locustelles ou bouscarles',
+    list:s=>[...new Set([...(s.sylviidaeOwnedSet||[]), ...(s.phylloscopidaeOwnedSet||[])])].sort().map(sci=>({ name:frName(sci,sci), sci, owned:true })),
+    note:s=>{ const n = new Set([...(s.sylviidaeOwnedSet||[]), ...(s.phylloscopidaeOwnedSet||[])]).size; return `${n} espèce${n>1?'s':''} observée${n>1?'s':''}`; },
   }),
   ...makeTierFamily({
     theme:'groupe', icon:ICONS.aigle, family:'fringillidae', category:'species', baseName:'Fringilles',
