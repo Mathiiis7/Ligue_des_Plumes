@@ -5190,9 +5190,11 @@ $('#mapSearchSuggest')?.addEventListener('mousedown', e=>{
     const s = $('#mapSearch'); s.value = m.name; mapSearch = m.name;
     // Auto-check la rareté de cette espèce si elle est décochée, sinon elle ne s'affichera pas
     // quand l'utilisateur reviendra à la vue régionale.
-    // N/P exotiques exposes sous leur tier reel via rarityForFilter (chip 'exo' = X/C seulement).
+    // N/P exotiques exposes sous leur tier reel via rarityForCountry (chip 'exo' = X/C seulement).
+    // Utilise le pays courant pour cocher le bon chip rarete (pas force FR).
     const cat = isExotic(m.sci) ? _exoticCategory(m.sci) : '';
-    const rarKey = (cat === 'X' || cat === 'C') ? 'exo' : rarityForFilter(m.sci);
+    const cc0 = ebFilter.country || 'FR';
+    const rarKey = (cat === 'X' || cat === 'C') ? 'exo' : rarityForCountry(m.sci, cc0);
     if(!ebFilter.rarities.has(rarKey)){
       ebFilter.rarities.add(rarKey);
       _refreshRarChips();
@@ -7127,13 +7129,15 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
       for(const [sci, k] of _gbifKeyBySci.entries()){ if(k) sciByKeyLocal.set(k, sci); }
       const allObs = [];
       const seenCache = new Set();
+      // Country-aware : le filtre rarete doit matcher le tier dans le pays courant.
+      const ccF = ebFilter.country || 'FR';
       for(const s of cached){
         const sci = sciByKeyLocal.get(s.tk);
         if(!sci) continue;
         if(_mineHas(mine, sci)) continue;
         if(hasRar){
           const cat = isExotic(sci) ? _exoticCategory(sci) : '';
-          const rk = (cat === 'X' || cat === 'C') ? 'exo' : rarityForFilter(sci);
+          const rk = (cat === 'X' || cat === 'C') ? 'exo' : rarityForCountry(sci, ccF);
           if(!rars.has(rk)) continue;
         }
         // Dedup safety net (au cas ou le cache aurait ete ecrit avec une version anterieure
@@ -10757,7 +10761,7 @@ function _renderSpeciesRarityCard(key){
       // explicative pour que l'utilisateur comprenne l'absence de sous-scores.
       const barTier = isEstabExo
         ? (_exoticTier(k) || 1)
-        : (ccBarTier || (_isForeignOnly(k) ? 9 : 1));
+        : (ccBarTier || ((cc === 'FR' && _isForeignOnly(k)) ? 9 : 1));
       const barMeasure = isEstabExo ? 'Densité GBIF' : 'Fréquence % checklists (pic biweekly)';
       detailsHtml = `
         <details style="margin-top:6px;">
