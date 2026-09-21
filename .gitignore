@@ -58,3 +58,4 @@ data/generated/
 # (95 MB de PNGs, ne devraient pas alourdir le main repo)
 data/range/
 data/range-weekly/
+tools/build/exotic-per-country-scraped.generated.js
