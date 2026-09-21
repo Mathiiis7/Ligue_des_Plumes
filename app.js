@@ -12211,10 +12211,12 @@ async function _renderSpeciesMap(key){
   }
   wrap.hidden = false;
   const bounds = [];
+  // Couleur = rareté DANS LE PAYS de la fiche (smCC). Bug corrige 2026-09-21 :
+  // sciColor(key) etait FR-only, ce qui donnait la mauvaise couleur des lors qu'on
+  // regardait des obs eBird/GBIF dans un autre pays (ex : Grebe esclavon en ME
+  // s'affichait avec couleur FR au lieu de couleur ME).
+  const col = sciColorForCountry(key, smCC);
   for(const p of points){
-    // Couleur = rareté de l'espèce (gris pour exotique), pareil pour amis et eBird 30j.
-    // Le nom de l'auteur reste dans le popup pour identifier qui a coché.
-    const col = sciColor(key);
     const m = L.circleMarker([p.lat, p.lon], { radius:7, weight:2, color:'#fff', fillColor:col, fillOpacity:0.9, opacity:1 });
     m._baseLat = p.lat; m._baseLon = p.lon;
     if(p.uid) m._uid = p.uid;   // pour lier click friend list -> pan marker
