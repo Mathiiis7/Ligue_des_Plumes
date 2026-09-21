@@ -10623,6 +10623,9 @@ async function _renderFrExoticMap(sci, cc){
         ${legendItem('#ef4444','X Échappé')}
         ${legendItem('#d4d4d8','Sauvage / absent')}
       </div>
+      <div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line-2); font-size:10.5px; color:var(--ink-3); text-align:center; line-height:1.4; opacity:.9;">
+        ⓘ Granularité approximative : le statut peut varier <b>au sein d'un département</b> selon le hotspot. eBird décide aussi au niveau de chaque obs individuelle — un couple nicheur en zone rurale peut être <b>N</b> alors qu'un individu isolé dans un parc urbain proche sera <b>X</b>.
+      </div>
     </div>`;
 }
 // Card Rarete : FR par defaut + dropdown pour switch entre pays calibres. Ligne du tier
