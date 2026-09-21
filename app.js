@@ -10256,7 +10256,10 @@ async function _renderSpeciesRangeCard(sci){
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution:'© OpenStreetMap', maxZoom:12, noWrap:true,
       // bounds : empeche Leaflet de requeter des tuiles hors monde (x=-1 -> OSM 400).
-      bounds: [[-85.0511, -180], [85.0511, 180]]
+      bounds: [[-85.0511, -180], [85.0511, 180]],
+      // Fix 2026-09-22 : errorTileUrl gris pour eviter le trait blanc quand une tuile
+      // OSM 200 rate (server occasionnellement 404/timeout sur certaines colonnes).
+      errorTileUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><rect width="256" height="256" fill="%23e6e6e6"/></svg>'
     }).addTo(_rangeMapInstance);
     L.imageOverlay(pngPath, dataBounds, { opacity:0.75, interactive:false, className:'sharp-overlay' }).addTo(_rangeMapInstance);
     _rangeMapInstance.fitBounds(dataBounds);
