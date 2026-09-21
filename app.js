@@ -1747,7 +1747,11 @@ function build(){
   for(const u of universe.values()){
     let k=0; for(const v of u.seenBy.values()) if(countsFR(v)) k++;   // détenteurs "France"
     u.counts=k;
-    u.tier = k===0 ? FOREIGN_TIER : tierFor(k, N);
+    // Rarete ligue : jamais 'Étranger'. Une espece cochee par 0 personne "France"
+    // (uniquement park-only ou X eBird) s'affiche 'Unique' par convention (2026-09-21).
+    // Le label 'Étranger'/'Domestique' est reserve a la rarete reelle (via FOREIGN_TIER
+    // dans rarOf mode real).
+    u.tier = tierFor(k===0 ? 1 : k, N);
     if(k>0){ const val = 100 / k;
       for(const [pidk,v] of u.seenBy){ if(!countsFR(v)) continue;
         const p = state.people.find(x=>x.id===pidk);
@@ -2077,9 +2081,14 @@ function renderMatrix({universe,N}){
   const rMode = state.boardMode==='real' ? 'real' : 'league';
   const NONE_TIER={ id:'none', ord:-1, label:'Non observé', color:'#9aa5b1' };
   // Non observés : en rareté réelle -> on montre leur vraie rareté ; en rareté ligue -> "Non observé"
-  const rarOf = u => u.missing ? (rMode!=='real' ? NONE_TIER : realTier(u.sci, false))
-    : (u.counts===0 ? FOREIGN_TIER                              // vu seulement à l'étranger : hors compétition, même affichage partout
-    : (rMode==='real' ? realTier(u.sci, false) : u.tier));
+  const rarOf = u => {
+    if(u.missing) return rMode!=='real' ? NONE_TIER : realTier(u.sci, false);
+    // Mode reel : espece vue par personne "en France" -> FOREIGN_TIER (label 'Étranger'
+    // avec couleur mauve). Sinon utilise realTier qui gere Étranger/Domestique/exotique.
+    if(rMode==='real') return u.counts===0 ? FOREIGN_TIER : realTier(u.sci, false);
+    // Mode ligue : toujours le tier ligue (jamais 'Étranger', 'Unique' minimum via u.tier).
+    return u.tier;
+  };
   const rarHead = rMode==='real' ? 'Rareté réelle' : 'Rareté';
 
   // option : ajouter tous les oiseaux de France non encore observés par le groupe
