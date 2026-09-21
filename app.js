@@ -1654,12 +1654,11 @@ function activeInMonth(sci, m, region, subregion){
 }
 function realTier(sci, abroad){
   const key=(sci||'').trim().toLowerCase();
-  // Obs a l'etranger + espece absente du bar chart FR = 'Étranger', peu importe son
-  // statut exotique en FR. Sinon une espece isExotic(FR)=true mais native ailleurs
-  // (Pintade de Numidie en Namibie, Ibis sacre au Kenya, Grue couronnee au Rwanda,
-  // Ouette d'Egypte en Afrique...) s'afficherait a tort en 'Exotique / Vu en parcs'
-  // pour un ami qui l'a vue chez elle. Priorite mise 2026-09-21.
-  if(abroad && !(key in REAL_RARITY)){
+  // Espece hors avifaune FR (pas dans REAL_RARITY) ET pas exotique etablie FR : "Étranger".
+  // Couvre les especes mondiales vues seulement a l'etranger (Tourterelle maillee en Namibie,
+  // Souimanga au Sri Lanka, Toucan au Bresil...). Renvoie ord=0 donc peu de points au score
+  // mais l'obs est comptee dans le total espece via foreignTick (revise 2026-09-21).
+  if(!(key in REAL_RARITY) && !isExotic(sci)){
     return { id:'etr', ord:0, label:'Étranger', color:'#8a7fb3' };
   }
   if(isExotic(sci)){
@@ -1673,15 +1672,6 @@ function realTier(sci, abroad){
       if(t) return { id:'r'+t, ord:t, label: REAL_LABELS[t]||('niveau '+t), color:realColor(t) };
     }
     return { id:'exo', ord:0, label: EXOTIC_CATEGORY_LABEL[cat] || 'Exotique', color:'#7e8a99' };
-  }
-  // Espèce hors des 648 de référence France : ne pas prétendre "Très commun".
-  // Si les données eBird (colonne State/Province) confirment qu'elle n'a été vue
-  // qu'à l'étranger -> "Étranger" ; sinon (pas d'info pays, ou vue en France :
-  // échappée/rareté) -> "Hors référence".
-  if(!(key in REAL_RARITY) && !(key in FR_NAMES)){
-    return abroad
-      ? { id:'etr', ord:0, label:'Étranger', color:'#8a7fb3' }
-      : { id:'hr', ord:0, label:'Hors référence', color:'#9aa5b1' };
   }
   // Utilise rarityForCountry (merge S&T composite + bar chart) au lieu de rarityReal
   // (bar chart brut). Sinon le classement affiche un tier different de celui de la fiche.
@@ -1699,18 +1689,19 @@ const inRef = sci => { const k=(sci||'').trim().toLowerCase(); return (k in REAL
 // Vrai cochage étranger = vu SEULEMENT à l'étranger ET pas une espèce de France.
 // (Un oiseau français vu d'abord à l'étranger - ex. Pinson - reste compté : la life list
 //  eBird ne garde que la 1re obs, donc son lieu n'est pas fiable pour l'exclure.)
-// AJOUT 2026-09-21 : une observation est aussi "etrangere" (exclue du classement) si
-// l'espece n'est pas observable a l'etat sauvage dans le pays d'observation :
-//   - isParkOnlyExotic : pure captive worldwide (Paon, Dendrocygne, Canard musque...)
+// REVISION 2026-09-21 : les especes etrangeres (vues seulement hors FR, hors avifaune FR)
+// SONT comptees dans le classement, avec le label 'Étranger' pour info. Seuls les
+// vrais captifs sont exclus :
+//   - isParkOnlyExotic : pure captive worldwide (Dendrocygne, Spatule platalea, Grue
+//     couronnee, Ibis rouge, Flamant nain...) -> jamais comptes
 //   - exoticCategoryInCountry === 'X' : eBird marque l'espece Escapee dans ce pays
-// Effet : un cochage au parc d'ornement (Spatule platalea a Nantes) ne pollue plus le
-// classement, meme s'il est logue country=FR.
+//     precis (ex : cygne noir logue en FR) -> pas compte pour ce pays d'obs
 const foreignTick = v => {
   const k = (v.sci||'').trim().toLowerCase();
   if(isParkOnlyExotic(k)) return true;
   const cc = v.country || (v.fr ? 'FR' : null);
   if(cc && exoticCategoryInCountry(k, cc) === 'X') return true;
-  return v.fr===false && !inRef(v.sci);
+  return false;
 };
 // X (Echappe isole) et C (Origine domestique) : classes "exotique meme cochee" -> comptent
 // dans le TOTAL d'especes et le SCORE (comme les autres cochages), mais sont exclus des
