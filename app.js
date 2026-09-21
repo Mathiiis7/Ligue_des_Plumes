@@ -10549,7 +10549,9 @@ function _renderSpeciesRarityCard(key){
     const cat = isExo ? (exoticCategoryInCountry(k, cc) || _exoticCategory(k)) : '';
     const catLbl = cat ? (EXOTIC_CATEGORY_LABEL[cat] || '') : '';
     // Etabli N/P : affiche vrai tier + label rarete + categorie. Sinon (X/C, parcs) : "0 · Exotique".
-    const isEstab = isExo && !isParkOnlyExotic(k) && (cat === 'N' || cat === 'P');
+    // Fix 2026-09-21 : priorite N/P sur park-only (Faisan venere park-only ET N eBird FR
+    // -> affichable a son vrai tier bar chart FR).
+    const isEstab = isExo && (cat === 'N' || cat === 'P');
     const label = isExo
       ? (isEstab ? ((typeof REAL_LABELS === 'object' && REAL_LABELS[w]) || ('niveau '+w)) : 'Exotique')
       : ((typeof REAL_LABELS === 'object' && REAL_LABELS[w]) || ('niveau '+w));
@@ -10575,7 +10577,7 @@ function _renderSpeciesRarityCard(key){
     // Source d'appui = bar chart eBird pour sauvages, GBIF pour exotiques N/P.
     // Non affichée pour tier 0 (parcs semi-libres, X/C échappés) : pas de calcul de tier.
     let detailsHtml = '';
-    const isEstabExo = isExo && !isParkOnlyExotic(k) && (cat === 'N' || cat === 'P');
+    const isEstabExo = isExo && (cat === 'N' || cat === 'P');
     const canHaveDetails = (!isExo || isEstabExo);
     // Data S&T + bar chart du pays courant (via registry pour multi-pays).
     const regCC = COUNTRIES_REG[cc];
