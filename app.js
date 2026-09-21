@@ -500,11 +500,11 @@ function _countryHasSpecies(cc, sci){
 // Birdydex, Cette semaine). Pave la scaling vers 15-100 pays avec search + grouping.
 const CONTINENT_BY_CC = {
   FR:'Europe', ME:'Europe', ES:'Europe', IT:'Europe', GB:'Europe', PT:'Europe',
-  DE:'Europe', NL:'Europe', GR:'Europe', CH:'Europe',
+  DE:'Europe', NL:'Europe', GR:'Europe', CH:'Europe', NO:'Europe', IS:'Europe',
   US:'Amérique', CA:'Amérique', MX:'Amérique', CR:'Amérique', EC:'Amérique',
   AU:'Océanie', NZ:'Océanie',
-  KE:'Afrique', ZA:'Afrique', MA:'Afrique',
-  JP:'Asie', IN:'Asie',
+  KE:'Afrique', ZA:'Afrique', MA:'Afrique', NA:'Afrique',
+  JP:'Asie', IN:'Asie', LK:'Asie',
 };
 const CONTINENT_ORDER = ['Europe', 'Amérique', 'Afrique', 'Océanie', 'Asie'];
 const CC_FLAGS = {
@@ -512,8 +512,8 @@ const CC_FLAGS = {
   DE:'🇩🇪', NL:'🇳🇱', GR:'🇬🇷', CH:'🇨🇭', BE:'🇧🇪', HR:'🇭🇷', AL:'🇦🇱', TR:'🇹🇷', IS:'🇮🇸',
   US:'🇺🇸', CA:'🇨🇦', MX:'🇲🇽', CR:'🇨🇷', EC:'🇪🇨', BR:'🇧🇷', AR:'🇦🇷', PE:'🇵🇪', CO:'🇨🇴',
   AU:'🇦🇺', NZ:'🇳🇿', PG:'🇵🇬',
-  KE:'🇰🇪', ZA:'🇿🇦', MA:'🇲🇦', EG:'🇪🇬', TZ:'🇹🇿', UG:'🇺🇬',
-  JP:'🇯🇵', IN:'🇮🇳', TH:'🇹🇭', CN:'🇨🇳', ID:'🇮🇩',
+  KE:'🇰🇪', ZA:'🇿🇦', MA:'🇲🇦', EG:'🇪🇬', TZ:'🇹🇿', UG:'🇺🇬', NA:'🇳🇦',
+  JP:'🇯🇵', IN:'🇮🇳', TH:'🇹🇭', CN:'🇨🇳', ID:'🇮🇩', LK:'🇱🇰',
   RU:'🇷🇺', SE:'🇸🇪', NO:'🇳🇴', FI:'🇫🇮', DK:'🇩🇰', PL:'🇵🇱', CZ:'🇨🇿', AT:'🇦🇹',
   IE:'🇮🇪', LU:'🇱🇺', HU:'🇭🇺', RO:'🇷🇴', BG:'🇧🇬', RS:'🇷🇸', SK:'🇸🇰', SI:'🇸🇮',
 };
@@ -672,7 +672,10 @@ function _openCountryPicker(currentCode, opts = {}){
               ? '<span class="cp-item-meta">absente</span>'
               : `<span class="cp-item-meta">${esc(lbl)}</span><span class="rar-chip on" style="background:${col};" title="tier ${tier}">${tier}</span>`;
           } else {
-            const nSp = Object.keys(reg.st() || {}).length;
+            // Nb d'especes calibrees pour ce pays : prime S&T Cornell (plus riche : ~600
+            // sp europeennes typiques), fallback bar chart eBird pour les pays sans S&T
+            // (Sri Lanka, Namibie, Islande, Norvege...).
+            const nSp = Object.keys(reg.st() || {}).length || Object.keys(reg.barTier() || {}).length;
             meta = nSp > 0 ? `<span class="cp-item-meta">${nSp} espèces</span>` : '';
           }
           const absentCls = (focusSci && it.score === 0) ? ' absent' : '';
