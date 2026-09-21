@@ -14049,15 +14049,15 @@ function _pkdxRender(){
       // de n'afficher que les exotiques ; sinon ils sont mixes avec les sauvages.
       const k = sci;
       // Espece dans le catalogue du pays : via registry COUNTRIES_REG (bar chart OU S&T
-      // non-nul) OU exotique explicite dans ce pays (via eBird ou park-only worldwide en FR).
-      // Fix 2026-09-21 : ne pas admettre les EXOTIQUES_CONNUES_FR via fallback dans les
-      // autres pays (Bernache du Canada apparaissait dans le Birdydex ME parce qu'exotique
-      // en FR). Park-only worldwide restent en FR (contexte parcs typiques).
+      // non-nul) OU exotique explicite dans ce pays (eBird uniquement).
+      // Fix 2026-09-21 : les park-only sont exclus PARTOUT (y compris FR). Le user prefere
+      // ne pas voir les flamants d'ornement/dendrocygnes/grues couronnees etc. dans le
+      // Birdydex - trop captifs, pollution visuelle. Les cochages historiques restent
+      // dans le total (foreignTick=false) mais ils n'apparaissent plus dans la grille.
       let inCatalog = _countryHasSpecies(country, k);
       if(!inCatalog){
         const inEbirdCC = !!(EXOTIQUES_EBIRD_PAR_PAYS[country] && EXOTIQUES_EBIRD_PAR_PAYS[country][k]);
-        const parkOnlyFR = country === 'FR' && isParkOnlyExotic(sci);
-        if(!inEbirdCC && !parkOnlyFR) continue;
+        if(!inEbirdCC) continue;
         inCatalog = true;
       }
       const tier = rarityForCountry(sci, country);
@@ -14120,14 +14120,13 @@ function _pkdxRender(){
   }
   // Compteur : X vues / Y filtrees / Z total FR.
   const totalFR = _pkdxAllSorted.length;
-  // Compte owned dans le catalogue du pays (meme logique que le filtre inCatalog ci-dessus,
-  // inclut TOUS les exotiques via isExoticInCountry). Fix 2026-09-21 : etendu aux 12 pays
-  // via _countryHasSpecies + EXOTIQUES_EBIRD_PAR_PAYS (etait FR/ME only).
+  // Compte owned dans le catalogue du pays (meme logique que le filtre inCatalog ci-dessus).
+  // Fix 2026-09-21 : etendu aux 12 pays via _countryHasSpecies + EXOTIQUES_EBIRD_PAR_PAYS.
+  // Park-only exclus partout (aligne avec le filtre inCatalog).
   const totalOwned = [...mine].filter(s => {
     if(!FR_NAMES[s]) return false;
     if(_countryHasSpecies(country, s)) return true;
     if(EXOTIQUES_EBIRD_PAR_PAYS[country] && EXOTIQUES_EBIRD_PAR_PAYS[country][s]) return true;
-    if(country === 'FR' && isParkOnlyExotic(s)) return true;
     return false;
   }).length;
   if(counter) counter.textContent = `${totalOwned} / ${totalFR}${rows.length !== totalFR ? ` · filtré : ${rows.length}` : ''}`;
