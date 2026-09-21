@@ -10599,15 +10599,17 @@ async function _renderFrExoticMap(sci, cc){
   if(!container) return;
   if(cc !== 'FR' || typeof EXOTIC_STATUS_BY_DEP_FR !== 'object'){ container.innerHTML = ''; return; }
   const key = (sci || '').toLowerCase();
-  // La mini-carte n'est affichee QUE pour les especes classees exotiques au niveau
-  // NATIONAL FR (dans EXOTIQUES_EBIRD_PAR_PAYS.FR). Cas ecarte : especes sauvages
-  // avec quelques obs isolees flaggees X dans 1-3 departements (Marmaronette, Oie
-  // naine...), qui n'ont pas de statut exotique national et polluent la carte avec
-  // 1-3 dept rouges pour un vagrant occasionnel.
+  // La mini-carte est affichee si :
+  //   - l'espece est exotique au niveau NATIONAL FR (EXOTIQUES_EBIRD_PAR_PAYS.FR), OU
+  //   - l'espece est park-only worldwide (EXOTIQUES_PARCS) - captif classique meme si
+  //     eBird ne la flag pas nationalement (Flamant nain a 2 dep P, Cygne noir a IDF X...).
+  // Cas ecarte : especes purement sauvages avec 1-3 obs isolees taggees X en dep
+  // (Marmaronette, Oie naine...) - pas de statut national + pas dans EXOTIQUES_PARCS.
   const nationalExotic = (typeof EXOTIQUES_EBIRD_PAR_PAYS === 'object') &&
                           EXOTIQUES_EBIRD_PAR_PAYS.FR &&
                           EXOTIQUES_EBIRD_PAR_PAYS.FR[key];
-  if(!nationalExotic){ container.innerHTML = ''; return; }
+  const isParkOnly = (typeof isParkOnlyExotic === 'function') && isParkOnlyExotic(key);
+  if(!nationalExotic && !isParkOnly){ container.innerHTML = ''; return; }
   const perDep = {};
   let anyStatus = false;
   for(const [code, byDep] of Object.entries(EXOTIC_STATUS_BY_DEP_FR)){
