@@ -1691,7 +1691,11 @@ function realTier(sci, abroad){
 // Cochage hors compétition : visible mais non compté.
 const FOREIGN_TIER = { id:'etr', ord:-1, label:'Étranger', color:'#8a7fb3' };
 // Espèce faisant partie de l'avifaune française (observable en France) ?
-const inRef = sci => { const k=(sci||'').trim().toLowerCase(); return (k in REAL_RARITY) || (k in FR_NAMES) || isExotic(k); };
+// (Retire FR_NAMES 2026-09-21 : ce dict couvre les noms fr de TOUTES les especes mondiales,
+// pas juste l'avifaune FR. Une tourterelle maillee vue en Namibie a un nom fr donc passait
+// comme "FR" et polluait le classement avec un label exotique-FR errone. Vraie ref FR :
+// bar chart REAL_RARITY + exotiques connues FR via isExotic().)
+const inRef = sci => { const k=(sci||'').trim().toLowerCase(); return (k in REAL_RARITY) || isExotic(k); };
 // Vrai cochage étranger = vu SEULEMENT à l'étranger ET pas une espèce de France.
 // (Un oiseau français vu d'abord à l'étranger - ex. Pinson - reste compté : la life list
 //  eBird ne garde que la 1re obs, donc son lieu n'est pas fiable pour l'exclure.)
