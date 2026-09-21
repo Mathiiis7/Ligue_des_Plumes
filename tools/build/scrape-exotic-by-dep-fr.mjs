@@ -16,7 +16,7 @@ const OUT = join(__dir, 'exotic-by-dep-fr.generated.js');
 
 // Codes departements fetches depuis eBird API 2026-09-21.
 const FR_DEPS = [
-  'FR-ARA-01','FR-HDF-02','FR-ARA-03','FR-PAC-04','FR-PAC-06','FR-ARA-07','FR-BFC-08',
+  'FR-ARA-01','FR-HDF-02','FR-ARA-03','FR-PAC-04','FR-PAC-06','FR-ARA-07','FR-GES-08',
   'FR-OCC-09','FR-GES-10','FR-OCC-11','FR-OCC-12','FR-PAC-13','FR-NOR-14','FR-NOR-27',
   'FR-CVL-28','FR-BRE-29','FR-BFC-21','FR-BRE-22','FR-NAQ-23','FR-NAQ-24','FR-BFC-25',
   'FR-ARA-26','FR-OCC-30','FR-OCC-31','FR-OCC-32','FR-NAQ-33','FR-OCC-34','FR-BRE-35',
@@ -28,8 +28,8 @@ const FR_DEPS = [
   'FR-IDF-91','FR-IDF-92','FR-IDF-93','FR-IDF-94','FR-IDF-95','FR-PAC-05','FR-HDF-59',
   'FR-HDF-60','FR-NOR-61','FR-HDF-62','FR-ARA-69','FR-BFC-70','FR-BFC-71','FR-CVL-45',
   'FR-CVL-18','FR-OCC-46','FR-NAQ-16','FR-NAQ-17','FR-NAQ-19','FR-COR-2A','FR-COR-2B',
-  'FR-NAQ-64','FR-OCC-65','FR-OCC-66','FR-GES-67','FR-GES-68','FR-BFC-58','FR-NOR-90',
-  'FR-BRE-44','FR-OCC-43','FR-BFC-15',
+  'FR-NAQ-64','FR-OCC-65','FR-OCC-66','FR-GES-67','FR-GES-68','FR-BFC-58','FR-BFC-90',
+  'FR-PDL-44','FR-ARA-43','FR-ARA-15',
   // Territoires outre-mer (DOM/COM)
   'FR-GF','FR-GP','FR-MQ','FR-YT','FR-RE',
 ];
