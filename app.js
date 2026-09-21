@@ -1767,17 +1767,11 @@ const inRef = sci => { const k=(sci||'').trim().toLowerCase(); return (k in REAL
 // Vrai cochage étranger = vu SEULEMENT à l'étranger ET pas une espèce de France.
 // (Un oiseau français vu d'abord à l'étranger - ex. Pinson - reste compté : la life list
 //  eBird ne garde que la 1re obs, donc son lieu n'est pas fiable pour l'exclure.)
-// REVISION 2026-09-21 : les park-only comptent aussi dans le total especes (0 points mais
-// +1 espece). Objectif user : si qqun coche un Dendrocygne fauve a un bassin d'ornement en
-// France, on compte l'observation. Sinon quand il verra la vraie forme sauvage a l'etranger
-// (Sahel par ex), il oubliera de la cocher parce qu'il pensera qu'il l'a deja.
-// Reste exclu : uniquement les formes domestiques (C).
-const foreignTick = v => {
-  const k = (v.sci||'').trim().toLowerCase();
-  const cc = v.country || (v.fr ? 'FR' : null);
-  if(cc && exoticCategoryInCountry(k, cc) === 'C') return true;
-  return false;
-};
+// REVISION 2026-09-21 : TOUT compte comme +1 espece (park-only, X, C, etrangers). Le user
+// prefere compter le cochage meme captif/domestique plutot que risquer que le birder oublie
+// la vraie forme sauvage plus tard (il pensera qu'il l'a deja). Le tier 0 reste applique aux
+// captifs -> 0 point au score rarete. foreignTick ne sert plus a exclure (retourne false).
+const foreignTick = v => false;
 // X (Echappe isole) et C (Origine domestique) : classes "exotique meme cochee" -> comptent
 // dans le TOTAL d'especes et le SCORE (comme les autres cochages), mais sont exclus des
 // calculs de rarete (Mike Horn, "plus rare", scoreReal) via _countsForRarity ci-dessous.
