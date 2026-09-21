@@ -14121,12 +14121,14 @@ function _pkdxRender(){
   // Compteur : X vues / Y filtrees / Z total FR.
   const totalFR = _pkdxAllSorted.length;
   // Compte owned dans le catalogue du pays (meme logique que le filtre inCatalog ci-dessus,
-  // inclut TOUS les exotiques via isExoticInCountry).
+  // inclut TOUS les exotiques via isExoticInCountry). Fix 2026-09-21 : etendu aux 12 pays
+  // via _countryHasSpecies + EXOTIQUES_EBIRD_PAR_PAYS (etait FR/ME only).
   const totalOwned = [...mine].filter(s => {
     if(!FR_NAMES[s]) return false;
-    return country === 'ME'
-      ? ((typeof REAL_RARITY_ME_EBIRD !== 'undefined' && !!REAL_RARITY_ME_EBIRD[s]) || isExoticInCountry(s, 'ME'))
-      : (!!REAL_RARITY[s] || isExoticInCountry(s, 'FR'));
+    if(_countryHasSpecies(country, s)) return true;
+    if(EXOTIQUES_EBIRD_PAR_PAYS[country] && EXOTIQUES_EBIRD_PAR_PAYS[country][s]) return true;
+    if(country === 'FR' && isParkOnlyExotic(s)) return true;
+    return false;
   }).length;
   if(counter) counter.textContent = `${totalOwned} / ${totalFR}${rows.length !== totalFR ? ` · filtré : ${rows.length}` : ''}`;
   if(!rows.length){ grid.innerHTML = ''; empty.style.display = ''; return; }
