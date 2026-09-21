@@ -981,17 +981,18 @@ function isHiddenSpecies(sci){ return EXOTIQUES_MASQUEES.has((sci||'').trim().to
 // nombre d'especes vues et le classement entre amis) mais on leur assigne tier 0 =
 // "aucun point de rarete reelle". Badge visuel gris avec un "0" pour bien montrer
 // qu'ils n'entrent pas dans le score rarete.
+// Liste "captif strict" : especes jamais vraiment libres en Europe (toujours pinionnees ou
+// en enclos). Cas par cas laisse au birder pour les especes ambigues qui apparaissent en
+// semi-liberte urbaine (paon bleu, cygne noir, cygne cou noir, pintade, canard musque) :
+// eBird les classe X partout mais leur presence "libre" a Vincennes / lacs urbains permet
+// une observation legitime. Retire de la liste stricte 2026-09-21 apres discussion.
 const EXOTIQUES_PARCS = new Set([
-  'pavo cristatus','pavo muticus',             // Paon bleu, Paon spicifère
-  'cygnus melancoryphus','cygnus atratus',    // Cygne cou noir, Cygne noir
+  'pavo muticus',                              // Paon spicifère (le paon bleu Pavo cristatus reste comptable au cas par cas)
   'phoenicopterus chilensis','phoenicopterus ruber',   // Flamants ornementaux
   'phoeniconaias minor','phoenicoparrus andinus',      // Flamant nain, Flamant des Andes
   'chloephaga picta','oressochen melanopterus','chloephaga rubidiceps',  // Ouettes Magellan, Andes, tête rousse
   'neochen jubata','cyanochen cyanoptera',    // Ouette Orénoque, Ouette à ailes bleues (Éthiopie)
-  'numida meleagris',                          // Pintade de Numidie
   'gallus gallus',                             // Coq bankiva domestique
-  'cairina moschata',                          // Canard musqué domestique
-  'anser cygnoides',                           // Oie cygnoide domestique
   'netta peposaca','netta erythrophthalma',   // Nette de Chili, Nette à cou rose (Afrique)
   'amazonetta brasiliensis',                   // Sarcelle du Brésil
   'mareca sibilatrix',                         // Canard du Chili
@@ -1652,12 +1653,20 @@ function activeInMonth(sci, m, region, subregion){
   return v >= Math.min(0.01, 0.3 * peak);
 }
 function realTier(sci, abroad){
+  const key=(sci||'').trim().toLowerCase();
+  // Obs a l'etranger + espece absente du bar chart FR = 'Étranger', peu importe son
+  // statut exotique en FR. Sinon une espece isExotic(FR)=true mais native ailleurs
+  // (Pintade de Numidie en Namibie, Ibis sacre au Kenya, Grue couronnee au Rwanda,
+  // Ouette d'Egypte en Afrique...) s'afficherait a tort en 'Exotique / Vu en parcs'
+  // pour un ami qui l'a vue chez elle. Priorite mise 2026-09-21.
+  if(abroad && !(key in REAL_RARITY)){
+    return { id:'etr', ord:0, label:'Étranger', color:'#8a7fb3' };
+  }
   if(isExotic(sci)){
     // Categorie eBird : N (introduit etabli) et P (semi-libre) meritent leur tier reel
     // (populations qui se comportent comme des sauvages). X (echappe) et C (domestique)
     // restent en "Exotique" gris uniforme.
-    const kk = (sci||'').trim().toLowerCase();
-    const cat = _exoticCategory(kk);
+    const cat = _exoticCategory(key);
     if(cat === 'N' || cat === 'P'){
       // Utilise rarityForCountry qui applique le merge S&T + GBIF (coherent avec fiche).
       const t = rarityForCountry(sci, 'FR');
@@ -1665,7 +1674,6 @@ function realTier(sci, abroad){
     }
     return { id:'exo', ord:0, label: EXOTIC_CATEGORY_LABEL[cat] || 'Exotique', color:'#7e8a99' };
   }
-  const key=(sci||'').trim().toLowerCase();
   // Espèce hors des 648 de référence France : ne pas prétendre "Très commun".
   // Si les données eBird (colonne State/Province) confirment qu'elle n'a été vue
   // qu'à l'étranger -> "Étranger" ; sinon (pas d'info pays, ou vue en France :

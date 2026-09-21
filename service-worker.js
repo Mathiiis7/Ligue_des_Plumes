@@ -3,7 +3,7 @@
 //   puis rafraichit en background. Prochain reload = nouvelle version.
 // - Requetes cross-origin (Firestore, iNaturalist, xeno-canto, Wikipedia, etc.) : reseau seul.
 // - Bump CACHE_VERSION quand on veut invalider volontairement.
-const CACHE_VERSION = 'v335-2026-09-21-classement-exclut-captifs-per-pays';
+const CACHE_VERSION = 'v337-2026-09-21-realtier-etranger-priorite-avant-exotique-fr';
 const CACHE_NAME = 'lmb-' + CACHE_VERSION;
 
 self.addEventListener('install', (e) => {
