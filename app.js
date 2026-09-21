@@ -14061,8 +14061,19 @@ function _pkdxRender(){
       const k = sci;
       // Espece dans le catalogue du pays : via registry COUNTRIES_REG (bar chart OU S&T
       // non-nul) OU exotique dans ce pays. Support FR, ME, ES, IT, GB, PT + futurs.
-      const inCatalog = _countryHasSpecies(country, k) || isExoticInCountry(sci, country);
-      if(!inCatalog) continue;
+      // Fix 2026-09-21 : ne pas admettre via isExoticInCountry si ca vient d'un fallback FR
+      // global (park-only worldwide ou EXOTIQUES_CONNUES_FR) car alors l'espece n'est pas
+      // vraiment presente dans ce pays. Ex : Bernache nene apparaissait dans le Birdydex ME
+      // parce que park-only worldwide -> isExoticInCountry(ME) = true.
+      let inCatalog = _countryHasSpecies(country, k);
+      if(!inCatalog){
+        const inEbirdCC = !!(EXOTIQUES_EBIRD_PAR_PAYS[country] && EXOTIQUES_EBIRD_PAR_PAYS[country][k]);
+        // Park-only : accepte uniquement en FR (contexte parcs francais types : Vincennes,
+        // Beaujoire...). Ailleurs ces especes sont exclues du Birdydex.
+        const parkOnlyFR = country === 'FR' && isParkOnlyExotic(sci);
+        if(!inEbirdCC && !parkOnlyFR) continue;
+        inCatalog = true;
+      }
       const tier = rarityForCountry(sci, country);
       // Tier peut etre 0 (parcs semi-libres : paons, flamants ornementaux, canards
       // exotiques de collection). On les garde -> visibles dans l'Birdydex avec badge
