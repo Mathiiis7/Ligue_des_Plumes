@@ -11482,7 +11482,11 @@ function _renderSpeciesFreqChart(key, country){
   const bestIdx = arr.indexOf(maxV);
   const now = new Date();
   const dayOfYear = Math.floor((now - new Date(now.getFullYear(),0,0)) / 86400000);
-  const curIdx = isWeekly ? Math.min(51, Math.floor(dayOfYear / 7)) : now.getMonth();
+  // curIdx = slot dans arr (52 semaines TOUJOURS, meme quand la source est mensuelle
+  // etiree). Avant : quand isWeekly=false on prenait now.getMonth() (0-11), mais l'array
+  // fait 52 slots -> le curseur se posait vers janvier (slot 8 = janv-fev) au lieu de
+  // septembre. Fix 2026-09-22 : toujours calculer en semaine.
+  const curIdx = Math.min(51, Math.floor(dayOfYear / 7));
   if(wrap) wrap.hidden = false;
   if(card) card.hidden = false;
   // Scope affiche : "Île-de-France" si mode strict region, "France (via Corse)" si
