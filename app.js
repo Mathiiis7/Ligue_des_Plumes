@@ -1374,9 +1374,17 @@ function rarityForCountry(sci, country){
     if(isParkOnlyExotic(sci)) return 0;
     const cat = exoticCategoryInCountry(sci, c) || _exoticCategory(k);
     if(cat === 'N' || cat === 'P'){
-      const gbifTier = _exoticTier(k) || 1;
-      // Merge S&T + GBIF exotiques pour tous les pays (regle +/-1 tier).
-      return _tierFromSTvsBarChart(k, gbifTier, c);
+      // Fix 2026-09-21 : le fallback _exoticTier utilise REAL_RARITY (FR) + REAL_RARITY_EXO_GBIF
+      // (FR). Ne l'appliquer que si on est en FR OU si l'espece est explicitement listee dans
+      // EXOTIQUES_EBIRD_PAR_PAYS[cc] (donc vraiment observee dans ce pays). Sinon retourne 0
+      // pour eviter d'inventer un tier base sur FR (ex : Erismature rousse au Montenegro).
+      const inEbirdCountry = EXOTIQUES_EBIRD_PAR_PAYS[c] && EXOTIQUES_EBIRD_PAR_PAYS[c][k];
+      if(c === 'FR' || inEbirdCountry){
+        const gbifTier = _exoticTier(k) || 1;
+        // Merge S&T + GBIF exotiques (regle +/-1 tier).
+        return _tierFromSTvsBarChart(k, gbifTier, c);
+      }
+      return 0;
     }
     return 0;
   }
@@ -11194,7 +11202,10 @@ function _renderSpeciesFreqChart(key, country){
       }
     }
     // Bar chart mensuel NATIONAL (SEULEMENT si pas en mode region)
-    if(!monthlyArr && !strictRegional && typeof REAL_FREQ_MONTHLY === 'object'){ monthlyArr = REAL_FREQ_MONTHLY[key] || null; }
+    // Fix 2026-09-21 : restreindre le fallback REAL_FREQ_MONTHLY (FR) au SEUL cas cc=FR.
+    // Sinon l'Erismature rousse au Montenegro affichait les data FR (0.15% partout) alors
+    // qu'elle n'est pas presente en ME.
+    if(!monthlyArr && !strictRegional && cc === 'FR' && typeof REAL_FREQ_MONTHLY === 'object'){ monthlyArr = REAL_FREQ_MONTHLY[key] || null; }
     if(monthlyArr && monthlyArr.length === 12){
       // Étire 12 mois -> 52 semaines (repartition proportionnelle des semaines par mois).
       // Chaque semaine w recoit la valeur du mois dont elle occupe le milieu.
