@@ -10798,13 +10798,13 @@ function _renderSpeciesRarityCard(key){
         <div style="padding:8px 10px;margin:4px 0 2px 6px;border-left:2px solid var(--line);line-height:1.5;">
           <div style="margin-bottom:6px;color:var(--ink-2);">Chaque espèce vue en dehors de son aire naturelle est classée par des reviewers bénévoles de l'<b>eBird Exotics Working Group</b> selon 4 catégories. Le badge est décidé au niveau <b>département / région / pays</b> selon la présence de populations reproductrices auto-suffisantes.</div>
           <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 10px;">
-            <span style="background:#22c55e;color:#fff;padding:1px 7px;border-radius:5px;font-weight:800;font-size:11px;align-self:start;">N</span>
+            <span style="font-weight:800;font-size:12px;align-self:start;color:var(--ink);">N</span>
             <span><b>Naturalisé (Introduit établi)</b> — population reproductrice établie durablement hors de l'aire native. Ex : Bernache du Canada, Perruche à collier IDF/PACA.</span>
-            <span style="background:#f59e0b;color:#fff;padding:1px 7px;border-radius:5px;font-weight:800;font-size:11px;align-self:start;">P</span>
+            <span style="font-weight:800;font-size:12px;align-self:start;color:var(--ink);">P</span>
             <span><b>Provisoire</b> — obs régulières mais population non-confirmée. Mélange typique de vagrants sauvages et échappés que les reviewers ne peuvent pas distinguer.</span>
-            <span style="background:#ef4444;color:#fff;padding:1px 7px;border-radius:5px;font-weight:800;font-size:11px;align-self:start;">X</span>
+            <span style="font-weight:800;font-size:12px;align-self:start;color:var(--ink);">X</span>
             <span><b>Échappé isolé</b> — individu(s) évidemment échappé(s) de captivité, aucune pop reproductrice. Ex : Ara, Perroquet gris, Flamant chilien.</span>
-            <span style="background:#94a3b8;color:#fff;padding:1px 7px;border-radius:5px;font-weight:800;font-size:11px;align-self:start;">C</span>
+            <span style="font-weight:800;font-size:12px;align-self:start;color:var(--ink);">C</span>
             <span><b>Origine domestique</b> — issue de ferme, élevage, hybride domestique. Ex : Canard musqué domestique, Coq, Pintade.</span>
           </div>
           <div style="margin-top:8px;padding-top:6px;border-top:1px dashed var(--line-2);color:var(--ink-3);opacity:.9;">
