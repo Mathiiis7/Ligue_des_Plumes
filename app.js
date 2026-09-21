@@ -662,7 +662,10 @@ function _openCountryPicker(currentCode, opts = {}){
           if(focusSci){
             // Utilise le tier de rareté (merge S&T + bar chart via rarityForCountry) plutot
             // que la valeur brute (evite melange % vs ind/h). Affiche tier + label + couleur.
-            const absent = it.score === 0;
+            // Espece consideree "absente" seulement si aucune data et PAS exotique dans ce pays.
+            // Ex : Faucon laggar est X en FR (echappe) - score=0 mais on doit afficher X, pas 'absente'.
+            const isExoLocal = isExoticInCountry(focusSci, cc);
+            const absent = it.score === 0 && !isExoLocal;
             const tier = absent ? 10 : rarityForCountry(focusSci, cc);
             const col = realColor(tier);
             // Tier 0 exotique : affiche la lettre categorie (N/P/X/C) au lieu de "0",
