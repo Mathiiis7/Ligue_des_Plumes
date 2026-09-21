@@ -10513,6 +10513,15 @@ function _renderSpeciesRarityCard(key){
     // isExo est PER-PAYS via isExoticInCountry (le Pelican gris est exotique X en ME
     // via EXOTIQUES_EBIRD_PAR_PAYS mais pas dans le dict EXOTIQUES_CONNUES_FR global centre FR).
     const isExo = isExoticInCountry(k, cc);
+    // Fix 2026-09-21 : si l'exotique vient d'un fallback FR (pas explicitement listee dans
+    // EXOTIQUES_EBIRD_PAR_PAYS[cc]) ET n'est pas dans le bar chart local ET pays != FR :
+    // afficher 'absente' comme le picker au lieu de '0 · Exotique · Échappé isolé' incoherent.
+    const inEbirdCC = !!(EXOTIQUES_EBIRD_PAR_PAYS[cc] && EXOTIQUES_EBIRD_PAR_PAYS[cc][k]);
+    const inBarCC = !!(COUNTRIES_REG[cc] && COUNTRIES_REG[cc].barTier && COUNTRIES_REG[cc].barTier()[k]);
+    if(cc !== 'FR' && isExo && !inEbirdCC && !inBarCC){
+      $('#smRarityLine').innerHTML = `<span class="help">${esc(COUNTRIES_REG[cc]?.name || cc)} : espèce absente.</span>`;
+      return;
+    }
     if(!isInCatalog(cc) && !isExo){
       $('#smRarityLine').innerHTML = '<span class="help">Pas de calibration pour ce pays.</span>'; return;
     }
