@@ -1177,11 +1177,8 @@ function rarityForFilter(sci){
     if(isParkOnlyExotic(sci)) return 0;
     const cat = exoticCategoryInCountry(sci, 'FR') || _exoticCategory(k);
     if(cat === 'N' || cat === 'P'){
-      // N/P etablis : tier via GBIF exotique (_exoticTier), avec merge S&T ±1 tier pour
-      // ajustement fin. Regle Perruche/Ibis : si S&T donne un tier >2 differents (Perruche
-      // 3 vs 5 par ex a cause de dilution nationale), le merge protege via ±1 tier max.
-      const gbifTier = _exoticTier(k) || 1;
-      return _tierFromSTvsBarChart(k, gbifTier);
+      // Bar chart eBird FR (meme signal que les sauvages depuis 2026-09-21).
+      return _tierFromSTvsBarChart(k, REAL_RARITY[k] || 1);
     }
     return 0;   // X, C
   }
@@ -1440,7 +1437,8 @@ function sciColorForCountry(sci, country){
     if(isParkOnlyExotic(sci)) return '#7e8a99';
     const cat = exoticCategoryInCountry(sci, c) || _exoticCategory(k);
     if(cat === 'N' || cat === 'P'){
-      const t = _exoticTier(k);
+      // Bar chart eBird du pays (meme signal que les sauvages depuis 2026-09-21).
+      const t = rarityForCountry(sci, c);
       if(t) return realColor(t);
     }
     return '#7e8a99';
@@ -1488,7 +1486,8 @@ function _rarityBadge(w, country, sci){
       const catLbl = EXOTIC_CATEGORY_LABEL[cat] || 'Exotique';
       const isEstab = !isParkOnlyExotic(sci) && (cat === 'N' || cat === 'P');
       if(isEstab){
-        const t = _exoticTier(sciKey) || 1;
+        // Bar chart eBird du pays (meme signal que les sauvages depuis 2026-09-21).
+        const t = rarityForCountry(sci, cc) || 1;
         const pill = `<span style="display:inline-block;background:${realColor(t)};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">${t}</span>`;
         return `${flgSpan}${pill} ${REAL_LABELS[t]||''} <span style="opacity:.7;font-size:11px;">· ${catLbl}</span>`;
       }
