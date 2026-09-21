@@ -1459,11 +1459,10 @@ function rarityForCountry(sci, country){
     if(cat === 'N' || cat === 'P'){
       if(barTier) return _tierFromSTvsBarChart(k, barTier, c);
       if(stEntry && stEntry.t) return stEntry.t;
-      // N/P sans bar chart ni S&T : espece flaggee exotique naturalisee/provisoire par
-      // eBird mais fréquence si basse qu'elle n'apparait pas dans le bar chart pays.
-      // Ex Flamant rose en GB (P mais aucune data agregee). Retourne tier 9 (Ultra rare)
-      // au lieu de 0 (qui donnerait le label 'Parc semi-libre' trompeur).
-      return 9;
+      // N/P sans bar chart ni S&T : espece flaggee exotique par eBird mais frequence
+      // trop basse pour etre agregee sur 7 ans. Retourne 0 = absente (le renderLine
+      // affichera "Absente du bar chart" plutot que "Parc semi-libre" qui est trompeur).
+      return 0;
     }
     if(isParkOnlyExotic(sci)) return 0;
     return 0;
@@ -10767,9 +10766,14 @@ function _renderSpeciesRarityCard(key){
     // Fix 2026-09-21 : priorite N/P sur park-only (Faisan venere park-only ET N eBird FR
     // -> affichable a son vrai tier bar chart FR).
     const isEstab = isExo && (cat === 'N' || cat === 'P');
-    const label = isExo
-      ? (isEstab ? ((typeof REAL_LABELS === 'object' && REAL_LABELS[w]) || ('niveau '+w)) : 'Exotique')
-      : ((typeof REAL_LABELS === 'object' && REAL_LABELS[w]) || ('niveau '+w));
+    // Fix 2026-09-22 : N/P avec w=0 (aucun bar chart aggrege sur 7 ans) -> "Absente"
+    // au lieu de "Parc semi-libre" (label REAL_LABELS[0] trompeur). Ex Flamant rose P en GB.
+    const noBarData = isEstab && w === 0;
+    const label = noBarData
+      ? 'Absente du bar chart'
+      : (isExo
+          ? (isEstab ? ((typeof REAL_LABELS === 'object' && REAL_LABELS[w]) || ('niveau '+w)) : 'Exotique')
+          : ((typeof REAL_LABELS === 'object' && REAL_LABELS[w]) || ('niveau '+w)));
     const color = realColor(w);
     const country = avail.find(c => c.code === cc) || avail[0];
     const flgFixed = (country.flag||'').replace('<img ', '<img style="height:14px;width:19px;object-fit:cover;object-position:center;vertical-align:middle;border-radius:2px;margin-right:8px;box-shadow:0 0 0 1px rgba(0,0,0,.08);" ');
