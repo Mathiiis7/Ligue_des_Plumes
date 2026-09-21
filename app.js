@@ -1387,12 +1387,12 @@ function rarityForCountry(sci, country){
   // Fix 2026-09-21 : abandon du chemin _exoticTier (GBIF) qui necessitait des overrides
   // manuels (EXOTIQUES_TIER_FORCE). Le bar chart eBird donne un signal fiable et scalable.
   if(isExotic(sci)){
-    // Fix 2026-09-21 : isExotic est FR-centric. Une espece dans EXOTIQUES_CONNUES_FR peut
-    // etre NATIVE dans un autre pays (Perruche a collier au Sri Lanka, Paon bleu au Sri
-    // Lanka, Numida meleagris en Namibie...). Si elle est dans le bar chart local ET pas
-    // explicitement listee comme exotique par eBird pour ce pays -> traite comme sauvage.
+    // Fix 2026-09-21 : native dans le pays courant (dans bar chart local ET pas listee
+    // exotique explicite par eBird) -> traite comme sauvage. S'applique meme aux park-only
+    // worldwide (Dendrocygne veuf natif Namibie, Dendrocygne siffleur natif Sri Lanka...).
+    // EXOTIQUES_PARCS est Europe-centric, ne bloque plus dans le pays natal.
     const explicitExoCC = !!(EXOTIQUES_EBIRD_PAR_PAYS[c] && EXOTIQUES_EBIRD_PAR_PAYS[c][k]);
-    if(!explicitExoCC && barTier && !isParkOnlyExotic(sci)){
+    if(!explicitExoCC && barTier){
       return _tierFromSTvsBarChart(k, barTier, c);
     }
     const cat = exoticCategoryInCountry(sci, c) || _exoticCategory(k);
@@ -14073,13 +14073,14 @@ function _pkdxRender(){
       if(_isSciAliasSource(sci)) continue;
       if(isHiddenSpecies(sci)) continue;   // perroquets cage etc.
       // Park-only worldwide (Bernache nene, Dendrocygnes tropicaux, Flamants ornementaux,
-      // Grues couronnees...) sont EXCLUS partout : ils sont dans REAL_RARITY (bar chart FR)
-      // via quelques cochages "Escapee" eBird, mais ne sont pas des especes vraiment
-      // observables sauvages. Fix 2026-09-21 : filtre en premier avant _countryHasSpecies.
-      // Exception : park-only avec eBird N/P dans le pays (ex: Faisan venere = N en FR)
-      // -> vraiment etabli, on l'affiche a son vrai tier.
-      const parkOnlyCat = EXOTIQUES_EBIRD_PAR_PAYS[country] && EXOTIQUES_EBIRD_PAR_PAYS[country][sci];
-      if(isParkOnlyExotic(sci) && parkOnlyCat !== 'N' && parkOnlyCat !== 'P') continue;
+      // Grues couronnees...) : exclus SAUF si natifs dans le pays courant (dans bar chart
+      // local + pas listes exotique par eBird) OU marques N/P par eBird localement.
+      // Ex : Dendrocygne veuf natif Namibie -> visible dans le Birdydex NA meme si park-only.
+      if(isParkOnlyExotic(sci)){
+        const parkEbCat = EXOTIQUES_EBIRD_PAR_PAYS[country] && EXOTIQUES_EBIRD_PAR_PAYS[country][sci];
+        const nativeHere = !parkEbCat && _countryHasSpecies(country, sci);
+        if(!nativeHere && parkEbCat !== 'N' && parkEbCat !== 'P') continue;
+      }
       // Filtre par pays : ne garde que les especes explicitement dans le catalogue du pays.
       // Pour FR on complete par isExotic (toutes categories N/P/X/C) qui a son propre systeme
       // de tiers via _exoticTier. Le filtre "🦆 Exotiques seulement" du dropdown Tier permet
