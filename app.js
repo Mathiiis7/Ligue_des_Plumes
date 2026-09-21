@@ -10575,6 +10575,15 @@ async function _renderFrExoticMap(sci, cc){
   if(!container) return;
   if(cc !== 'FR' || typeof EXOTIC_STATUS_BY_DEP_FR !== 'object'){ container.innerHTML = ''; return; }
   const key = (sci || '').toLowerCase();
+  // La mini-carte n'est affichee QUE pour les especes classees exotiques au niveau
+  // NATIONAL FR (dans EXOTIQUES_EBIRD_PAR_PAYS.FR). Cas ecarte : especes sauvages
+  // avec quelques obs isolees flaggees X dans 1-3 departements (Marmaronette, Oie
+  // naine...), qui n'ont pas de statut exotique national et polluent la carte avec
+  // 1-3 dept rouges pour un vagrant occasionnel.
+  const nationalExotic = (typeof EXOTIQUES_EBIRD_PAR_PAYS === 'object') &&
+                          EXOTIQUES_EBIRD_PAR_PAYS.FR &&
+                          EXOTIQUES_EBIRD_PAR_PAYS.FR[key];
+  if(!nationalExotic){ container.innerHTML = ''; return; }
   const perDep = {};
   let anyStatus = false;
   for(const [code, byDep] of Object.entries(EXOTIC_STATUS_BY_DEP_FR)){
@@ -10992,6 +11001,31 @@ function _renderSpeciesRarityCard(key){
             ${overrideNote}
           </div>
         </details>`;
+    }
+    // Note override liste rouge : quand rarityForCountry force tier 10 pour une
+    // espece RE FR (Regionalement Eteinte) ou EX/EW globale, expliquer que le tier
+    // brut du bar chart (souvent 7-8, ex Marmaronette) est ecrase par l'override
+    // redlist. Sinon l'utilisateur voit "bar chart 8 -> tier final 10" sans savoir
+    // pourquoi.
+    const rlOverride = (typeof REDLIST === 'object') ? REDLIST[k] : null;
+    const isReExtinctFR = cc === 'FR' && rlOverride && (rlOverride.fr === 'RE' || rlOverride.fr === 'EX');
+    const isGlobalExtinct = rlOverride && (rlOverride.global === 'EX' || rlOverride.global === 'EW');
+    if(w === 10 && (isReExtinctFR || isGlobalExtinct) && detailsHtml){
+      const rlLabel = isGlobalExtinct
+        ? (rlOverride.global === 'EX' ? 'EX (Éteinte mondialement)' : 'EW (Éteinte à l\'état sauvage)')
+        : (rlOverride.fr === 'RE' ? 'RE (Régionalement Éteinte en FR comme reproductrice)' : 'EX (Éteinte en FR)');
+      const rlWhy = isGlobalExtinct
+        ? 'Espèce éteinte : toute mention est extraordinaire, tier 10 forcé.'
+        : 'Espèce disparue comme reproductrice en France : toute obs est un vagrant exceptionnel. Le bar chart brut refléterait juste la fréquence de vagrance, pas la difficulté réelle → tier 10 forcé.';
+      const reNote = `<div style="margin-top:6px;padding:6px 8px;background:var(--surface-2, #fafafa);border-left:3px solid var(--danger, #ef4444);border-radius:4px;font-size:11.5px;line-height:1.45;color:var(--ink-2);">
+        <div style="font-weight:700;color:var(--ink);margin-bottom:2px;">Liste rouge : ${esc(rlLabel)}</div>
+        <div>${esc(rlWhy)}</div>
+      </div>`;
+      // Injecte la note tout en haut du contenu du <details>
+      detailsHtml = detailsHtml.replace(
+        /(<div style="padding:6px 0 4px 4px;border-left:2px solid var\(--line\);margin:4px 0 2px 6px;padding-left:10px;">)/,
+        `$1${reNote}`
+      );
     }
     $('#smRarityLine').innerHTML = `<div style="display:flex;align-items:center;gap:6px;padding:6px 0;">${flgFixed}${pill}<span style="font-weight:600;color:var(--ink);">${esc(label)}</span>${catMiniPill}${catBadge}</div>${detailsHtml}`;
     // Mini-carte statut exotique par region FR (uniquement quand cc === 'FR')
