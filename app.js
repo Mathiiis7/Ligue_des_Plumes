@@ -1120,44 +1120,14 @@ const EXOTIQUES_MASQUEES = new Set([
   'taeniopygia guttata','serinus canaria','estrilda melpoda',
 ]);
 function isHiddenSpecies(sci){ return EXOTIQUES_MASQUEES.has((sci||'').trim().toLowerCase()); }
-// Exotiques "parcs/domaines semi-libres" : paons, flamants ornementaux, canards
-// exotiques de collection... Visibles en France mais uniquement en enclos ou parcs
-// semi-captifs. On les affiche (l'utilisateur peut les cocher, ils comptent pour le
-// nombre d'especes vues et le classement entre amis) mais on leur assigne tier 0 =
-// "aucun point de rarete reelle". Badge visuel gris avec un "0" pour bien montrer
-// qu'ils n'entrent pas dans le score rarete.
-// Liste "captif strict" : especes jamais vraiment libres en Europe (toujours pinionnees ou
-// en enclos). Cas par cas laisse au birder pour les especes ambigues qui apparaissent en
-// semi-liberte urbaine (paon bleu, cygne noir, cygne cou noir, pintade, canard musque) :
-// eBird les classe X partout mais leur presence "libre" a Vincennes / lacs urbains permet
-// une observation legitime. Retire de la liste stricte 2026-09-21 apres discussion.
-const EXOTIQUES_PARCS = new Set([
-  'pavo muticus',                              // Paon spicifère (le paon bleu Pavo cristatus reste comptable au cas par cas)
-  'phoenicopterus chilensis','phoenicopterus ruber',   // Flamants ornementaux
-  'phoeniconaias minor','phoenicoparrus andinus',      // Flamant nain, Flamant des Andes
-  'chloephaga picta','oressochen melanopterus','chloephaga rubidiceps',  // Ouettes Magellan, Andes, tête rousse
-  'neochen jubata','cyanochen cyanoptera',    // Ouette Orénoque, Ouette à ailes bleues (Éthiopie)
-  'gallus gallus',                             // Coq bankiva domestique
-  'netta peposaca','netta erythrophthalma',   // Nette de Chili, Nette à cou rose (Afrique)
-  'amazonetta brasiliensis',                   // Sarcelle du Brésil
-  'mareca sibilatrix',                         // Canard du Chili
-  'callonetta leucophrys',                     // Callonette à collier
-  'chenonetta jubata',                         // Canard à crinière (Australie)
-  'phasianus versicolor',                      // Faisan versicolore
-  'syrmaticus reevesii',                       // Faisan vénéré (lâcher chasse)
-  'dendrocygna bicolor','dendrocygna viduata','dendrocygna autumnalis',   // Dendrocygnes tropicaux
-  'dendrocygna javanica','dendrocygna arcuata','dendrocygna eytoni',      // Dendrocygne siffleur/tacheté/Eyton
-  'tadorna cana','tadorna variegata',         // Tadorne à tête grise, Tadorne de paradis (NZ)
-  'spatula platalea','spatula rhynchotis','spatula versicolor',           // Canard spatule Am. Sud / Australie / Sarcelle versicolore
-  'sibirionetta formosa',                      // Sarcelle formose (Asie)
-  'anser canagicus',                           // Oie empereur
-  'branta sandvicensis',                       // Bernache néné
-  'anas zonorhyncha',                          // Canard de Chine
-  'balearica regulorum','balearica pavonina', // Grues couronnées (Afrique)
-  'grus japonensis','antigone antigone','antigone vipio',                 // Grue de Mandchourie, antigone, cou blanc
-  'eudocimus ruber',                           // Ibis rouge (Am. Sud)
-]);
-function isParkOnlyExotic(sci){ return EXOTIQUES_PARCS.has((sci||'').trim().toLowerCase()); }
+// EXOTIQUES_PARCS (liste 'captif worldwide') supprimee 2026-09-22 : rendue redondante
+// par les autres filtres. Le pipeline actuel exclut deja les especes park-only en FR :
+//   - si pas dans EXOTIQUES_EBIRD_PAR_PAYS.FR ET pas dans bar chart FR -> line 14448 continue
+//   - si X eBird mais pas dans bar chart FR -> line 14450 continue
+//   - si park-only dans un pays natif (bar chart local) -> traite comme sauvage
+// isParkOnlyExotic renvoie desormais toujours false pour rester compatible avec le code
+// existant qui l'appelle (stub, sera retire progressivement).
+function isParkOnlyExotic(_sci){ return false; }
 function isExotic(sci){
   const k = (sci||'').trim().toLowerCase();
   if(EXOTIQUES_MASQUEES.has(k)) return false;   // masquees partout
@@ -10806,9 +10776,16 @@ function _renderSpeciesRarityCard(key){
     // avec tier > 0 restent numeriques. Tier 0 exotique : lettre cat (N/P/X/C).
     const useCatLetter = isExo && (cat === 'N' || cat === 'P') && w > 0;
     const pillTxt = (w === 0 && isExo) ? (cat || 'X') : (useCatLetter ? cat : w);
+    // Couleur de fond du pill : quand on affiche une LETTRE (cat), on utilise la couleur
+    // de la categorie eBird pour aligner avec la mini-carte et l'explicatif (meme lettre
+    // = meme couleur). Le tier reste consultable via le tooltip. Quand on affiche un
+    // chiffre, on garde la couleur du tier (rareté visuelle).
+    const CAT_PILL_COLOR = { N:'#22c55e', P:'#f59e0b', X:'#ef4444', C:'#94a3b8' };
+    const isLetterPill = typeof pillTxt === 'string' && CAT_PILL_COLOR[pillTxt];
+    const pillBg = isLetterPill ? CAT_PILL_COLOR[pillTxt] : color;
     // Taille fixe (width + box-sizing) pour eviter que la position du label bouge selon
     // que le pill affiche 'X' (1 char), '10' (2 chars) ou 'N' (1 char).
-    const pill = `<span style="display:inline-block;box-sizing:border-box;background:${color};color:#fff;padding:3px 0;border-radius:8px;font-weight:800;font-size:15px;width:48px;text-align:center;margin-right:10px;flex-shrink:0;" title="tier ${w}">${pillTxt}</span>`;
+    const pill = `<span style="display:inline-block;box-sizing:border-box;background:${pillBg};color:#fff;padding:3px 0;border-radius:8px;font-weight:800;font-size:15px;width:48px;text-align:center;margin-right:10px;flex-shrink:0;" title="tier ${w}">${pillTxt}</span>`;
     // Mini-badge cat retire quand le pill affiche deja la lettre (evite doublon N + N).
     const catMiniPill = (isExo && cat && w > 0 && !useCatLetter) ? `<span style="display:inline-block;background:var(--surface-2);color:var(--ink-2);padding:1px 7px;border-radius:5px;font-weight:800;font-size:11px;margin-left:10px;vertical-align:middle;" title="${esc(catLbl)}">${cat}</span>` : '';
     const catBadge = catLbl ? `<span style="font-size:12px;color:var(--ink-3);margin-left:10px;">· ${esc(catLbl)}</span>` : '';
