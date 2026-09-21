@@ -417,6 +417,57 @@ const COUNTRIES_REG = {
     monthlyByRegion: () => REAL_FREQ_MONTHLY_BY_REGION_MULTI['PT'] || null,
     hasBarchart: true,
   },
+  // Ajouts 2026-09-21 : Suisse, Norvège, Grèce, Islande, Sri Lanka, Namibie.
+  // Bar chart eBird national + régions admin1. S&T Cornell absent pour LK/NA
+  // (couverture principalement Amérique du Nord + Europe de l'Ouest).
+  CH: {
+    name: 'Suisse', flagCode: 'CH',
+    barTier: () => (typeof REAL_RARITY_CH_EBIRD !== 'undefined') ? REAL_RARITY_CH_EBIRD : {},
+    monthly: () => (typeof REAL_FREQ_MONTHLY_CH !== 'undefined') ? REAL_FREQ_MONTHLY_CH : {},
+    st: () => (typeof REAL_ABUNDANCE_ST_CH !== 'undefined') ? REAL_ABUNDANCE_ST_CH : {},
+    monthlyByRegion: () => REAL_FREQ_MONTHLY_BY_REGION_MULTI['CH'] || null,
+    hasBarchart: true,
+  },
+  NO: {
+    name: 'Norvège', flagCode: 'NO',
+    barTier: () => (typeof REAL_RARITY_NO_EBIRD !== 'undefined') ? REAL_RARITY_NO_EBIRD : {},
+    monthly: () => (typeof REAL_FREQ_MONTHLY_NO !== 'undefined') ? REAL_FREQ_MONTHLY_NO : {},
+    st: () => (typeof REAL_ABUNDANCE_ST_NO !== 'undefined') ? REAL_ABUNDANCE_ST_NO : {},
+    monthlyByRegion: () => REAL_FREQ_MONTHLY_BY_REGION_MULTI['NO'] || null,
+    hasBarchart: true,
+  },
+  GR: {
+    name: 'Grèce', flagCode: 'GR',
+    barTier: () => (typeof REAL_RARITY_GR_EBIRD !== 'undefined') ? REAL_RARITY_GR_EBIRD : {},
+    monthly: () => (typeof REAL_FREQ_MONTHLY_GR !== 'undefined') ? REAL_FREQ_MONTHLY_GR : {},
+    st: () => (typeof REAL_ABUNDANCE_ST_GR !== 'undefined') ? REAL_ABUNDANCE_ST_GR : {},
+    monthlyByRegion: () => REAL_FREQ_MONTHLY_BY_REGION_MULTI['GR'] || null,
+    hasBarchart: true,
+  },
+  IS: {
+    name: 'Islande', flagCode: 'IS',
+    barTier: () => (typeof REAL_RARITY_IS_EBIRD !== 'undefined') ? REAL_RARITY_IS_EBIRD : {},
+    monthly: () => (typeof REAL_FREQ_MONTHLY_IS !== 'undefined') ? REAL_FREQ_MONTHLY_IS : {},
+    st: () => (typeof REAL_ABUNDANCE_ST_IS !== 'undefined') ? REAL_ABUNDANCE_ST_IS : {},
+    monthlyByRegion: () => REAL_FREQ_MONTHLY_BY_REGION_MULTI['IS'] || null,
+    hasBarchart: true,
+  },
+  LK: {
+    name: 'Sri Lanka', flagCode: 'LK',
+    barTier: () => (typeof REAL_RARITY_LK_EBIRD !== 'undefined') ? REAL_RARITY_LK_EBIRD : {},
+    monthly: () => (typeof REAL_FREQ_MONTHLY_LK !== 'undefined') ? REAL_FREQ_MONTHLY_LK : {},
+    st: () => ({}),   // S&T Cornell : pas de couverture Sri Lanka
+    monthlyByRegion: () => REAL_FREQ_MONTHLY_BY_REGION_MULTI['LK'] || null,
+    hasBarchart: true,
+  },
+  NA: {
+    name: 'Namibie', flagCode: 'NA',
+    barTier: () => (typeof REAL_RARITY_NA_EBIRD !== 'undefined') ? REAL_RARITY_NA_EBIRD : {},
+    monthly: () => (typeof REAL_FREQ_MONTHLY_NA !== 'undefined') ? REAL_FREQ_MONTHLY_NA : {},
+    st: () => ({}),   // S&T Cornell : pas de couverture Namibie
+    monthlyByRegion: () => REAL_FREQ_MONTHLY_BY_REGION_MULTI['NA'] || null,
+    hasBarchart: true,
+  },
 };
 // Helpers de la registry
 function _countryEntry(cc){ return COUNTRIES_REG[cc] || null; }

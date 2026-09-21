@@ -18,7 +18,7 @@ import { dirname, join } from 'node:path';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 
-const COUNTRIES = ['ES', 'IT', 'GB', 'PT'];
+const COUNTRIES = ['ES', 'IT', 'GB', 'PT', 'CH', 'NO', 'GR', 'IS', 'LK', 'NA'];
 
 // Regions par pays (admin1 eBird). Ajoute la data monthly par region -> alimente
 // data/freq_by_region_XX.json pour lazy-load runtime (comme FR).
@@ -33,6 +33,19 @@ const REGIONS = {
   IT: ['IT-21', 'IT-23', 'IT-25', 'IT-32', 'IT-34', 'IT-36', 'IT-42',
        'IT-45', 'IT-52', 'IT-55', 'IT-57', 'IT-62', 'IT-65', 'IT-67',
        'IT-72', 'IT-75', 'IT-77', 'IT-78', 'IT-82', 'IT-88'],
+  // Ajouts 2026-09-21 : CH/NO/GR/IS/LK/NA.
+  CH: ['CH-AG','CH-AI','CH-AR','CH-BE','CH-BL','CH-BS','CH-FR','CH-GE',
+       'CH-GL','CH-GR','CH-JU','CH-LU','CH-NE','CH-NW','CH-OW','CH-SG',
+       'CH-SH','CH-SO','CH-SZ','CH-TG','CH-TI','CH-UR','CH-VD','CH-VS',
+       'CH-ZG','CH-ZH'],
+  NO: ['NO-03','NO-11','NO-15','NO-18','NO-30','NO-34','NO-38','NO-42',
+       'NO-46','NO-50','NO-54'],
+  GR: ['GR-A','GR-B','GR-C','GR-D','GR-E','GR-F','GR-G','GR-H','GR-I',
+       'GR-J','GR-K','GR-L','GR-M'],
+  IS: ['IS-1','IS-2','IS-3','IS-4','IS-5','IS-6','IS-7','IS-8'],
+  LK: ['LK-1','LK-2','LK-3','LK-4','LK-5','LK-6','LK-7','LK-8','LK-9'],
+  NA: ['NA-CA','NA-ER','NA-HA','NA-KA','NA-KE','NA-KH','NA-KU','NA-OD',
+       'NA-OH','NA-ON','NA-OS','NA-OT','NA-OW','NA-KW'],
 };
 
 // Memes seuils que FR/ME (Option 1 recalibree 2026-08-27, tier 10 seuil 0.00015)

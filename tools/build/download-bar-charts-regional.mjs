@@ -30,6 +30,19 @@ const REGIONS = {
   IT: ['IT-21', 'IT-23', 'IT-25', 'IT-32', 'IT-34', 'IT-36', 'IT-42',
        'IT-45', 'IT-52', 'IT-55', 'IT-57', 'IT-62', 'IT-65', 'IT-67',
        'IT-72', 'IT-75', 'IT-77', 'IT-78', 'IT-82', 'IT-88'],
+  // Ajout 2026-09-21 : nouveaux pays.
+  CH: ['CH-AG','CH-AI','CH-AR','CH-BE','CH-BL','CH-BS','CH-FR','CH-GE',
+       'CH-GL','CH-GR','CH-JU','CH-LU','CH-NE','CH-NW','CH-OW','CH-SG',
+       'CH-SH','CH-SO','CH-SZ','CH-TG','CH-TI','CH-UR','CH-VD','CH-VS',
+       'CH-ZG','CH-ZH'],
+  NO: ['NO-03','NO-11','NO-15','NO-18','NO-30','NO-34','NO-38','NO-42',
+       'NO-46','NO-50','NO-54'],
+  GR: ['GR-A','GR-B','GR-C','GR-D','GR-E','GR-F','GR-G','GR-H','GR-I',
+       'GR-J','GR-K','GR-L','GR-M'],
+  IS: ['IS-1','IS-2','IS-3','IS-4','IS-5','IS-6','IS-7','IS-8'],
+  LK: ['LK-1','LK-2','LK-3','LK-4','LK-5','LK-6','LK-7','LK-8','LK-9'],
+  NA: ['NA-CA','NA-ER','NA-HA','NA-KA','NA-KE','NA-KH','NA-KU','NA-OD',
+       'NA-OH','NA-ON','NA-OS','NA-OT','NA-OW','NA-KW'],
 };
 
 const COOKIE = process.env.EBIRD_COOKIE;
@@ -54,8 +67,31 @@ function urlFor(region) {
   return `https://ebird.org/barchartData?${params.toString()}`;
 }
 
+// Cookie jar manuel : eBird renouvelle EBIRD_SESSIONID a chaque requete via Set-Cookie.
+// On maintient un dict {name: value} et on l'update entre les requetes.
+const cookieJar = {};
+// Init avec le cookie initial (format 'name=value; name2=value2').
+(COOKIE.includes('=') ? COOKIE : `EBIRD_SESSIONID=${COOKIE}`).split(';').forEach(kv => {
+  const [k, v] = kv.trim().split('=');
+  if (k && v) cookieJar[k] = v;
+});
+function cookieHeader() {
+  return Object.entries(cookieJar).map(([k,v]) => `${k}=${v}`).join('; ');
+}
+function updateJarFromSetCookie(headers) {
+  // Node fetch : getSetCookie() sur les Response headers (v18+).
+  const arr = headers.getSetCookie ? headers.getSetCookie() : [];
+  for (const raw of arr) {
+    const first = raw.split(';')[0];   // "name=value"
+    const [k, v] = first.split('=');
+    if (k && v !== undefined) cookieJar[k.trim()] = v.trim();
+  }
+}
+
+const OUT_DIR = join(__dir, '..', 'ebird-barcharts-raw');
+
 async function downloadOne(region) {
-  const out = join(__dir, `ebird-barchart-${region}-2019-2026.txt`);
+  const out = join(OUT_DIR, `ebird-barchart-${region}-2019-2026.txt`);
   if (existsSync(out)) {
     console.log(`  SKIP (deja present) : ${region}`);
     return { region, status: 'skip', size: 0 };
@@ -63,12 +99,13 @@ async function downloadOne(region) {
   try {
     const r = await fetch(urlFor(region), {
       headers: {
-        'Cookie': `EBIRD_SESSIONID=${COOKIE}`,
+        'Cookie': cookieHeader(),
         'Accept': 'text/tab-separated-values,text/plain,*/*',
-        'User-Agent': 'Mozilla/5.0 (compatible; birdlist-app/1.0)',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36',
       },
       redirect: 'follow',
     });
+    updateJarFromSetCookie(r.headers);
     if (!r.ok) {
       console.error(`  ERREUR ${region} : HTTP ${r.status}`);
       return { region, status: 'err', code: r.status };
@@ -90,14 +127,17 @@ async function downloadOne(region) {
 }
 
 async function main() {
-  console.log('Download bar charts regionaux eBird ES/IT/GB/PT');
-  console.log('Total : ' + Object.values(REGIONS).flat().length + ' regions');
+  console.log('Download bar charts eBird : national + regional par pays');
+  const totalCalls = Object.entries(REGIONS).reduce((a, [c, r]) => a + 1 + r.length, 0);
+  console.log('Total : ' + Object.keys(REGIONS).length + ' pays + ' + Object.values(REGIONS).flat().length + ' regions = ' + totalCalls + ' requetes');
   console.log('Delai entre requetes : ' + SLEEP_MS + 'ms\n');
 
   const results = [];
   for (const [country, regions] of Object.entries(REGIONS)) {
-    console.log(`\n=== ${country} (${regions.length} regions) ===`);
-    for (const region of regions) {
+    // Downloade aussi le fichier national (r=CH par ex) en plus des regions.
+    const allRegions = [country, ...regions];
+    console.log(`\n=== ${country} (${allRegions.length} fichiers : 1 national + ${regions.length} regions) ===`);
+    for (const region of allRegions) {
       const res = await downloadOne(region);
       results.push(res);
       if (res.status === 'invalid') {
