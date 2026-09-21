@@ -982,25 +982,34 @@ function isHiddenSpecies(sci){ return EXOTIQUES_MASQUEES.has((sci||'').trim().to
 // "aucun point de rarete reelle". Badge visuel gris avec un "0" pour bien montrer
 // qu'ils n'entrent pas dans le score rarete.
 const EXOTIQUES_PARCS = new Set([
-  'pavo cristatus',                            // Paon bleu
+  'pavo cristatus','pavo muticus',             // Paon bleu, Paon spicifère
   'cygnus melancoryphus','cygnus atratus',    // Cygne cou noir, Cygne noir
   'phoenicopterus chilensis','phoenicopterus ruber',   // Flamants ornementaux
-  'chloephaga picta','oressochen melanopterus',       // Ouettes Magellan, Andes
+  'phoeniconaias minor','phoenicoparrus andinus',      // Flamant nain, Flamant des Andes
+  'chloephaga picta','oressochen melanopterus','chloephaga rubidiceps',  // Ouettes Magellan, Andes, tête rousse
+  'neochen jubata','cyanochen cyanoptera',    // Ouette Orénoque, Ouette à ailes bleues (Éthiopie)
   'numida meleagris',                          // Pintade de Numidie
   'gallus gallus',                             // Coq bankiva domestique
   'cairina moschata',                          // Canard musqué domestique
   'anser cygnoides',                           // Oie cygnoide domestique
-  'netta peposaca',                            // Nette de Chili
+  'netta peposaca','netta erythrophthalma',   // Nette de Chili, Nette à cou rose (Afrique)
   'amazonetta brasiliensis',                   // Sarcelle du Brésil
   'mareca sibilatrix',                         // Canard du Chili
   'callonetta leucophrys',                     // Callonette à collier
+  'chenonetta jubata',                         // Canard à crinière (Australie)
   'phasianus versicolor',                      // Faisan versicolore
   'syrmaticus reevesii',                       // Faisan vénéré (lâcher chasse)
-  'dendrocygna bicolor','dendrocygna viduata','dendrocygna autumnalis',   // Dendrocygnes
-  'tadorna cana',                              // Tadorne à tête grise
+  'dendrocygna bicolor','dendrocygna viduata','dendrocygna autumnalis',   // Dendrocygnes tropicaux
+  'dendrocygna javanica','dendrocygna arcuata','dendrocygna eytoni',      // Dendrocygne siffleur/tacheté/Eyton
+  'tadorna cana','tadorna variegata',         // Tadorne à tête grise, Tadorne de paradis (NZ)
+  'spatula platalea','spatula rhynchotis','spatula versicolor',           // Canard spatule Am. Sud / Australie / Sarcelle versicolore
+  'sibirionetta formosa',                      // Sarcelle formose (Asie)
   'anser canagicus',                           // Oie empereur
   'branta sandvicensis',                       // Bernache néné
   'anas zonorhyncha',                          // Canard de Chine
+  'balearica regulorum','balearica pavonina', // Grues couronnées (Afrique)
+  'grus japonensis','antigone antigone','antigone vipio',                 // Grue de Mandchourie, antigone, cou blanc
+  'eudocimus ruber',                           // Ibis rouge (Am. Sud)
 ]);
 function isParkOnlyExotic(sci){ return EXOTIQUES_PARCS.has((sci||'').trim().toLowerCase()); }
 function isExotic(sci){
@@ -1678,7 +1687,19 @@ const inRef = sci => { const k=(sci||'').trim().toLowerCase(); return (k in REAL
 // Vrai cochage étranger = vu SEULEMENT à l'étranger ET pas une espèce de France.
 // (Un oiseau français vu d'abord à l'étranger - ex. Pinson - reste compté : la life list
 //  eBird ne garde que la 1re obs, donc son lieu n'est pas fiable pour l'exclure.)
-const foreignTick = v => v.fr===false && !inRef(v.sci);
+// AJOUT 2026-09-21 : une observation est aussi "etrangere" (exclue du classement) si
+// l'espece n'est pas observable a l'etat sauvage dans le pays d'observation :
+//   - isParkOnlyExotic : pure captive worldwide (Paon, Dendrocygne, Canard musque...)
+//   - exoticCategoryInCountry === 'X' : eBird marque l'espece Escapee dans ce pays
+// Effet : un cochage au parc d'ornement (Spatule platalea a Nantes) ne pollue plus le
+// classement, meme s'il est logue country=FR.
+const foreignTick = v => {
+  const k = (v.sci||'').trim().toLowerCase();
+  if(isParkOnlyExotic(k)) return true;
+  const cc = v.country || (v.fr ? 'FR' : null);
+  if(cc && exoticCategoryInCountry(k, cc) === 'X') return true;
+  return v.fr===false && !inRef(v.sci);
+};
 // X (Echappe isole) et C (Origine domestique) : classes "exotique meme cochee" -> comptent
 // dans le TOTAL d'especes et le SCORE (comme les autres cochages), mais sont exclus des
 // calculs de rarete (Mike Horn, "plus rare", scoreReal) via _countsForRarity ci-dessous.
