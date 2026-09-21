@@ -14551,7 +14551,11 @@ function _pkdxRender(){
     const CAT_LABEL = { X:'Échappé (X)', N:'Naturalisé (N)', P:'Provisoire (P)' };
     const catChipsHtml = ['X', 'N', 'P'].map(c => {
       const on = _pkdxCatSelected.has(c);
-      const bgStyle = on ? `background:${CAT_COLOR[c]};color:#fff;` : '';
+      // Off = gris neutre (surface-2/ink-3), On = couleur categorie. Rend l'etat "non actif"
+      // clairement lisible sans confondre avec les tier chips colores.
+      const bgStyle = on
+        ? `background:${CAT_COLOR[c]};color:#fff;`
+        : `background:var(--surface-2);color:var(--ink-3);`;
       return `<button type="button" class="rar-chip${on?' on':''}" data-cat="${c}" style="${bgStyle}" title="${esc(CAT_LABEL[c])}">${c}</button>`;
     }).join('');
     chipsBox.innerHTML = '<span style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; align-self:center; margin-right:6px;">Rareté</span>'
