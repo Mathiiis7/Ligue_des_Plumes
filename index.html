@@ -131,7 +131,9 @@
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:8px; margin-left:auto;">
-      <button type="button" id="globalCountryBtn" class="cp-btn" data-cc="FR" title="Pays actif : filtre appliqué à toutes les pages (Birdydex, Cette semaine, Carte, ...)">
+      <!-- Bouton pays global cache 2026-09-21 : deplace dans le Birdydex (seule vue
+           qui l'utilise en pratique). Reste dans le DOM (hidden) pour sync interne. -->
+      <button type="button" id="globalCountryBtn" class="cp-btn" data-cc="FR" hidden>
         <span class="cp-btn-flag">🇫🇷</span>
         <span class="cp-btn-label">France</span>
         <span class="cp-btn-arrow">▾</span>
@@ -894,8 +896,10 @@
       </div>
       <div class="pkdx-ctrls" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:10px 0 14px;">
         <input type="search" id="pkdxSearch" placeholder="Rechercher (nom fr ou sci)…" style="flex:1; min-width:180px; padding:9px 12px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2); color:var(--ink); font:14px system-ui;">
-        <!-- Pays global via header. Bouton local cache mais conserve pour init interne. -->
-        <button type="button" id="pkdxCountry" class="cp-btn" data-cc="FR" hidden>
+        <!-- Pays du Birdydex : ne s'applique qu'au Birdydex mais est aussi utilise
+             pour piloter le pays global (autres onglets suivent). Anciennement dans
+             le header, deplace ici le 2026-09-21. -->
+        <button type="button" id="pkdxCountry" class="cp-btn" data-cc="FR" title="Pays du Birdydex (les autres onglets suivent aussi)">
           <span class="cp-btn-flag">🇫🇷</span>
           <span class="cp-btn-label">France</span>
           <span class="cp-btn-arrow">▾</span>
