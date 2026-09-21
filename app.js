@@ -11643,8 +11643,17 @@ function _renderSpeciesFreqChart(key, country){
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   const N = arr.length;
   const bw = iw / N;
-  const yMax = maxV;
-  const yFor = v => PT + ih - ih * (v/yMax);
+  // Echelle Y : par defaut FIXE pour permettre la comparaison inter-especes (Ibis
+  // sacre 0.15% doit paraitre visuellement plus rare que Merle noir 30%). Toggle
+  // 'auto' via bouton dans la legende -> echelle normalisee sur maxV (utile pour
+  // voir les patterns saisonniers des rares).
+  let _freqScaleMode = 'fixed';
+  try { const s = localStorage.getItem('mb-freq-chart-scale'); if(s === 'auto' || s === 'fixed') _freqScaleMode = s; } catch(_){}
+  // Fixed ceiling : 30% checklists (tier 1-2 boundary) en monthly, 3 ind/h en weekly.
+  // Especes > ceiling sont ecretees visuellement (Merle 50% -> plafond) : signal "hyper commun".
+  const FIXED_MAX = isWeekly ? 3.0 : 0.30;
+  const yMax = (_freqScaleMode === 'auto') ? maxV : FIXED_MAX;
+  const yFor = v => PT + ih - ih * Math.min(1, v/yMax);
   // Format des labels y-axis. Precision adaptative pour les especes rares (0.0002 ind/h par ex).
   const fmtAbd = v => {
     if(v === 0) return '0';
@@ -11706,7 +11715,8 @@ function _renderSpeciesFreqChart(key, country){
   // distinct (or / accent) pour rester repérables.
   for(let i=0; i<N; i++){
     const v = arr[i];
-    const h = v > 0 ? ih * (v / yMax) : 0;
+    // Cap la hauteur au ceiling en mode fixe : Merle 50% s'ecrete a 100% du chart.
+    const h = v > 0 ? ih * Math.min(1, v / yMax) : 0;
     const gap = 0.5;
     const x = PL + i * bw + gap;
     const w = bw - gap*2;
@@ -11750,10 +11760,20 @@ function _renderSpeciesFreqChart(key, country){
     const palette = [1,2,3,4,5,6,7,8,9,10]
       .map(t => `<span style="width:8px;height:12px;background:${realColor(t)};display:inline-block;"></span>`).join('');
     const nowLbl = isWeekly ? 'Cette semaine' : 'Mois actuel';
+    // Bouton toggle echelle : fixe (0-30% ou 0-3 ind/h) <-> auto (max espece)
+    const isAuto = _freqScaleMode === 'auto';
+    const scaleToggle = `<button type="button" id="smFreqScaleBtn" style="font-size:11px;padding:3px 8px;border:1px solid var(--line);background:var(--surface-2);border-radius:4px;cursor:pointer;color:var(--ink-2);" title="${isAuto ? 'Echelle auto (pic espece = 100% chart)' : 'Echelle fixe pour comparaison inter-especes'}">${isAuto ? '🔍 Zoom auto' : '📏 Fixe ' + (isWeekly ? '0-3 ind/h' : '0-30%')}</button>`;
     legEl.innerHTML = `
       <span class="sm-freq-lg" title="Vert = espèce facile à voir, magenta = très rare"><span style="display:inline-flex;height:12px;border:1px solid var(--line);border-radius:2px;overflow:hidden;">${palette}</span>&nbsp;facile → rare</span>
       <span class="sm-freq-lg"><span class="sm-freq-sw" style="background:transparent;border:2px solid var(--gold);width:10px;height:10px;box-sizing:border-box;"></span>Pic</span>
-      <span class="sm-freq-lg"><span class="sm-freq-sw" style="background:transparent;border:2px solid var(--accent);width:10px;height:10px;box-sizing:border-box;"></span>${nowLbl}</span>`;
+      <span class="sm-freq-lg"><span class="sm-freq-sw" style="background:transparent;border:2px solid var(--accent);width:10px;height:10px;box-sizing:border-box;"></span>${nowLbl}</span>
+      ${scaleToggle}`;
+    const btn = document.getElementById('smFreqScaleBtn');
+    if(btn) btn.addEventListener('click', () => {
+      const next = (_freqScaleMode === 'fixed') ? 'auto' : 'fixed';
+      try { localStorage.setItem('mb-freq-chart-scale', next); } catch(_){}
+      _renderSpeciesFreqChart(key, country);
+    });
   }
 }
 // Extrait la couleur "vive" dominante d'une image (echantillonnage canvas). Retourne
