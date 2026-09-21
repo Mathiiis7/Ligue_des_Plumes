@@ -11667,16 +11667,14 @@ function _renderSpeciesFreqChart(key, country){
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   const N = arr.length;
   const bw = iw / N;
-  // Echelle Y : par defaut FIXE pour permettre la comparaison inter-especes (Ibis
-  // sacre 0.15% doit paraitre visuellement plus rare que Merle noir 30%). Toggle
-  // 'auto' via bouton dans la legende -> echelle normalisee sur maxV (utile pour
-  // voir les patterns saisonniers des rares).
-  let _freqScaleMode = 'fixed';
-  try { const s = localStorage.getItem('mb-freq-chart-scale'); if(s === 'auto' || s === 'fixed') _freqScaleMode = s; } catch(_){}
-  // Fixed ceiling : 30% checklists (tier 1-2 boundary) en monthly, 3 ind/h en weekly.
-  // Especes > ceiling sont ecretees visuellement (Merle 50% -> plafond) : signal "hyper commun".
-  const FIXED_MAX = isWeekly ? 3.0 : 0.30;
-  const yMax = (_freqScaleMode === 'auto') ? maxV : FIXED_MAX;
+  // Echelle Y : plancher fixe (30% ou 3 ind/h) etendu automatiquement pour ne pas ecreter.
+  // Molette souris = zoom (up = zoom in, down = zoom out). Multiplicateur persiste par
+  // pays+mode pour eviter qu'un zoom sur bar chart pollue le zoom S&T weekly.
+  const FIXED_MIN_MAX = isWeekly ? 3.0 : 0.30;
+  let _freqZoom = 1.0;
+  const zoomKey = 'mb-freq-zoom-' + (isWeekly ? 'w' : 'm');
+  try { const z = parseFloat(localStorage.getItem(zoomKey)); if(z > 0 && z < 100) _freqZoom = z; } catch(_){}
+  const yMax = Math.max(FIXED_MIN_MAX, maxV) / _freqZoom;
   const yFor = v => PT + ih - ih * Math.min(1, v/yMax);
   // Format des labels y-axis. Precision adaptative pour les especes rares (0.0002 ind/h par ex).
   const fmtAbd = v => {
@@ -11739,7 +11737,8 @@ function _renderSpeciesFreqChart(key, country){
   // distinct (or / accent) pour rester repérables.
   for(let i=0; i<N; i++){
     const v = arr[i];
-    // Cap la hauteur au ceiling en mode fixe : Merle 50% s'ecrete a 100% du chart.
+    // Cap la hauteur au ceiling : necessaire quand le user zoome IN (yMax reduit,
+    // les valeurs > yMax deborderaient sinon).
     const h = v > 0 ? ih * Math.min(1, v / yMax) : 0;
     const gap = 0.5;
     const x = PL + i * bw + gap;
@@ -11784,32 +11783,31 @@ function _renderSpeciesFreqChart(key, country){
     const palette = [1,2,3,4,5,6,7,8,9,10]
       .map(t => `<span style="width:8px;height:12px;background:${realColor(t)};display:inline-block;"></span>`).join('');
     const nowLbl = isWeekly ? 'Cette semaine' : 'Mois actuel';
-    // Bouton toggle echelle : fixe (0-30% ou 0-3 ind/h) <-> auto (max espece)
-    const isAuto = _freqScaleMode === 'auto';
-    // Stocke key/country sur le bouton via dataset : evite les problemes de closure
-    // stale et permet un handler global reutilisable.
-    const scaleToggle = `<button type="button" id="smFreqScaleBtn" data-key="${esc(key)}" data-cc="${esc(country||'FR')}" style="font-size:11px;padding:3px 8px;border:1px solid var(--line);background:var(--surface-2);border-radius:4px;cursor:pointer;color:var(--ink-2);" title="${isAuto ? 'Echelle auto (pic espece = 100% chart)' : 'Echelle fixe pour comparaison inter-especes'}">${isAuto ? '🔍 Zoom auto' : '📏 Fixe ' + (isWeekly ? '0-3 ind/h' : '0-30%')}</button>`;
+    // Legende + hint zoom molette.
     legEl.innerHTML = `
       <span class="sm-freq-lg" title="Vert = espèce facile à voir, magenta = très rare"><span style="display:inline-flex;height:12px;border:1px solid var(--line);border-radius:2px;overflow:hidden;">${palette}</span>&nbsp;facile → rare</span>
       <span class="sm-freq-lg"><span class="sm-freq-sw" style="background:transparent;border:2px solid var(--gold);width:10px;height:10px;box-sizing:border-box;"></span>Pic</span>
       <span class="sm-freq-lg"><span class="sm-freq-sw" style="background:transparent;border:2px solid var(--accent);width:10px;height:10px;box-sizing:border-box;"></span>${nowLbl}</span>
-      ${scaleToggle}`;
-    // Handler global (delegation via mousedown pour ne pas s'affronter au click d'autres
-    // elements parents comme details/summary). Attache une seule fois via une flag.
-    if(!window._freqScaleBtnAttached){
-      window._freqScaleBtnAttached = true;
-      document.body.addEventListener('click', (e) => {
-        const b = e.target.closest('#smFreqScaleBtn');
-        if(!b) return;
-        e.stopPropagation();
+      <span class="sm-freq-lg" style="opacity:.6;font-size:10px;">🖱 molette = zoom</span>`;
+    // Zoom molette sur le SVG. Multiplicateur persiste par mode (weekly/monthly).
+    if(svg && !svg._zoomAttached){
+      svg._zoomAttached = true;
+      svg.addEventListener('wheel', (e) => {
         e.preventDefault();
-        let cur = 'fixed';
-        try { const s = localStorage.getItem('mb-freq-chart-scale'); if(s === 'auto' || s === 'fixed') cur = s; } catch(_){}
-        const next = (cur === 'fixed') ? 'auto' : 'fixed';
-        try { localStorage.setItem('mb-freq-chart-scale', next); } catch(_){}
-        _renderSpeciesFreqChart(b.dataset.key, b.dataset.cc);
-      });
+        e.stopPropagation();
+        const modeKey = svg._zoomModeKey || 'mb-freq-zoom-m';
+        let z = 1.0;
+        try { const s = parseFloat(localStorage.getItem(modeKey)); if(s > 0 && s < 100) z = s; } catch(_){}
+        // deltaY > 0 = molette down = dezoom (yMax augmente = bars raccourcissent).
+        // deltaY < 0 = molette up = zoom in (yMax reduit = bars s'etirent).
+        z *= e.deltaY > 0 ? 0.87 : 1.15;
+        z = Math.max(0.05, Math.min(20, z));
+        try { localStorage.setItem(modeKey, String(z)); } catch(_){}
+        _renderSpeciesFreqChart(svg._renderKey, svg._renderCC);
+      }, { passive: false });
     }
+    // Stocke le contexte de rendu sur le SVG pour la molette
+    if(svg){ svg._renderKey = key; svg._renderCC = country; svg._zoomModeKey = zoomKey; }
   }
 }
 // Extrait la couleur "vive" dominante d'une image (echantillonnage canvas). Retourne
