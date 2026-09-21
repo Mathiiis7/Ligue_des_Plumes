@@ -35,14 +35,21 @@ const REGIONS = {
        'CH-GL','CH-GR','CH-JU','CH-LU','CH-NE','CH-NW','CH-OW','CH-SG',
        'CH-SH','CH-SO','CH-SZ','CH-TG','CH-TI','CH-UR','CH-VD','CH-VS',
        'CH-ZG','CH-ZH'],
-  NO: ['NO-03','NO-11','NO-15','NO-18','NO-30','NO-34','NO-38','NO-42',
-       'NO-46','NO-50','NO-54'],
+  // NO : eBird utilise les anciens codes 19 fylker (avant reforme 2020).
+  NO: ['NO-01','NO-02','NO-03','NO-04','NO-05','NO-06','NO-07','NO-08',
+       'NO-09','NO-10','NO-11','NO-12','NO-14','NO-15','NO-16','NO-17',
+       'NO-18','NO-19','NO-20'],
   GR: ['GR-A','GR-B','GR-C','GR-D','GR-E','GR-F','GR-G','GR-H','GR-I',
        'GR-J','GR-K','GR-L','GR-M'],
   IS: ['IS-1','IS-2','IS-3','IS-4','IS-5','IS-6','IS-7','IS-8'],
-  LK: ['LK-1','LK-2','LK-3','LK-4','LK-5','LK-6','LK-7','LK-8','LK-9'],
-  NA: ['NA-CA','NA-ER','NA-HA','NA-KA','NA-KE','NA-KH','NA-KU','NA-OD',
-       'NA-OH','NA-ON','NA-OS','NA-OT','NA-OW','NA-KW'],
+  // LK : eBird utilise 25 districts (pas 9 provinces).
+  LK: ['LK-11','LK-12','LK-13','LK-21','LK-22','LK-23','LK-31','LK-32',
+       'LK-33','LK-41','LK-42','LK-43','LK-44','LK-45','LK-51','LK-52',
+       'LK-53','LK-61','LK-62','LK-71','LK-72','LK-81','LK-82','LK-91',
+       'LK-92'],
+  // NA : 13 regions (retire NA-KE, NA-KW inexistants ; ajoute NA-OK).
+  NA: ['NA-CA','NA-ER','NA-HA','NA-KA','NA-KH','NA-KU','NA-OD','NA-OH',
+       'NA-OK','NA-ON','NA-OS','NA-OT','NA-OW'],
 };
 
 const COOKIE = process.env.EBIRD_COOKIE;
@@ -52,7 +59,7 @@ if (!COOKIE) {
   process.exit(1);
 }
 
-const SLEEP_MS = 3000;   // courtoisie eBird : 3s entre requetes
+const SLEEP_MS = 5000;   // courtoisie eBird : 5s entre requetes (anti-bot anubis strict)
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // eBird URL pour telecharger le bar chart en format tab-separated
@@ -100,8 +107,14 @@ async function downloadOne(region) {
     const r = await fetch(urlFor(region), {
       headers: {
         'Cookie': cookieHeader(),
-        'Accept': 'text/tab-separated-values,text/plain,*/*',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36',
+        'Referer': `https://ebird.org/barchart?r=${region}`,
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'same-origin',
+        'Sec-Fetch-User': '?1',
       },
       redirect: 'follow',
     });
@@ -145,7 +158,10 @@ async function main() {
         console.error('Refaire login sur ebird.org + regenerer le cookie.');
         process.exit(1);
       }
-      await sleep(SLEEP_MS);
+      // Sleep uniquement apres un vrai download (pas sur SKIP)
+      if (res.status === 'ok' || res.status === 'err') {
+        await sleep(SLEEP_MS);
+      }
     }
   }
 

@@ -38,14 +38,18 @@ const REGIONS = {
        'CH-GL','CH-GR','CH-JU','CH-LU','CH-NE','CH-NW','CH-OW','CH-SG',
        'CH-SH','CH-SO','CH-SZ','CH-TG','CH-TI','CH-UR','CH-VD','CH-VS',
        'CH-ZG','CH-ZH'],
-  NO: ['NO-03','NO-11','NO-15','NO-18','NO-30','NO-34','NO-38','NO-42',
-       'NO-46','NO-50','NO-54'],
+  NO: ['NO-01','NO-02','NO-03','NO-04','NO-05','NO-06','NO-07','NO-08',
+       'NO-09','NO-10','NO-11','NO-12','NO-14','NO-15','NO-16','NO-17',
+       'NO-18','NO-19','NO-20'],
   GR: ['GR-A','GR-B','GR-C','GR-D','GR-E','GR-F','GR-G','GR-H','GR-I',
        'GR-J','GR-K','GR-L','GR-M'],
   IS: ['IS-1','IS-2','IS-3','IS-4','IS-5','IS-6','IS-7','IS-8'],
-  LK: ['LK-1','LK-2','LK-3','LK-4','LK-5','LK-6','LK-7','LK-8','LK-9'],
-  NA: ['NA-CA','NA-ER','NA-HA','NA-KA','NA-KE','NA-KH','NA-KU','NA-OD',
-       'NA-OH','NA-ON','NA-OS','NA-OT','NA-OW','NA-KW'],
+  LK: ['LK-11','LK-12','LK-13','LK-21','LK-22','LK-23','LK-31','LK-32',
+       'LK-33','LK-41','LK-42','LK-43','LK-44','LK-45','LK-51','LK-52',
+       'LK-53','LK-61','LK-62','LK-71','LK-72','LK-81','LK-82','LK-91',
+       'LK-92'],
+  NA: ['NA-CA','NA-ER','NA-HA','NA-KA','NA-KH','NA-KU','NA-OD','NA-OH',
+       'NA-OK','NA-ON','NA-OS','NA-OT','NA-OW'],
 };
 
 // Memes seuils que FR/ME (Option 1 recalibree 2026-08-27, tier 10 seuil 0.00015)
@@ -110,9 +114,12 @@ async function fetchTaxonomy(){
   return TAXONOMY_CACHE;
 }
 
+const BAR_DIR = join(__dir, '..', 'ebird-barcharts-raw');
+const OUT_DIR = join(__dir, '..', '..', 'data', 'generated');
+
 async function processCountry(cc){
-  const barPath = join(__dir, `ebird-barchart-${cc}-2019-2026.txt`);
-  const outPath = join(__dir, `real-rarity-${cc.toLowerCase()}-ebird.generated.js`);
+  const barPath = join(BAR_DIR, `ebird-barchart-${cc}-2019-2026.txt`);
+  const outPath = join(OUT_DIR, `real-rarity-${cc.toLowerCase()}-ebird.generated.js`);
 
   console.log(`\n=== ${cc} ===`);
   const bar = parseBarchart(barPath);
@@ -151,7 +158,7 @@ async function processCountry(cc){
   const regionalData = {};
   let nRegionsFound = 0;
   for (const regCode of REGIONS[cc] || []) {
-    const barRegPath = join(__dir, `ebird-barchart-${regCode}-2019-2026.txt`);
+    const barRegPath = join(BAR_DIR, `ebird-barchart-${regCode}-2019-2026.txt`);
     try {
       const barReg = parseBarchart(barRegPath);
       const regMap = {};
@@ -168,8 +175,11 @@ async function processCountry(cc){
     }
   }
   const regJson = JSON.stringify(regionalData);
-  const dataDir = join(__dir, '..', 'data');
-  const regPath = join(dataDir, `freq_by_region_${cc.toLowerCase()}.json`);
+  // Path attendu par l'app : data/countries/xx/freq_by_region.json
+  const countryDir = join(__dir, '..', '..', 'data', 'countries', cc.toLowerCase());
+  const { mkdirSync } = await import('node:fs');
+  mkdirSync(countryDir, { recursive: true });
+  const regPath = join(countryDir, `freq_by_region.json`);
   writeFileSync(regPath, regJson);
   console.log(`  Ecrit : ${regPath} (${regJson.length} chars, ${nRegionsFound} regions)`);
 }
