@@ -715,8 +715,14 @@ function _openCountryPicker(currentCode, opts = {}){
             // Islande / Sri Lanka via fallback FR alors qu'elle n'y est pas listee.
             const ebCC = EXOTIQUES_EBIRD_PAR_PAYS[cc] && EXOTIQUES_EBIRD_PAR_PAYS[cc][focusSci];
             const isExoLocal = (cc === 'FR') ? isExoticInCountry(focusSci, cc) : !!ebCC;
-            const absent = it.score === 0 && !isExoLocal;
-            const tier = absent ? 10 : rarityForCountry(focusSci, cc);
+            // Source de verite = rarityForCountry (meme calcul que la fiche espece).
+            // Fix 2026-09-22 : avant, le picker basait "absente" sur it.score (max monthly
+            // brut) alors que la fiche utilise rarityForCountry qui a des fallbacks
+            // supplementaires (_isForeignOnly, override RE FR, REAL_RARITY legacy). Ex :
+            // Dindon sauvage affichait tier 9 sur la fiche mais "absente" sur le picker.
+            // On aligne : absent = rarityForCountry retourne 0 ET pas exotique local.
+            const tier = rarityForCountry(focusSci, cc);
+            const absent = tier === 0 && !isExoLocal;
             const col = realColor(tier);
             // Tier 0 exotique : affiche la lettre categorie (N/P/X/C) au lieu de "0",
             // et le label eBird ("Introduit etabli" / "Vu en parcs" / "Echappe isole" /
