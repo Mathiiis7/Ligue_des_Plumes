@@ -1388,6 +1388,14 @@ function rarityForCountry(sci, country){
   // Fix 2026-09-21 : abandon du chemin _exoticTier (GBIF) qui necessitait des overrides
   // manuels (EXOTIQUES_TIER_FORCE). Le bar chart eBird donne un signal fiable et scalable.
   if(isExotic(sci)){
+    // Fix 2026-09-21 : isExotic est FR-centric. Une espece dans EXOTIQUES_CONNUES_FR peut
+    // etre NATIVE dans un autre pays (Perruche a collier au Sri Lanka, Paon bleu au Sri
+    // Lanka, Numida meleagris en Namibie...). Si elle est dans le bar chart local ET pas
+    // explicitement listee comme exotique par eBird pour ce pays -> traite comme sauvage.
+    const explicitExoCC = !!(EXOTIQUES_EBIRD_PAR_PAYS[c] && EXOTIQUES_EBIRD_PAR_PAYS[c][k]);
+    if(!explicitExoCC && barTier && !isParkOnlyExotic(sci)){
+      return _tierFromSTvsBarChart(k, barTier, c);
+    }
     const cat = exoticCategoryInCountry(sci, c) || _exoticCategory(k);
     if(cat === 'N' || cat === 'P'){
       if(barTier) return _tierFromSTvsBarChart(k, barTier, c);
