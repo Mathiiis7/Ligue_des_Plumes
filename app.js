@@ -662,16 +662,21 @@ function _openCountryPicker(currentCode, opts = {}){
           if(focusSci){
             // Utilise le tier de rareté (merge S&T + bar chart via rarityForCountry) plutot
             // que la valeur brute (evite melange % vs ind/h). Affiche tier + label + couleur.
-            // Espece consideree "absente" seulement si aucune data et PAS exotique dans ce pays.
-            // Ex : Faucon laggar est X en FR (echappe) - score=0 mais on doit afficher X, pas 'absente'.
-            const isExoLocal = isExoticInCountry(focusSci, cc);
+            // Espece consideree "absente" seulement si aucune data et PAS exotique CONFIRME
+            // dans ce pays via eBird. Fix 2026-09-21 : n'utilise plus le fallback isExoticInCountry
+            // (base sur EXOTIQUES_CONNUES_FR qui est FR-centric). Un pays != FR doit avoir une
+            // entree explicite dans EXOTIQUES_EBIRD_PAR_PAYS[cc] pour etre considere "exotique
+            // local". Sinon la Perruche a collier apparaissait comme 'N Introduit etabli' en
+            // Islande / Sri Lanka via fallback FR alors qu'elle n'y est pas listee.
+            const ebCC = EXOTIQUES_EBIRD_PAR_PAYS[cc] && EXOTIQUES_EBIRD_PAR_PAYS[cc][focusSci];
+            const isExoLocal = (cc === 'FR') ? isExoticInCountry(focusSci, cc) : !!ebCC;
             const absent = it.score === 0 && !isExoLocal;
             const tier = absent ? 10 : rarityForCountry(focusSci, cc);
             const col = realColor(tier);
             // Tier 0 exotique : affiche la lettre categorie (N/P/X/C) au lieu de "0",
             // et le label eBird ("Introduit etabli" / "Vu en parcs" / "Echappe isole" /
             // "Origine domestique") au lieu de "Parc semi-libre".
-            const chipCat = (tier === 0) ? (exoticCategoryInCountry(focusSci, cc) || _exoticCategory(focusSci) || '') : '';
+            const chipCat = (tier === 0) ? (ebCC || (cc === 'FR' ? _exoticCategory(focusSci) : '') || '') : '';
             let lbl;
             if(absent) lbl = 'absente';
             else if(chipCat) lbl = EXOTIC_CATEGORY_LABEL[chipCat] || 'Exotique';
