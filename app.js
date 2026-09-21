@@ -665,12 +665,20 @@ function _openCountryPicker(currentCode, opts = {}){
             const absent = it.score === 0;
             const tier = absent ? 10 : rarityForCountry(focusSci, cc);
             const col = realColor(tier);
-            const lbl = absent ? 'absente' : ((typeof REAL_LABELS === 'object' && REAL_LABELS[tier]) || ('tier '+tier));
+            // Tier 0 exotique : affiche la lettre categorie (N/P/X/C) au lieu de "0",
+            // et le label eBird ("Introduit etabli" / "Vu en parcs" / "Echappe isole" /
+            // "Origine domestique") au lieu de "Parc semi-libre".
+            const chipCat = (tier === 0) ? (exoticCategoryInCountry(focusSci, cc) || _exoticCategory(focusSci) || '') : '';
+            let lbl;
+            if(absent) lbl = 'absente';
+            else if(chipCat) lbl = EXOTIC_CATEGORY_LABEL[chipCat] || 'Exotique';
+            else lbl = (typeof REAL_LABELS === 'object' && REAL_LABELS[tier]) || ('tier '+tier);
+            const chipText = chipCat || tier;
             // Nouveau format : label texte AVANT le chip numero pour que les chips
             // soient tous alignes a droite (ex: "Rare [7]"). Absent = pas de chip.
             meta = absent
               ? '<span class="cp-item-meta">absente</span>'
-              : `<span class="cp-item-meta">${esc(lbl)}</span><span class="rar-chip on" style="background:${col};" title="tier ${tier}">${tier}</span>`;
+              : `<span class="cp-item-meta">${esc(lbl)}</span><span class="rar-chip on" style="background:${col};" title="tier ${tier}">${chipText}</span>`;
           } else {
             // Nb d'especes calibrees pour ce pays : prime S&T Cornell (plus riche : ~600
             // sp europeennes typiques), fallback bar chart eBird pour les pays sans S&T
@@ -10545,6 +10553,9 @@ function _renderSpeciesRarityCard(key){
     // Tier 0 exotique : affiche la lettre categorie (N/P/X/C) au lieu de "0" pour plus de sens.
     const pillTxt = (w === 0 && isExo) ? (cat || 'X') : w;
     const pill = `<span style="display:inline-block;background:${color};color:#fff;padding:3px 12px;border-radius:8px;font-weight:800;font-size:15px;min-width:28px;text-align:center;margin-right:10px;">${pillTxt}</span>`;
+    // Exotique N/P avec un tier reel : affiche aussi la lettre categorie en mini-badge
+    // avant le libelle pour reconnaissance rapide (ex: '5 Peu commun · N · Introduit etabli').
+    const catMiniPill = (isExo && cat && w > 0) ? `<span style="display:inline-block;background:var(--surface-2);color:var(--ink-2);padding:1px 7px;border-radius:5px;font-weight:800;font-size:11px;margin-left:10px;vertical-align:middle;" title="${esc(catLbl)}">${cat}</span>` : '';
     const catBadge = catLbl ? `<span style="font-size:12px;color:var(--ink-3);margin-left:10px;">· ${esc(catLbl)}</span>` : '';
     // Sous-section dépliante : composantes du tier composite S&T (seulement FR pour l'instant,
     // seulement pour les sauvages calibrées S&T). Rend le calcul transparent : montre les 3

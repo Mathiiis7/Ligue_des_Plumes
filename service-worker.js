@@ -3,7 +3,7 @@
 //   puis rafraichit en background. Prochain reload = nouvelle version.
 // - Requetes cross-origin (Firestore, iNaturalist, xeno-canto, Wikipedia, etc.) : reseau seul.
 // - Bump CACHE_VERSION quand on veut invalider volontairement.
-const CACHE_VERSION = 'v366-2026-09-21-pill-tier-0-remplace-lettre-NPXC';
+const CACHE_VERSION = 'v367-2026-09-21-picker-pays-lettre-NPXC-et-mini-badge-NP';
 const CACHE_NAME = 'lmb-' + CACHE_VERSION;
 
 self.addEventListener('install', (e) => {
