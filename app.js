@@ -1484,7 +1484,7 @@ function _rarityBadge(w, country, sci){
         const pill = `<span style="display:inline-block;background:${realColor(t)};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">${t}</span>`;
         return `${flgSpan}${pill} ${REAL_LABELS[t]||''} <span style="opacity:.7;font-size:11px;">· ${catLbl}</span>`;
       }
-      const pill = `<span style="display:inline-block;background:${realColor(0)};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">0</span>`;
+      const pill = `<span style="display:inline-block;background:${realColor(0)};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">${cat || 'X'}</span>`;
       return `${flgSpan}${pill} Exotique <span style="opacity:.7;font-size:11px;">· ${catLbl}</span>`;
     }
     // Cas special FR : espece hors-aire (jamais observee en France, connue uniquement dans
@@ -10542,7 +10542,9 @@ function _renderSpeciesRarityCard(key){
     const color = realColor(w);
     const country = avail.find(c => c.code === cc) || avail[0];
     const flgFixed = (country.flag||'').replace('<img ', '<img style="height:14px;width:19px;object-fit:cover;object-position:center;vertical-align:middle;border-radius:2px;margin-right:8px;box-shadow:0 0 0 1px rgba(0,0,0,.08);" ');
-    const pill = `<span style="display:inline-block;background:${color};color:#fff;padding:3px 12px;border-radius:8px;font-weight:800;font-size:15px;min-width:28px;text-align:center;margin-right:10px;">${w}</span>`;
+    // Tier 0 exotique : affiche la lettre categorie (N/P/X/C) au lieu de "0" pour plus de sens.
+    const pillTxt = (w === 0 && isExo) ? (cat || 'X') : w;
+    const pill = `<span style="display:inline-block;background:${color};color:#fff;padding:3px 12px;border-radius:8px;font-weight:800;font-size:15px;min-width:28px;text-align:center;margin-right:10px;">${pillTxt}</span>`;
     const catBadge = catLbl ? `<span style="font-size:12px;color:var(--ink-3);margin-left:10px;">· ${esc(catLbl)}</span>` : '';
     // Sous-section dépliante : composantes du tier composite S&T (seulement FR pour l'instant,
     // seulement pour les sauvages calibrées S&T). Rend le calcul transparent : montre les 3
@@ -14172,9 +14174,12 @@ function _pkdxRender(){
     // de rarityForCountry qui merge S&T + overrides EXOTIQUES_TIER_FORCE_FR. Divergence
     // possible : Ibis sacre affichait '6' sur fond rouge (couleur du tier 7 bar chart brut).
     const tierBg = realColor(r.tier);
+    // Tier 0 exotique : affiche la lettre categorie (N/P/X/C) au lieu de "0".
+    const catLetter = r.tier === 0 ? (exoticCategoryInCountry(r.sci, country) || _exoticCategory(r.sci) || '') : '';
+    const badgeText = catLetter || r.tier;
     return `<div class="pkdx-card${r.owned?'':' missing'}" data-sci="${esc(r.sci)}">
       <span class="pkdx-num">#${num}</span>
-      <span class="pkdx-tier" style="background:${tierBg};" title="Tier ${r.tier}">${r.tier}</span>
+      <span class="pkdx-tier" style="background:${tierBg};" title="Tier ${r.tier}${catLetter ? ' · '+catLetter : ''}">${badgeText}</span>
       <div class="pkdx-img" data-pkdx-lazy="${esc(r.sci)}">${r.owned ? '🐦' : ''}</div>
       <div class="pkdx-name">${esc(r.nm)}</div>
       <div class="pkdx-sci">${esc(r.sci)}</div>
