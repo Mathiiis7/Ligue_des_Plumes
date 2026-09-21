@@ -790,10 +790,12 @@ function _openFilterPicker(currentValue, opts){
     if(searchEl) setTimeout(() => searchEl.focus(), 50);
   });
 }
-// EXOTIQUES_CONNUES_FR = liste globale exotiques (curatorial, ~68 especes probables en Europe de l'ouest).
-// Sert de FALLBACK quand EXOTIQUES_EBIRD_PAR_PAYS (source eBird API) ne connait pas une espece
-// (pas d'obs recente 30j). Voir isExoticInCountry() plus bas pour la logique de merge.
-const EXOTIQUES_CONNUES_FR={"netta peposaca":1,"branta canadensis":1,"alopochen aegyptiaca":1,"aix galericulata":1,"aix sponsa":1,"oxyura jamaicensis":1,"cygnus atratus":1,"cairina moschata":1,"anser indicus":1,"anser cygnoides":1,"dendrocygna bicolor":1,"tadorna ferruginea":1,"alectoris chukar":1,"colinus virginianus":1,"callipepla californica":1,"syrmaticus reevesii":1,"phasianus colchicus":1,"pavo cristatus":1,"psittacula krameri":1,"psittacula eupatria":1,"myiopsitta monachus":1,"agapornis fischeri":1,"threskiornis aethiopicus":1,"leiothrix lutea":1,"euodice malabarica":1,"phoenicopterus chilensis":1,"francolinus francolinus":1,"estrilda astrild":1,"callonetta leucophrys":1,"phoenicopterus ruber":1,"agapornis nigrigenis":1,"agapornis personatus":1,"agapornis roseicollis":1,"alisterus scapularis":1,"amazonetta brasiliensis":1,"anas zonorhyncha":1,"anser canagicus":1,"ara ararauna":1,"ara militaris":1,"aratinga solstitialis":1,"branta sandvicensis":1,"cacatua alba":1,"cacatua galerita":1,"chloephaga picta":1,"cygnus melancoryphus":1,"dendrocygna autumnalis":1,"dendrocygna viduata":1,"eolophus roseicapilla":1,"estrilda melpoda":1,"gallus gallus":1,"mareca sibilatrix":1,"melopsittacus undulatus":1,"numida meleagris":1,"nymphicus hollandicus":1,"oressochen melanopterus":1,"phasianus versicolor":1,"platycercus eximius":1,"poicephalus senegalus":1,"psittacara erythrogenys":1,"psittacara mitratus":1,"psittacula cyanocephala":1,"psittacus erithacus":1,"serinus canaria":1,"tadorna cana":1,"taeniopygia guttata":1,"thectocercus acuticaudatus":1,"trichoglossus haematodus":1,"trichoglossus moluccanus":1,"anas bahamensis":1,"anas capensis":1,"anas poecilorhyncha":1,"anas flavirostris":1,"spatula cyanoptera":1,"spatula hottentota":1,"spatula versicolor":1,"ploceus melanocephalus":1,"euplectes afer":1,"parabuteo unicinctus":1,"falco jugger":1,"paragallinula angulata":1,"riparia paludicola":1,"phoeniconaias minor":1};
+// EXOTIQUES_CONNUES_FR retire 2026-09-21. Remplace par EXOTIQUES_EBIRD_PAR_PAYS.FR
+// (scraping HTML eBird : 116 especes vs 82 curatoriales, avec categories N/P/X explicites).
+// Les 6 especes uniquement dans curatorial ont ete verifiees : soit park-only (Sarcelle
+// versicolore, Flamant nain -> deja dans EXOTIQUES_PARCS), soit incorrectement classees
+// exotiques (Perdrix choukar, Francolin noir, Gallinule africaine, Hirondelle paludicole
+// sont en fait des raretes/vagrants natives ou marginales, tier 7-8 dans le bar chart FR).
 // SOURCE eBird API v2 (per-country exotic status). Regenerable via
 // `node tools/build-exotic-per-country.mjs`. Categorie eBird officielle par pays :
 // N (Naturalized, pop etablie), P (Provisional), X (Escapee), C (obsolete).
@@ -1099,7 +1101,9 @@ function isParkOnlyExotic(sci){ return EXOTIQUES_PARCS.has((sci||'').trim().toLo
 function isExotic(sci){
   const k = (sci||'').trim().toLowerCase();
   if(EXOTIQUES_MASQUEES.has(k)) return false;   // masquees partout
-  return EXOTIQUES_CONNUES_FR[k]===1;
+  // Depuis 2026-09-21 : source unique EXOTIQUES_EBIRD_PAR_PAYS.FR (scraping HTML eBird)
+  // au lieu du fallback curatorial EXOTIQUES_CONNUES_FR (retire). Cover 116 vs 82 especes.
+  return !!(EXOTIQUES_EBIRD_PAR_PAYS.FR && EXOTIQUES_EBIRD_PAR_PAYS.FR[k]);
 }
 // Statut exotique per-pays : source d'autorite = EXOTIQUES_EBIRD_PAR_PAYS (eBird API, per-region
 // exoticCategory field). Fallback = liste EXOTIQUES_CONNUES_FR curatorial globale (couvre les rares
@@ -1138,10 +1142,9 @@ function isExoticInCountry(sci, country){
   //     que reguliere en tant qu'exotique etablie type Perruche a collier).
   //   - Autres pays : applique uniquement si l'espece n'est PAS dans le bar chart local, sinon
   //     risque de mal classer une espece native aux Balkans (Alectoris chukar en ME) comme exotique.
-  if(EXOTIQUES_CONNUES_FR[k]){
-    if(cc === 'FR') return true;
-    if(!_isNativeInCountry(k, cc)) return true;
-  }
+  // Fallback FR : EXOTIQUES_EBIRD_PAR_PAYS.FR (scraping HTML eBird 2026-09-21, 116 especes)
+  // remplace EXOTIQUES_CONNUES_FR curatorial (retire).
+  if(cc === 'FR' && EXOTIQUES_EBIRD_PAR_PAYS.FR && EXOTIQUES_EBIRD_PAR_PAYS.FR[k]) return true;
   return false;
 }
 // Categorie exotique per-pays (N/P/X/C). Meme logique de fallback que isExoticInCountry.
@@ -1150,10 +1153,6 @@ function exoticCategoryInCountry(sci, country){
   const cc = country || 'FR';
   if(EXOTIQUES_EBIRD_PAR_PAYS[cc] && EXOTIQUES_EBIRD_PAR_PAYS[cc][k]) return EXOTIQUES_EBIRD_PAR_PAYS[cc][k];
   if(isParkOnlyExotic(k)) return 'X';
-  if(EXOTIQUES_CONNUES_FR[k]){
-    if(cc === 'FR') return EXOTIQUES_CATEGORIES_FR[k] || 'X';
-    if(!_isNativeInCountry(k, cc)) return EXOTIQUES_CATEGORIES_FR[k] || 'X';
-  }
   return '';
 }
 // Depuis migration S&T (26/08/2026) : rarityReal renvoie le tier apres merge S&T+bar chart
