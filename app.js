@@ -14043,6 +14043,11 @@ function _pkdxRender(){
       // canonique existe aussi dans FR_NAMES, on saute la vieille entree.
       if(_isSciAliasSource(sci)) continue;
       if(isHiddenSpecies(sci)) continue;   // perroquets cage etc.
+      // Park-only worldwide (Bernache nene, Dendrocygnes tropicaux, Flamants ornementaux,
+      // Grues couronnees...) sont EXCLUS partout : ils sont dans REAL_RARITY (bar chart FR)
+      // via quelques cochages "Escapee" eBird, mais ne sont pas des especes vraiment
+      // observables sauvages. Fix 2026-09-21 : filtre en premier avant _countryHasSpecies.
+      if(isParkOnlyExotic(sci)) continue;
       // Filtre par pays : ne garde que les especes explicitement dans le catalogue du pays.
       // Pour FR on complete par isExotic (toutes categories N/P/X/C) qui a son propre systeme
       // de tiers via _exoticTier. Le filtre "🦆 Exotiques seulement" du dropdown Tier permet
@@ -14125,6 +14130,7 @@ function _pkdxRender(){
   // Park-only exclus partout (aligne avec le filtre inCatalog).
   const totalOwned = [...mine].filter(s => {
     if(!FR_NAMES[s]) return false;
+    if(isParkOnlyExotic(s)) return false;
     if(_countryHasSpecies(country, s)) return true;
     if(EXOTIQUES_EBIRD_PAR_PAYS[country] && EXOTIQUES_EBIRD_PAR_PAYS[country][s]) return true;
     return false;
