@@ -14473,9 +14473,12 @@ function _pkdxRender(){
       if(!inCatalog){
         const ebCat = EXOTIQUES_EBIRD_PAR_PAYS[country] && EXOTIQUES_EBIRD_PAR_PAYS[country][k];
         if(!ebCat) continue;
-        // X hors bar chart local -> exclu (echappe unique, non trouvable en pratique)
-        if(ebCat === 'X') continue;
-        // N/P etablis (meme hors bar chart) -> on garde
+        // Fix 2026-09-22 : seuls les N (Naturalises etablis) sont gardes hors bar chart.
+        // Les P (Provisoire) et X (Echappe) sans data bar chart local sont exclus - eBird
+        // les tag mais frequence trop basse pour agregat -> afficher "Absente du bar chart"
+        // etait deroutant. Le N reste (pop reellement etablie mais localisee, ex Anser
+        // indicus FR ~Grand-Lieu, presque jamais coche mais existe).
+        if(ebCat !== 'N') continue;
         inCatalog = true;
       }
       const tier = rarityForCountry(sci, country);
