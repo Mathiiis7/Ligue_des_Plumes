@@ -275,8 +275,11 @@ const REAL_RARITY = {"acanthis flammea":6,"acanthis hornemanni":7,"accipiter gen
 // Non liste = defaut X (echappe presume).
 const EXOTIQUES_CATEGORIES_FR = {
   // Naturalises (population etablie reproductrice, statut eBird "Naturalized" FR)
+  // Note 2026-09-21 : la Perdrix choukar (alectoris chukar) n'est pas classee exotique
+  // par eBird au niveau FR national (scraping HTML confirme), donc retiree de cette
+  // liste curatoriale pour eviter le badge N incorrect sur les cartes Birdydex.
   'alopochen aegyptiaca':'N', 'branta canadensis':'N', 'psittacula krameri':'N',
-  'phasianus colchicus':'N', 'alectoris chukar':'N', 'oxyura jamaicensis':'N',
+  'phasianus colchicus':'N', 'oxyura jamaicensis':'N',
   'threskiornis aethiopicus':'N', 'leiothrix lutea':'N',
   // Ajouts sync avec EXOTIQUES_EBIRD_PAR_PAYS.FR (etaient uniquement dans le dict per-pays,
   // absents du dict global -> tombaient en fallback 'X' Echappé isolé dans classement).
@@ -13712,6 +13715,10 @@ if(_pkdxFilters.habitat && typeof HABITAT_CATS !== 'undefined' && !HABITAT_CATS.
 // Rarete filtree via chips (Set des tiers EXCLUS). Coche = affiche, decoche = cache.
 var _pkdxTierExcl = new Set();
 try{ const s = localStorage.getItem('mb-pkdx-tier-excl'); if(s) _pkdxTierExcl = new Set(JSON.parse(s)); }catch(_){}
+// Filtres categorie exotique (N/P/X) : Set des lettres exclues. Ex : {'N'} = masque
+// les Naturalises. Independant des tier chips (une espece N a un tier > 0).
+var _pkdxCatExcl = new Set();
+try{ const s = localStorage.getItem('mb-pkdx-cat-excl'); if(s) _pkdxCatExcl = new Set(JSON.parse(s)); }catch(_){}
 var _pkdxInit = false;   // var hoisted : evite TDZ quand restore last tab (btn.click) declenche renderPokedex avant que la declaration soit atteinte
 // Photo cache : reutilise _spPhotoCache si defini, sinon Map locale.
 const _pkdxPhotos = new Map();
@@ -14082,12 +14089,22 @@ function renderPokedex(){
       tierChipsBox.addEventListener('click', e => {
         if(e.target.matches('[data-tier-all]')){
           _pkdxTierExcl = new Set();
-          try{ localStorage.setItem('mb-pkdx-tier-excl', '[]'); }catch(_){}
+          _pkdxCatExcl = new Set();
+          try{ localStorage.setItem('mb-pkdx-tier-excl', '[]'); localStorage.setItem('mb-pkdx-cat-excl', '[]'); }catch(_){}
           _pkdxRender(); return;
         }
         if(e.target.matches('[data-tier-none]')){
           _pkdxTierExcl = new Set([0,1,2,3,4,5,6,7,8,9,10]);
-          try{ localStorage.setItem('mb-pkdx-tier-excl', JSON.stringify([..._pkdxTierExcl])); }catch(_){}
+          _pkdxCatExcl = new Set(['N','P']);
+          try{ localStorage.setItem('mb-pkdx-tier-excl', JSON.stringify([..._pkdxTierExcl])); localStorage.setItem('mb-pkdx-cat-excl', JSON.stringify([..._pkdxCatExcl])); }catch(_){}
+          _pkdxRender(); return;
+        }
+        // Chip categorie N/P : toggle sur _pkdxCatExcl.
+        const catBtn = e.target.closest('button[data-cat]');
+        if(catBtn){
+          const c = catBtn.dataset.cat;
+          if(_pkdxCatExcl.has(c)) _pkdxCatExcl.delete(c); else _pkdxCatExcl.add(c);
+          try{ localStorage.setItem('mb-pkdx-cat-excl', JSON.stringify([..._pkdxCatExcl])); }catch(_){}
           _pkdxRender(); return;
         }
         const btn = e.target.closest('button[data-tier]');
@@ -14310,7 +14327,9 @@ function _pkdxRender(){
       // (Perdrix choukar par ex). Le badge violet et le filtre "Exotiques seulement"
       // reflete cette realite locale.
       const exo = isExoticInCountry(sci, country);
-      all.push({ sci, nm, fam, tier, exo });
+      // Categorie exotique pour ce pays (N/P/X/C ou '') utilisee par les filtres N/P/X.
+      const cat = exo ? (exoticCategoryInCountry(sci, country) || _exoticCategory(sci) || '') : '';
+      all.push({ sci, nm, fam, tier, exo, cat });
     }
     // Tri : par ordre taxonomique IOC/eBird (FAMILY_ORDER), puis dans chaque famille du
     // moins rare au plus rare (tier ascendant, 1 = tres commun). Nom en tie-break stable.
@@ -14330,16 +14349,19 @@ function _pkdxRender(){
   const ownedF = _pkdxFilters.owned || '';
   const rows = [];
   for(const r of _pkdxAllSorted){
-    const { sci, nm, fam, tier, exo } = r;
+    const { sci, nm, fam, tier, exo, cat } = r;
     if(q && !_mapNorm(nm).includes(q) && !sci.includes(q)) continue;
     if(famF && fam !== famF) continue;
     const habs = habitatsOf(sci) || [];
     if(habF && !habs.includes(habF)) continue;
     if(_pkdxTierExcl.has(tier)) continue;
+    // Filtre categorie exotique : masque N/P/X si exclus. Une espece sans cat n'est
+    // filtree que si le tier 0 est aussi exclu (fallback : tier 0 sans cat = curieux).
+    if(cat && _pkdxCatExcl.has(cat)) continue;
     const owned = _mineHasStrict(mine, sci);
     if(ownedF === 'owned' && !owned) continue;
     if(ownedF === 'missing' && owned) continue;
-    rows.push({ sci, nm, fam, tier, exo, owned });
+    rows.push({ sci, nm, fam, tier, exo, cat, owned });
   }
   // Rendu des chips rareté : style unifie avec le filtre carte (.rar-chip compact).
   const chipsBox = document.getElementById('pkdxTierChips');
@@ -14347,13 +14369,28 @@ function _pkdxRender(){
     const tiersPresent = [...new Set(_pkdxAllSorted.map(r => r.tier))].filter(t => t != null).sort((a, b) => a - b);
     const chipsHtml = tiersPresent.map(t => {
       const on = !_pkdxTierExcl.has(t);
-      const lbl = (typeof REAL_LABELS === 'object' && REAL_LABELS[t]) || ('tier '+t);
+      // Tier 0 = species classées X ou C par eBird (échappés/domestiques). Le chip
+      // porte la lettre "X" plutôt que "0" pour aligner avec le badge sur la carte.
+      const isZero = t === 0;
+      const display = isZero ? 'X' : String(t);
+      const lbl = isZero ? 'Exotique échappé (X)' : ((typeof REAL_LABELS === 'object' && REAL_LABELS[t]) || ('tier '+t));
       const color = realColor(t);
       const bgStyle = on ? `background:${color};` : '';
-      return `<button type="button" class="rar-chip${on?' on':''}" data-tier="${t}" style="${bgStyle}" title="${esc(lbl)}">${t}</button>`;
+      return `<button type="button" class="rar-chip${on?' on':''}" data-tier="${t}" style="${bgStyle}" title="${esc(lbl)}">${display}</button>`;
+    }).join('');
+    // Chips categorie N/P : affichees après les tiers, seulement si des especes de la
+    // categorie sont presentes dans le pays courant. Couleurs alignees mini-carte.
+    const catsPresent = new Set(_pkdxAllSorted.map(r => r.cat).filter(c => c === 'N' || c === 'P'));
+    const CAT_COLOR = { N:'#22c55e', P:'#f59e0b' };
+    const CAT_LABEL = { N:'Naturalisé', P:'Provisoire' };
+    const catChipsHtml = ['N', 'P'].filter(c => catsPresent.has(c)).map(c => {
+      const on = !_pkdxCatExcl.has(c);
+      const bgStyle = on ? `background:${CAT_COLOR[c]};color:#fff;` : '';
+      return `<button type="button" class="rar-chip${on?' on':''}" data-cat="${c}" style="${bgStyle}" title="${esc(CAT_LABEL[c])}">${c}</button>`;
     }).join('');
     chipsBox.innerHTML = '<span style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; align-self:center; margin-right:6px;">Rareté</span>'
       + chipsHtml
+      + catChipsHtml
       + '<button type="button" class="rar-chip" data-tier-all title="Cocher toutes les raretés">Tout</button>'
       + '<button type="button" class="rar-chip" data-tier-none title="Décocher toutes les raretés">Vide</button>';
   }
