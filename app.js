@@ -1384,27 +1384,19 @@ function rarityForCountry(sci, country){
   }
   const stEntry = reg.st()[k];
   const barTier = reg.barTier()[k];   // undefined si pas de bar chart pour ce pays
-  // Exotiques : N/P (populations naturalisees/provisoires) -> vrai tier (Perruche a collier,
-  // Bernache du Canada...). X/C (echappes/domestiques) et parcs semi-libres -> tier 0.
+  // Exotiques : N/P (populations naturalisees/provisoires) -> traites comme les sauvages
+  // (bar chart eBird local + composite S&T via _tierFromSTvsBarChart). Meme methode que
+  // pour les vrais sauvages, robuste aux variations saisonnieres (bar chart = 48 quinzaines
+  // sur 2019-2026 normalisees par sample size). X/C/park-only -> tier 0.
+  // Fix 2026-09-21 : abandon du chemin _exoticTier (GBIF) qui necessitait des overrides
+  // manuels (EXOTIQUES_TIER_FORCE). Le bar chart eBird donne un signal fiable et scalable.
   if(isExotic(sci)){
     const cat = exoticCategoryInCountry(sci, c) || _exoticCategory(k);
-    // Priorite eBird N/P : si eBird a marque l'espece N/P dans ce pays, on utilise son tier
-    // meme si elle est aussi dans EXOTIQUES_PARCS (liste curatoriale globale). Ex : Faisan
-    // venere (syrmaticus reevesii) est park-only worldwide MAIS N en France (lachers de
-    // chasse en Sologne) -> tier reel affiche.
     if(cat === 'N' || cat === 'P'){
-      // Fix 2026-09-21 : le fallback _exoticTier utilise REAL_RARITY (FR) + REAL_RARITY_EXO_GBIF
-      // (FR). Ne l'appliquer que si on est en FR OU si l'espece est explicitement listee dans
-      // EXOTIQUES_EBIRD_PAR_PAYS[cc] (donc vraiment observee dans ce pays). Sinon retourne 0
-      // pour eviter d'inventer un tier base sur FR (ex : Erismature rousse au Montenegro).
-      const inEbirdCountry = EXOTIQUES_EBIRD_PAR_PAYS[c] && EXOTIQUES_EBIRD_PAR_PAYS[c][k];
-      if(c === 'FR' || inEbirdCountry){
-        const gbifTier = _exoticTier(k) || 1;
-        return _tierFromSTvsBarChart(k, gbifTier, c);
-      }
+      if(barTier) return _tierFromSTvsBarChart(k, barTier, c);
+      if(stEntry && stEntry.t) return stEntry.t;
       return 0;
     }
-    // Park-only (Bernache nene, Dendrocygnes, Flamants d'ornement...) et X/C : tier 0.
     if(isParkOnlyExotic(sci)) return 0;
     return 0;
   }
@@ -10585,12 +10577,10 @@ function _renderSpeciesRarityCard(key){
     const hasStSubs = stEntry && stEntry.ta && stEntry.tn && stEntry.tl;
     const ccBarTier = (regCC && regCC.barTier) ? (regCC.barTier()[k] || null) : null;
     const ccName = (regCC && regCC.name) || cc;
-    // Label source d'appui : varie selon pays (FR = bar chart eBird FR + fallback GBIF exotiques,
-    // autres = bar chart XX si dispo, sinon rien).
-    const barSrcLabelCC = isEstabExo
-      ? 'GBIF exotiques (parcs urbains inclus)'
-      : (cc === 'FR' ? 'Bar chart eBird FR 2019-2026' : ('Bar chart eBird ' + cc + ' 2019-2026'));
-    const barSrcShortCC = isEstabExo ? 'GBIF' : 'bar chart';
+    // Label source d'appui : bar chart eBird du pays (meme pour les exotiques N/P depuis
+    // le fix 2026-09-21 qui abandonne GBIF pour utiliser le meme signal que les sauvages).
+    const barSrcLabelCC = (cc === 'FR' ? 'Bar chart eBird FR 2019-2026' : ('Bar chart eBird ' + cc + ' 2019-2026'));
+    const barSrcShortCC = 'bar chart';
     // Cas 1 : S&T dispo avec sous-tiers -> détail complet composite / bar chart / merge
     // Applique a TOUS les pays (meme regle +/-1 tier + moyenne ponderee). EXOTIQUES_TIER_FORCE_FR
     // reste FR-only (dict specifique aux sites francais) et ne fire pas pour les autres pays.
@@ -10629,8 +10619,8 @@ function _renderSpeciesRarityCard(key){
             </div>
           </details>`;
       } else if(st.ta && st.tn && st.tl){
-        // Source d'appui presente : bar chart ou GBIF -> merge complet.
-        const barTier = isEstabExo ? (_exoticTier(k) || 1) : ccBarTier;
+        // Source d'appui presente : bar chart eBird (meme pour exotiques N/P depuis 2026-09-21).
+        const barTier = ccBarTier;
         const barSrcLabel = barSrcLabelCC;
         const barSrcShort = barSrcShortCC;
         // Override manuel prioritaire : quelques exotiques naturalisees localement abondantes
@@ -10725,9 +10715,7 @@ function _renderSpeciesRarityCard(key){
           //      relève sans qu'on parle de "biais".
           //   2. stComp < barTier : biais grégaire (S&T dit plus commun que réalité observée)
           //   3. stComp > barTier : biais dilution localisée (S&T dit plus rare, hotspots dilués)
-          const barMeasure = isEstabExo
-            ? 'Densité GBIF (incl. iNaturalist + parcs urbains)'
-            : 'Fréquence % checklists (pic biweekly)';
+          const barMeasure = 'Fréquence % checklists (pic biweekly)';
           let biasNote;
           if(!stValid){
             biasNote = `S&amp;T Cornell n\'a pas de modèle utilisable pour ${esc(ccName)} (espèce sans données suffisantes, généralement vagrant transatlantique ou accidentelle asiatique). Source d\'appui utilisée par défaut.`;
@@ -10780,16 +10768,12 @@ function _renderSpeciesRarityCard(key){
       // Cas 2 : pas de S&T pour cette espece (Pipit spioncelle, Aigle de Bonelli, endemiques
       // montagnards, plusieurs vagrants). On n'a que le bar chart -> affiche mini-note
       // explicative pour que l'utilisateur comprenne l'absence de sous-scores.
-      const barTier = isEstabExo
-        ? (_exoticTier(k) || 1)
-        : (ccBarTier || ((cc === 'FR' && _isForeignOnly(k)) ? 9 : 1));
-      const barMeasure = isEstabExo ? 'Densité GBIF' : 'Fréquence % checklists (pic biweekly)';
-      // Detecte un override manuel EXOTIQUES_TIER_FORCE (Tadorne casarca FR=6 par ex).
-      const forceOverride = (isEstabExo && typeof EXOTIQUES_TIER_FORCE === 'object' && EXOTIQUES_TIER_FORCE[cc] && EXOTIQUES_TIER_FORCE[cc][k] != null) ? EXOTIQUES_TIER_FORCE[cc][k] : null;
-      const srcNoteText = isEstabExo
-        ? 'eBird Status &amp; Trends (Cornell) n\'a pas de modèle pour les exotiques. Tier basé sur la densité GBIF (parcs urbains inclus, capture les obs iNaturalist).'
-        : 'eBird Status &amp; Trends (Cornell) n\'a pas de modèle pour cette espèce (données insuffisantes ou taxa mineur). Tier basé uniquement sur le bar chart eBird.';
-      const overrideNote = (forceOverride != null && forceOverride !== barTier) ? `<div style="font-size:10.5px;color:var(--warn,#c07500);margin-top:6px;opacity:.9;line-height:1.4;">⚠ Tier ajusté manuellement à <b>${forceOverride}</b> (curatorial ${cc}) : reflète la difficulté réelle pour un birder généraliste, la source auto (${barTier}) étant biaisée par des concentrations locales (Alsace, Camargue pour Tadorne casarca ; Grand-Lieu pour Ibis sacré ; parcs Ile-de-France pour Canard mandarin).</div>` : '';
+      const barTier = ccBarTier || ((cc === 'FR' && _isForeignOnly(k)) ? 9 : 1);
+      const barMeasure = 'Fréquence % checklists (pic biweekly)';
+      // Detecte un override manuel EXOTIQUES_TIER_FORCE (fine-tune optionnel).
+      const forceOverride = (typeof EXOTIQUES_TIER_FORCE === 'object' && EXOTIQUES_TIER_FORCE[cc] && EXOTIQUES_TIER_FORCE[cc][k] != null) ? EXOTIQUES_TIER_FORCE[cc][k] : null;
+      const srcNoteText = 'eBird Status &amp; Trends (Cornell) n\'a pas de modèle pour cette espèce (données insuffisantes ou taxa mineur). Tier basé uniquement sur le bar chart eBird.';
+      const overrideNote = (forceOverride != null && forceOverride !== barTier) ? `<div style="font-size:10.5px;color:var(--warn,#c07500);margin-top:6px;opacity:.9;line-height:1.4;">⚠ Tier ajusté manuellement à <b>${forceOverride}</b> (curatorial ${cc}) : reflète la difficulté réelle pour un birder généraliste sur les sites clés (Alsace, Camargue…).</div>` : '';
       detailsHtml = `
         <details style="margin-top:6px;">
           <summary style="cursor:pointer;font-size:12px;color:var(--ink-3);user-select:none;padding:2px 0;">▸ Détails du calcul</summary>
