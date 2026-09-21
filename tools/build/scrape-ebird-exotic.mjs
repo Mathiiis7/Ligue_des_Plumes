@@ -17,7 +17,7 @@ import { dirname, join } from 'node:path';
 const __dir = dirname(fileURLToPath(import.meta.url));
 const OUT = join(__dir, 'exotic-per-country-scraped.generated.js');
 
-const COUNTRIES = ['FR', 'ME', 'ES', 'IT', 'GB', 'PT', 'CH', 'NO', 'GR', 'IS', 'LK', 'NA'];
+const COUNTRIES = ['FR', 'ME', 'ES', 'IT', 'GB', 'PT', 'CH', 'NO', 'GR', 'IS', 'LK', 'NA', 'AU'];
 
 async function scrapeCountry(page, cc) {
   console.log(`\n=== ${cc} ===`);

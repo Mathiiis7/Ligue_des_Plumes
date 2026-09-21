@@ -18,7 +18,7 @@ import { dirname, join } from 'node:path';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 
-const COUNTRIES = ['ES', 'IT', 'GB', 'PT', 'CH', 'NO', 'GR', 'IS', 'LK', 'NA'];
+const COUNTRIES = ['ES', 'IT', 'GB', 'PT', 'CH', 'NO', 'GR', 'IS', 'LK', 'NA', 'AU'];
 
 // Regions par pays (admin1 eBird). Ajoute la data monthly par region -> alimente
 // data/freq_by_region_XX.json pour lazy-load runtime (comme FR).
@@ -50,6 +50,7 @@ const REGIONS = {
        'LK-92'],
   NA: ['NA-CA','NA-ER','NA-HA','NA-KA','NA-KH','NA-KU','NA-OD','NA-OH',
        'NA-OK','NA-ON','NA-OS','NA-OT','NA-OW'],
+  AU: ['AU-ACT','AU-NSW','AU-NT','AU-QLD','AU-SA','AU-TAS','AU-VIC','AU-WA'],
 };
 
 // Memes seuils que FR/ME (Option 1 recalibree 2026-08-27, tier 10 seuil 0.00015)

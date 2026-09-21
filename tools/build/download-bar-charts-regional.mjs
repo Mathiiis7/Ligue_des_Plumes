@@ -50,6 +50,8 @@ const REGIONS = {
   // NA : 13 regions (retire NA-KE, NA-KW inexistants ; ajoute NA-OK).
   NA: ['NA-CA','NA-ER','NA-HA','NA-KA','NA-KH','NA-KU','NA-OD','NA-OH',
        'NA-OK','NA-ON','NA-OS','NA-OT','NA-OW'],
+  // Ajout 2026-09-21 : Australie (8 etats/territoires).
+  AU: ['AU-ACT','AU-NSW','AU-NT','AU-QLD','AU-SA','AU-TAS','AU-VIC','AU-WA'],
 };
 
 const COOKIE = process.env.EBIRD_COOKIE;
