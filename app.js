@@ -11532,16 +11532,10 @@ function _renderSpeciesFreqChart(key, country){
   }
   let monthlyArr = null;   // source mensuelle si fallback : garde pour tooltips "mois"
   if(!arr){
-    // Monthly bar chart via registry pour les pays qui en ont (FR/ME actuellement).
-    // ES/IT/GB/PT : monthly() renvoie {} donc rien -> pas de fallback monthly national,
-    // seul le S&T weekly ci-dessus sert.
-    if(cc !== 'FR'){
-      const reg = COUNTRIES_REG[cc];
-      if(reg && reg.monthly) monthlyArr = reg.monthly()[key] || null;
-    }
-    // Bar chart mensuel REGIONAL (utilise en mode region si S&T weekly regional absent).
-    // Multi-pays via COUNTRIES_REG.monthlyByRegion() qui expose la data lazy-loadee.
-    if(!monthlyArr && strictRegional){
+    // Bar chart mensuel REGIONAL prime en mode strict regional (Fix 2026-09-22 : avant,
+    // le national etait charge en 1er ce qui bloquait le lookup regional -> Delaware
+    // US affichait 'pas de données pour Delaware' alors que la data existait).
+    if(strictRegional){
       const regCC = COUNTRIES_REG[cc];
       const byReg = regCC && regCC.monthlyByRegion && regCC.monthlyByRegion();
       const regArr = byReg && byReg[_speciesRegion] && byReg[_speciesRegion][key];
@@ -11549,10 +11543,14 @@ function _renderSpeciesFreqChart(key, country){
         monthlyArr = regArr; regionScope = _speciesRegion;
       }
     }
-    // Bar chart mensuel NATIONAL (SEULEMENT si pas en mode region)
-    // Fix 2026-09-21 : restreindre le fallback REAL_FREQ_MONTHLY (FR) au SEUL cas cc=FR.
-    // Sinon l'Erismature rousse au Montenegro affichait les data FR (0.15% partout) alors
-    // qu'elle n'est pas presente en ME.
+    // Bar chart mensuel NATIONAL (SEULEMENT si pas en mode region OU si strict regional
+    // sans data pour la region -> tombe sur national avec fallback note).
+    if(!monthlyArr && cc !== 'FR'){
+      const reg = COUNTRIES_REG[cc];
+      if(reg && reg.monthly) monthlyArr = reg.monthly()[key] || null;
+    }
+    // FR : REAL_FREQ_MONTHLY (national). Fix 2026-09-21 : restreint au seul cas cc=FR
+    // pour eviter que Erismature rousse ME affiche data FR par erreur.
     if(!monthlyArr && !strictRegional && cc === 'FR' && typeof REAL_FREQ_MONTHLY === 'object'){ monthlyArr = REAL_FREQ_MONTHLY[key] || null; }
     if(monthlyArr && monthlyArr.length === 12){
       // Étire 12 mois -> 52 semaines (repartition proportionnelle des semaines par mois).
