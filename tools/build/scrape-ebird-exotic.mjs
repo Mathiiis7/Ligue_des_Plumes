@@ -17,16 +17,73 @@ import { dirname, join } from 'node:path';
 const __dir = dirname(fileURLToPath(import.meta.url));
 const OUT = join(__dir, 'exotic-per-country-scraped.generated.js');
 
-const COUNTRIES = ['FR', 'ME', 'ES', 'IT', 'GB', 'PT', 'CH', 'NO', 'GR', 'IS', 'LK', 'NA', 'AU'];
+const COUNTRIES = ['FR', 'ME', 'ES', 'IT', 'GB', 'PT', 'CH', 'NO', 'GR', 'IS', 'LK', 'NA', 'AU', 'NZ'];
+// Sous-set pour un run cible : CLI arg 1 en CSV, sinon tous. Ex: node scrape... AU,NZ
+const CLI_COUNTRIES = (process.argv[2] || '').split(',').map(s => s.trim()).filter(Boolean);
+const RUN_COUNTRIES = CLI_COUNTRIES.length > 0 ? CLI_COUNTRIES : COUNTRIES;
+
+// Regions pour pays trop gros (page nationale eBird echoue "Oups!") : on scrape
+// chaque region et on merge par priorite N > P > X.
+const REGION_FALLBACK = {
+  AU: ['AU-ACT','AU-NSW','AU-NT','AU-QLD','AU-SA','AU-TAS','AU-VIC','AU-WA'],
+};
+
+async function scrapeRegion(page, region) {
+  const url = `https://ebird.org/barchart?r=${region}&byr=1900&eyr=2026`;
+  await page.goto(url, { waitUntil: 'networkidle', timeout: 90000 });
+  await page.waitForTimeout(6000);
+  return await page.evaluate(() => {
+    const out = {};
+    const icons = document.querySelectorAll('[class*="Icon--exotic"]');
+    for(const icon of icons) {
+      let cat = null;
+      const classes = [...(icon.classList || [])];
+      if(classes.some(c => c.includes('Naturalized'))) cat = 'N';
+      else if(classes.some(c => c.includes('Provisional'))) cat = 'P';
+      else if(classes.some(c => c.includes('Escapee'))) cat = 'X';
+      if(!cat) continue;
+      const row = icon.closest('.SpeciesName') || icon.parentElement?.parentElement;
+      if(!row) continue;
+      const link = row.querySelector('a[data-species-code]');
+      if(!link) continue;
+      const code = link.getAttribute('data-species-code');
+      if(code) out[code] = cat;
+    }
+    return out;
+  });
+}
+
+// Merge par priorite N > P > X (categorie la plus etablie gagne).
+function mergeCat(existing, incoming){
+  const rank = { N: 3, P: 2, X: 1, C: 1 };
+  if(!existing) return incoming;
+  return (rank[incoming] || 0) > (rank[existing] || 0) ? incoming : existing;
+}
 
 async function scrapeCountry(page, cc) {
   console.log(`\n=== ${cc} ===`);
+  // Cas special : pays trop gros -> scrape par region + merge.
+  if(REGION_FALLBACK[cc]) {
+    console.log(`  Fallback regional (page nationale trop lourde) : ${REGION_FALLBACK[cc].length} regions`);
+    const merged = {};
+    for(const reg of REGION_FALLBACK[cc]) {
+      try {
+        const d = await scrapeRegion(page, reg);
+        for(const [code, cat] of Object.entries(d)) merged[code] = mergeCat(merged[code], cat);
+        console.log(`    ${reg}: +${Object.keys(d).length} (total merged: ${Object.keys(merged).length})`);
+      } catch(e) {
+        console.error(`    ${reg}: ERREUR ${e.message}`);
+      }
+    }
+    console.log(`  Extracted (merged): ${Object.keys(merged).length} exotiques`);
+    return merged;
+  }
+  // Cas normal : page pays.
   const url = `https://ebird.org/barchart?r=${cc}&byr=1900&eyr=2026`;
   console.log('  Navigating...');
   await page.goto(url, { waitUntil: 'networkidle', timeout: 90000 });
   console.log('  Waiting for full render...');
   await page.waitForTimeout(8000);
-  // Extract via species code (eBird), plus fiable que nom fr/sci
   const data = await page.evaluate(() => {
     const out = {};
     const icons = document.querySelectorAll('[class*="Icon--exotic"]');
@@ -37,7 +94,6 @@ async function scrapeCountry(page, cc) {
       else if(classes.some(c => c.includes('Provisional'))) cat = 'P';
       else if(classes.some(c => c.includes('Escapee'))) cat = 'X';
       if(!cat) continue;
-      // Remonte vers .SpeciesName container et cherche le lien species avec data-species-code
       const row = icon.closest('.SpeciesName') || icon.parentElement?.parentElement;
       if(!row) continue;
       const link = row.querySelector('a[data-species-code]');
@@ -59,7 +115,7 @@ const ctx = await browser.newContext({
 const page = await ctx.newPage();
 
 const results = {};   // { cc: { speciesCode: cat } }
-for(const cc of COUNTRIES) {
+for(const cc of RUN_COUNTRIES) {
   try {
     results[cc] = await scrapeCountry(page, cc);
   } catch(e) {
@@ -95,7 +151,7 @@ writeFileSync(OUT,
 );
 console.log(`\n✓ Ecrit ${OUT}`);
 console.log('\nRecap:');
-for(const cc of COUNTRIES) {
+for(const cc of RUN_COUNTRIES) {
   const m = bySci[cc] || {};
   const cats = {};
   for(const v of Object.values(m)) cats[v] = (cats[v]||0)+1;

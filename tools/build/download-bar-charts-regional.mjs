@@ -51,7 +51,13 @@ const REGIONS = {
   NA: ['NA-CA','NA-ER','NA-HA','NA-KA','NA-KH','NA-KU','NA-OD','NA-OH',
        'NA-OK','NA-ON','NA-OS','NA-OT','NA-OW'],
   // Ajout 2026-09-21 : Australie (8 etats/territoires).
+  // Note : le bar chart national AU echoue (dataset trop gros cote eBird),
+  // on ne downloade que les 8 regions et on agrege plus tard si besoin.
   AU: ['AU-ACT','AU-NSW','AU-NT','AU-QLD','AU-SA','AU-TAS','AU-VIC','AU-WA'],
+  // Ajout 2026-09-21 : Nouvelle-Zelande (17 regions).
+  NZ: ['NZ-AUK','NZ-BOP','NZ-CAN','NZ-CI','NZ-GIS','NZ-HKB','NZ-MWT','NZ-MBH',
+       'NZ-NSN','NZ-NTL','NZ-OTA','NZ-STL','NZ-TKI','NZ-TAS','NZ-WKO','NZ-WGN',
+       'NZ-WTC'],
 };
 
 const COOKIE = process.env.EBIRD_COOKIE;
@@ -148,10 +154,13 @@ async function main() {
   console.log('Delai entre requetes : ' + SLEEP_MS + 'ms\n');
 
   const results = [];
+  // Pays trop gros pour le bar chart national (page eBird "Oups!") : on skip
+  // le national et on ne downloade que les regions.
+  const SKIP_NATIONAL = new Set(['AU']);
   for (const [country, regions] of Object.entries(REGIONS)) {
-    // Downloade aussi le fichier national (r=CH par ex) en plus des regions.
-    const allRegions = [country, ...regions];
-    console.log(`\n=== ${country} (${allRegions.length} fichiers : 1 national + ${regions.length} regions) ===`);
+    const skipNat = SKIP_NATIONAL.has(country);
+    const allRegions = skipNat ? [...regions] : [country, ...regions];
+    console.log(`\n=== ${country} (${allRegions.length} fichiers : ${skipNat ? 0 : 1} national + ${regions.length} regions) ===`);
     for (const region of allRegions) {
       const res = await downloadOne(region);
       results.push(res);
