@@ -10777,12 +10777,14 @@ function _renderSpeciesRarityCard(key){
     const color = realColor(w);
     const country = avail.find(c => c.code === cc) || avail[0];
     const flgFixed = (country.flag||'').replace('<img ', '<img style="height:14px;width:19px;object-fit:cover;object-position:center;vertical-align:middle;border-radius:2px;margin-right:8px;box-shadow:0 0 0 1px rgba(0,0,0,.08);" ');
-    // Tier 0 exotique : affiche la lettre categorie (N/P/X/C) au lieu de "0" pour plus de sens.
-    const pillTxt = (w === 0 && isExo) ? (cat || 'X') : w;
-    const pill = `<span style="display:inline-block;background:${color};color:#fff;padding:3px 12px;border-radius:8px;font-weight:800;font-size:15px;min-width:28px;text-align:center;margin-right:10px;">${pillTxt}</span>`;
-    // Exotique N/P avec un tier reel : affiche aussi la lettre categorie en mini-badge
-    // avant le libelle pour reconnaissance rapide (ex: '5 Peu commun · N · Introduit etabli').
-    const catMiniPill = (isExo && cat && w > 0) ? `<span style="display:inline-block;background:var(--surface-2);color:var(--ink-2);padding:1px 7px;border-radius:5px;font-weight:800;font-size:11px;margin-left:10px;vertical-align:middle;" title="${esc(catLbl)}">${cat}</span>` : '';
+    // Pill : affiche la lettre categorie (N/P) au lieu du chiffre du tier pour les
+    // exotiques etablis N/P (aligne avec le comportement des cartes Birdydex). X et C
+    // avec tier > 0 restent numeriques. Tier 0 exotique : lettre cat (N/P/X/C).
+    const useCatLetter = isExo && (cat === 'N' || cat === 'P') && w > 0;
+    const pillTxt = (w === 0 && isExo) ? (cat || 'X') : (useCatLetter ? cat : w);
+    const pill = `<span style="display:inline-block;background:${color};color:#fff;padding:3px 12px;border-radius:8px;font-weight:800;font-size:15px;min-width:28px;text-align:center;margin-right:10px;" title="tier ${w}">${pillTxt}</span>`;
+    // Mini-badge cat retire quand le pill affiche deja la lettre (evite doublon N + N).
+    const catMiniPill = (isExo && cat && w > 0 && !useCatLetter) ? `<span style="display:inline-block;background:var(--surface-2);color:var(--ink-2);padding:1px 7px;border-radius:5px;font-weight:800;font-size:11px;margin-left:10px;vertical-align:middle;" title="${esc(catLbl)}">${cat}</span>` : '';
     const catBadge = catLbl ? `<span style="font-size:12px;color:var(--ink-3);margin-left:10px;">· ${esc(catLbl)}</span>` : '';
     // Sous-section dépliante : composantes du tier composite S&T (seulement FR pour l'instant,
     // seulement pour les sauvages calibrées S&T). Rend le calcul transparent : montre les 3
