@@ -1767,18 +1767,13 @@ const inRef = sci => { const k=(sci||'').trim().toLowerCase(); return (k in REAL
 // Vrai cochage étranger = vu SEULEMENT à l'étranger ET pas une espèce de France.
 // (Un oiseau français vu d'abord à l'étranger - ex. Pinson - reste compté : la life list
 //  eBird ne garde que la 1re obs, donc son lieu n'est pas fiable pour l'exclure.)
-// REVISION 2026-09-21 : les especes etrangeres SONT comptees, les X (Escapee) aussi.
-// Seuls les vrais captifs stricts et les formes domestiques sont exclus :
-//   - isParkOnlyExotic : pure captive worldwide (Dendrocygne, Spatule platalea, Grue
-//     couronnee, Ibis rouge, Flamant nain...) -> jamais comptes
-//   - exoticCategoryInCountry === 'C' : formes domestiques d'elevage (Canard musque de
-//     Barbarie, Oie cygnoide de basse-cour, Pintade domestique, Colin de Virginie de
-//     chasse, Francolin noir) -> pas de vraie population sauvage en FR.
-// NOTE : les X eBird (Paon, Cygne noir, Cygne cou noir, ...) restent COMPTABLES : le user
-// juge au cas par cas selon le contexte (paon en semi-liberte Vincennes vs paon en cage).
+// REVISION 2026-09-21 : les park-only comptent aussi dans le total especes (0 points mais
+// +1 espece). Objectif user : si qqun coche un Dendrocygne fauve a un bassin d'ornement en
+// France, on compte l'observation. Sinon quand il verra la vraie forme sauvage a l'etranger
+// (Sahel par ex), il oubliera de la cocher parce qu'il pensera qu'il l'a deja.
+// Reste exclu : uniquement les formes domestiques (C).
 const foreignTick = v => {
   const k = (v.sci||'').trim().toLowerCase();
-  if(isParkOnlyExotic(k)) return true;
   const cc = v.country || (v.fr ? 'FR' : null);
   if(cc && exoticCategoryInCountry(k, cc) === 'C') return true;
   return false;
@@ -14060,15 +14055,15 @@ function _pkdxRender(){
       // de n'afficher que les exotiques ; sinon ils sont mixes avec les sauvages.
       const k = sci;
       // Espece dans le catalogue du pays : via registry COUNTRIES_REG (bar chart OU S&T
-      // non-nul) OU exotique dans ce pays. Support FR, ME, ES, IT, GB, PT + futurs.
-      // Fix 2026-09-21 : ne pas admettre via isExoticInCountry si ca vient d'un fallback
-      // global (park-only worldwide ou EXOTIQUES_CONNUES_FR appliquee au mauvais pays).
-      // Les park-only sont exclus MEME de FR : tier 0 + foreignTick=true -> 0 points, pas
-      // d'interet de polluer le Birdydex avec 35+ especes jamais observables sauvages.
+      // non-nul) OU exotique explicite dans ce pays (via eBird ou park-only worldwide en FR).
+      // Fix 2026-09-21 : ne pas admettre les EXOTIQUES_CONNUES_FR via fallback dans les
+      // autres pays (Bernache du Canada apparaissait dans le Birdydex ME parce qu'exotique
+      // en FR). Park-only worldwide restent en FR (contexte parcs typiques).
       let inCatalog = _countryHasSpecies(country, k);
       if(!inCatalog){
         const inEbirdCC = !!(EXOTIQUES_EBIRD_PAR_PAYS[country] && EXOTIQUES_EBIRD_PAR_PAYS[country][k]);
-        if(!inEbirdCC || isParkOnlyExotic(sci)) continue;
+        const parkOnlyFR = country === 'FR' && isParkOnlyExotic(sci);
+        if(!inEbirdCC && !parkOnlyFR) continue;
         inCatalog = true;
       }
       const tier = rarityForCountry(sci, country);
