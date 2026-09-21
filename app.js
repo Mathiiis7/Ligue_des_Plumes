@@ -2236,10 +2236,12 @@ function renderMatrix({universe,N}){
   if(state.q){ const q=state.q.toLowerCase();
     list=list.filter(u=>u.common.toLowerCase().includes(q)||(u.sci||'').toLowerCase().includes(q)); }
   if(state.sort==='rarity'){
-    if(rMode==='real') list.sort((a,b)=> rarOf(b).ord-rarOf(a).ord || a.common.localeCompare(b.common));  // plus rare d'abord
-    else list.sort((a,b)=> (a.missing?1:0)-(b.missing?1:0) || holdersFR(a)-holdersFR(b) || a.common.localeCompare(b.common)); // observés (unique d'abord), manquants en bas
+    // localeCompare avec 'fr' explicit + sensitivity:'base' : tri alphabetique francais
+    // stable independant de la locale navigateur (evite les ordres bizarres selon OS).
+    if(rMode==='real') list.sort((a,b)=> rarOf(b).ord-rarOf(a).ord || a.common.localeCompare(b.common, 'fr', {sensitivity:'base'}));
+    else list.sort((a,b)=> (a.missing?1:0)-(b.missing?1:0) || holdersFR(a)-holdersFR(b) || a.common.localeCompare(b.common, 'fr', {sensitivity:'base'}));
   }
-  else list.sort((a,b)=> a.common.localeCompare(b.common));
+  else list.sort((a,b)=> a.common.localeCompare(b.common, 'fr', {sensitivity:'base'}));
 
   // On applique enfin l'entête maintenant que displayPeople est connu.
   $('#thead').innerHTML = buildHead(displayPeople);
