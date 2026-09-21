@@ -1459,7 +1459,11 @@ function rarityForCountry(sci, country){
     if(cat === 'N' || cat === 'P'){
       if(barTier) return _tierFromSTvsBarChart(k, barTier, c);
       if(stEntry && stEntry.t) return stEntry.t;
-      return 0;
+      // N/P sans bar chart ni S&T : espece flaggee exotique naturalisee/provisoire par
+      // eBird mais fréquence si basse qu'elle n'apparait pas dans le bar chart pays.
+      // Ex Flamant rose en GB (P mais aucune data agregee). Retourne tier 9 (Ultra rare)
+      // au lieu de 0 (qui donnerait le label 'Parc semi-libre' trompeur).
+      return 9;
     }
     if(isParkOnlyExotic(sci)) return 0;
     return 0;
@@ -10987,19 +10991,27 @@ function _renderSpeciesRarityCard(key){
       // Cas 2 : pas de S&T pour cette espece (Pipit spioncelle, Aigle de Bonelli, endemiques
       // montagnards, plusieurs vagrants). On n'a que le bar chart -> affiche mini-note
       // explicative pour que l'utilisateur comprenne l'absence de sous-scores.
+      // Fix 2026-09-22 : quand ni bar chart ni S&T, on affichait tier 1 fallback trompeur.
+      // Detecte ce cas et affiche une note honnete (ex Flamant rose P en GB sans data).
+      const hasRealBarTier = !!ccBarTier;
       const barTier = ccBarTier || ((cc === 'FR' && _isForeignOnly(k)) ? 9 : 1);
       const barMeasure = 'Fréquence % checklists (pic biweekly)';
       // Detecte un override manuel EXOTIQUES_TIER_FORCE (fine-tune optionnel).
       const forceOverride = (typeof EXOTIQUES_TIER_FORCE === 'object' && EXOTIQUES_TIER_FORCE[cc] && EXOTIQUES_TIER_FORCE[cc][k] != null) ? EXOTIQUES_TIER_FORCE[cc][k] : null;
-      const srcNoteText = 'eBird Status &amp; Trends (Cornell) n\'a pas de modèle pour cette espèce (données insuffisantes ou taxa mineur). Tier basé uniquement sur le bar chart eBird.';
+      const srcNoteText = hasRealBarTier
+        ? 'eBird Status &amp; Trends (Cornell) n\'a pas de modèle pour cette espèce (données insuffisantes ou taxa mineur). Tier basé uniquement sur le bar chart eBird.'
+        : 'Aucune donnée de fréquence dans le bar chart eBird ' + esc(cc) + ' (espèce flaggée exotique par eBird mais fréquence trop basse pour être agrégée). Tier ' + w + ' déduit par défaut : espèce très rare / vagrante.';
       const overrideNote = (forceOverride != null && forceOverride !== barTier) ? `<div style="font-size:10.5px;color:var(--warn,#c07500);margin-top:6px;opacity:.9;line-height:1.4;">⚠ Tier ajusté manuellement à <b>${forceOverride}</b> (curatorial ${cc}) : reflète la difficulté réelle pour un birder généraliste sur les sites clés (Alsace, Camargue…).</div>` : '';
+      const headerLabel = hasRealBarTier
+        ? esc(barSrcLabelCC) + ' (seule source)'
+        : 'Bar chart eBird ' + esc(cc) + ' : espèce absente du dataset';
       detailsHtml = `
         <details style="margin-top:6px;">
           <summary style="cursor:pointer;font-size:12px;color:var(--ink-3);user-select:none;padding:2px 0;">▸ Détails du calcul</summary>
           <div style="padding:6px 0 4px 4px;border-left:2px solid var(--line);margin:4px 0 2px 6px;padding-left:10px;">
-            <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">${esc(barSrcLabelCC)} (seule source)</div>
-            <div style="display:flex;align-items:center;gap:8px;padding:5px 0 2px 0;">
-              <span style="color:var(--accent);font-weight:800;font-size:14px;">✓</span>
+            <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">${headerLabel}</div>
+            ${hasRealBarTier ? `<div style="display:flex;align-items:center;gap:8px;padding:5px 0 2px 0;">
+              <span style="color:var(--accent);font-weight:800;font-size:14px;">✓</span>` : `<div style="display:none;">`}
               <span style="display:inline-block;background:${realColor(barTier)};color:#fff;padding:2px 8px;border-radius:6px;font-weight:800;font-size:13px;min-width:22px;text-align:center;">${barTier}</span>
               <span style="font-size:12px;color:var(--ink);font-weight:600;">${barMeasure}</span>
             </div>
