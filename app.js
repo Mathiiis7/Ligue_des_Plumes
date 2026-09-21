@@ -14471,15 +14471,12 @@ function _pkdxRender(){
       // bar chart (populations vraiment etablies mais localisees).
       let inCatalog = _countryHasSpecies(country, k);
       if(!inCatalog){
-        const ebCat = EXOTIQUES_EBIRD_PAR_PAYS[country] && EXOTIQUES_EBIRD_PAR_PAYS[country][k];
-        if(!ebCat) continue;
-        // Fix 2026-09-22 : seuls les N (Naturalises etablis) sont gardes hors bar chart.
-        // Les P (Provisoire) et X (Echappe) sans data bar chart local sont exclus - eBird
-        // les tag mais frequence trop basse pour agregat -> afficher "Absente du bar chart"
-        // etait deroutant. Le N reste (pop reellement etablie mais localisee, ex Anser
-        // indicus FR ~Grand-Lieu, presque jamais coche mais existe).
-        if(ebCat !== 'N') continue;
-        inCatalog = true;
+        // Fix 2026-09-22 : plus d'exception pour N/P/X hors bar chart. Si aucune data
+        // eBird agregée sur 7 ans, l'espèce n'est pas montrable de facon coherente
+        // (afficher 'Absente du bar chart' avec badge N/P/X était déroutant). Les vraies
+        // pop N restent visibles via leur bar chart local (Anser indicus FR est bien
+        // dans le bar chart FR, freq faible mais > 0).
+        continue;
       }
       const tier = rarityForCountry(sci, country);
       // Tier peut etre 0 (parcs semi-libres : paons, flamants ornementaux, canards
