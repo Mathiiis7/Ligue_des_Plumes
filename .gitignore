@@ -11,6 +11,8 @@ tools/real-rarity.generated.js
 tools/real-freq-monthly.generated.js
 tools/real-freq-monthly-by-region.generated.js
 tools/real-abundance-dept.generated.js
+tools/build/exotic-per-country.generated.js
+tools/build/real-rarity-*-ebird.generated.js
 tools/scratch-new-species.json
 tools/ebirdst-target-codes.txt
 
