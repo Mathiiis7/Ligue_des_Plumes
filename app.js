@@ -12105,6 +12105,24 @@ async function _smFetchGbif(sci, month, yearMin, yearMax, bbox, cc, onProgress){
     return { points, total: j.count||0, error:null };
   }catch(_){ return { points:[], total:0, error:'network' }; }
 }
+// Bounds approximatifs par pays [minLat, minLon, maxLat, maxLon] pour zoom auto quand
+// pas d'obs a fitBounds. Ajoute 2026-09-21 pour eviter que la carte reste sur le pays
+// precedent quand on change de pays vers un pays sans obs.
+const _SM_COUNTRY_BOUNDS = {
+  FR:[41,-5,51.1,10.5], ME:[41.85,18.4,43.55,20.4], ES:[35.9,-9.4,43.9,4.4],
+  IT:[36.5,6.6,47.1,18.6], GB:[49.9,-8.2,60.9,1.8], PT:[36.9,-9.6,42.2,-6.1],
+  CH:[45.8,5.9,47.9,10.6], NO:[57.9,4.6,71.3,31.2], GR:[34.7,19.4,41.8,28.3],
+  IS:[63.3,-24.6,66.6,-13.4], LK:[5.9,79.6,9.9,81.9], NA:[-28.9,11.6,-16.9,25.3],
+};
+function _smFitCountryBounds(cc){
+  if(!_smMapInstance) return;
+  const b = _SM_COUNTRY_BOUNDS[cc];
+  if(!b) return;
+  try{
+    _smMapInstance.invalidateSize();
+    _smMapInstance.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding:[20,20] });
+  }catch(_){}
+}
 async function _renderSpeciesMap(key){
   _smCurrentKey = key;
   const wrap = $('#smMapWrap'), el = $('#smMap'); if(!wrap || !el || !window.L){ if(wrap) wrap.hidden=true; return; }
@@ -12169,6 +12187,7 @@ async function _renderSpeciesMap(key){
     if(!points.length){
       wrap.hidden = false;
       _smSetHint(res.error==='taxonomy' ? 'Espece introuvable dans la taxonomie eBird.' : res.error==='network' ? 'Erreur reseau lors de la requete eBird.' : `Pas d'obs eBird recente (${days}j) dans ${zoneLbl} pour cette espece.`);
+      _smFitCountryBounds(smCC);
       return;
     }
   } else if(_smMapMode === 'gbif'){
@@ -12212,12 +12231,14 @@ async function _renderSpeciesMap(key){
     if(!points.length){
       wrap.hidden = false;
       _smSetHint(res.error==='taxonomy' ? 'Espèce introuvable dans la base GBIF.' : res.error==='network' ? 'Erreur réseau lors de la requête GBIF.' : `Aucune obs GBIF pour ${_SM_MONTH_NAMES[gbifMonth]} ${rangeTxt} (${gbifScopeLabel}).`);
+      _smFitCountryBounds(smCC);
       return;
     }
   }
   if(!points.length){
     wrap.hidden = false;
     _smSetHint('Aucune obs de la ligue avec coordonnees pour cette espece.');
+    _smFitCountryBounds(smCC);
     return;
   }
   wrap.hidden = false;
