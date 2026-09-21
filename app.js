@@ -1371,8 +1371,11 @@ function rarityForCountry(sci, country){
   // Exotiques : N/P (populations naturalisees/provisoires) -> vrai tier (Perruche a collier,
   // Bernache du Canada...). X/C (echappes/domestiques) et parcs semi-libres -> tier 0.
   if(isExotic(sci)){
-    if(isParkOnlyExotic(sci)) return 0;
     const cat = exoticCategoryInCountry(sci, c) || _exoticCategory(k);
+    // Priorite eBird N/P : si eBird a marque l'espece N/P dans ce pays, on utilise son tier
+    // meme si elle est aussi dans EXOTIQUES_PARCS (liste curatoriale globale). Ex : Faisan
+    // venere (syrmaticus reevesii) est park-only worldwide MAIS N en France (lachers de
+    // chasse en Sologne) -> tier reel affiche.
     if(cat === 'N' || cat === 'P'){
       // Fix 2026-09-21 : le fallback _exoticTier utilise REAL_RARITY (FR) + REAL_RARITY_EXO_GBIF
       // (FR). Ne l'appliquer que si on est en FR OU si l'espece est explicitement listee dans
@@ -1381,11 +1384,12 @@ function rarityForCountry(sci, country){
       const inEbirdCountry = EXOTIQUES_EBIRD_PAR_PAYS[c] && EXOTIQUES_EBIRD_PAR_PAYS[c][k];
       if(c === 'FR' || inEbirdCountry){
         const gbifTier = _exoticTier(k) || 1;
-        // Merge S&T + GBIF exotiques (regle +/-1 tier).
         return _tierFromSTvsBarChart(k, gbifTier, c);
       }
       return 0;
     }
+    // Park-only (Bernache nene, Dendrocygnes, Flamants d'ornement...) et X/C : tier 0.
+    if(isParkOnlyExotic(sci)) return 0;
     return 0;
   }
   // Sauvages : merge S&T + bar chart via _tierFromSTvsBarChart quand on a REELLEMENT un bar chart
@@ -14047,7 +14051,10 @@ function _pkdxRender(){
       // Grues couronnees...) sont EXCLUS partout : ils sont dans REAL_RARITY (bar chart FR)
       // via quelques cochages "Escapee" eBird, mais ne sont pas des especes vraiment
       // observables sauvages. Fix 2026-09-21 : filtre en premier avant _countryHasSpecies.
-      if(isParkOnlyExotic(sci)) continue;
+      // Exception : park-only avec eBird N/P dans le pays (ex: Faisan venere = N en FR)
+      // -> vraiment etabli, on l'affiche a son vrai tier.
+      const parkOnlyCat = EXOTIQUES_EBIRD_PAR_PAYS[country] && EXOTIQUES_EBIRD_PAR_PAYS[country][sci];
+      if(isParkOnlyExotic(sci) && parkOnlyCat !== 'N' && parkOnlyCat !== 'P') continue;
       // Filtre par pays : ne garde que les especes explicitement dans le catalogue du pays.
       // Pour FR on complete par isExotic (toutes categories N/P/X/C) qui a son propre systeme
       // de tiers via _exoticTier. Le filtre "🦆 Exotiques seulement" du dropdown Tier permet
