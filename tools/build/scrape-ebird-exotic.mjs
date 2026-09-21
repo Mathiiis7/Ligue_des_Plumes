@@ -17,7 +17,7 @@ import { dirname, join } from 'node:path';
 const __dir = dirname(fileURLToPath(import.meta.url));
 const OUT = join(__dir, 'exotic-per-country-scraped.generated.js');
 
-const COUNTRIES = ['FR', 'ME', 'ES', 'IT', 'GB', 'PT', 'CH', 'NO', 'GR', 'IS', 'LK', 'NA', 'AU', 'NZ'];
+const COUNTRIES = ['FR', 'ME', 'ES', 'IT', 'GB', 'PT', 'CH', 'NO', 'GR', 'IS', 'LK', 'NA', 'AU', 'NZ', 'US', 'CA'];
 // Sous-set pour un run cible : CLI arg 1 en CSV, sinon tous. Ex: node scrape... AU,NZ
 const CLI_COUNTRIES = (process.argv[2] || '').split(',').map(s => s.trim()).filter(Boolean);
 const RUN_COUNTRIES = CLI_COUNTRIES.length > 0 ? CLI_COUNTRIES : COUNTRIES;
@@ -26,6 +26,12 @@ const RUN_COUNTRIES = CLI_COUNTRIES.length > 0 ? CLI_COUNTRIES : COUNTRIES;
 // chaque region et on merge par priorite N > P > X.
 const REGION_FALLBACK = {
   AU: ['AU-ACT','AU-NSW','AU-NT','AU-QLD','AU-SA','AU-TAS','AU-VIC','AU-WA'],
+  US: ['US-AL','US-AK','US-AZ','US-AR','US-CA','US-CO','US-CT','US-DE','US-DC',
+       'US-FL','US-GA','US-HI','US-ID','US-IL','US-IN','US-IA','US-KS','US-KY',
+       'US-LA','US-ME','US-MD','US-MA','US-MI','US-MN','US-MS','US-MO','US-MT',
+       'US-NE','US-NV','US-NH','US-NJ','US-NM','US-NY','US-NC','US-ND','US-OH',
+       'US-OK','US-OR','US-PA','US-RI','US-SC','US-SD','US-TN','US-TX','US-UT',
+       'US-VT','US-VA','US-WA','US-WV','US-WI','US-WY'],
 };
 
 async function scrapeRegion(page, region) {
@@ -83,7 +89,14 @@ async function scrapeCountry(page, cc) {
   console.log('  Navigating...');
   await page.goto(url, { waitUntil: 'networkidle', timeout: 90000 });
   console.log('  Waiting for full render...');
-  await page.waitForTimeout(8000);
+  // Attend qu'au moins une .SpeciesName soit dans le DOM (rendu client-side).
+  // Fallback : timeout 25s pour laisser le JS finir de dessiner tout le bar chart.
+  try {
+    await page.waitForSelector('.SpeciesName', { timeout: 25000 });
+  } catch(e) {
+    console.warn('  (aucun .SpeciesName apres 25s, on tente extract quand meme)');
+  }
+  await page.waitForTimeout(3000);
   const data = await page.evaluate(() => {
     const out = {};
     const icons = document.querySelectorAll('[class*="Icon--exotic"]');
