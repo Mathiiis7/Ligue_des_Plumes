@@ -11788,18 +11788,30 @@ function _renderSpeciesFreqChart(key, country){
     const nowLbl = isWeekly ? 'Cette semaine' : 'Mois actuel';
     // Bouton toggle echelle : fixe (0-30% ou 0-3 ind/h) <-> auto (max espece)
     const isAuto = _freqScaleMode === 'auto';
-    const scaleToggle = `<button type="button" id="smFreqScaleBtn" style="font-size:11px;padding:3px 8px;border:1px solid var(--line);background:var(--surface-2);border-radius:4px;cursor:pointer;color:var(--ink-2);" title="${isAuto ? 'Echelle auto (pic espece = 100% chart)' : 'Echelle fixe pour comparaison inter-especes'}">${isAuto ? '🔍 Zoom auto' : '📏 Fixe ' + (isWeekly ? '0-3 ind/h' : '0-30%')}</button>`;
+    // Stocke key/country sur le bouton via dataset : evite les problemes de closure
+    // stale et permet un handler global reutilisable.
+    const scaleToggle = `<button type="button" id="smFreqScaleBtn" data-key="${esc(key)}" data-cc="${esc(country||'FR')}" style="font-size:11px;padding:3px 8px;border:1px solid var(--line);background:var(--surface-2);border-radius:4px;cursor:pointer;color:var(--ink-2);" title="${isAuto ? 'Echelle auto (pic espece = 100% chart)' : 'Echelle fixe pour comparaison inter-especes'}">${isAuto ? '🔍 Zoom auto' : '📏 Fixe ' + (isWeekly ? '0-3 ind/h' : '0-30%')}</button>`;
     legEl.innerHTML = `
       <span class="sm-freq-lg" title="Vert = espèce facile à voir, magenta = très rare"><span style="display:inline-flex;height:12px;border:1px solid var(--line);border-radius:2px;overflow:hidden;">${palette}</span>&nbsp;facile → rare</span>
       <span class="sm-freq-lg"><span class="sm-freq-sw" style="background:transparent;border:2px solid var(--gold);width:10px;height:10px;box-sizing:border-box;"></span>Pic</span>
       <span class="sm-freq-lg"><span class="sm-freq-sw" style="background:transparent;border:2px solid var(--accent);width:10px;height:10px;box-sizing:border-box;"></span>${nowLbl}</span>
       ${scaleToggle}`;
-    const btn = document.getElementById('smFreqScaleBtn');
-    if(btn) btn.addEventListener('click', () => {
-      const next = (_freqScaleMode === 'fixed') ? 'auto' : 'fixed';
-      try { localStorage.setItem('mb-freq-chart-scale', next); } catch(_){}
-      _renderSpeciesFreqChart(key, country);
-    });
+    // Handler global (delegation via mousedown pour ne pas s'affronter au click d'autres
+    // elements parents comme details/summary). Attache une seule fois via une flag.
+    if(!window._freqScaleBtnAttached){
+      window._freqScaleBtnAttached = true;
+      document.body.addEventListener('click', (e) => {
+        const b = e.target.closest('#smFreqScaleBtn');
+        if(!b) return;
+        e.stopPropagation();
+        e.preventDefault();
+        let cur = 'fixed';
+        try { const s = localStorage.getItem('mb-freq-chart-scale'); if(s === 'auto' || s === 'fixed') cur = s; } catch(_){}
+        const next = (cur === 'fixed') ? 'auto' : 'fixed';
+        try { localStorage.setItem('mb-freq-chart-scale', next); } catch(_){}
+        _renderSpeciesFreqChart(b.dataset.key, b.dataset.cc);
+      });
+    }
   }
 }
 // Extrait la couleur "vive" dominante d'une image (echantillonnage canvas). Retourne
