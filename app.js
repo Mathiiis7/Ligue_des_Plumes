@@ -14145,7 +14145,7 @@ function renderPokedex(){
           saveState(); _pkdxRender(); return;
         }
         if(e.target.matches('[data-tier-none]')){
-          _pkdxTierExcl = new Set([1,2,3,4,5,6,7,8,9,10]);
+          _pkdxTierExcl = new Set([0,1,2,3,4,5,6,7,8,9,10]);
           _pkdxCatSelected = new Set();
           saveState(); _pkdxRender(); return;
         }
@@ -14159,7 +14159,7 @@ function renderPokedex(){
           if(_pkdxCatSelected.has(c)) _pkdxCatSelected.delete(c);
           else _pkdxCatSelected.add(c);
           if(wasEmpty && _pkdxCatSelected.size > 0){
-            _pkdxTierExcl = new Set([1,2,3,4,5,6,7,8,9,10]);
+            _pkdxTierExcl = new Set([0,1,2,3,4,5,6,7,8,9,10]);
           } else if(!wasEmpty && _pkdxCatSelected.size === 0){
             _pkdxTierExcl = new Set();
           }
@@ -14431,14 +14431,16 @@ function _pkdxRender(){
   // Rendu des chips rareté : style unifie avec le filtre carte (.rar-chip compact).
   const chipsBox = document.getElementById('pkdxTierChips');
   if(chipsBox){
-    // Chips tier : tiers 1-10 uniquement (tier 0 = cat X couvert par le chip X plus bas).
+    // Chips tier : 0 (exotique X/C/park-only) + 1-10. Le chip 0 sert a EXCLURE les
+    // exotiques du mode normal (browsing tous les tiers). Le chip X plus bas fait
+    // l'inverse : afficher UNIQUEMENT les exotiques (mode inclusif exclusif).
     // Quand un cat est actif (_pkdxCatSelected non vide), les tier chips sont visuellement
     // desactives (gris) car le filtre cat prime.
     const catActive = _pkdxCatSelected.size > 0;
-    const tiersPresent = [...new Set(_pkdxAllSorted.map(r => r.tier))].filter(t => t != null && t > 0).sort((a, b) => a - b);
+    const tiersPresent = [...new Set(_pkdxAllSorted.map(r => r.tier))].filter(t => t != null).sort((a, b) => a - b);
     const chipsHtml = tiersPresent.map(t => {
       const on = !catActive && !_pkdxTierExcl.has(t);
-      const lbl = (typeof REAL_LABELS === 'object' && REAL_LABELS[t]) || ('tier '+t);
+      const lbl = (typeof REAL_LABELS === 'object' && REAL_LABELS[t]) || (t === 0 ? 'Exotique (parc / échappé)' : 'tier '+t);
       const color = realColor(t);
       const bgStyle = on ? `background:${color};` : '';
       return `<button type="button" class="rar-chip${on?' on':''}" data-tier="${t}" style="${bgStyle}" title="${esc(lbl)}">${t}</button>`;
