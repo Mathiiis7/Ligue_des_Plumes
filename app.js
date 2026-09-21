@@ -11189,6 +11189,22 @@ function _renderSpeciesRarityCard(key){
         });
       }
     });
+    // Molette : scroller la LISTE interne au lieu de la page. Sans ce handler, le
+    // wheel bubble vers document et scroll la fiche entière alors qu'on veut juste
+    // naviguer dans les régions.
+    panel.addEventListener('wheel', e => {
+      const el = panel;
+      const canScroll = el.scrollHeight > el.clientHeight;
+      if(!canScroll) return;
+      const atTop = el.scrollTop === 0;
+      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 0.5;
+      // Bloque le bubble sauf si on tente de scroller au-dela de la fin.
+      if((e.deltaY < 0 && !atTop) || (e.deltaY > 0 && !atBottom)){
+        e.stopPropagation();
+        e.preventDefault();
+        el.scrollTop += e.deltaY;
+      }
+    }, { passive: false });
     panel.addEventListener('click', e => {
       const it = e.target.closest('.reg-picker-item');
       if(!it) return;
