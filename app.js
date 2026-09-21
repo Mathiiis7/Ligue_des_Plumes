@@ -10793,7 +10793,7 @@ function _renderSpeciesRarityCard(key){
           </div>
         </details>`;
     }
-    $('#smRarityLine').innerHTML = `<div style="display:flex;align-items:center;gap:6px;padding:6px 0;">${flgFixed}${pill}<span style="font-weight:600;color:var(--ink);">${esc(label)}</span>${catBadge}</div>${detailsHtml}`;
+    $('#smRarityLine').innerHTML = `<div style="display:flex;align-items:center;gap:6px;padding:6px 0;">${flgFixed}${pill}<span style="font-weight:600;color:var(--ink);">${esc(label)}</span>${catMiniPill}${catBadge}</div>${detailsHtml}`;
   };
   // Pays par defaut : reprend le contexte du site (filtre Birdydex ou carte). Sinon FR.
   // (initCountry deja calcule plus haut avant box.innerHTML)
