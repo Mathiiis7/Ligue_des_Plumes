@@ -727,13 +727,17 @@ function _openCountryPicker(currentCode, opts = {}){
             const tier = rarityForCountry(focusSci, cc);
             const absent = tier === 0 && !isExoLocal;
             const col = realColor(tier);
-            // Tier 0 exotique : affiche la lettre categorie (N/P/X/C) au lieu de "0",
-            // et le label eBird ("Introduit etabli" / "Vu en parcs" / "Echappe isole" /
-            // "Origine domestique") au lieu de "Parc semi-libre".
-            const chipCat = (tier === 0) ? (ebCC || (cc === 'FR' ? _exoticCategory(focusSci) : '') || '') : '';
+            // Chip letter : aligne le comportement sur la fiche espece (renderLine).
+            // - Tier 0 exotique : affiche la lettre categorie (N/P/X/C)
+            // - Tier > 0 et cat = N ou P : affiche N ou P (Etabli / Provisoire visibles
+            //   sur les cartes Birdydex, coherent inter-vues)
+            // - Autres : le chiffre du tier
+            const localCat = ebCC || (cc === 'FR' ? _exoticCategory(focusSci) : '') || '';
+            const isEstabLetter = (localCat === 'N' || localCat === 'P') && tier > 0;
+            const chipCat = (tier === 0) ? localCat : (isEstabLetter ? localCat : '');
             let lbl;
             if(absent) lbl = 'absente';
-            else if(chipCat) lbl = EXOTIC_CATEGORY_LABEL[chipCat] || 'Exotique';
+            else if(tier === 0 && chipCat) lbl = EXOTIC_CATEGORY_LABEL[chipCat] || 'Exotique';
             else lbl = (typeof REAL_LABELS === 'object' && REAL_LABELS[tier]) || ('tier '+tier);
             const chipText = chipCat || tier;
             // Nouveau format : label texte AVANT le chip numero pour que les chips
