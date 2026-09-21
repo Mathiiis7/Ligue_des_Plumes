@@ -10779,6 +10779,12 @@ function _renderSpeciesRarityCard(key){
         ? (_exoticTier(k) || 1)
         : (ccBarTier || ((cc === 'FR' && _isForeignOnly(k)) ? 9 : 1));
       const barMeasure = isEstabExo ? 'Densité GBIF' : 'Fréquence % checklists (pic biweekly)';
+      // Detecte un override manuel EXOTIQUES_TIER_FORCE (Tadorne casarca FR=6 par ex).
+      const forceOverride = (isEstabExo && typeof EXOTIQUES_TIER_FORCE === 'object' && EXOTIQUES_TIER_FORCE[cc] && EXOTIQUES_TIER_FORCE[cc][k] != null) ? EXOTIQUES_TIER_FORCE[cc][k] : null;
+      const srcNoteText = isEstabExo
+        ? 'eBird Status &amp; Trends (Cornell) n\'a pas de modèle pour les exotiques. Tier basé sur la densité GBIF (parcs urbains inclus, capture les obs iNaturalist).'
+        : 'eBird Status &amp; Trends (Cornell) n\'a pas de modèle pour cette espèce (données insuffisantes ou taxa mineur). Tier basé uniquement sur le bar chart eBird.';
+      const overrideNote = (forceOverride != null && forceOverride !== barTier) ? `<div style="font-size:10.5px;color:var(--warn,#c07500);margin-top:6px;opacity:.9;line-height:1.4;">⚠ Tier ajusté manuellement à <b>${forceOverride}</b> (curatorial ${cc}) : reflète la difficulté réelle pour un birder généraliste, la source auto (${barTier}) étant biaisée par des concentrations locales (Alsace, Camargue pour Tadorne casarca ; Grand-Lieu pour Ibis sacré ; parcs Ile-de-France pour Canard mandarin).</div>` : '';
       detailsHtml = `
         <details style="margin-top:6px;">
           <summary style="cursor:pointer;font-size:12px;color:var(--ink-3);user-select:none;padding:2px 0;">▸ Détails du calcul</summary>
@@ -10789,7 +10795,8 @@ function _renderSpeciesRarityCard(key){
               <span style="display:inline-block;background:${realColor(barTier)};color:#fff;padding:2px 8px;border-radius:6px;font-weight:800;font-size:13px;min-width:22px;text-align:center;">${barTier}</span>
               <span style="font-size:12px;color:var(--ink);font-weight:600;">${barMeasure}</span>
             </div>
-            <div style="font-size:10.5px;color:var(--ink-3);margin-top:6px;opacity:.85;line-height:1.4;">eBird Status &amp; Trends (Cornell) n'a pas de modèle pour cette espèce (données insuffisantes ou taxa mineur). Tier basé uniquement sur le bar chart eBird.</div>
+            <div style="font-size:10.5px;color:var(--ink-3);margin-top:6px;opacity:.85;line-height:1.4;">${srcNoteText}</div>
+            ${overrideNote}
           </div>
         </details>`;
     }
