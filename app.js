@@ -11620,7 +11620,7 @@ function _renderSpeciesFreqChart(key, country){
             : maxV >= 0.001 ? maxV.toFixed(4)
             : maxV >= 0.0001 ? maxV.toFixed(5)
             : '<0.0001';
-    srcEl.innerHTML = `${esc(ccLabel)} - pic ${esc(peakLbl)} (${esc(String(peakVal))} ${esc(unitLabel)})${fallbackNote}`;
+    srcEl.innerHTML = `${esc(ccLabel)}${fallbackNote}`;
   } else {
     // Source mensuelle etiree a 52 slots : le pic est au premier slot du mois pic,
     // on reconvertit vers un label mois-only pour ne pas suggerer une precision fictive.
@@ -11634,7 +11634,7 @@ function _renderSpeciesFreqChart(key, country){
             : maxV >= 0.001 ? (maxV*100).toFixed(2) // 0.1-1%
             : maxV >= 0.0001 ? (maxV*100).toFixed(3)// 0.01-0.1%
             : '<0.01';
-    srcEl.innerHTML = `${esc(ccLabel)} - pic ${esc(peakLbl)} (${esc(String(peakVal))} %)${fallbackNote}`;
+    srcEl.innerHTML = `${esc(ccLabel)}${fallbackNote}`;
   }
   // Layout du chart : toujours 520x130 (52 slots dans tous les cas, weekly S&T reel ou
   // monthly bar chart etire).
