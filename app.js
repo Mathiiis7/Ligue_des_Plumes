@@ -14069,14 +14069,17 @@ function _pkdxRender(){
       const k = sci;
       // Espece dans le catalogue du pays : via registry COUNTRIES_REG (bar chart OU S&T
       // non-nul) OU exotique explicite dans ce pays (eBird uniquement).
-      // Fix 2026-09-21 : les park-only sont exclus PARTOUT (y compris FR). Le user prefere
-      // ne pas voir les flamants d'ornement/dendrocygnes/grues couronnees etc. dans le
-      // Birdydex - trop captifs, pollution visuelle. Les cochages historiques restent
-      // dans le total (foreignTick=false) mais ils n'apparaissent plus dans la grille.
+      // Fix 2026-09-21 : les X (Escapee) hors bar chart local sont exclus - ce sont des
+      // echappes uniques observes une fois, jamais retrouvables. Sur les 244 X en GB, seuls
+      // 58 sont dans le bar chart -> les 186 restants pollueraient. Garde N/P meme hors
+      // bar chart (populations vraiment etablies mais localisees).
       let inCatalog = _countryHasSpecies(country, k);
       if(!inCatalog){
-        const inEbirdCC = !!(EXOTIQUES_EBIRD_PAR_PAYS[country] && EXOTIQUES_EBIRD_PAR_PAYS[country][k]);
-        if(!inEbirdCC) continue;
+        const ebCat = EXOTIQUES_EBIRD_PAR_PAYS[country] && EXOTIQUES_EBIRD_PAR_PAYS[country][k];
+        if(!ebCat) continue;
+        // X hors bar chart local -> exclu (echappe unique, non trouvable en pratique)
+        if(ebCat === 'X') continue;
+        // N/P etablis (meme hors bar chart) -> on garde
         inCatalog = true;
       }
       const tier = rarityForCountry(sci, country);
