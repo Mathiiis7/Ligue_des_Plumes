@@ -1492,10 +1492,13 @@ function _rarityBadge(w, country, sci){
     if(tier) return `${flgSpan}${pillFor(tier)} ${REAL_LABELS[tier]||''}`;
     return `${flgSpan}Rareté inconnue`;
   };
-  if(c === 'FR') return lineFor('FR', w);
+  // Fix 2026-09-21 : le tier w passe en param est souvent FR-only (via rarityReal). Recalcule
+  // w pour le vrai pays cible c au lieu d'afficher un tier FR sous un drapeau etranger.
+  const wCC = sci ? rarityForCountry(sci, c) : w;
+  if(c === 'FR') return lineFor('FR', wCC);
   const wFR = sci ? rarityForCountry(sci, 'FR') : 0;
   // Ligne 1 rarete du pays visite, ligne 2 rarete FR. Petit espace vertical entre les deux.
-  return `<div>${lineFor(c, w)}</div><div style="margin-top:3px;">${lineFor('FR', wFR)}</div>`;
+  return `<div>${lineFor(c, wCC)}</div><div style="margin-top:3px;">${lineFor('FR', wFR)}</div>`;
 }
 // Fréquence eBird fine (part des listes) - pour départager les oiseaux d'un même poids.
 // Absente (espèce hors bar chart eBird = encore plus rare) -> -1 (classée la plus rare).
@@ -5146,7 +5149,7 @@ function _updateMapSuggest(){
       const nm = FR_NAMES[(m._sciName||'').toLowerCase()] || m._sciName;
       const hint = m._speciesCode ? '→ toutes les obs' : '→ voir sur la carte';
       return `<div class="map-search-suggest-item" data-idx="${i}">`+
-        `<span class="ss-dot" style="background:${sciColor(m._sciName)}"></span>`+
+        `<span class="ss-dot" style="background:${sciColorForCountry(m._sciName, (ebFilter && ebFilter.country) || 'FR')}"></span>`+
         `<span>${esc(nm)}</span>`+
         `<span class="ss-sci">${esc(m._sciName)}</span>`+
         `<span class="ss-hint">${hint}</span></div>`;
