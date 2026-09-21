@@ -33,7 +33,7 @@ import { dirname, join } from 'node:path';
 const __dir = dirname(fileURLToPath(import.meta.url));
 const OUT = join(__dir, 'exotic-per-country.generated.js');
 const KEY = 'dbflh4atmsom';
-const COUNTRIES = ['FR', 'ME', 'ES', 'IT', 'GB', 'PT'];
+const COUNTRIES = ['FR', 'ME', 'ES', 'IT', 'GB', 'PT', 'CH', 'NO', 'GR', 'IS', 'LK', 'NA'];
 
 // Fenetre d'echantillonnage historique : 12 dates (une par mois de l'annee ecoulee)
 // Date "de reference" = aujourd'hui. On recule mois par mois.
