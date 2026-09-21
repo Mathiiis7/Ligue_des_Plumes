@@ -16,6 +16,11 @@
 
   Total : 1 + 12 = 13 calls par pays, ~1 min pour 6 pays.
 
+  NOTE 2026-09-21 : teste avec fenetre elargie 72 dates sur 2 ans -> aucune espece
+  X supplementaire captee. Les birders ne listent PAS les captifs de parc sur eBird,
+  donc peu importe le nombre d'echantillons. Pour ces cas, la source d'autorite est
+  EXOTIQUES_PARCS (curatorial global) in-app, pas eBird.
+
   Priorite de merge : si une espece est vue avec N ET X sur differentes obs, on
   garde la categorie la plus etablie (N > P > X).
 
@@ -44,7 +49,7 @@ function samplesLast12Months(){
   return dates;
 }
 
-const REAL_RARITY_PATH = join(__dir, 'real-rarity.generated.js');
+const REAL_RARITY_PATH = join(__dir, '..', '..', 'data', 'generated', 'real-rarity.generated.js');
 const rarSrc = readFileSync(REAL_RARITY_PATH, 'utf8');
 const rarMatch = rarSrc.match(/REAL_RARITY\s*=\s*(\{[\s\S]*?\})\s*;/);
 const REAL_RARITY_FR = rarMatch ? JSON.parse(rarMatch[1]) : {};
