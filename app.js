@@ -10786,13 +10786,9 @@ function _renderSpeciesRarityCard(key){
     // avec tier > 0 restent numeriques. Tier 0 exotique : lettre cat (N/P/X/C).
     const useCatLetter = isExo && (cat === 'N' || cat === 'P') && w > 0;
     const pillTxt = (w === 0 && isExo) ? (cat || 'X') : (useCatLetter ? cat : w);
-    // Couleur de fond du pill : quand on affiche une LETTRE (cat), on utilise la couleur
-    // de la categorie eBird pour aligner avec la mini-carte et l'explicatif (meme lettre
-    // = meme couleur). Le tier reste consultable via le tooltip. Quand on affiche un
-    // chiffre, on garde la couleur du tier (rareté visuelle).
-    const CAT_PILL_COLOR = { N:'#22c55e', P:'#f59e0b', X:'#ef4444', C:'#94a3b8' };
-    const isLetterPill = typeof pillTxt === 'string' && CAT_PILL_COLOR[pillTxt];
-    const pillBg = isLetterPill ? CAT_PILL_COLOR[pillTxt] : color;
+    // Couleur de fond : par defaut, couleur du tier (rareté). Pour l'exotique tier 0
+    // (X/C echappe non-etabli), on force gris neutre pour signifier "hors barème".
+    const pillBg = (w === 0 && isExo) ? '#7e8a99' : color;
     // Taille fixe (width + box-sizing) pour eviter que la position du label bouge selon
     // que le pill affiche 'X' (1 char), '10' (2 chars) ou 'N' (1 char).
     const pill = `<span style="display:inline-block;box-sizing:border-box;background:${pillBg};color:#fff;padding:3px 0;border-radius:8px;font-weight:800;font-size:15px;width:48px;text-align:center;margin-right:10px;flex-shrink:0;" title="tier ${w}">${pillTxt}</span>`;
