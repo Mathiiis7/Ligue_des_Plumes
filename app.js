@@ -306,7 +306,7 @@ function _exoticTier(sci){
 }
 const EXOTIC_CATEGORY_LABEL = {
   'N':'Introduit établi',   // pop reproductrice etablie hors aire naturelle
-  'P':'Vu en parcs',        // regulier mais surtout parcs semi-captifs
+  'P':'Provisoire',         // presence reguliere mais pop non-confirmee (vagrant + echappes melanges)
   'X':'Échappé isolé',      // individu echappe, pas de pop
   'C':'Origine domestique'  // ferme, elevage, hybride domestique
 };
