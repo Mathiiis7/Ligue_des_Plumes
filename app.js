@@ -1195,8 +1195,17 @@ function isExoticInCountry(sci, country){
   const cc = country || 'FR';
   if(EXOTIQUES_EBIRD_PAR_PAYS[cc] && EXOTIQUES_EBIRD_PAR_PAYS[cc][k]) return true;
   // Park-only exotics (Canard musque, Paon, Cygne noir...) : echappes cage/parc
-  // dans tous les pays par definition.
-  if(isParkOnlyExotic(k)) return true;
+  // dans tous les pays par definition. SAUF si l'espece est presente dans le bar chart
+  // eBird du pays courant sans etre flaggee exotique par eBird : signifie qu'eBird la
+  // traite comme sauvage locale (vagrant naturel ou espece calibree). Ex Sarcelle
+  // elegante FR : dans EXOTIQUES_PARCS (captif classique) mais NAb FR + bar chart
+  // present -> eBird la considere comme vraie vagrante -> pas exotique en FR.
+  if(isParkOnlyExotic(k)){
+    const reg = (typeof COUNTRIES_REG === 'object') ? COUNTRIES_REG[cc] : null;
+    const hasBarChart = reg && reg.barTier && reg.barTier()[k];
+    if(!hasBarChart) return true;
+    // Sinon : elle est dans le bar chart local -> considérée sauvage (comme rarityForCountry).
+  }
   // Fallback curated EXOTIQUES_CONNUES_FR : dict des exotiques historiquement observes en Europe de l'ouest.
   //   - FR : applique blindly (dict cure pour FR, meme si l'espece est dans REAL_RARITY parce
   //     que reguliere en tant qu'exotique etablie type Perruche a collier).
@@ -1212,7 +1221,13 @@ function exoticCategoryInCountry(sci, country){
   const k = (sci||'').trim().toLowerCase();
   const cc = country || 'FR';
   if(EXOTIQUES_EBIRD_PAR_PAYS[cc] && EXOTIQUES_EBIRD_PAR_PAYS[cc][k]) return EXOTIQUES_EBIRD_PAR_PAYS[cc][k];
-  if(isParkOnlyExotic(k)) return 'X';
+  // Meme logique que isExoticInCountry : ne PAS retourner 'X' pour un park-only qui a
+  // du bar chart local (traitee sauvage par eBird cf. Sarcelle élégante FR).
+  if(isParkOnlyExotic(k)){
+    const reg = (typeof COUNTRIES_REG === 'object') ? COUNTRIES_REG[cc] : null;
+    const hasBarChart = reg && reg.barTier && reg.barTier()[k];
+    if(!hasBarChart) return 'X';
+  }
   return '';
 }
 // Depuis migration S&T (26/08/2026) : rarityReal renvoie le tier apres merge S&T+bar chart
