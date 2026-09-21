@@ -1689,24 +1689,20 @@ const inRef = sci => { const k=(sci||'').trim().toLowerCase(); return (k in REAL
 // Vrai cochage étranger = vu SEULEMENT à l'étranger ET pas une espèce de France.
 // (Un oiseau français vu d'abord à l'étranger - ex. Pinson - reste compté : la life list
 //  eBird ne garde que la 1re obs, donc son lieu n'est pas fiable pour l'exclure.)
-// REVISION 2026-09-21 : les especes etrangeres (vues seulement hors FR, hors avifaune FR)
-// SONT comptees dans le classement, avec le label 'Étranger' pour info. Seuls les
-// vrais captifs sont exclus :
+// REVISION 2026-09-21 : les especes etrangeres SONT comptees, les X (Escapee) aussi.
+// Seuls les vrais captifs stricts et les formes domestiques sont exclus :
 //   - isParkOnlyExotic : pure captive worldwide (Dendrocygne, Spatule platalea, Grue
 //     couronnee, Ibis rouge, Flamant nain...) -> jamais comptes
-//   - exoticCategoryInCountry === 'X' : eBird marque l'espece Escapee dans ce pays
-//     precis (ex : cygne noir logue en FR) -> pas compte pour ce pays d'obs
 //   - exoticCategoryInCountry === 'C' : formes domestiques d'elevage (Canard musque de
 //     Barbarie, Oie cygnoide de basse-cour, Pintade domestique, Colin de Virginie de
-//     chasse, Francolin noir) -> pas de vraie population sauvage en FR, exclu 2026-09-21.
+//     chasse, Francolin noir) -> pas de vraie population sauvage en FR.
+// NOTE : les X eBird (Paon, Cygne noir, Cygne cou noir, ...) restent COMPTABLES : le user
+// juge au cas par cas selon le contexte (paon en semi-liberte Vincennes vs paon en cage).
 const foreignTick = v => {
   const k = (v.sci||'').trim().toLowerCase();
   if(isParkOnlyExotic(k)) return true;
   const cc = v.country || (v.fr ? 'FR' : null);
-  if(cc){
-    const cat = exoticCategoryInCountry(k, cc);
-    if(cat === 'X' || cat === 'C') return true;
-  }
+  if(cc && exoticCategoryInCountry(k, cc) === 'C') return true;
   return false;
 };
 // X (Echappe isole) et C (Origine domestique) : classes "exotique meme cochee" -> comptent
