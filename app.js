@@ -10413,10 +10413,17 @@ function _renderSpeciesRarityCard(key){
   // Pays disponibles pour cette espece : ceux ou l'espece a de la data (bar chart tier
   // OU S&T avec au moins une valeur non-nulle) OU est exotique dans ce pays.
   const isInCatalog = (cc) => _countryHasSpecies(cc, k) || isExoticInCountry(k, cc);
-  const avail = COUNTRIES.filter(c => isInCatalog(c.code));
+  // Fix 2026-09-21 : affiche TOUS les pays supportes dans le picker, meme ceux ou l'espece
+  // est absente (le picker les montrera 'absente'). Le user peut ainsi comparer et voir
+  // qu'une espece n'est pas presente dans un pays au lieu d'avoir un picker vide.
+  const avail = COUNTRIES;
   if(!avail.length){ box.hidden = true; return; }
   box.hidden = false;
-  const selectOpts = avail.map(c => `<option value="${esc(c.code)}">${esc(c.name)}</option>`).join('');
+  // Le <select> select native ne sert que pour compat (ancien code). Le vrai picker est
+  // le modal _openCountryPicker qui affiche aussi 'absente'. On liste juste les pays ou
+  // l'espece a du calage pour le select natif (evite les options 'absente' sans data).
+  const selectOpts = COUNTRIES.filter(c => isInCatalog(c.code))
+    .map(c => `<option value="${esc(c.code)}">${esc(c.name)}</option>`).join('');
   // Sélecteur région custom : dropdown riche avec bars d'abondance colorées.
   // Trie par presence descendante. Regions ou espece absente = tout en bas grisées.
   // Rerend apres lazy-load des data regionales.
