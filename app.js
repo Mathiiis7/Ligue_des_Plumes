@@ -14561,10 +14561,9 @@ function _pkdxRender(){
     const CAT_LABEL = { X:'Échappé (X)', N:'Naturalisé (N)', P:'Provisoire (P)' };
     const catChipsHtml = ['X', 'N', 'P'].map(c => {
       const on = _pkdxCatSelected.has(c);
-      // Off (par defaut) = gris neutre. On = couleur categorie (X rouge, N vert, P orange).
-      const bgStyle = on
-        ? `background:${CAT_COLOR[c]};color:#fff;`
-        : `background:var(--surface-2);color:var(--ink-3);`;
+      // Off = default rar-chip (comme les tier chips non selectionnes). On = gris fonce
+      // pour signaler "filtre applique". Coherent avec les tier chips.
+      const bgStyle = on ? `background:#7e8a99;color:#fff;` : '';
       return `<button type="button" class="rar-chip${on?' on':''}" data-cat="${c}" style="${bgStyle}" title="${esc(CAT_LABEL[c])}">${c}</button>`;
     }).join('');
     chipsBox.innerHTML = '<span style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; align-self:center; margin-right:6px;">Rareté</span>'
