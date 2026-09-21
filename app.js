@@ -1696,11 +1696,17 @@ const inRef = sci => { const k=(sci||'').trim().toLowerCase(); return (k in REAL
 //     couronnee, Ibis rouge, Flamant nain...) -> jamais comptes
 //   - exoticCategoryInCountry === 'X' : eBird marque l'espece Escapee dans ce pays
 //     precis (ex : cygne noir logue en FR) -> pas compte pour ce pays d'obs
+//   - exoticCategoryInCountry === 'C' : formes domestiques d'elevage (Canard musque de
+//     Barbarie, Oie cygnoide de basse-cour, Pintade domestique, Colin de Virginie de
+//     chasse, Francolin noir) -> pas de vraie population sauvage en FR, exclu 2026-09-21.
 const foreignTick = v => {
   const k = (v.sci||'').trim().toLowerCase();
   if(isParkOnlyExotic(k)) return true;
   const cc = v.country || (v.fr ? 'FR' : null);
-  if(cc && exoticCategoryInCountry(k, cc) === 'X') return true;
+  if(cc){
+    const cat = exoticCategoryInCountry(k, cc);
+    if(cat === 'X' || cat === 'C') return true;
+  }
   return false;
 };
 // X (Echappe isole) et C (Origine domestique) : classes "exotique meme cochee" -> comptent
