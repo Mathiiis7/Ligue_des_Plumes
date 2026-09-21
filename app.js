@@ -307,11 +307,14 @@ function _exoticTier(sci){
   if(cat === 'N' || cat === 'C') return REAL_RARITY[k] || REAL_RARITY_EXO_GBIF[k];
   return REAL_RARITY_EXO_GBIF[k] || REAL_RARITY[k];
 }
+// La categorie C (Origine domestique) existe dans la doc eBird mais n'apparait jamais
+// dans les scrapings HTML des bar charts (16 pays, 3 niveaux -> 0 C). eBird la tagge
+// au niveau des obs-checklists mais pas des bar charts pays/region/dep. Retiree du dict
+// 2026-09-22 - le code peut toujours recevoir 'C' d'ailleurs et le fallback title l'indique.
 const EXOTIC_CATEGORY_LABEL = {
   'N':'Introduit établi',   // pop reproductrice etablie hors aire naturelle
   'P':'Provisoire',         // presence reguliere mais pop non-confirmee (vagrant + echappes melanges)
   'X':'Échappé isolé',      // individu echappe, pas de pop
-  'C':'Origine domestique'  // ferme, elevage, hybride domestique
 };
 // Rarete "observabilite reelle" des exotiques en FR, calibree via GBIF (inclut iNaturalist,
 // donc capture les obs de parcs publics que eBird filtre pour "captif"). Prime sur REAL_RARITY
@@ -10804,8 +10807,6 @@ function _renderSpeciesRarityCard(key){
             <span><b>Provisoire</b> — obs régulières mais population non-confirmée. Mélange typique de vagrants sauvages et échappés que les reviewers ne peuvent pas distinguer.</span>
             <span style="font-weight:800;font-size:12px;align-self:start;color:var(--ink);">X</span>
             <span><b>Échappé isolé</b> — individu(s) évidemment échappé(s) de captivité, aucune pop reproductrice. Ex : Ara, Perroquet gris, Flamant chilien.</span>
-            <span style="font-weight:800;font-size:12px;align-self:start;color:var(--ink);">C</span>
-            <span><b>Origine domestique</b> — issue de ferme, élevage, hybride domestique. Ex : Canard musqué domestique, Coq, Pintade.</span>
           </div>
           <div style="margin-top:8px;padding-top:6px;border-top:1px dashed var(--line-2);color:var(--ink-3);opacity:.9;">
             <b>Source</b> : bar chart eBird du pays (scraping HTML). Les icônes exotiques sont extraites à côté de chaque espèce sur les pages <code style="font-size:10.5px;">ebird.org/barchart?r=&lt;code_région&gt;</code>. Priorité N &gt; P &gt; X quand une espèce a plusieurs statuts selon les régions.
