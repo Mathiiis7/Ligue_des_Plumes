@@ -1438,7 +1438,10 @@ function rarityForCountry(sci, country){
   // sur 2019-2026 normalisees par sample size). X/C/park-only -> tier 0.
   // Fix 2026-09-21 : abandon du chemin _exoticTier (GBIF) qui necessitait des overrides
   // manuels (EXOTIQUES_TIER_FORCE). Le bar chart eBird donne un signal fiable et scalable.
-  if(isExotic(sci)){
+  // Fix 2026-09-22 : utilise isExoticInCountry (per-pays) au lieu de isExotic (FR-only).
+  // Ex Perdrix rouge X en ES mais pas listee en FR : isExotic FR-only retournait false et
+  // la branche exotique etait skippee -> tier bar chart brut (7) au lieu de tier 0 (X).
+  if(isExoticInCountry(sci, c)){
     // Fix 2026-09-21 : native dans le pays courant (dans bar chart local ET pas listee
     // exotique explicite par eBird) -> traite comme sauvage. S'applique meme aux park-only
     // worldwide (Dendrocygne veuf natif Namibie, Dendrocygne siffleur natif Sri Lanka...).
