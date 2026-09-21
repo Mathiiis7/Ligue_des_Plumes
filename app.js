@@ -10797,28 +10797,31 @@ function _renderSpeciesRarityCard(key){
     const pill = `<span style="display:inline-block;box-sizing:border-box;background:${pillBg};color:#fff;padding:3px 0;border-radius:8px;font-weight:800;font-size:15px;width:48px;text-align:center;margin-right:10px;flex-shrink:0;" title="tier ${w}">${pillTxt}</span>`;
     // Mini-badge cat retire quand le pill affiche deja la lettre (evite doublon N + N).
     const catMiniPill = (isExo && cat && w > 0 && !useCatLetter) ? `<span style="display:inline-block;background:var(--surface-2);color:var(--ink-2);padding:1px 7px;border-radius:5px;font-weight:800;font-size:11px;margin-left:10px;vertical-align:middle;" title="${esc(catLbl)}">${cat}</span>` : '';
-    const catBadge = catLbl ? `<span style="font-size:12px;color:var(--ink-3);margin-left:10px;">· ${esc(catLbl)}</span>` : '';
-    // Explication des statuts exotiques eBird : depliant affiche quand l'espece a une
-    // categorie (N/P/X/C). Aide a comprendre d'ou vient le badge et ce que signifient
-    // les 4 lettres eBird utilise pour classer les exotiques.
-    const catExplainer = cat ? `
-      <details style="margin-top:4px;font-size:11.5px;color:var(--ink-3);">
-        <summary style="cursor:pointer;user-select:none;padding:2px 0;opacity:.85;">▸ Comprendre les statuts exotiques eBird</summary>
-        <div style="padding:8px 10px;margin:4px 0 2px 6px;border-left:2px solid var(--line);line-height:1.5;">
-          <div style="margin-bottom:6px;color:var(--ink-2);">Chaque espèce vue en dehors de son aire naturelle est classée par des reviewers bénévoles de l'<b>eBird Exotics Working Group</b> selon 4 catégories. Le badge est décidé au niveau <b>département / région / pays</b> selon la présence de populations reproductrices auto-suffisantes.</div>
-          <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 10px;">
-            <span style="font-weight:800;font-size:12px;align-self:start;color:var(--ink);">N</span>
-            <span><b>Naturalisé (Introduit établi)</b> — population reproductrice établie durablement hors de l'aire native. Ex : Bernache du Canada, Perruche à collier IDF/PACA.</span>
-            <span style="font-weight:800;font-size:12px;align-self:start;color:var(--ink);">P</span>
-            <span><b>Provisoire</b> — obs régulières mais population non-confirmée. Mélange typique de vagrants sauvages et échappés que les reviewers ne peuvent pas distinguer.</span>
-            <span style="font-weight:800;font-size:12px;align-self:start;color:var(--ink);">X</span>
-            <span><b>Échappé isolé</b> — individu(s) évidemment échappé(s) de captivité, aucune pop reproductrice. Ex : Ara, Perroquet gris, Flamant chilien.</span>
-          </div>
-          <div style="margin-top:8px;padding-top:6px;border-top:1px dashed var(--line-2);color:var(--ink-3);opacity:.9;">
-            <b>Source</b> : bar chart eBird du pays (scraping HTML). Les icônes exotiques sont extraites à côté de chaque espèce sur les pages <code style="font-size:10.5px;">ebird.org/barchart?r=&lt;code_région&gt;</code>. Priorité N &gt; P &gt; X quand une espèce a plusieurs statuts selon les régions.
-          </div>
+    // Icone "?" avec tooltip explicatif : remplace l'ancien depliant. Petit cercle
+    // avec point d'interrogation apres le label categorie ; survole = tooltip.
+    // Le tooltip est en CSS pur via :hover sur .cat-help-wrap.
+    const catHelpTip = cat ? `<span class="cat-help-wrap" style="position:relative;display:inline-block;margin-left:6px;vertical-align:middle;">
+      <span style="display:inline-flex;width:14px;height:14px;border-radius:50%;background:var(--surface-2);border:1px solid var(--line);font-size:10px;font-weight:700;color:var(--ink-2);align-items:center;justify-content:center;cursor:help;line-height:1;">?</span>
+      <span class="cat-help-tip" style="position:absolute;top:20px;left:0;z-index:1000;width:340px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:11.5px;line-height:1.5;color:var(--ink-2);box-shadow:0 6px 20px rgba(0,0,0,0.15);display:none;text-align:left;font-weight:400;">
+        <div style="margin-bottom:8px;">Chaque espèce vue en dehors de son aire naturelle est classée par des reviewers bénévoles de l'<b>eBird Exotics Working Group</b>, au niveau <b>département / région / pays</b>.</div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 8px;">
+          <span style="font-weight:700;color:var(--ink);">N</span><span><b>Naturalisé</b> — pop reproductrice établie. Ex Bernache du Canada.</span>
+          <span style="font-weight:700;color:var(--ink);">P</span><span><b>Provisoire</b> — obs régulières mais pop non-confirmée. Vagrants + échappés mélangés.</span>
+          <span style="font-weight:700;color:var(--ink);">X</span><span><b>Échappé isolé</b> — évidemment captif, pas de pop. Ex Ara, Perroquet gris.</span>
         </div>
-      </details>` : '';
+        <div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--line-2);opacity:.85;">Source : bar chart eBird du pays (scraping HTML des icônes exotiques).</div>
+      </span>
+    </span>` : '';
+    const catBadge = catLbl ? `<span style="font-size:12px;color:var(--ink-3);margin-left:10px;">· ${esc(catLbl)}${catHelpTip}</span>` : '';
+    // Style pur pour le tooltip au hover (une seule fois, ajoute au head)
+    if(cat && !document.getElementById('cat-help-style')){
+      const st = document.createElement('style');
+      st.id = 'cat-help-style';
+      st.textContent = '.cat-help-wrap:hover .cat-help-tip{display:block !important;}';
+      document.head.appendChild(st);
+    }
+    // Ancien catExplainer (details deroulant) retire 2026-09-22 -> remplace par le tooltip.
+    const catExplainer = '';
     // Sous-section dépliante : composantes du tier composite S&T (seulement FR pour l'instant,
     // seulement pour les sauvages calibrées S&T). Rend le calcul transparent : montre les 3
     // sous-scores S&T, le composite S&T, le bar chart, et quelle source est retenue selon
