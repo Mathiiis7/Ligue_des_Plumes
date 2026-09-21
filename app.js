@@ -10795,13 +10795,20 @@ function _renderSpeciesRarityCard(key){
           : ((typeof REAL_LABELS === 'object' && REAL_LABELS[w]) || ('niveau '+w)));
     const color = realColor(w);
     const country = avail.find(c => c.code === cc) || avail[0];
-    const flgFixed = (country.flag||'').replace('<img ', '<img style="height:14px;width:19px;object-fit:cover;object-position:center;vertical-align:middle;border-radius:2px;margin-right:8px;box-shadow:0 0 0 1px rgba(0,0,0,.08);" ');
+    // Flag : taille fixe + width/height HTML attrs pour eviter le layout shift au load
+    // (image loading=lazy sinon zero-size initial puis pop-in). Remove aussi loading=lazy
+    // pour le charger direct avec la fiche.
+    const flgFixed = (country.flag||'')
+      .replace(' loading="lazy"', '')
+      .replace('<img ', '<img width="19" height="14" style="height:14px;width:19px;object-fit:cover;object-position:center;vertical-align:middle;border-radius:2px;margin-right:8px;box-shadow:0 0 0 1px rgba(0,0,0,.08);flex-shrink:0;" ');
     // Pill : affiche la lettre categorie (N/P) au lieu du chiffre du tier pour les
     // exotiques etablis N/P (aligne avec le comportement des cartes Birdydex). X et C
     // avec tier > 0 restent numeriques. Tier 0 exotique : lettre cat (N/P/X/C).
     const useCatLetter = isExo && (cat === 'N' || cat === 'P') && w > 0;
     const pillTxt = (w === 0 && isExo) ? (cat || 'X') : (useCatLetter ? cat : w);
-    const pill = `<span style="display:inline-block;background:${color};color:#fff;padding:3px 12px;border-radius:8px;font-weight:800;font-size:15px;min-width:28px;text-align:center;margin-right:10px;" title="tier ${w}">${pillTxt}</span>`;
+    // Taille fixe (width + box-sizing) pour eviter que la position du label bouge selon
+    // que le pill affiche 'X' (1 char), '10' (2 chars) ou 'N' (1 char).
+    const pill = `<span style="display:inline-block;box-sizing:border-box;background:${color};color:#fff;padding:3px 0;border-radius:8px;font-weight:800;font-size:15px;width:48px;text-align:center;margin-right:10px;flex-shrink:0;" title="tier ${w}">${pillTxt}</span>`;
     // Mini-badge cat retire quand le pill affiche deja la lettre (evite doublon N + N).
     const catMiniPill = (isExo && cat && w > 0 && !useCatLetter) ? `<span style="display:inline-block;background:var(--surface-2);color:var(--ink-2);padding:1px 7px;border-radius:5px;font-weight:800;font-size:11px;margin-left:10px;vertical-align:middle;" title="${esc(catLbl)}">${cat}</span>` : '';
     const catBadge = catLbl ? `<span style="font-size:12px;color:var(--ink-3);margin-left:10px;">· ${esc(catLbl)}</span>` : '';
