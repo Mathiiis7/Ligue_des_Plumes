@@ -11712,7 +11712,8 @@ function _renderSpeciesFreqChart(key, country){
     if(p >= 0.01) return p.toFixed(3) + '%';
     return '<0.01%';
   };
-  const fmtY = v => isWeekly ? fmtAbd(v) : fmtPct(v);
+  // Format ind/h avec unite
+  const fmtAbdUnit = v => v === 0 ? '0' : fmtAbd(v) + ' ind/h';
   const midV = yMax / 2;
   // Seuils tier (utilises pour couleur des barres + conversion inter-unites axe droit).
   const _WEEKLY_TIER_THRESHOLDS = [
@@ -11740,33 +11741,19 @@ function _renderSpeciesFreqChart(key, country){
     }
     return v * (to[to.length-1][0] / from[from.length-1][0]);   // sous le plus bas seuil
   };
-  // Format pour l'unite secondaire (celle affichee a droite)
-  const fmtSecondary = v => {
-    if(v <= 0) return '0';
-    if(isWeekly){
-      // Primary = ind/h, secondary = %
-      if(v >= 0.10) return Math.round(v*100) + '%';
-      if(v >= 0.01) return (v*100).toFixed(1) + '%';
-      if(v >= 0.001) return (v*100).toFixed(2) + '%';
-      return '<0.1%';
-    } else {
-      // Primary = %, secondary = ind/h
-      if(v >= 10) return Math.round(v) + ' ind/h';
-      if(v >= 1) return v.toFixed(1) + ' ind/h';
-      if(v >= 0.01) return v.toFixed(2) + ' ind/h';
-      if(v >= 0.001) return v.toFixed(3) + ' ind/h';
-      return '<0.001 ind/h';
-    }
-  };
   let out = '';
-  // Grille horizontale + labels valeur (gauche = unite primaire, droite = equivalent secondaire)
+  // Grille horizontale + labels valeur.
+  // Fix 2026-09-22 : % TOUJOURS a gauche, ind/h TOUJOURS a droite, quelle que soit
+  // la source primaire (weekly S&T ou monthly bar chart). L'axe non-primaire est
+  // la conversion via _convertUnit (interpolation log-log entre seuils de tier).
   for(const v of [0, midV, yMax]){
     const y = yFor(v);
     out += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${(W-PR).toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"/>`;
-    out += `<text x="${(PL-4).toFixed(1)}" y="${(y+3).toFixed(1)}" font-size="9" fill="var(--ink-3)" text-anchor="end">${fmtY(v)}</text>`;
-    // Label droit : conversion vers l'unite secondaire
-    const vSec = _convertUnit(v, isWeekly);
-    out += `<text x="${(W-PR+4).toFixed(1)}" y="${(y+3).toFixed(1)}" font-size="9" fill="var(--ink-3)" text-anchor="start">${fmtSecondary(vSec)}</text>`;
+    // Left = %, Right = ind/h. Si primary est ind/h, on convertit vers % a gauche.
+    const vPct = isWeekly ? _convertUnit(v, true) : v;
+    const vAbd = isWeekly ? v : _convertUnit(v, false);
+    out += `<text x="${(PL-4).toFixed(1)}" y="${(y+3).toFixed(1)}" font-size="9" fill="var(--ink-3)" text-anchor="end">${fmtPct(vPct)}</text>`;
+    out += `<text x="${(W-PR+4).toFixed(1)}" y="${(y+3).toFixed(1)}" font-size="9" fill="var(--ink-3)" text-anchor="start">${fmtAbdUnit(vAbd)}</text>`;
   }
   const _weeklyAbdToTier = v => {
     if(!(v > 0)) return 10;
