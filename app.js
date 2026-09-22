@@ -11682,7 +11682,8 @@ function _renderSpeciesFreqChart(key, country){
   } else {
     try { const z = parseFloat(localStorage.getItem(zoomKey)); if(z > 0 && z < 1000) _freqZoom = z; } catch(_){}
   }
-  const yMax = FIXED_MAX / _freqZoom;
+  // Plafond a 100% : une % de checklists ne peut pas depasser 100%. Dezoom limite au max.
+  const yMax = Math.min(1.0, FIXED_MAX / _freqZoom);
   const yFor = v => PT + ih - ih * Math.min(1, v/yMax);
   // Format des labels y-axis. Precision adaptative pour les especes rares (0.0002 ind/h par ex).
   const fmtAbd = v => {
