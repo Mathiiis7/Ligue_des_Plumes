@@ -11593,6 +11593,19 @@ function _renderSpeciesFreqChart(key, country){
     return (list.find(r => r.code === rcode) || {}).name || rcode;
   };
   const countryName = (COUNTRIES_REG[cc] && COUNTRIES_REG[cc].name) || cc;
+  // Icone '?' pour expliquer ce que represente le %.
+  const _freqPctHelp = ` <span class="freq-pct-help" style="position:relative;display:inline-block;margin-left:6px;vertical-align:middle;line-height:1;cursor:help;">
+    <svg width="14" height="14" viewBox="0 0 14 14" style="vertical-align:-2px;"><circle cx="7" cy="7" r="6.5" fill="var(--surface-2)" stroke="var(--line)"/><text x="7" y="10.5" text-anchor="middle" font-size="10" font-weight="700" fill="var(--ink-3)">?</text></svg>
+    <span class="freq-pct-tip" style="position:absolute;top:20px;left:0;z-index:1000;width:300px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:11.5px;line-height:1.45;color:var(--ink-2);box-shadow:0 6px 20px rgba(0,0,0,0.15);display:none;font-weight:400;text-align:left;">
+      <b>% checklists</b> = fraction des sorties birding eBird qui ont coché cette espèce. Ex : 23% en mars = <b>1 checklist sur 4</b> a vu l'espèce en mars. Reflète la probabilité de rencontre pour un birder en sortie.
+    </span>
+  </span>`;
+  if(!document.getElementById('freq-pct-help-style')){
+    const st = document.createElement('style');
+    st.id = 'freq-pct-help-style';
+    st.textContent = '.freq-pct-help:hover .freq-pct-tip{display:block !important;}';
+    document.head.appendChild(st);
+  }
   let ccLabel;
   if(regionScope){
     const regName = _regNameFor(regionScope);
@@ -11622,7 +11635,7 @@ function _renderSpeciesFreqChart(key, country){
             : maxV >= 0.001 ? maxV.toFixed(4)
             : maxV >= 0.0001 ? maxV.toFixed(5)
             : '<0.0001';
-    srcEl.innerHTML = `${esc(ccLabel)}${fallbackNote}`;
+    srcEl.innerHTML = `${esc(ccLabel)}${fallbackNote}${_freqPctHelp}`;
   } else {
     // Source mensuelle etiree a 52 slots : le pic est au premier slot du mois pic,
     // on reconvertit vers un label mois-only pour ne pas suggerer une precision fictive.
@@ -11636,7 +11649,7 @@ function _renderSpeciesFreqChart(key, country){
             : maxV >= 0.001 ? (maxV*100).toFixed(2) // 0.1-1%
             : maxV >= 0.0001 ? (maxV*100).toFixed(3)// 0.01-0.1%
             : '<0.01';
-    srcEl.innerHTML = `${esc(ccLabel)}${fallbackNote}`;
+    srcEl.innerHTML = `${esc(ccLabel)}${fallbackNote}${_freqPctHelp}`;
   }
   // Layout du chart : toujours 520x130. Source unique = bar chart % checklists.
   const W = 520, H = 130, PT = 12, PB = 26, PL = 32, PR = 8;
