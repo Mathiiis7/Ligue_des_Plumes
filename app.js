@@ -11787,13 +11787,17 @@ function _renderSpeciesFreqChart(key, country){
     const nowLbl = isWeekly ? 'Cette semaine' : 'Mois actuel';
     // Slider zoom visible : mapping log10 pour progression naturelle
     // value -2 -> z=0.01 (dezoom 100x), value 0 -> z=1 (defaut), value 2.7 -> z=500 (zoom 500x)
+    // Persiste _freqZoom sur window pour survivre aux re-renders (localStorage read peut
+    // etre lent ou intercepte, on prime les mutations en memoire).
+    window._smFreqZoomState = window._smFreqZoomState || {};
+    if(window._smFreqZoomState[zoomKey] != null) _freqZoom = window._smFreqZoomState[zoomKey];
     const sliderVal = Math.log10(_freqZoom).toFixed(2);
     const zoomLbl = _freqZoom >= 10 ? '×' + Math.round(_freqZoom)
                   : _freqZoom >= 1 ? '×' + _freqZoom.toFixed(1)
                   : '×' + _freqZoom.toFixed(2);
     const zoomSlider = `<span style="display:inline-flex;align-items:center;gap:6px;pointer-events:auto;">
       <span style="font-size:10px;color:var(--ink-3);">zoom</span>
-      <input type="range" id="smFreqZoomSlider" min="-2" max="2.7" step="0.05" value="${sliderVal}" style="width:120px;height:20px;cursor:pointer;pointer-events:auto;touch-action:none;">
+      <input type="range" id="smFreqZoomSlider" min="-2" max="2.7" step="0.05" value="${sliderVal}" data-current="${sliderVal}" style="width:120px;height:20px;cursor:pointer;pointer-events:auto;touch-action:none;">
       <span id="smFreqZoomLbl" style="font-size:10px;color:var(--ink-2);min-width:32px;">${zoomLbl}</span>
     </span>`;
     legEl.innerHTML = `
@@ -11803,23 +11807,24 @@ function _renderSpeciesFreqChart(key, country){
       ${zoomSlider}`;
     const slider = document.getElementById('smFreqZoomSlider');
     if(slider){
-      // Utilise 'change' pour ne re-render qu'au relachement (evite le lag du re-render
-      // sur chaque pixel de drag). 'input' fait la mise a jour live du label uniquement.
+      // Force la value HTML apres innerHTML (au cas ou le browser reset).
+      slider.value = sliderVal;
       slider.oninput = (e) => {
         const v = parseFloat(e.target.value);
         const z = Math.pow(10, v);
+        // Store en memoire (window) ET localStorage.
+        window._smFreqZoomState[zoomKey] = z;
+        try { localStorage.setItem(zoomKey, String(z)); } catch(_){}
+        // Update label live.
         const lbl = document.getElementById('smFreqZoomLbl');
         if(lbl) lbl.textContent = z >= 10 ? '×' + Math.round(z) : z >= 1 ? '×' + z.toFixed(1) : '×' + z.toFixed(2);
-      };
-      slider.onchange = (e) => {
-        const v = parseFloat(e.target.value);
-        const z = Math.pow(10, v);
-        try { localStorage.setItem(zoomKey, String(z)); } catch(_){}
+        // Re-render le chart AVEC la nouvelle valeur (la memoire window prime).
         _renderSpeciesFreqChart(key, country);
       };
-      // Bloque la propagation pour ne pas gener le drag (scroll parent, wheel handler, etc).
+      // Bloque la propagation pour ne pas gener le drag.
       slider.onmousedown = (e) => e.stopPropagation();
       slider.ontouchstart = (e) => e.stopPropagation();
+      slider.onclick = (e) => e.stopPropagation();
     }
   }
 }
