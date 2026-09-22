@@ -310,6 +310,16 @@ function _isEstablishedExotic(cat){ return cat === 'N'; }
 // Elles partent toutes dans le meme seau gris "Exotique" des filtres et ne comptent pas
 // dans les statistiques de rarete. Renvoie false pour une espece non exotique (cat vide).
 function _isUnestablishedExotic(cat){ return cat === 'P' || cat === 'X' || cat === 'C'; }
+// Seuils de conversion valeur -> tier de rarete (1 = omnipresent, 10 = exceptionnel).
+// _MONTHLY_THR : frequence mensuelle du bar chart eBird (part des listes, 0.25 = 25%).
+// _WEEKLY_THR  : abondance hebdomadaire Cornell S&T (individus/heure).
+// Source unique : ces seuils etaient dupliques dans le picker pays et le picker regions,
+// et une carte de rarete par region en aurait fait un troisieme exemplaire.
+const _MONTHLY_THR = [[0.25,1],[0.15,2],[0.08,3],[0.04,4],[0.02,5],[0.007,6],[0.0015,7],[0.0003,8],[0.00005,9]];
+const _WEEKLY_THR  = [[2.2596,1],[0.8496,2],[0.34178,3],[0.12404,4],[0.04666,5],[0.01880,6],[0.00440,7],[0.00114,8],[0.00009,9]];
+const _tierFromThresholds = (v, thr) => { if(!(v > 0)) return 10; for(const [lim, t] of thr) if(v >= lim) return t; return 10; };
+const monthlyFreqToTier = v => _tierFromThresholds(v, _MONTHLY_THR);
+const weeklyAbundanceToTier = v => _tierFromThresholds(v, _WEEKLY_THR);
 // Tier pour un exotique. Selon la categorie, on prime la source la plus juste :
 //   N (etabli sauvage) / C (domestique) -> eBird (effort-normalise, refllete la vraie
 //     frequence de rencontre en pleine nature).
@@ -680,10 +690,6 @@ function _openCountryPicker(currentCode, opts = {}){
     // Si opts.sci est passe (appel depuis fiche espece), on trie par abondance pour
     // cette espece et on affiche un indicateur (max weekly S&T ou % pic monthly).
     const focusSci = opts.sci ? opts.sci.toLowerCase() : null;
-    const _wThr = [[2.2596,1],[0.8496,2],[0.34178,3],[0.12404,4],[0.04666,5],[0.01880,6],[0.00440,7],[0.00114,8],[0.00009,9]];
-    const _mThr = [[0.25,1],[0.15,2],[0.08,3],[0.04,4],[0.02,5],[0.007,6],[0.0015,7],[0.0003,8],[0.00005,9]];
-    const abdToTier = v => { if(!(v>0)) return 10; for(const [t,i] of _wThr) if(v>=t) return i; return 10; };
-    const freqToTier = v => { if(!(v>0)) return 10; for(const [t,i] of _mThr) if(v>=t) return i; return 10; };
     // Utilise TOUJOURS le bar chart mensuel (unite % listes) pour cohérence inter-pays.
     // Tous les pays ont un bar chart national (FR/ME/ES/IT/GB/PT), donc pas de melange
     // d'unites % vs ind/h dans le picker. Fallback S&T uniquement si aucun bar chart.
@@ -10858,6 +10864,7 @@ async function _renderExoticMap(sci, cc){
   // Si l'user a ouvert la carte sur une espece, garde ouvert pour les suivantes qui
   // ont aussi une carte.
   const openState = window._smExoticMapOpen ? ' open' : '';
+  if(_ccFicheObsolete(cc)) return;
   container.innerHTML = `
     <details${openState} style="margin-top:10px;" id="smExoticMapDetails">
       <summary style="cursor:pointer; padding:6px 10px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2, #fafafa); font-size:12px; color:var(--ink-2); user-select:none;">
@@ -10882,6 +10889,96 @@ async function _renderExoticMap(sci, cc){
   const det = document.getElementById('smExoticMapDetails');
   if(det){
     det.ontoggle = () => { window._smExoticMapOpen = det.open; };
+  }
+}
+// Les deux mini-cartes attendent des fetch avant d'ecrire. Si l'utilisateur change de
+// pays entre-temps, le rendu le plus lent ecraserait le plus recent : on abandonne quand
+// le pays demande n'est plus celui selectionne dans la fiche.
+function _ccFicheObsolete(cc){
+  const actuel = document.getElementById('smRarityCountrySel')?.dataset.cc;
+  return !!actuel && actuel !== cc;
+}
+const _MOIS_COURTS = ['janv','févr','mars','avr','mai','juin','juil','août','sept','oct','nov','déc'];
+// Carte de rarete par zone : colore chaque departement / region avec le tier deduit de
+// sa frequence mensuelle locale, sur la meme echelle de couleurs que le reste de l'appli.
+// Distincte de la carte de statut exotique, qui repond a une autre question.
+// Mois affiche : le mois courant par defaut, changeable via les pastilles. Le choix est
+// conserve d'une espece a l'autre pour pouvoir comparer plusieurs fiches au meme mois.
+async function _renderRarityMap(sci, cc){
+  const container = document.getElementById('smRarityMap');
+  if(!container) return;
+  const key = (sci || '').toLowerCase();
+  if(window._smRarityMapMonth == null) window._smRarityMapMonth = new Date().getMonth();
+  const mois = Math.min(11, Math.max(0, window._smRarityMapMonth));
+  // Frequences par zone : lazy-loadees par pays (deja declenche par la card Rarete).
+  if(typeof _loadFreqDataForCountry === 'function'){
+    try { await _loadFreqDataForCountry(cc); } catch(_){}
+  }
+  const byZone = (typeof REAL_FREQ_MONTHLY_BY_REGION_MULTI === 'object')
+    ? REAL_FREQ_MONTHLY_BY_REGION_MULTI[cc] : null;
+  const paths = byZone ? await _loadExoticMapPaths(cc) : null;
+  if(!byZone || !paths){ container.innerHTML = ''; return; }
+  // Une espece jamais vue nulle part dans l'annee n'a pas de carte a montrer.
+  const zones = Object.keys(paths.zones);
+  const aDeLaData = zones.some(z => {
+    const arr = byZone[z] && byZone[z][key];
+    return Array.isArray(arr) && arr.some(v => v > 0);
+  });
+  if(!aDeLaData){ container.innerHTML = ''; return; }
+  const ABSENT = '#d4d4d8';
+  const svgZones = zones.map(z => {
+    const arr = byZone[z] && byZone[z][key];
+    const v = Array.isArray(arr) ? (arr[mois] || 0) : 0;
+    const nom = paths.zones[z].name;
+    let fill = ABSENT, titre = `${nom} — absente en ${_MOIS_COURTS[mois]}`;
+    if(v > 0){
+      const tier = monthlyFreqToTier(v);
+      fill = realColor(tier);
+      const lbl = (typeof REAL_LABELS === 'object' && REAL_LABELS[tier]) || ('tier ' + tier);
+      const pct = v >= 0.1 ? Math.round(v*100)+'%' : v >= 0.01 ? (v*100).toFixed(1)+'%' : (v*100).toFixed(2)+'%';
+      titre = `${nom} — ${lbl} (${tier}) · ${pct} des listes`;
+    }
+    return `<path d="${paths.zones[z].path}" fill="${fill}" stroke="var(--surface, #fff)" stroke-width="0.5"><title>${titre.replace(/</g,'&lt;')}</title></path>`;
+  }).join('');
+  const moisBtns = _MOIS_COURTS.map((m, i) => {
+    const on = i === mois;
+    return `<button type="button" data-mois="${i}" style="border:1px solid ${on ? 'var(--accent)' : 'var(--line-2)'}; background:${on ? 'var(--accent)' : 'var(--surface)'}; color:${on ? '#fff' : 'var(--ink-2)'}; font:${on ? '700' : '400'} 10.5px system-ui; padding:2px 6px; border-radius:6px; cursor:pointer;">${m}</button>`;
+  }).join('');
+  const legendItem = (col, label) => `<span style="display:inline-flex; align-items:center; gap:4px;"><span style="display:inline-block; width:10px; height:10px; background:${col}; border-radius:2px;"></span>${label}</span>`;
+  const zoneWord = cc === 'FR' ? 'département' : 'région';
+  const openState = window._smRarityMapOpen ? ' open' : '';
+  if(_ccFicheObsolete(cc)) return;
+  container.innerHTML = `
+    <details${openState} style="margin-top:10px;" id="smRarityMapDetails">
+      <summary style="cursor:pointer; padding:6px 10px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2, #fafafa); font-size:12px; color:var(--ink-2); user-select:none;">
+        ▸ Rareté par ${zoneWord} (${_MOIS_COURTS[mois]})
+      </summary>
+      <div style="margin-top:6px; padding:10px 12px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2, #fafafa);">
+        <div id="smRarityMapMois" style="display:flex; flex-wrap:wrap; gap:3px; justify-content:center; margin-bottom:8px;">${moisBtns}</div>
+        <svg viewBox="${paths.viewBox}" style="width:100%; max-width:320px; height:auto; display:block; margin:0 auto;" role="img" aria-label="Rareté par ${zoneWord} en ${_MOIS_COURTS[mois]}">
+          ${svgZones}
+        </svg>
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; font-size:11px; color:var(--ink-2); justify-content:center;">
+          ${legendItem(realColor(1),'Commun')}
+          ${legendItem(realColor(5),'Peu commun')}
+          ${legendItem(realColor(9),'Très rare')}
+          ${legendItem(ABSENT,'Absente')}
+        </div>
+        <div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line-2); font-size:10.5px; color:var(--ink-3); text-align:center; line-height:1.4; opacity:.9;">
+          ⓘ Part des listes eBird du ${zoneWord} où l'espèce a été notée ce mois-ci, agrégée sur 2019-2026. Reflète la facilité de rencontre, pas l'effectif.
+        </div>
+      </div>
+    </details>`;
+  const det2 = document.getElementById('smRarityMapDetails');
+  if(det2) det2.ontoggle = () => { window._smRarityMapOpen = det2.open; };
+  const barre = document.getElementById('smRarityMapMois');
+  if(barre){
+    barre.onclick = (e) => {
+      const b = e.target.closest('[data-mois]');
+      if(!b) return;
+      window._smRarityMapMonth = +b.dataset.mois;
+      _renderRarityMap(sci, cc);
+    };
   }
 }
 // Card Rarete : FR par defaut + dropdown pour switch entre pays calibres. Ligne du tier
@@ -10924,10 +11021,6 @@ function _renderSpeciesRarityCard(key){
     const reg = COUNTRIES_REG[cc];
     const stByReg = (typeof REAL_ABUNDANCE_ST_BY_REGION === 'object' && REAL_ABUNDANCE_ST_BY_REGION[cc]) || {};
     const freqByReg = (reg && typeof reg.monthlyByRegion === 'function') ? (reg.monthlyByRegion() || {}) : {};
-    const _wThr = [[2.2596,1],[0.8496,2],[0.34178,3],[0.12404,4],[0.04666,5],[0.01880,6],[0.00440,7],[0.00114,8],[0.00009,9]];
-    const _mThr = [[0.25,1],[0.15,2],[0.08,3],[0.04,4],[0.02,5],[0.007,6],[0.0015,7],[0.0003,8],[0.00005,9]];
-    const abdToTier = v => { if(!(v>0)) return 10; for(const [t,i] of _wThr) if(v>=t) return i; return 10; };
-    const freqToTier = v => { if(!(v>0)) return 10; for(const [t,i] of _mThr) if(v>=t) return i; return 10; };
     // Toujours utiliser le bar chart mensuel (%) pour cohérence avec le reste de la fiche
     // (choix produit : plus d'ind/h nulle part). Le S&T weekly ind/h existe mais est
     // subjectivement pas comparable au %, donc retire du picker regional aussi.
@@ -10952,7 +11045,7 @@ function _renderSpeciesRarityCard(key){
     const nationalRow = `<div class="reg-picker-item national${_speciesRegion===''?' on':''}" data-code="">${flag} ${esc(nationalLbl)} entier</div>`;
     const items = scored.map(s => {
       const absent = s.score === 0;
-      const tier = absent ? 10 : (useST ? abdToTier(s.score) : freqToTier(s.score));
+      const tier = absent ? 10 : (useST ? weeklyAbundanceToTier(s.score) : monthlyFreqToTier(s.score));
       const col = realColor(tier);
       const barW = (maxScore > 0 && s.score > 0) ? Math.max(4, Math.round(100 * s.score / maxScore)) : 0;
       const val = absent ? 'absente' : (useST ? fmtST(s.score) : fmtPct(s.score));
@@ -10998,8 +11091,15 @@ function _renderSpeciesRarityCard(key){
       </div>
     </div>
     <div id="smRarityLine"></div>
+    <div id="smRarityMap"></div>
     <div id="smExoticMap"></div>`;
   const renderLine = (cc) => {
+    // Les deux mini-cartes sont rendues AVANT les sorties anticipees ci-dessous : sinon,
+    // en passant sur un pays ou l'espece est absente, renderLine sortait tot et laissait
+    // affichee la carte du pays precedent. Chacune vide son conteneur si elle n'a rien a
+    // montrer, donc les appeler ici suffit a nettoyer.
+    if(typeof _renderRarityMap === 'function') _renderRarityMap(k, cc);
+    if(typeof _renderExoticMap === 'function') _renderExoticMap(k, cc);
     const w = rarityForCountry(k, cc);
     // isExo est PER-PAYS via isExoticInCountry (le Pelican gris est exotique X en ME
     // via EXOTIQUES_EBIRD_PAR_PAYS mais pas dans le dict EXOTIQUES_CONNUES_FR global centre FR).
@@ -11342,8 +11442,6 @@ function _renderSpeciesRarityCard(key){
       );
     }
     $('#smRarityLine').innerHTML = `<div style="display:flex;align-items:center;gap:6px;padding:6px 0;">${flgFixed}${pill}<span style="font-weight:600;color:var(--ink);">${esc(label)}</span>${catMiniPill}${catBadge}</div>${catExplainer}${detailsHtml}`;
-    // Mini-carte statut exotique par region FR (uniquement quand cc === 'FR')
-    if(typeof _renderExoticMap === 'function') _renderExoticMap(k, cc);
   };
   // Pays par defaut : reprend le contexte du site (filtre Birdydex ou carte). Sinon FR.
   // (initCountry deja calcule plus haut avant box.innerHTML)
