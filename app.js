@@ -11673,9 +11673,17 @@ function _renderSpeciesFreqChart(key, country){
   // Molette souris = zoom (up = zoom in, down = zoom out). Multiplicateur persiste par
   // pays+mode pour eviter qu'un zoom sur bar chart pollue le zoom S&T weekly.
   const FIXED_MIN_MAX = isWeekly ? 3.0 : 0.30;
-  let _freqZoom = 1.0;
   const zoomKey = 'mb-freq-zoom-' + (isWeekly ? 'w' : 'm');
-  try { const z = parseFloat(localStorage.getItem(zoomKey)); if(z > 0 && z < 1000) _freqZoom = z; } catch(_){}
+  // _freqZoom : priorite memoire (window._smFreqZoomState set live par le slider) puis
+  // fallback localStorage puis 1.0 par defaut. La memoire prime pour eviter les problemes
+  // de timing (le slider ecrit puis re-render immediatement, localStorage sync possible en retard).
+  window._smFreqZoomState = window._smFreqZoomState || {};
+  let _freqZoom = 1.0;
+  if(window._smFreqZoomState[zoomKey] != null && window._smFreqZoomState[zoomKey] > 0){
+    _freqZoom = window._smFreqZoomState[zoomKey];
+  } else {
+    try { const z = parseFloat(localStorage.getItem(zoomKey)); if(z > 0 && z < 1000) _freqZoom = z; } catch(_){}
+  }
   const yMax = Math.max(FIXED_MIN_MAX, maxV) / _freqZoom;
   const yFor = v => PT + ih - ih * Math.min(1, v/yMax);
   // Format des labels y-axis. Precision adaptative pour les especes rares (0.0002 ind/h par ex).
@@ -11786,11 +11794,8 @@ function _renderSpeciesFreqChart(key, country){
       .map(t => `<span style="width:8px;height:12px;background:${realColor(t)};display:inline-block;"></span>`).join('');
     const nowLbl = isWeekly ? 'Cette semaine' : 'Mois actuel';
     // Slider zoom visible : mapping log10 pour progression naturelle
-    // value -2 -> z=0.01 (dezoom 100x), value 0 -> z=1 (defaut), value 2.7 -> z=500 (zoom 500x)
-    // Persiste _freqZoom sur window pour survivre aux re-renders (localStorage read peut
-    // etre lent ou intercepte, on prime les mutations en memoire).
-    window._smFreqZoomState = window._smFreqZoomState || {};
-    if(window._smFreqZoomState[zoomKey] != null) _freqZoom = window._smFreqZoomState[zoomKey];
+    // value -2 -> z=0.01, value 0 -> z=1, value 2.7 -> z=500
+    // _freqZoom deja resolu plus haut (memoire window + fallback localStorage).
     const sliderVal = Math.log10(_freqZoom).toFixed(2);
     const zoomLbl = _freqZoom >= 10 ? '×' + Math.round(_freqZoom)
                   : _freqZoom >= 1 ? '×' + _freqZoom.toFixed(1)
