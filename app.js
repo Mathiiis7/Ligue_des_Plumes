@@ -539,8 +539,10 @@ function _countryHasSpecies(cc, sci){
   // Espece consideree presente si :
   //   - bar chart tier > 0 (pour FR/ME)
   //   - OU S&T avec au moins une valeur weekly non-nulle
+  //   - OU S&T avec composite tier > 0 (vagrants Cornell : w=[0,0,...] mais t=10)
   if(e.barTier()[k]) return true;
   if(stEntry && Array.isArray(stEntry.w) && stEntry.w.some(v => v > 0)) return true;
+  if(stEntry && stEntry.t > 0) return true;
   return false;
 }
 
