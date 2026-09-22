@@ -10621,21 +10621,25 @@ async function _renderFrExoticMap(sci, cc){
   }).join('');
   const legendItem = (col, label) => `<span style="display:inline-flex; align-items:center; gap:4px;"><span style="display:inline-block; width:10px; height:10px; background:${col}; border-radius:2px;"></span>${label}</span>`;
   container.innerHTML = `
-    <div style="margin-top:10px; padding:10px 12px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2, #fafafa);">
-      <div style="font-size:12px; color:var(--ink-2); margin-bottom:6px;">Statut exotique par département (eBird)</div>
-      <svg viewBox="${paths.viewBox}" style="width:100%; max-width:320px; height:auto; display:block; margin:0 auto;" role="img" aria-label="Statut exotique par département FR">
-        ${svgDeps}
-      </svg>
-      <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; font-size:11px; color:var(--ink-2); justify-content:center;">
-        ${legendItem('#22c55e','N Établi')}
-        ${legendItem('#f59e0b','P Provisoire')}
-        ${legendItem('#ef4444','X Échappé')}
-        ${legendItem('#d4d4d8','Sauvage / absent')}
+    <details style="margin-top:10px;">
+      <summary style="cursor:pointer; padding:6px 10px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2, #fafafa); font-size:12px; color:var(--ink-2); user-select:none;">
+        ▸ Statut exotique par département (eBird)
+      </summary>
+      <div style="margin-top:6px; padding:10px 12px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2, #fafafa);">
+        <svg viewBox="${paths.viewBox}" style="width:100%; max-width:320px; height:auto; display:block; margin:0 auto;" role="img" aria-label="Statut exotique par département FR">
+          ${svgDeps}
+        </svg>
+        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; font-size:11px; color:var(--ink-2); justify-content:center;">
+          ${legendItem('#22c55e','N Établi')}
+          ${legendItem('#f59e0b','P Provisoire')}
+          ${legendItem('#ef4444','X Échappé')}
+          ${legendItem('#d4d4d8','Sauvage / absent')}
+        </div>
+        <div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line-2); font-size:10.5px; color:var(--ink-3); text-align:center; line-height:1.4; opacity:.9;">
+          ⓘ Granularité approximative : le statut peut varier <b>au sein d'un département</b> selon le hotspot. eBird décide aussi au niveau de chaque obs individuelle — un couple nicheur en zone rurale peut être <b>N</b> alors qu'un individu isolé dans un parc urbain proche sera <b>X</b>.
+        </div>
       </div>
-      <div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line-2); font-size:10.5px; color:var(--ink-3); text-align:center; line-height:1.4; opacity:.9;">
-        ⓘ Granularité approximative : le statut peut varier <b>au sein d'un département</b> selon le hotspot. eBird décide aussi au niveau de chaque obs individuelle — un couple nicheur en zone rurale peut être <b>N</b> alors qu'un individu isolé dans un parc urbain proche sera <b>X</b>.
-      </div>
-    </div>`;
+    </details>`;
 }
 // Card Rarete : FR par defaut + dropdown pour switch entre pays calibres. Ligne du tier
 // affichee juste sous le select (pill + label + categorie exotique si applicable).
