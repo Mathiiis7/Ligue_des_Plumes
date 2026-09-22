@@ -532,11 +532,12 @@ const COUNTRIES_REG = {
 };
 // Helpers de la registry
 function _countryEntry(cc){ return COUNTRIES_REG[cc] || null; }
-// True si l'espece est un X (Echappe) purement anecdotique dans ce pays : presente sur
-// <= 3 mois (peu importe le %). Un X qui apparait sporadiquement 1-3 mois par an = obs
-// isolees (echappe de compagnie, voyageur unique). Un X qui apparait sur 4+ mois =
-// probablement semi-etabli (paons de parcs, canards domestiques recurrents) : garde.
-// Utilise pour filtrer la birdydex/picker. N'agit que sur les X.
+// True si l'espece est un X (Echappe) purement anecdotique dans ce pays. Deux criteres :
+//   - nzMonths <= 3 : sporadique (1-3 mois d'apparition annuelle)
+//   - OU moyenne annuelle < 0.1% : presence year-round mais volumes noise-level (ex
+//     Oie empereur FR : 7 mois de valeurs mais 4 sont a 0.00008/0.00015, sum ~= 0.6%,
+//     moyenne 0.05% -> vraiment anecdotique meme si techniquement present 7 mois).
+// N'agit que sur les X, garde les N/P etablis meme rares.
 function _isIsolatedXExotic(sci, cc){
   const k = (sci||'').toLowerCase();
   const catByEbird = (EXOTIQUES_EBIRD_PAR_PAYS[cc] && EXOTIQUES_EBIRD_PAR_PAYS[cc][k]) || '';
@@ -545,7 +546,9 @@ function _isIsolatedXExotic(sci, cc){
   const monArr = e.monthly() && e.monthly()[k];
   if(!Array.isArray(monArr) || !monArr.length) return true;   // aucune data = anecdotique
   const nzMonths = monArr.filter(v => v > 0).length;
-  return nzMonths <= 3;
+  if(nzMonths <= 3) return true;
+  const mean = monArr.reduce((a,v) => a + v, 0) / 12;
+  return mean < 0.001;   // < 0.1% moyen year-round = presence sub-noise
 }
 function _countryHasSpecies(cc, sci){
   const e = _countryEntry(cc); if(!e) return false;
