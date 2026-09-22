@@ -10623,8 +10623,12 @@ async function _renderFrExoticMap(sci, cc){
     return `<path d="${r.path}" fill="${fill}" stroke="var(--surface, #fff)" stroke-width="0.5"><title>${title.replace(/</g,'&lt;')}</title></path>`;
   }).join('');
   const legendItem = (col, label) => `<span style="display:inline-flex; align-items:center; gap:4px;"><span style="display:inline-block; width:10px; height:10px; background:${col}; border-radius:2px;"></span>${label}</span>`;
+  // Persist l'etat ouvert/ferme du details entre les switchs d'especes (fleches).
+  // Si l'user a ouvert la carte sur une espece, garde ouvert pour les suivantes qui
+  // ont aussi une carte.
+  const openState = window._smExoticMapOpen ? ' open' : '';
   container.innerHTML = `
-    <details style="margin-top:10px;">
+    <details${openState} style="margin-top:10px;" id="smExoticMapDetails">
       <summary style="cursor:pointer; padding:6px 10px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2, #fafafa); font-size:12px; color:var(--ink-2); user-select:none;">
         ▸ Statut exotique par département (eBird)
       </summary>
@@ -10643,6 +10647,10 @@ async function _renderFrExoticMap(sci, cc){
         </div>
       </div>
     </details>`;
+  const det = document.getElementById('smExoticMapDetails');
+  if(det){
+    det.ontoggle = () => { window._smExoticMapOpen = det.open; };
+  }
 }
 // Card Rarete : FR par defaut + dropdown pour switch entre pays calibres. Ligne du tier
 // affichee juste sous le select (pill + label + categorie exotique si applicable).
