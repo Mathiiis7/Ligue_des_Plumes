@@ -11219,7 +11219,12 @@ function _renderSpeciesRarityCard(key){
       const absent = s.score === 0;
       const tier = absent ? 10 : (useST ? weeklyAbundanceToTier(s.score) : monthlyFreqToTier(s.score));
       const col = realColor(tier);
-      const barW = (maxScore > 0 && s.score > 0) ? Math.max(4, Math.round(100 * s.score / maxScore)) : 0;
+      // Remplissage ABSOLU, pas relatif au maximum : la barre doit dire la meme chose que
+      // le pourcentage affiche a cote. En relatif, la zone de tete etait toujours pleine,
+      // ce qui affichait une barre remplie a cote d'un "55 %". Plancher a 3 % pour qu'une
+      // presence tres faible reste visible ; l'ordre de la liste porte deja la comparaison
+      // entre zones, que le mode relatif etait cense apporter.
+      const barW = s.score > 0 ? Math.min(100, Math.max(3, Math.round(s.score * 100))) : 0;
       const val = absent ? 'absente' : (useST ? fmtST(s.score) : fmtPct(s.score));
       return `<div class="reg-picker-item${absent?' absent':''}${s.code===_speciesRegion?' on':''}" data-code="${esc(s.code)}">
         <span class="reg-picker-dot" style="background:${col};"></span>

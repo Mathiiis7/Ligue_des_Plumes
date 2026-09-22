@@ -465,7 +465,9 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .reg-picker-panel[hidden] { display:none; }
   .reg-picker-item { display:grid; grid-template-columns:10px 1fr 60px auto; gap:8px; align-items:center; padding:6px 10px; cursor:pointer; border-radius:6px; font-size:12px; color:var(--ink); }
   .reg-picker-item:hover { background:var(--surface-2); }
-  .reg-picker-item.on { background:var(--surface-2); font-weight:700; }
+  /* Sélection courante : teinte d'accent plutôt que gris. Le gris se confondait avec un
+     état désactivé, alors que cette ligne est justement celle qu'on regarde. */
+  .reg-picker-item.on { background:color-mix(in srgb, var(--accent) 14%, var(--surface)); font-weight:700; box-shadow:inset 3px 0 0 var(--accent); }
   .reg-picker-item.absent { opacity:.5; }
   .reg-picker-item.national { grid-template-columns:1fr; padding:8px 10px; border-bottom:1px solid var(--line-2); margin-bottom:4px; font-weight:600; }
   .reg-picker-dot { width:10px; height:10px; border-radius:50%; }
