@@ -2637,7 +2637,7 @@ const TROPHIES = [
     // Progression Terroir : le repas français qui monte en gamme, chaque tier a son
     // objet emblematique du bistrot (baguette -> saucisson -> fromage -> champagne -> croissant).
     // 5 tiers (skip Emeraude) : Prismatique = croissant irise = toute la France cochee.
-    tierNames:['Baguette','Saucisson','Fromage','Champagne','Croissant'],
+    tierNames:['Gaulois','Bon vivant','Notable','Grand seigneur','Roi Soleil'],
     tierRefs:['le pain quotidien, on démarre la tournée','l\'apéro entre potes, on explore plus loin','un fromage par région, du terroir plein le carnet','les bulles montent, presque toute la carte cochée','le petit-déjeuner doré, la France entière au bec'],
     // FR metropolitaine = 13 regions -> Prismatique atteint quand toutes sont visitees.
     metric:s=>s.regionsCount, thresholds:[2,4,7,10,13],
