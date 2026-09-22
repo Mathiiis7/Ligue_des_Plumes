@@ -11675,7 +11675,7 @@ function _renderSpeciesFreqChart(key, country){
   const FIXED_MIN_MAX = isWeekly ? 3.0 : 0.30;
   let _freqZoom = 1.0;
   const zoomKey = 'mb-freq-zoom-' + (isWeekly ? 'w' : 'm');
-  try { const z = parseFloat(localStorage.getItem(zoomKey)); if(z > 0 && z < 100) _freqZoom = z; } catch(_){}
+  try { const z = parseFloat(localStorage.getItem(zoomKey)); if(z > 0 && z < 1000) _freqZoom = z; } catch(_){}
   const yMax = Math.max(FIXED_MIN_MAX, maxV) / _freqZoom;
   const yFor = v => PT + ih - ih * Math.min(1, v/yMax);
   // Format des labels y-axis. Precision adaptative pour les especes rares (0.0002 ind/h par ex).
