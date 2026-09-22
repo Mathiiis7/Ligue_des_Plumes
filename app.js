@@ -540,10 +540,24 @@ function _countryHasSpecies(cc, sci){
   //   - bar chart tier > 0 (pour FR/ME)
   //   - OU S&T avec au moins une valeur weekly non-nulle
   //   - OU S&T avec composite tier > 0 (vagrants Cornell : w=[0,0,...] mais t=10)
-  if(e.barTier()[k]) return true;
-  if(stEntry && Array.isArray(stEntry.w) && stEntry.w.some(v => v > 0)) return true;
-  if(stEntry && stEntry.t > 0) return true;
-  return false;
+  const hasBar = !!e.barTier()[k];
+  const hasSTWeekly = stEntry && Array.isArray(stEntry.w) && stEntry.w.some(v => v > 0);
+  const hasSTTier = stEntry && stEntry.t > 0;
+  if(!hasBar && !hasSTWeekly && !hasSTTier) return false;
+  // Filtre X isolés : les échappés (X) qui n'apparaissent que sur ≤ 3 mois
+  // et avec un max < 0.01% sont considérés comme "observations ponctuelles" et non
+  // comme espèce présente. Empêche les Diamant de Gould et autres échappés de compagnie
+  // de polluer la birdydex pays. N'affecte que les X, pas les N/P (populations établies).
+  const cat = (typeof exoticCategoryInCountry === 'function') ? exoticCategoryInCountry(sci, cc) : '';
+  if(cat === 'X'){
+    const monArr = e.monthly() && e.monthly()[k];
+    if(Array.isArray(monArr) && monArr.length){
+      const maxM = Math.max(...monArr);
+      const nzMonths = monArr.filter(v => v > 0).length;
+      if(maxM < 0.0001 && nzMonths <= 3) return false;
+    }
+  }
+  return true;
 }
 
 // Country picker modal reutilisable : appele depuis les 3 endroits (fiche espece,
