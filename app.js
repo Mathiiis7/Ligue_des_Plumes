@@ -11791,9 +11791,9 @@ function _renderSpeciesFreqChart(key, country){
     const zoomLbl = _freqZoom >= 10 ? '×' + Math.round(_freqZoom)
                   : _freqZoom >= 1 ? '×' + _freqZoom.toFixed(1)
                   : '×' + _freqZoom.toFixed(2);
-    const zoomSlider = `<span class="sm-freq-lg" style="display:inline-flex;align-items:center;gap:6px;">
+    const zoomSlider = `<span style="display:inline-flex;align-items:center;gap:6px;pointer-events:auto;">
       <span style="font-size:10px;color:var(--ink-3);">zoom</span>
-      <input type="range" id="smFreqZoomSlider" min="-2" max="2.7" step="0.05" value="${sliderVal}" style="width:100px;">
+      <input type="range" id="smFreqZoomSlider" min="-2" max="2.7" step="0.05" value="${sliderVal}" style="width:120px;height:20px;cursor:pointer;pointer-events:auto;touch-action:none;">
       <span id="smFreqZoomLbl" style="font-size:10px;color:var(--ink-2);min-width:32px;">${zoomLbl}</span>
     </span>`;
     legEl.innerHTML = `
@@ -11803,12 +11803,23 @@ function _renderSpeciesFreqChart(key, country){
       ${zoomSlider}`;
     const slider = document.getElementById('smFreqZoomSlider');
     if(slider){
+      // Utilise 'change' pour ne re-render qu'au relachement (evite le lag du re-render
+      // sur chaque pixel de drag). 'input' fait la mise a jour live du label uniquement.
       slider.oninput = (e) => {
+        const v = parseFloat(e.target.value);
+        const z = Math.pow(10, v);
+        const lbl = document.getElementById('smFreqZoomLbl');
+        if(lbl) lbl.textContent = z >= 10 ? '×' + Math.round(z) : z >= 1 ? '×' + z.toFixed(1) : '×' + z.toFixed(2);
+      };
+      slider.onchange = (e) => {
         const v = parseFloat(e.target.value);
         const z = Math.pow(10, v);
         try { localStorage.setItem(zoomKey, String(z)); } catch(_){}
         _renderSpeciesFreqChart(key, country);
       };
+      // Bloque la propagation pour ne pas gener le drag (scroll parent, wheel handler, etc).
+      slider.onmousedown = (e) => e.stopPropagation();
+      slider.ontouchstart = (e) => e.stopPropagation();
     }
   }
 }
