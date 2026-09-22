@@ -10810,8 +10810,8 @@ function _renderSpeciesRarityCard(key){
     // Icone "?" avec tooltip explicatif : remplace l'ancien depliant. Petit cercle
     // avec point d'interrogation apres le label categorie ; survole = tooltip.
     // Le tooltip est en CSS pur via :hover sur .cat-help-wrap.
-    const catHelpTip = cat ? `<span class="cat-help-wrap" style="position:relative;display:inline-block;margin-left:8px;vertical-align:middle;">
-      <span style="display:inline-block;width:14px;height:14px;line-height:14px;border-radius:50%;background:var(--surface-2);border:1px solid var(--line);font-size:10px;font-weight:700;color:var(--ink-3);text-align:center;cursor:help;vertical-align:middle;">?</span>
+    const catHelpTip = cat ? `<span class="cat-help-wrap" style="position:relative;display:inline-block;margin-left:8px;vertical-align:middle;line-height:1;cursor:help;">
+      <svg width="14" height="14" viewBox="0 0 14 14" style="vertical-align:-2px;"><circle cx="7" cy="7" r="6.5" fill="var(--surface-2)" stroke="var(--line)"/><text x="7" y="10.5" text-anchor="middle" font-size="10" font-weight="700" fill="var(--ink-3)">?</text></svg>
       <span class="cat-help-tip" style="position:absolute;top:20px;left:0;z-index:1000;width:340px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:11.5px;line-height:1.5;color:var(--ink-2);box-shadow:0 6px 20px rgba(0,0,0,0.15);display:none;text-align:left;font-weight:400;">
         <div style="margin-bottom:8px;">Chaque espèce vue en dehors de son aire naturelle est classée par des reviewers bénévoles de l'<b>eBird Exotics Working Group</b>, au niveau <b>département / région / pays</b>.</div>
         <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 8px;">
