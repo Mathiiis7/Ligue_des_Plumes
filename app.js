@@ -532,9 +532,11 @@ const COUNTRIES_REG = {
 };
 // Helpers de la registry
 function _countryEntry(cc){ return COUNTRIES_REG[cc] || null; }
-// True si l'espece est un X (Echappe) purement anecdotique dans ce pays : max monthly
-// < 0.01% ET presente sur <= 3 mois. Utilise pour filtrer les Diamant de Gould et autres
-// echappes de compagnie ponctuels qui polluent la birdydex/picker. N'agit que sur les X.
+// True si l'espece est un X (Echappe) purement anecdotique dans ce pays : presente sur
+// <= 3 mois (peu importe le %). Un X qui apparait sporadiquement 1-3 mois par an = obs
+// isolees (echappe de compagnie, voyageur unique). Un X qui apparait sur 4+ mois =
+// probablement semi-etabli (paons de parcs, canards domestiques recurrents) : garde.
+// Utilise pour filtrer la birdydex/picker. N'agit que sur les X.
 function _isIsolatedXExotic(sci, cc){
   const k = (sci||'').toLowerCase();
   const catByEbird = (EXOTIQUES_EBIRD_PAR_PAYS[cc] && EXOTIQUES_EBIRD_PAR_PAYS[cc][k]) || '';
@@ -542,9 +544,8 @@ function _isIsolatedXExotic(sci, cc){
   const e = _countryEntry(cc); if(!e) return false;
   const monArr = e.monthly() && e.monthly()[k];
   if(!Array.isArray(monArr) || !monArr.length) return true;   // aucune data = anecdotique
-  const maxM = Math.max(...monArr);
   const nzMonths = monArr.filter(v => v > 0).length;
-  return maxM < 0.0001 && nzMonths <= 3;
+  return nzMonths <= 3;
 }
 function _countryHasSpecies(cc, sci){
   const e = _countryEntry(cc); if(!e) return false;
