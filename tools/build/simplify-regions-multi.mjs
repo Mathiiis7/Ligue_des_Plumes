@@ -143,10 +143,18 @@ const MAIN_BOX = {
   ES: [20, 10, 960, 670],   // laisse la bande basse libre pour les Canaries
 };
 
+// Certaines regions trainent un chapelet d'ilots tres lointains qui etire leur bbox et
+// ecrase la partie habitee. Hawai porte ainsi les iles du Nord-Ouest jusqu'a Midway :
+// 23.5 degres de longitude au lieu de 5.4 pour les huit iles principales, qui se
+// retrouvaient reduites a 8 pixels. On ne garde que les anneaux dans la fenetre indiquee.
+const CLIP_LON = {
+  'US-HI': { min: -161 },   // ecarte Midway, Kure et le reste de la chaine du Nord-Ouest
+};
+
 // Territoires eloignes places en encart (sinon ils etirent la bbox et ecrasent le pays).
 // box = [x, y, w, h] dans le viewBox 1000x900.
 const INSETS = {
-  US: { 'US-AK': [10, 600, 260, 260], 'US-HI': [290, 740, 130, 110] },
+  US: { 'US-AK': [10, 600, 260, 260], 'US-HI': [285, 720, 170, 145] },
   PT: { 'PT-20': [10, 20, 220, 180], 'PT-30': [10, 230, 160, 130] },
   ES: { 'ES-CN': [30, 706, 300, 170] },
   NZ: { 'NZ-CI': [780, 20, 200, 160] },
@@ -309,6 +317,20 @@ function buildCountry(features, cc){
     (byCode[code] = byCode[code] || []).push(...ringsOf(f.geometry));
     if(!neNames[code]) neNames[code] = f.properties.name_fr || f.properties.name;
   }
+  // Retire les ilots hors fenetre avant tout calcul de bbox (cf. CLIP_LON).
+  let clipped = 0;
+  for(const [code, fenetre] of Object.entries(CLIP_LON)){
+    if(!byCode[code]) continue;
+    const avant = byCode[code].length;
+    byCode[code] = byCode[code].filter(ring => {
+      const lons = ring.map(p => p[0]);
+      if(fenetre.min != null && Math.max(...lons) < fenetre.min) return false;
+      if(fenetre.max != null && Math.min(...lons) > fenetre.max) return false;
+      return true;
+    });
+    clipped += avant - byCode[code].length;
+  }
+
   const codes = Object.keys(byCode);
   if(!codes.length) return null;
   const missing = [...allowed].filter(c => !byCode[c]);
@@ -364,7 +386,7 @@ function buildCountry(features, cc){
     if(!paths.length) continue;
     out[code] = { name: NAMES[code] || neNames[code] || code, path: paths.join(' ') };
   }
-  return { out, skipped, tol, missing, dissolved, dissolveFailed,
+  return { out, skipped, tol, missing, dissolved, dissolveFailed, clipped,
            nRings: codes.reduce((a,c) => a + byCode[c].length, 0) };
 }
 
@@ -401,6 +423,7 @@ for(const cc of COUNTRIES){
   console.log(`${cc}: ${Object.keys(res.out).length}/${EBIRD_REGIONS[cc].length} regions, ` +
     `${res.nRings} anneaux bruts, tol=${res.tol.toFixed(4)}deg -> ${kb.toFixed(1)} KB`);
   if(res.missing.length) console.warn(`  ⚠ MANQUE : ${res.missing.join(',')}`);
+  if(res.clipped) console.log(`  clip : ${res.clipped} ilots lointains retires (CLIP_LON)`);
   if(res.dissolved) console.log(`  dissolve : ${res.dissolved} regions fusionnees` +
     (res.dissolveFailed ? `, ${res.dissolveFailed} en echec (contours d'origine gardes)` : ''));
 }
