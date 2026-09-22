@@ -11309,9 +11309,10 @@ function _renderSpeciesRarityCard(key){
     const p = $('#smRegPickerPanel');
     if(p) p.innerHTML = buildRegPanel(initCountry);
     if(_speciesRegion) _renderSpeciesFreqChart(k, initCountry);
-    // Re-render la rarity card : peut avoir bascule tag X -> pas X via
-    // _hasNativeRegionalPresence maintenant que la data regionale est loadee.
-    if(typeof _renderSpeciesRarityCard === 'function') _renderSpeciesRarityCard(k);
+    // Ne PAS re-render la rarity card ici : ca replace le bouton #smRarityCountrySel
+    // dans le DOM et les event listeners attaches plus bas (line 11353+) pointent sur
+    // l'ancien noeud detache. Le tag X est donc calcule avec la data present au 1er
+    // render ; si l'user rouvre la fiche apres load regional, le tag sera correct.
   });
   _renderSpeciesFreqChart(k, initCountry);
   const sel = $('#smRarityCountrySel');
