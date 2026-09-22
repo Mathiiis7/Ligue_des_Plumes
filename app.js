@@ -3390,19 +3390,14 @@ const REGIONS_BY_COUNTRY = {
   // GB : 12 subdivisions = 3 nations (Écosse, Pays de Galles, Irlande du Nord)
   // + 9 régions statistiques ONS de l'Angleterre (agrégat de 49 counties admin2 eBird).
   // Voir tools/download-bar-charts-uk-counties.mjs pour le mapping county -> ONS region.
+  // eBird n'a que 4 codes admin1 pour GB : ENG, SCT, WLS, NIR (les regions type NUTS-1
+  // GB-LON, GB-SE, GB-SW... n'existent pas chez eBird). Pour du plus fin sur l'Angleterre
+  // il faudrait basculer aux 48 comtes GB-ENG-XXX (subnational2).
   GB: [
+    { code:'GB-ENG',  name:'Angleterre' },
     { code:'GB-SCT',  name:'Écosse' },
     { code:'GB-WLS',  name:'Pays de Galles' },
     { code:'GB-NIR',  name:'Irlande du Nord' },
-    { code:'GB-LON',  name:'Grand Londres' },
-    { code:'GB-SE',   name:'Sud-Est Angleterre' },
-    { code:'GB-SW',   name:'Sud-Ouest Angleterre' },
-    { code:'GB-EE',   name:"Est de l'Angleterre" },
-    { code:'GB-EM',   name:'East Midlands' },
-    { code:'GB-WM',   name:'West Midlands' },
-    { code:'GB-YH',   name:'Yorkshire and the Humber' },
-    { code:'GB-NW',   name:'Nord-Ouest Angleterre' },
-    { code:'GB-NE',   name:'Nord-Est Angleterre' },
   ],
   PT: [
     { code:'PT-01', name:'Aveiro' },
