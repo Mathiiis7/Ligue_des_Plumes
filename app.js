@@ -1207,9 +1207,11 @@ function isExoticInCountry(sci, country){
   const k = (sci||'').trim().toLowerCase();
   const cc = country || 'FR';
   if(EXOTIQUES_EBIRD_PAR_PAYS[cc] && EXOTIQUES_EBIRD_PAR_PAYS[cc][k]){
-    // Override X : native forte dans une region du pays -> pas exotique au niveau pays.
-    // Aligne avec exoticCategoryInCountry (meme regle : Oie empereur US = native Alaska).
-    if(EXOTIQUES_EBIRD_PAR_PAYS[cc][k] === 'X' && _hasNativeRegionalPresence(k, cc)) return false;
+    // Override X et P : native forte dans une region -> pas exotique au niveau pays.
+    // Aligne avec exoticCategoryInCountry (Oie empereur US = native Alaska, Bruant
+    // chanteur US = native dans 49 etats, tag P national aberrant).
+    const cat = EXOTIQUES_EBIRD_PAR_PAYS[cc][k];
+    if((cat === 'X' || cat === 'P') && _hasNativeRegionalPresence(k, cc)) return false;
     return true;
   }
   // Park-only exotics (Canard musque, Paon, Cygne noir...) : echappes cage/parc
@@ -1257,10 +1259,11 @@ function exoticCategoryInCountry(sci, country){
   const k = (sci||'').trim().toLowerCase();
   const cc = country || 'FR';
   const rawCat = EXOTIQUES_EBIRD_PAR_PAYS[cc] && EXOTIQUES_EBIRD_PAR_PAYS[cc][k];
-  // Override X : si la data regionale montre une population native forte quelque part
-  // dans le pays (ex: Alaska pour US), le tag X national eBird est trompeur - on le
-  // supprime. Ne touche pas N/P (populations naturalisees, tag correct partout).
-  if(rawCat === 'X' && _hasNativeRegionalPresence(k, cc)) return '';
+  // Override X ET P : si la data regionale montre une population native forte quelque
+  // part dans le pays (ex: Alaska/Oie empereur, ou Bruant chanteur present dans 49/51
+  // etats US mais taggue P au national), le tag exotique eBird est trompeur - supprime.
+  // Ne touche pas N (naturalise, tag legitime meme pour les etablis recents).
+  if((rawCat === 'X' || rawCat === 'P') && _hasNativeRegionalPresence(k, cc)) return '';
   if(rawCat) return rawCat;
   // Meme logique que isExoticInCountry : ne PAS retourner 'X' pour un park-only qui a
   // du bar chart local (traitee sauvage par eBird cf. Sarcelle élégante FR).
