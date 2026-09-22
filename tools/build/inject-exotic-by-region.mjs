@@ -28,18 +28,13 @@ for(const cc of CCS){
   const m = src.match(new RegExp(`EXOTIC_STATUS_BY_REGION_${cc}\\s*=\\s*(\\{[\\s\\S]*?\\});`));
   if(!m){ console.warn(`  ${cc} : pattern introuvable, skip.`); continue; }
   const data = JSON.parse(m[1]);
-  // Ne garde que les regions qui ont au moins une entree : une region vide est
-  // ambigue (soit aucune exotique, soit scrape rate) et on ne veut pas conclure
-  // "native ici" sur un scrape incomplet.
-  const kept = {};
-  let empty = 0;
-  for(const [region, byS] of Object.entries(data)){
-    if(byS && Object.keys(byS).length) kept[region] = byS;
-    else empty++;
-  }
-  merged[cc] = kept;
-  const tot = Object.values(kept).reduce((a, o) => a + Object.keys(o).length, 0);
-  console.log(`  ${cc} : ${Object.keys(kept).length} regions, ${tot} entrees` + (empty ? ` (${empty} regions vides ignorees)` : ''));
+  // Une region presente avec un objet vide a bien ete scrapee et n'a simplement aucune
+  // exotique : on la garde, c'est justement la qu'une espece peut etre native. Le scraper
+  // supprime la cle des regions en echec, donc "absent du dict" = "pas encore scrape".
+  merged[cc] = data;
+  const tot = Object.values(data).reduce((a, o) => a + Object.keys(o).length, 0);
+  const empty = Object.values(data).filter(o => !Object.keys(o).length).length;
+  console.log(`  ${cc} : ${Object.keys(data).length} regions, ${tot} entrees` + (empty ? ` (dont ${empty} sans exotique)` : ''));
 }
 
 // ---------------------------------------------------------------------------

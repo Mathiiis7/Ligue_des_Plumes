@@ -166,7 +166,9 @@ for(const cc of COUNTRIES) {
   console.log(`\n===== ${cc} (${regions.length} regions) =====`);
   for(const region of regions){
     done++;
-    if(!FORCE && results[region] && Object.keys(results[region]).length){
+    // Presence de la CLE (et pas contenu non vide) : une region sans exotique est un
+    // resultat valide qu'il ne faut pas relancer indefiniment.
+    if(!FORCE && (region in results)){
       console.log(`  [${done}/${totalRegions}] ${region} : SKIP (deja fait, ${Object.keys(results[region]).length} sp)`);
       continue;
     }
@@ -183,11 +185,14 @@ for(const cc of COUNTRIES) {
       const cats = {};
       for(const v of Object.values(bySci)) cats[v] = (cats[v]||0)+1;
       console.log(`    -> ${Object.keys(bySci).length} exotiques / ${totalRows} sp totales`, cats);
-      // Warning si 0 exotiques sur une grosse region (probable rate de scrape)
-      if(Object.keys(bySci).length === 0 && totalRows > 200){
-        console.warn(`    ⚠ 0 exotiques trouvés dans ${totalRows} sp - possible timing manqué, à relancer`);
-        // Force re-scrape en supprimant l'entrée (sinon le resume skip)
-        delete results[region];
+      // Un resultat vide est ambigu : soit la region n'a vraiment aucune exotique (cas
+      // courant au Sri Lanka, 15 exotiques pour tout le pays), soit la liste n'a pas fini
+      // de se rendre. On distingue sur totalRows : si les especes sont la, la page a bien
+      // charge et 0 exotique est un vrai resultat qu'on conserve. Si la liste est vide
+      // aussi, le scrape a echoue -> on retire l'entree pour qu'elle soit relancee.
+      if(Object.keys(bySci).length === 0){
+        if(totalRows > 0) console.log(`    (aucune exotique dans cette region - resultat conserve)`);
+        else { console.warn(`    ⚠ liste d'especes vide : scrape rate, sera relance`); delete results[region]; }
       }
       // Sauvegarde progressive apres chaque region (resistance aux crashs)
       writeFileSync(outFile,
@@ -197,8 +202,9 @@ for(const cc of COUNTRIES) {
         `export const EXOTIC_STATUS_BY_REGION_${cc} = ${JSON.stringify(results)};\n`
       );
     } catch(e) {
+      // Pas d'entree vide : la cle doit rester absente pour que le prochain run relance.
       console.error(`    ERREUR ${region}: ${e.message}`);
-      results[region] = results[region] || {};
+      delete results[region];
     }
   }
   console.log(`  ✓ Ecrit ${outFile}`);
