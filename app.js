@@ -297,6 +297,19 @@ function _exoticCategory(sci){
   const k = (sci||'').trim().toLowerCase();
   return EXOTIQUES_CATEGORIES_FR[k] || (isExotic(k) ? 'X' : '');
 }
+// Une exotique est consideree "etablie" (elle merite un vrai tier de rarete et une
+// couleur, comme une sauvage) uniquement si eBird la classe N (Naturalized) : population
+// reproductrice installee et auto-suffisante.
+// P (Provisional) en est exclu depuis 2026-09-22 : par definition eBird, c'est une
+// population qui n'est PAS clairement etablie ou PAS clairement d'origine naturelle.
+// Elle est donc traitee comme X (Escapee) : tier 0, gris, pas de rarete.
+// Les faux P nationaux (ex : Bruant chanteur aux US) sont deja neutralises en amont par
+// NATIVE_REGIONS_DESPITE_NATIONAL_TAG, donc les P restants sont de vrais provisoires.
+function _isEstablishedExotic(cat){ return cat === 'N'; }
+// Complement : exotiques sans population etablie (P Provisoire, X Echappe, C Domestique).
+// Elles partent toutes dans le meme seau gris "Exotique" des filtres et ne comptent pas
+// dans les statistiques de rarete. Renvoie false pour une espece non exotique (cat vide).
+function _isUnestablishedExotic(cat){ return cat === 'P' || cat === 'X' || cat === 'C'; }
 // Tier pour un exotique. Selon la categorie, on prime la source la plus juste :
 //   N (etabli sauvage) / C (domestique) -> eBird (effort-normalise, refllete la vraie
 //     frequence de rencontre en pleine nature).
@@ -766,7 +779,7 @@ function _openCountryPicker(currentCode, opts = {}){
             //   sur les cartes Birdydex, coherent inter-vues)
             // - Autres : le chiffre du tier
             const localCat = ebCC || (cc === 'FR' ? _exoticCategory(focusSci) : '') || '';
-            const isEstabLetter = (localCat === 'N' || localCat === 'P') && tier > 0;
+            const isEstabLetter = _isEstablishedExotic(localCat) && tier > 0;
             const chipCat = (tier === 0) ? localCat : (isEstabLetter ? localCat : '');
             let lbl;
             if(absent) lbl = 'absente';
@@ -1298,12 +1311,13 @@ function rarityReal(sci){
 function rarityForFilter(sci){
   const k = (sci||'').trim().toLowerCase();
   if(isExotic(sci)){
-    // Exotiques : N/P (Naturalized / Provisional) = populations reelles qu'on voit vraiment
-    // en nature (Perruche a collier, Bernache du Canada, Ouette d'Egypte...) -> vrai tier.
-    // X/C (Escapee / Domestic) + parcs semi-libres (Paon, Flamants ornementaux, ...) -> 0.
+    // Exotiques : seules les N (Naturalized) ont un vrai tier - populations installees
+    // qu'on voit vraiment en nature (Perruche a collier, Bernache du Canada, Ouette d'Egypte).
+    // P (Provisional, pop non confirmee etablie), X (Escapee), C (Domestic) et les parcs
+    // semi-libres (Paon, Flamants ornementaux) -> 0.
     if(isParkOnlyExotic(sci)) return 0;
     const cat = exoticCategoryInCountry(sci, 'FR') || _exoticCategory(k);
-    if(cat === 'N' || cat === 'P'){
+    if(_isEstablishedExotic(cat)){
       // Bar chart eBird FR (meme signal que les sauvages depuis 2026-09-21).
       return _tierFromSTvsBarChart(k, REAL_RARITY[k] || 1);
     }
@@ -1508,10 +1522,10 @@ function rarityForCountry(sci, country){
   }
   const stEntry = reg.st()[k];
   const barTier = reg.barTier()[k];   // undefined si pas de bar chart pour ce pays
-  // Exotiques : N/P (populations naturalisees/provisoires) -> traites comme les sauvages
+  // Exotiques : N (populations naturalisees) -> traitees comme les sauvages
   // (bar chart eBird local + composite S&T via _tierFromSTvsBarChart). Meme methode que
   // pour les vrais sauvages, robuste aux variations saisonnieres (bar chart = 48 quinzaines
-  // sur 2019-2026 normalisees par sample size). X/C/park-only -> tier 0.
+  // sur 2019-2026 normalisees par sample size). P/X/C/park-only -> tier 0.
   // Fix 2026-09-21 : abandon du chemin _exoticTier (GBIF) qui necessitait des overrides
   // manuels (EXOTIQUES_TIER_FORCE). Le bar chart eBird donne un signal fiable et scalable.
   // Fix 2026-09-22 : utilise isExoticInCountry (per-pays) au lieu de isExotic (FR-only).
@@ -1527,7 +1541,7 @@ function rarityForCountry(sci, country){
       return _tierFromSTvsBarChart(k, barTier, c);
     }
     const cat = exoticCategoryInCountry(sci, c) || _exoticCategory(k);
-    if(cat === 'N' || cat === 'P'){
+    if(_isEstablishedExotic(cat)){
       if(barTier) return _tierFromSTvsBarChart(k, barTier, c);
       if(stEntry && stEntry.t) return stEntry.t;
       // N/P sans bar chart ni S&T : espece flaggee exotique par eBird mais frequence
@@ -1577,7 +1591,7 @@ function sciColorForCountry(sci, country){
   if(isExoticInCountry(sci, c)){
     if(isParkOnlyExotic(sci)) return '#7e8a99';
     const cat = exoticCategoryInCountry(sci, c) || _exoticCategory(k);
-    if(cat === 'N' || cat === 'P'){
+    if(_isEstablishedExotic(cat)){
       // Bar chart eBird du pays (meme signal que les sauvages depuis 2026-09-21).
       const t = rarityForCountry(sci, c);
       if(t) return realColor(t);
@@ -1625,7 +1639,7 @@ function _rarityBadge(w, country, sci){
       //   X (Escapee) / C (Domestic) + parcs semi-libres = "0 · Exotique · <categorie>"
       const cat = exoticCategoryInCountry(sci, cc) || _exoticCategory(sciKey);
       const catLbl = EXOTIC_CATEGORY_LABEL[cat] || 'Exotique';
-      const isEstab = !isParkOnlyExotic(sci) && (cat === 'N' || cat === 'P');
+      const isEstab = !isParkOnlyExotic(sci) && _isEstablishedExotic(cat);
       if(isEstab){
         // Bar chart eBird du pays (meme signal que les sauvages depuis 2026-09-21).
         const t = rarityForCountry(sci, cc) || 1;
@@ -1837,12 +1851,12 @@ function realColor(w){
 // Couleur pastille sur la carte : gris pour les exotiques (comme dans le classement), sinon barème rareté.
 function sciColor(sci){
   if(isExotic(sci)){
-    // Categorie via eBird API (priorite FR) + fallback curated. N/P : couleur tier reel,
-    // X/C + parcs semi-libres : gris.
+    // Categorie via eBird API (priorite FR) + fallback curated. N : couleur tier reel,
+    // P/X/C + parcs semi-libres : gris.
     const kk = (sci||'').trim().toLowerCase();
     if(isParkOnlyExotic(sci)) return '#7e8a99';
     const cat = exoticCategoryInCountry(sci, 'FR') || _exoticCategory(kk);
-    if(cat === 'N' || cat === 'P'){
+    if(_isEstablishedExotic(cat)){
       const t = _exoticTier(kk);
       if(t) return realColor(t);
     }
@@ -1892,11 +1906,11 @@ function realTier(sci, abroad){
     return { id:'etr', ord:0, label:'Étranger', color:'#8a7fb3' };
   }
   if(isExotic(sci)){
-    // Categorie eBird : N (introduit etabli) et P (semi-libre) meritent leur tier reel
-    // (populations qui se comportent comme des sauvages). X (echappe) et C (domestique)
-    // restent en "Exotique" gris uniforme.
+    // Categorie eBird : seul N (introduit etabli) merite son tier reel - population qui se
+    // comporte comme une sauvage. P (provisoire), X (echappe) et C (domestique) restent en
+    // "Exotique" gris uniforme : aucune population confirmee etablie.
     const cat = _exoticCategory(key);
-    if(cat === 'N' || cat === 'P'){
+    if(_isEstablishedExotic(cat)){
       // Utilise rarityForCountry qui applique le merge S&T + GBIF (coherent avec fiche).
       const t = rarityForCountry(sci, 'FR');
       if(t) return { id:'r'+t, ord:t, label: REAL_LABELS[t]||('niveau '+t), color:realColor(t) };
@@ -1927,7 +1941,7 @@ const foreignTick = v => false;
 // X (Echappe isole) et C (Origine domestique) : classes "exotique meme cochee" -> comptent
 // dans le TOTAL d'especes et le SCORE (comme les autres cochages), mais sont exclus des
 // calculs de rarete (Mike Horn, "plus rare", scoreReal) via _countsForRarity ci-dessous.
-function _isExoticNotCounted(sci){ if(!isExotic(sci)) return false; const c = _exoticCategory((sci||'').trim().toLowerCase()); return c === 'X' || c === 'C'; }
+function _isExoticNotCounted(sci){ if(!isExotic(sci)) return false; const c = _exoticCategory((sci||'').trim().toLowerCase()); return _isUnestablishedExotic(c); }
 const countsFR = v => !foreignTick(v);
 // Sous-filtre : exclut aussi les exotiques X/C (utilise pour les stats rarete uniquement).
 // Compte pour les trophees rarete : exclut TOUS les exotiques (tous en tier 0 maintenant,
@@ -4940,11 +4954,11 @@ function renderFeed(){
       const sci = (v.sci||'').toLowerCase();
       if(isHiddenSpecies(sci)) continue;   // perroquets cage etc., jamais dans le fil
       if(feedTier !== 'any'){
-        // Chip 'exo' = uniquement les X/C (echappes / domestiques). Les N/P (naturalises,
-        // vus en parcs) sont exposes sous leur vrai tier via rarityForFilter.
+        // Chip 'exo' = P/X/C (provisoires, echappes, domestiques). Seules les N (naturalisees)
+        // sont exposees sous leur vrai tier via rarityForFilter.
         const cat = isExotic(sci) ? _exoticCategory(sci) : '';
-        if(feedTier === 'exo'){ if(!(cat === 'X' || cat === 'C')) continue; }
-        else { if(cat === 'X' || cat === 'C' || rarityForFilter(sci) !== +feedTier) continue; }
+        if(feedTier === 'exo'){ if(!_isUnestablishedExotic(cat)) continue; }
+        else { if(_isUnestablishedExotic(cat) || rarityForFilter(sci) !== +feedTier) continue; }
       }
       items.push({
         kind:'obs',
@@ -5541,7 +5555,7 @@ $('#mapSearchSuggest')?.addEventListener('mousedown', e=>{
     // Utilise le pays courant pour cocher le bon chip rarete (pas force FR).
     const cat = isExotic(m.sci) ? _exoticCategory(m.sci) : '';
     const cc0 = ebFilter.country || 'FR';
-    const rarKey = (cat === 'X' || cat === 'C') ? 'exo' : rarityForCountry(m.sci, cc0);
+    const rarKey = _isUnestablishedExotic(cat) ? 'exo' : rarityForCountry(m.sci, cc0);
     if(!ebFilter.rarities.has(rarKey)){
       ebFilter.rarities.add(rarKey);
       _refreshRarChips();
@@ -7296,7 +7310,7 @@ async function _loadMissingLayer(zone, days=14, rarities=new Set(), onProgress){
     if(!hasRar) return true;
     if(isExotic(sp.sciName)){
       const cat = _exoticCategory(sp.sciName);
-      if(cat === 'X' || cat === 'C') return rarities.has('exo');
+      if(_isUnestablishedExotic(cat)) return rarities.has('exo');
       // N/P : tier reel via rarityForCountry (qui dispatch vers _exoticTier).
     }
     const w = rarityForCountry(sp.sciName, ebFilter.country || 'FR');
@@ -7484,7 +7498,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
         if(_mineHas(mine, sci)) continue;
         if(hasRar){
           const cat = isExotic(sci) ? _exoticCategory(sci) : '';
-          const rk = (cat === 'X' || cat === 'C') ? 'exo' : rarityForCountry(sci, ccF);
+          const rk = _isUnestablishedExotic(cat) ? 'exo' : rarityForCountry(sci, ccF);
           if(!rars.has(rk)) continue;
         }
         // Dedup safety net (au cas ou le cache aurait ete ecrit avec une version anterieure
@@ -7512,7 +7526,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     if(!hasRar) return true;
     if(isExotic(sci)){
       const cat = _exoticCategory(sci);
-      if(cat === 'X' || cat === 'C') return rars.has('exo');
+      if(_isUnestablishedExotic(cat)) return rars.has('exo');
       // N / P : traites comme les wild birds au tier reel.
       const w = rarityForCountry(sci, country);
       if(!w) return true;
@@ -10999,10 +11013,10 @@ function _renderSpeciesRarityCard(key){
     }
     const cat = isExo ? (exoticCategoryInCountry(k, cc) || _exoticCategory(k)) : '';
     const catLbl = cat ? (EXOTIC_CATEGORY_LABEL[cat] || '') : '';
-    // Etabli N/P : affiche vrai tier + label rarete + categorie. Sinon (X/C, parcs) : "0 · Exotique".
+    // Etabli N : affiche vrai tier + label rarete + categorie. Sinon (P/X/C, parcs) : "0 · Exotique".
     // Fix 2026-09-21 : priorite N/P sur park-only (Faisan venere park-only ET N eBird FR
     // -> affichable a son vrai tier bar chart FR).
-    const isEstab = isExo && (cat === 'N' || cat === 'P');
+    const isEstab = isExo && _isEstablishedExotic(cat);
     // Fix 2026-09-22 : N/P avec w=0 (aucun bar chart aggrege sur 7 ans) -> "Absente"
     // au lieu de "Parc semi-libre" (label REAL_LABELS[0] trompeur). Ex Flamant rose P en GB.
     const noBarData = isEstab && w === 0;
@@ -11022,7 +11036,7 @@ function _renderSpeciesRarityCard(key){
     // Pill : affiche la lettre categorie (N/P) au lieu du chiffre du tier pour les
     // exotiques etablis N/P (aligne avec le comportement des cartes Birdydex). X et C
     // avec tier > 0 restent numeriques. Tier 0 exotique : lettre cat (N/P/X/C).
-    const useCatLetter = isExo && (cat === 'N' || cat === 'P') && w > 0;
+    const useCatLetter = isExo && _isEstablishedExotic(cat) && w > 0;
     const pillTxt = (w === 0 && isExo) ? (cat || 'X') : (useCatLetter ? cat : w);
     // Couleur de fond : par defaut, couleur du tier (rareté). Pour l'exotique tier 0
     // (X/C echappe non-etabli), on force gris neutre pour signifier "hors barème".
@@ -11069,7 +11083,7 @@ function _renderSpeciesRarityCard(key){
     // Source d'appui = bar chart eBird pour sauvages, GBIF pour exotiques N/P.
     // Non affichée pour tier 0 (parcs semi-libres, X/C échappés) : pas de calcul de tier.
     let detailsHtml = '';
-    const isEstabExo = isExo && (cat === 'N' || cat === 'P');
+    const isEstabExo = isExo && _isEstablishedExotic(cat);
     const canHaveDetails = (!isExo || isEstabExo);
     // Data S&T + bar chart du pays courant (via registry pour multi-pays).
     const regCC = COUNTRIES_REG[cc];
@@ -14335,7 +14349,7 @@ function renderTargets(){
     // exotique par pays (une espece exotique en FR peut etre native en ES).
     if(isExotic(sci) && (isParkOnlyExotic(sci) || (() => {
       const cat = exoticCategoryInCountry(sci, ccT) || _exoticCategory(sci);
-      return cat === 'X' || cat === 'C';
+      return _isUnestablishedExotic(cat);
     })())) continue;
     // Filtre regional : si region choisie, espece doit etre presente dans cette region.
     // 2 sources possibles (par ordre de preference) :
@@ -14894,7 +14908,7 @@ function _pkdxRender(){
     // rareté pourrait tromper (ex Cygne noir tier 7 mais N). X et C gardent le tier
     // numerique (deja evidemment rare/echappe).
     const cat = exoticCategoryInCountry(r.sci, country) || _exoticCategory(r.sci) || '';
-    const catLetter = r.tier === 0 ? cat : ((cat === 'N' || cat === 'P') ? cat : '');
+    const catLetter = r.tier === 0 ? cat : (_isEstablishedExotic(cat) ? cat : '');
     const badgeText = catLetter || r.tier;
     return `<div class="pkdx-card${r.owned?'':' missing'}" data-sci="${esc(r.sci)}">
       <span class="pkdx-num">#${num}</span>
