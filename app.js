@@ -1241,11 +1241,10 @@ function isExoticInCountry(sci, country){
   return false;
 }
 // True si l'espece a une presence forte native dans au moins UNE region du pays :
-// max monthly >= 0.1% ET presence sur >= 8 mois. Utilise pour override le tag X eBird
-// national quand une region est clairement native (ex: Oie empereur US = X national
-// mais native en Alaska). 0.1% ~= 1 obs / 1000 checklists = tres discret mais reel
-// (petits nicturnes, oiseaux forestiers rares). Le critere nz>=8 (annee entiere) suffit
-// a ecarter les vagrants sporadiques meme a bas seuil. Necessite regional data loadee.
+// max monthly >= 0.1% ET presence sur >= 8 mois. Utilise comme heuristique fallback
+// tant que le vrai statut exotique per-region n'est pas scrape pour ce pays.
+// Une fois EXOTIC_STATUS_BY_REGION_XX dispo, on prefere la source directe (voir
+// _hasNativeRegionExplicit).
 function _hasNativeRegionalPresence(sci, cc){
   const reg = COUNTRIES_REG[cc];
   const byReg = reg && typeof reg.monthlyByRegion === 'function' ? reg.monthlyByRegion() : null;
