@@ -3378,6 +3378,114 @@ const FR_REGIONS = [
 ];
 // Regions par pays (admin1 eBird). Sert au region picker de la fiche espece pour
 // afficher les regions pertinentes du pays selectionne + charger la data associee.
+// Departements francais, utilises UNIQUEMENT par le selecteur de la fiche espece : en
+// France la mini-carte est au departement, la liste deroulante doit donc offrir la meme
+// granularite. Les 13 regions de REGIONS_BY_COUNTRY.FR restent la reference ailleurs
+// (page Objectifs, trophee Terroir "regions visitees"), a ne pas confondre.
+// Genere depuis data/departements-fr-simplified.json, trie par nom.
+const FR_DEPARTEMENTS = [
+  { code:'FR-ARA-01', name:"Ain" },
+  { code:'FR-HDF-02', name:"Aisne" },
+  { code:'FR-ARA-03', name:"Allier" },
+  { code:'FR-PAC-04', name:"Alpes-de-Haute-Provence" },
+  { code:'FR-PAC-06', name:"Alpes-Maritimes" },
+  { code:'FR-ARA-07', name:"Ardèche" },
+  { code:'FR-GES-08', name:"Ardennes" },
+  { code:'FR-OCC-09', name:"Ariège" },
+  { code:'FR-GES-10', name:"Aube" },
+  { code:'FR-OCC-11', name:"Aude" },
+  { code:'FR-OCC-12', name:"Aveyron" },
+  { code:'FR-GES-67', name:"Bas-Rhin" },
+  { code:'FR-PAC-13', name:"Bouches-du-Rhône" },
+  { code:'FR-NOR-14', name:"Calvados" },
+  { code:'FR-ARA-15', name:"Cantal" },
+  { code:'FR-NAQ-16', name:"Charente" },
+  { code:'FR-NAQ-17', name:"Charente-Maritime" },
+  { code:'FR-CVL-18', name:"Cher" },
+  { code:'FR-NAQ-19', name:"Corrèze" },
+  { code:'FR-COR-2A', name:"Corse-du-Sud" },
+  { code:'FR-BFC-21', name:"Côte-d'Or" },
+  { code:'FR-BRE-22', name:"Côtes-d'Armor" },
+  { code:'FR-NAQ-23', name:"Creuse" },
+  { code:'FR-NAQ-79', name:"Deux-Sèvres" },
+  { code:'FR-NAQ-24', name:"Dordogne" },
+  { code:'FR-BFC-25', name:"Doubs" },
+  { code:'FR-ARA-26', name:"Drôme" },
+  { code:'FR-IDF-91', name:"Essonne" },
+  { code:'FR-NOR-27', name:"Eure" },
+  { code:'FR-CVL-28', name:"Eure-et-Loir" },
+  { code:'FR-BRE-29', name:"Finistère" },
+  { code:'FR-OCC-30', name:"Gard" },
+  { code:'FR-OCC-32', name:"Gers" },
+  { code:'FR-NAQ-33', name:"Gironde" },
+  { code:'FR-GES-68', name:"Haut-Rhin" },
+  { code:'FR-COR-2B', name:"Haute-Corse" },
+  { code:'FR-OCC-31', name:"Haute-Garonne" },
+  { code:'FR-ARA-43', name:"Haute-Loire" },
+  { code:'FR-GES-52', name:"Haute-Marne" },
+  { code:'FR-BFC-70', name:"Haute-Saône" },
+  { code:'FR-ARA-74', name:"Haute-Savoie" },
+  { code:'FR-NAQ-87', name:"Haute-Vienne" },
+  { code:'FR-PAC-05', name:"Hautes-Alpes" },
+  { code:'FR-OCC-65', name:"Hautes-Pyrénées" },
+  { code:'FR-IDF-92', name:"Hauts-de-Seine" },
+  { code:'FR-OCC-34', name:"Hérault" },
+  { code:'FR-BRE-35', name:"Ille-et-Vilaine" },
+  { code:'FR-CVL-36', name:"Indre" },
+  { code:'FR-CVL-37', name:"Indre-et-Loire" },
+  { code:'FR-ARA-38', name:"Isère" },
+  { code:'FR-BFC-39', name:"Jura" },
+  { code:'FR-NAQ-40', name:"Landes" },
+  { code:'FR-CVL-41', name:"Loir-et-Cher" },
+  { code:'FR-ARA-42', name:"Loire" },
+  { code:'FR-PDL-44', name:"Loire-Atlantique" },
+  { code:'FR-CVL-45', name:"Loiret" },
+  { code:'FR-OCC-46', name:"Lot" },
+  { code:'FR-NAQ-47', name:"Lot-et-Garonne" },
+  { code:'FR-OCC-48', name:"Lozère" },
+  { code:'FR-PDL-49', name:"Maine-et-Loire" },
+  { code:'FR-NOR-50', name:"Manche" },
+  { code:'FR-GES-51', name:"Marne" },
+  { code:'FR-PDL-53', name:"Mayenne" },
+  { code:'FR-GES-54', name:"Meurthe-et-Moselle" },
+  { code:'FR-GES-55', name:"Meuse" },
+  { code:'FR-BRE-56', name:"Morbihan" },
+  { code:'FR-GES-57', name:"Moselle" },
+  { code:'FR-BFC-58', name:"Nièvre" },
+  { code:'FR-HDF-59', name:"Nord" },
+  { code:'FR-HDF-60', name:"Oise" },
+  { code:'FR-NOR-61', name:"Orne" },
+  { code:'FR-IDF-75C', name:"Paris" },
+  { code:'FR-HDF-62', name:"Pas-de-Calais" },
+  { code:'FR-ARA-63', name:"Puy-de-Dôme" },
+  { code:'FR-NAQ-64', name:"Pyrénées-Atlantiques" },
+  { code:'FR-OCC-66', name:"Pyrénées-Orientales" },
+  { code:'FR-ARA-69', name:"Rhône" },
+  { code:'FR-BFC-71', name:"Saône-et-Loire" },
+  { code:'FR-PDL-72', name:"Sarthe" },
+  { code:'FR-ARA-73', name:"Savoie" },
+  { code:'FR-IDF-77', name:"Seine-et-Marne" },
+  { code:'FR-NOR-76', name:"Seine-Maritime" },
+  { code:'FR-IDF-93', name:"Seine-Saint-Denis" },
+  { code:'FR-HDF-80', name:"Somme" },
+  { code:'FR-OCC-81', name:"Tarn" },
+  { code:'FR-OCC-82', name:"Tarn-et-Garonne" },
+  { code:'FR-BFC-90', name:"Territoire de Belfort" },
+  { code:'FR-IDF-95', name:"Val-d'Oise" },
+  { code:'FR-IDF-94', name:"Val-de-Marne" },
+  { code:'FR-PAC-83', name:"Var" },
+  { code:'FR-PAC-84', name:"Vaucluse" },
+  { code:'FR-PDL-85', name:"Vendée" },
+  { code:'FR-NAQ-86', name:"Vienne" },
+  { code:'FR-GES-88', name:"Vosges" },
+  { code:'FR-BFC-89', name:"Yonne" },
+  { code:'FR-IDF-78', name:"Yvelines" },
+];
+// Granularite du selecteur de la fiche espece pour un pays donne.
+function zonesFichePourPays(cc){
+  if(cc === 'FR') return FR_DEPARTEMENTS;
+  return (typeof REGIONS_BY_COUNTRY === 'object' && REGIONS_BY_COUNTRY[cc]) || [];
+}
 const REGIONS_BY_COUNTRY = {
   FR: FR_REGIONS,
   // Monténégro : pas de subdivisions bar chart eBird (opstine trop petites), mais on
@@ -10923,8 +11031,7 @@ function _ccFicheObsolete(cc){
 function _zonesSelectionnees(cc, zones){
   const sel = new Set();
   if(!_speciesRegion) return sel;
-  const appartient = (typeof REGIONS_BY_COUNTRY === 'object') &&
-    (REGIONS_BY_COUNTRY[cc] || []).some(r => r.code === _speciesRegion);
+  const appartient = zonesFichePourPays(cc).some(r => r.code === _speciesRegion);
   if(!appartient) return sel;
   for(const z of zones) if(z === _speciesRegion || z.startsWith(_speciesRegion + '-')) sel.add(z);
   return sel;
@@ -11081,7 +11188,7 @@ function _renderSpeciesRarityCard(key){
   // S&T weekly regional dispo par pays (dict multi-country lazy-loade).
   // Freq mensuelle regionale bar chart via monthlyByRegion() du registry.
   const buildRegPanel = (cc) => {
-    const regList = (typeof REGIONS_BY_COUNTRY === 'object' && REGIONS_BY_COUNTRY[cc]) || [];
+    const regList = zonesFichePourPays(cc);
     if(!regList.length) return '';
     const reg = COUNTRIES_REG[cc];
     const stByReg = (typeof REAL_ABUNDANCE_ST_BY_REGION === 'object' && REAL_ABUNDANCE_ST_BY_REGION[cc]) || {};
@@ -11129,7 +11236,7 @@ function _renderSpeciesRarityCard(key){
     const nationalLbl = (COUNTRIES_REG[cc] && COUNTRIES_REG[cc].name) || cc;
     if(!_speciesRegion) return `${flag} ${nationalLbl}`;
     // Cherche la region dans le pays courant
-    const regList = (typeof REGIONS_BY_COUNTRY === 'object' && REGIONS_BY_COUNTRY[cc]) || [];
+    const regList = zonesFichePourPays(cc);
     const r = regList.find(x => x.code === _speciesRegion);
     return r ? '📍 ' + r.name : `${flag} ${nationalLbl}`;
   };
@@ -11523,7 +11630,7 @@ function _renderSpeciesRarityCard(key){
   const regPick = $('#smRegPicker');
   const updateRegVisibility = (cc) => {
     if(!regPick) return;
-    const has = REGIONS_BY_COUNTRY[cc] && REGIONS_BY_COUNTRY[cc].length > 0;
+    const has = zonesFichePourPays(cc).length > 0;
     regPick.style.display = has ? '' : 'none';
   };
   updateRegVisibility(initCountry);
@@ -11566,7 +11673,7 @@ function _renderSpeciesRarityCard(key){
     renderLine(chosen);
     updateRegVisibility(chosen);
     if(_speciesRegion){
-      const belongs = (REGIONS_BY_COUNTRY[chosen] || []).some(r => r.code === _speciesRegion);
+      const belongs = zonesFichePourPays(chosen).some(r => r.code === _speciesRegion);
       if(!belongs){
         _speciesRegion = '';
         try{ localStorage.setItem('mb-species-region', ''); }catch(_){}
@@ -11904,8 +12011,7 @@ function _renderSpeciesFreqChart(key, country){
   // Mode region strict : le user a selectionne une region ET le pays a des subdivisions.
   // Le pays du _speciesRegion doit matcher cc courant sinon la region est stale.
   const regionBelongsToCC = _speciesRegion &&
-    (typeof REGIONS_BY_COUNTRY === 'object') &&
-    (REGIONS_BY_COUNTRY[cc] || []).some(r => r.code === _speciesRegion);
+    zonesFichePourPays(cc).some(r => r.code === _speciesRegion);
   const strictRegional = !!regionBelongsToCC;
   // Decision 2026-09-22 : le bar chart utilise TOUJOURS le bar chart % checklists
   // (plus intuitif pour un birder : "quand est-ce qu'on la voit"). Le S&T Cornell reste
@@ -11951,8 +12057,7 @@ function _renderSpeciesFreqChart(key, country){
     // Cas 1 : espece absente de la region choisie (mode strict). On l'affiche
     // explicitement pour ne pas confondre avec un fallback national trompeur.
     if(strictRegional){
-      const regList = (typeof REGIONS_BY_COUNTRY === 'object' && REGIONS_BY_COUNTRY[cc]) || [];
-      const regName = (regList.find(r => r.code === _speciesRegion) || {}).name || _speciesRegion;
+      const regName = (zonesFichePourPays(cc).find(r => r.code === _speciesRegion) || {}).name || _speciesRegion;
       if(card) card.hidden = false;
       if(srcEl) srcEl.textContent = '';
       if(svg){
@@ -11990,10 +12095,9 @@ function _renderSpeciesFreqChart(key, country){
   if(card) card.hidden = false;
   // Scope affiche : "Île-de-France" si mode strict region, "France (via Corse)" si
   // agregation 1-region pour le national, "France" ou "Monténégro" sinon.
-  // Helper : nom d'une region via REGIONS_BY_COUNTRY (multi-pays).
+  // Helper : nom d'une zone (departement en FR, region ailleurs).
   const _regNameFor = (rcode) => {
-    const list = (typeof REGIONS_BY_COUNTRY === 'object' && REGIONS_BY_COUNTRY[cc]) || [];
-    return (list.find(r => r.code === rcode) || {}).name || rcode;
+    return (zonesFichePourPays(cc).find(r => r.code === rcode) || {}).name || rcode;
   };
   const countryName = (COUNTRIES_REG[cc] && COUNTRIES_REG[cc].name) || cc;
   // Icone '?' pour expliquer ce que represente le %.
@@ -14370,9 +14474,18 @@ try{ _targetsOwnedFilter = localStorage.getItem('mb-targets-owned') || ''; }catc
 // Set des tiers EXCLUS (comme dans Ma liste : chips off = exclus). Vide = tous inclus.
 let _targetsTierExcl = new Set();
 try{ const s = localStorage.getItem('mb-targets-tier-excl'); if(s) _targetsTierExcl = new Set(JSON.parse(s)); }catch(_){}
-// Region choisie sur les fiches especes (histogramme 52 bar par region). '' = France entiere.
+// Zone choisie sur les fiches especes (histogramme 52 barres par zone). '' = pays entier.
+// En France c'est un departement (FR-ARA-01), ailleurs une region (ES-CT).
 let _speciesRegion = '';
 try{ _speciesRegion = localStorage.getItem('mb-species-region') || ''; }catch(_){ _speciesRegion = ''; }
+// Migration : la fiche selectionnait autrefois des REGIONS francaises (FR-ARA, 2 segments).
+// Elle travaille desormais au departement (FR-ARA-01, 3 segments), donc un ancien choix
+// enregistre ne correspond plus a rien. On repart du pays entier plutot que de laisser une
+// selection fantome qui n'apparait nulle part dans la liste.
+if(/^FR-[A-Z]+$/.test(_speciesRegion)){
+  _speciesRegion = '';
+  try{ localStorage.setItem('mb-species-region', ''); }catch(_){}
+}
 try{ _targetsRegion = localStorage.getItem('mb-targets-region') || ''; }catch(_){ _targetsRegion = ''; }
 
 function renderTargets(){
