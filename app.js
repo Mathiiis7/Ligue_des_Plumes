@@ -580,9 +580,13 @@ function _isIsolatedXExotic(sci, cc){
   if(_hasNativeRegionalPresence(k, cc)) return false;
   const e = _countryEntry(cc); if(!e) return false;
   const monArr = e.monthly() && e.monthly()[k];
-  // Pas de bar chart mensuel : on ne conclut rien ici. _countryHasSpecies exige deja
-  // une presence bar chart ou S&T, c'est lui qui tranche.
-  if(!Array.isArray(monArr) || !monArr.length) return false;
+  // Aucune serie mensuelle alors que l'espece a un tier de rarete : sa frequence est trop
+  // basse pour que le build ait pu agreger douze mois. C'est donc une observation isolee,
+  // et la fiche le dit deja — son graphique affiche "Pas de donnees eBird, echappe
+  // cage/voliere". On ecarte, pour que la Birdydex soit d'accord avec la fiche.
+  // Concerne 5 especes en France (Faucon laggar, Bulbul orphee, Conure veuve, Sarcelle a
+  // collier, Dendrocygne a ventre noir), aucune dans les 14 autres pays.
+  if(!Array.isArray(monArr) || !monArr.length) return true;
   return monArr.filter(v => v > 0).length < _MOIS_MIN_X_VISIBLE;
 }
 function _countryHasSpecies(cc, sci){
