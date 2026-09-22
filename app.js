@@ -11799,9 +11799,11 @@ function _renderSpeciesFreqChart(key, country){
       e.preventDefault();
       e.stopPropagation();
       let z = 1.0;
-      try { const s = parseFloat(localStorage.getItem(zoomKey)); if(s > 0 && s < 100) z = s; } catch(_){}
-      z *= e.deltaY > 0 ? 0.87 : 1.15;
-      z = Math.max(0.05, Math.min(20, z));
+      try { const s = parseFloat(localStorage.getItem(zoomKey)); if(s > 0 && s < 1000) z = s; } catch(_){}
+      // Pas plus grand pour un zoom sensible (1.5x par cran de molette).
+      z *= e.deltaY > 0 ? 0.667 : 1.5;
+      // Plage large : de 0.01x (voir 100x le pic) à 500x (voir 1/500 du pic - species ultra rares).
+      z = Math.max(0.01, Math.min(500, z));
       try { localStorage.setItem(zoomKey, String(z)); } catch(_){}
       _renderSpeciesFreqChart(key, country);
     };
