@@ -10696,13 +10696,10 @@ function _renderSpeciesRarityCard(key){
     const _mThr = [[0.25,1],[0.15,2],[0.08,3],[0.04,4],[0.02,5],[0.007,6],[0.0015,7],[0.0003,8],[0.00005,9]];
     const abdToTier = v => { if(!(v>0)) return 10; for(const [t,i] of _wThr) if(v>=t) return i; return 10; };
     const freqToTier = v => { if(!(v>0)) return 10; for(const [t,i] of _mThr) if(v>=t) return i; return 10; };
-    // Decide source : S&T regional si dispo pour cette espece dans au moins 1 region, sinon bar chart
-    let anyST = false;
-    for(const r of regList){
-      const e = stByReg[r.code] && stByReg[r.code][k];
-      if(e && Array.isArray(e.w) && e.w.some(v => v > 0)){ anyST = true; break; }
-    }
-    const useST = anyST;
+    // Toujours utiliser le bar chart mensuel (%) pour cohérence avec le reste de la fiche
+    // (choix produit : plus d'ind/h nulle part). Le S&T weekly ind/h existe mais est
+    // subjectivement pas comparable au %, donc retire du picker regional aussi.
+    const useST = false;
     const fmtST = v => v >= 10 ? Math.round(v)+' ind/h' : v >= 1 ? v.toFixed(1)+' ind/h' : v >= 0.01 ? v.toFixed(2)+' ind/h' : v >= 0.001 ? v.toFixed(3)+' ind/h' : v > 0 ? '<0.001 ind/h' : '-';
     const fmtPct = v => { if(!(v>0)) return '-'; const p = v*100; if(p >= 10) return Math.round(p)+'%'; if(p >= 1) return p.toFixed(1)+'%'; if(p >= 0.1) return p.toFixed(2)+'%'; return '<0.1%'; };
     const scored = regList.map(r => {
