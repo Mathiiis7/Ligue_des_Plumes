@@ -11497,45 +11497,10 @@ function _renderSpeciesFreqChart(key, country){
     (typeof REGIONS_BY_COUNTRY === 'object') &&
     (REGIONS_BY_COUNTRY[cc] || []).some(r => r.code === _speciesRegion);
   const strictRegional = !!regionBelongsToCC;
-  // Cas 1 : S&T weekly regional (fine, la meilleure info spatiale-temporelle)
+  // Decision 2026-09-22 : le bar chart utilise TOUJOURS le bar chart % checklists
+  // (plus intuitif pour un birder : "quand est-ce qu'on la voit"). Le S&T Cornell reste
+  // utilise pour le tier composite et la carte de repartition.
   const stByReg = REAL_ABUNDANCE_ST_BY_REGION[cc];
-  if(strictRegional && stByReg && stByReg[_speciesRegion]){
-    const regEntry = stByReg[_speciesRegion][key];
-    if(regEntry && Array.isArray(regEntry.w) && regEntry.w.length === 52 && regEntry.w.some(v => v > 0)){
-      arr = regEntry.w; isWeekly = true; unitLabel = 'ind/h'; regionScope = _speciesRegion;
-    }
-  }
-  // Cas 2 : S&T weekly national (SEULEMENT si pas en mode region). Lecture via
-  // COUNTRIES_REG pour supporter FR, ME, ES, IT, GB, PT et pays futurs uniformement.
-  if(!arr && !strictRegional){
-    const reg = COUNTRIES_REG[cc];
-    const stEntry = reg && reg.st()[key];
-    if(stEntry && Array.isArray(stEntry.w) && stEntry.w.length === 52){
-      const wv = stEntry.w;
-      if(wv.some(v => v > 0)){ arr = wv; isWeekly = true; unitLabel = 'ind/h'; }
-    }
-  }
-  // Cas 2 bis : S&T national tout-zero (espece ultra-localisee comme Colin de Californie en
-  // Corse, diluee dans la moyenne France par ratio superficie). On aggrege les regions ayant
-  // de la data en prenant le max hebdomadaire cross-region. Le label du chart signale
-  // "France (via <region>)" quand une seule region contribue.
-  if(!arr && !strictRegional && stByReg){
-    const contributingRegions = [];
-    for(const rcode in stByReg){
-      const e = stByReg[rcode][key];
-      if(e && Array.isArray(e.w) && e.w.length === 52 && e.w.some(v => v > 0)) contributingRegions.push({ code: rcode, w: e.w });
-    }
-    if(contributingRegions.length === 1){
-      arr = contributingRegions[0].w;
-      isWeekly = true; unitLabel = 'ind/h';
-      regionScope = contributingRegions[0].code;   // note: label = "France (via Corse)"
-    } else if(contributingRegions.length > 1){
-      // Plusieurs regions -> max hebdo cross-region (approximation qui garde le meilleur signal).
-      const merged = new Array(52).fill(0);
-      for(const c of contributingRegions){ for(let i=0; i<52; i++) if(c.w[i] > merged[i]) merged[i] = c.w[i]; }
-      arr = merged; isWeekly = true; unitLabel = 'ind/h';
-    }
-  }
   let monthlyArr = null;   // source mensuelle si fallback : garde pour tooltips "mois"
   if(!arr){
     // Bar chart mensuel REGIONAL prime en mode strict regional (Fix 2026-09-22 : avant,
@@ -11666,9 +11631,8 @@ function _renderSpeciesFreqChart(key, country){
             : '<0.01';
     srcEl.innerHTML = `${esc(ccLabel)}${fallbackNote}`;
   }
-  // Layout du chart : toujours 520x130. PR agrandi pour laisser place aux labels axe Y
-  // droit (equivalent en % si primary=ind/h, ou en ind/h si primary=%).
-  const W = 520, H = 130, PT = 12, PB = 26, PL = 32, PR = 42;
+  // Layout du chart : toujours 520x130. Source unique = bar chart % checklists.
+  const W = 520, H = 130, PT = 12, PB = 26, PL = 32, PR = 8;
   const iw = W - PL - PR, ih = H - PT - PB;
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   const N = arr.length;
@@ -11712,8 +11676,6 @@ function _renderSpeciesFreqChart(key, country){
     if(p >= 0.01) return p.toFixed(3) + '%';
     return '<0.01%';
   };
-  // Format ind/h avec unite
-  const fmtAbdUnit = v => v === 0 ? '0' : fmtAbd(v) + ' ind/h';
   const midV = yMax / 2;
   // Seuils tier (utilises pour couleur des barres + conversion inter-unites axe droit).
   const _WEEKLY_TIER_THRESHOLDS = [
@@ -11742,18 +11704,11 @@ function _renderSpeciesFreqChart(key, country){
     return v * (to[to.length-1][0] / from[from.length-1][0]);   // sous le plus bas seuil
   };
   let out = '';
-  // Grille horizontale + labels valeur.
-  // Fix 2026-09-22 : % TOUJOURS a gauche, ind/h TOUJOURS a droite, quelle que soit
-  // la source primaire (weekly S&T ou monthly bar chart). L'axe non-primaire est
-  // la conversion via _convertUnit (interpolation log-log entre seuils de tier).
+  // Grille horizontale + labels valeur (% checklists uniquement, source unique bar chart).
   for(const v of [0, midV, yMax]){
     const y = yFor(v);
     out += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${(W-PR).toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"/>`;
-    // Left = %, Right = ind/h. Si primary est ind/h, on convertit vers % a gauche.
-    const vPct = isWeekly ? _convertUnit(v, true) : v;
-    const vAbd = isWeekly ? v : _convertUnit(v, false);
-    out += `<text x="${(PL-4).toFixed(1)}" y="${(y+3).toFixed(1)}" font-size="9" fill="var(--ink-3)" text-anchor="end">${fmtPct(vPct)}</text>`;
-    out += `<text x="${(W-PR+4).toFixed(1)}" y="${(y+3).toFixed(1)}" font-size="9" fill="var(--ink-3)" text-anchor="start">${fmtAbdUnit(vAbd)}</text>`;
+    out += `<text x="${(PL-4).toFixed(1)}" y="${(y+3).toFixed(1)}" font-size="9" fill="var(--ink-3)" text-anchor="end">${fmtPct(v)}</text>`;
   }
   const _weeklyAbdToTier = v => {
     if(!(v > 0)) return 10;
