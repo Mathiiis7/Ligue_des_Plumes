@@ -135,12 +135,20 @@ const EBIRD_REGIONS = {
        'CA-QC','CA-SK','CA-YT'],
 };
 
+// Reduction de la zone allouee au corps principal pour degager la place des encarts.
+// Par defaut le pays occupe presque tout le viewBox, ce qui le fait chevaucher ses
+// encarts : l'Espagne continentale descendait jusqu'a y=809 alors que les Canaries
+// etaient posees a partir de y=700. box = [x, y, w, h].
+const MAIN_BOX = {
+  ES: [20, 10, 960, 670],   // laisse la bande basse libre pour les Canaries
+};
+
 // Territoires eloignes places en encart (sinon ils etirent la bbox et ecrasent le pays).
 // box = [x, y, w, h] dans le viewBox 1000x900.
 const INSETS = {
   US: { 'US-AK': [10, 600, 260, 260], 'US-HI': [290, 740, 130, 110] },
   PT: { 'PT-20': [10, 20, 220, 180], 'PT-30': [10, 230, 160, 130] },
-  ES: { 'ES-CN': [10, 700, 300, 170] },
+  ES: { 'ES-CN': [30, 706, 300, 170] },
   NZ: { 'NZ-CI': [780, 20, 200, 160] },
 };
 
@@ -330,8 +338,8 @@ function buildCountry(features, cc){
   }
 
   const mainBbox = bboxOf(mainCodes.map(c => byCode[c]));
-  // Marge de 2% pour que les traits de bord ne soient pas coupes.
-  const mainBox = [W * 0.02, H * 0.02, W * 0.96, H * 0.96];
+  // Marge de 2% pour que les traits de bord ne soient pas coupes, sauf override.
+  const mainBox = MAIN_BOX[cc] || [W * 0.02, H * 0.02, W * 0.96, H * 0.96];
   const projectors = {};
   for(const c of mainCodes) projectors[c] = makeProjector(mainBbox, mainBox);
   for(const c of insetCodes) projectors[c] = makeProjector(bboxOf([byCode[c]]), insetCfg[c]);
