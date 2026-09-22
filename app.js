@@ -545,12 +545,18 @@ const COUNTRIES_REG = {
 };
 // Helpers de la registry
 function _countryEntry(cc){ return COUNTRIES_REG[cc] || null; }
-// True si l'espece est un X (Echappe) purement anecdotique dans ce pays. Deux criteres :
-//   - nzMonths <= 3 : sporadique (1-3 mois d'apparition annuelle)
-//   - OU moyenne annuelle < 0.1% : presence year-round mais volumes noise-level (ex
-//     Oie empereur FR : 7 mois de valeurs mais 4 sont a 0.00008/0.00015, sum ~= 0.6%,
-//     moyenne 0.05% -> vraiment anecdotique meme si techniquement present 7 mois).
-// N'agit que sur les X, garde les N/P etablis meme rares.
+// True si l'espece est un X (Echappe) purement anecdotique dans ce pays : vue sur un
+// seul mois de l'annee. C'est le cas du Diamant de Gould en Espagne ou de l'Urubu a tete
+// rouge en France, quelques observations groupees puis plus rien.
+//
+// Attention aux criteres bases sur la valeur des frequences : 0.0015 (0.15%) est la
+// valeur PLANCHER d'eBird, posee des qu'une espece a ete vue au moins une fois dans le
+// mois, pas une frequence mesuree. 43 des 97 X de France ont ce plancher pour pic. Un
+// seuil sur la moyenne annuelle mesure donc ce plancher et non la presence reelle : il
+// gardait les especes vues une fois par mois et jetait celles qui ont de vraies valeurs
+// basses. Seul le nombre de mois distincts est exploitable ici.
+//
+// N'agit que sur les X, garde les N/P meme rares.
 function _isIsolatedXExotic(sci, cc){
   const k = (sci||'').toLowerCase();
   const catByEbird = (EXOTIQUES_EBIRD_PAR_PAYS[cc] && EXOTIQUES_EBIRD_PAR_PAYS[cc][k]) || '';
@@ -561,11 +567,10 @@ function _isIsolatedXExotic(sci, cc){
   if(_hasNativeRegionalPresence(k, cc)) return false;
   const e = _countryEntry(cc); if(!e) return false;
   const monArr = e.monthly() && e.monthly()[k];
-  if(!Array.isArray(monArr) || !monArr.length) return true;   // aucune data = anecdotique
-  const nzMonths = monArr.filter(v => v > 0).length;
-  if(nzMonths <= 3) return true;
-  const mean = monArr.reduce((a,v) => a + v, 0) / 12;
-  return mean < 0.001;   // < 0.1% moyen year-round = presence sub-noise
+  // Pas de bar chart mensuel : on ne conclut rien ici. _countryHasSpecies exige deja
+  // une presence bar chart ou S&T, c'est lui qui tranche.
+  if(!Array.isArray(monArr) || !monArr.length) return false;
+  return monArr.filter(v => v > 0).length <= 1;
 }
 function _countryHasSpecies(cc, sci){
   const e = _countryEntry(cc); if(!e) return false;
