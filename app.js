@@ -11995,6 +11995,11 @@ function _getTaxonomicPool(){
 }
 function openSpeciesModal(sci){
   if(!sci) return;
+  // Preserve la position de scroll quand on navigue entre fiches (‹ ›) : sinon
+  // le contenu re-rendu remet la sm-scroll a 0. On restore juste apres l'update DOM sync.
+  const _modalEl = document.getElementById('speciesModal');
+  const _wasOpen = _modalEl && !_modalEl.hidden;
+  const _savedScroll = _wasOpen ? (_modalEl.querySelector('.sm-scroll')?.scrollTop || 0) : 0;
   // Si l'espece est dans le pool courant, met a jour l'index (navigation depuis ← →)
   if(_speciesNavPool.length){
     const i = _speciesNavPool.findIndex(s => s === sci || s?.toLowerCase() === sci.toLowerCase());
@@ -12144,6 +12149,11 @@ function openSpeciesModal(sci){
     <a href="${xcUrl}" target="_blank" rel="noopener">🎵 xeno-canto</a>
   `;
   modal.hidden = false;
+  // Restore la scroll position si on navigue entre fiches (sinon reset a 0 par le re-render).
+  if(_wasOpen){
+    const _ss = modal.querySelector('.sm-scroll');
+    if(_ss) _ss.scrollTop = _savedScroll;
+  }
   // Bloque le scroll de la page en arriere-plan quand la fiche est ouverte.
   document.body.classList.add('species-modal-open');
   // Redirige la molette vers la sm-scroll interne partout dans le modal (fiche + backdrop),
