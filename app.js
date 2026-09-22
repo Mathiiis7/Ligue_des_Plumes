@@ -1241,11 +1241,11 @@ function isExoticInCountry(sci, country){
   return false;
 }
 // True si l'espece a une presence forte native dans au moins UNE region du pays :
-// max monthly >= 0.3% ET presence sur >= 8 mois. Utilise pour override le tag X eBird
+// max monthly >= 0.1% ET presence sur >= 8 mois. Utilise pour override le tag X eBird
 // national quand une region est clairement native (ex: Oie empereur US = X national
-// mais native en Alaska). 0.3% ~= 3 obs / 1000 checklists = distribution restreinte
-// mais reelle (petits passereaux localises, rapaces territoriaux). En dessous (0.01-
-// 0.1%) = bruit / echappes. Necessite regional data loadee ; fallback silencieux sinon.
+// mais native en Alaska). 0.1% ~= 1 obs / 1000 checklists = tres discret mais reel
+// (petits nicturnes, oiseaux forestiers rares). Le critere nz>=8 (annee entiere) suffit
+// a ecarter les vagrants sporadiques meme a bas seuil. Necessite regional data loadee.
 function _hasNativeRegionalPresence(sci, cc){
   const reg = COUNTRIES_REG[cc];
   const byReg = reg && typeof reg.monthlyByRegion === 'function' ? reg.monthlyByRegion() : null;
@@ -1256,7 +1256,7 @@ function _hasNativeRegionalPresence(sci, cc){
     if(!Array.isArray(arr) || !arr.length) continue;
     let nz = 0, max = 0;
     for(const v of arr){ if(v > 0) nz++; if(v > max) max = v; }
-    if(max >= 0.003 && nz >= 8) return true;
+    if(max >= 0.001 && nz >= 8) return true;
   }
   return false;
 }
