@@ -1203,7 +1203,12 @@ function _isNativeInCountry(k, cc){
 function isExoticInCountry(sci, country){
   const k = (sci||'').trim().toLowerCase();
   const cc = country || 'FR';
-  if(EXOTIQUES_EBIRD_PAR_PAYS[cc] && EXOTIQUES_EBIRD_PAR_PAYS[cc][k]) return true;
+  if(EXOTIQUES_EBIRD_PAR_PAYS[cc] && EXOTIQUES_EBIRD_PAR_PAYS[cc][k]){
+    // Override X : native forte dans une region du pays -> pas exotique au niveau pays.
+    // Aligne avec exoticCategoryInCountry (meme regle : Oie empereur US = native Alaska).
+    if(EXOTIQUES_EBIRD_PAR_PAYS[cc][k] === 'X' && _hasNativeRegionalPresence(k, cc)) return false;
+    return true;
+  }
   // Park-only exotics (Canard musque, Paon, Cygne noir...) : echappes cage/parc
   // dans tous les pays par definition. SAUF si l'espece est presente dans le bar chart
   // eBird du pays courant sans etre flaggee exotique par eBird : signifie qu'eBird la
@@ -1226,11 +1231,34 @@ function isExoticInCountry(sci, country){
   if(cc === 'FR' && EXOTIQUES_EBIRD_PAR_PAYS.FR && EXOTIQUES_EBIRD_PAR_PAYS.FR[k]) return true;
   return false;
 }
+// True si l'espece a une presence forte native dans au moins UNE region du pays :
+// max monthly >= 1% ET presence sur >= 8 mois. Utilise pour override le tag X eBird
+// national quand une region est clairement native (ex: Oie empereur US = X national
+// mais native en Alaska). Necessite regional data loadee ; fallback silencieux sinon.
+function _hasNativeRegionalPresence(sci, cc){
+  const reg = COUNTRIES_REG[cc];
+  const byReg = reg && typeof reg.monthlyByRegion === 'function' ? reg.monthlyByRegion() : null;
+  if(!byReg) return false;
+  const k = (sci||'').toLowerCase();
+  for(const rc in byReg){
+    const arr = byReg[rc] && byReg[rc][k];
+    if(!Array.isArray(arr) || !arr.length) continue;
+    let nz = 0, max = 0;
+    for(const v of arr){ if(v > 0) nz++; if(v > max) max = v; }
+    if(max >= 0.01 && nz >= 8) return true;
+  }
+  return false;
+}
 // Categorie exotique per-pays (N/P/X/C). Meme logique de fallback que isExoticInCountry.
 function exoticCategoryInCountry(sci, country){
   const k = (sci||'').trim().toLowerCase();
   const cc = country || 'FR';
-  if(EXOTIQUES_EBIRD_PAR_PAYS[cc] && EXOTIQUES_EBIRD_PAR_PAYS[cc][k]) return EXOTIQUES_EBIRD_PAR_PAYS[cc][k];
+  const rawCat = EXOTIQUES_EBIRD_PAR_PAYS[cc] && EXOTIQUES_EBIRD_PAR_PAYS[cc][k];
+  // Override X : si la data regionale montre une population native forte quelque part
+  // dans le pays (ex: Alaska pour US), le tag X national eBird est trompeur - on le
+  // supprime. Ne touche pas N/P (populations naturalisees, tag correct partout).
+  if(rawCat === 'X' && _hasNativeRegionalPresence(k, cc)) return '';
+  if(rawCat) return rawCat;
   // Meme logique que isExoticInCountry : ne PAS retourner 'X' pour un park-only qui a
   // du bar chart local (traitee sauvage par eBird cf. Sarcelle élégante FR).
   if(isParkOnlyExotic(k)){
@@ -11163,6 +11191,9 @@ function _renderSpeciesRarityCard(key){
     const p = $('#smRegPickerPanel');
     if(p) p.innerHTML = buildRegPanel(initCountry);
     if(_speciesRegion) _renderSpeciesFreqChart(k, initCountry);
+    // Re-render la rarity card : peut avoir bascule tag X -> pas X via
+    // _hasNativeRegionalPresence maintenant que la data regionale est loadee.
+    if(typeof _renderSpeciesRarityCard === 'function') _renderSpeciesRarityCard(k);
   });
   _renderSpeciesFreqChart(k, initCountry);
   const sel = $('#smRarityCountrySel');
