@@ -754,7 +754,10 @@ function _openCountryPicker(currentCode, opts = {}){
             const nSp = Object.keys(reg.st() || {}).length || Object.keys(reg.barTier() || {}).length;
             meta = nSp > 0 ? `<span class="cp-item-meta">${nSp} espèces</span>` : '';
           }
-          const absentCls = (focusSci && it.score === 0) ? ' absent' : '';
+          // Fix 2026-09-22 : absentCls doit refléter le vrai statut 'absent' (tier === 0
+           // ET pas exotique local) au lieu de it.score seul. Sinon FR avec tier 7 via
+          // S&T Cornell mais aucune data monthly apparaît grisée à tort.
+          const absentCls = focusSci && typeof absent !== 'undefined' && absent ? ' absent' : '';
           html += `<div class="cp-item${cc === currentCode ? ' on' : ''}${absentCls}" data-cc="${esc(cc)}">
             <span class="cp-item-flag">${flag}</span>
             <span class="cp-item-name">${esc(reg.name || cc)}</span>
