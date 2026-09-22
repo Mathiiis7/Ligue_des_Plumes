@@ -11666,9 +11666,9 @@ function _renderSpeciesFreqChart(key, country){
             : '<0.01';
     srcEl.innerHTML = `${esc(ccLabel)}${fallbackNote}`;
   }
-  // Layout du chart : toujours 520x130 (52 slots dans tous les cas, weekly S&T reel ou
-  // monthly bar chart etire).
-  const W = 520, H = 130, PT = 12, PB = 26, PL = 32, PR = 8;
+  // Layout du chart : toujours 520x130. PR agrandi pour laisser place aux labels axe Y
+  // droit (equivalent en % si primary=ind/h, ou en ind/h si primary=%).
+  const W = 520, H = 130, PT = 12, PB = 26, PL = 32, PR = 42;
   const iw = W - PL - PR, ih = H - PT - PB;
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   const N = arr.length;
@@ -11714,18 +11714,7 @@ function _renderSpeciesFreqChart(key, country){
   };
   const fmtY = v => isWeekly ? fmtAbd(v) : fmtPct(v);
   const midV = yMax / 2;
-  let out = '';
-  // Grille horizontale + labels valeur
-  for(const v of [0, midV, yMax]){
-    const y = yFor(v);
-    out += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${(W-PR).toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"/>`;
-    out += `<text x="${(PL-4).toFixed(1)}" y="${(y+3).toFixed(1)}" font-size="9" fill="var(--ink-3)" text-anchor="end">${fmtY(v)}</text>`;
-  }
-  // Seuils tier pour colorer les barres. Deux echelles distinctes :
-  //   - Mode S&T weekly (ind/h) : calibres par le R script sur la distribution FR des
-  //     abondances annuelles. Applicable semaine par semaine.
-  //   - Mode monthly stretched (% checklists) : les memes seuils que build-rarity-ebird.mjs
-  //     (pic biweekly -> tier). Applicable a chaque valeur mensuelle etiree.
+  // Seuils tier (utilises pour couleur des barres + conversion inter-unites axe droit).
   const _WEEKLY_TIER_THRESHOLDS = [
     [2.2596, 1], [0.8496, 2], [0.34178, 3], [0.12404, 4], [0.04666, 5],
     [0.01880, 6], [0.00440, 7], [0.00114, 8], [0.00009, 9],
@@ -11734,6 +11723,51 @@ function _renderSpeciesFreqChart(key, country){
     [0.25, 1], [0.15, 2], [0.08, 3], [0.04, 4], [0.02, 5],
     [0.007, 6], [0.0015, 7], [0.0003, 8], [0.00005, 9],
   ];
+  // Conversion inter-unites via interpolation log-log entre seuils de tier.
+  // Ex : 0.5 ind/h (weekly) <-> ~15% checklists (monthly) via correspondance de tier.
+  const _convertUnit = (v, fromWeekly) => {
+    if(!(v > 0)) return 0;
+    const from = fromWeekly ? _WEEKLY_TIER_THRESHOLDS : _MONTHLY_TIER_THRESHOLDS;
+    const to = fromWeekly ? _MONTHLY_TIER_THRESHOLDS : _WEEKLY_TIER_THRESHOLDS;
+    // Trouve dans quel intervalle de tier v tombe.
+    for(let i = 0; i < from.length; i++){
+      if(v >= from[i][0]){
+        if(i === 0) return v * (to[0][0] / from[0][0]);   // au-dessus du plus haut seuil : ratio direct
+        const fHi = from[i-1][0], fLo = from[i][0], tHi = to[i-1][0], tLo = to[i][0];
+        const t = (Math.log(v) - Math.log(fLo)) / (Math.log(fHi) - Math.log(fLo));
+        return Math.exp(Math.log(tLo) + t * (Math.log(tHi) - Math.log(tLo)));
+      }
+    }
+    return v * (to[to.length-1][0] / from[from.length-1][0]);   // sous le plus bas seuil
+  };
+  // Format pour l'unite secondaire (celle affichee a droite)
+  const fmtSecondary = v => {
+    if(v <= 0) return '0';
+    if(isWeekly){
+      // Primary = ind/h, secondary = %
+      if(v >= 0.10) return Math.round(v*100) + '%';
+      if(v >= 0.01) return (v*100).toFixed(1) + '%';
+      if(v >= 0.001) return (v*100).toFixed(2) + '%';
+      return '<0.1%';
+    } else {
+      // Primary = %, secondary = ind/h
+      if(v >= 10) return Math.round(v) + ' ind/h';
+      if(v >= 1) return v.toFixed(1) + ' ind/h';
+      if(v >= 0.01) return v.toFixed(2) + ' ind/h';
+      if(v >= 0.001) return v.toFixed(3) + ' ind/h';
+      return '<0.001 ind/h';
+    }
+  };
+  let out = '';
+  // Grille horizontale + labels valeur (gauche = unite primaire, droite = equivalent secondaire)
+  for(const v of [0, midV, yMax]){
+    const y = yFor(v);
+    out += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${(W-PR).toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"/>`;
+    out += `<text x="${(PL-4).toFixed(1)}" y="${(y+3).toFixed(1)}" font-size="9" fill="var(--ink-3)" text-anchor="end">${fmtY(v)}</text>`;
+    // Label droit : conversion vers l'unite secondaire
+    const vSec = _convertUnit(v, isWeekly);
+    out += `<text x="${(W-PR+4).toFixed(1)}" y="${(y+3).toFixed(1)}" font-size="9" fill="var(--ink-3)" text-anchor="start">${fmtSecondary(vSec)}</text>`;
+  }
   const _weeklyAbdToTier = v => {
     if(!(v > 0)) return 10;
     for(const [thr, t] of _WEEKLY_TIER_THRESHOLDS) if(v >= thr) return t;
