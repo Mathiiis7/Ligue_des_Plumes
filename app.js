@@ -11139,11 +11139,9 @@ function _renderSpeciesRarityCard(key){
     || (typeof ebFilter !== 'undefined' && ebFilter.country)
     || 'FR';
   const initCountry = avail.find(c => c.code === ctxCountry) ? ctxCountry : avail[0].code;
-  // Les selecteurs pays / region vivent dans l'en-tete de la fiche (#smHeaderGeo) et non
-  // dans la carte Rarete : ils pilotent aussi les deux mini-cartes, c'est donc un reglage
-  // global de la fiche. Le repli sur la carte reste possible si l'en-tete manque.
-  const geoHost = document.getElementById('smHeaderGeo');
-  const geoHtml = `
+  box.innerHTML = `
+    <div class="sm-card-title" style="display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
+      <span>Rareté</span>
       <button type="button" id="smRarityCountrySel" class="cp-btn" data-cc="${esc(initCountry)}" style="font-size:12px; padding:3px 8px;">
         <span class="cp-btn-flag">${flagImg(initCountry)}</span>
         <span class="cp-btn-label">${esc((COUNTRIES_REG[initCountry] && COUNTRIES_REG[initCountry].name) || initCountry)}</span>
@@ -11155,12 +11153,7 @@ function _renderSpeciesRarityCard(key){
           <span style="opacity:.6;">▾</span>
         </button>
         <div class="reg-picker-panel" id="smRegPickerPanel" hidden>${buildRegPanel(initCountry)}</div>
-      </div>`;
-  if(geoHost) geoHost.innerHTML = geoHtml;
-  box.innerHTML = `
-    <div class="sm-card-title" style="display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
-      <span>Rareté</span>
-      ${geoHost ? '' : geoHtml}
+      </div>
     </div>
     <div id="smRarityLine"></div>
     <div id="smRarityMap"></div>
@@ -11623,22 +11616,9 @@ function _renderSpeciesRarityCard(key){
         });
       }
     });
-    // Molette : scroller la LISTE interne au lieu de la page. Sans ce handler, le
-    // wheel bubble vers document et scroll la fiche entière alors qu'on veut juste
-    // naviguer dans les régions.
-    panel.addEventListener('wheel', e => {
-      const el = panel;
-      const canScroll = el.scrollHeight > el.clientHeight;
-      if(!canScroll) return;
-      const atTop = el.scrollTop === 0;
-      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 0.5;
-      // Bloque le bubble sauf si on tente de scroller au-dela de la fin.
-      if((e.deltaY < 0 && !atTop) || (e.deltaY > 0 && !atBottom)){
-        e.stopPropagation();
-        e.preventDefault();
-        el.scrollTop += e.deltaY;
-      }
-    }, { passive: false });
+    // Pas de handler molette ici : le redirecteur du modal laisse desormais passer
+    // .reg-picker-panel, et le CSS overscroll-behavior:contain empeche le scroll de
+    // se propager a la fiche en butee. Le defilement natif conserve son inertie.
     panel.addEventListener('click', e => {
       const it = e.target.closest('.reg-picker-item');
       if(!it) return;
@@ -12603,8 +12583,11 @@ function openSpeciesModal(sci){
     modal._wheelRedirect = e => {
       const box = modal.querySelector('.sm-scroll');
       if(!box) return;
-      // Laisser le natif gerer sur la carte Leaflet et audio (zoom map, controles).
-      if(e.target.closest('.sm-map, audio, .sm-panel[data-sm-panel=map]')) return;
+      // Laisser le natif gerer sur la carte Leaflet, l'audio (zoom map, controles) et la
+      // liste deroulante des regions. Sans ce dernier cas, arriver en butee de la liste
+      // faisait defiler la fiche derriere le panneau : le handler du panneau ne bloquait
+      // la propagation que tant qu'il restait du scroll disponible.
+      if(e.target.closest('.sm-map, audio, .sm-panel[data-sm-panel=map], .reg-picker-panel')) return;
       e.preventDefault();
       // Facteur 1.5 : compense l'absence d'acceleration/momentum sur scrollTop manuel,
       // sans donner l'impression de scroll trop rapide (on etait a 2 avant).
