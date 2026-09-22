@@ -11643,7 +11643,7 @@ function _renderSpeciesFreqChart(key, country){
             : maxV >= 0.001 ? maxV.toFixed(4)
             : maxV >= 0.0001 ? maxV.toFixed(5)
             : '<0.0001';
-    srcEl.innerHTML = `${esc(ccLabel)}${fallbackNote}${_freqPctHelp}`;
+    srcEl.innerHTML = `${esc(ccLabel)}${fallbackNote}`;
   } else {
     // Source mensuelle etiree a 52 slots : le pic est au premier slot du mois pic,
     // on reconvertit vers un label mois-only pour ne pas suggerer une precision fictive.
@@ -11657,7 +11657,7 @@ function _renderSpeciesFreqChart(key, country){
             : maxV >= 0.001 ? (maxV*100).toFixed(2) // 0.1-1%
             : maxV >= 0.0001 ? (maxV*100).toFixed(3)// 0.01-0.1%
             : '<0.01';
-    srcEl.innerHTML = `${esc(ccLabel)}${fallbackNote}${_freqPctHelp}`;
+    srcEl.innerHTML = `${esc(ccLabel)}${fallbackNote}`;
   }
   // Layout du chart : toujours 520x130. Source unique = bar chart % checklists.
   const W = 520, H = 130, PT = 12, PB = 26, PL = 32, PR = 8;
@@ -11793,6 +11793,12 @@ function _renderSpeciesFreqChart(key, country){
     const isHiMonth = Math.floor(bestIdx / 4.33) === m || Math.floor(curIdx / 4.33) === m;
     out += `<text x="${x.toFixed(1)}" y="${(H-8).toFixed(1)}" font-size="9" fill="${isHiMonth?'var(--ink)':'var(--ink-3)'}" text-anchor="middle" font-weight="${isHiMonth?700:400}">${_MONTH_ABBR3[m]}</text>`;
   }
+  // Petit '?' dans l'angle bas-gauche du chart (entre '0%' et 'janv') avec tooltip explicatif.
+  out += `<g style="cursor:help;">
+    <circle cx="10" cy="${(H-8).toFixed(1)}" r="5.5" fill="var(--surface-2)" stroke="var(--line)"/>
+    <text x="10" y="${(H-5.5).toFixed(1)}" text-anchor="middle" font-size="8" font-weight="700" fill="var(--ink-3)">?</text>
+    <title>% checklists = fraction des sorties eBird qui ont coché l'espèce. Ex : 23% en mars = 1 sortie sur 4 a vu l'espèce en mars.</title>
+  </g>`;
   svg.innerHTML = out;
   // Legende adaptee au mode : en weekly, la couleur des barres = tier, donc on montre
   // une palette compacte + contours "Pic" et "Cette semaine". En monthly stretched,
