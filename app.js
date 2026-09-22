@@ -11139,9 +11139,11 @@ function _renderSpeciesRarityCard(key){
     || (typeof ebFilter !== 'undefined' && ebFilter.country)
     || 'FR';
   const initCountry = avail.find(c => c.code === ctxCountry) ? ctxCountry : avail[0].code;
-  box.innerHTML = `
-    <div class="sm-card-title" style="display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
-      <span>Rareté</span>
+  // Les selecteurs pays / region vivent dans l'en-tete de la fiche (#smHeaderGeo) plutot
+  // que dans la carte Rarete : ils pilotent aussi les deux mini-cartes, c'est donc un
+  // reglage global de la fiche. Repli dans la carte si l'en-tete est absent.
+  const geoHost = document.getElementById('smHeaderGeo');
+  const geoHtml = `
       <button type="button" id="smRarityCountrySel" class="cp-btn" data-cc="${esc(initCountry)}" style="font-size:12px; padding:3px 8px;">
         <span class="cp-btn-flag">${flagImg(initCountry)}</span>
         <span class="cp-btn-label">${esc((COUNTRIES_REG[initCountry] && COUNTRIES_REG[initCountry].name) || initCountry)}</span>
@@ -11153,7 +11155,12 @@ function _renderSpeciesRarityCard(key){
           <span style="opacity:.6;">▾</span>
         </button>
         <div class="reg-picker-panel" id="smRegPickerPanel" hidden>${buildRegPanel(initCountry)}</div>
-      </div>
+      </div>`;
+  if(geoHost) geoHost.innerHTML = geoHtml;
+  box.innerHTML = `
+    <div class="sm-card-title" style="display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
+      <span>Rareté</span>
+      ${geoHost ? '' : geoHtml}
     </div>
     <div id="smRarityLine"></div>
     <div id="smRarityMap"></div>
