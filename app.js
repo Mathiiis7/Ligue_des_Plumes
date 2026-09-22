@@ -10856,14 +10856,17 @@ async function _renderExoticMap(sci, cc){
   const CAT_COLOR = { N:'#22c55e', P:'#f59e0b', X:'#ef4444' };
   const CAT_LABEL = { N:'Naturalisé', P:'Provisoire', X:'Échappé' };
   const NATIVE_COLOR = '#3b82f6';
-  const svgZones = Object.entries(paths.zones).map(([code, r]) => {
+  // Meme mise en evidence que la carte de rarete, pour que les deux se lisent pareil.
+  const selection = _zonesSelectionnees(cc, Object.keys(paths.zones));
+  const svgZones = _ordonnerSelectionDevant(Object.keys(paths.zones), selection).map(code => {
+    const r = paths.zones[code];
     const cat = perZone[code];
     const isNative = !cat && nativeZones.has(code);
     const fill = cat ? CAT_COLOR[cat] : (isNative ? NATIVE_COLOR : '#d4d4d8');
     const title = cat ? `${r.name} — ${CAT_LABEL[cat]} (${cat})`
                 : isNative ? `${r.name} — native (présente, non taguée exotique)`
                 : `${r.name} — non listé (sauvage / absent)`;
-    return `<path d="${r.path}" fill="${fill}" stroke="var(--surface, #fff)" stroke-width="0.5"><title>${title.replace(/</g,'&lt;')}</title></path>`;
+    return _pathZone(r.path, fill, title, selection.has(code), selection.size > 0);
   }).join('');
   const legendItem = (col, label) => `<span style="display:inline-flex; align-items:center; gap:4px;"><span style="display:inline-block; width:10px; height:10px; background:${col}; border-radius:2px;"></span>${label}</span>`;
   const zoneWord = cc === 'FR' ? 'département' : 'région';
@@ -10905,6 +10908,35 @@ function _ccFicheObsolete(cc){
   const actuel = document.getElementById('smRarityCountrySel')?.dataset.cc;
   return !!actuel && actuel !== cc;
 }
+// Zones de la carte correspondant a la region selectionnee dans la fiche, pour les mettre
+// en evidence. En France la carte est au departement alors que la selection se fait a la
+// region : on retient donc aussi les zones prefixees, FR-ARA selectionne FR-ARA-01 etc.
+// Set vide si aucune region n'est choisie ou si elle appartient a un autre pays.
+function _zonesSelectionnees(cc, zones){
+  const sel = new Set();
+  if(!_speciesRegion) return sel;
+  const appartient = (typeof REGIONS_BY_COUNTRY === 'object') &&
+    (REGIONS_BY_COUNTRY[cc] || []).some(r => r.code === _speciesRegion);
+  if(!appartient) return sel;
+  for(const z of zones) if(z === _speciesRegion || z.startsWith(_speciesRegion + '-')) sel.add(z);
+  return sel;
+}
+// Les zones mises en evidence sont dessinees en dernier : en SVG le dernier peint passe
+// devant, sinon le contour epais de la selection serait recouvert par ses voisines.
+function _ordonnerSelectionDevant(zones, selection){
+  if(!selection.size) return zones;
+  return [...zones.filter(z => !selection.has(z)), ...zones.filter(z => selection.has(z))];
+}
+// Rend une zone de carte. Quand une selection existe, les zones hors selection sont
+// attenuees et la selection recoit un contour sombre appuye.
+function _pathZone(d, fill, titre, estSelectionnee, selectionActive){
+  const attenuee = selectionActive && !estSelectionnee;
+  const stroke = estSelectionnee ? 'var(--ink, #1a1a1a)' : 'var(--surface, #fff)';
+  const largeur = estSelectionnee ? 2 : 0.5;
+  const opacite = attenuee ? ' opacity="0.35"' : '';
+  return `<path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="${largeur}"` +
+         ` stroke-linejoin="round"${opacite}><title>${titre.replace(/</g,'&lt;')}</title></path>`;
+}
 const _MOIS_COURTS = ['janv','févr','mars','avr','mai','juin','juil','août','sept','oct','nov','déc'];
 // Carte de rarete par zone : colore chaque departement / region avec le tier deduit de
 // sa frequence mensuelle locale, sur la meme echelle de couleurs que le reste de l'appli.
@@ -10938,7 +10970,11 @@ async function _renderRarityMap(sci, cc){
   });
   if(!aDeLaData){ container.innerHTML = ''; return; }
   const ABSENT = '#d4d4d8';
-  const svgZones = zones.map(z => {
+  // Zones a mettre en avant quand une region est selectionnee dans la fiche. En France
+  // la carte est au departement alors que la selection est une region : on retient donc
+  // aussi les zones prefixees (FR-ARA -> FR-ARA-01, FR-ARA-03...).
+  const selection = _zonesSelectionnees(cc, zones);
+  const svgZones = _ordonnerSelectionDevant(zones, selection).map(z => {
     const arr = byZone[z] && byZone[z][key];
     let v = 0, moisPic = -1;
     if(Array.isArray(arr)){
@@ -10957,7 +10993,7 @@ async function _renderRarityMap(sci, cc){
         ? `${nom} — ${lbl} (${tier}) · jusqu'à ${pct} des listes en ${_MOIS_COURTS[moisPic]}`
         : `${nom} — ${lbl} (${tier}) · ${pct} des listes`;
     }
-    return `<path d="${paths.zones[z].path}" fill="${fill}" stroke="var(--surface, #fff)" stroke-width="0.5"><title>${titre.replace(/</g,'&lt;')}</title></path>`;
+    return _pathZone(paths.zones[z].path, fill, titre, selection.has(z), selection.size > 0);
   }).join('');
   const chip = (val, label, actif) =>
     `<button type="button" data-mois="${val}" style="border:1px solid ${actif ? 'var(--accent)' : 'var(--line-2)'}; background:${actif ? 'var(--accent)' : 'var(--surface)'}; color:${actif ? '#fff' : 'var(--ink-2)'}; font:${actif ? '700' : '400'} 10.5px system-ui; padding:2px 6px; border-radius:6px; cursor:pointer;">${label}</button>`;
@@ -11598,7 +11634,12 @@ function _renderSpeciesRarityCard(key){
       panel.querySelectorAll('.reg-picker-item.on').forEach(x => x.classList.remove('on'));
       it.classList.add('on');
       panel.hidden = true;
-      loadRegionalDataFor(cc2).then(() => _renderSpeciesFreqChart(k, cc2));
+      loadRegionalDataFor(cc2).then(() => {
+        _renderSpeciesFreqChart(k, cc2);
+        // Les cartes mettent en evidence la region choisie : il faut les redessiner.
+        if(typeof _renderRarityMap === 'function') _renderRarityMap(k, cc2);
+        if(typeof _renderExoticMap === 'function') _renderExoticMap(k, cc2);
+      });
     });
     // Click outside : ferme le panel
     document.addEventListener('click', e => {
