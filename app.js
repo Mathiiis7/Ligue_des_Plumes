@@ -542,6 +542,10 @@ function _isIsolatedXExotic(sci, cc){
   const k = (sci||'').toLowerCase();
   const catByEbird = (EXOTIQUES_EBIRD_PAR_PAYS[cc] && EXOTIQUES_EBIRD_PAR_PAYS[cc][k]) || '';
   if(catByEbird !== 'X') return false;
+  // Exception : si l'espece a une population native forte dans une region (ex : Oie
+  // empereur en Alaska pour US), le tag X national est aberrant - on garde l'espece
+  // visible, elle sera traitee comme native via l'override dans exoticCategoryInCountry.
+  if(_hasNativeRegionalPresence(k, cc)) return false;
   const e = _countryEntry(cc); if(!e) return false;
   const monArr = e.monthly() && e.monthly()[k];
   if(!Array.isArray(monArr) || !monArr.length) return true;   // aucune data = anecdotique
