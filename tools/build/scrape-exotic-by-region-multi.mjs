@@ -76,13 +76,29 @@ console.log(`Estim ~30s/region => ~${Math.round(totalRegions * 30 / 60)} min tot
 
 async function scrapeRegion(page, region) {
   const url = `https://ebird.org/barchart?r=${region}&byr=1900&eyr=2026`;
-  await page.goto(url, { waitUntil: 'networkidle', timeout: 90000 });
+  await page.goto(url, { waitUntil: 'networkidle', timeout: 120000 });
   try {
-    await page.waitForSelector('.SpeciesName', { timeout: 25000 });
+    await page.waitForSelector('.SpeciesName', { timeout: 45000 });
   } catch(e) {
-    console.warn(`    (aucun .SpeciesName apres 25s, tente extract quand meme)`);
+    console.warn(`    (aucun .SpeciesName apres 45s, tente extract quand meme)`);
   }
-  await page.waitForTimeout(3000);
+  // Attente : la liste peut etre en cours de render. On boucle jusqu'a stabilisation
+  // du nombre de rows (max 20s) : evite les 0-exotique pour les grosses regions GB-ENG,
+  // US-CA, IT-25 ou les icones lazy-load progressivement.
+  await page.evaluate(async () => {
+    let prev = -1, stable = 0, attempts = 0;
+    while(attempts++ < 40 && stable < 3){
+      const n = document.querySelectorAll('.SpeciesName').length;
+      if(n === prev && n > 0) stable++; else stable = 0;
+      prev = n;
+      await new Promise(r => setTimeout(r, 500));
+    }
+  });
+  // Scroll bottom pour trigger lazy-load restant
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await page.waitForTimeout(2000);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(1000);
   return await page.evaluate(() => {
     const out = {};
     const icons = document.querySelectorAll('[class*="Icon--exotic"]');
@@ -100,7 +116,7 @@ async function scrapeRegion(page, region) {
       const code = link.getAttribute('data-species-code');
       if(code) out[code] = cat;
     }
-    return out;
+    return { data: out, totalRows: document.querySelectorAll('.SpeciesName').length };
   });
 }
 
@@ -145,7 +161,7 @@ for(const cc of COUNTRIES) {
     }
     try {
       console.log(`  [${done}/${totalRegions}] ${region} ...`);
-      const raw = await scrapeRegion(page, region);
+      const { data: raw, totalRows } = await scrapeRegion(page, region);
       // Convert code -> sciName
       const bySci = {};
       for(const [code, cat] of Object.entries(raw)){
@@ -155,7 +171,13 @@ for(const cc of COUNTRIES) {
       results[region] = bySci;
       const cats = {};
       for(const v of Object.values(bySci)) cats[v] = (cats[v]||0)+1;
-      console.log(`    -> ${Object.keys(bySci).length} exotiques`, cats);
+      console.log(`    -> ${Object.keys(bySci).length} exotiques / ${totalRows} sp totales`, cats);
+      // Warning si 0 exotiques sur une grosse region (probable rate de scrape)
+      if(Object.keys(bySci).length === 0 && totalRows > 200){
+        console.warn(`    ⚠ 0 exotiques trouvés dans ${totalRows} sp - possible timing manqué, à relancer`);
+        // Force re-scrape en supprimant l'entrée (sinon le resume skip)
+        delete results[region];
+      }
       // Sauvegarde progressive apres chaque region (resistance aux crashs)
       writeFileSync(outFile,
         `// Genere par scrape-exotic-by-region-multi.mjs (Playwright + Chromium headless).\n` +
