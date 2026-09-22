@@ -11785,30 +11785,31 @@ function _renderSpeciesFreqChart(key, country){
     const palette = [1,2,3,4,5,6,7,8,9,10]
       .map(t => `<span style="width:8px;height:12px;background:${realColor(t)};display:inline-block;"></span>`).join('');
     const nowLbl = isWeekly ? 'Cette semaine' : 'Mois actuel';
-    // Legende + hint zoom molette.
+    // Slider zoom visible : mapping log10 pour progression naturelle
+    // value -2 -> z=0.01 (dezoom 100x), value 0 -> z=1 (defaut), value 2.7 -> z=500 (zoom 500x)
+    const sliderVal = Math.log10(_freqZoom).toFixed(2);
+    const zoomLbl = _freqZoom >= 10 ? '×' + Math.round(_freqZoom)
+                  : _freqZoom >= 1 ? '×' + _freqZoom.toFixed(1)
+                  : '×' + _freqZoom.toFixed(2);
+    const zoomSlider = `<span class="sm-freq-lg" style="display:inline-flex;align-items:center;gap:6px;">
+      <span style="font-size:10px;color:var(--ink-3);">zoom</span>
+      <input type="range" id="smFreqZoomSlider" min="-2" max="2.7" step="0.05" value="${sliderVal}" style="width:100px;">
+      <span id="smFreqZoomLbl" style="font-size:10px;color:var(--ink-2);min-width:32px;">${zoomLbl}</span>
+    </span>`;
     legEl.innerHTML = `
       <span class="sm-freq-lg" title="Vert = espèce facile à voir, magenta = très rare"><span style="display:inline-flex;height:12px;border:1px solid var(--line);border-radius:2px;overflow:hidden;">${palette}</span>&nbsp;facile → rare</span>
       <span class="sm-freq-lg"><span class="sm-freq-sw" style="background:transparent;border:2px solid var(--gold);width:10px;height:10px;box-sizing:border-box;"></span>Pic</span>
       <span class="sm-freq-lg"><span class="sm-freq-sw" style="background:transparent;border:2px solid var(--accent);width:10px;height:10px;box-sizing:border-box;"></span>${nowLbl}</span>
-      <span class="sm-freq-lg" style="opacity:.6;font-size:10px;">🖱 molette = zoom</span>`;
-    // Zoom molette : onwheel direct (remplace le handler a chaque render). Attache aussi
-    // sur le wrapper (.sm-freq-chart-wrap) pour capter les evenements meme si le curseur
-    // n'est pas exactement sur une barre du SVG.
-    const chartWrap = card ? card.querySelector('.sm-freq-chart-wrap') : null;
-    const wheelHandler = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      let z = 1.0;
-      try { const s = parseFloat(localStorage.getItem(zoomKey)); if(s > 0 && s < 1000) z = s; } catch(_){}
-      // Pas plus grand pour un zoom sensible (1.5x par cran de molette).
-      z *= e.deltaY > 0 ? 0.667 : 1.5;
-      // Plage large : de 0.01x (voir 100x le pic) à 500x (voir 1/500 du pic - species ultra rares).
-      z = Math.max(0.01, Math.min(500, z));
-      try { localStorage.setItem(zoomKey, String(z)); } catch(_){}
-      _renderSpeciesFreqChart(key, country);
-    };
-    if(svg) svg.onwheel = wheelHandler;
-    if(chartWrap) chartWrap.onwheel = wheelHandler;
+      ${zoomSlider}`;
+    const slider = document.getElementById('smFreqZoomSlider');
+    if(slider){
+      slider.oninput = (e) => {
+        const v = parseFloat(e.target.value);
+        const z = Math.pow(10, v);
+        try { localStorage.setItem(zoomKey, String(z)); } catch(_){}
+        _renderSpeciesFreqChart(key, country);
+      };
+    }
   }
 }
 // Extrait la couleur "vive" dominante d'une image (echantillonnage canvas). Retourne
