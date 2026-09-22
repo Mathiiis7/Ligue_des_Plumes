@@ -555,18 +555,21 @@ const COUNTRIES_REG = {
 };
 // Helpers de la registry
 function _countryEntry(cc){ return COUNTRIES_REG[cc] || null; }
-// True si l'espece est un X (Echappe) purement anecdotique dans ce pays : vue sur un
-// seul mois de l'annee. C'est le cas du Diamant de Gould en Espagne ou de l'Urubu a tete
-// rouge en France, quelques observations groupees puis plus rien.
+// True si l'espece est un X (Echappe) trop anecdotique pour meriter une fiche dans ce
+// pays : presente sur moins de la moitie de l'annee. Ecarte les oiseaux de cage echappes
+// une fois (Ara bleu, Cacatoes blanc, Inseparable masque, Perroquet jaco... 2 a 5 mois)
+// et garde ceux qu'on croise reellement en parc ou sur un plan d'eau (Canard musque,
+// Paon bleu, Perruche alexandre, Calopsitte... 6 a 12 mois).
 //
-// Attention aux criteres bases sur la valeur des frequences : 0.0015 (0.15%) est la
+// Attention aux criteres bases sur la VALEUR des frequences : 0.0015 (0.15%) est la
 // valeur PLANCHER d'eBird, posee des qu'une espece a ete vue au moins une fois dans le
-// mois, pas une frequence mesuree. 43 des 97 X de France ont ce plancher pour pic. Un
-// seuil sur la moyenne annuelle mesure donc ce plancher et non la presence reelle : il
-// gardait les especes vues une fois par mois et jetait celles qui ont de vraies valeurs
-// basses. Seul le nombre de mois distincts est exploitable ici.
+// mois, pas une frequence mesuree. Sur les 45 X de France qui passaient le filtre
+// precedent, 40 ne depassent ce plancher aucun mois de l'annee : un seuil sur la moyenne
+// ou sur le pic mesure donc ce plancher et non la presence reelle. Seul le nombre de mois
+// distincts est exploitable.
 //
 // N'agit que sur les X, garde les N/P meme rares.
+const _MOIS_MIN_X_VISIBLE = 6;
 function _isIsolatedXExotic(sci, cc){
   const k = (sci||'').toLowerCase();
   const catByEbird = (EXOTIQUES_EBIRD_PAR_PAYS[cc] && EXOTIQUES_EBIRD_PAR_PAYS[cc][k]) || '';
@@ -580,7 +583,7 @@ function _isIsolatedXExotic(sci, cc){
   // Pas de bar chart mensuel : on ne conclut rien ici. _countryHasSpecies exige deja
   // une presence bar chart ou S&T, c'est lui qui tranche.
   if(!Array.isArray(monArr) || !monArr.length) return false;
-  return monArr.filter(v => v > 0).length <= 1;
+  return monArr.filter(v => v > 0).length < _MOIS_MIN_X_VISIBLE;
 }
 function _countryHasSpecies(cc, sci){
   const e = _countryEntry(cc); if(!e) return false;
