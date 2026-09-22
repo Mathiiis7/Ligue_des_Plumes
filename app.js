@@ -10905,14 +10905,19 @@ const _MOIS_COURTS = ['janv','févr','mars','avr','mai','juin','juil','août','s
 // Carte de rarete par zone : colore chaque departement / region avec le tier deduit de
 // sa frequence mensuelle locale, sur la meme echelle de couleurs que le reste de l'appli.
 // Distincte de la carte de statut exotique, qui repond a une autre question.
-// Mois affiche : le mois courant par defaut, changeable via les pastilles. Le choix est
-// conserve d'une espece a l'autre pour pouvoir comparer plusieurs fiches au meme mois.
+// Periode affichee : 'an' par defaut (maximum sur les 12 mois, soit la meilleure periode
+// pour trouver l'espece dans chaque zone), ou un mois precis via les pastilles. Le
+// maximum est la meme agregation que le selecteur de regions, les deux vues concordent
+// donc. Le choix est conserve d'une espece a l'autre pour comparer plusieurs fiches.
 async function _renderRarityMap(sci, cc){
   const container = document.getElementById('smRarityMap');
   if(!container) return;
   const key = (sci || '').toLowerCase();
-  if(window._smRarityMapMonth == null) window._smRarityMapMonth = new Date().getMonth();
-  const mois = Math.min(11, Math.max(0, window._smRarityMapMonth));
+  if(window._smRarityMapMonth == null) window._smRarityMapMonth = 'an';
+  const periode = window._smRarityMapMonth;
+  const surAnnee = periode === 'an';
+  const mois = surAnnee ? null : Math.min(11, Math.max(0, +periode));
+  const libellePeriode = surAnnee ? 'année' : _MOIS_COURTS[mois];
   // Frequences par zone : lazy-loadees par pays (deja declenche par la card Rarete).
   if(typeof _loadFreqDataForCountry === 'function'){
     try { await _loadFreqDataForCountry(cc); } catch(_){}
@@ -10931,22 +10936,30 @@ async function _renderRarityMap(sci, cc){
   const ABSENT = '#d4d4d8';
   const svgZones = zones.map(z => {
     const arr = byZone[z] && byZone[z][key];
-    const v = Array.isArray(arr) ? (arr[mois] || 0) : 0;
+    let v = 0, moisPic = -1;
+    if(Array.isArray(arr)){
+      if(surAnnee){ for(let i = 0; i < 12; i++) if((arr[i] || 0) > v){ v = arr[i]; moisPic = i; } }
+      else v = arr[mois] || 0;
+    }
     const nom = paths.zones[z].name;
-    let fill = ABSENT, titre = `${nom} — absente en ${_MOIS_COURTS[mois]}`;
+    let fill = ABSENT;
+    let titre = surAnnee ? `${nom} — jamais observée` : `${nom} — absente en ${libellePeriode}`;
     if(v > 0){
       const tier = monthlyFreqToTier(v);
       fill = realColor(tier);
       const lbl = (typeof REAL_LABELS === 'object' && REAL_LABELS[tier]) || ('tier ' + tier);
       const pct = v >= 0.1 ? Math.round(v*100)+'%' : v >= 0.01 ? (v*100).toFixed(1)+'%' : (v*100).toFixed(2)+'%';
-      titre = `${nom} — ${lbl} (${tier}) · ${pct} des listes`;
+      titre = surAnnee
+        ? `${nom} — ${lbl} (${tier}) · jusqu'à ${pct} des listes en ${_MOIS_COURTS[moisPic]}`
+        : `${nom} — ${lbl} (${tier}) · ${pct} des listes`;
     }
     return `<path d="${paths.zones[z].path}" fill="${fill}" stroke="var(--surface, #fff)" stroke-width="0.5"><title>${titre.replace(/</g,'&lt;')}</title></path>`;
   }).join('');
-  const moisBtns = _MOIS_COURTS.map((m, i) => {
-    const on = i === mois;
-    return `<button type="button" data-mois="${i}" style="border:1px solid ${on ? 'var(--accent)' : 'var(--line-2)'}; background:${on ? 'var(--accent)' : 'var(--surface)'}; color:${on ? '#fff' : 'var(--ink-2)'}; font:${on ? '700' : '400'} 10.5px system-ui; padding:2px 6px; border-radius:6px; cursor:pointer;">${m}</button>`;
-  }).join('');
+  const chip = (val, label, actif) =>
+    `<button type="button" data-mois="${val}" style="border:1px solid ${actif ? 'var(--accent)' : 'var(--line-2)'}; background:${actif ? 'var(--accent)' : 'var(--surface)'}; color:${actif ? '#fff' : 'var(--ink-2)'}; font:${actif ? '700' : '400'} 10.5px system-ui; padding:2px 6px; border-radius:6px; cursor:pointer;">${label}</button>`;
+  const moisBtns = chip('an', 'année', surAnnee)
+    + `<span style="width:6px;"></span>`
+    + _MOIS_COURTS.map((m, i) => chip(i, m, !surAnnee && i === mois)).join('');
   const legendItem = (col, label) => `<span style="display:inline-flex; align-items:center; gap:4px;"><span style="display:inline-block; width:10px; height:10px; background:${col}; border-radius:2px;"></span>${label}</span>`;
   const zoneWord = cc === 'FR' ? 'département' : 'région';
   const openState = window._smRarityMapOpen ? ' open' : '';
@@ -10954,11 +10967,11 @@ async function _renderRarityMap(sci, cc){
   container.innerHTML = `
     <details${openState} style="margin-top:10px;" id="smRarityMapDetails">
       <summary style="cursor:pointer; padding:6px 10px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2, #fafafa); font-size:12px; color:var(--ink-2); user-select:none;">
-        ▸ Rareté par ${zoneWord} (${_MOIS_COURTS[mois]})
+        ▸ Rareté par ${zoneWord} (${libellePeriode})
       </summary>
       <div style="margin-top:6px; padding:10px 12px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2, #fafafa);">
         <div id="smRarityMapMois" style="display:flex; flex-wrap:wrap; gap:3px; justify-content:center; margin-bottom:8px;">${moisBtns}</div>
-        <svg viewBox="${paths.viewBox}" style="width:100%; max-width:320px; height:auto; display:block; margin:0 auto;" role="img" aria-label="Rareté par ${zoneWord} en ${_MOIS_COURTS[mois]}">
+        <svg viewBox="${paths.viewBox}" style="width:100%; max-width:320px; height:auto; display:block; margin:0 auto;" role="img" aria-label="Rareté par ${zoneWord} sur ${libellePeriode}">
           ${svgZones}
         </svg>
         <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; font-size:11px; color:var(--ink-2); justify-content:center;">
@@ -10968,7 +10981,7 @@ async function _renderRarityMap(sci, cc){
           ${legendItem(ABSENT,'Absente')}
         </div>
         <div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line-2); font-size:10.5px; color:var(--ink-3); text-align:center; line-height:1.4; opacity:.9;">
-          ⓘ Part des listes eBird du ${zoneWord} où l'espèce a été notée ce mois-ci, agrégée sur 2019-2026. Reflète la facilité de rencontre, pas l'effectif.
+          ⓘ Part des listes eBird du ${zoneWord} où l'espèce a été notée, agrégée sur 2019-2026. Sur l'année, c'est le meilleur mois de chaque ${zoneWord} qui est retenu. Reflète la facilité de rencontre, pas l'effectif.
         </div>
       </div>
     </details>`;
@@ -10979,7 +10992,8 @@ async function _renderRarityMap(sci, cc){
     barre.onclick = (e) => {
       const b = e.target.closest('[data-mois]');
       if(!b) return;
-      window._smRarityMapMonth = +b.dataset.mois;
+      // 'an' = agregat annuel, sinon l'index du mois.
+      window._smRarityMapMonth = b.dataset.mois === 'an' ? 'an' : +b.dataset.mois;
       _renderRarityMap(sci, cc);
     };
   }
