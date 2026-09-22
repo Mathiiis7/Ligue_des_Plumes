@@ -11797,44 +11797,34 @@ function _renderSpeciesFreqChart(key, country){
     const palette = [1,2,3,4,5,6,7,8,9,10]
       .map(t => `<span style="width:8px;height:12px;background:${realColor(t)};display:inline-block;"></span>`).join('');
     const nowLbl = isWeekly ? 'Cette semaine' : 'Mois actuel';
-    // Slider zoom visible : mapping log10 pour progression naturelle
-    // value -2 -> z=0.01, value 0 -> z=1, value 2.7 -> z=500
-    // _freqZoom deja resolu plus haut (memoire window + fallback localStorage).
-    const sliderVal = Math.log10(_freqZoom).toFixed(2);
+    // Legende + hint zoom molette
     const zoomLbl = _freqZoom >= 10 ? '×' + Math.round(_freqZoom)
                   : _freqZoom >= 1 ? '×' + _freqZoom.toFixed(1)
                   : '×' + _freqZoom.toFixed(2);
-    const zoomSlider = `<span style="display:inline-flex;align-items:center;gap:6px;pointer-events:auto;">
-      <span style="font-size:10px;color:var(--ink-3);">zoom</span>
-      <input type="range" id="smFreqZoomSlider" min="-2" max="2.7" step="0.05" value="${sliderVal}" data-current="${sliderVal}" style="width:120px;height:20px;cursor:pointer;pointer-events:auto;touch-action:none;">
-      <span id="smFreqZoomLbl" style="font-size:10px;color:var(--ink-2);min-width:32px;">${zoomLbl}</span>
-    </span>`;
     legEl.innerHTML = `
       <span class="sm-freq-lg" title="Vert = espèce facile à voir, magenta = très rare"><span style="display:inline-flex;height:12px;border:1px solid var(--line);border-radius:2px;overflow:hidden;">${palette}</span>&nbsp;facile → rare</span>
       <span class="sm-freq-lg"><span class="sm-freq-sw" style="background:transparent;border:2px solid var(--gold);width:10px;height:10px;box-sizing:border-box;"></span>Pic</span>
       <span class="sm-freq-lg"><span class="sm-freq-sw" style="background:transparent;border:2px solid var(--accent);width:10px;height:10px;box-sizing:border-box;"></span>${nowLbl}</span>
-      ${zoomSlider}`;
-    const slider = document.getElementById('smFreqZoomSlider');
-    if(slider){
-      // Force la value HTML apres innerHTML (au cas ou le browser reset).
-      slider.value = sliderVal;
-      slider.oninput = (e) => {
-        const v = parseFloat(e.target.value);
-        const z = Math.pow(10, v);
-        // Store en memoire (window) ET localStorage.
-        window._smFreqZoomState[zoomKey] = z;
-        try { localStorage.setItem(zoomKey, String(z)); } catch(_){}
-        // Update label live.
-        const lbl = document.getElementById('smFreqZoomLbl');
-        if(lbl) lbl.textContent = z >= 10 ? '×' + Math.round(z) : z >= 1 ? '×' + z.toFixed(1) : '×' + z.toFixed(2);
-        // Re-render le chart AVEC la nouvelle valeur (la memoire window prime).
+      <span class="sm-freq-lg" style="opacity:.75;font-size:10px;">🖱 molette sur le chart : zoom (${zoomLbl})</span>`;
+    // Zoom molette : onwheel direct sur SVG + wrapper. Re-render immediat (rAF).
+    const chartWrap = card ? card.querySelector('.sm-freq-chart-wrap') : null;
+    let _wheelRAF = null;
+    const wheelHandler = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      let z = window._smFreqZoomState[zoomKey] || _freqZoom || 1.0;
+      z *= e.deltaY > 0 ? 0.75 : 1.333;
+      z = Math.max(0.01, Math.min(500, z));
+      window._smFreqZoomState[zoomKey] = z;
+      try { localStorage.setItem(zoomKey, String(z)); } catch(_){}
+      if(_wheelRAF) return;
+      _wheelRAF = requestAnimationFrame(() => {
+        _wheelRAF = null;
         _renderSpeciesFreqChart(key, country);
-      };
-      // Bloque la propagation pour ne pas gener le drag.
-      slider.onmousedown = (e) => e.stopPropagation();
-      slider.ontouchstart = (e) => e.stopPropagation();
-      slider.onclick = (e) => e.stopPropagation();
-    }
+      });
+    };
+    if(svg) svg.onwheel = wheelHandler;
+    if(chartWrap) chartWrap.onwheel = wheelHandler;
   }
 }
 // Extrait la couleur "vive" dominante d'une image (echantillonnage canvas). Retourne
