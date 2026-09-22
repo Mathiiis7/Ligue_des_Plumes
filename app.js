@@ -532,6 +532,20 @@ const COUNTRIES_REG = {
 };
 // Helpers de la registry
 function _countryEntry(cc){ return COUNTRIES_REG[cc] || null; }
+// True si l'espece est un X (Echappe) purement anecdotique dans ce pays : max monthly
+// < 0.01% ET presente sur <= 3 mois. Utilise pour filtrer les Diamant de Gould et autres
+// echappes de compagnie ponctuels qui polluent la birdydex/picker. N'agit que sur les X.
+function _isIsolatedXExotic(sci, cc){
+  const k = (sci||'').toLowerCase();
+  const catByEbird = (EXOTIQUES_EBIRD_PAR_PAYS[cc] && EXOTIQUES_EBIRD_PAR_PAYS[cc][k]) || '';
+  if(catByEbird !== 'X') return false;
+  const e = _countryEntry(cc); if(!e) return false;
+  const monArr = e.monthly() && e.monthly()[k];
+  if(!Array.isArray(monArr) || !monArr.length) return true;   // aucune data = anecdotique
+  const maxM = Math.max(...monArr);
+  const nzMonths = monArr.filter(v => v > 0).length;
+  return maxM < 0.0001 && nzMonths <= 3;
+}
 function _countryHasSpecies(cc, sci){
   const e = _countryEntry(cc); if(!e) return false;
   const k = (sci||'').toLowerCase();
@@ -548,15 +562,7 @@ function _countryHasSpecies(cc, sci){
   // et avec un max < 0.01% sont considérés comme "observations ponctuelles" et non
   // comme espèce présente. Empêche les Diamant de Gould et autres échappés de compagnie
   // de polluer la birdydex pays. N'affecte que les X, pas les N/P (populations établies).
-  const cat = (typeof exoticCategoryInCountry === 'function') ? exoticCategoryInCountry(sci, cc) : '';
-  if(cat === 'X'){
-    const monArr = e.monthly() && e.monthly()[k];
-    if(Array.isArray(monArr) && monArr.length){
-      const maxM = Math.max(...monArr);
-      const nzMonths = monArr.filter(v => v > 0).length;
-      if(maxM < 0.0001 && nzMonths <= 3) return false;
-    }
-  }
+  if(_isIsolatedXExotic(sci, cc)) return false;
   return true;
 }
 
@@ -733,7 +739,10 @@ function _openCountryPicker(currentCode, opts = {}){
             // local". Sinon la Perruche a collier apparaissait comme 'N Introduit etabli' en
             // Islande / Sri Lanka via fallback FR alors qu'elle n'y est pas listee.
             const ebCC = EXOTIQUES_EBIRD_PAR_PAYS[cc] && EXOTIQUES_EBIRD_PAR_PAYS[cc][focusSci];
-            const isExoLocal = (cc === 'FR') ? isExoticInCountry(focusSci, cc) : !!ebCC;
+            // Un X isole (echappe anecdotique) est traite comme non-exotique local :
+            // le picker doit afficher "absente" pour Diamant de Gould en Espagne, pas "X".
+            const isExoLocal = ((cc === 'FR') ? isExoticInCountry(focusSci, cc) : !!ebCC)
+              && !_isIsolatedXExotic(focusSci, cc);
             // Source de verite = rarityForCountry (meme calcul que la fiche espece).
             // Fix 2026-09-22 : avant, le picker basait "absente" sur it.score (max monthly
             // brut) alors que la fiche utilise rarityForCountry qui a des fallbacks
