@@ -4775,12 +4775,16 @@ function renderFeed(){
   // Evenements trophees (uniquement en mode "nouveautes", filtre rareté ignore).
   // On garde les 3 types : unlock (debloque), transfer (prend a X), demote (passe de A a B).
   if(feedMode==='new' && feedTier==='any'){
+    // Set des noms de trophees actifs pour purger les events historiques dont le trophee
+    // n'existe plus (renommé ex Astérix→Terroir, ou retiré ex 'Bear Grylls', 'Armée d'aigles royaux').
+    const activeTrophyNames = new Set();
+    if(typeof TROPHIES === 'object' && Array.isArray(TROPHIES)){
+      for(const t of TROPHIES) if(t && t.name) activeTrophyNames.add(t.name);
+    }
     for(const ev of _computeTrophyEvents()){
-      // Filtre les demote events historiques : les rank trophies etant "unlockes pour
-      // toujours" (une fois obtenu, jamais perdu dans l'historique du joueur), les
-      // retrogradations ne sont plus annoncees. Purge les vieux events Firestore de
-      // ce type au rendu.
       if(ev.kind === 'demote') continue;
+      // Filtre les events dont le trophee n'existe plus (renommé ou retiré).
+      if(ev.trophyName && !activeTrophyNames.has(ev.trophyName)) continue;
       // Le filtre "personne" affiche les evts ou cette personne est impliquee (uid OU fromUid).
       if(feedPerson !== 'any' && ev.uid !== feedPerson && ev.fromUid !== feedPerson) continue;
       items.push({ ...ev, ord:0, disp:'', addedAt:ev.at||ev.addedAt||0 });
