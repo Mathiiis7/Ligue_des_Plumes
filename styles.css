@@ -808,7 +808,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .species-modal .sm-info-chips .chip.rar-chip-fill { color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.35); font-weight:800; }
   /* Card photo : ratio 16/9, cover, arrondie */
   .species-modal .sm-photo-card { padding:0 !important; overflow:hidden; }
-  .species-modal .sm-photo-card img { display:block; width:100%; aspect-ratio:21/9; object-fit:cover; object-position:center; max-height:280px; }
+  .species-modal .sm-photo-card img { display:block; width:100%; aspect-ratio:16/9; object-fit:cover; object-position:center; }
   .species-modal .sm-photo-card .photo-caption { padding:8px 12px; font-size:11.5px; color:var(--ink-3); background:var(--surface); border-top:1px solid var(--line); }
   /* Bouton fermer : rond blanc glassy en haut a droite */
   .species-modal .sm-close { position:absolute; top:14px; right:16px; background:rgba(255,255,255,.95); border:none; font-size:18px; color:var(--ink); cursor:pointer; width:34px; height:34px; border-radius:50%; box-shadow:0 2px 8px rgba(0,0,0,.3); z-index:6; display:grid; place-items:center; transition:transform .12s; }
