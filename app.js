@@ -11791,29 +11791,22 @@ function _renderSpeciesFreqChart(key, country){
       <span class="sm-freq-lg"><span class="sm-freq-sw" style="background:transparent;border:2px solid var(--gold);width:10px;height:10px;box-sizing:border-box;"></span>Pic</span>
       <span class="sm-freq-lg"><span class="sm-freq-sw" style="background:transparent;border:2px solid var(--accent);width:10px;height:10px;box-sizing:border-box;"></span>${nowLbl}</span>
       <span class="sm-freq-lg" style="opacity:.6;font-size:10px;">🖱 molette = zoom</span>`;
-    // Zoom molette : delegation body pour ne pas dependre du timing d'attach au SVG.
-    // Stocke le contexte de rendu (key, country, mode) sur le SVG via dataset.
-    if(svg){
-      svg.dataset.freqKey = key;
-      svg.dataset.freqCc = country || 'FR';
-      svg.dataset.freqZoomKey = zoomKey;
-    }
-    if(!window._freqWheelAttached){
-      window._freqWheelAttached = true;
-      document.body.addEventListener('wheel', (e) => {
-        const target = e.target.closest('#smFreqChart');
-        if(!target) return;
-        e.preventDefault();
-        e.stopPropagation();
-        const modeKey = target.dataset.freqZoomKey || 'mb-freq-zoom-m';
-        let z = 1.0;
-        try { const s = parseFloat(localStorage.getItem(modeKey)); if(s > 0 && s < 100) z = s; } catch(_){}
-        z *= e.deltaY > 0 ? 0.87 : 1.15;
-        z = Math.max(0.05, Math.min(20, z));
-        try { localStorage.setItem(modeKey, String(z)); } catch(_){}
-        _renderSpeciesFreqChart(target.dataset.freqKey, target.dataset.freqCc);
-      }, { passive: false });
-    }
+    // Zoom molette : onwheel direct (remplace le handler a chaque render). Attache aussi
+    // sur le wrapper (.sm-freq-chart-wrap) pour capter les evenements meme si le curseur
+    // n'est pas exactement sur une barre du SVG.
+    const chartWrap = card ? card.querySelector('.sm-freq-chart-wrap') : null;
+    const wheelHandler = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      let z = 1.0;
+      try { const s = parseFloat(localStorage.getItem(zoomKey)); if(s > 0 && s < 100) z = s; } catch(_){}
+      z *= e.deltaY > 0 ? 0.87 : 1.15;
+      z = Math.max(0.05, Math.min(20, z));
+      try { localStorage.setItem(zoomKey, String(z)); } catch(_){}
+      _renderSpeciesFreqChart(key, country);
+    };
+    if(svg) svg.onwheel = wheelHandler;
+    if(chartWrap) chartWrap.onwheel = wheelHandler;
   }
 }
 // Extrait la couleur "vive" dominante d'une image (echantillonnage canvas). Retourne
