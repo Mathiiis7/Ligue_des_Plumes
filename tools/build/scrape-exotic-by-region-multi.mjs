@@ -67,12 +67,17 @@ const REGIONS = {
        'CA-PE','CA-QC','CA-SK','CA-YT'],
 };
 
-// Filter par CLI (subset)
-const arg = process.argv[2];
-const COUNTRIES = arg ? arg.split(',').map(s => s.trim().toUpperCase()) : Object.keys(REGIONS);
+// Args CLI : [countries] [--force]
+//   countries : subset separe par virgules (US,CA,GB), sinon tous
+//   --force   : re-scrape TOUTES les regions meme celles deja faites
+const args = process.argv.slice(2);
+const FORCE = args.includes('--force');
+const filterArg = args.find(a => !a.startsWith('--'));
+const COUNTRIES = filterArg ? filterArg.split(',').map(s => s.trim().toUpperCase()) : Object.keys(REGIONS);
 const totalRegions = COUNTRIES.reduce((a, c) => a + (REGIONS[c]?.length || 0), 0);
 console.log(`Scrape exotic status per region : ${COUNTRIES.length} pays, ${totalRegions} regions.`);
-console.log(`Estim ~30s/region => ~${Math.round(totalRegions * 30 / 60)} min total.\n`);
+if(FORCE) console.log(`Mode FORCE : re-scrape toutes les regions meme celles deja faites.`);
+console.log(`Estim ~60s/region => ~${Math.round(totalRegions * 60 / 60)} min total.\n`);
 
 async function scrapeRegion(page, region) {
   const url = `https://ebird.org/barchart?r=${region}&byr=1900&eyr=2026`;
@@ -82,23 +87,28 @@ async function scrapeRegion(page, region) {
   } catch(e) {
     console.warn(`    (aucun .SpeciesName apres 45s, tente extract quand meme)`);
   }
-  // Attente : la liste peut etre en cours de render. On boucle jusqu'a stabilisation
-  // du nombre de rows (max 20s) : evite les 0-exotique pour les grosses regions GB-ENG,
-  // US-CA, IT-25 ou les icones lazy-load progressivement.
+  // Attente stabilisation : la liste peut etre en cours de render. On boucle jusqu'a
+  // stabilisation du nombre de rows (max 40s) puis attente supplementaire pour les
+  // icones exotic qui peuvent arriver apres. Grosses regions (GB-ENG, US-CA) sont
+  // lentes a rendre : on prend le temps.
   await page.evaluate(async () => {
     let prev = -1, stable = 0, attempts = 0;
-    while(attempts++ < 40 && stable < 3){
+    while(attempts++ < 80 && stable < 5){
       const n = document.querySelectorAll('.SpeciesName').length;
       if(n === prev && n > 0) stable++; else stable = 0;
       prev = n;
       await new Promise(r => setTimeout(r, 500));
     }
   });
-  // Scroll bottom pour trigger lazy-load restant
+  // Scroll bottom -> top -> bottom pour trigger lazy-load des icones hors viewport
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(3000);
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(2000);
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await page.waitForTimeout(3000);
+  // Attente finale pour laisser les icones apparaitre
+  await page.waitForTimeout(3000);
   return await page.evaluate(() => {
     const out = {};
     const icons = document.querySelectorAll('[class*="Icon--exotic"]');
@@ -142,9 +152,10 @@ for(const cc of COUNTRIES) {
   if(!regions){ console.warn(`Pas de regions pour ${cc}, skip.`); continue; }
 
   const outFile = join(__dir, `exotic-by-region-${cc.toLowerCase()}.generated.js`);
-  // Resume : reprend un scrape interrompu si le fichier existe deja
+  // Resume : reprend un scrape interrompu si le fichier existe deja.
+  // Skippe en mode --force pour tout re-scraper.
   let results = {};
-  if(existsSync(outFile)){
+  if(existsSync(outFile) && !FORCE){
     try {
       const src = readFileSync(outFile, 'utf8');
       const m = src.match(new RegExp(`EXOTIC_STATUS_BY_REGION_${cc}\\s*=\\s*({[\\s\\S]*?});`));
@@ -155,7 +166,7 @@ for(const cc of COUNTRIES) {
   console.log(`\n===== ${cc} (${regions.length} regions) =====`);
   for(const region of regions){
     done++;
-    if(results[region] && Object.keys(results[region]).length){
+    if(!FORCE && results[region] && Object.keys(results[region]).length){
       console.log(`  [${done}/${totalRegions}] ${region} : SKIP (deja fait, ${Object.keys(results[region]).length} sp)`);
       continue;
     }
