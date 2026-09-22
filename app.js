@@ -11660,11 +11660,13 @@ function _renderSpeciesFreqChart(key, country){
   // Echelle Y : plancher fixe (30% ou 3 ind/h) etendu automatiquement pour ne pas ecreter.
   // Molette souris = zoom (up = zoom in, down = zoom out). Multiplicateur persiste par
   // pays+mode pour eviter qu'un zoom sur bar chart pollue le zoom S&T weekly.
-  const FIXED_MIN_MAX = isWeekly ? 3.0 : 0.30;
-  const zoomKey = 'mb-freq-zoom-' + (isWeekly ? 'w' : 'm');
-  // _freqZoom : priorite memoire (window._smFreqZoomState set live par le slider) puis
-  // fallback localStorage puis 1.0 par defaut. La memoire prime pour eviter les problemes
-  // de timing (le slider ecrit puis re-render immediatement, localStorage sync possible en retard).
+  // Echelle Y : FIXE 30% (source unique bar chart % checklists) + zoom molette.
+  // Fix 2026-09-22 : yMax est toujours FIXED_MAX / zoom, INDEPENDAMMENT du pic de
+  // l'espece. Sinon deux especes au meme zoom avaient des echelles differentes
+  // (Merle noir 34% -> yMax=26%, Fuligule 20% -> yMax=23%). Comparaison impossible.
+  // Les especes qui depassent le plafond (Merle noir tier 1) sont ecretees visuellement.
+  const FIXED_MAX = 0.30;
+  const zoomKey = 'mb-freq-zoom-m';
   window._smFreqZoomState = window._smFreqZoomState || {};
   let _freqZoom = 1.0;
   if(window._smFreqZoomState[zoomKey] != null && window._smFreqZoomState[zoomKey] > 0){
@@ -11672,7 +11674,7 @@ function _renderSpeciesFreqChart(key, country){
   } else {
     try { const z = parseFloat(localStorage.getItem(zoomKey)); if(z > 0 && z < 1000) _freqZoom = z; } catch(_){}
   }
-  const yMax = Math.max(FIXED_MIN_MAX, maxV) / _freqZoom;
+  const yMax = FIXED_MAX / _freqZoom;
   const yFor = v => PT + ih - ih * Math.min(1, v/yMax);
   // Format des labels y-axis. Precision adaptative pour les especes rares (0.0002 ind/h par ex).
   const fmtAbd = v => {
