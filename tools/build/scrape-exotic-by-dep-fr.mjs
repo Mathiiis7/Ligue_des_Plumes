@@ -29,7 +29,7 @@ const FR_DEPS = [
   'FR-HDF-60','FR-NOR-61','FR-HDF-62','FR-ARA-69','FR-BFC-70','FR-BFC-71','FR-CVL-45',
   'FR-CVL-18','FR-OCC-46','FR-NAQ-16','FR-NAQ-17','FR-NAQ-19','FR-COR-2A','FR-COR-2B',
   'FR-NAQ-64','FR-OCC-65','FR-OCC-66','FR-GES-67','FR-GES-68','FR-BFC-58','FR-BFC-90',
-  'FR-PDL-44','FR-ARA-43','FR-ARA-15',
+  'FR-PDL-44','FR-ARA-43','FR-ARA-15','FR-ARA-63','FR-NAQ-87',
   // Territoires outre-mer (DOM/COM)
   'FR-GF','FR-GP','FR-MQ','FR-YT','FR-RE',
 ];
