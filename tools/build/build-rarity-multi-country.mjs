@@ -94,12 +94,37 @@ const REGIONS = {
 };
 
 // Memes seuils que FR/ME (Option 1 recalibree 2026-08-27, tier 10 seuil 0.00015)
+// MESURE DE LA RARETE : moyenne du pic annuel et de la moyenne des 12 mois.
+//
+// On prenait le seul pic, ce qui recompensait la saisonnalite : le Rossignol philomele,
+// present six mois, ressortait tier 1 sur son pic de mai, devant le Pigeon biset present
+// toute l annee a 18 %. Le tier disait "si je viens au bon moment" plutot que "quelle
+// chance j ai de le rencontrer".
+//
+// La moyenne seule corrigeait trop : elle retrogradait le Martinet noir et l Hirondelle
+// rustique au tier 2, alors qu ils sont omnipresents et voyants la moitie de l annee.
+// La moyenne des deux garde ces migrateurs abondants au tier 1 et ne deplace que 42 taxons
+// francais, contre 183 pour la moyenne seule.
+//
+// Noter l asymetrie que ca corrige : dans l ESPACE le tier national etait deja une moyenne,
+// il diluait la Sittelle corse (tier 7 national, tier 1 en Corse-du-Sud) sur toute la France.
+// Dans le TEMPS il prenait le pic. Les deux dimensions etaient traitees a l oppose.
+//
+// Seuils recalibres sur les 12 632 taxons-pays des 15 bar charts nationaux, a effectifs
+// constants : la repartition des couleurs ne bouge pas, seul l ordre change.
 const THRESHOLDS = [
-  [0.25, 1], [0.15, 2], [0.08, 3], [0.04, 4],
-  [0.02, 5], [0.007, 6], [0.0015, 7], [0.0003, 8],
-  [0.00015, 9],
+  [0.21, 1], [0.12, 2], [0.062, 3], [0.030, 4],
+  [0.015, 5], [0.0050, 6], [0.00080, 7], [0.00018, 8],
+  [0.000090, 9],
 ];
-function weightFor(freq){ for(const [min, w] of THRESHOLDS) if(freq >= min) return w; return 10; }
+function weightFor(v){ for(const [min, w] of THRESHOLDS) if(v >= min) return w; return 10; }
+// Valeur annuelle d un taxon : (pic + moyenne) / 2 sur les 12 mois.
+function valeurAnnuelle(m12){
+  if(!Array.isArray(m12) || !m12.length) return 0;
+  const pic = Math.max(...m12);
+  const moy = m12.reduce((a, b) => a + (b || 0), 0) / m12.length;
+  return (pic + moy) / 2;
+}
 
 const norm = s => s.toLowerCase()
   .replace(/œ/g, 'oe').replace(/æ/g, 'ae')
@@ -142,7 +167,7 @@ function parseBarchart(path){
       const start = m * 4;
       m12[m] = Math.max(nums[start]||0, nums[start+1]||0, nums[start+2]||0, nums[start+3]||0);
     }
-    out[norm(clean)] = { name: clean, freq: Math.max(...nums), monthly: m12 };
+    out[norm(clean)] = { name: clean, freq: valeurAnnuelle(m12), monthly: m12 };
   }
   return out;
 }
