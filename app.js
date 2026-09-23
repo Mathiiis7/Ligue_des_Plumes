@@ -1373,10 +1373,11 @@ function _updateCountryHint(){
   if(c === 'FR'){ el.style.display = 'none'; el.innerHTML = ''; return; }
   const flg = flagImg(c) || '';
   const wrap = `<span style="display:inline-block;vertical-align:middle;margin-right:6px;">${flg}</span>`;
-  const calibrated = (c === 'ME');
-  el.innerHTML = calibrated
-    ? `${wrap} Rareté et couleurs calibrées pour ce pays (eBird bar chart). France utilise en plus eBird Status & Trends (Cornell ML).`
-    : `${wrap} Rareté non calibrée pour ce pays : marqueurs en gris "inconnue".`;
+  // Les 16 pays sont desormais calibres sur la meme mesure, le bar chart eBird 2019-2026.
+  // Le message disait encore que seul le Montenegro l'etait et que la France ajoutait du
+  // Status & Trends : les deux branches etaient fausses.
+  const nom = (COUNTRIES_REG[c] && COUNTRIES_REG[c].name) || c;
+  el.innerHTML = `${wrap} Rareté calibrée pour ${esc(nom)} sur le bar chart eBird 2019-2026, même échelle que la France.`;
   el.style.display = '';
 }
 // Rareté par pays. Passe explicitement 'FR' ou 'ME' etc. Retourne 0 si pas calibre pour
@@ -5865,6 +5866,26 @@ function _mapMarker(pt, groupSize){
 // cc -> { region: { sci: [12] } }
 const REAL_FREQ_MONTHLY_BY_REGION_MULTI = {};
 const _freqDataPromises = {};
+// Series en 48 quinzaines du bar chart national, chargees a la demande (~200 Ko par pays).
+// L'histogramme de saisonnalite etirait jusqu'ici 12 valeurs mensuelles sur ses 52 creneaux,
+// d'ou des groupes de 4 barres strictement identiques : la resolution d'eBird, qui publie
+// bien 48 quinzaines, etait perdue a l'affichage.
+const REAL_FREQ_48_MULTI = {};
+const _freq48Promises = {};
+async function _loadFreq48(cc){
+  if(_freq48Promises[cc]) return _freq48Promises[cc];
+  _freq48Promises[cc] = (async () => {
+    try{
+      const data = await fetch('data/countries/' + cc.toLowerCase() + '/freq_48.json?v=20260923').then(r => r.ok ? r.json() : null);
+      if(data) REAL_FREQ_48_MULTI[cc] = data;
+    }catch(err){
+      console.warn('Erreur load freq_48_' + cc + ' :', err.message);
+      _freq48Promises[cc] = null;
+    }
+  })();
+  return _freq48Promises[cc];
+}
+
 async function _loadFreqDataForCountry(cc){
   if(_freqDataPromises[cc]) return _freqDataPromises[cc];
   const filename = 'data/countries/' + cc.toLowerCase() + '/freq_by_region.json?v=20260830';
@@ -11847,6 +11868,13 @@ function _renderSpeciesFreqChart(key, country){
   const wrap = $('#smFreqWrap'), card = $('#smFreqCard'), svg = $('#smFreqChart'), srcEl = $('#smFreqSrc');
   if(!svg) return;
   const cc = country || 'FR';
+  // Charge les 48 quinzaines du pays si besoin, puis redessine. Le premier rendu se fait
+  // sans, en etirant les 12 mois : on affiche tout de suite plutot que d attendre 200 Ko.
+  if(typeof REAL_FREQ_48_MULTI === 'object' && !REAL_FREQ_48_MULTI[cc] && typeof _loadFreq48 === 'function'){
+    _loadFreq48(cc).then(() => {
+      if(REAL_FREQ_48_MULTI[cc] && !_ccFicheObsolete(cc)) _renderSpeciesFreqChart(key, cc);
+    });
+  }
   // Priorite : (1) S&T weekly REGIONAL si FR + region choisie + data dispo pour l'espece
   //           (2) S&T weekly NATIONAL si FR
   //           (3) fallback bar chart mensuel 12 valeurs ETIREES sur 52 slots (FR ou ME)
@@ -11887,19 +11915,26 @@ function _renderSpeciesFreqChart(key, country){
     // pour eviter que Erismature rousse ME affiche data FR par erreur.
     if(!monthlyArr && !strictRegional && cc === 'FR' && typeof REAL_FREQ_MONTHLY === 'object'){ monthlyArr = REAL_FREQ_MONTHLY[key] || null; }
     if(monthlyArr && monthlyArr.length === 12){
-      // Étire 12 mois -> 52 semaines (repartition proportionnelle des semaines par mois).
-      // Chaque semaine w recoit la valeur du mois dont elle occupe le milieu.
-      arr = new Array(52);
-      for(let w=0; w<52; w++){
-        const dayOfYear = w * 7 + 4;   // milieu de la semaine
-        const monthIdx = Math.min(11, Math.floor(dayOfYear / 30.44));   // 365/12
-        arr[w] = monthlyArr[monthIdx] || 0;
+      // eBird publie 48 quinzaines : on les affiche telles quelles quand on les a, plutot
+      // que d'etirer 12 moyennes mensuelles sur 52 creneaux, ce qui produisait des groupes
+      // de 4 barres strictement identiques. A defaut, on retombe sur l'etirement.
+      const q48 = (!strictRegional && REAL_FREQ_48_MULTI[cc]) ? REAL_FREQ_48_MULTI[cc][key] : null;
+      if(Array.isArray(q48) && q48.length === 48){
+        arr = q48.slice();
+      } else {
+        arr = new Array(52);
+        for(let w = 0; w < 52; w++){
+          const dayOfYear = w * 7 + 4;   // milieu de la semaine
+          const monthIdx = Math.min(11, Math.floor(dayOfYear / 30.44));   // 365/12
+          arr[w] = monthlyArr[monthIdx] || 0;
+        }
       }
       isWeekly = false;   // rendu 52 slots mais source mensuelle -> unite %
       unitLabel = '%';
     }
   }
-  if(!arr || arr.length !== 52){
+  // Le graphique accepte 48 creneaux (quinzaines eBird) ou 52 (semaines S&T).
+  if(!arr || (arr.length !== 48 && arr.length !== 52)){
     const cc2 = country || 'FR';
     // Cas 1 : espece absente de la region choisie (mode strict). On l'affiche
     // explicitement pour ne pas confondre avec un fallback national trompeur.
@@ -11937,7 +11972,9 @@ function _renderSpeciesFreqChart(key, country){
   // etiree). Avant : quand isWeekly=false on prenait now.getMonth() (0-11), mais l'array
   // fait 52 slots -> le curseur se posait vers janvier (slot 8 = janv-fev) au lieu de
   // septembre. Fix 2026-09-22 : toujours calculer en semaine.
-  const curIdx = Math.min(51, Math.floor(dayOfYear / 7));
+  const _nSlots = arr.length;
+  const _joursParSlot = 365 / _nSlots;
+  const curIdx = Math.min(_nSlots - 1, Math.floor(dayOfYear / _joursParSlot));
   if(wrap) wrap.hidden = false;
   if(card) card.hidden = false;
   // Scope affiche : "Île-de-France" si mode strict region, "France (via Corse)" si
@@ -11993,7 +12030,7 @@ function _renderSpeciesFreqChart(key, country){
   } else {
     // Source mensuelle etiree a 52 slots : le pic est au premier slot du mois pic,
     // on reconvertit vers un label mois-only pour ne pas suggerer une precision fictive.
-    const peakMonth = Math.min(11, Math.floor((bestIdx * 7 + 4) / 30.44));
+    const peakMonth = Math.min(11, Math.floor((bestIdx * _joursParSlot + _joursParSlot / 2) / 30.44));
     peakLbl = 'en ' + _MONTH_FR[peakMonth];
     // Format % adaptatif : pour les exotiques (Ibis, Tadorne casarca), maxV peut etre
     // 0.006 = 0.6%. Math.round(0.6) = 1 mais Math.round(0.4) = 0 -> "0%" bugue. On
@@ -12123,7 +12160,14 @@ function _renderSpeciesFreqChart(key, country){
     // Label tooltip : "mi-mai" pour weekly S&T, "mai" pour monthly stretched (l'index i
     // 0..51 correspond a une semaine dans les deux cas, mais monthly n'a que 12 valeurs
     // distinctes reparties par mois → tooltip mois-only plus honnete).
-    const titleLbl = isWeekly ? _weekToLabel(i) : _MONTH_FR[Math.min(11, Math.floor((i * 7 + 4) / 30.44))];
+    // Libelle d'un creneau. En 48 quinzaines, quatre barres tombent dans le meme mois : on
+    // donne la plage de jours, sans quoi l'infobulle repete "mars" avec quatre valeurs.
+    const _PLAGES = ['1-7', '8-15', '16-23', '24-fin'];
+    const titleLbl = isWeekly
+      ? _weekToLabel(i)
+      : (_nSlots === 48
+          ? `${_PLAGES[i % 4]} ${_MONTH_FR[Math.floor(i / 4)]}`
+          : _MONTH_FR[Math.min(11, Math.floor((i * _joursParSlot + _joursParSlot / 2) / 30.44))]);
     const title = `${titleLbl} : ${titleVal}${titleUnit}`;
     // Coloration tier partout : pic + semaine/mois courant repérés via contour distinct
     // (or / accent) plutot que via la couleur du fill.

@@ -200,7 +200,7 @@ function parseBarchart(path){
       m12[m] = valeurPonderee(nums.slice(m * 4, m * 4 + 4), effort.slice(m * 4, m * 4 + 4));
     }
     // La valeur annuelle se calcule sur les 48 quinzaines, pas sur les 12 mois agreges.
-    out[norm(clean)] = { name: clean, freq: valeurPonderee(nums.slice(0, 48), effort), monthly: m12 };
+    out[norm(clean)] = { name: clean, freq: valeurPonderee(nums.slice(0, 48), effort), monthly: m12, q48: nums.slice(0, 48).map(v => +(v || 0).toFixed(5)) };
   }
   return out;
 }
@@ -304,6 +304,18 @@ async function processCountry(cc){
   const countryDir = join(__dir, '..', '..', 'data', 'countries', cc.toLowerCase());
   const { mkdirSync } = await import('node:fs');
   mkdirSync(countryDir, { recursive: true });
+  // Series en 48 quinzaines pour l histogramme de saisonnalite de la fiche espece. Il
+  // etirait jusqu ici 12 valeurs mensuelles sur 52 creneaux, d ou des groupes de 4 barres
+  // identiques : la resolution d eBird etait perdue a l affichage. Charge a la demande,
+  // ces series pesent environ 200 Ko par pays et n ont pas leur place dans app.js.
+  const q48 = {};
+  for(const [k, o] of Object.entries(bar)){
+    const sci = resolveSci(tax, k, o.name);
+    if(sci && o.q48) q48[sci] = o.q48;
+  }
+  const q48Path = join(countryDir, `freq_48.json`);
+  writeFileSync(q48Path, JSON.stringify(q48));
+  console.log(`  Ecrit : ${q48Path} (${Object.keys(q48).length} especes)`);
   const regPath = join(countryDir, `freq_by_region.json`);
   // Garde-fou : ne jamais remplacer un fichier regional existant par un plus pauvre. Une
   // fenetre de TSV mal nommee ou une region non telechargee produirait sinon une perte
