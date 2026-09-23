@@ -599,12 +599,19 @@ function _countryHasSpecies(cc, sci){
   const k = (sci||'').toLowerCase();
   const stEntry = e.st()[k];
   // Espece consideree presente si :
-  //   - bar chart tier > 0 (pour FR/ME)
+  //   - bar chart tier > 0
   //   - OU S&T avec au moins une valeur weekly non-nulle
-  //   - OU S&T avec composite tier > 0 (vagrants Cornell : w=[0,0,...] mais t=10)
+  //   - OU S&T avec un composite tier ET une abondance reelle dans le pays
+  //
+  // La troisieme condition testait seulement `stEntry.t > 0`, pour admettre les vagrants
+  // que Cornell modelise avec w=[0,0,...] mais t=10. Or ce t=10 est le plancher de la
+  // fonction de tier applique a une abondance nulle, pas une mesure : il admettait
+  // 50 especes au catalogue francais qui n'y ont rien a faire (Vautour oricou, Damier du
+  // Cap, Petrel geant...), toutes avec abondance ET valeurs hebdo strictement nulles.
+  // Meme garde que pour la rarete, cf. _stUtilisable.
   const hasBar = !!e.barTier()[k];
   const hasSTWeekly = stEntry && Array.isArray(stEntry.w) && stEntry.w.some(v => v > 0);
-  const hasSTTier = stEntry && stEntry.t > 0;
+  const hasSTTier = _stUtilisable(stEntry);
   if(!hasBar && !hasSTWeekly && !hasSTTier) return false;
   // Filtre X isolés : les échappés (X) qui n'apparaissent que sur ≤ 3 mois
   // et avec un max < 0.01% sont considérés comme "observations ponctuelles" et non
@@ -702,20 +709,19 @@ function _openCountryPicker(currentCode, opts = {}){
     // Si opts.sci est passe (appel depuis fiche espece), on trie par abondance pour
     // cette espece et on affiche un indicateur (max weekly S&T ou % pic monthly).
     const focusSci = opts.sci ? opts.sci.toLowerCase() : null;
-    // Utilise TOUJOURS le bar chart mensuel (unite % listes) pour cohérence inter-pays.
-    // Tous les pays ont un bar chart national (FR/ME/ES/IT/GB/PT), donc pas de melange
-    // d'unites % vs ind/h dans le picker. Fallback S&T uniquement si aucun bar chart.
+    // Uniquement le bar chart mensuel (% de listes). Le repli S&T qui existait ici
+    // renvoyait un score en ind/h, trie dans la meme liste que des pourcentages : un pays
+    // note 0.015 ind/h se retrouvait classe comme un pays a 1,5 % de listes. Il ne se
+    // declenchait que pour 6 especes francaises, toutes pourvues d'un tier bar chart et
+    // seulement privees de tableau mensuel. Elles scorent desormais 0 comme les 40 autres
+    // especes dans le meme cas, ce qui est au moins coherent. Meme choix que le panneau
+    // regional, ou useST est fige a false.
     const scoreCountryForSpecies = (cc) => {
       const reg = COUNTRIES_REG[cc];
       const monArr = reg.monthly()[focusSci];
       if(Array.isArray(monArr)){
         const m = Math.max(...monArr);
         if(m > 0) return { score: m, isSt: false };
-      }
-      const stEntry = reg.st()[focusSci];
-      if(stEntry && Array.isArray(stEntry.w)){
-        const m = Math.max(...stEntry.w);
-        if(m > 0) return { score: m, isSt: true };
       }
       return { score: 0, isSt: false };
     };
@@ -815,10 +821,13 @@ function _openCountryPicker(currentCode, opts = {}){
               ? '<span class="cp-item-meta">absente</span>'
               : `<span class="cp-item-meta">${esc(lbl)}</span><span class="rar-chip on" style="background:${col};" title="tier ${tier}">${chipText}</span>`;
           } else {
-            // Nb d'especes calibrees pour ce pays : prime S&T Cornell (plus riche : ~600
-            // sp europeennes typiques), fallback bar chart eBird pour les pays sans S&T
-            // (Sri Lanka, Namibie, Islande, Norvege...).
-            const nSp = Object.keys(reg.st() || {}).length || Object.keys(reg.barTier() || {}).length;
+            // Nb d'especes calibrees pour ce pays = le bar chart, qui est la source de la
+            // rarete dans les 16 pays. On primait le S&T en le croyant plus riche : il ne
+            // l'est pas, il compte 171 a 450 especes de MOINS selon le pays. Les 6 pays
+            // pourvus d'un S&T affichaient donc un nombre plus petit que les 10 autres,
+            // qui tombaient deja sur le bar chart (l'Espagne annoncait 284 especes contre
+            // 694 reelles). Le bar chart partout, c'est comparable.
+            const nSp = Object.keys(reg.barTier() || {}).length || Object.keys(reg.st() || {}).length;
             meta = nSp > 0 ? `<span class="cp-item-meta">${nSp} espèces</span>` : '';
           }
           // Fix 2026-09-22 : absentCls doit refléter le vrai statut 'absent' (tier === 0
