@@ -1183,36 +1183,10 @@ const HABITAT_TO_SCIS = (() => {
 // en FR" est plus juste que 5 % du catalogue mondial. Ex : Forest 6052 sp mondial ->
 // ~200 sp FR (bien plus atteignable). Getter lazy : REAL_RARITY est declare plus bas,
 // donc on differe le calcul au 1er acces.
-let _HABITAT_TO_SCIS_FR = null;
-function HABITAT_TO_SCIS_FR(cat){
-  if(_HABITAT_TO_SCIS_FR) return _HABITAT_TO_SCIS_FR[cat] || [];
-  const idx = Object.fromEntries(HABITAT_CATS.map(c=>[c, []]));
-  // Filtre "presente en France" pour les trophees habitat : on exige une abondance
-  // annuelle > 0 dans le modele eBird S&T FR (`REAL_ABUNDANCE_ST_FR[sci].a > 0`).
-  // Fallback sur REAL_RARITY tier < 10 pour les especes non modelisees par S&T.
-  // Ecarte les vagrants exceptionnels (ex: Arlequin plongeur, canard nord-americain
-  // qui apparait 1 fois par decennie en France - il etait bug-liste avec tier 7 dans
-  // REAL_RARITY mais son a=0 dans S&T confirme qu'il n'est pas vraiment present).
-  const inFR = sci => {
-    const st = typeof REAL_ABUNDANCE_ST_FR === 'object' ? REAL_ABUNDANCE_ST_FR[sci] : null;
-    if(st){ return (st.a || 0) > 0; }
-    const rr = typeof REAL_RARITY === 'object' ? REAL_RARITY[sci] : null;
-    return rr && rr < 10;
-  };
-  // Union des cles : HABITATS (AVONET base) + HABITAT_ADDITIONS + HABITAT_OVERRIDES.
-  // Avant on iterait juste sur HABITATS, ce qui ratait les especes dont la seule
-  // classification vient des ADDITIONS (ex: Gypaete, Aigle royal, Lagopede
-  // pour "montane"). Passe par habitatsOf() pour merger correctement.
-  const seen = new Set();
-  const push = sci => { if(seen.has(sci)) return; seen.add(sci); if(!inFR(sci)) return;
-    const cats = habitatsOf(sci); if(!cats) return;
-    for(const c of cats) if(idx[c]) idx[c].push(sci); };
-  for(const sci in HABITATS) push(sci);
-  for(const sci in HABITAT_ADDITIONS) push(sci);
-  for(const sci in HABITAT_OVERRIDES) push(sci);
-  _HABITAT_TO_SCIS_FR = idx;
-  return idx[cat] || [];
-}
+// HABITAT_TO_SCIS_FR (index habitat -> especes francaises) et son filtre inFR ont ete
+// retires avec les trophees habitat : ils n'avaient pas d'autre consommateur. inFR etait
+// le dernier usage du S&T pour trancher "presente en France", via les entrees a abondance
+// nulle qui ecartaient les vagrants.
 // Especes exotiques "cage/voliere echappee isolee" : perroquets d'appartement,
 // canaris, calopsittes, aras, cacatoes, loriquets, inseparables, diamants...
 // Techniquement observables si l'oiseau du voisin s'echappe, mais aucun interet
@@ -2723,10 +2697,6 @@ const TROPHIES = [
     list:s=>FR_REGIONS.map(r=>({ name:r.name, owned:s.regionsOwnedSet.has(r.code) })),
     note:s=>`${s.regionsCount} région${s.regionsCount>1?'s':''} visitée${s.regionsCount>1?'s':''} sur ${FR_REGIONS.length}`,
   }),
-  // ----- 17 familles habitat evolutives (seuils absolus, seuil = nb d'especes obs
-  // dans ce milieu peu importe le pays). Philo 'FR-first, voyage doux' :
-  // Diamant ~= 20-30% du pool FR (accessible bon birder FR), Emeraude/Prismatique
-  // atteignables avec un peu de voyage sans etre grand voyageur. Pools FR indiques
   // -- Familles d'especes (paliers) --
   ...makeTierFamily({
     theme:'groupe', icon:ICONS.aigle, family:'rapaces', category:'species', baseName:'Rapaces diurnes',
@@ -3957,8 +3927,6 @@ function statsFor(me, N){
         sturnoideaOwnedSet=new Set(), passeridaeOwnedSet=new Set(),
         certhioideaOwnedSet=new Set(), podicipedidaeOwnedSet=new Set(),
         cuculidaeOwnedSet=new Set();
-  // Milieux (habitats) : Set d'espèces par catégorie via HABITATS (source : famille eBird).
-  const habOwned = Object.fromEntries(HABITAT_CATS.map(c=>[c, new Set()]));
   for(const v of me._active.values()){
     const sci=(v.sci||'').toLowerCase();
     const g=sci.split(' ')[0];
@@ -4067,24 +4035,11 @@ function statsFor(me, N){
     // debloquait le trophee alors qu'elle n'apparait pas dans le catalogue.
     if(!_isExoticNotCounted(sci) && !isHiddenSpecies(sci) && rarityForFilter(sci)>=8){ megaList.push(frName(v.sci, v.common)); megaOwnedSet.add(sci); }
     if(/teste[- ]?de[- ]?buch|arcachon/i.test(v.loc||'')) locTeste=true;
-    const habs = habitatsOf(sci); if(habs) for(const h of habs) if(habOwned[h]) habOwned[h].add(sci);
   }
   megaList.sort((a,b)=>a.localeCompare(b,'fr'));
   const seasonCount=SEASON_ORDER.filter(s=>seasonHit[s]).length;
   const regionsOwnedSet = me.regionsFR || new Set();
   const regionsCount = [...regionsOwnedSet].filter(c=>FR_REGIONS.some(r=>r.code===c)).length;
-  // Seuil dynamique par milieu = 5 % des especes FRANCAISES de ce milieu (arrondi
-  // superieur, min 1). Utilise HABITAT_TO_SCIS_FR (intersection HABITATS x REAL_RARITY FR)
-  // au lieu du catalogue mondial : bien plus atteignable (Forest 6052 sp mondial -> ~200 FR).
-  const habMin = c => Math.max(1, Math.ceil((HABITAT_TO_SCIS_FR(c)||[]).length * 0.20));
-  // Validation FR-only : on compte uniquement les especes de la liste France, pas
-  // les obs globales. Sinon un ami qui a vu 1 Traquet cul-blanc au Maroc valide
-  // 'desert' alors qu'aucune des 3 especes FR n'a ete cochee.
-  const habCovered = HABITAT_CATS.filter(c => {
-    const frSet = new Set(HABITAT_TO_SCIS_FR(c) || []);
-    const observedInFr = [...habOwned[c]].filter(sci => frSet.has(sci)).length;
-    return observedInFr >= habMin(c);
-  }).length;
   // Compte les photos de cette personne ayant ≥3 COEURS (bouton dédié type Instagram).
   // On ignore les autres emojis libres (seul le ❤️ compte) et le cœur que l'auteur
   // se donne à lui-même (auto-like non compté).
@@ -4097,7 +4052,7 @@ function statsFor(me, N){
     for(const uid of voters) if(uid !== me.id) hearts++;
     if(hearts >= 2) hotPhotos++;
   }
-  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, hasHummingbird, hasRatite, hasExoticParrot, hasToucan, hasHornbill, hasShrike, hasPelagic, hasWaxwing, hasNightjar, hummingbirdsSet, ratitesSet, exoticParrotsSet, toucansSet, hornbillsSet, shrikesSet, pelagicsSet, waxwingsSet, nightjarsSet, locTeste, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, martinetsOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, motacillidaeOwnedSet, ciconiidaeOwnedSet, coraciiformesOwnedSet, suliformesOwnedSet, sturnoideaOwnedSet, passeridaeOwnedSet, certhioideaOwnedSet, podicipedidaeOwnedSet, cuculidaeOwnedSet, regionsOwnedSet, regionsCount, habOwned, habCovered, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
+  return { total:me.total, unique:N>1?me.unique:0, score:me.score, rank, groupN:N, owls, raptors, water, sea, blackWoodpecker, hasKingfisher, hasPenguin, hasFireKingfisher, hasHummingbird, hasRatite, hasExoticParrot, hasToucan, hasHornbill, hasShrike, hasPelagic, hasWaxwing, hasNightjar, hummingbirdsSet, ratitesSet, exoticParrotsSet, toucansSet, hornbillsSet, shrikesSet, pelagicsSet, waxwingsSet, nightjarsSet, locTeste, mikeHorn:!!me.mikeHorn, mikeBird:me.mikeBird||'', megaList, megaOwnedSet, seasonCount, seasonOwnedSet, raptorOwnedSet, owlOwnedSet, alcidOwnedSet, manchotOwnedSet, waterOwnedSet, anatidaeOwnedSet, hirundoOwnedSet, martinetsOwnedSet, alaudaOwnedSet, paridaeOwnedSet, corvidaeOwnedSet, alcediOwnedSet, ardeidaeOwnedSet, columbidaeOwnedSet, galliformesOwnedSet, picidaeOwnedSet, scolopacidaeOwnedSet, rivagesOwnedSet, laridaeOwnedSet, turdidaeOwnedSet, muscicapidaeOwnedSet, sylviidaeOwnedSet, phylloscopidaeOwnedSet, fringillidaeOwnedSet, emberizidaeOwnedSet, rallidaeOwnedSet, motacillidaeOwnedSet, ciconiidaeOwnedSet, coraciiformesOwnedSet, suliformesOwnedSet, sturnoideaOwnedSet, passeridaeOwnedSet, certhioideaOwnedSet, podicipedidaeOwnedSet, cuculidaeOwnedSet, regionsOwnedSet, regionsCount, hotPhotos, grosBebeVotes:(votesMap.get('grosBebe')?.get(me.id)?.size)||0, kimonoVotes:(votesMap.get('kimono')?.get(me.id)?.size)||0, necrophileVotes:(votesMap.get('necrophile')?.get(me.id)?.size)||0, globeTrotter:!!me.globeTrotter, countryCount:me.countryCount||0 };
 }
 let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
@@ -4153,7 +4108,7 @@ function renderTrophies(data){
     }
   }
   // Groupement par categorie pour organiser le showcase.
-  const familyBlocksByCategory = { progression:[], species:[], habitat:[] };
+  const familyBlocksByCategory = { progression:[], species:[] };
   // Ordre taxonomique IOC/eBird pour les familles d'especes (trie du showcase Trophees > Groupes) :
   // anatides -> galliformes -> pigeons -> rallides -> herons -> limicoles (Scolopacidae puis Rivages)
   // -> larides -> chouettes -> rapaces diurnes -> martins-pecheurs -> pics -> corvides -> mesanges
@@ -4217,12 +4172,6 @@ function renderTrophies(data){
       // Pour Bear Grylls / Ma France, le prog list existe -> on peut aussi montrer la liste des elements a cocher.
       itemList: displayTier.list ? displayTier.list(s) : null,
       itemNote: displayTier.note ? displayTier.note(s) : '',
-      // Habitat family : on stocke habKey + set des especes cochees pour permettre
-      // au modal de switcher entre "Monde" (especes que j'ai cochees) et "France"
-      // (le pool FR complet avec ma progression). Le selecteur de pays est ajoute
-      // dans le modal, cf renderTrophyModal.
-      habKey: familyKey.startsWith('habitat_') ? familyKey.slice(8) : null,
-      habOwnedSet: familyKey.startsWith('habitat_') ? new Set(s.habOwned[familyKey.slice(8)] || []) : null,
       // Famille d'especes : stocke la cle pour permettre le switcher Monde/France
       // dans le modal (via SPECIES_FAMILY_FILTERS / SPECIES_FAMILY_LABELS).
       speciesFamilyKey: SPECIES_FAMILY_FILTERS[familyKey] ? familyKey : null,
@@ -4426,7 +4375,6 @@ function renderTrophies(data){
   const CATEGORY_META = [
     { key:'progression', label:'Progression',           subtitle:'Repères de progression individuels' },
     { key:'species',     label:"Familles d'espèces",    subtitle:'Groupes taxonomiques d\'oiseaux' },
-    { key:'habitat',     label:'Milieux & habitats',    subtitle:'Écosystèmes visités' },
   ];
   const renderCat = m => `
       <div class="tro-cat-section">
@@ -4436,8 +4384,9 @@ function renderTrophies(data){
         </div>
         <div class="tro-families">${familyBlocksByCategory[m.key].sort((a,b) => a.order - b.order).map(x => x.html).join('')}</div>
       </div>`;
-  const catSectionsBefore = CATEGORY_META.filter(m => m.key !== 'habitat' && (familyBlocksByCategory[m.key] || []).length).map(renderCat).join('');
-  const catSectionsAfter = CATEGORY_META.filter(m => m.key === 'habitat' && (familyBlocksByCategory[m.key] || []).length).map(renderCat).join('');
+  // Le decoupage avant/apres n'existait que pour renvoyer la section "Milieux & habitats"
+  // en fin de page. Ses trophees ayant ete retires, il ne reste qu'une suite de sections.
+  const catSections = CATEGORY_META.filter(m => (familyBlocksByCategory[m.key] || []).length).map(renderCat).join('');
   const exoticSection = exoticCards ? `
       <div class="tro-cat-section">
         <div class="tro-cat-head">
@@ -4448,9 +4397,8 @@ function renderTrophies(data){
       </div>` : '';
   grid.innerHTML = `
     <div class="tro-showcase">
-      ${catSectionsBefore}
+      ${catSections}
       ${exoticSection}
-      ${catSectionsAfter}
       ${oneShotCards ? `
       <div class="tro-oneshots-section">
         <div class="tro-oneshots-title">Trophées spéciaux</div>
@@ -13579,36 +13527,6 @@ function _renderSpeciesFamilyCountryList(mode, familyLabel, ownedSet, frFilter){
       return `<li class="${isOwn?'own':''}">${lbl}</li>`;
     }).join('') + '</ul>';
 }
-// Genere la liste des especes d'un habitat pour un pays donne. Mode :
-//  - 'monde' : les especes que le user a cochees dans cet habitat (peu importe le pays).
-//  - 'fr'    : le pool complet des especes FR de cet habitat, marquees vues/pas vues.
-function _renderHabitatCountryList(mode, habKey, ownedSet){
-  const own = ownedSet instanceof Set ? ownedSet : new Set(ownedSet||[]);
-  if(mode === 'fr'){
-    const frList = HABITAT_TO_SCIS_FR(habKey) || [];
-    if(!frList.length){
-      return '<p class="tmodal-note" style="font-style:italic;color:var(--ink-3);">Aucune espèce de ce milieu n\'est présente en France.</p>';
-    }
-    const items = frList.map(sci => ({ name: frName(sci, sci), sci, owned: own.has(sci), section: '' }));
-    // Header simple : X/Y vues
-    const okCount = items.filter(x => x.owned).length;
-    const totalCount = items.length;
-    return `<p class="tmodal-note"><b>${okCount} / ${totalCount}</b> espèce${totalCount>1?'s':''} de ${esc(HABITAT_LABELS[habKey]||habKey)} vue${okCount>1?'s':''} en France.</p>` +
-      '<ul class="tmodal-list mega" style="columns:2;column-gap:24px;padding-left:20px;">' +
-      items.map(x => {
-        const lbl = (x.owned?'✓ ':'') + `<span class="sp-link" data-sci="${esc(x.sci)}">${esc(x.name)}</span>`;
-        return `<li class="${x.owned?'own':''}">${lbl}</li>`;
-      }).join('') + '</ul>';
-  }
-  // Mode 'monde' : liste des cochees.
-  const observed = [...own].sort((a,b) => frName(a,a).localeCompare(frName(b,b),'fr'));
-  if(!observed.length){
-    return '<p class="tmodal-note" style="font-style:italic;color:var(--ink-3);">Aucune espèce de ce milieu observée pour le moment. Ouvre l\'onglet France pour voir ce qui est chassable ici.</p>';
-  }
-  return `<p class="tmodal-note"><b>${observed.length}</b> espèce${observed.length>1?'s':''} observée${observed.length>1?'s':''} dans le monde en ${esc(HABITAT_LABELS[habKey]||habKey)}.</p>` +
-    '<ul class="tmodal-list mega" style="columns:2;column-gap:24px;padding-left:20px;">' +
-    observed.map(sci => `<li class="own">✓ <span class="sp-link" data-sci="${esc(sci)}">${esc(frName(sci,sci))}</span></li>`).join('') + '</ul>';
-}
 function _renderModalAccordion(items){
   if(!items || !items.length) return '';
   const sections = [];
@@ -13693,15 +13611,8 @@ $('#trophyGrid').addEventListener('click',async e=>{
         <div class="tmodal-tier-prog">${t.current} / ${t.threshold} ${t.unlocked?'· <b>débloqué ✓</b>':''}</div>
       </div>`;
     }).join('') + '</div>';
-    // Famille habitat : selecteur de pays (Monde / France) + liste dynamique.
-    if(d.habKey){
-      html += '<hr class="tmodal-sep">';
-      html += `<div class="tmodal-country-select" data-kind="habitat" data-hab-key="${esc(d.habKey)}" data-detail="${esc(card.dataset.detail)}">
-        <button type="button" class="tro-cc-chip on" data-cc="monde">🌍 Monde (mes obs)</button>
-        <button type="button" class="tro-cc-chip" data-cc="fr">🇫🇷 France</button>
-      </div>`;
-      html += `<div class="tmodal-country-body">${_renderHabitatCountryList('monde', d.habKey, d.habOwnedSet)}</div>`;
-    } else if(d.speciesFamilyKey){
+    // Famille d'especes : selecteur de pays (Monde / France) + liste dynamique.
+    if(d.speciesFamilyKey){
       // Famille d'especes : meme mecanique de selecteur.
       html += '<hr class="tmodal-sep">';
       html += `<div class="tmodal-country-select" data-kind="species" data-sp-key="${esc(d.speciesFamilyKey)}" data-detail="${esc(card.dataset.detail)}">
@@ -13754,14 +13665,11 @@ $('#tmodalBody').addEventListener('click', e => {
   wrap.querySelectorAll('.tro-cc-chip').forEach(c => c.classList.toggle('on', c === chip));
   const body = wrap.parentElement.querySelector('.tmodal-country-body');
   if(!body) return;
-  if(wrap.dataset.kind === 'species'){
-    const key = wrap.dataset.spKey;
-    const label = SPECIES_FAMILY_LABELS[key] || d.familyName?.toLowerCase() || 'espèces';
-    const filter = SPECIES_FAMILY_FILTERS[key];
-    body.innerHTML = _renderSpeciesFamilyCountryList(mode, label, d.speciesOwnedSet, filter);
-  } else {
-    body.innerHTML = _renderHabitatCountryList(mode, wrap.dataset.habKey, d.habOwnedSet);
-  }
+  // Seul data-kind="species" est encore emis : la branche habitat a disparu avec ses trophees.
+  const key = wrap.dataset.spKey;
+  const label = SPECIES_FAMILY_LABELS[key] || d.familyName?.toLowerCase() || 'espèces';
+  const filter = SPECIES_FAMILY_FILTERS[key];
+  body.innerHTML = _renderSpeciesFamilyCountryList(mode, label, d.speciesOwnedSet, filter);
 });
 // Helper : ferme le modal ET debloque le scroll de fond.
 function _closeTrophyModal(){
