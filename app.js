@@ -11199,19 +11199,25 @@ function _renderSpeciesRarityCard(key){
     const useST = false;
     const fmtST = v => v >= 10 ? Math.round(v)+' ind/h' : v >= 1 ? v.toFixed(1)+' ind/h' : v >= 0.01 ? v.toFixed(2)+' ind/h' : v >= 0.001 ? v.toFixed(3)+' ind/h' : v > 0 ? '<0.001 ind/h' : '-';
     const fmtPct = v => { if(!(v>0)) return '-'; const p = v*100; if(p >= 10) return Math.round(p)+'%'; if(p >= 1) return p.toFixed(1)+'%'; if(p >= 0.1) return p.toFixed(2)+'%'; return '<0.1%'; };
+    // Score = MOYENNE annuelle, pas le maximum mensuel. Le maximum classait en tete des
+    // zones ou l'espece n'a ete vue qu'un mois : avec peu de listes ce mois-la, une seule
+    // observation suffit a afficher 100%. Le Bouvreuil pivoine mettait ainsi la Sarthe
+    // (100%, mais 9 mois sur 12, 15.9% de moyenne) devant le Jura (50%, toute l'annee,
+    // 24.7%). Comme on compare des zones pour UNE meme espece, la saisonnalite est
+    // commune a toutes et s'annule dans le classement : la moyenne est le bon critere.
+    const moyenne = (arr) => Array.isArray(arr) && arr.length
+      ? arr.reduce((a, v) => a + (v || 0), 0) / arr.length : 0;
     const scored = regList.map(r => {
-      let score = 0;
-      if(useST){
-        const e = stByReg[r.code] && stByReg[r.code][k];
-        if(e && Array.isArray(e.w)) score = Math.max(...e.w);
-      } else {
-        const m = freqByReg[r.code] && freqByReg[r.code][k];
-        if(Array.isArray(m)) score = Math.max(...m);
-      }
-      return { code: r.code, name: r.name, score };
+      const serie = useST
+        ? (stByReg[r.code] && stByReg[r.code][k] || {}).w
+        : (freqByReg[r.code] && freqByReg[r.code][k]);
+      const score = moyenne(serie);
+      // Pic conserve pour l'infobulle : "en moyenne X, jusqu'a Y en <mois>".
+      let pic = 0, moisPic = -1;
+      if(Array.isArray(serie)) serie.forEach((v, i) => { if((v || 0) > pic){ pic = v; moisPic = i; } });
+      return { code: r.code, name: r.name, score, pic, moisPic, nbMois: Array.isArray(serie) ? serie.filter(v => v > 0).length : 0 };
     });
     scored.sort((a, b) => b.score - a.score);
-    const maxScore = scored.length ? scored[0].score : 0;
     const nationalLbl = (COUNTRIES_REG[cc] && COUNTRIES_REG[cc].name) || cc;
     const flag = FLAG_EMOJI[cc] || '';
     const nationalRow = `<div class="reg-picker-item national${_speciesRegion===''?' on':''}" data-code="">${flag} ${esc(nationalLbl)} entier</div>`;
@@ -11226,7 +11232,15 @@ function _renderSpeciesRarityCard(key){
       // entre zones, que le mode relatif etait cense apporter.
       const barW = s.score > 0 ? Math.min(100, Math.max(3, Math.round(s.score * 100))) : 0;
       const val = absent ? 'absente' : (useST ? fmtST(s.score) : fmtPct(s.score));
-      return `<div class="reg-picker-item${absent?' absent':''}${s.code===_speciesRegion?' on':''}" data-code="${esc(s.code)}">
+      // Infobulle : le nombre affiche est une moyenne annuelle, on donne le pic et le
+      // nombre de mois de presence pour que la saisonnalite reste lisible.
+      const fmt = useST ? fmtST : fmtPct;
+      const titre = absent
+        ? `${s.name} — jamais observée`
+        : `${s.name} — ${fmt(s.score)} en moyenne sur l'année` +
+          (s.moisPic >= 0 ? ` · jusqu'à ${fmt(s.pic)} en ${_MOIS_COURTS[s.moisPic]}` : '') +
+          ` · présente ${s.nbMois} mois sur 12`;
+      return `<div class="reg-picker-item${absent?' absent':''}${s.code===_speciesRegion?' on':''}" data-code="${esc(s.code)}" title="${esc(titre)}">
         <span class="reg-picker-dot" style="background:${col};"></span>
         <span>${esc(s.name)}</span>
         <div class="reg-picker-bar"><div style="width:${barW}%; background:${col};"></div></div>
