@@ -21,8 +21,8 @@ const TOUS = ['FR','ES','IT','GB','PT','CH','NO','GR','IS','LK','NA','AU','NZ','
 
 // La France nomme ses tables sans suffixe de pays, et on FUSIONNE au lieu de remplacer :
 // REAL_RARITY porte 8 anciennes cles de genre (bubulcus ibis, accipiter gentilis,
-// charadrius dubius...) absentes du bar chart courant et sans entree dans SCI_ALIAS. Du
-// code peut les interroger directement ; un remplacement sec les perdrait.
+// charadrius dubius...) absentes du bar chart courant. SCI_ALIAS les resout toutes, donc
+// elles sont redondantes ; on les garde par prudence, pas par necessite.
 const NOMS_TABLES = { FR: { rarete: 'REAL_RARITY', mensuel: 'REAL_FREQ_MONTHLY' } };
 const FUSIONNE = new Set(['FR']);
 const nomRarete = cc => (NOMS_TABLES[cc] && NOMS_TABLES[cc].rarete) || ('REAL_RARITY_' + cc + '_EBIRD');

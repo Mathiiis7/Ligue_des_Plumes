@@ -37,7 +37,24 @@ const REGIONS = {
   // les 15 autres pays sont sur 2019-2026, ce qui faisait divergier les cartes de rarete
   // par region du tier national de la meme espece.
   FR: ['FR-ARA','FR-BFC','FR-BRE','FR-COR','FR-CVL','FR-GES','FR-HDF',
-       'FR-IDF','FR-NAQ','FR-NOR','FR-OCC','FR-PAC','FR-PDL'],
+       'FR-IDF','FR-NAQ','FR-NOR','FR-OCC','FR-PAC','FR-PDL',
+       // Les 96 departements, sur la meme fenetre : ce sont eux que portent les cartes
+       // departementales de la fiche espece, et ils etaient aussi sur 2015-2026.
+       'FR-ARA-01','FR-ARA-03','FR-ARA-07','FR-ARA-15','FR-ARA-26','FR-ARA-38','FR-ARA-42',
+       'FR-ARA-43','FR-ARA-63','FR-ARA-69','FR-ARA-73','FR-ARA-74','FR-BFC-21','FR-BFC-25',
+       'FR-BFC-39','FR-BFC-58','FR-BFC-70','FR-BFC-71','FR-BFC-89','FR-BFC-90','FR-BRE-22',
+       'FR-BRE-29','FR-BRE-35','FR-BRE-56','FR-COR-2A','FR-COR-2B','FR-CVL-18','FR-CVL-28',
+       'FR-CVL-36','FR-CVL-37','FR-CVL-41','FR-CVL-45','FR-GES-08','FR-GES-10','FR-GES-51',
+       'FR-GES-52','FR-GES-54','FR-GES-55','FR-GES-57','FR-GES-67','FR-GES-68','FR-GES-88',
+       'FR-HDF-02','FR-HDF-59','FR-HDF-60','FR-HDF-62','FR-HDF-80','FR-IDF-75C','FR-IDF-77',
+       'FR-IDF-78','FR-IDF-91','FR-IDF-92','FR-IDF-93','FR-IDF-94','FR-IDF-95','FR-NAQ-16',
+       'FR-NAQ-17','FR-NAQ-19','FR-NAQ-23','FR-NAQ-24','FR-NAQ-33','FR-NAQ-40','FR-NAQ-47',
+       'FR-NAQ-64','FR-NAQ-79','FR-NAQ-86','FR-NAQ-87','FR-NOR-14','FR-NOR-27','FR-NOR-50',
+       'FR-NOR-61','FR-NOR-76','FR-OCC-09','FR-OCC-11','FR-OCC-12','FR-OCC-30','FR-OCC-31',
+       'FR-OCC-32','FR-OCC-34','FR-OCC-46','FR-OCC-48','FR-OCC-65','FR-OCC-66','FR-OCC-81',
+       'FR-OCC-82','FR-PAC-04','FR-PAC-05','FR-PAC-06','FR-PAC-13','FR-PAC-83','FR-PAC-84',
+       'FR-PDL-44','FR-PDL-49','FR-PDL-53','FR-PDL-72','FR-PDL-85',
+      ],
   GB: ['GB-ENG', 'GB-SCT', 'GB-WLS', 'GB-NIR'],
   PT: ['PT-01', 'PT-02', 'PT-03', 'PT-04', 'PT-05', 'PT-06', 'PT-07',
        'PT-08', 'PT-09', 'PT-10', 'PT-11', 'PT-12', 'PT-13', 'PT-14',

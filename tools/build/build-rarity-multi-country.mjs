@@ -30,9 +30,9 @@ const COUNTRIES = ['FR', 'ES', 'IT', 'GB', 'PT', 'CH', 'NO', 'GR', 'IS', 'LK', '
 // Trois particularites francaises, d'ou les tables ci-dessous :
 //   - l'app nomme ses tables REAL_RARITY et REAL_FREQ_MONTHLY, sans suffixe de pays ;
 //   - les bar charts regionaux FR couvrent 2015-2026 la ou tout le reste est sur 2019-2026 ;
-//   - REAL_RARITY porte 8 anciennes cles de genre (bubulcus ibis, accipiter gentilis...) qui
-//     n'ont pas d'entree dans SCI_ALIAS : du code peut les interroger directement, elles sont
-//     conservees par fusion a l'injection plutot que perdues au rebuild.
+//   - REAL_RARITY porte 8 anciennes cles de genre (bubulcus ibis, accipiter gentilis...),
+//     doublons redondants de leur cle canonique : SCI_ALIAS les resout toutes. Elles sont
+//     conservees par fusion a l'injection par prudence, pas par necessite.
 const NOMS_TABLES = {
   FR: { rarete: 'REAL_RARITY', mensuel: 'REAL_FREQ_MONTHLY' },
 };
