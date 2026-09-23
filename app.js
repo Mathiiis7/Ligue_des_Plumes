@@ -353,14 +353,10 @@ const EXOTIC_CATEGORY_LABEL = {
 // pour les exotiques dans rarityForCountry (voir plus bas). Regenerable :
 // node tools/build-rarity-exo-gbif.mjs
 const REAL_RARITY_EXO_GBIF = {"phasianus colchicus":2,"psittacula krameri":3,"branta canadensis":3,"alopochen aegyptiaca":4,"cygnus atratus":4,"euodice malabarica":5,"aix galericulata":5,"tadorna ferruginea":5,"threskiornis aethiopicus":5,"oxyura jamaicensis":5,"leiothrix lutea":5,"anser indicus":6,"syrmaticus reevesii":6,"aix sponsa":6,"phoenicopterus ruber":6,"cairina moschata":7,"colinus virginianus":7,"anser cygnoides":7,"pavo cristatus":7,"nymphicus hollandicus":7,"myiopsitta monachus":7,"callonetta leucophrys":8,"phoenicopterus chilensis":8,"gallus gallus":8,"callipepla californica":8,"melopsittacus undulatus":8,"serinus canaria":8,"estrilda astrild":8,"alectoris chukar":8,"dendrocygna bicolor":8,"estrilda melpoda":8,"francolinus francolinus":8,"psittacula eupatria":8,"agapornis fischeri":8,"mareca sibilatrix":9,"poicephalus senegalus":9,"dendrocygna viduata":9,"netta peposaca":9,"agapornis roseicollis":9,"tadorna cana":9,"psittacus erithacus":9,"platycercus eximius":9,"dendrocygna autumnalis":9,"agapornis personatus":9,"phasianus versicolor":9,"numida meleagris":9,"chloephaga picta":9,"taeniopygia guttata":9,"cygnus melancoryphus":9,"branta sandvicensis":9,"anser canagicus":9,"ara ararauna":9,"cacatua galerita":9,"cacatua alba":9,"aratinga solstitialis":9,"trichoglossus haematodus":9,"amazonetta brasiliensis":9,"agapornis nigrigenis":9,"eolophus roseicapilla":9,"alisterus scapularis":8,"anas zonorhyncha":8,"ara militaris":8,"oressochen melanopterus":8,"psittacara erythrogenys":8,"psittacara mitratus":8,"psittacula cyanocephala":8,"thectocercus acuticaudatus":8,"trichoglossus moluccanus":8};
-// Tier 1 (tres commun) FR : le build script les exclut de REAL_RARITY par convention
-// (absent = tier 1). Mais _isForeignOnly voit "absent de REAL_RARITY + present dans
-// REAL_RARITY_ME_EBIRD" et les marquerait "Hors aire" a tort (Etourneau sansonnet,
-// Rougegorge, Merle noir etc. sont ultra communs FR). On les injecte explicitement.
-;(function(){
-  const TIER_1_FR = ['apus apus','chroicocephalus ridibundus','columba palumbus','corvus corone','cyanistes caeruleus','erithacus rubecula','fringilla coelebs','hirundo rustica','parus major','passer domesticus','phalacrocorax carbo','phylloscopus collybita','pica pica','sturnus vulgaris','sylvia atricapilla','turdus merula'];
-  for(const sci of TIER_1_FR){ if(!REAL_RARITY[sci]) REAL_RARITY[sci] = 1; }
-})();
+// Une injection manuelle de 16 especes tres communes en tier 1 se trouvait ici. Elle
+// n'existait que pour empecher _isForeignOnly de les marquer "Hors aire" a tort, du temps ou
+// REAL_RARITY omettait les tier 1 par convention. La table les porte desormais explicitement
+// et _isForeignOnly a disparu : l'injection etait devenue un no-op sur ses 16 entrees.
 // eBird bar chart ME 2015-2026 -> weight 1-9 (voir tools/build-rarity-me-ebird.mjs).
 const REAL_RARITY_ME_EBIRD = {"anser anser":4,"anser albifrons":6,"cygnus olor":4,"tadorna tadorna":3,"cairina moschata":7,"spatula querquedula":3,"spatula clypeata":1,"mareca strepera":4,"mareca penelope":2,"anas platyrhynchos":1,"anas acuta":4,"anas crecca":2,"netta rufina":4,"aythya ferina":1,"aythya nyroca":3,"aythya fuligula":1,"aythya marila":6,"somateria mollissima":6,"melanitta nigra":6,"bucephala clangula":4,"mergus merganser":3,"mergus serrator":5,"tetrastes bonasia":6,"tetrao urogallus":6,"perdix perdix":6,"phasianus colchicus":4,"coturnix coturnix":5,"alectoris graeca":5,"columba livia":1,"columba oenas":4,"columba palumbus":2,"streptopelia turtur":3,"streptopelia decaocto":1,"clamator glandarius":6,"cuculus canorus":1,"caprimulgus europaeus":4,"tachymarptis melba":3,"apus apus":1,"apus pallidus":4,"rallus aquaticus":1,"crex crex":7,"porzana porzana":6,"gallinula chloropus":2,"fulica atra":1,"zapornia parva":6,"zapornia pusilla":6,"grus virgo":6,"grus grus":6,"burhinus oedicnemus":3,"himantopus himantopus":3,"recurvirostra avosetta":4,"haematopus ostralegus":6,"pluvialis squatarola":3,"pluvialis apricaria":4,"eudromias morinellus":6,"charadrius hiaticula":3,"thinornis dubius":3,"vanellus vanellus":3,"vanellus spinosus":6,"anarhynchus alexandrinus":3,"numenius phaeopus":4,"numenius arquata":4,"limosa lapponica":6,"limosa limosa":4,"lymnocryptes minimus":6,"scolopax rusticola":6,"gallinago gallinago":3,"xenus cinereus":6,"actitis hypoleucos":2,"tringa ochropus":3,"tringa stagnatilis":4,"tringa glareola":2,"tringa totanus":1,"tringa erythropus":3,"tringa nebularia":3,"arenaria interpres":6,"calidris canutus":4,"calidris pugnax":3,"calidris falcinellus":6,"calidris ferruginea":4,"calidris temminckii":4,"calidris alba":5,"calidris alpina":3,"calidris minuta":4,"glareola pratincola":3,"hydrocoloeus minutus":4,"chroicocephalus genei":6,"chroicocephalus ridibundus":1,"ichthyaetus audouinii":6,"ichthyaetus melanocephalus":3,"larus canus":4,"larus cachinnans":3,"larus michahellis":1,"larus fuscus":4,"sternula albifrons":3,"gelochelidon nilotica":6,"hydroprogne caspia":5,"chlidonias hybrida":2,"chlidonias niger":4,"chlidonias leucopterus":4,"sterna hirundo":2,"thalasseus sandvicensis":3,"phoenicopterus roseus":2,"tachybaptus ruficollis":1,"podiceps auritus":2,"podiceps grisegena":4,"podiceps cristatus":2,"podiceps nigricollis":1,"gavia stellata":3,"gavia arctica":3,"calonectris diomedea":4,"puffinus yelkouan":4,"ciconia nigra":6,"ciconia ciconia":6,"microcarbo pygmaeus":1,"phalacrocorax carbo":1,"gulosus aristotelis":3,"plegadis falcinellus":4,"platalea leucorodia":3,"botaurus stellaris":3,"botaurus minutus":4,"nycticorax nycticorax":3,"egretta garzetta":1,"ardeola ralloides":2,"ardea ibis":3,"ardea alba":1,"ardea cinerea":1,"ardea purpurea":4,"pelecanus crispus":1,"pandion haliaetus":4,"pernis apivorus":4,"gyps fulvus":6,"circaetus gallicus":3,"clanga pomarina":5,"clanga clanga":4,"hieraaetus pennatus":6,"aquila chrysaetos":3,"aquila fasciata":5,"tachyspiza brevipes":4,"accipiter nisus":2,"astur gentilis":5,"circus aeruginosus":1,"circus cyaneus":3,"circus macrourus":6,"circus pygargus":5,"milvus milvus":5,"milvus migrans":4,"haliaeetus albicilla":6,"buteo lagopus":6,"buteo buteo":1,"buteo rufinus":6,"tyto alba":6,"otus scops":4,"bubo bubo":6,"glaucidium passerinum":7,"athene noctua":3,"strix aluco":5,"strix uralensis":6,"asio otus":5,"asio flammeus":4,"upupa epops":2,"merops apiaster":1,"alcedo atthis":1,"coracias garrulus":3,"jynx torquilla":4,"picoides tridactylus":5,"dendrocoptes medius":4,"dendrocopos leucotos":4,"dendrocopos major":2,"dendrocopos syriacus":4,"dryobates minor":3,"picus canus":5,"picus viridis":2,"dryocopus martius":4,"falco naumanni":6,"falco tinnunculus":2,"falco vespertinus":5,"falco eleonorae":6,"falco columbarius":4,"falco subbuteo":4,"falco peregrinus":5,"psittacula krameri":7,"oriolus oriolus":1,"lanius collurio":1,"lanius excubitor":4,"lanius minor":4,"lanius senator":3,"garrulus glandarius":1,"pica pica":1,"nucifraga caryocatactes":3,"pyrrhocorax pyrrhocorax":7,"pyrrhocorax graculus":1,"coloeus monedula":2,"corvus frugilegus":3,"corvus corone":3,"corvus cornix":1,"corvus corax":1,"periparus ater":1,"lophophanes cristatus":3,"poecile lugubris":3,"poecile palustris":2,"poecile montanus":3,"cyanistes caeruleus":1,"parus major":1,"remiz pendulinus":4,"lullula arborea":4,"alauda arvensis":3,"galerida cristata":2,"eremophila alpestris":6,"calandrella brachydactyla":5,"melanocorypha calandra":6,"panurus biarmicus":6,"cisticola juncidis":3,"iduna pallida":2,"hippolais olivetorum":6,"hippolais polyglotta":5,"hippolais icterina":4,"acrocephalus melanopogon":3,"acrocephalus schoenobaenus":4,"acrocephalus palustris":6,"acrocephalus scirpaceus":4,"acrocephalus arundinaceus":3,"locustella luscinioides":6,"locustella naevia":6,"riparia riparia":2,"ptyonoprogne rupestris":4,"hirundo rustica":1,"delichon urbicum":1,"cecropis rufula":1,"phylloscopus sibilatrix":2,"phylloscopus orientalis":6,"phylloscopus trochilus":2,"phylloscopus collybita":1,"cettia cetti":1,"aegithalos caudatus":2,"sylvia atricapilla":1,"sylvia borin":3,"curruca nisoria":6,"curruca curruca":4,"curruca crassirostris":5,"curruca melanocephala":4,"curruca cantillans":2,"curruca communis":3,"regulus regulus":1,"tichodroma muraria":6,"sitta neumayer":3,"sitta europaea":2,"certhia familiaris":3,"certhia brachydactyla":4,"troglodytes troglodytes":1,"cinclus cinclus":4,"sturnus vulgaris":1,"turdus viscivorus":3,"turdus philomelos":3,"turdus iliacus":4,"turdus merula":1,"turdus pilaris":3,"turdus torquatus":4,"muscicapa striata":1,"erithacus rubecula":1,"luscinia luscinia":6,"luscinia megarhynchos":1,"luscinia svecica":6,"ficedula parva":6,"ficedula hypoleuca":3,"ficedula albicollis":2,"phoenicurus phoenicurus":3,"phoenicurus ochruros":1,"monticola saxatilis":5,"monticola solitarius":3,"saxicola rubetra":2,"saxicola rubicola":1,"oenanthe oenanthe":2,"oenanthe melanoleuca":3,"bombycilla garrulus":6,"prunella collaris":6,"prunella modularis":1,"passer domesticus":1,"passer hispaniolensis":2,"passer montanus":2,"montifringilla nivalis":6,"motacilla cinerea":1,"motacilla flava":2,"motacilla citreola":7,"motacilla alba":1,"anthus campestris":5,"anthus pratensis":2,"anthus trivialis":2,"anthus cervinus":5,"anthus spinoletta":2,"fringilla coelebs":1,"fringilla montifringilla":5,"coccothraustes coccothraustes":2,"carpodacus erythrinus":5,"pyrrhula pyrrhula":3,"chloris chloris":1,"linaria cannabina":3,"loxia curvirostra":4,"carduelis carduelis":1,"serinus serinus":3,"spinus spinus":3,"emberiza melanocephala":5,"emberiza calandra":2,"emberiza cia":2,"emberiza cirlus":1,"emberiza citrinella":4,"emberiza hortulana":6,"emberiza schoeniclus":2};
 // Genere par tools/ebirdst/build-abundance-by-country.R (eBird Status & Trends Cornell,
@@ -789,7 +785,7 @@ function _openCountryPicker(currentCode, opts = {}){
             // Source de verite = rarityForCountry (meme calcul que la fiche espece).
             // Fix 2026-09-22 : avant, le picker basait "absente" sur it.score (max monthly
             // brut) alors que la fiche utilise rarityForCountry qui a des fallbacks
-            // supplementaires (_isForeignOnly, override RE FR, REAL_RARITY legacy). Ex :
+            // supplementaires (exotiques, REAL_RARITY legacy). Ex :
             // Dindon sauvage affichait tier 9 sur la fiche mais "absente" sur le picker.
             // On aligne : absent = rarityForCountry retourne 0 ET pas exotique local.
             const tier = rarityForCountry(focusSci, cc);
@@ -1433,14 +1429,29 @@ function _mineHas(mine, sci){
   if(typeof ebFilter !== 'undefined' && ebFilter.showObserved) return false;
   return _mineHasStrict(mine, sci);
 }
-// Si une espece est absente de REAL_RARITY FR MAIS presente dans un catalogue etranger
-// (aujourd'hui REAL_RARITY_ME_EBIRD), c'est une espece qui n'a jamais ete observee en France
-// (Sittelle de Neumayer, Ammomane, Fauvette du desert...). On la traite comme "exceptionnelle"
-// (tier 9) plutot que tier 1 par defaut.
-function _isForeignOnly(k){
-  if(REAL_RARITY[k]) return false;
-  if(typeof REAL_RARITY_ME_EBIRD !== 'undefined' && REAL_RARITY_ME_EBIRD[k]) return true;
-  return false;
+// Une espece absente du bar chart du pays courant mais presente dans celui d'au moins un
+// autre pays de l'app est hors de son aire ici : eBird la mesure ailleurs, pas ici.
+//
+// Cette fonction remplace _isForeignOnly, qui attribuait un tier 9 en France sur un critere
+// arbitraire : "figurer au bar chart du Montenegro", pays retenu pour la seule raison qu'il
+// fut le deuxieme ajoute a l'app. Ca concernait 8 especes, des specialites balkaniques qui
+// valent 3 a 6 chez elles, gratifiees d'un 9 francais qu'aucune donnee ne soutenait.
+//
+// Le badge "Hors aire" qu'il alimentait, lui, est juste et conserve : il dit qu'on ne mesure
+// pas l'espece ici, sans pretendre la classer. Elargi au 16 pays, il couvre les especes que
+// le Montenegro seul ne pouvait pas voir.
+let _TOUS_BARCHARTS = null;
+function _horsAire(k, cc){
+  const e = _countryEntry(cc || 'FR');
+  if(e && e.barTier()[k]) return false;
+  if(!_TOUS_BARCHARTS){
+    _TOUS_BARCHARTS = new Set();
+    for(const r of Object.values(COUNTRIES_REG)){
+      const t = r && r.barTier && r.barTier();
+      if(t) for(const sci in t) _TOUS_BARCHARTS.add(sci);
+    }
+  }
+  return _TOUS_BARCHARTS.has(k);
 }
 // Merge S&T (Cornell, calibration ML abondance) + bar chart eBird. Strategie :
 //   S&T disponible ET abd > 0 ET |S&T tier - bar chart tier| <= 1 : garde S&T (correction fine)
@@ -1592,12 +1603,12 @@ function rarityForCountry(sci, country){
   // Regles :
   //   - Bar chart present : bar chart pur, quel que soit le pays
   //   - Pas de bar chart mais S&T : composite S&T
-  //   - Ni l'un ni l'autre : tier 9 en FR pour _isForeignOnly (vagrants americains), sinon 0
+  //   - Ni l'un ni l'autre : tier 0 (non calibree). Le badge "Hors aire" de la fiche dira
+  //     qu'on la mesure ailleurs, ce qui est tout ce qu'on sait.
   if(barTier){
     return _tierFromSTvsBarChart(k, barTier, c);
   }
   if(_stUtilisable(stEntry)) return stEntry.t;
-  if(c === 'FR' && _isForeignOnly(k)) return 9;
   return 0;
 }
 // Placeholder pour future feature : tendance decennale par espece par pays.
@@ -1639,7 +1650,6 @@ function sciColorForCountry(sci, country){
   // Fallback quand rarityForCountry renvoie 0 (pas de calibration pour ce pays).
   const table = c === 'ME' ? REAL_RARITY_ME_EBIRD : REAL_RARITY;
   if(table[k]) return realColor(table[k]);
-  if(c === 'FR') return realColor(_isForeignOnly(k) ? 9 : 1);
   return '#94a3b8';
 }
 // Drapeau du pays pour afficher dans les popups "Rareté 🇲🇪 : X · Label" (montre que la
@@ -1649,7 +1659,7 @@ const COUNTRY_FLAG = CC_FLAGS;
 function _rarityBadge(w, country, sci){
   const c = country || 'FR';
   const pillFor = tier => tier ? `<span style="display:inline-block;background:${realColor(tier)};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11.5px;vertical-align:middle;">${tier}</span>` : '<span style="display:inline-block;background:#94a3b8;color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">?</span>';
-  // sciKey normalise pour tester _isForeignOnly (couvre les alias taxo).
+  // sciKey normalise pour tester _horsAire (couvre les alias taxo).
   const sciKey = (() => { if(!sci) return ''; let k=(sci||'').trim().toLowerCase(); if(SCI_ALIAS[k]) k=SCI_ALIAS[k]; return k; })();
   const lineFor = (cc, tier) => {
     // Drapeau : force une hauteur fixe (12px) pour que tous les pays s'affichent a la
@@ -1681,9 +1691,9 @@ function _rarityBadge(w, country, sci){
       const pill = `<span style="display:inline-block;background:${realColor(0)};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">${cat || 'X'}</span>`;
       return `${flgSpan}${pill} Exotique <span style="opacity:.7;font-size:11px;">· ${catLbl}</span>`;
     }
-    // Cas special FR : espece hors-aire (jamais observee en France, connue uniquement dans
-    // les catalogues etrangers) -> badge gris "Hors aire", pas tier "Exceptionnel" trompeur.
-    if(cc === 'FR' && sciKey && _isForeignOnly(sciKey)){
+    // Espece hors aire : pas de bar chart ici, mais mesuree dans un autre pays de l'app.
+    // Badge gris "Hors aire" plutot qu'un tier invente.
+    if(sciKey && _horsAire(sciKey, cc)){
       const pill = `<span style="display:inline-block;background:#7e8a99;color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">-</span>`;
       return `${flgSpan}${pill} Hors aire`;
     }
@@ -11603,7 +11613,7 @@ function _renderSpeciesRarityCard(key){
       // Fix 2026-09-22 : quand ni bar chart ni S&T, on affichait tier 1 fallback trompeur.
       // Detecte ce cas et affiche une note honnete (ex Flamant rose P en GB sans data).
       const hasRealBarTier = !!ccBarTier;
-      const barTier = ccBarTier || ((cc === 'FR' && _isForeignOnly(k)) ? 9 : 1);
+      const barTier = ccBarTier || 1;
       const barMeasure = 'Fréquence % checklists (pic biweekly)';
       // Detecte un override manuel EXOTIQUES_TIER_FORCE (fine-tune optionnel).
       const forceOverride = (typeof EXOTIQUES_TIER_FORCE === 'object' && EXOTIQUES_TIER_FORCE[cc] && EXOTIQUES_TIER_FORCE[cc][k] != null) ? EXOTIQUES_TIER_FORCE[cc][k] : null;
