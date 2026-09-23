@@ -11110,18 +11110,30 @@ async function _renderRarityMap(sci, cc){
       v = surAnnee ? _valeurAnnuelleZone(arr) : (arr[mois] || 0);
     }
     const nom = paths.zones[z].name;
+    const fmtP = (x) => x >= 0.1 ? Math.round(x*100)+'%' : x >= 0.01 ? (x*100).toFixed(1)+'%' : (x*100).toFixed(2)+'%';
     let fill = ABSENT;
     let titre = surAnnee ? `${nom} — jamais observée` : `${nom} — absente en ${libellePeriode}`;
     if(v > 0){
       const tier = monthlyFreqToTier(v);
       fill = realColor(tier);
       const lbl = (typeof REAL_LABELS === 'object' && REAL_LABELS[tier]) || ('tier ' + tier);
-      const fmtP = (x) => x >= 0.1 ? Math.round(x*100)+'%' : x >= 0.01 ? (x*100).toFixed(1)+'%' : (x*100).toFixed(2)+'%';
       titre = surAnnee
         ? `${nom} — ${lbl} (${tier}) · ${fmtP(v)} sur un bon mois` +
           (moisPic >= 0 ? ` · jusqu'à ${fmtP(pic)} en ${_MOIS_COURTS[moisPic]}` : '') +
           ` · présente ${nbMois} mois sur 12`
         : `${nom} — ${lbl} (${tier}) · ${fmtP(v)} des listes`;
+    } else if(surAnnee && pic > 0){
+      // Presente, mais sur un seul mois. Le score annuel est le 2e meilleur mois, qui vaut
+      // donc 0 : la zone ressortait grise et etiquetee "jamais observee", ce qui est faux.
+      // 3 529 couples zone-espece etaient dans ce cas, soit 12,5 % de tout ce qui est
+      // reellement observe, et ce sont les plus interessants : vagabonds et passages
+      // saisonniers stricts comme le Puffin a bec grele, vu le seul mois d'aout en Morbihan.
+      //
+      // On la montre au tier le plus rare plutot qu'a sa valeur de pic : un mois isole ne
+      // corrobore rien, il ne doit pas pouvoir classer une zone "commune". C'est le biais
+      // que le 2e meilleur mois corrige, et qu'on ne reintroduit pas ici.
+      fill = realColor(10);
+      titre = `${nom} — vue le seul mois de ${_MOIS_COURTS[moisPic]} (${fmtP(pic)} des listes) · un mois isolé ne suffit pas à la classer plus haut`;
     }
     return _pathZone(paths.zones[z].path, fill, titre, selection.has(z), selection.size > 0);
   }).join('');
@@ -11233,8 +11245,12 @@ function _renderSpeciesRarityCard(key){
     const flag = FLAG_EMOJI[cc] || '';
     const nationalRow = `<div class="reg-picker-item national${_speciesRegion===''?' on':''}" data-code="">${flag} ${esc(nationalLbl)} entier</div>`;
     const items = scored.map(s => {
-      const absent = s.score === 0;
-      const tier = absent ? 10 : (useST ? weeklyAbundanceToTier(s.score) : monthlyFreqToTier(s.score));
+      // Une zone ou l'espece n'a ete vue qu'un seul mois a un score annuel nul, puisque
+      // celui-ci est le 2e meilleur mois. Elle n'est pas absente pour autant : on la
+      // distingue, au tier le plus rare, comme sur la carte.
+      const vueUnMois = s.score === 0 && s.pic > 0;
+      const absent = s.score === 0 && !vueUnMois;
+      const tier = (absent || vueUnMois) ? 10 : (useST ? weeklyAbundanceToTier(s.score) : monthlyFreqToTier(s.score));
       const col = realColor(tier);
       // Remplissage ABSOLU, pas relatif au maximum : la barre doit dire la meme chose que
       // le pourcentage affiche a cote. En relatif, la zone de tete etait toujours pleine,
@@ -11242,12 +11258,14 @@ function _renderSpeciesRarityCard(key){
       // presence tres faible reste visible ; l'ordre de la liste porte deja la comparaison
       // entre zones, que le mode relatif etait cense apporter.
       const barW = s.score > 0 ? Math.min(100, Math.max(3, Math.round(s.score * 100))) : 0;
-      const val = absent ? 'absente' : (useST ? fmtST(s.score) : fmtPct(s.score));
+      const val = absent ? 'absente' : vueUnMois ? '1 mois' : (useST ? fmtST(s.score) : fmtPct(s.score));
       // Infobulle : le nombre affiche est une moyenne annuelle, on donne le pic et le
       // nombre de mois de presence pour que la saisonnalite reste lisible.
       const fmt = useST ? fmtST : fmtPct;
       const titre = absent
         ? `${s.name} — jamais observée`
+        : vueUnMois
+        ? `${s.name} — vue le seul mois de ${_MOIS_COURTS[s.moisPic]} (${fmt(s.pic)} des listes) · un mois isolé ne suffit pas à la classer plus haut`
         : `${s.name} — ${fmt(s.score)} sur un bon mois` +
           (s.moisPic >= 0 ? ` · jusqu'à ${fmt(s.pic)} en ${_MOIS_COURTS[s.moisPic]}` : '') +
           ` · présente ${s.nbMois} mois sur 12`;
