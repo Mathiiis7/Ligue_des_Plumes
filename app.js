@@ -4064,25 +4064,6 @@ let trophyPlayerId = null, trophyData = {N:0}, trophyDetails = {};
 function renderTrophies(data){
   trophyData = data;
   const grid=$('#trophyGrid'), summary=$('#trophySummary'), who=$('#trophyWho'); if(!grid) return;
-  // Mode maintenance : la page trophees est masquee pour les non-admins pendant la
-  // refonte des trophees. Les admins voient tout comme d'habitude.
-  if(!isAdmin()){
-    if(who) who.innerHTML='';
-    grid.innerHTML = `
-      <div style="padding:40px 24px; text-align:center; max-width:520px; margin:0 auto;
-        background:var(--surface-2); border:1px solid var(--line); border-radius:14px;">
-        <div style="font-size:44px; line-height:1; margin-bottom:14px;">🚧</div>
-        <div style="font-size:16px; font-weight:700; color:var(--ink); margin-bottom:8px;">
-          Page trophées en maintenance
-        </div>
-        <div style="font-size:13px; color:var(--ink-2); line-height:1.55;">
-          On refait tous les visuels des trophées et on peaufine les seuils.
-          Revenez très bientôt — vos données ne sont pas affectées, seul l'affichage est temporairement caché.
-        </div>
-      </div>`;
-    if(summary) summary.textContent = '';
-    return;
-  }
   const people = state.people;
   if(!people.length){
     if(who) who.innerHTML='';
@@ -13624,7 +13605,6 @@ $('#trophyGrid').addEventListener('click',async e=>{
     }).join('') + '</div>';
     // Famille d'especes : selecteur de pays (Monde / France) + liste dynamique.
     if(d.speciesFamilyKey){
-      // Famille d'especes : meme mecanique de selecteur.
       html += '<hr class="tmodal-sep">';
       html += `<div class="tmodal-country-select" data-kind="species" data-sp-key="${esc(d.speciesFamilyKey)}" data-detail="${esc(card.dataset.detail)}">
         <button type="button" class="tro-cc-chip on" data-cc="monde">🌍 Monde (mes obs)</button>
@@ -13664,7 +13644,7 @@ $('#trophyGrid').addEventListener('click',async e=>{
   // Bloque le scroll du body/fond quand le modal est ouvert (evite de scroller la page derriere).
   document.body.classList.add('trophy-modal-open');
 });
-// Chip Monde / France dans le modal (habitat OU famille d'especes) : rebuild la liste.
+// Chip Monde / France dans le modal d'une famille d'especes : rebuild la liste.
 $('#tmodalBody').addEventListener('click', e => {
   const chip = e.target.closest('.tmodal-country-select .tro-cc-chip');
   if(!chip) return;
