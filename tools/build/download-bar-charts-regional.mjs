@@ -12,6 +12,19 @@
 
   Sortie : tools/ebird-barchart-XX-YYYY-2019-2026.txt pour chaque region.
   Rate limit : delai 3s entre requetes (courtoisie envers eBird).
+
+  CE COOKIE EST INDISPENSABLE, ET CE N EST PAS UNE QUESTION D ANTI-BOT.
+  Verifie le 2026-09-23 : /barchartData exige une session authentifiee. Une requete sans
+  cookie, meme depuis un vrai Chrome pilote par Playwright, est redirigee vers la page de
+  connexion du Cornell Lab (secure.birds.cornell.edu/cassso/login). Il n y a donc pas de
+  contournement possible par navigateur : il faut le cookie d une session connectee.
+  La page HTML /barchart, elle, est publique — c est pourquoi les scrapers de statut
+  exotique fonctionnent sans cookie, contrairement a ce telechargement.
+
+  Filtrer les pays : passer leurs codes en arguments.
+    EBIRD_COOKIE=... node tools/build/download-bar-charts-regional.mjs FR
+  Sans argument, tous les pays de REGIONS sont parcourus (les fichiers deja presents sont
+  ignores, donc un rerun complet ne retelecharge rien inutilement).
 */
 import { writeFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -20,6 +33,11 @@ import { fileURLToPath } from 'node:url';
 const __dir = dirname(fileURLToPath(import.meta.url));
 
 const REGIONS = {
+  // Ajout 2026-09-23 : les TSV regionaux FR couvraient 2015-2026 alors que le national et
+  // les 15 autres pays sont sur 2019-2026, ce qui faisait divergier les cartes de rarete
+  // par region du tier national de la meme espece.
+  FR: ['FR-ARA','FR-BFC','FR-BRE','FR-COR','FR-CVL','FR-GES','FR-HDF',
+       'FR-IDF','FR-NAQ','FR-NOR','FR-OCC','FR-PAC','FR-PDL'],
   GB: ['GB-ENG', 'GB-SCT', 'GB-WLS', 'GB-NIR'],
   PT: ['PT-01', 'PT-02', 'PT-03', 'PT-04', 'PT-05', 'PT-06', 'PT-07',
        'PT-08', 'PT-09', 'PT-10', 'PT-11', 'PT-12', 'PT-13', 'PT-14',
@@ -153,6 +171,9 @@ async function downloadOne(region) {
   }
 }
 
+// Pays demandes en arguments (codes ISO). Vide = tous.
+const PAYS_DEMANDES = process.argv.slice(2).filter(a => /^[A-Z]{2}$/.test(a.toUpperCase())).map(a => a.toUpperCase());
+
 async function main() {
   console.log('Download bar charts eBird : national + regional par pays');
   const totalCalls = Object.entries(REGIONS).reduce((a, [c, r]) => a + 1 + r.length, 0);
@@ -164,6 +185,7 @@ async function main() {
   // MAIS l'endpoint /barchartData renvoie bien le TSV. On downloade donc le national
   // pour tous les pays sans exception.
   for (const [country, regions] of Object.entries(REGIONS)) {
+    if (PAYS_DEMANDES.length && !PAYS_DEMANDES.includes(country)) continue;
     const allRegions = [country, ...regions];
     console.log(`\n=== ${country} (${allRegions.length} fichiers : 1 national + ${regions.length} regions) ===`);
     for (const region of allRegions) {
