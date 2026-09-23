@@ -11053,6 +11053,31 @@ function _pathZone(d, fill, titre, estSelectionnee, selectionActive){
          ` stroke-linejoin="round"${opacite}><title>${titre.replace(/</g,'&lt;')}</title></path>`;
 }
 const _MOIS_COURTS = ['janv','févr','mars','avr','mai','juin','juil','août','sept','oct','nov','déc'];
+// Valeur annuelle d'une zone : le DEUXIEME meilleur mois, pas le pic ni la moyenne.
+//
+// Le pic seul est inexploitable a l'echelle d'un departement : avec peu de listes un mois
+// creux, une seule observation affiche 100% et classait 212 zones francaises comme
+// "communes" alors qu'elles ne reposent que sur un mois.
+//
+// La moyenne corrige ce bruit mais decale l'echelle de +1,55 cran vers "plus rare", parce
+// que les seuils de _MONTHLY_THR sont calibres sur des PICS nationaux (cf. THRESHOLDS dans
+// build-rarity-ebird.mjs). Colorier des moyennes avec des seuils a pics rendait les cartes
+// beaucoup trop rouges : le tier 1 tombait de 6988 a 2702 zones.
+//
+// Le 2e meilleur mois garde la semantique "pic" donc reste comparable a la calibration
+// nationale (+0,94 seulement), tout en supprimant la totalite du bruit : une zone dont la
+// presence ne tient qu'a un mois a un 2e mois nul, donc un tier de zone absente. Et une
+// espece franchement saisonniere garde un score eleve, son 2e mois etant aussi en saison.
+function _valeurAnnuelleZone(arr){
+  if(!Array.isArray(arr) || arr.length < 2) return 0;
+  let premier = 0, second = 0;
+  for(const x of arr){
+    const v = x || 0;
+    if(v > premier){ second = premier; premier = v; }
+    else if(v > second) second = v;
+  }
+  return second;
+}
 // Carte de rarete par zone : colore chaque departement / region avec le tier deduit de
 // sa frequence mensuelle locale, sur la meme echelle de couleurs que le reste de l'appli.
 // Distincte de la carte de statut exotique, qui repond a une autre question.
@@ -11102,7 +11127,7 @@ async function _renderRarityMap(sci, cc){
         if(x > 0) nbMois++;
         if(x > pic){ pic = x; moisPic = i; }
       }
-      v = surAnnee ? arr.reduce((a, x) => a + (x || 0), 0) / 12 : (arr[mois] || 0);
+      v = surAnnee ? _valeurAnnuelleZone(arr) : (arr[mois] || 0);
     }
     const nom = paths.zones[z].name;
     let fill = ABSENT;
@@ -11113,7 +11138,7 @@ async function _renderRarityMap(sci, cc){
       const lbl = (typeof REAL_LABELS === 'object' && REAL_LABELS[tier]) || ('tier ' + tier);
       const fmtP = (x) => x >= 0.1 ? Math.round(x*100)+'%' : x >= 0.01 ? (x*100).toFixed(1)+'%' : (x*100).toFixed(2)+'%';
       titre = surAnnee
-        ? `${nom} — ${lbl} (${tier}) · ${fmtP(v)} en moyenne sur l'année` +
+        ? `${nom} — ${lbl} (${tier}) · ${fmtP(v)} sur un bon mois` +
           (moisPic >= 0 ? ` · jusqu'à ${fmtP(pic)} en ${_MOIS_COURTS[moisPic]}` : '') +
           ` · présente ${nbMois} mois sur 12`
         : `${nom} — ${lbl} (${tier}) · ${fmtP(v)} des listes`;
@@ -11146,7 +11171,7 @@ async function _renderRarityMap(sci, cc){
           ${legendItem(ABSENT,'Absente')}
         </div>
         <div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line-2); font-size:10.5px; color:var(--ink-3); text-align:center; line-height:1.4; opacity:.9;">
-          ⓘ Part des listes eBird du ${zoneWord} où l'espèce a été notée, agrégée sur 2019-2026. Sur l'année, c'est la moyenne des douze mois de chaque ${zoneWord} qui est retenue. Reflète la facilité de rencontre, pas l'effectif.
+          ⓘ Part des listes eBird du ${zoneWord} où l'espèce a été notée, agrégée sur 2019-2026. Sur l'année, chaque ${zoneWord} est évalué sur son 2ᵉ meilleur mois : un mois exceptionnel isolé ne suffit donc pas à le classer commun. Reflète la facilité de rencontre, pas l'effectif.
         </div>
       </div>
     </details>`;
@@ -11211,19 +11236,13 @@ function _renderSpeciesRarityCard(key){
     // Une decimale au maximum : "0.62%" etait plus large que "3.4%", ce qui elargissait
     // la colonne des valeurs et decalait les barres d une ligne a l autre.
     const fmtPct = v => { if(!(v>0)) return '-'; const p = v*100; if(p >= 10) return Math.round(p)+'%'; if(p >= 0.1) return p.toFixed(1)+'%'; return '<0.1%'; };
-    // Score = MOYENNE annuelle, pas le maximum mensuel. Le maximum classait en tete des
-    // zones ou l'espece n'a ete vue qu'un mois : avec peu de listes ce mois-la, une seule
-    // observation suffit a afficher 100%. Le Bouvreuil pivoine mettait ainsi la Sarthe
-    // (100%, mais 9 mois sur 12, 15.9% de moyenne) devant le Jura (50%, toute l'annee,
-    // 24.7%). Comme on compare des zones pour UNE meme espece, la saisonnalite est
-    // commune a toutes et s'annule dans le classement : la moyenne est le bon critere.
-    const moyenne = (arr) => Array.isArray(arr) && arr.length
-      ? arr.reduce((a, v) => a + (v || 0), 0) / arr.length : 0;
+    // Score = 2e meilleur mois (cf. _valeurAnnuelleZone), le meme critere que la carte
+    // pour que l'ordre de la liste et les couleurs racontent la meme chose.
     const scored = regList.map(r => {
       const serie = useST
         ? (stByReg[r.code] && stByReg[r.code][k] || {}).w
         : (freqByReg[r.code] && freqByReg[r.code][k]);
-      const score = moyenne(serie);
+      const score = _valeurAnnuelleZone(serie);
       // Pic conserve pour l'infobulle : "en moyenne X, jusqu'a Y en <mois>".
       let pic = 0, moisPic = -1;
       if(Array.isArray(serie)) serie.forEach((v, i) => { if((v || 0) > pic){ pic = v; moisPic = i; } });
@@ -11249,7 +11268,7 @@ function _renderSpeciesRarityCard(key){
       const fmt = useST ? fmtST : fmtPct;
       const titre = absent
         ? `${s.name} — jamais observée`
-        : `${s.name} — ${fmt(s.score)} en moyenne sur l'année` +
+        : `${s.name} — ${fmt(s.score)} sur un bon mois` +
           (s.moisPic >= 0 ? ` · jusqu'à ${fmt(s.pic)} en ${_MOIS_COURTS[s.moisPic]}` : '') +
           ` · présente ${s.nbMois} mois sur 12`;
       return `<div class="reg-picker-item${absent?' absent':''}${s.code===_speciesRegion?' on':''}" data-code="${esc(s.code)}" title="${esc(titre)}">
