@@ -94,7 +94,7 @@ const REGIONS = {
 };
 
 // Memes seuils que FR/ME (Option 1 recalibree 2026-08-27, tier 10 seuil 0.00015)
-// MESURE DE LA RARETE : moyenne du pic annuel et de la moyenne des 12 mois.
+// MESURE DE LA RARETE : moyenne quadratique des 12 valeurs mensuelles.
 //
 // On prenait le seul pic, ce qui recompensait la saisonnalite : le Rossignol philomele,
 // present six mois, ressortait tier 1 sur son pic de mai, devant le Pigeon biset present
@@ -118,17 +118,17 @@ const REGIONS = {
 // l Hirondelle rustique passent en tier 2 "Tres commun", ce qui leur va mieux.
 // constants : la repartition des couleurs ne bouge pas, seul l ordre change.
 const THRESHOLDS = [
-  [0.30, 1], [0.12, 2], [0.062, 3], [0.030, 4],
-  [0.015, 5], [0.0050, 6], [0.00080, 7], [0.00018, 8],
-  [0.000090, 9],
+  [0.26, 1], [0.098, 2], [0.049, 3], [0.023, 4],
+  [0.011, 5], [0.0035, 6], [0.00043, 7], [0.00011, 8],
+  [0.000055, 9],
 ];
 function weightFor(v){ for(const [min, w] of THRESHOLDS) if(v >= min) return w; return 10; }
-// Valeur annuelle d un taxon : (pic + moyenne) / 2 sur les 12 mois.
+// Moyenne de puissance d ordre 2 : chaque mois pese son propre carre, donc les bons mois
+// comptent plus sans qu un seul puisse dominer.
 function valeurAnnuelle(m12){
   if(!Array.isArray(m12) || !m12.length) return 0;
-  const pic = Math.max(...m12);
-  const moy = m12.reduce((a, b) => a + (b || 0), 0) / m12.length;
-  return (pic + moy) / 2;
+  const carres = m12.reduce((a, b) => a + (b || 0) * (b || 0), 0);
+  return Math.sqrt(carres / m12.length);
 }
 
 const norm = s => s.toLowerCase()
