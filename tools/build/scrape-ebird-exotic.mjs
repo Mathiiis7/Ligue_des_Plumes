@@ -35,7 +35,7 @@ const REGION_FALLBACK = {
 };
 
 async function scrapeRegion(page, region) {
-  const url = `https://ebird.org/barchart?r=${region}&byr=1900&eyr=2026`;
+  const url = `https://ebird.org/barchart?r=${region}&byr=2019&eyr=2026`;
   await page.goto(url, { waitUntil: 'networkidle', timeout: 90000 });
   await page.waitForTimeout(6000);
   return await page.evaluate(() => {
@@ -85,7 +85,7 @@ async function scrapeCountry(page, cc) {
     return merged;
   }
   // Cas normal : page pays.
-  const url = `https://ebird.org/barchart?r=${cc}&byr=1900&eyr=2026`;
+  const url = `https://ebird.org/barchart?r=${cc}&byr=2019&eyr=2026`;
   console.log('  Navigating...');
   await page.goto(url, { waitUntil: 'networkidle', timeout: 90000 });
   console.log('  Waiting for full render...');

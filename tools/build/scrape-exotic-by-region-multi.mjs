@@ -80,7 +80,7 @@ if(FORCE) console.log(`Mode FORCE : re-scrape toutes les regions meme celles dej
 console.log(`Estim ~60s/region => ~${Math.round(totalRegions * 60 / 60)} min total.\n`);
 
 async function scrapeRegion(page, region) {
-  const url = `https://ebird.org/barchart?r=${region}&byr=1900&eyr=2026`;
+  const url = `https://ebird.org/barchart?r=${region}&byr=2019&eyr=2026`;
   await page.goto(url, { waitUntil: 'networkidle', timeout: 120000 });
   try {
     await page.waitForSelector('.SpeciesName', { timeout: 45000 });

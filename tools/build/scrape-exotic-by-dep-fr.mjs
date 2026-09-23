@@ -7,7 +7,7 @@
   Format : { "FR-XXX-YY": { sciName: "N|P|X" } }
 */
 import { chromium } from 'playwright';
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -36,7 +36,7 @@ const FR_DEPS = [
 
 async function scrapeDep(page, code) {
   console.log(`\n=== ${code} ===`);
-  const url = `https://ebird.org/barchart?r=${code}&byr=1900&eyr=2026`;
+  const url = `https://ebird.org/barchart?r=${code}&byr=2019&eyr=2026`;
   try {
     await page.goto(url, { waitUntil: 'networkidle', timeout: 60000 });
     try {
@@ -83,36 +83,55 @@ const page = await ctx.newPage();
 
 console.log(`Scrape de ${FR_DEPS.length} departements FR (~${Math.round(FR_DEPS.length * 0.5)} min).`);
 
-const results = {};
-let i = 0;
-for(const code of FR_DEPS) {
-  i++;
-  process.stdout.write(`[${i}/${FR_DEPS.length}] `);
-  results[code] = await scrapeDep(page, code);
-}
-
-// Convertit speciesCode -> sciName via API taxonomy.
-console.log('\nFetching eBird taxonomy...');
+// Taxonomy chargee AVANT la boucle : on ecrit le fichier apres chaque departement, il
+// faut donc pouvoir convertir speciesCode -> sciName au fur et a mesure. Sans ca, une
+// interruption en cours de route (Ctrl+C, veille) perdait les 50 minutes deja passees.
+console.log('Fetching eBird taxonomy...');
 const tax = await (await fetch('https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json&locale=fr&cat=species', {
   headers: { 'X-eBirdApiToken': 'dbflh4atmsom' }
 })).json();
 const codeToSci = {};
 for(const t of tax) codeToSci[t.speciesCode] = (t.sciName || '').toLowerCase();
+console.log(`  ${Object.keys(codeToSci).length} entrees taxonomiques\n`);
 
+// Reprise : relit le fichier existant pour ne pas refaire les departements deja scrapes.
+// --force ignore ce cache et repart de zero (cas d'un changement de fenetre temporelle).
+const FORCE = process.argv.includes('--force');
 const bySci = {};
-for(const [code, m] of Object.entries(results)) {
-  bySci[code] = {};
-  for(const [sc, cat] of Object.entries(m)) {
-    const sci = codeToSci[sc];
-    if(sci) bySci[code][sci] = cat;
-  }
+if(!FORCE && existsSync(OUT)){
+  try {
+    const m = readFileSync(OUT, 'utf8').match(/EXOTIC_STATUS_BY_DEP_FR = (\{[\s\S]*?\});/);
+    if(m) Object.assign(bySci, JSON.parse(m[1]));
+    console.log(`Reprise : ${Object.keys(bySci).length} departements deja presents.\n`);
+  } catch(e) { console.warn('  (fichier existant illisible, on repart de zero)'); }
 }
 
-writeFileSync(OUT,
+const ecrire = () => writeFileSync(OUT,
   `// Genere par scrape-exotic-by-dep-fr.mjs (Playwright + Chromium headless).\n` +
+  `// Fenetre eBird : 2019-2026, alignee sur les bar charts de frequence.\n` +
   `// Format : { "FR-XXX-YY": { sciName: category } } avec N=Naturalized, P=Provisional, X=Escapee.\n` +
   `export const EXOTIC_STATUS_BY_DEP_FR = ${JSON.stringify(bySci)};\n`
 );
+
+let i = 0;
+for(const code of FR_DEPS) {
+  i++;
+  if(!FORCE && (code in bySci)){
+    console.log(`[${i}/${FR_DEPS.length}] ${code} : SKIP (deja fait)`);
+    continue;
+  }
+  process.stdout.write(`[${i}/${FR_DEPS.length}] `);
+  const brut = await scrapeDep(page, code);
+  const conv = {};
+  for(const [sc, cat] of Object.entries(brut)) {
+    const sci = codeToSci[sc];
+    if(sci) conv[sci] = cat;
+  }
+  bySci[code] = conv;
+  ecrire();   // sauvegarde apres chaque departement
+}
+
+ecrire();
 console.log(`\n✓ Ecrit ${OUT}`);
 
 const totalDeps = Object.keys(bySci).length;

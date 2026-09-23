@@ -22,7 +22,7 @@ const FR_REGIONS = [
 
 async function scrapeRegion(page, region) {
   console.log(`\n=== ${region} ===`);
-  const url = `https://ebird.org/barchart?r=${region}&byr=1900&eyr=2026`;
+  const url = `https://ebird.org/barchart?r=${region}&byr=2019&eyr=2026`;
   console.log('  Navigating...');
   await page.goto(url, { waitUntil: 'networkidle', timeout: 90000 });
   console.log('  Waiting for full render...');
