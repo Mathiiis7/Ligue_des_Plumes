@@ -10940,16 +10940,19 @@ async function _renderExoticMap(sci, cc){
   const statusByZone = _exoticStatusByZone(cc);
   if(!statusByZone){ container.innerHTML = ''; return; }
   const key = (sci || '').toLowerCase();
-  // La mini-carte n'est affichee QUE pour les especes classees exotiques par eBird au
-  // niveau NATIONAL du pays courant. eBird prime : si le bar chart local est present et
-  // l'espece n'est pas dans EXOTIQUES_EBIRD_PAR_PAYS[cc], on la traite comme sauvage
-  // locale meme si elle est dans EXOTIQUES_PARCS (park-only worldwide).
-  // Le Flamant nain (2 dep P scraped) est bar-charte tier 7 -> sauvage, pas de carte.
-  // La Marmaronette (3 dep X, RE FR) est aussi ecartee pour la meme raison.
-  const nationalExotic = (typeof EXOTIQUES_EBIRD_PAR_PAYS === 'object') &&
+  // La carte s'affiche des qu'au moins une zone porte un tag, que l'espece soit classee
+  // exotique au niveau national ou non.
+  //
+  // Elle etait auparavant reservee aux especes taguees au national, ce qui masquait le cas
+  // le plus interessant : une espece sauvage dans le pays mais echappee ou introduite par
+  // endroits. 13 especes francaises sont dans ce cas, dont l'Oie cendree (X dans 2
+  // departements), la Bernache nonnette (X dans 9) et le Pigeon biset (N dans 90). Le
+  // lecteur ne pouvait pas savoir ou le statut basculait.
+  //
+  // Le libelle distingue les deux situations pour que la carte ne se lise pas de travers.
+  const nationalExotic = !!((typeof EXOTIQUES_EBIRD_PAR_PAYS === 'object') &&
                           EXOTIQUES_EBIRD_PAR_PAYS[cc] &&
-                          EXOTIQUES_EBIRD_PAR_PAYS[cc][key];
-  if(!nationalExotic){ container.innerHTML = ''; return; }
+                          EXOTIQUES_EBIRD_PAR_PAYS[cc][key]);
   const perZone = {};
   let anyStatus = false;
   for(const [code, byZone] of Object.entries(statusByZone)){
@@ -10957,6 +10960,7 @@ async function _renderExoticMap(sci, cc){
     if(cat){ perZone[code] = cat; anyStatus = true; }
   }
   if(!anyStatus){ container.innerHTML = ''; return; }
+  const nZonesTaggees = Object.keys(perZone).length;
   const paths = await _loadExoticMapPaths(cc);
   if(!paths){ container.innerHTML = ''; return; }
   // Zones ou eBird ne tague pas l'espece alors qu'elle y est observee : native locale.
@@ -10987,7 +10991,9 @@ async function _renderExoticMap(sci, cc){
   container.innerHTML = `
     <details${openState} style="margin-top:10px;" id="smExoticMapDetails">
       <summary style="cursor:pointer; padding:6px 10px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2, #fafafa); font-size:12px; color:var(--ink-2); user-select:none;">
-        ▸ Statut exotique par ${zoneWord} (eBird)
+        ▸ ${nationalExotic
+             ? `Statut exotique par ${zoneWord} (eBird)`
+             : `Sauvage en ${(COUNTRIES_REG[cc] && COUNTRIES_REG[cc].name) || cc}, exotique dans ${nZonesTaggees} ${zoneWord}${nZonesTaggees > 1 ? 's' : ''} (eBird)`}
       </summary>
       <div style="margin-top:6px; padding:10px 12px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2, #fafafa);">
         <svg viewBox="${paths.viewBox}" style="width:100%; max-width:320px; height:auto; display:block; margin:0 auto;" role="img" aria-label="Statut exotique par ${zoneWord}">
