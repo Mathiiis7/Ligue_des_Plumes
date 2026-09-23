@@ -17,7 +17,16 @@ const __dir = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dir, '..', '..');
 const APP = join(ROOT, 'app.js');
 
-const TOUS = ['ES','IT','GB','PT','CH','NO','GR','IS','LK','NA','AU','NZ','US','CA'];
+const TOUS = ['FR','ES','IT','GB','PT','CH','NO','GR','IS','LK','NA','AU','NZ','US','CA'];
+
+// La France nomme ses tables sans suffixe de pays, et on FUSIONNE au lieu de remplacer :
+// REAL_RARITY porte 8 anciennes cles de genre (bubulcus ibis, accipiter gentilis,
+// charadrius dubius...) absentes du bar chart courant et sans entree dans SCI_ALIAS. Du
+// code peut les interroger directement ; un remplacement sec les perdrait.
+const NOMS_TABLES = { FR: { rarete: 'REAL_RARITY', mensuel: 'REAL_FREQ_MONTHLY' } };
+const FUSIONNE = new Set(['FR']);
+const nomRarete = cc => (NOMS_TABLES[cc] && NOMS_TABLES[cc].rarete) || ('REAL_RARITY_' + cc + '_EBIRD');
+const nomMensuel = cc => (NOMS_TABLES[cc] && NOMS_TABLES[cc].mensuel) || ('REAL_FREQ_MONTHLY_' + cc);
 const arg = process.argv[2];
 const PAYS = arg ? arg.split(',').map(s => s.trim().toUpperCase()) : TOUS;
 
@@ -42,17 +51,24 @@ for (const cc of PAYS) {
   if (!existsSync(f)) { console.warn(`${cc} : ${f} absent, skip.`); continue; }
   const gen = readFileSync(f, 'utf8');
 
-  for (const nom of [`REAL_RARITY_${cc}_EBIRD`, `REAL_FREQ_MONTHLY_${cc}`]) {
+  for (const nom of [nomRarete(cc), nomMensuel(cc)]) {
     const source = extraire(gen, nom);
     if (!source) { console.warn(`  ${nom} : introuvable dans le fichier genere.`); continue; }
     const cible = extraire(app, `const ${nom}`);
     if (!cible) { console.warn(`  ${nom} : introuvable dans app.js.`); continue; }
 
-    const avant = Object.keys(JSON.parse(cible.litteral)).length;
-    const apres = Object.keys(JSON.parse(source.litteral)).length;
-    app = app.slice(0, cible.debut) + source.litteral + app.slice(cible.fin);
+    const ancien = JSON.parse(cible.litteral);
+    const neuf = JSON.parse(source.litteral);
+    const avant = Object.keys(ancien).length;
+    let conserves = 0;
+    if (FUSIONNE.has(cc)) {
+      for (const k of Object.keys(ancien)) if (!(k in neuf)) { neuf[k] = ancien[k]; conserves++; }
+    }
+    const apres = Object.keys(neuf).length;
+    app = app.slice(0, cible.debut) + JSON.stringify(neuf) + app.slice(cible.fin);
     total++;
-    console.log(`  ${nom.padEnd(28)} ${String(avant).padStart(5)} -> ${String(apres).padStart(5)} entrees`);
+    const suffixe = conserves ? `  (${conserves} anciennes cles conservees)` : '';
+    console.log(`  ${nom.padEnd(28)} ${String(avant).padStart(5)} -> ${String(apres).padStart(5)} entrees${suffixe}`);
   }
 }
 

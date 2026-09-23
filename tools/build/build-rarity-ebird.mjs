@@ -1,5 +1,16 @@
 #!/usr/bin/env node
 /*
+  OBSOLETE depuis le 2026-09-23. La France est passee sur build-rarity-multi-country.mjs,
+  le meme generateur que les 15 autres pays. Ce script souffrait de trois defauts :
+    - il lit FR_NAMES depuis index.html, alors que la table vit dans app.js depuis le
+      decoupage du fichier ; il travaillait donc sur une liste figee ;
+    - sa table EBIRD_ALIAS traduit les noms europeens des bar charts vers la nomenclature
+      nord-americaine de locale=fr, devenue inutile depuis le passage a locale=fr_FR ;
+    - son bareme plafonne a 9 tiers avec des seuils qui lui sont propres (0,35 / 0,20 /
+      0,10...), quand tous les autres pays utilisent une echelle a 10 tiers.
+  Conserve pour reference historique. Ne pas relancer : il ecraserait REAL_RARITY avec des
+  tiers d une autre echelle.
+
   build-rarity-ebird.mjs - Barème de "rareté réelle" basé sur la FRÉQUENCE eBird.
 
   PRINCIPE

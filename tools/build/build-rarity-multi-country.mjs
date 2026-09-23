@@ -18,11 +18,40 @@ import { dirname, join } from 'node:path';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 
-const COUNTRIES = ['ES', 'IT', 'GB', 'PT', 'CH', 'NO', 'GR', 'IS', 'LK', 'NA', 'AU', 'NZ', 'US', 'CA'];
+const COUNTRIES = ['FR', 'ES', 'IT', 'GB', 'PT', 'CH', 'NO', 'GR', 'IS', 'LK', 'NA', 'AU', 'NZ', 'US', 'CA'];
+
+// La France est passee sur ce generateur le 2026-09-23. Elle dependait jusque-la de
+// build-rarity-ebird.mjs, devenu obsolete : il lisait FR_NAMES depuis index.html (la table
+// vit dans app.js depuis le decoupage), appariait les anciens noms nord-americains contre un
+// bar chart europeen, et plafonnait a 9 tiers avec des seuils qui lui etaient propres
+// (0,35 / 0,20 / 0,10...). Les tiers francais avaient ete recalibres depuis sur l'echelle
+// commune a 10 tiers, mais par un chemin qui n'etait plus celui du script.
+//
+// Trois particularites francaises, d'ou les tables ci-dessous :
+//   - l'app nomme ses tables REAL_RARITY et REAL_FREQ_MONTHLY, sans suffixe de pays ;
+//   - les bar charts regionaux FR couvrent 2015-2026 la ou tout le reste est sur 2019-2026 ;
+//   - REAL_RARITY porte 8 anciennes cles de genre (bubulcus ibis, accipiter gentilis...) qui
+//     n'ont pas d'entree dans SCI_ALIAS : du code peut les interroger directement, elles sont
+//     conservees par fusion a l'injection plutot que perdues au rebuild.
+const NOMS_TABLES = {
+  FR: { rarete: 'REAL_RARITY', mensuel: 'REAL_FREQ_MONTHLY' },
+};
+const nomRarete = cc => (NOMS_TABLES[cc] && NOMS_TABLES[cc].rarete) || ('REAL_RARITY_' + cc + '_EBIRD');
+const nomMensuel = cc => (NOMS_TABLES[cc] && NOMS_TABLES[cc].mensuel) || ('REAL_FREQ_MONTHLY_' + cc);
+
+// Fenetre des bar charts regionaux, quand elle differe du national.
+const FENETRE_REGIONS = { FR: '2015-2026' };
+const fenetreRegion = cc => FENETRE_REGIONS[cc] || '2019-2026';
 
 // Regions par pays (admin1 eBird). Ajoute la data monthly par region -> alimente
 // data/freq_by_region_XX.json pour lazy-load runtime (comme FR).
 const REGIONS = {
+// La France est volontairement absente de cette table. Son data/countries/fr/
+// freq_by_region.json contient 109 zones — les 13 regions ET les 96 departements — pour
+// 29 298 series, alors que seuls les bar charts des 13 regions existent en local.
+// Regenerer depuis ici ecraserait le fichier avec 13 zones et 4 780 series, faisant
+// disparaitre toutes les cartes departementales. Le national FR est bien produit ici,
+// le regional reste sur sa source d origine.
   GB: ['GB-ENG', 'GB-SCT', 'GB-WLS', 'GB-NIR'],
   PT: ['PT-01', 'PT-02', 'PT-03', 'PT-04', 'PT-05', 'PT-06', 'PT-07',
        'PT-08', 'PT-09', 'PT-10', 'PT-11', 'PT-12', 'PT-13', 'PT-14',
@@ -174,8 +203,8 @@ async function processCountry(cc){
 
   const content = `// Genere par tools/build-rarity-multi-country.mjs depuis le bar chart eBird ${cc}.\n` +
                   `// Ne pas editer a la main.\n` +
-                  `export const REAL_RARITY_${cc}_EBIRD = ${JSON.stringify(rarity)};\n` +
-                  `export const REAL_FREQ_MONTHLY_${cc} = ${JSON.stringify(monthly)};\n`;
+                  `export const ${nomRarete(cc)} = ${JSON.stringify(rarity)};\n` +
+                  `export const ${nomMensuel(cc)} = ${JSON.stringify(monthly)};\n`;
   writeFileSync(outPath, content);
   console.log(`  Ecrit : ${outPath} (${content.length} chars)`);
 
@@ -184,7 +213,7 @@ async function processCountry(cc){
   const regionalData = {};
   let nRegionsFound = 0;
   for (const regCode of REGIONS[cc] || []) {
-    const barRegPath = join(BAR_DIR, `ebird-barchart-${regCode}-2019-2026.txt`);
+    const barRegPath = join(BAR_DIR, `ebird-barchart-${regCode}-${fenetreRegion(cc)}.txt`);
     try {
       const barReg = parseBarchart(barRegPath);
       const regMap = {};
@@ -206,8 +235,20 @@ async function processCountry(cc){
   const { mkdirSync } = await import('node:fs');
   mkdirSync(countryDir, { recursive: true });
   const regPath = join(countryDir, `freq_by_region.json`);
-  writeFileSync(regPath, regJson);
-  console.log(`  Ecrit : ${regPath} (${regJson.length} chars, ${nRegionsFound} regions)`);
+  // Garde-fou : ne jamais remplacer un fichier regional existant par un plus pauvre. Une
+  // fenetre de TSV mal nommee ou une region non telechargee produirait sinon une perte
+  // silencieuse — c est ce qui a failli effacer les 96 departements francais.
+  const { existsSync } = await import('node:fs');
+  let ancienNb = 0;
+  if (existsSync(regPath)) {
+    try { ancienNb = Object.keys(JSON.parse(readFileSync(regPath, 'utf8'))).length; } catch (e) {}
+  }
+  if (nRegionsFound < ancienNb) {
+    console.warn(`  ! ${regPath} conserve : ${ancienNb} zones deja presentes contre ${nRegionsFound} produites.`);
+  } else {
+    writeFileSync(regPath, regJson);
+    console.log(`  Ecrit : ${regPath} (${regJson.length} chars, ${nRegionsFound} regions)`);
+  }
 }
 
 for(const cc of COUNTRIES){
