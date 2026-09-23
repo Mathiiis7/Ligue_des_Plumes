@@ -320,7 +320,11 @@ function _isUnestablishedExotic(cat){ return cat === 'P' || cat === 'X' || cat =
 // _WEEKLY_THR  : abondance hebdomadaire Cornell S&T (individus/heure).
 // Source unique : ces seuils etaient dupliques dans le picker pays et le picker regions,
 // et une carte de rarete par region en aurait fait un troisieme exemplaire.
-const _MONTHLY_THR = [[0.25,1],[0.15,2],[0.08,3],[0.04,4],[0.02,5],[0.007,6],[0.0015,7],[0.0003,8],[0.00005,9]];
+// Le plancher du tier 9 etait a 0.00005 alors que les scripts de build qui calculent les
+// tiers nationaux utilisent 0.00015 (valeur de la recalibration du 2026-08-27). Une zone a
+// 0,01 % ressortait donc tier 9 sur la carte et tier 10 au national : la couleur et le tier
+// racontaient deux choses. 11 597 valeurs de zone etaient dans cette bande.
+const _MONTHLY_THR = [[0.25,1],[0.15,2],[0.08,3],[0.04,4],[0.02,5],[0.007,6],[0.0015,7],[0.0003,8],[0.00015,9]];
 const _WEEKLY_THR  = [[2.2596,1],[0.8496,2],[0.34178,3],[0.12404,4],[0.04666,5],[0.01880,6],[0.00440,7],[0.00114,8],[0.00009,9]];
 const _tierFromThresholds = (v, thr) => { if(!(v > 0)) return 10; for(const [lim, t] of thr) if(v >= lim) return t; return 10; };
 const monthlyFreqToTier = v => _tierFromThresholds(v, _MONTHLY_THR);
@@ -954,7 +958,7 @@ const EXOTIC_STATUS_BY_REGION_MULTI = {"FR":{"FR-ARA":{"dendrocygna viduata":"X"
 // (ex : Oie empereur = X aux US car echappee sur le continent, mais native en Alaska ;
 // Bruant chanteur = P aux US alors qu'il niche dans 49 etats).
 // Format : { cc: { sciName: ["XX-YY", ...] } }. Precalcule par inject-exotic-by-region.mjs.
-const NATIVE_REGIONS_DESPITE_NATIONAL_TAG = {"FR":{"cygnus melancoryphus":["FR-GES","FR-OCC"],"tadorna cana":["FR-BRE","FR-NAQ"],"chenonetta jubata":["FR-PDL"],"spatula cyanoptera":["FR-GES"],"mareca sibilatrix":["FR-IDF"],"anas bahamensis":["FR-PDL"],"lophodytes cucullatus":["FR-HDF","FR-NAQ"],"chrysolophus pictus":["FR-GES"],"phoenicopterus chilensis":["FR-HDF"],"phoenicopterus ruber":["FR-HDF"],"eudocimus ruber":["FR-NAQ"],"pelecanus rufescens":["FR-GES"],"pelecanus crispus":["FR-GES","FR-IDF"],"psittacula eupatria":["FR-GES"],"agapornis fischeri":["FR-OCC"],"agapornis personatus":["FR-GES"],"psittacus erithacus":["FR-OCC"],"poicephalus senegalus":["FR-PAC"],"euplectes afer":["FR-OCC"],"taeniopygia guttata":["FR-ARA"],"estrilda astrild":["FR-ARA","FR-PDL"],"passer luteus":["FR-NAQ"],"dendrocygna autumnalis":["FR-OCC"],"branta hutchinsii":["FR-NOR"],"anas capensis":["FR-ARA"],"falco jugger":["FR-HDF"],"trichoglossus haematodus":["FR-PDL"],"pycnonotus jocosus":["FR-IDF"],"quiscalus quiscula":["FR-NAQ"]},"AU":{"cacatua leadbeateri":["AU-NSW","AU-NT","AU-QLD","AU-SA","AU-VIC","AU-WA"],"trichoglossus rubritorquis":["AU-NT","AU-QLD","AU-WA"],"chloebia gouldiae":["AU-NT","AU-QLD","AU-WA"],"polytelis alexandrae":["AU-NT","AU-SA","AU-WA"],"eclectus polychloros":["AU-QLD"],"callocephalon fimbriatum":["AU-ACT","AU-NSW","AU-SA","AU-VIC"],"platycercus caledonicus":["AU-TAS"],"alisterus scapularis":["AU-ACT","AU-NSW","AU-QLD","AU-VIC"],"platycercus elegans":["AU-ACT","AU-NSW","AU-QLD","AU-SA","AU-VIC"],"melopsittacus undulatus":["AU-ACT","AU-NSW","AU-NT","AU-QLD","AU-SA","AU-VIC","AU-WA"],"aprosmictus erythropterus":["AU-NSW","AU-NT","AU-QLD","AU-WA"],"platycercus eximius":["AU-ACT","AU-NSW","AU-QLD","AU-SA","AU-TAS","AU-VIC"],"trichoglossus chlorolepidotus":["AU-ACT","AU-NSW","AU-QLD","AU-VIC"],"stagonopleura guttata":["AU-ACT","AU-NSW","AU-QLD","AU-SA","AU-VIC"]},"US":{"colinus virginianus":["US-AL","US-AR","US-CO","US-DE","US-FL","US-GA","US-IL","US-IN","US-IA","US-KS","US-KY","US-LA","US-MD","US-MA","US-MI","US-MN","US-MS","US-MO","US-NE","US-NJ","US-NM","US-NY","US-NC","US-OH","US-OK","US-RI","US-SC","US-SD","US-TN","US-TX","US-VA","US-WV","US-WI"],"anas bahamensis":["US-FL"],"callipepla squamata":["US-AZ","US-CO","US-KS","US-NM","US-OK","US-TX","US-UT"],"phoenicopterus ruber":["US-AL","US-DE","US-FL","US-GA","US-IN","US-KS","US-KY","US-LA","US-MD","US-MA","US-MI","US-MS","US-MO","US-NY","US-NC","US-OH","US-PA","US-RI","US-SC","US-TN","US-TX","US-VA","US-WI"],"daptrius chimachima":["US-FL","US-TX"],"cyanocorax yncas":["US-TX"],"cygnus buccinator":["US-AL","US-AK","US-AZ","US-AR","US-CA","US-CO","US-CT","US-DE","US-DC","US-GA","US-ID","US-IL","US-IN","US-IA","US-KS","US-KY","US-LA","US-ME","US-MD","US-MA","US-MI","US-MN","US-MO","US-MT","US-NE","US-NV","US-NH","US-NJ","US-NM","US-NY","US-NC","US-ND","US-OH","US-OK","US-OR","US-PA","US-SC","US-SD","US-TN","US-TX","US-UT","US-VT","US-VA","US-WA","US-WV","US-WI","US-WY"],"cygnus cygnus":["US-AK","US-WA"],"aythya ferina":["US-AK"],"parabuteo unicinctus":["US-AZ","US-CA","US-CO","US-KS","US-LA","US-NV","US-NM","US-OK","US-TX"],"volatinia jacarina":["US-AZ"],"melospiza melodia":["US-AL","US-AK","US-AZ","US-AR","US-CA","US-CO","US-CT","US-DE","US-DC","US-FL","US-GA","US-ID","US-IL","US-IN","US-IA","US-KS","US-KY","US-LA","US-ME","US-MD","US-MA","US-MI","US-MN","US-MS","US-MO","US-MT","US-NE","US-NV","US-NH","US-NJ","US-NM","US-NY","US-NC","US-ND","US-OH","US-OK","US-OR","US-PA","US-RI","US-SC","US-SD","US-TN","US-TX","US-UT","US-VT","US-VA","US-WA","US-WV","US-WI","US-WY"],"quiscalus mexicanus":["US-AZ","US-AR","US-CA","US-CO","US-FL","US-ID","US-IL","US-IA","US-KS","US-LA","US-MA","US-MI","US-MN","US-MO","US-MT","US-NE","US-NV","US-NM","US-ND","US-OK","US-OR","US-SD","US-TX","US-UT","US-WA","US-WI","US-WY"],"branta leucopsis":["US-CO","US-CT","US-DE","US-DC","US-IL","US-ME","US-MD","US-MA","US-NH","US-NJ","US-NY","US-PA","US-RI","US-VT","US-VA"],"mergellus albellus":["US-AK"],"melozone aberti":["US-AZ","US-CA","US-NV","US-NM","US-UT"],"anser canagicus":["US-AK","US-CA","US-OR","US-WA"],"anas zonorhyncha":["US-AK","US-HI"],"anser erythropus":["US-AK"],"spinus spinus":["US-AK"]}};
+const NATIVE_REGIONS_DESPITE_NATIONAL_TAG = {"FR":{"pelecanus crispus":["FR-GES"]},"AU":{"cacatua leadbeateri":["AU-NSW","AU-NT","AU-QLD","AU-SA","AU-VIC","AU-WA"],"trichoglossus rubritorquis":["AU-NT","AU-QLD","AU-WA"],"chloebia gouldiae":["AU-NT","AU-QLD","AU-WA"],"polytelis alexandrae":["AU-NT","AU-WA"],"eclectus polychloros":["AU-QLD"],"callocephalon fimbriatum":["AU-ACT","AU-NSW","AU-SA","AU-VIC"],"platycercus caledonicus":["AU-TAS"],"alisterus scapularis":["AU-ACT","AU-NSW","AU-QLD","AU-VIC"],"platycercus elegans":["AU-ACT","AU-NSW","AU-QLD","AU-SA","AU-VIC"],"melopsittacus undulatus":["AU-NSW","AU-NT","AU-QLD","AU-SA","AU-VIC","AU-WA"],"aprosmictus erythropterus":["AU-NSW","AU-NT","AU-QLD","AU-WA"],"platycercus eximius":["AU-ACT","AU-NSW","AU-QLD","AU-SA","AU-TAS","AU-VIC"],"trichoglossus chlorolepidotus":["AU-ACT","AU-NSW","AU-QLD","AU-VIC"],"stagonopleura guttata":["AU-ACT","AU-NSW","AU-QLD","AU-SA","AU-VIC"]},"US":{"colinus virginianus":["US-AL","US-AR","US-CO","US-DE","US-FL","US-GA","US-IL","US-IN","US-IA","US-KS","US-KY","US-LA","US-MD","US-MA","US-MS","US-MO","US-NE","US-NJ","US-NM","US-NC","US-OH","US-OK","US-RI","US-SC","US-SD","US-TN","US-TX","US-VA","US-WV","US-WI"],"callipepla squamata":["US-AZ","US-CO","US-KS","US-NM","US-OK","US-TX"],"phoenicopterus ruber":["US-FL","US-LA","US-SC","US-TX"],"daptrius chimachima":["US-FL","US-TX"],"cyanocorax yncas":["US-TX"],"cygnus buccinator":["US-AK","US-AZ","US-AR","US-CA","US-CO","US-DE","US-ID","US-IL","US-IN","US-IA","US-KS","US-KY","US-MD","US-MA","US-MI","US-MN","US-MO","US-MT","US-NE","US-NV","US-NH","US-NJ","US-NY","US-ND","US-OH","US-OK","US-OR","US-PA","US-SD","US-UT","US-VT","US-VA","US-WA","US-WV","US-WI","US-WY"],"cygnus cygnus":["US-AK"],"aythya ferina":["US-AK"],"parabuteo unicinctus":["US-AZ","US-CA","US-LA","US-NV","US-NM","US-TX"],"melospiza melodia":["US-AL","US-AK","US-AZ","US-AR","US-CA","US-CO","US-CT","US-DE","US-DC","US-FL","US-GA","US-ID","US-IL","US-IN","US-IA","US-KS","US-KY","US-LA","US-ME","US-MD","US-MA","US-MI","US-MN","US-MS","US-MO","US-MT","US-NE","US-NV","US-NH","US-NJ","US-NM","US-NY","US-NC","US-ND","US-OH","US-OK","US-OR","US-PA","US-RI","US-SC","US-SD","US-TN","US-TX","US-UT","US-VT","US-VA","US-WA","US-WV","US-WI","US-WY"],"quiscalus mexicanus":["US-AZ","US-AR","US-CA","US-CO","US-FL","US-ID","US-IL","US-IA","US-KS","US-LA","US-MN","US-MO","US-MT","US-NE","US-NV","US-NM","US-OK","US-OR","US-SD","US-TX","US-UT","US-WA","US-WY"],"branta leucopsis":["US-ME","US-MA","US-NY","US-PA"],"mergellus albellus":["US-AK"],"melozone aberti":["US-AZ","US-CA","US-NV","US-NM","US-UT"],"anser canagicus":["US-AK","US-CA"]}};
 
 // Statut exotique par departement FR (96 dep metropole + 5 DOM) scrape par
 // tools/build/scrape-exotic-by-dep-fr.mjs. Meme structure que EXOTIC_STATUS_BY_REGION_FR
@@ -1536,18 +1540,23 @@ function rarityForCountry(sci, country){
   const c = country || 'FR';
   const reg = _countryEntry(c);
   if(!reg) return 0;
-  // Especes eteintes : force tier 10 (Exceptionnel) prioritaire.
-  //   - REDLIST.fr = 'RE' (Regionalement Eteinte) : eteinte comme reproducteur en France.
-  //     Ne concerne que le pays FR (les autres pays ont leur propre liste rouge non chargee).
-  //   - REDLIST.global = 'EX' (Eteinte mondiale) : partout.
-  //   - REDLIST.global = 'EW' (Eteinte a l'etat sauvage) : partout.
-  // Sans ce check, le tier auto renvoyait 7 pour Otis tarda (bar chart 7 base sur vagrants
-  // occasionnels) alors qu'en pratique impossible a voir en France sauf coup de chance ultime.
-  const rl = (typeof REDLIST === 'object') ? REDLIST[k] : null;
-  if(rl){
-    if(rl.global === 'EX' || rl.global === 'EW') return 10;
-    if(c === 'FR' && (rl.fr === 'RE' || rl.fr === 'EX')) return 10;
-  }
+  // La liste rouge ne force plus de tier. Elle le faisait dans deux cas, tous deux errones :
+  //
+  //   - EX/EW mondial -> tier 10 partout. Sur les 155 especes concernees, UNE SEULE a un bar
+  //     chart dans les 16 pays (la Corneille d'Hawai, en reintroduction aux Etats-Unis). Pour
+  //     les 154 autres la regle ne corrigeait rien : elle transformait "aucune donnee" (tier 0,
+  //     grise) en "Exceptionnel", affichant le Dronte de Maurice ou la Tourte voyageuse comme
+  //     des cibles ultra-rares.
+  //
+  //   - RE en France -> tier 10. "Regionalement eteinte" qualifie le statut de REPRODUCTEUR,
+  //     pas l'observabilite. Le Guignard d'Eurasie est un migrateur de passage regulier, bar
+  //     chart 6 ("assez rare mais trouvable") : le forcer a 10 etait faux. Idem Sarcelle
+  //     marbree et Erismature a tete blanche, tier 8 poussees a 10.
+  //
+  // Le cas que le commentaire d'origine defendait (Grande Outarde, tier 7 sur des vagrants)
+  // reste discutable, mais il releve d'un override cible par espece, pas d'une regle generale
+  // appuyee sur une categorie de liste rouge qui mesure autre chose. REDLIST continue de servir
+  // a l'affichage du statut de conservation sur la fiche.
   const stEntry = reg.st()[k];
   const barTier = reg.barTier()[k];   // undefined si pas de bar chart pour ce pays
   // Exotiques : N (populations naturalisees) -> traitees comme les sauvages

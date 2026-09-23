@@ -50,6 +50,11 @@ function readNationalExotics(appSrc){
   return JSON.parse(m[1]);
 }
 
+// Nombre de mois de presence exiges dans une region pour la considerer comme native
+// malgre un tag exotique national. Aligne sur _MOIS_MIN_X_VISIBLE cote app, qui ecarte de
+// la meme facon les echappees trop ponctuelles.
+const MOIS_MIN_NATIF = 6;
+
 function computeNativeRegions(appSrc){
   const national = readNationalExotics(appSrc);
   const out = {};
@@ -66,9 +71,23 @@ function computeNativeRegions(appSrc){
       for(const [region, byS] of Object.entries(exoByRegion)){
         // (b) pas de tag exotique dans cette region
         if(byS[sci]) continue;
-        // (a) presente dans le bar chart de cette region
+        // (a) presente dans le bar chart de cette region, et pas juste de passage.
+        //
+        // Exiger "au moins une valeur > 0" ne suffisait pas : une seule observation suffisait
+        // a decreter l'espece native. En France, 28 des 34 exceptions ainsi accordees ne
+        // reposaient que sur UN mois de l'annee, et 25 sur la valeur plancher d'eBird
+        // (0,15 % = "vu au moins une fois, sous le seuil de report"). Ca donnait un statut
+        // de sauvage a des oiseaux de cage : Perroquet jaco, Diamant mandarin, Inseparables,
+        // Ibis rouge, flamants et pelicans ornementaux.
+        //
+        // Le cas que cette exception doit servir est l'inverse : une espece vraiment installee
+        // dans une region, comme l'Oie empereur en Alaska ou le Bruant chanteur dans 49 Etats.
+        // Ces oiseaux-la sont presents toute l'annee ou sur une vraie saison. Le seuil de
+        // MOIS_MIN_NATIF mois conserve 54 des 56 cas australiens et 172 des 233 americains,
+        // dont l'Oie empereur, et ecarte 33 des 34 francais.
         const arr = freq[region] && freq[region][sci];
-        if(!Array.isArray(arr) || !arr.some(v => v > 0)) continue;
+        if(!Array.isArray(arr)) continue;
+        if(arr.filter(v => v > 0).length < MOIS_MIN_NATIF) continue;
         nativeIn.push(region);
       }
       if(nativeIn.length) perSpecies[sci] = nativeIn;
