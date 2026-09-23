@@ -94,7 +94,20 @@ const REGIONS = {
 };
 
 // Memes seuils que FR/ME (Option 1 recalibree 2026-08-27, tier 10 seuil 0.00015)
-// MESURE DE LA RARETE : moyenne quadratique des 12 valeurs mensuelles.
+// MESURE DE LA RARETE : part des listes eBird du pays qui mentionnent l espece, sur
+// 2019-2026. Autrement dit, la chance de la rencontrer lors d une sortie prise au hasard.
+//
+// Mesure exacte, sans parametre libre. Elle remplace trois formules qui tentaient de
+// l approcher : le pic seul, le melange pic+moyenne, puis la moyenne quadratique. Chacune
+// arbitrait la place a donner a la saison ; celle-ci n arbitre rien.
+//
+// Deux corrections viennent avec elle :
+//   - on travaille sur les 48 quinzaines, plus sur 12 mois agreges par un MAX. Ce max etait
+//     un pic deguise : il gonflait les valeurs de 57,8 % en moyenne, jusqu a +28 % pour les
+//     especes saisonnieres comme le Rossignol philomele.
+//   - on pondere par la taille d echantillon de chaque quinzaine, que le TSV fournit et
+//     qu on ignorait. L effort varie d un facteur 2,9 sur l annee en France : 16 000 listes
+//     en novembre contre 47 000 en mai.
 //
 // On prenait le seul pic, ce qui recompensait la saisonnalite : le Rossignol philomele,
 // present six mois, ressortait tier 1 sur son pic de mai, devant le Pigeon biset present
@@ -118,17 +131,28 @@ const REGIONS = {
 // l Hirondelle rustique passent en tier 2 "Tres commun", ce qui leur va mieux.
 // constants : la repartition des couleurs ne bouge pas, seul l ordre change.
 const THRESHOLDS = [
-  [0.26, 1], [0.098, 2], [0.049, 3], [0.023, 4],
-  [0.011, 5], [0.0035, 6], [0.00043, 7], [0.00011, 8],
-  [0.000055, 9],
+  [0.23, 1], [0.078, 2], [0.035, 3], [0.016, 4],
+  [0.0069, 5], [0.0018, 6], [0.000038, 7], [0.000017, 8],
+  [0.0000084, 9],
 ];
 function weightFor(v){ for(const [min, w] of THRESHOLDS) if(v >= min) return w; return 10; }
-// Moyenne de puissance d ordre 2 : chaque mois pese son propre carre, donc les bons mois
-// comptent plus sans qu un seul puisse dominer.
-function valeurAnnuelle(m12){
-  if(!Array.isArray(m12) || !m12.length) return 0;
-  const carres = m12.reduce((a, b) => a + (b || 0) * (b || 0), 0);
-  return Math.sqrt(carres / m12.length);
+// Moyenne ponderee par l effort : somme(frequence x nb de listes) / somme(nb de listes).
+function valeurPonderee(valeurs, poids){
+  let num = 0, den = 0;
+  for(let i = 0; i < valeurs.length; i++){
+    const n = poids[i] || 0;
+    num += (valeurs[i] || 0) * n;
+    den += n;
+  }
+  return den ? num / den : 0;
+}
+// Ligne "Sample Size" du bar chart : nombre de listes par quinzaine. Sans elle on ne peut
+// ni ponderer ni agreger correctement, donc on refuse de deviner.
+function lireEffort(lignes){
+  const ligne = lignes.find(x => /sample size/i.test(x));
+  if(!ligne) return null;
+  const v = ligne.split(String.fromCharCode(9)).slice(1, 49).map(Number);
+  return (v.length === 48 && v.every(x => !isNaN(x))) ? v : null;
 }
 
 const norm = s => s.toLowerCase()
@@ -159,20 +183,24 @@ const BAR_CHART_ALIAS = {
 
 function parseBarchart(path){
   const out = {};
-  for(const ln of readFileSync(path, 'utf8').split(/\r?\n/)){
+  const lignes = readFileSync(path, 'utf8').split(/\r?\n/);
+  const effort = lireEffort(lignes);
+  if(!effort) throw new Error(`ligne "Sample Size" absente ou malformee : ${path}`);
+  for(const ln of lignes){
     if(!ln.includes('\t')) continue;
     const p = ln.split('\t');
     const nm = p[0].trim();
     const nums = p.slice(1).map(Number).filter(x => !isNaN(x));
     if(!nm || nums.length < 12 || /sample size/i.test(nm)) continue;
     const clean = nm.replace(/\s*\(.*?\)\s*/g, ' ').trim();
-    // 48 quinzaines -> 12 mois (max des 4 quinzaines par mois)
+    // 48 quinzaines -> 12 mois, chaque mois etant la moyenne de ses 4 quinzaines ponderee
+    // par leur nombre de listes. Plus de max : c etait un pic deguise.
     const m12 = new Array(12).fill(0);
     for(let m = 0; m < 12; m++){
-      const start = m * 4;
-      m12[m] = Math.max(nums[start]||0, nums[start+1]||0, nums[start+2]||0, nums[start+3]||0);
+      m12[m] = valeurPonderee(nums.slice(m * 4, m * 4 + 4), effort.slice(m * 4, m * 4 + 4));
     }
-    out[norm(clean)] = { name: clean, freq: valeurAnnuelle(m12), monthly: m12 };
+    // La valeur annuelle se calcule sur les 48 quinzaines, pas sur les 12 mois agreges.
+    out[norm(clean)] = { name: clean, freq: valeurPonderee(nums.slice(0, 48), effort), monthly: m12 };
   }
   return out;
 }
@@ -199,6 +227,11 @@ function resolveSci(tax, k, name){
   return al ? tax[norm(al)] : undefined;
 }
 
+// Profil d effort mensuel par pays : part des listes de l annee tombant dans chaque mois.
+// Le runtime en a besoin pour ponderer la valeur annuelle d une zone a partir de ses 12
+// valeurs mensuelles, sans avoir a stocker les 48 quinzaines pour chacune des 109 zones.
+const EFFORT_PAR_PAYS = {};
+
 const BAR_DIR = join(__dir, '..', 'ebird-barcharts-raw');
 const OUT_DIR = join(__dir, '..', '..', 'data', 'generated');
 
@@ -208,6 +241,13 @@ async function processCountry(cc){
 
   console.log(`\n=== ${cc} ===`);
   const bar = parseBarchart(barPath);
+  {
+    const eff = lireEffort(readFileSync(barPath, 'utf8').split(/\r?\n/));
+    const parMois = [];
+    for(let m = 0; m < 12; m++) parMois.push(eff[m*4] + eff[m*4+1] + eff[m*4+2] + eff[m*4+3]);
+    const tot = parMois.reduce((a, b) => a + b, 0);
+    EFFORT_PAR_PAYS[cc] = parMois.map(v => +(v / tot).toFixed(5));
+  }
   console.log(`  Bar chart : ${Object.keys(bar).length} taxons`);
 
   const tax = await fetchTaxonomy();
@@ -285,3 +325,15 @@ for(const cc of COUNTRIES){
   await processCountry(cc);
 }
 console.log('\nTermine.');
+
+
+// Profil d effort mensuel, injecte dans app.js par inject-rarity-multi-country.mjs.
+writeFileSync(join(OUT_DIR, 'effort-mensuel.generated.js'),
+  `// Genere par tools/build/build-rarity-multi-country.mjs. Ne pas editer a la main.
+` +
+  `// Part des listes eBird de l annee tombant dans chaque mois, par pays.
+` +
+  `export const EFFORT_MENSUEL_PAR_PAYS = ${JSON.stringify(EFFORT_PAR_PAYS)};
+`);
+console.log(`
+Profil d effort ecrit pour ${Object.keys(EFFORT_PAR_PAYS).length} pays.`);

@@ -72,5 +72,21 @@ for (const cc of PAYS) {
   }
 }
 
+// Profil d effort mensuel : une seule table pour tous les pays, produite par le meme build.
+// Le runtime s en sert pour ponderer la valeur annuelle d une zone a partir de ses 12 mois.
+{
+  const fe = join(ROOT, 'data', 'generated', 'effort-mensuel.generated.js');
+  if (existsSync(fe)) {
+    const src = extraire(readFileSync(fe, 'utf8'), 'EFFORT_MENSUEL_PAR_PAYS');
+    const cible = extraire(app, 'const EFFORT_MENSUEL_PAR_PAYS');
+    if (src && cible) {
+      app = app.slice(0, cible.debut) + src.litteral + app.slice(cible.fin);
+      console.log("  EFFORT_MENSUEL_PAR_PAYS      " + Object.keys(JSON.parse(src.litteral)).length + " pays");
+    } else if (src) {
+      console.warn('  EFFORT_MENSUEL_PAR_PAYS : absent d app.js, injection ignoree.');
+    }
+  }
+}
+
 writeFileSync(APP, app);
 console.log(`\n${total} tables injectees dans app.js.`);

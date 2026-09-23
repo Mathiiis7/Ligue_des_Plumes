@@ -4,17 +4,18 @@
   bar charts 2019-2026, zone par zone, sans jamais changer la liste des zones.
 
   Pourquoi une fusion et pas un rebuild : ce fichier porte 109 zones, les 13 regions ET les
-  96 departements, pour ~29 000 series. Un rebuild depuis build-rarity-multi-country.mjs le
-  ramenerait aux seules zones qu'il sait produire et effacerait les autres — c'est arrive
-  une fois, d'ou ce script dedie et le garde-fou pose dans le generateur.
+  96 departements. Un rebuild depuis build-rarity-multi-country.mjs le ramenerait aux seules
+  zones qu'il sait produire et effacerait les autres — c'est arrive une fois, d'ou ce script
+  dedie et le garde-fou pose dans le generateur.
 
-  Le fichier etait sur la fenetre 2015-2026 alors que le national et les 15 autres pays sont
-  sur 2019-2026, ce qui faisait divergier les cartes de rarete du tier national de la meme
-  espece.
+  MESURE : chaque mois est la moyenne de ses 4 quinzaines ponderee par leur nombre de listes
+  (ligne "Sample Size" du TSV). Le MAX employe auparavant etait un pic deguise : il gonflait
+  les valeurs de 57,8 % en moyenne, davantage pour les especes saisonnieres. La valeur
+  annuelle d'une zone se calcule ensuite au runtime en ponderant ces 12 mois par le profil
+  d'effort du pays (EFFORT_MENSUEL_PAR_PAYS).
 
-  Prerequis : les TSV 2019-2026 des zones a mettre a jour, obtenus par
+  Prerequis : les TSV 2019-2026 des zones, obtenus par
   EBIRD_COOKIE="..." node tools/build/download-bar-charts-regional.mjs FR
-  (/barchartData exige une session authentifiee, cf. l'en-tete de ce script-la).
 
   Une zone sans TSV est laissee telle quelle et signalee : mieux vaut une zone sur l'ancienne
   fenetre qu'une zone vide.
@@ -45,6 +46,24 @@ function extraire(src, decl) {
   return JSON.parse(src.substring(debut, j));
 }
 
+// Ligne "Sample Size" : nombre de listes par quinzaine.
+function lireEffort(lignes) {
+  const ligne = lignes.find(x => /sample size/i.test(x));
+  if (!ligne) return null;
+  const v = ligne.split('\t').slice(1, 49).map(Number);
+  return (v.length === 48 && v.every(x => !isNaN(x))) ? v : null;
+}
+
+function pondere(valeurs, poids) {
+  let num = 0, den = 0;
+  for (let i = 0; i < valeurs.length; i++) {
+    const n = poids[i] || 0;
+    num += (valeurs[i] || 0) * n;
+    den += n;
+  }
+  return den ? num / den : 0;
+}
+
 console.log('Taxonomie eBird (locale=fr_FR)...');
 const tax = await (await fetch(
   'https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json&locale=fr_FR&cat=species',
@@ -56,10 +75,12 @@ const FR_NAMES = extraire(readFileSync(join(ROOT, 'app.js'), 'utf8'), 'const FR_
 const parApp = {};
 for (const [sci, nom] of Object.entries(FR_NAMES)) if (!parApp[norm(nom)]) parApp[norm(nom)] = sci;
 
-// 48 quinzaines -> 12 mois, max des 4 quinzaines du mois (meme conversion que partout).
 function parse(chemin) {
   const out = {};
-  for (const ln of readFileSync(chemin, 'utf8').split(/\r?\n/)) {
+  const lignes = readFileSync(chemin, 'utf8').split(/\r?\n/);
+  const effort = lireEffort(lignes);
+  if (!effort) throw new Error(`ligne "Sample Size" absente : ${chemin}`);
+  for (const ln of lignes) {
     if (!ln.includes('\t')) continue;
     const p = ln.split('\t');
     const nm = p[0].trim();
@@ -70,9 +91,9 @@ function parse(chemin) {
     if (!sci) continue;
     const m12 = new Array(12).fill(0);
     for (let m = 0; m < 12; m++) {
-      m12[m] = Math.max(nums[m*4] || 0, nums[m*4+1] || 0, nums[m*4+2] || 0, nums[m*4+3] || 0);
+      m12[m] = +pondere(nums.slice(m * 4, m * 4 + 4), effort.slice(m * 4, m * 4 + 4)).toFixed(6);
     }
-    out[sci] = m12.map(v => +v.toFixed(5));
+    out[sci] = m12;
   }
   return out;
 }
@@ -82,16 +103,12 @@ const zones = Object.keys(fichier);
 const zonesAvant = zones.length;
 const seriesAvant = Object.values(fichier).reduce((a, z) => a + Object.keys(z).length, 0);
 
-let maj = 0, sansTsv = [], vides = [];
-let deltaSeries = 0;
+let maj = 0; const sansTsv = [], vides = [];
 for (const z of zones) {
   const tsv = join(BAR_DIR, `ebird-barchart-${z}-2019-2026.txt`);
   if (!existsSync(tsv)) { sansTsv.push(z); continue; }
   const neuf = parse(tsv);
-  const n = Object.keys(neuf).length;
-  // Une zone qui ressort vide signale un TSV tronque : on ne remplace pas.
-  if (n === 0) { vides.push(z); continue; }
-  deltaSeries += n - Object.keys(fichier[z]).length;
+  if (!Object.keys(neuf).length) { vides.push(z); continue; }
   fichier[z] = neuf;
   maj++;
 }
@@ -102,10 +119,10 @@ if (Object.keys(fichier).length !== zonesAvant) {
 }
 
 const seriesApres = Object.values(fichier).reduce((a, z) => a + Object.keys(z).length, 0);
-console.log(`\n${maj}/${zonesAvant} zones mises a jour sur 2019-2026.`);
-console.log(`series : ${seriesAvant} -> ${seriesApres} (${deltaSeries >= 0 ? '+' : ''}${deltaSeries})`);
-if (sansTsv.length) console.log(`sans TSV 2019-2026, laissees telles quelles : ${sansTsv.length} (${sansTsv.slice(0, 8).join(', ')}${sansTsv.length > 8 ? '…' : ''})`);
-if (vides.length) console.log(`TSV present mais aucune espece appariee, non remplacees : ${vides.join(', ')}`);
+console.log(`\n${maj}/${zonesAvant} zones mises a jour.`);
+console.log(`series : ${seriesAvant} -> ${seriesApres}`);
+if (sansTsv.length) console.log(`sans TSV, laissees telles quelles : ${sansTsv.length}`);
+if (vides.length) console.log(`aucune espece appariee, non remplacees : ${vides.join(', ')}`);
 
 if (DRY) { console.log('\n--dry : fichier non modifie.'); process.exit(0); }
 writeFileSync(CIBLE, JSON.stringify(fichier));
