@@ -33,6 +33,8 @@ node_modules/
 # Caches et fichiers intermediaires jamais lus par le site
 tools/logs/
 tools/ebird-barcharts-raw/
+# Bar charts annuels, jetables apres comptage (compter-annees-presence.mjs)
+tools/ebird-barcharts-annees/
 tools/*-cache.json
 tools/*-progress.json
 tools/rarity-data.json
