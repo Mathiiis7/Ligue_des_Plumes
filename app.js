@@ -1531,6 +1531,17 @@ function _tierFromSTvsBarChart(k, barTier, country){
   if(EXOTIQUES_TIER_FORCE[cc] && EXOTIQUES_TIER_FORCE[cc][k] != null) return EXOTIQUES_TIER_FORCE[cc][k];
   return barTier;
 }
+// Le S&T ne dit quelque chose d'une espece que si son abondance dans le pays est non nulle.
+// Une entree a zero sur les trois mesures (annuel, pic national, pic local) signifie que
+// Cornell possede un modele mondial pour cette espece mais n'en trouve aucune trace dans le
+// pays : le tier qui en sort est le plancher de la fonction (10), pas une mesure. Les 48
+// entrees de ce genre en France (Vautour oricou, Damier du Cap, Petrel geant...) venaient de
+// l'extraction S&T lancee sur les 11 170 noms de FR_NAMES, catalogue mondial.
+// Cette condition existait dans la logique de fusion ("S&T absent OU abd = 0 : bar chart")
+// et a ete perdue le 2026-09-23 en simplifiant vers un repli direct.
+function _stUtilisable(e){
+  return !!(e && e.t && ((e.a || 0) || (e.an || 0) || (e.al || 0)));
+}
 function rarityForCountry(sci, country){
   let k = (sci||'').trim().toLowerCase();
   if(SCI_ALIAS[k]) k = SCI_ALIAS[k];
@@ -1572,7 +1583,7 @@ function rarityForCountry(sci, country){
     const cat = exoticCategoryInCountry(sci, c) || _exoticCategory(k);
     if(_isEstablishedExotic(cat)){
       if(barTier) return _tierFromSTvsBarChart(k, barTier, c);
-      if(stEntry && stEntry.t) return stEntry.t;
+      if(_stUtilisable(stEntry)) return stEntry.t;
       // N/P sans bar chart ni S&T : espece flaggee exotique par eBird mais frequence
       // trop basse pour etre agregee sur 7 ans. Retourne 0 = absente (le renderLine
       // affichera "Absente du bar chart" plutot que "Parc semi-libre" qui est trompeur).
@@ -1585,11 +1596,12 @@ function rarityForCountry(sci, country){
   // existe, la fusion avec le S&T ayant ete retiree pour que l'echelle soit comparable
   // entre pays (cf. _tierFromSTvsBarChart).
   //
-  // Le S&T reste un dernier recours, et seulement la : 88 especes n'ont aucun bar chart
-  // dans leur pays, dont des oiseaux tout a fait communs comme le Guillemot de Troil au
-  // Royaume-Uni. Sans ce repli elles n'auraient aucun tier du tout, ce qui serait pire que
-  // d'en avoir un calcule autrement. Ce n'est donc pas la fusion qu'on a supprimee, c'est
-  // le seul chiffre disponible.
+  // Le S&T reste un dernier recours, mais il ne sert plus rien aujourd'hui : depuis que les
+  // bar charts sont matches en nomenclature europeenne (locale=fr_FR) et que les alias de
+  // noms sont devenus un repli, plus aucune espece a abondance non nulle n'est privee de bar
+  // chart. Le Guillemot de Troil au Royaume-Uni, longtemps l'exemple de ce manque, a retrouve
+  // son tier 4. La branche est gardee comme filet pour un pays ou une espece a venir, pas
+  // parce qu'elle produit quelque chose.
   //
   // Regles :
   //   - Bar chart present : bar chart pur, quel que soit le pays
@@ -1598,7 +1610,7 @@ function rarityForCountry(sci, country){
   if(barTier){
     return _tierFromSTvsBarChart(k, barTier, c);
   }
-  if(stEntry && stEntry.t) return stEntry.t;
+  if(_stUtilisable(stEntry)) return stEntry.t;
   if(c === 'FR' && _isForeignOnly(k)) return 9;
   return 0;
 }
