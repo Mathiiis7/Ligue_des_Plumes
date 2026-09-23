@@ -14467,6 +14467,24 @@ var _pkdxNumById = null;
 // Hash du dernier rendu grille : skip rebuild innerHTML si rien n'a change (evite
 // ~300ms de re-render de 597 cards a chaque tab switch/Firestore update).
 var _pkdxLastRowsHash = null;
+// Zone choisie sur les fiches especes (histogramme 52 barres par zone). '' = pays entier.
+// En France c'est un departement (FR-ARA-01), ailleurs une region (ES-CT).
+//
+// Cette declaration vivait au milieu du bloc de l'ecran Objectifs, sans lui appartenir : elle
+// a ete emportee avec lui le 2026-09-23 et plus aucune fiche espece ne s'ouvrait, depuis le
+// birdydex comme depuis le classement (ReferenceError au clic). Elle est remise ici, hors du
+// perimetre de tout ecran.
+let _speciesRegion = '';
+try{ _speciesRegion = localStorage.getItem('mb-species-region') || ''; }catch(_){ _speciesRegion = ''; }
+// Migration : la fiche selectionnait autrefois des REGIONS francaises (FR-ARA, 2 segments).
+// Elle travaille desormais au departement (FR-ARA-01, 3 segments), donc un ancien choix
+// enregistre ne correspond plus a rien. On repart du pays entier plutot que de laisser une
+// selection fantome qui n'apparait nulle part dans la liste.
+if(/^FR-[A-Z]+$/.test(_speciesRegion)){
+  _speciesRegion = '';
+  try{ localStorage.setItem('mb-species-region', ''); }catch(_){}
+}
+
 /* L'ecran "Cibles de la semaine" (Objectifs) a ete retire : aucun onglet n'y menait, il
    n'y avait pas de data-view="targets" dans index.html. Il etait aussi le dernier gros
    consommateur du Status & Trends, dont il exigeait la presence : faute de table S&T il
