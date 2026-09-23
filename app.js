@@ -11091,10 +11091,18 @@ async function _renderRarityMap(sci, cc){
   const selection = _zonesSelectionnees(cc, zones);
   const svgZones = _ordonnerSelectionDevant(zones, selection).map(z => {
     const arr = byZone[z] && byZone[z][key];
-    let v = 0, moisPic = -1;
+    // Vue "année" : MOYENNE des douze mois, pas le pic. Le pic classait en tete des zones
+    // ou l'espece n'a ete vue qu'une fois un mois peu couvert - une seule observation
+    // suffit a afficher 100% et a colorer la zone en vert vif. Meme correction que pour la
+    // liste des zones, sans quoi les deux vues de la fiche se contrediraient.
+    let v = 0, pic = 0, moisPic = -1, nbMois = 0;
     if(Array.isArray(arr)){
-      if(surAnnee){ for(let i = 0; i < 12; i++) if((arr[i] || 0) > v){ v = arr[i]; moisPic = i; } }
-      else v = arr[mois] || 0;
+      for(let i = 0; i < 12; i++){
+        const x = arr[i] || 0;
+        if(x > 0) nbMois++;
+        if(x > pic){ pic = x; moisPic = i; }
+      }
+      v = surAnnee ? arr.reduce((a, x) => a + (x || 0), 0) / 12 : (arr[mois] || 0);
     }
     const nom = paths.zones[z].name;
     let fill = ABSENT;
@@ -11103,10 +11111,12 @@ async function _renderRarityMap(sci, cc){
       const tier = monthlyFreqToTier(v);
       fill = realColor(tier);
       const lbl = (typeof REAL_LABELS === 'object' && REAL_LABELS[tier]) || ('tier ' + tier);
-      const pct = v >= 0.1 ? Math.round(v*100)+'%' : v >= 0.01 ? (v*100).toFixed(1)+'%' : (v*100).toFixed(2)+'%';
+      const fmtP = (x) => x >= 0.1 ? Math.round(x*100)+'%' : x >= 0.01 ? (x*100).toFixed(1)+'%' : (x*100).toFixed(2)+'%';
       titre = surAnnee
-        ? `${nom} — ${lbl} (${tier}) · jusqu'à ${pct} des listes en ${_MOIS_COURTS[moisPic]}`
-        : `${nom} — ${lbl} (${tier}) · ${pct} des listes`;
+        ? `${nom} — ${lbl} (${tier}) · ${fmtP(v)} en moyenne sur l'année` +
+          (moisPic >= 0 ? ` · jusqu'à ${fmtP(pic)} en ${_MOIS_COURTS[moisPic]}` : '') +
+          ` · présente ${nbMois} mois sur 12`
+        : `${nom} — ${lbl} (${tier}) · ${fmtP(v)} des listes`;
     }
     return _pathZone(paths.zones[z].path, fill, titre, selection.has(z), selection.size > 0);
   }).join('');
@@ -11136,7 +11146,7 @@ async function _renderRarityMap(sci, cc){
           ${legendItem(ABSENT,'Absente')}
         </div>
         <div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line-2); font-size:10.5px; color:var(--ink-3); text-align:center; line-height:1.4; opacity:.9;">
-          ⓘ Part des listes eBird du ${zoneWord} où l'espèce a été notée, agrégée sur 2019-2026. Sur l'année, c'est le meilleur mois de chaque ${zoneWord} qui est retenu. Reflète la facilité de rencontre, pas l'effectif.
+          ⓘ Part des listes eBird du ${zoneWord} où l'espèce a été notée, agrégée sur 2019-2026. Sur l'année, c'est la moyenne des douze mois de chaque ${zoneWord} qui est retenue. Reflète la facilité de rencontre, pas l'effectif.
         </div>
       </div>
     </details>`;
@@ -11198,7 +11208,9 @@ function _renderSpeciesRarityCard(key){
     // subjectivement pas comparable au %, donc retire du picker regional aussi.
     const useST = false;
     const fmtST = v => v >= 10 ? Math.round(v)+' ind/h' : v >= 1 ? v.toFixed(1)+' ind/h' : v >= 0.01 ? v.toFixed(2)+' ind/h' : v >= 0.001 ? v.toFixed(3)+' ind/h' : v > 0 ? '<0.001 ind/h' : '-';
-    const fmtPct = v => { if(!(v>0)) return '-'; const p = v*100; if(p >= 10) return Math.round(p)+'%'; if(p >= 1) return p.toFixed(1)+'%'; if(p >= 0.1) return p.toFixed(2)+'%'; return '<0.1%'; };
+    // Une decimale au maximum : "0.62%" etait plus large que "3.4%", ce qui elargissait
+    // la colonne des valeurs et decalait les barres d une ligne a l autre.
+    const fmtPct = v => { if(!(v>0)) return '-'; const p = v*100; if(p >= 10) return Math.round(p)+'%'; if(p >= 0.1) return p.toFixed(1)+'%'; return '<0.1%'; };
     // Score = MOYENNE annuelle, pas le maximum mensuel. Le maximum classait en tete des
     // zones ou l'espece n'a ete vue qu'un mois : avec peu de listes ce mois-la, une seule
     // observation suffit a afficher 100%. Le Bouvreuil pivoine mettait ainsi la Sarthe

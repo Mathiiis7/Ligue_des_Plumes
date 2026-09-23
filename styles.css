@@ -463,7 +463,9 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
      un panneau de 400px pourrait dépasser le bas du modal sur un écran court. */
   .reg-picker-panel { position:absolute; top:calc(100% + 4px); right:0; z-index:20; background:var(--surface); border:1px solid var(--line-2); border-radius:10px; padding:4px; max-height:min(400px, calc(100vh - 90px)); overflow-y:auto; overscroll-behavior:contain; box-shadow:0 6px 18px rgba(0,0,0,.18); min-width:280px; }
   .reg-picker-panel[hidden] { display:none; }
-  .reg-picker-item { display:grid; grid-template-columns:10px 1fr 60px auto; gap:8px; align-items:center; padding:6px 10px; cursor:pointer; border-radius:6px; font-size:12px; color:var(--ink); }
+  /* Colonne des valeurs à largeur FIXE : en auto, « 0.62% » était plus large que « 3.4% »,
+     ce qui décalait la barre d'une ligne à l'autre. Les barres sont ainsi toutes alignées. */
+  .reg-picker-item { display:grid; grid-template-columns:10px 1fr 60px 44px; gap:8px; align-items:center; padding:6px 10px; cursor:pointer; border-radius:6px; font-size:12px; color:var(--ink); }
   .reg-picker-item:hover { background:var(--surface-2); }
   /* Sélection courante : teinte d'accent plutôt que gris. Le gris se confondait avec un
      état désactivé, alors que cette ligne est justement celle qu'on regarde. */
