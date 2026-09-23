@@ -1509,24 +1509,27 @@ const EXOTIQUES_TIER_FORCE_FR = EXOTIQUES_TIER_FORCE.FR;
 // +/-1 tier + moyenne ponderee si S&T >> bar (biais recherche active).
 // Multi-pays : depuis 2026-08 applique aussi aux pays autres que FR quand la data S&T
 // est dispo. EXOTIQUES_TIER_FORCE court-circuite le merge par pays si l'espece est listee.
+// Tier de rarete d'une espece dans un pays : UNIQUEMENT le bar chart eBird.
+//
+// La fusion avec le composite Cornell S&T a ete retiree le 2026-09-23 au profit de la
+// coherence entre pays. Le S&T n'existe que pour 6 pays sur 16 (FR, ME, ES, IT, GB, PT)
+// et, meme la, ne couvre qu'une partie des especes : 456 sur 627 en France. Il creait
+// donc une double incoherence, entre pays et a l'interieur d'un meme pays, ou une espece
+// fusionnee ressortait environ 0,8 cran plus rare que la meme espece evaluee au seul bar
+// chart. A terrain egal, un oiseau apparaissait plus rare en France qu'en Suisse par pur
+// effet de methode.
+//
+// Ce qu'on perd : la correction du biais d'effort de recherche. Le bar chart surrepresente
+// les especes activement cherchees (rapaces en migration, rallides discrets, marins),
+// puisque ceux qui les notent s'etaient deplaces pour ca. Le S&T corrigeait ce biais sur
+// 1 279 especes. C'est un compromis assume : une echelle unique et comparable partout
+// plutot qu'une echelle plus fine mais valable seulement sur un tiers du catalogue.
+//
+// Le nom de la fonction est conserve, une quinzaine de points d'appel s'y referent.
 function _tierFromSTvsBarChart(k, barTier, country){
   const cc = country || 'FR';
   if(EXOTIQUES_TIER_FORCE[cc] && EXOTIQUES_TIER_FORCE[cc][k] != null) return EXOTIQUES_TIER_FORCE[cc][k];
-  const reg = COUNTRIES_REG[cc];
-  const stDict = (reg && reg.st) ? reg.st() : null;
-  if(!stDict) return barTier;
-  const st = stDict[k];
-  if(!st || !st.a) return barTier;
-  const stTier = st.t;
-  if(!stTier) return barTier;
-  const diff = stTier - barTier;
-  if(Math.abs(diff) <= 1) return stTier;                // correction fine acceptee
-  if(diff < 0) return barTier;                          // S&T << bar : biais gregaire, bar wins
-  // S&T >> bar (diff >= 2) : biais recherche active des birders (rapaces en migration,
-  // rallides discrets, oiseaux marins). Le bar chart surrepresente ces especes cherchees.
-  // On moyenne pour approcher la difficulte "birder generaliste" plutot que "birder expert
-  // en migration". Ex : Balbuzard bar=4 + ST=7 -> moyenne 5.5 -> 6.
-  return Math.round((barTier + stTier) / 2);
+  return barTier;
 }
 function rarityForCountry(sci, country){
   let k = (sci||'').trim().toLowerCase();
@@ -1578,15 +1581,20 @@ function rarityForCountry(sci, country){
     if(isParkOnlyExotic(sci)) return 0;
     return 0;
   }
-  // Sauvages : merge S&T + bar chart via _tierFromSTvsBarChart quand on a REELLEMENT un bar chart
-  // pour ce pays et cette espece. Sinon on prend le S&T composite direct (pas de merge avec un
-  // fallback bidon qui ecraserait les tiers vers la source d'appui).
+  // Sauvages. Depuis le 2026-09-23 le bar chart eBird est la SEULE source du tier quand il
+  // existe, la fusion avec le S&T ayant ete retiree pour que l'echelle soit comparable
+  // entre pays (cf. _tierFromSTvsBarChart).
+  //
+  // Le S&T reste un dernier recours, et seulement la : 88 especes n'ont aucun bar chart
+  // dans leur pays, dont des oiseaux tout a fait communs comme le Guillemot de Troil au
+  // Royaume-Uni. Sans ce repli elles n'auraient aucun tier du tout, ce qui serait pire que
+  // d'en avoir un calcule autrement. Ce n'est donc pas la fusion qu'on a supprimee, c'est
+  // le seul chiffre disponible.
   //
   // Regles :
-  //   - Bar chart + S&T dispo : merge (regle +/-1 tier, moyenne si S&T >> bar)
-  //   - Bar chart seul : bar chart pur
-  //   - S&T seul : S&T composite pur
-  //   - Rien : fallback tier 9 en FR pour _isForeignOnly (vagrants americains), sinon tier 0
+  //   - Bar chart present : bar chart pur, quel que soit le pays
+  //   - Pas de bar chart mais S&T : composite S&T
+  //   - Ni l'un ni l'autre : tier 9 en FR pour _isForeignOnly (vagrants americains), sinon 0
   if(barTier){
     return _tierFromSTvsBarChart(k, barTier, c);
   }
@@ -11429,10 +11437,11 @@ function _renderSpeciesRarityCard(key){
     // le fix 2026-09-21 qui abandonne GBIF pour utiliser le meme signal que les sauvages).
     const barSrcLabelCC = (cc === 'FR' ? 'Bar chart eBird FR 2019-2026' : ('Bar chart eBird ' + cc + ' 2019-2026'));
     const barSrcShortCC = 'bar chart';
-    // Cas 1 : S&T dispo avec sous-tiers -> détail complet composite / bar chart / merge
-    // Applique a TOUS les pays (meme regle +/-1 tier + moyenne ponderee). EXOTIQUES_TIER_FORCE_FR
-    // reste FR-only (dict specifique aux sites francais) et ne fire pas pour les autres pays.
-    if(canHaveDetails && hasStSubs){
+    // Cas 1 : le tier vient du composite S&T, c'est-a-dire uniquement quand l'espece n'a
+    // AUCUN bar chart dans ce pays. Depuis le retrait de la fusion (2026-09-23), des que le
+    // bar chart existe c'est lui seul qui decide : on passe alors au cas 2, sans quoi ce
+    // panneau expliquerait un calcul qui n'a plus lieu.
+    if(canHaveDetails && hasStSubs && !ccBarTier){
       const st = stEntry;
       // Source d'appui : bar chart pays si dispo, sinon GBIF pour exotiques N/P.
       // Si ni bar chart ni GBIF (pays S&T-only pour sauvages), on affiche composite S&T direct.
