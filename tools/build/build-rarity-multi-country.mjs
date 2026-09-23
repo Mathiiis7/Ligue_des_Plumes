@@ -77,7 +77,14 @@ const norm = s => s.toLowerCase()
   .normalize('NFD').replace(/\p{Diacritic}/gu, '')
   .replace(/[^a-z0-9]/g, '');
 
-// Alias generaux : nom UI bar chart -> nom API (CINFO long). Meme table que ME.
+// Repli de nommage : nom du bar chart -> autre nom API possible.
+//
+// Ces alias datent de l'epoque ou la taxonomie etait interrogee en locale=fr, qui renvoie la
+// nomenclature nord-americaine (Pluvier grand-gravelot, Grand Harle). Les bar charts europeens
+// utilisent la nomenclature europeenne (Grand Gravelot, Harle bievre). Depuis le passage a
+// locale=fr_FR l'API parle la meme langue que les bar charts : ces alias ne servent plus qu'en
+// secours, essayes UNIQUEMENT si le nom brut ne matche pas. Les appliquer d'office faisait
+// l'inverse du travail attendu et perdait silencieusement les especes concernees.
 const BAR_CHART_ALIAS = {
   'Grand Gravelot': 'Pluvier grand-gravelot',
   'Petit Gravelot': 'Pluvier petit-gravelot',
@@ -100,14 +107,13 @@ function parseBarchart(path){
     const nums = p.slice(1).map(Number).filter(x => !isNaN(x));
     if(!nm || nums.length < 12 || /sample size/i.test(nm)) continue;
     const clean = nm.replace(/\s*\(.*?\)\s*/g, ' ').trim();
-    const canonical = BAR_CHART_ALIAS[clean] || clean;
     // 48 quinzaines -> 12 mois (max des 4 quinzaines par mois)
     const m12 = new Array(12).fill(0);
     for(let m = 0; m < 12; m++){
       const start = m * 4;
       m12[m] = Math.max(nums[start]||0, nums[start+1]||0, nums[start+2]||0, nums[start+3]||0);
     }
-    out[norm(canonical)] = { name: canonical, freq: Math.max(...nums), monthly: m12 };
+    out[norm(clean)] = { name: clean, freq: Math.max(...nums), monthly: m12 };
   }
   return out;
 }
@@ -126,6 +132,14 @@ async function fetchTaxonomy(){
   return TAXONOMY_CACHE;
 }
 
+// Nom brut d'abord, alias en secours (voir BAR_CHART_ALIAS).
+function resolveSci(tax, k, name){
+  const direct = tax[k];
+  if(direct) return direct;
+  const al = BAR_CHART_ALIAS[name];
+  return al ? tax[norm(al)] : undefined;
+}
+
 const BAR_DIR = join(__dir, '..', 'ebird-barcharts-raw');
 const OUT_DIR = join(__dir, '..', '..', 'data', 'generated');
 
@@ -142,7 +156,7 @@ async function processCountry(cc){
   let matched = 0, unmatched = 0;
   const unmatchedList = [];
   for(const [k, { name, freq, monthly: m12 }] of Object.entries(bar)){
-    const sci = tax[k];
+    const sci = resolveSci(tax, k, name);
     if(sci){
       rarity[sci] = weightFor(freq);
       monthly[sci] = m12.map(v => +v.toFixed(5));
@@ -174,8 +188,8 @@ async function processCountry(cc){
     try {
       const barReg = parseBarchart(barRegPath);
       const regMap = {};
-      for (const [k, { monthly: m12 }] of Object.entries(barReg)) {
-        const sci = tax[k];
+      for (const [k, { name, monthly: m12 }] of Object.entries(barReg)) {
+        const sci = resolveSci(tax, k, name);
         if (sci) regMap[sci] = m12.map(v => +v.toFixed(5));
       }
       if (Object.keys(regMap).length > 0) {
