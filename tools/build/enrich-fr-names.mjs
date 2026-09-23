@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /*
   enrich-fr-names.mjs - Enrichit FR_NAMES avec la eBird taxonomy complete
-  en francais. Fetch UNE fois via /v2/ref/taxonomy/ebird?locale=fr&cat=species.
+  en francais. Fetch UNE fois via /v2/ref/taxonomy/ebird?locale=fr_FR&cat=species.
 
   Comportement :
     - Ajoute tous les sci name manquants dans FR_NAMES (11k species mondiales)
@@ -32,9 +32,9 @@ if (!frMatch) throw new Error('FR_NAMES introuvable dans index.html');
 const currentFR = JSON.parse(frMatch[1]);
 console.log(`    Actuel : ${Object.keys(currentFR).length} especes.`);
 
-console.log('\n[2] Fetch eBird taxonomy (locale=fr, ~2 MB)...');
+console.log('\n[2] Fetch eBird taxonomy (locale=fr_FR, ~2 MB)...');
 const tax = await (await fetch(
-  'https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json&locale=fr&cat=species',
+  'https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json&locale=fr_FR&cat=species',
   { headers: { 'X-eBirdApiToken': EBIRD_KEY } }
 )).json();
 console.log(`    Recu : ${tax.length} especes.`);

@@ -22,7 +22,7 @@ const APP_JS = path.join(ROOT, 'app.js');
 const EBIRD_KEY = 'dbflh4atmsom';
 
 console.log('Fetch taxonomie eBird...');
-const r = await fetch('https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json&locale=fr', {
+const r = await fetch('https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json&locale=fr_FR', {
   headers: { 'X-eBirdApiToken': EBIRD_KEY }
 });
 if(!r.ok){ console.error('HTTP', r.status); process.exit(1); }

@@ -139,7 +139,7 @@ const page = await ctx.newPage();
 
 // Fetch taxonomy une seule fois
 console.log('Fetching eBird taxonomy...');
-const tax = await (await fetch('https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json&locale=fr&cat=species', {
+const tax = await (await fetch('https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json&locale=fr_FR&cat=species', {
   headers: { 'X-eBirdApiToken': 'dbflh4atmsom' }
 })).json();
 const codeToSci = {};

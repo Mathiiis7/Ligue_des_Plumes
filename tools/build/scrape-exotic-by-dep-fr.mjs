@@ -87,7 +87,7 @@ console.log(`Scrape de ${FR_DEPS.length} departements FR (~${Math.round(FR_DEPS.
 // faut donc pouvoir convertir speciesCode -> sciName au fur et a mesure. Sans ca, une
 // interruption en cours de route (Ctrl+C, veille) perdait les 50 minutes deja passees.
 console.log('Fetching eBird taxonomy...');
-const tax = await (await fetch('https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json&locale=fr&cat=species', {
+const tax = await (await fetch('https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json&locale=fr_FR&cat=species', {
   headers: { 'X-eBirdApiToken': 'dbflh4atmsom' }
 })).json();
 const codeToSci = {};

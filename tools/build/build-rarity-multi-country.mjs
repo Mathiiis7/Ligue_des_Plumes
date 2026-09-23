@@ -4,7 +4,7 @@
   (les 4 pays sans bar chart pour le moment). Same logic que build-rarity-me-ebird.mjs
   mais parametrisee.
 
-  Bar charts en francais (locale=fr) : parseur identique a FR/ME.
+  Bar charts en francais (locale=fr_FR) : parseur identique a FR/ME.
   eBird taxonomy API : matche noms FR -> sciName.
 
   Sortie par pays :
@@ -116,8 +116,8 @@ function parseBarchart(path){
 let TAXONOMY_CACHE = null;
 async function fetchTaxonomy(){
   if(TAXONOMY_CACHE) return TAXONOMY_CACHE;
-  console.log('Fetching eBird taxonomy (locale=fr)...');
-  const tax = await (await fetch('https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json&locale=fr&cat=species', {
+  console.log('Fetching eBird taxonomy (locale=fr_FR)...');
+  const tax = await (await fetch('https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json&locale=fr_FR&cat=species', {
     headers: { 'X-eBirdApiToken': 'dbflh4atmsom' }
   })).json();
   TAXONOMY_CACHE = {};   // norm(comName) -> sciName lowercase

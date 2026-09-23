@@ -31,12 +31,12 @@ const norm = s => s.toLowerCase()
   .normalize('NFD').replace(/\p{Diacritic}/gu, '')
   .replace(/[^a-z0-9]/g, '');
 
-// Alias FR name du bar chart -> FR name que retourne eBird taxonomy API (locale=fr).
+// Alias FR name du bar chart -> FR name que retourne eBird taxonomy API (locale=fr_FR).
 // Le bar chart utilise les noms courts UI (Grand Gravelot), l'API retourne les noms
 // CINFO longs (Pluvier grand-gravelot). Sans cet alias, ~30 especes du bar chart ME
 // ne sont pas matchees vers un sciName.
 // Ces aliases mappent le nom UI du bar chart -> le nom retourne par eBird taxonomy API
-// (locale=fr). La plupart des especes ont le meme nom des deux cotes ; seules quelques
+// (locale=fr_FR). La plupart des especes ont le meme nom des deux cotes ; seules quelques
 // unes ont un raccourci UI different du nom CINFO long. Attention : ne PAS confondre
 // avec les alias FR_NAMES (nom app) -> API : ici c'est bar chart -> API.
 const BAR_CHART_ALIAS = {
@@ -78,8 +78,8 @@ const bar = parseBarchart(BARCHART);
 console.log(`Bar chart ME : ${Object.keys(bar).length} taxons.`);
 
 // 2) Fetch eBird taxonomy pour mapper FR name -> sciName.
-console.log('Fetching eBird taxonomy (locale=fr) ...');
-const tax = await (await fetch('https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json&locale=fr&cat=species', {
+console.log('Fetching eBird taxonomy (locale=fr_FR) ...');
+const tax = await (await fetch('https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json&locale=fr_FR&cat=species', {
   headers: { 'X-eBirdApiToken': 'dbflh4atmsom' }
 })).json();
 const frToSci = {};   // norm(comName FR) -> sciName lowercase
