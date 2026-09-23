@@ -1761,21 +1761,4 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .pkdx-card.missing .pkdx-sci { visibility:hidden; }
   .pkdx-card.missing .pkdx-tier { opacity:.4; filter:grayscale(.5); }
   @media (max-width:600px){ .pkdx-grid { grid-template-columns:repeat(auto-fill, minmax(105px, 1fr)); gap:8px; } .pkdx-card { padding:6px 6px 8px; } }
-
-  /* Manquantes sur "Cette semaine" : silhouette + nom italique (meme convention que Dex) */
-  .target-card.missing { opacity:.9; background:var(--surface-2); }
-  .target-card.missing .t-img img { filter:brightness(0) contrast(2) opacity(.65); }
-  .target-card.missing .t-name { color:var(--ink-3); font-style:italic; }
-  .target-card.missing .t-tier { opacity:.65; filter:grayscale(.3); }
-  /* Cibles de la semaine : cartes horizontales avec photo, nom, tier, abondance semaine. */
-  .targets-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:10px; }
-  .target-card { display:flex; align-items:center; gap:12px; padding:10px; background:var(--surface); border:1px solid var(--line-2); border-radius:12px; cursor:pointer; transition:transform .1s, box-shadow .1s; }
-  .target-card:hover { transform:translateY(-2px); box-shadow:0 6px 14px rgba(0,0,0,.12); border-color:var(--accent); }
-  .target-card .t-img { width:64px; height:64px; border-radius:10px; background:var(--surface-2); flex:0 0 auto; overflow:hidden; display:grid; place-items:center; color:var(--ink-3); font-size:24px; }
-  .target-card .t-img img { width:100%; height:100%; object-fit:cover; display:block; }
-  .target-card .t-info { flex:1; min-width:0; }
-  .target-card .t-name { font:600 14px system-ui; color:var(--ink); line-height:1.2; margin-bottom:3px; }
-  .target-card .t-meta { display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-size:11.5px; color:var(--ink-3); }
-  .target-card .t-tier { display:inline-block; padding:1px 6px; border-radius:4px; color:#fff; font-weight:700; font-size:11px; }
-  .target-card .t-freq { color:var(--ink-2); }
-  @media (max-width:600px){ .targets-grid { grid-template-columns:1fr; } .target-card .t-img { width:56px; height:56px; } }
+

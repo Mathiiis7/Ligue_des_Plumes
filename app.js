@@ -271,7 +271,7 @@ const FAMILY_ORDER = Object.fromEntries([
   // Autres (fallback)
   'Autres',
 ].map((f, i) => [f, i]));
-const REAL_RARITY = {"acanthis flammea":6,"acanthis hornemanni":7,"accipiter gentilis":6,"accipiter nisus":3,"acridotheres tristis":7,"acrocephalus agricola":7,"acrocephalus arundinaceus":4,"acrocephalus dumetorum":7,"acrocephalus melanopogon":6,"acrocephalus paludicola":7,"acrocephalus palustris":6,"acrocephalus schoenobaenus":4,"acrocephalus scirpaceus":3,"actitis hypoleucos":3,"actitis macularius":7,"aegithalos caudatus":2,"aegolius funereus":7,"aegypius monachus":7,"agapornis fischeri":7,"agapornis nigrigenis":7,"agapornis personatus":7,"agapornis roseicollis":7,"aix galericulata":7,"aix sponsa":7,"alauda arvensis":2,"alauda leucoptera":8,"alaudala rufescens":9,"alca torda":5,"alcedo atthis":2,"alectoris chukar":8,"alectoris graeca":7,"alectoris rufa":5,"alisterus scapularis":7,"alle alle":7,"alopochen aegyptiaca":5,"amazonetta brasiliensis":7,"anarhynchus alexandrinus":5,"anarhynchus atrifrons":9,"anarhynchus leschenaultii":7,"anarhynchus mongolus":9,"anarhynchus pecuarius":9,"anas acuta":4,"anas bahamensis":8,"anas carolinensis":7,"anas crecca":3,"anas flavirostris":7,"anas platyrhynchos":1,"anas poecilorhyncha":9,"anas zonorhyncha":7,"anser albifrons":7,"anser anser":4,"anser brachyrhynchus":7,"anser caerulescens":7,"anser canagicus":7,"anser cygnoides":7,"anser erythropus":10,"anser fabalis":6,"anser indicus":7,"anser serrirostris":7,"anthus campestris":5,"anthus cervinus":7,"anthus godlewskii":8,"anthus gustavi":8,"anthus hodgsoni":7,"anthus japonicus":7,"anthus petrosus":4,"anthus pratensis":1,"anthus richardi":7,"anthus rubescens":8,"anthus spinoletta":4,"anthus trivialis":3,"apus affinis":7,"apus apus":1,"apus caffer":7,"apus pallidus":6,"aquila adalberti":8,"aquila chrysaetos":6,"aquila fasciata":7,"aquila heliaca":7,"aquila nipalensis":7,"ara ararauna":9,"ara militaris":10,"aratinga solstitialis":10,"ardea alba":2,"ardea cinerea":1,"ardea ibis":3,"ardea purpurea":4,"ardenna gravis":6,"ardenna grisea":6,"ardenna tenuirostris":10,"ardeola ralloides":5,"arenaria interpres":4,"asio flammeus":6,"asio otus":7,"astur gentilis":6,"athene noctua":6,"aythya affinis":7,"aythya collaris":7,"aythya ferina":3,"aythya fuligula":3,"aythya marila":6,"aythya nyroca":7,"balearica regulorum":8,"bartramia longicauda":7,"bombycilla garrulus":7,"botaurus minutus":6,"botaurus stellaris":7,"botaurus sturmii":9,"branta bernicla":4,"branta canadensis":4,"branta hutchinsii":10,"branta leucopsis":6,"branta ruficollis":8,"branta sandvicensis":7,"bubo bubo":7,"bubulcus ibis":3,"bucanetes githagineus":7,"bucephala albeola":9,"bucephala clangula":5,"burhinus oedicnemus":5,"buteo buteo":2,"buteo lagopus":7,"buteo rufinus":7,"cacatua alba":7,"cacatua galerita":7,"cairina moschata":7,"calandrella brachydactyla":7,"calcarius lapponicus":6,"calidris acuminata":8,"calidris alba":5,"calidris alpina":4,"calidris bairdii":7,"calidris canutus":6,"calidris falcinellus":7,"calidris ferruginea":5,"calidris fuscicollis":8,"calidris himantopus":7,"calidris maritima":6,"calidris mauri":7,"calidris melanotos":7,"calidris minuta":5,"calidris minutilla":7,"calidris pugnax":5,"calidris pusilla":8,"calidris ruficollis":9,"calidris subruficollis":7,"calidris temminckii":7,"callipepla californica":7,"callonetta leucophrys":9,"calonectris borealis":7,"calonectris diomedea":6,"caprimulgus europaeus":6,"caprimulgus ruficollis":8,"carduelis carduelis":1,"carduelis citrinella":6,"carduelis corsicana":6,"carpodacus erythrinus":7,"cathartes aura":10,"catharus minimus":8,"catharus ustulatus":8,"cecropis rufula":7,"cepphus grylle":7,"cercotrichas galactotes":8,"certhia brachydactyla":2,"certhia familiaris":6,"cettia cetti":2,"charadrius alexandrinus":5,"charadrius dubius":5,"charadrius hiaticula":3,"charadrius semipalmatus":8,"charadrius vociferus":8,"chenonetta jubata":10,"chlidonias hybrida":5,"chlidonias leucopterus":7,"chlidonias niger":5,"chloephaga picta":7,"chloris chloris":2,"chordeiles minor":8,"chroicocephalus genei":5,"chroicocephalus philadelphia":7,"chroicocephalus ridibundus":1,"chrysolophus pictus":7,"ciconia ciconia":4,"ciconia nigra":6,"cinclus cinclus":6,"circaetus gallicus":5,"circus aeruginosus":3,"circus cyaneus":5,"circus hudsonius":7,"circus macrourus":7,"circus pygargus":6,"cisticola juncidis":3,"clamator glandarius":7,"clanga clanga":7,"clanga pomarina":7,"clangula hyemalis":6,"coccothraustes coccothraustes":4,"colinus virginianus":7,"coloeus monedula":2,"columba guinea":10,"columba livia":2,"columba oenas":4,"columba palumbus":1,"coracias garrulus":5,"corvus albicollis":7,"corvus corax":4,"corvus cornix":5,"corvus corone":1,"corvus frugilegus":4,"coturnix coturnix":6,"crex crex":7,"cuculus canorus":2,"curruca cantillans":10,"curruca communis":3,"curruca conspicillata":7,"curruca curruca":6,"curruca hortensis":6,"curruca iberiae":5,"curruca melanocephala":3,"curruca nisoria":8,"curruca ruppeli":7,"curruca sarda":7,"curruca subalpina":6,"curruca undata":5,"cursorius cursor":7,"cyanistes caeruleus":1,"cyanistes cyanus":7,"cygnus atratus":7,"cygnus columbianus":5,"cygnus cygnus":7,"cygnus melancoryphus":9,"cygnus olor":2,"delichon urbicum":2,"dendrocopos leucotos":7,"dendrocopos major":2,"dendrocoptes medius":5,"dendrocygna autumnalis":9,"dendrocygna bicolor":7,"dendrocygna viduata":7,"dryobates minor":5,"dryocopus martius":5,"egretta garzetta":2,"egretta gularis":8,"elanus caeruleus":6,"emberiza calandra":4,"emberiza cia":7,"emberiza cirlus":3,"emberiza citrinella":4,"emberiza hortulana":7,"emberiza leucocephalos":7,"emberiza melanocephala":7,"emberiza pusilla":7,"emberiza rustica":7,"emberiza sahari":7,"emberiza schoeniclus":3,"emberiza spodocephala":7,"eolophus roseicapilla":7,"eremophila alpestris":7,"erithacus rubecula":1,"estrilda astrild":10,"estrilda melpoda":10,"eudocimus albus":8,"eudocimus ruber":8,"eudromias morinellus":6,"euodice malabarica":7,"euplectes afer":10,"falco cherrug":7,"falco columbarius":5,"falco eleonorae":7,"falco jugger":9,"falco naumanni":6,"falco peregrinus":5,"falco subbuteo":4,"falco tinnunculus":2,"falco vespertinus":7,"ficedula albicollis":7,"ficedula hypoleuca":2,"ficedula parva":6,"francolinus francolinus":8,"fratercula arctica":7,"fringilla coelebs":1,"fringilla montifringilla":3,"fulica atra":2,"fulmarus glacialis":6,"galerida cristata":4,"galerida theklae":7,"gallinago gallinago":3,"gallinago media":7,"gallinula chloropus":2,"gallus gallus":10,"garrulus glandarius":1,"gavia adamsii":7,"gavia arctica":7,"gavia immer":6,"gavia pacifica":7,"gavia stellata":6,"gelochelidon nilotica":5,"geronticus eremita":7,"glareola nordmanni":7,"glareola pratincola":6,"glaucidium passerinum":7,"grus grus":4,"grus japonensis":7,"grus virgo":7,"gulosus aristotelis":4,"gypaetus barbatus":6,"gyps fulvus":4,"gyps rueppelli":7,"haematopus ostralegus":4,"haliaeetus albicilla":6,"haliaeetus leucocephalus":7,"haliastur indus":7,"hieraaetus pennatus":6,"himantopus himantopus":3,"hippolais icterina":7,"hippolais polyglotta":3,"hirundo rustica":1,"hydrobates castro":10,"hydrobates leucorhous":6,"hydrobates pelagicus":6,"hydrocoloeus minutus":6,"hydroprogne caspia":5,"ichthyaetus audouinii":7,"ichthyaetus melanocephalus":4,"icterus galbula":8,"iduna caligata":7,"iduna opaca":10,"iduna pallida":7,"jynx torquilla":6,"lagopus muta":7,"lanius collurio":4,"lanius cristatus":7,"lanius excubitor":7,"lanius isabellinus":7,"lanius meridionalis":7,"lanius minor":7,"lanius nubicus":9,"lanius phoenicuroides":7,"lanius senator":6,"larus argentatus":2,"larus cachinnans":6,"larus canus":4,"larus delawarensis":7,"larus dominicanus":7,"larus fuscus":4,"larus glaucoides":7,"larus hyperboreus":7,"larus marinus":3,"larus michahellis":2,"larus smithsonianus":9,"leiothlypis peregrina":7,"leiothrix lutea":7,"leucophaeus atricilla":7,"leucophaeus pipixcan":7,"limnodromus scolopaceus":7,"limosa lapponica":5,"limosa limosa":5,"linaria cannabina":2,"linaria flavirostris":7,"locustella fluviatilis":8,"locustella luscinioides":6,"locustella naevia":6,"lophodytes cucullatus":7,"lophophanes cristatus":4,"loxia curvirostra":6,"loxia scotica":7,"lullula arborea":4,"luscinia luscinia":8,"luscinia megarhynchos":1,"luscinia svecica":5,"lymnocryptes minimus":6,"lyrurus tetrix":7,"mareca americana":8,"mareca penelope":4,"mareca sibilatrix":7,"mareca strepera":3,"marmaronetta angustirostris":8,"megaceryle alcyon":7,"melanitta americana":7,"melanitta fusca":6,"melanitta nigra":6,"melanitta perspicillata":7,"melanocorypha calandra":7,"meleagris gallopavo":9,"melopsittacus undulatus":7,"mergellus albellus":6,"mergus merganser":4,"mergus serrator":6,"merops apiaster":3,"merops persicus":9,"microcarbo pygmaeus":7,"milvus migrans":2,"milvus milvus":4,"mniotilta varia":8,"monticola saxatilis":7,"monticola solitarius":6,"montifringilla nivalis":7,"morus bassanus":4,"motacilla alba":1,"motacilla cinerea":2,"motacilla citreola":7,"motacilla flava":3,"motacilla tschutschensis":8,"muscicapa striata":3,"muscicapa tyrrhenica":8,"myiopsitta monachus":7,"neophron percnopterus":5,"netta peposaca":8,"netta rufina":4,"nucifraga caryocatactes":6,"numenius arquata":4,"numenius hudsonicus":7,"numenius phaeopus":4,"numida meleagris":7,"nycticorax nycticorax":5,"nymphicus hollandicus":7,"oceanites oceanicus":7,"oenanthe deserti":7,"oenanthe hispanica":7,"oenanthe isabellina":7,"oenanthe melanoleuca":7,"oenanthe oenanthe":3,"oenanthe pleschanka":8,"onychoprion anaethetus":7,"onychoprion fuscatus":7,"oressochen melanopterus":9,"oriolus oriolus":3,"otis tarda":7,"otus scops":6,"oxyura jamaicensis":7,"oxyura leucocephala":8,"pandion haliaetus":4,"panurus biarmicus":6,"parabuteo unicinctus":7,"paragallinula angulata":8,"parus major":1,"passer domesticus":1,"passer hispaniolensis":7,"passer italiae":6,"passer luteus":7,"passer montanus":5,"pastor roseus":7,"pavo cristatus":7,"pelecanus crispus":8,"pelecanus onocrotalus":7,"pelecanus rufescens":7,"perdix perdix":6,"periparus ater":4,"pernis apivorus":4,"petrochelidon pyrrhonota":9,"petronia petronia":7,"phalacrocorax aristotelis":4,"phalacrocorax carbo":1,"phalaropus fulicarius":6,"phalaropus lobatus":7,"phalaropus tricolor":7,"phasianus colchicus":3,"phasianus versicolor":7,"pheucticus ludovicianus":10,"phoeniconaias minor":7,"phoenicopterus chilensis":7,"phoenicopterus roseus":4,"phoenicopterus ruber":9,"phoenicurus moussieri":7,"phoenicurus ochruros":2,"phoenicurus phoenicurus":3,"phylloscopus bonelli":4,"phylloscopus borealis":7,"phylloscopus collybita":1,"phylloscopus fuscatus":7,"phylloscopus humei":7,"phylloscopus ibericus":8,"phylloscopus inornatus":5,"phylloscopus orientalis":8,"phylloscopus plumbeitarsus":7,"phylloscopus proregulus":7,"phylloscopus schwarzi":7,"phylloscopus sibilatrix":5,"phylloscopus sibillatrix":5,"phylloscopus trochiloides":7,"phylloscopus trochilus":3,"pica pica":1,"picoides tridactylus":7,"picus canus":7,"picus sharpei":7,"picus viridis":2,"platalea leucorodia":4,"platycercus eximius":7,"plectrophenax nivalis":6,"plegadis falcinellus":4,"ploceus melanocephalus":10,"pluvialis apricaria":5,"pluvialis dominica":7,"pluvialis fulva":7,"pluvialis squatarola":4,"podiceps auritus":6,"podiceps cristatus":2,"podiceps grisegena":7,"podiceps nigricollis":5,"podilymbus podiceps":7,"poecile montanus":6,"poecile palustris":3,"poicephalus senegalus":7,"porphyrio porphyrio":6,"porzana porzana":7,"prunella collaris":6,"prunella modularis":2,"psittacara erythrogenys":7,"psittacara mitratus":7,"psittacula cyanocephala":7,"psittacula eupatria":7,"psittacula krameri":3,"psittacus erithacus":7,"pterocles alchata":7,"pterodroma feae":8,"ptyonoprogne rupestris":4,"puffinus baroli":8,"puffinus mauretanicus":5,"puffinus puffinus":5,"puffinus yelkouan":6,"pycnonotus jocosus":9,"pyrrhocorax graculus":5,"pyrrhocorax pyrrhocorax":4,"pyrrhula pyrrhula":4,"rallus aquaticus":3,"recurvirostra avosetta":4,"regulus ignicapilla":3,"regulus regulus":3,"remiz pendulinus":6,"rhodostethia rosea":8,"riparia riparia":4,"rissa tridactyla":5,"saxicola maurus":7,"saxicola rubetra":4,"saxicola rubicola":2,"scolopax rusticola":6,"seiurus aurocapilla":7,"serinus canaria":7,"serinus serinus":2,"setophaga aestiva":7,"setophaga striata":9,"sibirionetta formosa":8,"sitta europaea":2,"sitta whiteheadi":7,"somateria mollissima":7,"somateria spectabilis":7,"spatula clypeata":3,"spatula cyanoptera":9,"spatula discors":7,"spatula hottentota":8,"spatula querquedula":5,"spatula versicolor":8,"spinus spinus":2,"stercorarius longicaudus":7,"stercorarius maccormicki":7,"stercorarius parasiticus":6,"stercorarius pomarinus":7,"stercorarius skua":6,"sterna dougallii":7,"sterna forsteri":7,"sterna hirundo":3,"sterna paradisaea":7,"sternula albifrons":4,"streptopelia decaocto":1,"streptopelia orientalis":7,"streptopelia roseogrisea":7,"streptopelia turtur":3,"strix aluco":5,"sturnus unicolor":6,"sturnus vulgaris":1,"sula leucogaster":7,"sula sula":10,"sylvia atricapilla":1,"sylvia borin":4,"sylvia communis":3,"sylvia curruca":6,"syrmaticus reevesii":7,"tachybaptus ruficollis":3,"tachymarptis melba":5,"tachyspiza brevipes":9,"tadorna cana":9,"tadorna ferruginea":7,"tadorna tadorna":3,"taeniopygia guttata":7,"tarsiger cyanurus":7,"tetrao urogallus":7,"tetrastes bonasia":7,"tetrax tetrax":6,"thalassarche melanophris":7,"thalasseus albididorsalis":7,"thalasseus bengalensis":7,"thalasseus elegans":7,"thalasseus sandvicensis":4,"thectocercus acuticaudatus":9,"thinornis dubius":5,"threskiornis aethiopicus":7,"tichodroma muraria":7,"trichoglossus moluccanus":10,"tringa brevipes":7,"tringa erythropus":5,"tringa flavipes":8,"tringa glareola":4,"tringa nebularia":4,"tringa ochropus":3,"tringa stagnatilis":7,"tringa totanus":4,"troglodytes troglodytes":1,"turdus iliacus":3,"turdus merula":1,"turdus philomelos":2,"turdus pilaris":4,"turdus torquatus":5,"turdus viscivorus":3,"tyto alba":7,"upupa epops":4,"uria aalge":5,"vanellus gregarius":7,"vanellus leucurus":7,"vanellus spinosus":7,"vanellus vanellus":3,"vireo olivaceus":8,"xema sabini":6,"xenus cinereus":7,"zapornia parva":7,"zapornia pusilla":7,"zonotrichia albicollis":7,"zoothera aurea":8};
+const REAL_RARITY = {"acanthis flammea":6,"accipiter gentilis":6,"accipiter nisus":3,"acridotheres tristis":7,"acrocephalus agricola":7,"acrocephalus arundinaceus":4,"acrocephalus dumetorum":7,"acrocephalus melanopogon":6,"acrocephalus paludicola":7,"acrocephalus palustris":6,"acrocephalus schoenobaenus":4,"acrocephalus scirpaceus":3,"actitis hypoleucos":3,"actitis macularius":7,"aegithalos caudatus":2,"aegolius funereus":7,"aegypius monachus":7,"agapornis fischeri":7,"agapornis nigrigenis":7,"agapornis personatus":7,"agapornis roseicollis":7,"aix galericulata":7,"aix sponsa":7,"alauda arvensis":2,"alauda leucoptera":8,"alca torda":5,"alcedo atthis":2,"alectoris graeca":7,"alectoris rufa":5,"alisterus scapularis":7,"alle alle":7,"alopochen aegyptiaca":5,"amazonetta brasiliensis":7,"anarhynchus alexandrinus":5,"anarhynchus leschenaultii":7,"anas acuta":4,"anas bahamensis":8,"anas crecca":3,"anas flavirostris":7,"anas platyrhynchos":1,"anas poecilorhyncha":9,"anas zonorhyncha":7,"anser albifrons":7,"anser anser":4,"anser brachyrhynchus":7,"anser caerulescens":7,"anser canagicus":7,"anser cygnoides":7,"anser erythropus":10,"anser fabalis":6,"anser indicus":7,"anser serrirostris":7,"anthus campestris":5,"anthus cervinus":7,"anthus godlewskii":8,"anthus gustavi":8,"anthus hodgsoni":7,"anthus japonicus":7,"anthus petrosus":4,"anthus pratensis":1,"anthus richardi":7,"anthus rubescens":8,"anthus spinoletta":4,"anthus trivialis":3,"apus affinis":7,"apus apus":1,"apus caffer":7,"apus pallidus":6,"aquila chrysaetos":6,"aquila fasciata":7,"aquila heliaca":7,"aquila nipalensis":7,"ara ararauna":9,"ara militaris":10,"aratinga solstitialis":10,"ardea alba":2,"ardea cinerea":1,"ardea ibis":3,"ardea purpurea":4,"ardenna gravis":6,"ardenna grisea":6,"ardenna tenuirostris":10,"ardeola ralloides":5,"arenaria interpres":4,"asio flammeus":6,"asio otus":7,"astur gentilis":6,"athene noctua":6,"aythya affinis":7,"aythya collaris":7,"aythya ferina":3,"aythya fuligula":3,"aythya marila":6,"aythya nyroca":7,"balearica regulorum":8,"bartramia longicauda":7,"bombycilla garrulus":7,"botaurus minutus":6,"botaurus stellaris":7,"branta bernicla":4,"branta canadensis":4,"branta hutchinsii":10,"branta leucopsis":6,"branta ruficollis":8,"branta sandvicensis":7,"bubo bubo":7,"bubulcus ibis":3,"bucanetes githagineus":7,"bucephala albeola":9,"bucephala clangula":5,"burhinus oedicnemus":5,"buteo buteo":2,"buteo lagopus":7,"buteo rufinus":7,"cacatua alba":7,"cacatua galerita":7,"cairina moschata":7,"calandrella brachydactyla":7,"calcarius lapponicus":6,"calidris acuminata":8,"calidris alba":5,"calidris alpina":4,"calidris bairdii":7,"calidris canutus":6,"calidris falcinellus":7,"calidris ferruginea":5,"calidris fuscicollis":8,"calidris himantopus":7,"calidris maritima":6,"calidris mauri":7,"calidris melanotos":7,"calidris minuta":5,"calidris minutilla":7,"calidris pugnax":5,"calidris pusilla":8,"calidris ruficollis":9,"calidris subruficollis":7,"calidris temminckii":7,"callipepla californica":7,"callonetta leucophrys":9,"calonectris borealis":7,"calonectris diomedea":6,"caprimulgus europaeus":6,"caprimulgus ruficollis":8,"carduelis carduelis":1,"carduelis citrinella":6,"carduelis corsicana":6,"carpodacus erythrinus":7,"cathartes aura":10,"catharus minimus":8,"catharus ustulatus":8,"cecropis rufula":7,"cepphus grylle":7,"certhia brachydactyla":2,"certhia familiaris":6,"cettia cetti":2,"charadrius alexandrinus":5,"charadrius dubius":5,"charadrius hiaticula":3,"charadrius semipalmatus":8,"charadrius vociferus":8,"chenonetta jubata":10,"chlidonias hybrida":5,"chlidonias leucopterus":7,"chlidonias niger":5,"chloephaga picta":7,"chloris chloris":2,"chordeiles minor":8,"chroicocephalus genei":5,"chroicocephalus philadelphia":7,"chroicocephalus ridibundus":1,"chrysolophus pictus":7,"ciconia ciconia":4,"ciconia nigra":6,"cinclus cinclus":6,"circaetus gallicus":5,"circus aeruginosus":3,"circus cyaneus":5,"circus hudsonius":7,"circus macrourus":7,"circus pygargus":6,"cisticola juncidis":3,"clamator glandarius":7,"clanga clanga":7,"clanga pomarina":7,"clangula hyemalis":6,"coccothraustes coccothraustes":4,"colinus virginianus":7,"coloeus monedula":2,"columba guinea":10,"columba livia":2,"columba oenas":4,"columba palumbus":1,"coracias garrulus":5,"corvus albicollis":7,"corvus corax":4,"corvus cornix":5,"corvus corone":1,"corvus frugilegus":4,"coturnix coturnix":6,"crex crex":7,"cuculus canorus":2,"curruca cantillans":10,"curruca communis":3,"curruca conspicillata":7,"curruca curruca":6,"curruca hortensis":6,"curruca iberiae":5,"curruca melanocephala":3,"curruca nisoria":8,"curruca ruppeli":7,"curruca sarda":7,"curruca subalpina":6,"curruca undata":5,"cursorius cursor":7,"cyanistes caeruleus":1,"cyanistes cyanus":7,"cygnus atratus":7,"cygnus columbianus":5,"cygnus cygnus":7,"cygnus melancoryphus":9,"cygnus olor":2,"delichon urbicum":2,"dendrocopos leucotos":7,"dendrocopos major":2,"dendrocoptes medius":5,"dendrocygna autumnalis":9,"dendrocygna bicolor":7,"dendrocygna viduata":7,"dryobates minor":5,"dryocopus martius":5,"egretta garzetta":2,"egretta gularis":8,"elanus caeruleus":6,"emberiza calandra":4,"emberiza cia":7,"emberiza cirlus":3,"emberiza citrinella":4,"emberiza hortulana":7,"emberiza leucocephalos":7,"emberiza melanocephala":7,"emberiza pusilla":7,"emberiza rustica":7,"emberiza sahari":7,"emberiza schoeniclus":3,"emberiza spodocephala":7,"eolophus roseicapilla":7,"eremophila alpestris":7,"erithacus rubecula":1,"estrilda astrild":10,"estrilda melpoda":10,"eudocimus albus":8,"eudocimus ruber":8,"eudromias morinellus":6,"euodice malabarica":7,"euplectes afer":10,"falco cherrug":7,"falco columbarius":5,"falco eleonorae":7,"falco jugger":9,"falco naumanni":6,"falco peregrinus":5,"falco subbuteo":4,"falco tinnunculus":2,"falco vespertinus":7,"ficedula albicollis":7,"ficedula hypoleuca":2,"ficedula parva":6,"fratercula arctica":7,"fringilla coelebs":1,"fringilla montifringilla":3,"fulica atra":2,"fulmarus glacialis":6,"galerida cristata":4,"galerida theklae":7,"gallinago gallinago":3,"gallinago media":7,"gallinula chloropus":2,"gallus gallus":10,"garrulus glandarius":1,"gavia adamsii":7,"gavia arctica":7,"gavia immer":6,"gavia pacifica":7,"gavia stellata":6,"gelochelidon nilotica":5,"geronticus eremita":7,"glareola nordmanni":7,"glareola pratincola":6,"glaucidium passerinum":7,"grus grus":4,"grus japonensis":7,"grus virgo":7,"gulosus aristotelis":4,"gypaetus barbatus":6,"gyps fulvus":4,"gyps rueppelli":7,"haematopus ostralegus":4,"haliaeetus albicilla":6,"haliaeetus leucocephalus":7,"haliastur indus":7,"hieraaetus pennatus":6,"himantopus himantopus":3,"hippolais icterina":7,"hippolais polyglotta":3,"hirundo rustica":1,"hydrobates castro":10,"hydrobates leucorhous":6,"hydrobates pelagicus":6,"hydrocoloeus minutus":6,"hydroprogne caspia":5,"ichthyaetus audouinii":7,"ichthyaetus melanocephalus":4,"icterus galbula":8,"iduna caligata":7,"iduna opaca":10,"iduna pallida":7,"jynx torquilla":6,"lagopus muta":7,"lanius collurio":4,"lanius cristatus":7,"lanius excubitor":7,"lanius isabellinus":7,"lanius meridionalis":7,"lanius minor":7,"lanius nubicus":9,"lanius phoenicuroides":7,"lanius senator":6,"larus argentatus":2,"larus cachinnans":6,"larus canus":4,"larus delawarensis":7,"larus dominicanus":7,"larus fuscus":4,"larus glaucoides":7,"larus hyperboreus":7,"larus marinus":3,"larus michahellis":2,"larus smithsonianus":9,"leiothlypis peregrina":7,"leiothrix lutea":7,"leucophaeus atricilla":7,"leucophaeus pipixcan":7,"limnodromus scolopaceus":7,"limosa lapponica":5,"limosa limosa":5,"linaria cannabina":2,"linaria flavirostris":7,"locustella luscinioides":6,"locustella naevia":6,"lophodytes cucullatus":7,"lophophanes cristatus":4,"loxia curvirostra":6,"loxia scotica":7,"lullula arborea":4,"luscinia megarhynchos":1,"luscinia svecica":5,"lymnocryptes minimus":6,"lyrurus tetrix":7,"mareca americana":8,"mareca penelope":4,"mareca sibilatrix":7,"mareca strepera":3,"marmaronetta angustirostris":8,"megaceryle alcyon":7,"melanitta americana":7,"melanitta fusca":6,"melanitta nigra":6,"melanitta perspicillata":7,"melanocorypha calandra":7,"melopsittacus undulatus":7,"mergellus albellus":6,"mergus merganser":4,"mergus serrator":6,"merops apiaster":3,"merops persicus":9,"microcarbo pygmaeus":7,"milvus migrans":2,"milvus milvus":4,"mniotilta varia":8,"monticola saxatilis":7,"monticola solitarius":6,"montifringilla nivalis":7,"morus bassanus":4,"motacilla alba":1,"motacilla cinerea":2,"motacilla citreola":7,"motacilla flava":3,"motacilla tschutschensis":8,"muscicapa striata":3,"myiopsitta monachus":7,"neophron percnopterus":5,"netta peposaca":8,"netta rufina":4,"nucifraga caryocatactes":6,"numenius arquata":4,"numenius hudsonicus":7,"numenius phaeopus":4,"numida meleagris":7,"nycticorax nycticorax":5,"nymphicus hollandicus":7,"oceanites oceanicus":7,"oenanthe deserti":7,"oenanthe hispanica":7,"oenanthe isabellina":7,"oenanthe melanoleuca":7,"oenanthe oenanthe":3,"oenanthe pleschanka":8,"onychoprion anaethetus":7,"onychoprion fuscatus":7,"oressochen melanopterus":9,"oriolus oriolus":3,"otis tarda":7,"otus scops":6,"oxyura jamaicensis":7,"oxyura leucocephala":8,"pandion haliaetus":4,"panurus biarmicus":6,"parabuteo unicinctus":7,"paragallinula angulata":8,"parus major":1,"passer domesticus":1,"passer hispaniolensis":7,"passer italiae":6,"passer luteus":7,"passer montanus":5,"pastor roseus":7,"pavo cristatus":7,"pelecanus crispus":8,"pelecanus onocrotalus":7,"pelecanus rufescens":7,"perdix perdix":6,"periparus ater":4,"pernis apivorus":4,"petronia petronia":7,"phalacrocorax aristotelis":4,"phalacrocorax carbo":1,"phalaropus fulicarius":6,"phalaropus lobatus":7,"phalaropus tricolor":7,"phasianus colchicus":3,"phasianus versicolor":7,"pheucticus ludovicianus":10,"phoeniconaias minor":7,"phoenicopterus chilensis":7,"phoenicopterus roseus":4,"phoenicopterus ruber":9,"phoenicurus moussieri":7,"phoenicurus ochruros":2,"phoenicurus phoenicurus":3,"phylloscopus bonelli":4,"phylloscopus borealis":7,"phylloscopus collybita":1,"phylloscopus fuscatus":7,"phylloscopus humei":7,"phylloscopus ibericus":8,"phylloscopus inornatus":5,"phylloscopus orientalis":8,"phylloscopus plumbeitarsus":7,"phylloscopus proregulus":7,"phylloscopus schwarzi":7,"phylloscopus sibilatrix":5,"phylloscopus sibillatrix":5,"phylloscopus trochiloides":7,"phylloscopus trochilus":3,"pica pica":1,"picoides tridactylus":7,"picus canus":7,"picus sharpei":7,"picus viridis":2,"platalea leucorodia":4,"platycercus eximius":7,"plectrophenax nivalis":6,"plegadis falcinellus":4,"ploceus melanocephalus":10,"pluvialis apricaria":5,"pluvialis dominica":7,"pluvialis fulva":7,"pluvialis squatarola":4,"podiceps auritus":6,"podiceps cristatus":2,"podiceps grisegena":7,"podiceps nigricollis":5,"podilymbus podiceps":7,"poecile montanus":6,"poecile palustris":3,"poicephalus senegalus":7,"porphyrio porphyrio":6,"porzana porzana":7,"prunella collaris":6,"prunella modularis":2,"psittacara erythrogenys":7,"psittacara mitratus":7,"psittacula cyanocephala":7,"psittacula eupatria":7,"psittacula krameri":3,"psittacus erithacus":7,"pterocles alchata":7,"ptyonoprogne rupestris":4,"puffinus baroli":8,"puffinus mauretanicus":5,"puffinus puffinus":5,"puffinus yelkouan":6,"pycnonotus jocosus":9,"pyrrhocorax graculus":5,"pyrrhocorax pyrrhocorax":4,"pyrrhula pyrrhula":4,"rallus aquaticus":3,"recurvirostra avosetta":4,"regulus ignicapilla":3,"regulus regulus":3,"remiz pendulinus":6,"rhodostethia rosea":8,"riparia riparia":4,"rissa tridactyla":5,"saxicola maurus":7,"saxicola rubetra":4,"saxicola rubicola":2,"scolopax rusticola":6,"seiurus aurocapilla":7,"serinus canaria":7,"serinus serinus":2,"setophaga aestiva":7,"setophaga striata":9,"sibirionetta formosa":8,"sitta europaea":2,"sitta whiteheadi":7,"somateria mollissima":7,"somateria spectabilis":7,"spatula clypeata":3,"spatula cyanoptera":9,"spatula discors":7,"spatula hottentota":8,"spatula querquedula":5,"spatula versicolor":8,"spinus spinus":2,"stercorarius longicaudus":7,"stercorarius maccormicki":7,"stercorarius parasiticus":6,"stercorarius pomarinus":7,"stercorarius skua":6,"sterna dougallii":7,"sterna forsteri":7,"sterna hirundo":3,"sterna paradisaea":7,"sternula albifrons":4,"streptopelia decaocto":1,"streptopelia orientalis":7,"streptopelia roseogrisea":7,"streptopelia turtur":3,"strix aluco":5,"sturnus unicolor":6,"sturnus vulgaris":1,"sula leucogaster":7,"sula sula":10,"sylvia atricapilla":1,"sylvia borin":4,"sylvia communis":3,"sylvia curruca":6,"syrmaticus reevesii":7,"tachybaptus ruficollis":3,"tachymarptis melba":5,"tadorna cana":9,"tadorna ferruginea":7,"tadorna tadorna":3,"taeniopygia guttata":7,"tarsiger cyanurus":7,"tetrao urogallus":7,"tetrastes bonasia":7,"tetrax tetrax":6,"thalassarche melanophris":7,"thalasseus albididorsalis":7,"thalasseus bengalensis":7,"thalasseus elegans":7,"thalasseus sandvicensis":4,"thectocercus acuticaudatus":9,"thinornis dubius":5,"threskiornis aethiopicus":7,"tichodroma muraria":7,"trichoglossus moluccanus":10,"tringa brevipes":7,"tringa erythropus":5,"tringa flavipes":8,"tringa glareola":4,"tringa nebularia":4,"tringa ochropus":3,"tringa stagnatilis":7,"tringa totanus":4,"troglodytes troglodytes":1,"turdus iliacus":3,"turdus merula":1,"turdus philomelos":2,"turdus pilaris":4,"turdus torquatus":5,"turdus viscivorus":3,"tyto alba":7,"upupa epops":4,"uria aalge":5,"vanellus gregarius":7,"vanellus leucurus":7,"vanellus spinosus":7,"vanellus vanellus":3,"vireo olivaceus":8,"xema sabini":6,"xenus cinereus":7,"zapornia parva":7,"zapornia pusilla":7,"zonotrichia albicollis":7,"zoothera aurea":8};
 // Categorie eBird des exotiques FR (estimation basee sur statut public eBird FR).
 // N = Naturalise (population etablie reproductrice, "vrai" sauvage installe)
 // P = Provisoire (obs regulieres mais reproduction non confirmee, souvent parcs semi-libres)
@@ -665,16 +665,6 @@ function _setGlobalCountry(cc){
     if(typeof _pkdxNumById !== 'undefined') _pkdxNumById = null;
     if(typeof _pkdxLastRowsHash !== 'undefined') _pkdxLastRowsHash = null;
   }
-  if(typeof _targetsCountry !== 'undefined'){
-    _targetsCountry = cc;
-    try{ localStorage.setItem('mb-targets-country', cc); }catch(_){}
-    // Reset region si stale
-    if(typeof _targetsRegion !== 'undefined' && typeof REGIONS_BY_COUNTRY === 'object'){
-      const belongs = (REGIONS_BY_COUNTRY[cc] || []).some(r => r.code === _targetsRegion);
-      if(!belongs){ _targetsRegion = ''; try{ localStorage.setItem('mb-targets-region', ''); }catch(_){} }
-    }
-    if(typeof _targetsRegionInit !== 'undefined') _targetsRegionInit = false;
-  }
   if(typeof ebFilter === 'object'){
     ebFilter.country = cc;
     ebFilter.region = cc;
@@ -690,7 +680,6 @@ function _setGlobalCountry(cc){
   try{
     const activeView = [...document.querySelectorAll('.tab.on')][0]?.dataset?.view;
     if(activeView === 'pokedex' && typeof _pkdxRender === 'function') _pkdxRender();
-    else if(activeView === 'targets' && typeof renderTargets === 'function') renderTargets();
     else if(activeView === 'map' && typeof renderMap === 'function') renderMap();
   }catch(e){ console.warn('sync view after country change :', e.message); }
 }
@@ -2214,8 +2203,6 @@ function _renderResultsImpl(){
     _trophiesDirty = true;
   }
   // Rafraichit les cibles seulement si l'onglet est visible (evite compute inutile
-  // sinon : renderTargets est deja rappele quand on clique le tab).
-  if(_isViewVisible('viewTargets')) renderTargets();
 }
 // Appele au tab switch : si la view etait dirty, la rebuild maintenant.
 function _flushDirtyForView(viewName){
@@ -5892,7 +5879,7 @@ async function _loadFreqDataForCountry(cc){
   })();
   return _freqDataPromises[cc];
 }
-// Compat : ancien nom, redirige vers FR (utilise par renderTargets, renderMap etc.).
+// Compat : ancien nom, redirige vers FR (utilise par renderMap etc.).
 let _freqDataPromise = null;
 async function _loadFreqData(){
   if(!_freqDataPromise) _freqDataPromise = _loadFreqDataForCountry('FR');
@@ -9133,7 +9120,7 @@ $('#manualAddBtn')?.addEventListener('click', async ()=>{
   btn.disabled=false;
 });
 
-const VIEWS = { load:'#viewLoad', profil:'#viewProfil', ranking:'#viewRanking', map:'#viewMap', targets:'#viewTargets', trophies:'#viewTrophies', chat:'#viewChat', photos:'#viewPhotos', feed:'#viewFeed', requests:'#viewRequests', quiz:'#viewQuiz', pokedex:'#viewPokedex', about:'#viewAbout' };
+const VIEWS = { load:'#viewLoad', profil:'#viewProfil', ranking:'#viewRanking', map:'#viewMap', trophies:'#viewTrophies', chat:'#viewChat', photos:'#viewPhotos', feed:'#viewFeed', requests:'#viewRequests', quiz:'#viewQuiz', pokedex:'#viewPokedex', about:'#viewAbout' };
 // Hamburger menu + FABs Chat/Photos : delegate vers les tabs caches.
 document.addEventListener('click', e => {
   const ham = e.target.closest('#hamburgerBtn');
@@ -9234,14 +9221,13 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   if(b.dataset.view==='quiz') renderQuizInit();
   if(b.dataset.view==='pokedex') renderPokedex();
   if(b.dataset.view==='map') renderMap();
-  if(b.dataset.view==='targets') renderTargets();
   // Flush les renders differes pour ranking/trophies (voir renderResults + _rankingDirty).
   if(b.dataset.view==='ranking' || b.dataset.view==='trophies') _flushDirtyForView(b.dataset.view);
   try{ localStorage.setItem('mb-last-tab', b.dataset.view); }catch(_){ }
 }));
 // Restaure l'onglet visité la dernière fois (par défaut Ma liste).
 // Defer via setTimeout(0) pour laisser le reste du module finir de s'executer avant
-// que renderPokedex / renderTargets etc. n'accedent aux vars _pkdxFilters/_targetsX
+// que renderPokedex etc. n'accedent aux vars _pkdxFilters
 // declarees plus tard dans le fichier (evite les TDZ / undefined au boot).
 setTimeout(() => {
   try{
@@ -13427,7 +13413,7 @@ document.addEventListener('click', e=>{
     // Pool contextuel : depuis Birdydex, Cette semaine ou le Classement (tbody/cards),
     // on suit l'ordre DOM affiche (respecte tri + filtres en cours). Depuis les autres
     // contextes (popups carte, modal amis...), fallback sur ordre taxonomique global.
-    const contextEl = sp.closest('#viewPokedex, #targetsPanel, .pkdx-grid, #tbody, #matrixCards, #tmodalBody, .tmodal-list, .tmodal-country-body');
+    const contextEl = sp.closest('#viewPokedex, .pkdx-grid, #tbody, #matrixCards, #tmodalBody, .tmodal-list, .tmodal-country-body');
     if(contextEl){
       const siblings = Array.from(contextEl.querySelectorAll('.sp-link[data-sci]')).map(el => el.dataset.sci);
       setSpeciesNavPool([...new Set(siblings)], sp.dataset.sci);
@@ -14465,357 +14451,11 @@ var _pkdxNumById = null;
 // Hash du dernier rendu grille : skip rebuild innerHTML si rien n'a change (evite
 // ~300ms de re-render de 597 cards a chaque tab switch/Firestore update).
 var _pkdxLastRowsHash = null;
-/* ---------------- Cibles de la semaine ---------------- */
-// Panel qui affiche les especes les plus faciles a voir CETTE SEMAINE dans la region
-// selectionnee (ou France entiere) que l'utilisateur n'a pas encore cochees. Utilise
-// S&T weekly national + REAL_FREQ_MONTHLY_BY_REGION pour filtrer par presence regionale.
-let _targetsRegion = null;   // '' = pays entier, sinon code region (FR-BRE, ES-AN, etc.)
-let _targetsRegionInit = false;
-let _targetsCountry = (typeof _globalCountry !== 'undefined') ? _globalCountry : 'FR';   // pays courant pour "Cette semaine" (hérite du global)
-// Anti-boucle infinite : marque quels pays ont deja tente le fetch data regionale.
-// Sans ca, pour un pays comme Monténégro (monthlyByRegion() = null permanent), on
-// re-tentait a chaque renderTargets → boucle qui bloque la page.
-const _targetsLoadAttempted = {};
-const FLAG_EMOJI_TGT = CC_FLAGS;   // alias vers la source unique
-let _targetsOwnedFilter = '';   // '' = toutes, 'missing' = manquantes seulement, 'owned' = deja cochees
-try{ _targetsOwnedFilter = localStorage.getItem('mb-targets-owned') || ''; }catch(_){}
-// Set des tiers EXCLUS (comme dans Ma liste : chips off = exclus). Vide = tous inclus.
-let _targetsTierExcl = new Set();
-try{ const s = localStorage.getItem('mb-targets-tier-excl'); if(s) _targetsTierExcl = new Set(JSON.parse(s)); }catch(_){}
-// Zone choisie sur les fiches especes (histogramme 52 barres par zone). '' = pays entier.
-// En France c'est un departement (FR-ARA-01), ailleurs une region (ES-CT).
-let _speciesRegion = '';
-try{ _speciesRegion = localStorage.getItem('mb-species-region') || ''; }catch(_){ _speciesRegion = ''; }
-// Migration : la fiche selectionnait autrefois des REGIONS francaises (FR-ARA, 2 segments).
-// Elle travaille desormais au departement (FR-ARA-01, 3 segments), donc un ancien choix
-// enregistre ne correspond plus a rien. On repart du pays entier plutot que de laisser une
-// selection fantome qui n'apparait nulle part dans la liste.
-if(/^FR-[A-Z]+$/.test(_speciesRegion)){
-  _speciesRegion = '';
-  try{ localStorage.setItem('mb-species-region', ''); }catch(_){}
-}
-try{ _targetsRegion = localStorage.getItem('mb-targets-region') || ''; }catch(_){ _targetsRegion = ''; }
-
-function renderTargets(){
-  const panel = $('#targetsPanel'), grid = $('#targetsGrid'), hint = $('#targetsHint');
-  if(!panel || !grid) return;
-  const me = realPeople.find(p => p.id === myUid);
-  const mine = me ? new Set([...me.species.keys()]) : new Set();
-  // Onglet dedie : on affiche le panel meme sans liste chargee (onboarding), et meme sans
-  // S&T (message d'attente). Le style panel:display initial est vide.
-  if(!mine.size){
-    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:24px; color:var(--ink-3);">Charge d\'abord ta life list eBird sur l\'onglet <b>Ma liste</b> - les cochées apparaîtront en photo, les manquantes en silhouette.</div>';
-    if(hint) hint.textContent = '';
-    return;
-  }
-  const ccT = _targetsCountry || 'FR';
-  const regT = COUNTRIES_REG[ccT];
-  if(!regT){
-    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:24px; color:var(--ink-3);">Pays inconnu.</div>';
-    if(hint) hint.textContent = '';
-    return;
-  }
-  const stCountry = regT.st();
-  if(!stCountry || !Object.keys(stCountry).length){
-    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:24px; color:var(--ink-3);">Données eBird Status & Trends non chargées pour ce pays.</div>';
-    if(hint) hint.textContent = '';
-    return;
-  }
-  // Init du bouton pays (modal). Une seule fois.
-  const ccBtn = $('#targetsCountry');
-  if(ccBtn && !ccBtn._init){
-    _syncCountryButton(ccBtn, ccT);
-    ccBtn.addEventListener('click', async () => {
-      const chosen = await _openCountryPicker(_targetsCountry || 'FR');
-      if(chosen && chosen !== _targetsCountry){
-        _targetsCountry = chosen;
-        try{ localStorage.setItem('mb-targets-country', _targetsCountry); }catch(_){}
-        // Reset region si stale, rebuild du selecteur region
-        const belongs = (REGIONS_BY_COUNTRY[_targetsCountry] || []).some(r => r.code === _targetsRegion);
-        if(!belongs){ _targetsRegion = ''; try{ localStorage.setItem('mb-targets-region', ''); }catch(_){} }
-        _targetsRegionInit = false;
-        _syncCountryButton(ccBtn, chosen);
-        Promise.all([_loadFreqDataForCountry(_targetsCountry)]).then(() => renderTargets());
-      }
-    });
-    ccBtn._init = true;
-  }
-  // Init/rebuild du selecteur region : liste les regions du pays courant.
-  const sel = $('#targetsRegion');
-  if(sel && !_targetsRegionInit){
-    const regList = REGIONS_BY_COUNTRY[ccT] || [];
-    const natLbl = 'Toutes';
-    sel.innerHTML = `<option value="">${esc(natLbl)}</option>`
-      + regList.map(r => `<option value="${esc(r.code)}">${esc(r.name)}</option>`).join('');
-    sel.value = _targetsRegion || '';
-    if(!sel._init){
-      sel.addEventListener('change', () => {
-        _targetsRegion = sel.value || '';
-        try{ localStorage.setItem('mb-targets-region', _targetsRegion); }catch(_){}
-        const proms = [_loadFreqDataForCountry(_targetsCountry), _loadAbundanceRegionData(_targetsCountry)];
-        Promise.all(proms).then(() => renderTargets());
-      });
-      sel._init = true;
-    }
-    _targetsRegionInit = true;
-  }
-  // Init du selecteur filtre propriete (toutes/manquantes/cochees). Ecouteur pose une seule fois.
-  const ownedSel = $('#targetsOwnedFilt');
-  if(ownedSel && !ownedSel._init){
-    ownedSel.value = _targetsOwnedFilter || '';
-    ownedSel.addEventListener('change', () => {
-      _targetsOwnedFilter = ownedSel.value || '';
-      try{ localStorage.setItem('mb-targets-owned', _targetsOwnedFilter); }catch(_){}
-      renderTargets();
-    });
-    ownedSel._init = true;
-  }
-  // Chips rareté (multi) : toggle exclu/inclus, persiste en localStorage.
-  const chipsBox = $('#targetsTierChips');
-  if(chipsBox && !chipsBox._init){
-    chipsBox.addEventListener('click', e => {
-      // Boutons Tout / Vide : reset l'exclusion.
-      if(e.target.matches('[data-tier-all]')){
-        _targetsTierExcl = new Set();
-        try{ localStorage.setItem('mb-targets-tier-excl', '[]'); }catch(_){}
-        renderTargets(); return;
-      }
-      if(e.target.matches('[data-tier-none]')){
-        _targetsTierExcl = new Set([0,1,2,3,4,5,6,7,8,9,10]);
-        try{ localStorage.setItem('mb-targets-tier-excl', JSON.stringify([..._targetsTierExcl])); }catch(_){}
-        renderTargets(); return;
-      }
-      const btn = e.target.closest('button[data-tier]');
-      if(!btn) return;
-      const t = parseInt(btn.dataset.tier, 10);
-      if(_targetsTierExcl.has(t)) _targetsTierExcl.delete(t); else _targetsTierExcl.add(t);
-      try{ localStorage.setItem('mb-targets-tier-excl', JSON.stringify([..._targetsTierExcl])); }catch(_){}
-      renderTargets();
-    });
-    chipsBox._init = true;
-  }
-  // Data regionale du pays courant (via registry lazy-loadee) + S&T regional multi-pays.
-  const regionSelected = !!_targetsRegion;
-  const monthByReg = regT.monthlyByRegion && regT.monthlyByRegion();
-  const regionData = (regionSelected && monthByReg) ? monthByReg[_targetsRegion] : null;
-  const stByRegCC = REAL_ABUNDANCE_ST_BY_REGION[ccT];
-  const stRegionData = (regionSelected && stByRegCC && stByRegCC[_targetsRegion]) || null;
-  const hasRegionalST = !!stRegionData;
-  // Chargement lazy : uniquement si (region choisie) ET (aucune data regionale dispo)
-  // ET (pas encore essaye). Sans le flag on boucle infiniment pour les pays sans bar
-  // chart regional (ex : Montenegro, monthlyByRegion = null en permanence).
-  if(regionSelected && !regionData && !hasRegionalST && !_targetsLoadAttempted[ccT]){
-    _targetsLoadAttempted[ccT] = true;
-    const proms = [_loadFreqDataForCountry(ccT), _loadAbundanceRegionData(ccT)];
-    Promise.all(proms).then(() => renderTargets());
-    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--ink-3);">Chargement des données régionales…</div>';
-    if(hint) hint.textContent = '';
-    return;
-  }
-  // Monthly national du pays courant (via registry) : pour le ratio regional / national.
-  const monthlyNat = regT.monthly ? regT.monthly() : {};
-  // Semaine courante (0..51). Semaine 0 = 1-7 janvier, semaine 25 = ~24 juin, etc.
-  const now = new Date();
-  const dayOfYear = Math.floor((now - new Date(now.getFullYear(),0,0)) / 86400000);
-  const curWeek = Math.min(51, Math.floor(dayOfYear / 7));
-  const curMonth = now.getMonth();   // 0..11 pour REAL_FREQ_MONTHLY_BY_REGION
-  // Candidates : especes S&T avec weekly[curWeek] > 0 que l'utilisateur n'a pas cochees,
-  // pas cachees, pas exotiques cage/volaire. Si region choisie, filtre par presence regionale
-  // ce mois (REAL_FREQ_MONTHLY_BY_REGION[region][sci][month] > seuil).
-  // Seuil regional durci a 0.5% : evite les migrateurs passage (Traquet motteux qui passe
-  // en IdF mais rare) qui polluent le top des cibles locales.
-  const REGION_MIN_FREQ = 0.005;
-  const candidates = [];
-  for(const sci in stCountry){
-    if(_isSciAliasSource(sci)) continue;
-    if(isHiddenSpecies(sci)) continue;
-    // Ne pas exclure les cochees : toutes les especes affichees, les manquantes en silhouette.
-    // Filtre "owned" applique apres le tri.
-    const owned = _mineHasStrict(mine, sci);
-    const st = stCountry[sci];
-    if(!Array.isArray(st.w) || st.w.length !== 52) continue;
-    const wNat = st.w[curWeek];
-    if(!wNat || wNat <= 0) continue;
-    // Skip cage/voliere et parcs semi-libres (pas des cibles ornitho). Categorie
-    // exotique par pays (une espece exotique en FR peut etre native en ES).
-    if(isExotic(sci) && (isParkOnlyExotic(sci) || (() => {
-      const cat = exoticCategoryInCountry(sci, ccT) || _exoticCategory(sci);
-      return _isUnestablishedExotic(cat);
-    })())) continue;
-    // Filtre regional : si region choisie, espece doit etre presente dans cette region.
-    // 2 sources possibles (par ordre de preference) :
-    //   1. Bar chart regional mensuel (FR/ES/IT/GB/PT) : freq >= REGION_MIN_FREQ
-    //   2. S&T weekly regional (ME et fallback) : wReg > 0 la semaine courante
-    // Un pays comme ME n'a que la source #2, il faut donc que ce filtre accepte les 2.
-    let regionalFreq = 0;
-    let wReg = null;
-    if(regionSelected){
-      const hasBarReg = regionData && regionData[sci] && regionData[sci].length === 12;
-      const hasStReg = hasRegionalST && stRegionData[sci] && Array.isArray(stRegionData[sci].w) && stRegionData[sci].w.length === 52;
-      // Applique filtre bar chart si dispo
-      if(hasBarReg){
-        regionalFreq = regionData[sci][curMonth] || 0;
-        if(regionalFreq < REGION_MIN_FREQ) continue;
-      }
-      // Applique filtre S&T weekly si dispo
-      if(hasStReg){
-        wReg = stRegionData[sci].w[curWeek] || 0;
-        if(wReg <= 0) continue;
-      }
-      // Si aucune source regionale dispo pour cette espece, elle est absente de cette region -> skip
-      if(!hasBarReg && !hasStReg) continue;
-    }
-    // Score de facilite :
-    // - Region avec S&T weekly regional dispo : tri direct par densite regionale de la
-    //   semaine courante (temporel + spatial precis, plus de biais national).
-    // - Region sans S&T regional (fallback) : national weekly x ratio (freq mensuelle
-    //   regionale / freq mensuelle nationale). Ce ratio corrige la densite nationale
-    //   pour refleter la sur/sous-representation regionale. Ex Rossignol IdF fin aout :
-    //   wNat encore fort (chante au sud) mais ratio IdF/FR quasi nul (parti d'IdF) ->
-    //   score effondre. Bien plus juste que l'ancien booster additif.
-    // - France entiere : abondance S&T nationale semaine courante seule.
-    let score, wDisplay, wProxy = null;
-    if(regionSelected){
-      if(wReg !== null){
-        score = wReg;
-        wDisplay = wReg;
-      } else {
-        // Ratio bar chart regional / national ce mois pour proxy de densite regionale.
-        // Utilise monthlyNat du pays courant (via registry) au lieu de REAL_FREQ_MONTHLY FR.
-        const natMonthly = monthlyNat[sci];
-        const natFreq = (natMonthly && natMonthly[curMonth]) || 0;
-        let ratio;
-        if(natFreq > 0){
-          ratio = Math.min(2, Math.max(0.02, regionalFreq / natFreq));
-        } else {
-          ratio = Math.min(2, regionalFreq / 0.05);
-        }
-        wProxy = wNat * ratio;
-        score = wProxy;
-        wDisplay = wProxy;   // Affiche la proxy regionale, pas le national brut
-      }
-    } else {
-      score = wNat;
-      wDisplay = wNat;
-    }
-    candidates.push({ sci, wVal: wDisplay, wReg, wProxy, score, regionalFreq, owned, tier: rarityForCountry(sci, ccT) });
-  }
-  if(!candidates.length){
-    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--ink-3);">Aucune espèce cible cette semaine' + (regionSelected ? ' dans cette région' : '') + '.</div>';
-    if(hint) hint.textContent = '';
-    return;
-  }
-  // Tri : score decroissant.
-  candidates.sort((a, b) => b.score - a.score);
-  // Rendu des chips rarete : uniquement les tiers presents dans candidates, tries croissant.
-  const tiersPresent = [...new Set(candidates.map(c => c.tier))].filter(t => t != null).sort((a, b) => a - b);
-  if(chipsBox){
-    // Style unifie avec le filtre rareté de la carte (.rar-chip compact).
-    // Chaque chip = numero, couleur du tier quand active. Boutons Tout/Vide en fin.
-    const chipsHtml = tiersPresent.map(t => {
-      const on = !_targetsTierExcl.has(t);
-      const lbl = (REAL_LABELS && REAL_LABELS[t]) || ('tier '+t);
-      const color = realColor(t);
-      const bgStyle = on ? `background:${color};` : '';
-      return `<button type="button" class="rar-chip${on?' on':''}" data-tier="${t}" style="${bgStyle}" title="${esc(lbl)}">${t}</button>`;
-    }).join('');
-    chipsBox.innerHTML = '<span style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; align-self:center; margin-right:6px;">Rareté</span>'
-      + chipsHtml
-      + '<button type="button" class="rar-chip" data-tier-all title="Cocher toutes les raretés">Tout</button>'
-      + '<button type="button" class="rar-chip" data-tier-none title="Décocher toutes les raretés">Vide</button>';
-  }
-  // Applique les filtres APRES le tri : proprietaire + rarete.
-  let display = candidates;
-  if(_targetsOwnedFilter === 'missing') display = display.filter(c => !c.owned);
-  else if(_targetsOwnedFilter === 'owned') display = display.filter(c => c.owned);
-  if(_targetsTierExcl.size) display = display.filter(c => !_targetsTierExcl.has(c.tier));
-  // 60 = lignes completes pour toutes les largeurs standards (2, 3, 4, 5, 6 colonnes).
-  const top = display.slice(0, 60);
-  if(hint){
-    const regList = REGIONS_BY_COUNTRY[ccT] || [];
-    const regName = regionSelected
-      ? (regList.find(r => r.code === _targetsRegion)?.name || _targetsRegion)
-      : ((FLAG_EMOJI_TGT[ccT] || '') + ' ' + (regT.name || ccT) + ' entier');
-    const precisionTag = regionSelected ? (hasRegionalST ? ' · densité régionale S&T' : ' · densité nationale × présence régionale') : '';
-    const ownedCount = candidates.filter(c => c.owned).length;
-    const missingCount = candidates.length - ownedCount;
-    const filterInfo = (_targetsTierExcl.size || _targetsOwnedFilter) ? ` · ${display.length} après filtres` : '';
-    hint.textContent = `Semaine ${curWeek + 1}/52 · ${regName}${precisionTag} · ${candidates.length} espèces (${ownedCount} cochées · ${missingCount} manquantes)${filterInfo}.`;
-  }
-  // Rendu cartes. En mode region avec S&T weekly regional : ind/h regional cette semaine
-  // (temporel + spatial precis). En mode region fallback : ind/h national + % listes region.
-  // En mode France : ind/h national.
-  const fmtInd = v => v >= 1 ? v.toFixed(1) : v >= 0.01 ? v.toFixed(2) : v >= 0.001 ? v.toFixed(3) : v.toFixed(4);
-  grid.innerHTML = top.map(c => {
-    const nm = FR_NAMES[c.sci] || c.sci;
-    const tierColor = realColor(c.tier);
-    const tierLbl = REAL_LABELS[c.tier] || ('niveau '+c.tier);
-    // Affichage uniforme :
-    //   - Mode region : ind/h (regional si dispo, sinon national) sur une ligne, puis
-    //     % listes region mensuel sur une 2e ligne (visuellement lisible en un coup d'oeil).
-    //   - Mode France entiere : ind/h national seul.
-    let line1, line2;
-    if(regionSelected){
-      const primary = (c.wReg !== null) ? c.wReg : c.wVal;
-      // "(région)" pour la vraie donnee S&T regionale, "(estimé région)" pour la proxy
-      // (national x ratio bar chart regional/national) quand S&T regional manque.
-      const primaryLbl = (c.wReg !== null) ? 'ind/h cette semaine (région)' : 'ind/h cette semaine (estimé région)';
-      line1 = `${fmtInd(primary)} ${primaryLbl}`;
-      if(c.regionalFreq > 0){
-        const pct = c.regionalFreq * 100;
-        const pctStr = pct >= 10 ? Math.round(pct) : pct >= 1 ? pct.toFixed(1) : pct.toFixed(2);
-        line2 = `${pctStr}% listes région (mensuel)`;
-      }
-    } else {
-      line1 = `${fmtInd(c.wVal)} ind/h cette semaine`;
-    }
-    const metricHtml = `<span class="t-freq">${esc(line1)}</span>`
-      + (line2 ? `<span class="t-freq" style="display:block; margin-top:1px;">${esc(line2)}</span>` : '');
-    // Manquantes -> classe .missing (silhouette + nom italique, style Dex).
-    const missingCls = c.owned ? '' : ' missing';
-    const ownedBadge = c.owned ? ' <span style="font-size:11px; color:var(--accent); font-weight:700;">✓ vue</span>' : '';
-    return `<div class="target-card${missingCls}" data-sci="${esc(c.sci)}">
-      <div class="t-img" data-targ-lazy="${esc(c.sci)}">🐦</div>
-      <div class="t-info">
-        <div class="t-name">${esc(nm)}${ownedBadge}</div>
-        <div class="t-meta">
-          <span class="t-tier" style="background:${tierColor}">${c.tier}</span>
-          <span>${esc(tierLbl)}</span>
-        </div>
-        <div style="margin-top:2px; font-size:11.5px; color:var(--ink-3);">${metricHtml}</div>
-      </div>
-    </div>`;
-  }).join('');
-  _targetsLazyPhotos();
-}
-function _targetsLazyPhotos(){
-  const els = document.querySelectorAll('#targetsGrid .t-img[data-targ-lazy]');
-  if(!els.length || !('IntersectionObserver' in window)) return;
-  const io = new IntersectionObserver(entries => {
-    for(const e of entries){
-      if(!e.isIntersecting) continue;
-      const el = e.target;
-      io.unobserve(el);
-      const sci = el.dataset.targLazy;
-      if(!sci) continue;
-      _fetchWikiPhoto(sci).then(p => {
-        const src = p?.thumb || p?.url;   // grille -> thumb (fast)
-        if(src){ el.innerHTML = `<img loading="lazy" src="${esc(src)}" alt="${esc(sci)}" onerror="this.parentElement.textContent='🐦'">`; }
-      }).catch(()=>{});
-    }
-  }, { rootMargin:'150px' });
-  els.forEach(el => io.observe(el));
-}
-// Delegation click : ouvre la fiche au clic sur une carte cible.
-document.addEventListener('click', e => {
-  const card = e.target.closest('.target-card[data-sci]');
-  if(!card) return;
-  // Pool navigation : cartes 'Cette semaine' dans l'ordre affiche
-  const siblings = [...document.querySelectorAll('#targetsGrid .target-card[data-sci]')].map(c => c.dataset.sci);
-  setSpeciesNavPool(siblings, card.dataset.sci);
-  openSpeciesModal(card.dataset.sci);
-});
-
+/* L'ecran "Cibles de la semaine" (Objectifs) a ete retire : aucun onglet n'y menait, il
+   n'y avait pas de data-view="targets" dans index.html. Il etait aussi le dernier gros
+   consommateur du Status & Trends, dont il exigeait la presence : faute de table S&T il
+   affichait "Donnees eBird Status & Trends indisponibles", ce qui etait le cas dans 10
+   pays sur 16. */
 function renderPokedex(){
   const grid = $('#pkdxGrid'); if(!grid) return;
   // Garde defensive : si render est appele avant que le module ait initialise les vars

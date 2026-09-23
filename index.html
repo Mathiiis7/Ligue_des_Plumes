@@ -405,52 +405,6 @@
   <!-- Cette semaine : especes S&T les plus faciles a voir cette semaine (region ou FR).
        Toutes les especes affichees : celles deja cochees en couleur, les manquantes en
        silhouette (style Dex). Filtre pour n'afficher que les manquantes. -->
-  <div id="viewTargets" style="display:none;">
-    <section class="panel" id="targetsPanel" style="padding:20px; margin-top:22px;">
-      <div class="section-head">
-        <div>
-          <div class="eyebrow">Semaine ornitho</div>
-          <h2>📅 Cette semaine</h2>
-          <p class="help" style="margin-top:2px;">Espèces les plus faciles à observer cette semaine dans ta région. Les manquantes apparaissent en silhouette.</p>
-        </div>
-        <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
-          <!-- Pays global via bouton en haut a droite (header). Le selecteur local est cache. -->
-          <button type="button" id="targetsCountry" class="cp-btn" data-cc="FR" hidden>
-            <span class="cp-btn-flag">🇫🇷</span>
-            <span class="cp-btn-label">France</span>
-            <span class="cp-btn-arrow">▾</span>
-          </button>
-          <div>
-            <label for="targetsRegion" style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; display:block; margin-bottom:4px;">Région</label>
-            <select id="targetsRegion" class="filt-sel" style="font-size:13px; padding:6px 10px;"></select>
-          </div>
-          <div>
-            <label for="targetsOwnedFilt" style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; display:block; margin-bottom:4px;">Affichage</label>
-            <select id="targetsOwnedFilt" class="filt-sel" style="font-size:13px; padding:6px 10px;">
-              <option value="">Toutes</option>
-              <option value="missing">Manquantes seulement</option>
-              <option value="owned">Cochées seulement</option>
-            </select>
-          </div>
-        </div>
-      </div>
-      <div id="targetsTierChips" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; padding:8px 10px; background:var(--surface-2); border-radius:8px;">
-        <span style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; align-self:center; margin-right:6px;">Rareté :</span>
-      </div>
-      <details style="margin-top:10px;">
-        <summary style="cursor:pointer; font-size:12px; color:var(--ink-3); user-select:none; padding:2px 0;">▸ Comment lire les métriques</summary>
-        <div style="padding:8px 12px; margin-top:6px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--ink-2); line-height:1.5;">
-          <p style="margin:0 0 6px 0;">Chaque espèce a deux indicateurs :</p>
-          <p style="margin:0 0 6px 0;"><b>X ind/h cette semaine</b> - combien d'individus tu croiserais en moyenne <b>par heure de balade</b> dans ta région, cette semaine précise. Basé sur les données Cornell (le labo ornitho mondial qui gère eBird). Ex : 2 ind/h = 1 oiseau vu toutes les 30 min ; 0.001 ind/h = quasi introuvable.</p>
-          <p style="margin:0;"><b>X% listes région (mensuel)</b> - sur toutes les sorties eBird faites dans ta région à ce mois, <b>quel pourcentage mentionne l'espèce</b>. Moyenne des 6 dernières années. Ex : 30% = 1 sortie sur 3 en voit ; 1% = 1 sortie sur 100.</p>
-          <p style="margin:6px 0 0 0; opacity:.85;">Le classement se base sur "ind/h" (la mesure de la semaine en cours). Le "% listes" complète en montrant si l'espèce est régulière en général à cette saison.</p>
-          <p style="margin:6px 0 0 0; opacity:.85;">Détails complets sur la page <a href="#" onclick="document.querySelector('.tab[data-view=about]')?.click(); return false;" style="color:var(--accent); text-decoration:underline;">ℹ️ À propos</a> (menu ☰).</p>
-        </div>
-      </details>
-      <div id="targetsGrid" class="targets-grid" style="margin-top:12px;"></div>
-      <div id="targetsHint" class="help" style="margin-top:10px; font-size:11px; color:var(--ink-3);"></div>
-    </section>
-  </div>
 
   <div id="viewProfil" style="display:none;">
     <section class="panel" style="padding:20px; margin-top:22px;">
