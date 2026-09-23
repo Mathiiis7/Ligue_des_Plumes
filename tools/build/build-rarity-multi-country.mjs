@@ -111,9 +111,14 @@ const REGIONS = {
 // Dans le TEMPS il prenait le pic. Les deux dimensions etaient traitees a l oppose.
 //
 // Seuils recalibres sur les 12 632 taxons-pays des 15 bar charts nationaux, a effectifs
+// constants, SAUF le tier 1 : releve de 21 % a 30 % pour que "Omnipresent" le soit vraiment.
+// A 21 % le Martinet noir y figurait alors qu il est absent sept mois sur douze, porte par
+// son seul pic de juin. A 30 % la France compte 15 especes tier 1 — Rougegorge, Pigeon
+// ramier, Corneille noire, Merle noir, Mesange charbonniere... — et le Martinet comme
+// l Hirondelle rustique passent en tier 2 "Tres commun", ce qui leur va mieux.
 // constants : la repartition des couleurs ne bouge pas, seul l ordre change.
 const THRESHOLDS = [
-  [0.21, 1], [0.12, 2], [0.062, 3], [0.030, 4],
+  [0.30, 1], [0.12, 2], [0.062, 3], [0.030, 4],
   [0.015, 5], [0.0050, 6], [0.00080, 7], [0.00018, 8],
   [0.000090, 9],
 ];
