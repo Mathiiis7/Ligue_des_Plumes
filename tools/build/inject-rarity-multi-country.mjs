@@ -88,5 +88,22 @@ for (const cc of PAYS) {
   }
 }
 
+// Annees de presence : critere d entree au catalogue de chaque pays (cf. _estReguliere).
+{
+  const fa = join(ROOT, 'data', 'generated', 'annees-presence.generated.js');
+  if (existsSync(fa)) {
+    const src = extraire(readFileSync(fa, 'utf8'), 'ANNEES_PRESENCE');
+    const cible = extraire(app, 'const ANNEES_PRESENCE');
+    if (src && cible) {
+      app = app.slice(0, cible.debut) + src.litteral + app.slice(cible.fin);
+      const o = JSON.parse(src.litteral);
+      const n = Object.values(o).reduce((a, m) => a + Object.keys(m).length, 0);
+      console.log("  ANNEES_PRESENCE              " + Object.keys(o).length + " pays, " + n + " especes");
+    } else if (src) {
+      console.warn("  ANNEES_PRESENCE : absent d app.js, injection ignoree.");
+    }
+  }
+}
+
 writeFileSync(APP, app);
 console.log(`\n${total} tables injectees dans app.js.`);
