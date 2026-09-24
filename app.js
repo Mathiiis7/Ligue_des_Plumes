@@ -11494,7 +11494,7 @@ async function _renderRarityMap(sci, cc){
       <div style="margin-top:6px; padding:10px 12px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2, #fafafa);">
         <div style="display:flex; align-items:flex-start; justify-content:flex-start; gap:8px;">
           <div id="smRarityMapMois" style="display:flex; flex-direction:column; gap:2px; flex:0 0 auto; width:62px;">${moisBtns}</div>
-          <div style="flex:1 1 auto; min-width:0; max-width:520px; margin:0 auto;"><svg viewBox="${paths.viewBox}" style="width:100%; height:auto; display:block;" role="img" aria-label="Rareté par ${zoneWord} sur ${libellePeriode}">
+          <div style="flex:1 1 auto; min-width:0; max-width:420px; margin:0 auto;"><svg viewBox="${paths.viewBox}" style="width:100%; height:auto; display:block;" role="img" aria-label="Rareté par ${zoneWord} sur ${libellePeriode}">
             ${svgZones}
           </svg></div>
         </div>
@@ -11642,7 +11642,10 @@ function _renderSpeciesRarityCard(key){
   };
   // Pays initial : contexte (Ornidex, carte) ou 1er dispo. Doit etre calcule AVANT
   // le innerHTML car les templates referencent initCountry via getTriggerLabel/buildRegPanel.
-  const ctxCountry = (typeof _pkdxFilters !== 'undefined' && _pkdxFilters.country)
+  // Le choix fait sur une fiche precedente prime sur le contexte : c'est lui qu'on veut
+  // retrouver en passant d'une espece a l'autre avec les fleches.
+  const ctxCountry = (_speciesCountry && COUNTRIES_REG[_speciesCountry] ? _speciesCountry : '')
+    || (typeof _pkdxFilters !== 'undefined' && _pkdxFilters.country)
     || (typeof ebFilter !== 'undefined' && ebFilter.country)
     || 'FR';
   const initCountry = avail.find(c => c.code === ctxCountry) ? ctxCountry : avail[0].code;
@@ -11910,6 +11913,8 @@ function _renderSpeciesRarityCard(key){
   // Utilisee par les 2 pickers (Rarete dans l'onglet Info + Carte & amis) pour rester sync.
   const applyCountryChange = (chosen) => {
     if(!chosen) return;
+    _speciesCountry = chosen;
+    try{ localStorage.setItem('mb-species-country', chosen); }catch(_){}
     _syncCountryButton(sel, chosen);
     if(mapSel) _syncCountryButton(mapSel, chosen);
     renderLine(chosen);
@@ -14693,6 +14698,12 @@ var _pkdxLastRowsHash = null;
 // perimetre de tout ecran.
 let _speciesRegion = '';
 try{ _speciesRegion = localStorage.getItem('mb-species-region') || ''; }catch(_){ _speciesRegion = ''; }
+// Le pays choisi sur la fiche. La zone etait retenue, le pays non : les fleches de
+// navigation ramenaient donc chaque espece au pays du contexte (filtre du birdydex, ou
+// France par defaut), et une zone etrangere restait enregistree sous un pays qui ne la
+// contient pas - selection fantome que rien n'affichait. Les deux vont ensemble.
+let _speciesCountry = '';
+try{ _speciesCountry = localStorage.getItem('mb-species-country') || ''; }catch(_){ _speciesCountry = ''; }
 // Migration : la fiche selectionnait autrefois des REGIONS francaises (FR-ARA, 2 segments).
 // Elle travaille desormais au departement (FR-ARA-01, 3 segments), donc un ancien choix
 // enregistre ne correspond plus a rien. On repart du pays entier plutot que de laisser une
