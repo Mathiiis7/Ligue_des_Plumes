@@ -1277,11 +1277,11 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
      deux. Mesure faite sur l encre reelle (canvas actualBoundingBox) : une mesure de la
      boite de ligne avait conclu l inverse et fait corriger dans le mauvais sens. */
   /* Le rond du birdydex a ete essaye ici (v492-v493) puis abandonne : garder le carre. */
-  .rar-chip, .tier-chip { display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:24px; padding:0 5px 1px; border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink-3); border-radius:6px; font:600 13px/1 system-ui; }
+  .rar-chip, .tier-chip { display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 5px 1px; border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink-3); border-radius:6px; font:600 12px/1 system-ui; }
   /* Un carre reste un carre, meme a deux chiffres : « 10 » poussait sur son padding et
      sortait de la rangee. Largeur fixe pour tout ce qui porte un palier ; les libelles
      (« Tout », « Vide ») gardent leur padding, eux ne sont pas des carres. */
-  .tier-chip, .rar-chip[data-tier], .rar-chip[data-rar], .rar-chip[data-cat] { width:24px; padding:0 0 1px; }
+  .tier-chip, .rar-chip[data-tier], .rar-chip[data-rar], .rar-chip[data-cat] { width:22px; padding:0 0 1px; }
   .rar-chip { cursor:pointer; }
   .rar-chip:hover { filter:brightness(0.97); }
   .rar-chip.on, .tier-chip { color:#fff; border-color:transparent; box-shadow:inset 0 0 0 1px rgba(0,0,0,.2); }
