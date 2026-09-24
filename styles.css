@@ -494,7 +494,10 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .cp-item .reg-picker-bar { flex:0 0 60px; }
   .reg-picker-bar { height:5px; background:var(--line-2); border-radius:3px; overflow:hidden; }
   .reg-picker-bar > div { height:100%; border-radius:3px; }
-  .reg-picker-val { font-size:10.5px; color:var(--ink-3); text-align:right; white-space:nowrap; }
+  /* Chiffres a chasse fixe : sans ca le « 1 » est bien plus etroit que le « 2 », si bien
+     qu'en alignant a droite le bord GAUCHE de « 19% » tombait 4 px plus loin que celui de
+     « 42% ». La colonne etait rigide, c'est le texte dedans qui dansait d'une ligne a l'autre. */
+  .reg-picker-val { font-size:10.5px; color:var(--ink-3); text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
   /* Country picker modal (reutilise dans fiches, Birdydex, Cette semaine).
      Future-proof pour 15-100 pays : search + grouped by continent. */
   .cp-btn { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line-2); background:var(--surface); color:var(--ink); font:inherit; font-size:13px; padding:5px 10px; border-radius:8px; cursor:pointer; font-weight:600; }
@@ -1289,7 +1292,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   /* Variante ronde, reservee a la ligne RARETE de la fiche espece : exactement le jeton
      du birdydex (.pkdx-tier) - 20 px, corps 10, ombre portee, aucun filet. Le carre reste
      partout ou les pastilles s'alignent en colonnes. */
-  .tier-chip.tier-rond { width:20px; min-width:20px; height:20px; padding:0; border:0; border-radius:50%; font:800 10px/1 system-ui; box-shadow:0 1px 3px rgba(0,0,0,.3); }
+  .tier-chip.tier-rond { width:26px; min-width:26px; height:26px; padding:0; border:0; border-radius:50%; font:800 13px/1 system-ui; box-shadow:0 1px 3px rgba(0,0,0,.3); }
   .rar-chip.rar-exo.on { background:#7e8a99; }
   /* Retire les flèches spinner natives sur #mapEbMinTodo (on a nos propres boutons +/-) */
   #mapEbMinTodo::-webkit-outer-spin-button, #mapEbMinTodo::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
