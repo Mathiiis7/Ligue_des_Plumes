@@ -11241,7 +11241,7 @@ async function _renderExoticMap(sci, cc){
   // surligner ce qu'on clique.
   const zonesSelectionnables = new Set(
     (typeof zonesFichePourPays === 'function' ? zonesFichePourPays(cc) : []).map(r => r.code));
-  const rendreZoneExo = (code, echelle) => {
+  const rendreZoneExo = (code, echelle, dRemplace) => {
     const r = paths.zones[code];
     const cat = perZone[code];
     const isNative = !cat && nativeZones.has(code);
@@ -11249,7 +11249,7 @@ async function _renderExoticMap(sci, cc){
     const title = cat ? `${r.name} — ${CAT_LABEL[cat]} (${cat})`
                 : isNative ? `${r.name} — native (présente, non taguée exotique)`
                 : `${r.name} — non listé (sauvage / absent)`;
-    return _pathZone(r.path, fill, title, selection.has(code), selection.size > 0,
+    return _pathZone(dRemplace || r.path, fill, title, selection.has(code), selection.size > 0,
       zonesSelectionnables.has(code) ? code : null, echelle);
   };
   const svgZones = _ordonnerSelectionDevant(Object.keys(paths.zones), selection)
@@ -11339,8 +11339,8 @@ function _ordonnerSelectionDevant(zones, selection){
 const _ENCART_CARTE = {
   FR: [{ titre: 'Petite couronne', cadre: { x:820, y:4, w:176, h:164 },
          codes: ['FR-IDF-75C', 'FR-IDF-92', 'FR-IDF-93', 'FR-IDF-94'] }],
-  PT: [{ titre: 'Açores', cadre: { x:625, y:400, w:365, h:240 }, codes: ['PT-20'] },
-       { titre: 'Madère', cadre: { x:15, y:395, w:255, h:490 }, codes: ['PT-30'] }],
+  PT: [{ titre: 'Açores', cadre: { x:640, y:420, w:350, h:290 }, codes: ['PT-20'], coteACote: true },
+       { titre: 'Madère', cadre: { x:15, y:420, w:250, h:460 }, codes: ['PT-30'], coteACote: true }],
 };
 // Boite englobante d'une liste de chemins SVG. Les cartes du projet n'emploient que des
 // commandes M et L en coordonnees absolues, donc lire les nombres deux a deux suffit.
@@ -11360,6 +11360,48 @@ function _bboxChemins(chemins){
 // Rend l'encart du pays, ou '' s'il n'en a pas. `rendre(code, echelle)` vient de la carte
 // appelante : l'encart herite ainsi exactement de ses couleurs, de ses infobulles et de
 // son clic, au lieu de reimplementer un rendu qui deriverait avec le temps.
+// Repose les iles d'un archipel cote a cote, a la meme echelle, dans une boite donnee.
+// Agrandir un archipel tel quel agrandit surtout l'ocean entre ses iles : les Acores
+// s'etalent sur 600 km, si bien qu'un encart classique ne gagnait qu'un facteur 1,6 et
+// laissait la plus grande ile a 13 px. En abandonnant leur position reelle - elle ne dit
+// rien d'utile a cette taille - on les serre et on gagne un facteur 4.
+//
+// L'ordre ouest -> est est conserve pour que l'archipel reste reconnaissable, et toutes
+// les iles gardent la meme echelle : leurs tailles restent comparables entre elles.
+function _reposerIles(d, boite, ecart){
+  const morceaux = String(d).split('M').filter(x => x.trim()).map(x => 'M' + x);
+  const iles = morceaux.map(sd => ({ d: sd, bb: _bboxChemins([sd]) })).filter(x => x.bb);
+  if(iles.length < 2) return null;
+  iles.sort((a, b) => a.bb.x0 - b.bb.x0);
+  const ranger = (k) => {
+    let x = 0, y = 0, hLigne = 0;
+    const cases = [];
+    for(const it of iles){
+      const w = (it.bb.x1 - it.bb.x0) * k, h = (it.bb.y1 - it.bb.y0) * k;
+      if(x > 0 && x + w > boite.w){ x = 0; y += hLigne + ecart; hLigne = 0; }
+      cases.push({ it, x, y, h });
+      x += w + ecart;
+      if(h > hLigne) hLigne = h;
+    }
+    return { cases, hTotale: y + hLigne };
+  };
+  // Plus grande echelle qui tienne dans la boite. Le plafond vient de l ile la plus large :
+  // sans lui, un archipel fait d une grande ile et de quelques ilots voyait la recherche
+  // grimper - la hauteur totale restait bonne pendant que la grande ile debordait en largeur.
+  const plusLarge = Math.max(...iles.map(it => it.bb.x1 - it.bb.x0));
+  let bas = 0.05, haut = boite.w / Math.max(1e-6, plusLarge);
+  for(let i = 0; i < 40; i++){
+    const m = (bas + haut) / 2;
+    if(ranger(m).hTotale <= boite.h) bas = m; else haut = m;
+  }
+  const { cases } = ranger(bas);
+  const d2 = cases.map(({ it, x, y }) => it.d.replace(
+    /(-?\d+(?:\.\d+)?)[ ,](-?\d+(?:\.\d+)?)/g,
+    (_, a, b) => (((+a) - it.bb.x0) * bas + x + boite.x).toFixed(2) + ','
+               + (((+b) - it.bb.y0) * bas + y + boite.y).toFixed(2)
+  )).join(' ');
+  return { d: d2, echelle: bas };
+}
 function _encartCarte(cc, paths, rendre){
   const liste = _ENCART_CARTE[cc];
   if(!Array.isArray(liste) || !paths || !paths.zones) return '';
@@ -11371,6 +11413,18 @@ function _unEncart(cfg, paths, rendre){
   const bb = _bboxChemins(codes.map(z => paths.zones[z].path));
   if(!bb) return '';
   const c = cfg.cadre, marge = 2, bandeau = 20;
+  // Archipel trop etale pour un simple agrandissement : on repose ses iles cote a cote.
+  if(cfg.coteACote && codes.length === 1){
+    const boite = { x: c.x + marge, y: c.y + marge + bandeau,
+                    w: c.w - marge * 2, h: c.h - marge * 2 - bandeau };
+    const pose = _reposerIles(paths.zones[codes[0]].path, boite, 4);
+    if(pose) return '<g>'
+      + '<text x="' + (c.x + c.w / 2) + '" y="' + (c.y + 16) + '" text-anchor="middle"'
+        + ' font-size="20" font-weight="600" font-family="system-ui" fill="var(--ink-2, #47534f)">'
+        + esc(cfg.titre) + '</text>'
+      + rendre(codes[0], pose.echelle, pose.d)
+      + '</g>';
+  }
   const dispoW = c.w - marge * 2, dispoH = c.h - marge * 2 - bandeau;
   const k = Math.min(dispoW / (bb.x1 - bb.x0), dispoH / (bb.y1 - bb.y0));
   const tx = c.x + marge + (dispoW - (bb.x1 - bb.x0) * k) / 2 - bb.x0 * k;
@@ -11499,7 +11553,7 @@ async function _renderRarityMap(sci, cc){
   const fmtP = (x) => x >= 0.1 ? Math.round(x*100)+'%' : x >= 0.01 ? (x*100).toFixed(1)+'%' : (x*100).toFixed(2)+'%';
   // Rendu d'une zone, isole pour que l'encart montre exactement la meme chose que la
   // carte : memes couleurs, memes infobulles, meme clic.
-  const rendreZone = (z, echelle) => {
+  const rendreZone = (z, echelle, dRemplace) => {
     const arr = byZone[z] && byZone[z][key];
     // Vue "année" : MOYENNE des douze mois, pas le pic. Le pic classait en tete des zones
     // ou l'espece n'a ete vue qu'une fois un mois peu couvert - une seule observation
@@ -11530,7 +11584,7 @@ async function _renderRarityMap(sci, cc){
     // Cliquable seulement si le selecteur connait la zone : sans cela on pourrait
     // selectionner un code que le libelle du declencheur ne sait pas nommer, et la
     // fiche afficherait des donnees locales sous une etiquette "France entier".
-    return _pathZone(paths.zones[z].path, fill, titre, selection.has(z), selection.size > 0,
+    return _pathZone(dRemplace || paths.zones[z].path, fill, titre, selection.has(z), selection.size > 0,
       zonesSelectionnables.has(z) ? z : null, echelle);
   };
   const svgZones = _ordonnerSelectionDevant(zones, selection).map(z => rendreZone(z, 1)).join('')
