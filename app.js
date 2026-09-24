@@ -11332,9 +11332,15 @@ function _ordonnerSelectionDevant(zones, selection){
 // couronne parisienne tient dans 32 unites de carte sur 1000 : a 320 px de large, Paris
 // fait 3 px de cote. On la reprend agrandie dans un encart pose sur un coin vide, comme
 // le font les cartes administratives. Le cadre est en coordonnees du viewBox du pays.
+// Un pays peut en avoir plusieurs : le Portugal grossit separement ses deux archipels,
+// qui n ont ni la meme forme ni le meme coin libre. Les Acores s etalent sur 600 km d ocean,
+// leur agrandissement reste donc modeste - x1,6, de 8 a 14 px pour la plus grande ile -
+// la ou Madere, ramassee, passe a x3,1 et 21 px.
 const _ENCART_CARTE = {
-  FR: { titre: 'Petite couronne', cadre: { x:820, y:4, w:176, h:164 },
-        codes: ['FR-IDF-75C', 'FR-IDF-92', 'FR-IDF-93', 'FR-IDF-94'] },
+  FR: [{ titre: 'Petite couronne', cadre: { x:820, y:4, w:176, h:164 },
+         codes: ['FR-IDF-75C', 'FR-IDF-92', 'FR-IDF-93', 'FR-IDF-94'] }],
+  PT: [{ titre: 'Açores', cadre: { x:625, y:400, w:365, h:240 }, codes: ['PT-20'] },
+       { titre: 'Madère', cadre: { x:15, y:395, w:255, h:490 }, codes: ['PT-30'] }],
 };
 // Boite englobante d'une liste de chemins SVG. Les cartes du projet n'emploient que des
 // commandes M et L en coordonnees absolues, donc lire les nombres deux a deux suffit.
@@ -11355,10 +11361,13 @@ function _bboxChemins(chemins){
 // appelante : l'encart herite ainsi exactement de ses couleurs, de ses infobulles et de
 // son clic, au lieu de reimplementer un rendu qui deriverait avec le temps.
 function _encartCarte(cc, paths, rendre){
-  const cfg = _ENCART_CARTE[cc];
-  if(!cfg || !paths || !paths.zones) return '';
+  const liste = _ENCART_CARTE[cc];
+  if(!Array.isArray(liste) || !paths || !paths.zones) return '';
+  return liste.map(cfg => _unEncart(cfg, paths, rendre)).join('');
+}
+function _unEncart(cfg, paths, rendre){
   const codes = cfg.codes.filter(z => paths.zones[z]);
-  if(codes.length < 2) return '';
+  if(!codes.length) return '';
   const bb = _bboxChemins(codes.map(z => paths.zones[z].path));
   if(!bb) return '';
   const c = cfg.cadre, marge = 2, bandeau = 20;
