@@ -11172,19 +11172,28 @@ function _ordonnerSelectionDevant(zones, selection){
 }
 // Rend une zone de carte. Quand une selection existe, les zones hors selection sont
 // attenuees et la selection recoit un contour sombre appuye.
-function _pathZone(d, fill, titre, estSelectionnee, selectionActive){
+// Applique une selection de zone a la fiche. Renseigne par le selecteur de zones, qui
+// detient le libelle du declencheur et la liste a mettre a jour ; la carte l'appelle
+// plutot que de reimplementer le meme enchainement de redessins de son cote.
+let _appliquerZoneFiche = null;
+// `code` rend la zone cliquable : la carte devient un selecteur, au lieu d'obliger a
+// retrouver dans une liste deroulante le departement qu'on vient de pointer du doigt.
+// Les cartes qui ne selectionnent rien (statut exotique) l'omettent et restent inertes.
+function _pathZone(d, fill, titre, estSelectionnee, selectionActive, code){
   const attenuee = selectionActive && !estSelectionnee;
   const stroke = estSelectionnee ? 'var(--ink, #1a1a1a)' : 'var(--surface, #fff)';
   const largeur = estSelectionnee ? 2 : 0.5;
   const opacite = attenuee ? ' opacity="0.35"' : '';
+  const cliquable = code ? ' data-zone="' + String(code).replace(/"/g, '&quot;') + '" style="cursor:pointer"' : '';
   return `<path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="${largeur}"` +
-         ` stroke-linejoin="round"${opacite}><title>${titre.replace(/</g,'&lt;')}</title></path>`;
+         ` stroke-linejoin="round"${opacite}${cliquable}><title>${titre.replace(/</g,'&lt;')}</title></path>`;
 }
 const _MOIS_COURTS = ['janv','févr','mars','avr','mai','juin','juil','août','sept','oct','nov','déc'];
-// Valeur annuelle d'une zone : le DEUXIEME meilleur mois, pas le pic ni la moyenne.
-//
+// Valeur annuelle d'une zone : la moyenne de ses 12 mois ponderee par l'effort LOCAL,
+// c'est-a-dire la part de ses listes qui citent l'espece. Ni le pic, ni le 2e meilleur
+// mois, deux mesures essayees avant celle-ci.
 // Le pic seul est inexploitable a l'echelle d'un departement : avec peu de listes un mois
-// creux, une seule observation affiche 100% et classait 212 zones francaises comme
+// creux, une seule observation affiche 100 % et classait 212 zones francaises comme
 // "communes" alors qu'elles ne reposent que sur un mois.
 //
 // La moyenne corrige ce bruit mais decale l'echelle de +1,55 cran vers "plus rare", parce
@@ -11248,6 +11257,10 @@ async function _renderRarityMap(sci, cc){
   }
   const byZone = (typeof REAL_FREQ_MONTHLY_BY_REGION_MULTI === 'object')
     ? REAL_FREQ_MONTHLY_BY_REGION_MULTI[cc] : null;
+  // Codes que le selecteur de zones sait nommer et surligner ; la carte n'autorise le
+  // clic que sur ceux-la.
+  const zonesSelectionnables = new Set(
+    (typeof zonesFichePourPays === 'function' ? zonesFichePourPays(cc) : []).map(r => r.code));
   const paths = byZone ? await _loadExoticMapPaths(cc) : null;
   if(!byZone || !paths){ container.innerHTML = ''; return; }
   // Une espece jamais vue nulle part dans l'annee n'a pas de carte a montrer.
@@ -11291,7 +11304,11 @@ async function _renderRarityMap(sci, cc){
           ` · présente ${nbMois} mois sur 12`
         : `${nom} — ${lbl} (${tier}) · ${fmtP(v)} des listes`;
     }
-    return _pathZone(paths.zones[z].path, fill, titre, selection.has(z), selection.size > 0);
+    // Cliquable seulement si le selecteur connait la zone : sans cela on pourrait
+    // selectionner un code que le libelle du declencheur ne sait pas nommer, et la
+    // fiche afficherait des donnees locales sous une etiquette "France entier".
+    return _pathZone(paths.zones[z].path, fill, titre, selection.has(z), selection.size > 0,
+      zonesSelectionnables.has(z) ? z : null);
   }).join('');
   const chip = (val, label, actif) =>
     `<button type="button" data-mois="${val}" style="border:1px solid ${actif ? 'var(--accent)' : 'var(--line-2)'}; background:${actif ? 'var(--accent)' : 'var(--surface)'}; color:${actif ? '#fff' : 'var(--ink-2)'}; font:${actif ? '700' : '400'} 10.5px system-ui; padding:2px 6px; border-radius:6px; cursor:pointer;">${label}</button>`;
@@ -11325,6 +11342,18 @@ async function _renderRarityMap(sci, cc){
     </details>`;
   const det2 = document.getElementById('smRarityMapDetails');
   if(det2) det2.ontoggle = () => { window._smRarityMapOpen = det2.open; };
+  // Cliquer une zone la selectionne : c'est le geste naturel une fois qu'on l'a reperee
+  // sur la carte. Recliquer la zone deja choisie revient au national, pour pouvoir
+  // ressortir sans aller chercher la ligne "France entier" dans la liste.
+  const svgCarte = document.querySelector('#smRarityMap svg');
+  if(svgCarte && typeof _appliquerZoneFiche === 'function'){
+    svgCarte.onclick = (e) => {
+      const p = e.target.closest('[data-zone]');
+      if(!p) return;
+      const z = p.dataset.zone;
+      _appliquerZoneFiche(z === _speciesRegion ? '' : z);
+    };
+  }
   const barre = document.getElementById('smRarityMapMois');
   if(barre){
     barre.onclick = (e) => {
@@ -11423,7 +11452,7 @@ function _renderSpeciesRarityCard(key){
           (s.moisPic >= 0 ? ` · jusqu'à ${fmt(s.pic)} en ${_MOIS_COURTS[s.moisPic]}` : '') +
           ` · présente ${s.nbMois} mois sur 12`;
       return `<div class="reg-picker-item${absent?' absent':''}${s.code===_speciesRegion?' on':''}" data-code="${esc(s.code)}" title="${esc(titre)}">
-        <span class="reg-picker-dot" style="background:${col};"></span>
+        <span class="reg-picker-tier" style="background:${absent ? 'var(--line-2)' : col};">${absent ? '–' : tier}</span>
         <span>${esc(s.name)}</span>
         <div class="reg-picker-bar"><div style="width:${barW}%; background:${col};"></div></div>
         <span class="reg-picker-val">${esc(val)}</span>
@@ -11778,15 +11807,17 @@ function _renderSpeciesRarityCard(key){
     // Pas de handler molette ici : le redirecteur du modal laisse desormais passer
     // .reg-picker-panel, et le CSS overscroll-behavior:contain empeche le scroll de
     // se propager a la fiche en butee. Le defilement natif conserve son inertie.
-    panel.addEventListener('click', e => {
-      const it = e.target.closest('.reg-picker-item');
-      if(!it) return;
-      _speciesRegion = it.dataset.code || '';
+    // Selectionner une zone : depuis la liste, ou depuis la carte via _appliquerZoneFiche.
+    const appliquer = (code) => {
+      _speciesRegion = code || '';
       try{ localStorage.setItem('mb-species-region', _speciesRegion); }catch(_){}
       const cc2 = $('#smRarityCountrySel')?.dataset.cc || 'FR';
       if(lbl) lbl.textContent = getTriggerLabel(cc2);
       panel.querySelectorAll('.reg-picker-item.on').forEach(x => x.classList.remove('on'));
-      it.classList.add('on');
+      // La ligne correspondante peut ne pas exister si la liste n'a jamais ete ouverte :
+      // la selection reste valide, seul le surlignage attend le prochain rendu.
+      const ligne = panel.querySelector('.reg-picker-item[data-code="' + (_speciesRegion || '') + '"]');
+      if(ligne) ligne.classList.add('on');
       panel.hidden = true;
       loadRegionalDataFor(cc2).then(() => {
         _renderSpeciesFreqChart(k, cc2);
@@ -11794,6 +11825,12 @@ function _renderSpeciesRarityCard(key){
         if(typeof _renderRarityMap === 'function') _renderRarityMap(k, cc2);
         if(typeof _renderExoticMap === 'function') _renderExoticMap(k, cc2);
       });
+    };
+    _appliquerZoneFiche = appliquer;
+    panel.addEventListener('click', e => {
+      const it = e.target.closest('.reg-picker-item');
+      if(!it) return;
+      appliquer(it.dataset.code || '');
     });
     // Click outside : ferme le panel
     document.addEventListener('click', e => {

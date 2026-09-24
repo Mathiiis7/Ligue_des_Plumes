@@ -465,14 +465,18 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .reg-picker-panel[hidden] { display:none; }
   /* Colonne des valeurs à largeur FIXE : en auto, « 0.62% » était plus large que « 3.4% »,
      ce qui décalait la barre d'une ligne à l'autre. Les barres sont ainsi toutes alignées. */
-  .reg-picker-item { display:grid; grid-template-columns:10px 1fr 60px 44px; gap:8px; align-items:center; padding:6px 10px; cursor:pointer; border-radius:6px; font-size:12px; color:var(--ink); }
+  .reg-picker-item { display:grid; grid-template-columns:22px 1fr 60px 44px; gap:8px; align-items:center; padding:6px 10px; cursor:pointer; border-radius:6px; font-size:12px; color:var(--ink); }
   .reg-picker-item:hover { background:var(--surface-2); }
   /* Sélection courante : teinte d'accent plutôt que gris. Le gris se confondait avec un
      état désactivé, alors que cette ligne est justement celle qu'on regarde. */
   .reg-picker-item.on { background:color-mix(in srgb, var(--accent) 14%, var(--surface)); font-weight:700; box-shadow:inset 3px 0 0 var(--accent); }
   .reg-picker-item.absent { opacity:.5; }
   .reg-picker-item.national { grid-template-columns:1fr; padding:8px 10px; border-bottom:1px solid var(--line-2); margin-bottom:4px; font-weight:600; }
-  .reg-picker-dot { width:10px; height:10px; border-radius:50%; }
+  /* Le palier, ecrit, plutot qu'une pastille de couleur a decoder : c'est le meme
+     rectangle que partout ailleurs dans l'appli. La couleur reste, elle devient le fond. */
+  .reg-picker-tier { min-width:22px; padding:1px 0; border-radius:5px; color:#fff; font-weight:800;
+    font-size:11px; line-height:1.45; text-align:center; font-variant-numeric:tabular-nums; }
+  .reg-picker-item.absent .reg-picker-tier { color:var(--ink-3); }
   .reg-picker-bar { height:5px; background:var(--line-2); border-radius:3px; overflow:hidden; }
   .reg-picker-bar > div { height:100%; border-radius:3px; }
   .reg-picker-val { font-size:10.5px; color:var(--ink-3); text-align:right; white-space:nowrap; }
