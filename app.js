@@ -470,6 +470,8 @@ const COUNTRIES_REG = {
     monthly: () => (typeof REAL_FREQ_MONTHLY_ME !== 'undefined') ? REAL_FREQ_MONTHLY_ME : {},
     st: () => (typeof REAL_ABUNDANCE_ST_ME !== 'undefined') ? REAL_ABUNDANCE_ST_ME : {},
     monthlyByRegion: () => null,   // ME : pas de subdivisions
+    // Seul pays sans freq_by_region.json : la fiche ne peut pas mesurer ses zones.
+    zonesMesurables: false,
     hasBarchart: true,
   },
   ES: {
@@ -3655,7 +3657,13 @@ const FR_DEPARTEMENTS = [
   { code:'FR-IDF-78', name:"Yvelines" },
 ];
 // Granularite du selecteur de la fiche espece pour un pays donne.
+// Zones que la fiche sait mesurer. Sans bar chart regional, elle ne le sait pas : elle
+// afficherait toutes les zones du pays en "absente", quelle que soit l espece, parce que
+// buildRegPanel lit monthlyByRegion() et rien d autre. Le Montenegro est dans ce cas - eBird
+// ne publie pas de bar chart par opstina, ses trois regions sont des decoupages MONSTAT que
+// nous avons definis nous-memes. Il vaut mieux ne pas proposer de selecteur du tout.
 function zonesFichePourPays(cc){
+  if(COUNTRIES_REG[cc] && COUNTRIES_REG[cc].zonesMesurables === false) return [];
   if(cc === 'FR') return FR_DEPARTEMENTS;
   return (typeof REGIONS_BY_COUNTRY === 'object' && REGIONS_BY_COUNTRY[cc]) || [];
 }
