@@ -15338,6 +15338,8 @@ function _pkdxRender(){
     const catLetter = vue.tier === 0 ? cat : (_isEstablishedExotic(cat) ? cat : '');
     const badgeText = catLetter || vue.tier;
     // Absente de la zone choisie : la case reste, en retrait. La masquer ferait croire que
+    // l'espece n'existe pas, alors qu'elle est seulement ailleurs.
+    return `<div class="pkdx-card${r.owned?'':' missing'}${vue.absente?' hors-zone':''}" data-sci="${esc(r.sci)}">
       <span class="pkdx-num">#${num}</span>
       ${r.saison ? `<span class="pkdx-saison" title="Espèce nettement saisonnière : son pic mensuel vaut au moins 3 fois sa moyenne annuelle. Viser le bon mois change tout.">◑</span>` : ''}
       <span class="pkdx-tier" style="background:${tierBg};" title="Palier ${vue.tier}${catLetter ? ' · '+catLetter : ''}${vue.absente ? ' · jamais notée ici' : ''}">${badgeText}</span>
