@@ -463,11 +463,14 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
      un panneau de 400px pourrait dépasser le bas du modal sur un écran court. */
   /* Colonne des valeurs à largeur FIXE : en auto, « 0.62% » était plus large que « 3.4% »,
      ce qui décalait la barre d'une ligne à l'autre. Les barres sont ainsi toutes alignées. */
-  .reg-picker-item { display:grid; grid-template-columns:26px 1fr 60px 44px; gap:8px; align-items:center; padding:6px 10px; cursor:pointer; border-radius:6px; font-size:12px; color:var(--ink); }
+  /* Meme ordre que les lignes du selecteur de pays : le nom d'abord, la pastille de palier
+     tout a droite. La valeur chiffree vient se poser juste avant sa barre, qu'elle decrit. */
+  .reg-picker-item { display:grid; grid-template-columns:1fr 44px 60px 26px; gap:8px; align-items:center; padding:6px 10px; cursor:pointer; border-radius:6px; font-size:12px; color:var(--ink); }
   .reg-picker-item:hover { background:var(--surface-2); }
-  /* Sélection courante : teinte d'accent plutôt que gris. Le gris se confondait avec un
-     état désactivé, alors que cette ligne est justement celle qu'on regarde. */
-  .reg-picker-item.on { background:color-mix(in srgb, var(--accent) 14%, var(--surface)); font-weight:700; box-shadow:inset 3px 0 0 var(--accent); }
+  /* Selection courante : la meme que celle d'un pays (voir .cp-item.on, plus bas, dont
+     cette regle partage la declaration). Les deux listes vivent dans le meme modal, une
+     ligne choisie doit s'y voir pareil. */
+  .reg-picker-item.on { background:var(--surface-2); font-weight:700; }
   .reg-picker-item.absent { opacity:.5; }
   .reg-picker-item.national { grid-template-columns:1fr; padding:8px 10px; border-bottom:1px solid var(--line-2); margin-bottom:4px; font-weight:600; }
   /* Le palier, ecrit, plutot qu'une pastille de couleur a decoder : c'est le meme

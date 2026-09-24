@@ -11278,16 +11278,15 @@ function _encartCarte(cc, paths, rendre){
   if(codes.length < 2) return '';
   const bb = _bboxChemins(codes.map(z => paths.zones[z].path));
   if(!bb) return '';
-  const c = cfg.cadre, marge = 6, bandeau = 14;
+  const c = cfg.cadre, marge = 2, bandeau = 20;
   const dispoW = c.w - marge * 2, dispoH = c.h - marge * 2 - bandeau;
   const k = Math.min(dispoW / (bb.x1 - bb.x0), dispoH / (bb.y1 - bb.y0));
   const tx = c.x + marge + (dispoW - (bb.x1 - bb.x0) * k) / 2 - bb.x0 * k;
   const ty = c.y + marge + bandeau + (dispoH - (bb.y1 - bb.y0) * k) / 2 - bb.y0 * k;
   return '<g>'
-    + '<rect x="' + c.x + '" y="' + c.y + '" width="' + c.w + '" height="' + c.h + '" rx="8"'
-      + ' fill="var(--surface, #fff)" stroke="var(--line-2, #ccc)" stroke-width="1.5"/>'
-    + '<text x="' + (c.x + c.w / 2) + '" y="' + (c.y + 13) + '" text-anchor="middle"'
-      + ' font-size="11.5" font-family="system-ui" fill="var(--ink-3, #7c8783)">' + esc(cfg.titre) + '</text>'
+    + '<text x="' + (c.x + c.w / 2) + '" y="' + (c.y + 16) + '" text-anchor="middle"'
+      + ' font-size="20" font-weight="600" font-family="system-ui" fill="var(--ink-2, #47534f)">'
+      + esc(cfg.titre) + '</text>'
     + '<g transform="translate(' + tx.toFixed(2) + ',' + ty.toFixed(2) + ') scale(' + k.toFixed(3) + ')">'
       + codes.map(z => rendre(z, k)).join('')
     + '</g></g>';
@@ -11597,8 +11596,9 @@ function _renderSpeciesRarityCard(key){
     });
     scored.sort((a, b) => b.score - a.score);
     const nationalLbl = (COUNTRIES_REG[cc] && COUNTRIES_REG[cc].name) || cc;
-    const flag = FLAG_EMOJI[cc] || '';
-    const nationalRow = `<div class="reg-picker-item national${_speciesRegion===''?' on':''}" data-code="">${flag} ${esc(nationalLbl)} entier</div>`;
+    // Sans drapeau : l'emoji tombe en lettres "FR" sur Windows, et le pays est deja nomme
+    // juste a cote, dans l'onglet voisin et sur le bouton qui a ouvert le selecteur.
+    const nationalRow = `<div class="reg-picker-item national${_speciesRegion===''?' on':''}" data-code="">${esc(nationalLbl)} entier</div>`;
     const items = scored.map(s => {
       // La valeur annuelle etant une moyenne ponderee, une zone ou l'espece a ete vue ne
       // serait-ce qu'un mois a un score non nul : le cas special qui les rattrapait n'a
@@ -11622,10 +11622,10 @@ function _renderSpeciesRarityCard(key){
           (s.moisPic >= 0 ? ` · jusqu'à ${fmt(s.pic)} en ${_MOIS_COURTS[s.moisPic]}` : '') +
           ` · présente ${s.nbMois} mois sur 12`;
       return `<div class="reg-picker-item${absent?' absent':''}${s.code===_speciesRegion?' on':''}" data-code="${esc(s.code)}" title="${esc(titre)}">
-        ${tierChip(absent ? '–' : tier, absent ? 'var(--line-2)' : col)}
         <span>${esc(s.name)}</span>
-        <div class="reg-picker-bar"><div style="width:${barW}%; background:${col};"></div></div>
         <span class="reg-picker-val">${esc(val)}</span>
+        <div class="reg-picker-bar"><div style="width:${barW}%; background:${col};"></div></div>
+        ${tierChip(absent ? '–' : tier, absent ? 'var(--line-2)' : col)}
       </div>`;
     }).join('');
     return nationalRow + items;
