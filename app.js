@@ -11902,7 +11902,7 @@ function _renderSpeciesRarityCard(key){
     // Pill : affiche la lettre categorie (N/P) au lieu du chiffre du tier pour les
     // exotiques etablis N/P (aligne avec le comportement des cartes Birdydex). X et C
     // avec tier > 0 restent numeriques. Tier 0 exotique : lettre cat (N/P/X/C).
-    const useCatLetter = isExo && _isEstablishedExotic(cat) && w > 0;
+    const useCatLetter = isExo && (cat === 'N' || cat === 'P') && w > 0;
     const pillTxt = absenteZone ? '–' : ((w === 0 && isExo) ? (cat || 'X') : (useCatLetter ? cat : w));
     // Couleur de fond : par defaut, couleur du tier (rareté). Pour l'exotique tier 0
     // (X/C echappe non-etabli), on force gris neutre pour signifier "hors barème".
@@ -15317,7 +15317,10 @@ function _pkdxRender(){
   const famF = _pkdxFilters.family || '';
   const habF = _pkdxFilters.habitat || '';
   const ownedF = _pkdxFilters.owned || '';
-  const rows = [];
+  // let, pas const : le filtre par zone et le tri par rarete reassignent. Ils levaient une
+  // TypeError qui tuait _pkdxRender au milieu - la grille ne bougeait plus, ni au changement
+  // de zone ni au changement de tri.
+  let rows = [];
   for(const r of _pkdxAllSorted){
     const { sci, nm, fam, tier, exo, cat, accidentelle, saison } = r;
     // Accidentelle non cochee : hors catalogue, on ne l affiche pas. Cochee, elle reste —
@@ -15440,7 +15443,11 @@ function _pkdxRender(){
     // rareté pourrait tromper (ex Cygne noir tier 7 mais N). X et C gardent le tier
     // numerique (deja evidemment rare/echappe).
     const cat = vue.cat || exoticCategoryInCountry(r.sci, country) || _exoticCategory(r.sci) || '';
-    const catLetter = vue.tier === 0 ? cat : (_isEstablishedExotic(cat) ? cat : '');
+    // La lettre s affiche pour les exotiques dont la population tient : N naturalisee et
+    // P provisoire. Le test ne portait que sur N, alors que le commentaire au-dessus annonce
+    // les deux - le Canard carolin, P au Royaume-Uni, ressortait "10" comme une sauvage ultra
+    // rare, quand la carte le donnait exotique dans deux regions.
+    const catLetter = vue.tier === 0 ? cat : ((cat === 'N' || cat === 'P') ? cat : '');
     const badgeText = catLetter || vue.tier;
     // Absente de la zone choisie : la case reste, en retrait. La masquer ferait croire que
     // l'espece n'existe pas, alors qu'elle est seulement ailleurs.
