@@ -752,7 +752,9 @@ function _openCountryPicker(currentCode, opts = {}){
       return { score: 0, isSt: false };
     };
     const fmtST = v => v >= 10 ? Math.round(v)+' ind/h' : v >= 1 ? v.toFixed(1)+' ind/h' : v >= 0.01 ? v.toFixed(2)+' ind/h' : v >= 0.001 ? v.toFixed(3)+' ind/h' : v > 0 ? '<0.001 ind/h' : '-';
-    const fmtPct = v => { if(!(v>0)) return '-'; const p = v*100; if(p >= 10) return Math.round(p)+'%'; if(p >= 1) return p.toFixed(1)+'%'; if(p >= 0.1) return p.toFixed(2)+'%'; return '<0.1%'; };
+    // Une decimale au maximum, comme dans la liste des zones : « 0.62% » est plus large que
+    // « 3.4% » et decalerait les barres d'une ligne a l'autre.
+    const fmtPct = v => { if(!(v>0)) return '-'; const p = v*100; if(p >= 10) return Math.round(p)+'%'; if(p >= 0.1) return p.toFixed(1)+'%'; return '<0.1%'; };
     // Grouper par continent (avec optionnel score espece)
     const grouped = {};
     for(const cc of allCodes){
@@ -826,6 +828,7 @@ function _openCountryPicker(currentCode, opts = {}){
           const flag = flagImg(cc);
           let meta = '';
           let dotHtml = '';
+          let titreLigne = '';
           if(focusSci){
             // Utilise le tier de rareté (merge S&T + bar chart via rarityForCountry) plutot
             // que la valeur brute (evite melange % vs ind/h). Affiche tier + label + couleur.
@@ -864,9 +867,26 @@ function _openCountryPicker(currentCode, opts = {}){
             const chipText = chipCat || tier;
             // Nouveau format : label texte AVANT le chip numero pour que les chips
             // soient tous alignes a droite (ex: "Rare [7]"). Absent = pas de chip.
+            // Meme lecture que les lignes de zone : la valeur annuelle, sa barre, puis le
+            // palier - et la meme fonction pour les fabriquer, pour qu'elles ne divergent pas.
+            // La valeur est celle qui fonde le palier national : la part des listes du pays qui
+            // citent l'espece, ponderee par l'effort mensuel. Pas le pic, qui dirait autre chose
+            // que la couleur posee a cote.
+            //
+            // Le libelle ("Omnipresent", "Introduit etabli") passe en infobulle : il repetait le
+            // plus souvent ce que le palier dit deja, et il empechait d'aligner les deux listes
+            // du meme selecteur.
+            const monCC = reg.monthly()[focusSci];
+            const vAn = Array.isArray(monCC) ? _valeurAnnuelleZone(monCC, cc) : 0;
+            const barW = vAn > 0 ? Math.min(100, Math.max(3, Math.round(vAn * 100))) : 0;
+            titreLigne = (reg.name || cc) + ' — ' + lbl
+              + (vAn > 0 ? ' · ' + fmtPct(vAn) + ' des listes sur l\'année' : '');
             meta = absent
-              ? '<span class="cp-item-meta">absente</span>'
-              : `<span class="cp-item-meta">${esc(lbl)}</span><span class="rar-chip on" style="background:${col};" title="tier ${tier}">${chipText}</span>`;
+              ? '<span class="reg-picker-val">absente</span><div class="reg-picker-bar"></div>'
+                + tierChip('–', 'var(--line-2)')
+              : '<span class="reg-picker-val">' + esc(fmtPct(vAn)) + '</span>'
+                + '<div class="reg-picker-bar"><div style="width:' + barW + '%; background:' + col + ';"></div></div>'
+                + tierChip(chipText, col, { title: 'palier ' + tier });
           } else {
             // Nb d'especes calibrees pour ce pays = le bar chart, qui est la source de la
             // rarete dans les 16 pays. On primait le S&T en le croyant plus riche : il ne
@@ -881,7 +901,7 @@ function _openCountryPicker(currentCode, opts = {}){
            // ET pas exotique local) au lieu de it.score seul. Sinon FR avec tier 7 via
           // S&T Cornell mais aucune data monthly apparaît grisée à tort.
           const absentCls = focusSci && typeof absent !== 'undefined' && absent ? ' absent' : '';
-          html += `<div class="cp-item${cc === ccCourant ? ' on' : ''}${absentCls}" data-cc="${esc(cc)}">
+          html += `<div class="cp-item${cc === ccCourant ? ' on' : ''}${absentCls}" data-cc="${esc(cc)}"${titreLigne ? ` title="${esc(titreLigne)}"` : ''}>
             <span class="cp-item-flag">${flag}</span>
             <span class="cp-item-name">${esc(reg.name || cc)}</span>
             ${meta}
