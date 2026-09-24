@@ -1781,10 +1781,6 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
     text-transform:uppercase; letter-spacing:.4px; }
   .pkdx-groupe:first-child { margin-top:0; }
   .pkdx-groupe-n { font-weight:600; color:var(--ink-3); letter-spacing:0; text-transform:none; }
-  /* Absente de la zone choisie : la case reste, en retrait. La masquer ferait croire que
-     l espece n existe pas, alors qu elle est seulement ailleurs. */
-  .pkdx-card.hors-zone { opacity:.42; }
-  .pkdx-card.hors-zone .pkdx-tier { filter:grayscale(1); }
   .pkdx-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:10px; margin-top:6px; }
   .pkdx-card {
     /* Virtualisation native : le navigateur skip completement le rendu (layout, paint,

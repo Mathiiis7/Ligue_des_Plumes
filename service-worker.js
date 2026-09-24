@@ -3,7 +3,7 @@
 //   puis rafraichit en background. Prochain reload = nouvelle version.
 // - Requetes cross-origin (Firestore, iNaturalist, xeno-canto, Wikipedia, etc.) : reseau seul.
 // - Bump CACHE_VERSION quand on veut invalider volontairement.
-const CACHE_VERSION = 'v480-2026-09-24-palier-de-la-zone-sur-la-fiche';
+const CACHE_VERSION = 'v481-2026-09-24-grille-limitee-a-la-zone';
 const CACHE_NAME = 'lmb-' + CACHE_VERSION;
 
 self.addEventListener('install', (e) => {

@@ -15336,6 +15336,10 @@ function _pkdxRender(){
     }
   }
   const vues = new Map(rows.map(r => [r.sci, _pkdxVue(r, country, zone)]));
+  // Zone choisie : les especes qu elle n a jamais notees sortent de la grille. Les garder
+  // en grise avait ete envisage - on voyait qu elles existaient ailleurs - mais la grille
+  // d un departement doit montrer ce qu on peut y cocher, pas le catalogue national.
+  if(zone) rows = rows.filter(r => !(vues.get(r.sci) || {}).absente);
   const tri = _pkdxFilters.sort || 'famille';
   if(tri === 'rarete'){
     // Sur la frequence precise, pas sur le palier : celui-ci met dans le meme sac tout un
@@ -15370,7 +15374,7 @@ function _pkdxRender(){
     const badgeText = catLetter || vue.tier;
     // Absente de la zone choisie : la case reste, en retrait. La masquer ferait croire que
     // l'espece n'existe pas, alors qu'elle est seulement ailleurs.
-    return `<div class="pkdx-card${r.owned?'':' missing'}${vue.absente?' hors-zone':''}" data-sci="${esc(r.sci)}">
+    return `<div class="pkdx-card${r.owned?'':' missing'}" data-sci="${esc(r.sci)}">
       <span class="pkdx-num">#${num}</span>
       ${r.saison ? `<span class="pkdx-saison" title="Espèce nettement saisonnière : son pic mensuel vaut au moins 3 fois sa moyenne annuelle. Viser le bon mois change tout.">◑</span>` : ''}
       <span class="pkdx-tier" style="background:${tierBg};" title="Palier ${vue.tier}${catLetter ? ' · '+catLetter : ''}${vue.absente ? ' · jamais notée ici' : ''}">${badgeText}</span>
