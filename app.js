@@ -15138,11 +15138,18 @@ function _pkdxRender(){
       const cat = exo ? (exoticCategoryInCountry(sci, country) || _exoticCategory(sci) || '') : '';
       all.push({ sci, nm, fam, tier, exo, cat, accidentelle, saison });
     }
-    // Tri : par ordre taxonomique IOC/eBird (FAMILY_ORDER), puis dans chaque famille du
-    // moins rare au plus rare (tier ascendant, 1 = tres commun). Nom en tie-break stable.
-    // Familles absentes de FAMILY_ORDER -> 9999 (fin).
+    // Tri : par ordre taxonomique IOC/eBird (FAMILY_ORDER), puis les exotiques rejetees en
+    // fin de famille, puis du moins rare au plus rare (tier ascendant, 1 = tres commun).
+    // Nom en tie-break stable. Familles absentes de FAMILY_ORDER -> 9999 (fin).
+    //
+    // Les exotiques ouvraient leur famille : celles des parcs et des echappees portent le
+    // tier 0, qui passait avant le 1. Une famille commencait donc par ses oiseaux de voliere
+    // au lieu de ses oiseaux sauvages les plus communs. Le critere est le statut exotique
+    // dans le pays affiche, pas le tier : une naturalisee gardee au milieu du classement par
+    // sa raretie aurait laisse le bloc a moitie fait.
     all.sort((a,b) =>
       ((FAMILY_ORDER[a.fam] ?? 9999) - (FAMILY_ORDER[b.fam] ?? 9999))
+      || ((a.exo ? 1 : 0) - (b.exo ? 1 : 0))
       || a.tier - b.tier
       || a.nm.localeCompare(b.nm, 'fr')
     );
