@@ -11763,7 +11763,22 @@ function _renderSpeciesRarityCard(key){
     // montrer, donc les appeler ici suffit a nettoyer.
     if(typeof _renderRarityMap === 'function') _renderRarityMap(k, cc);
     if(typeof _renderExoticMap === 'function') _renderExoticMap(k, cc);
-    const w = rarityForCountry(k, cc);
+    // Palier lu a l echelle choisie. Avec une zone selectionnee, c est SA rarete : le Canard
+    // souchet est "Assez commun" au Portugal et deux crans plus rare aux Acores, et afficher
+    // le palier national sous une zone selectionnee contredisait la carte juste en dessous.
+    // Zone sans donnee pour cette espece : on garde le national plutot que d annoncer 10.
+    let w = rarityForCountry(k, cc);
+    const zoneLue = (_speciesRegion && typeof zonesFichePourPays === 'function'
+      && zonesFichePourPays(cc).some(r => r.code === _speciesRegion)) ? _speciesRegion : '';
+    if(zoneLue){
+      const byZone = (typeof REAL_FREQ_MONTHLY_BY_REGION_MULTI === 'object')
+        ? REAL_FREQ_MONTHLY_BY_REGION_MULTI[cc] : null;
+      const serie = byZone && byZone[zoneLue] ? byZone[zoneLue][k] : null;
+      if(Array.isArray(serie)){
+        const v = _valeurAnnuelleZone(serie, cc, zoneLue);
+        if(v > 0) w = annualFreqToTier(v);
+      }
+    }
     // isExo est PER-PAYS via isExoticInCountry (le Pelican gris est exotique X en ME
     // via EXOTIQUES_EBIRD_PAR_PAYS mais pas dans le dict EXOTIQUES_CONNUES_FR global centre FR).
     const isExo = isExoticInCountry(k, cc);
