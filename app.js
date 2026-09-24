@@ -1282,42 +1282,11 @@ const HABITAT_TO_SCIS = (() => {
 // le dernier usage du S&T pour trancher "presente en France", via les entrees a abondance
 // nulle qui ecartaient les vagrants.
 // Especes exotiques "cage/voliere echappee isolee" : perroquets d'appartement,
-// canaris, calopsittes, aras, cacatoes, loriquets, inseparables, diamants...
-// Techniquement observables si l'oiseau du voisin s'echappe, mais aucun interet
-// pour un birder de terrain. On les filtre partout dans l'app (Birdydex, Classement,
-// Trophees Saint-Graal, suggestions cartes, autocomplete, "manquantes")
-// pour ne garder que les exotiques etablis, en cours d'etablissement, ou observables
-// dans les parcs semi-libres.
-const EXOTIQUES_MASQUEES = new Set([
-  'ara ararauna','ara militaris',
-  'cacatua alba','cacatua galerita','eolophus roseicapilla',
-  'trichoglossus haematodus','trichoglossus moluccanus',
-  'aratinga solstitialis','psittacara erythrogenys','psittacara mitratus','thectocercus acuticaudatus',
-  'agapornis fischeri','agapornis nigrigenis','agapornis personatus','agapornis roseicollis',
-  'platycercus eximius','alisterus scapularis','melopsittacus undulatus','psittacula cyanocephala',
-  'nymphicus hollandicus','poicephalus senegalus','psittacus erithacus',
-  'taeniopygia guttata','serinus canaria','estrilda melpoda',
-]);
-// Oiseaux de cage, masques partout... sauf la ou eBird leur reconnait une population
-// etablie. La liste etait globale, ce qui la rendait fausse des qu on sortait de France :
-// la Conure a tete bleue y est une echappee (categorie X), mais le Portugal la classe
-// naturalisee (N) et son bar chart la trouve sur 0,5 a 0,7 % des listes tous les mois de
-// l annee. Elle etait pourtant invisible dans le fil, le birdydex et le reste.
-//
-// Sept des 25 especes masquees sont dans ce cas quelque part : Conure a tete bleue
-// (ES, PT), Conure de Guayaquil et Conure mitree (ES, US), Inseparable rosegorge (US),
-// Perruche omnicolore (NZ), Loriquet a tete bleue (AU), Astrild a joues orange (ES).
-//
-// Sans pays, le comportement d avant : masquee. C est le bon defaut pour les vues
-// centrees sur la France (classement, trophees, suggestions).
-function isHiddenSpecies(sci, cc){
-  const k = (sci||'').trim().toLowerCase();
-  if(!EXOTIQUES_MASQUEES.has(k)) return false;
-  if(!cc) return true;
-  const cat = (typeof EXOTIQUES_EBIRD_PAR_PAYS === 'object' && EXOTIQUES_EBIRD_PAR_PAYS[cc])
-    ? EXOTIQUES_EBIRD_PAR_PAYS[cc][k] : null;
-  return !_isEstablishedExotic(cat);
-}
+// Les oiseaux de cage echappes (aras, cacatoes, inseparables, calopsittes, serins...)
+// etaient filtres partout par une liste EXOTIQUES_MASQUEES, retiree le 2026-09-24. Ils
+// apparaissent desormais comme les autres exotiques, au palier que leur donne leur
+// frequence : en France, 19 des 24 concernees sont au palier 10 et les 5 autres au 9, la
+// plus notee etant la Calopsitte elegante sur 0,046 % des listes.
 // EXOTIQUES_PARCS (liste 'captif worldwide') supprimee 2026-09-22 : rendue redondante
 // par les autres filtres. Le pipeline actuel exclut deja les especes park-only en FR :
 //   - si pas dans EXOTIQUES_EBIRD_PAR_PAYS.FR ET pas dans bar chart FR -> line 14448 continue
@@ -1328,7 +1297,6 @@ function isHiddenSpecies(sci, cc){
 function isParkOnlyExotic(_sci){ return false; }
 function isExotic(sci){
   const k = (sci||'').trim().toLowerCase();
-  if(EXOTIQUES_MASQUEES.has(k)) return false;   // masquees partout
   // Depuis 2026-09-21 : source unique EXOTIQUES_EBIRD_PAR_PAYS.FR (scraping HTML eBird)
   // au lieu du fallback curatorial EXOTIQUES_CONNUES_FR (retire). Cover 116 vs 82 especes.
   return !!(EXOTIQUES_EBIRD_PAR_PAYS.FR && EXOTIQUES_EBIRD_PAR_PAYS.FR[k]);
@@ -1887,9 +1855,9 @@ function realFreq(sci){ if(isExotic(sci)) return 1; const f=REAL_FREQ[(sci||'').
 // exotiques X (echappes isoles) et C (domestiques) : eux ne comptent pas pour le graal.
 const MEGA_CATALOG = (function(){
   const seen = new Map();   // sci -> weight
-  for(const sci in REAL_RARITY){ if(_isExoticNotCounted(sci) || isHiddenSpecies(sci)) continue; const w = rarityForFilter(sci); if(w >= 8) seen.set(sci, w); }
+  for(const sci in REAL_RARITY){ if(_isExoticNotCounted(sci)) continue; const w = rarityForFilter(sci); if(w >= 8) seen.set(sci, w); }
   if(typeof REAL_RARITY_EXO_GBIF === 'object'){
-    for(const sci in REAL_RARITY_EXO_GBIF){ if(_isExoticNotCounted(sci) || isHiddenSpecies(sci)) continue; const w = rarityForFilter(sci); if(w >= 8 && !seen.has(sci)) seen.set(sci, w); }
+    for(const sci in REAL_RARITY_EXO_GBIF){ if(_isExoticNotCounted(sci)) continue; const w = rarityForFilter(sci); if(w >= 8 && !seen.has(sci)) seen.set(sci, w); }
   }
   return [...seen.entries()].map(([sci,w])=>({ sci, name:frName(sci, sci), w })).sort((a,b)=> b.w-a.w || a.name.localeCompare(b.name,'fr'));
 })();
@@ -2169,7 +2137,7 @@ const countsFR = v => !foreignTick(v);
 // Sous-filtre : exclut aussi les exotiques X/C (utilise pour les stats rarete uniquement).
 // Compte pour les trophees rarete : exclut TOUS les exotiques (tous en tier 0 maintenant,
 // donc hors bareme rarete 1-9) et les especes hidden. Reste : les vraies especes sauvages.
-const _countsForRarity = v => countsFR(v) && !isExotic(v.sci) && !isHiddenSpecies(v.sci);
+const _countsForRarity = v => countsFR(v) && !isExotic(v.sci);
 const seenFR = v => !v.country || v.country==='FR';  // observé EN France (ou pays inconnu) - pour Mike Horn
 const holdersFR = u => u.counts!=null ? u.counts : [...u.seenBy.values()].filter(countsFR).length;
 // Pays (code ISO 2 lettres)
@@ -2623,7 +2591,7 @@ function renderMatrix({universe,N}){
     // Filtre pollutants : ne montre que les especes reellement observees en FR selon
     // le catalogue (bar chart) ou explicitement exotiques en FR. Evite d'afficher les
     // Sittelles de Neumayer, Alouettes de Heine et autres taxons mondiaux jamais observes.
-    const missing=Object.keys(FR_NAMES).filter(sci=>!have.has(sci) && !_isSciAliasSource(sci) && !isHiddenSpecies(sci) && hasRarityCalibrationInCountry(sci, 'FR'))
+    const missing=Object.keys(FR_NAMES).filter(sci=>!have.has(sci) && !_isSciAliasSource(sci) && hasRarityCalibrationInCountry(sci, 'FR'))
       .map(sci=>({ key:'miss:'+sci, common:frName(sci,sci), sci, seenBy:new Map(), missing:true }));
     uni = universe.concat(missing);
   }
@@ -4295,7 +4263,7 @@ function statsFor(me, N){
     // Trophee Saint-Graal : aligne sur MEGA_CATALOG (exclut X/C, utilise rarityForFilter
     // pour les N/P sous leur tier GBIF). Sans ces 2 checks, Cacatua alba (X tier 9)
     // debloquait le trophee alors qu'elle n'apparait pas dans le catalogue.
-    if(!_isExoticNotCounted(sci) && !isHiddenSpecies(sci) && rarityForFilter(sci)>=8){ megaList.push(frName(v.sci, v.common)); megaOwnedSet.add(sci); }
+    if(!_isExoticNotCounted(sci) && rarityForFilter(sci)>=8){ megaList.push(frName(v.sci, v.common)); megaOwnedSet.add(sci); }
     if(/teste[- ]?de[- ]?buch|arcachon/i.test(v.loc||'')) locTeste=true;
   }
   megaList.sort((a,b)=>a.localeCompare(b,'fr'));
@@ -5312,9 +5280,6 @@ function renderFeed(){
       }
       // Filtre rareté : 1..9 (rareté réelle) ou 'exo' (exotiques/échappés).
       const sci = (v.sci||'').toLowerCase();
-      // Le pays de l observation, pas celui de l affichage : une Conure a tete bleue vue au
-      // Portugal y est naturalisee, meme si le fil est lu depuis la France.
-      if(isHiddenSpecies(sci, v.country)) continue;   // perroquets de cage
       if(feedTier !== 'any'){
         // Chip 'exo' = P/X/C (provisoires, echappes, domestiques). Seules les N (naturalisees)
         // sont exposees sous leur vrai tier via rarityForFilter.
@@ -5728,7 +5693,6 @@ function _updateMapSuggest(){
     const _cc = (ebFilter && ebFilter.country) || 'FR';
     for(const sci of Object.keys(FR_NAMES)){
       if(_isSciAliasSource(sci)) continue;
-      if(isHiddenSpecies(sci)) continue;
       if(!hasRarityCalibrationInCountry(sci, _cc)) continue;   // per-pays, evite les pollutants
       const fr = FR_NAMES[sci] || sci;
       if(q && !_mapNorm(fr).includes(q) && !sci.includes(q)) continue;
@@ -5776,7 +5740,6 @@ function _updateMapSuggest(){
     const _ccMiss = (ebFilter && ebFilter.country) || 'FR';
     for(const sci in FR_NAMES){
       if(_isSciAliasSource(sci)) continue;
-      if(isHiddenSpecies(sci)) continue;
       if(!hasRarityCalibrationInCountry(sci, _ccMiss)) continue;   // per-pays, evite les pollutants
       if(_mineHas(mine, sci)) continue;   // déjà cochée par l'utilisateur
       const fr = FR_NAMES[sci];
@@ -7928,7 +7891,7 @@ async function _loadMissingLayerGbifBbox(bbox, month, yearMin, yearMax, onProgre
     return rars.has(w);
   };
   const _mapCty = (ebFilter && ebFilter.country) || 'FR';
-  const missingSci = Object.keys(FR_NAMES).filter(sci => !_mineHas(mine, sci) && passRar(sci) && !_isSciAliasSource(sci) && !isHiddenSpecies(sci) && hasRarityCalibrationInCountry(sci, _mapCty));
+  const missingSci = Object.keys(FR_NAMES).filter(sci => !_mineHas(mine, sci) && passRar(sci) && !_isSciAliasSource(sci) && hasRarityCalibrationInCountry(sci, _mapCty));
   const isForeignEarly = ebFilter.country && ebFilter.country !== 'FR';
   // Pour l'etranger on n'utilise pas missingSci (voir fast path), donc pas d'early return sur vide.
   if(!isForeignEarly && !missingSci.length){ return { total:0, points:0, empty:true }; }
@@ -9329,7 +9292,7 @@ $('#pickMapSearch')?.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.pre
 const _mnorm = s => s.toLowerCase().replace(/œ/g,'oe').replace(/æ/g,'ae').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,' ').trim();
 // normAnc : ancien nom francais (nomenclature nord-americaine, cf. FR_NAMES_ANCIENS). Il ne
 // s'affiche jamais, il sert seulement a rester trouvable pour qui a l'ancien nom en tete.
-const MANUAL_INDEX = Object.keys(FR_NAMES).filter(sci=>!_isSciAliasSource(sci) && !isHiddenSpecies(sci)).map(sci=>{
+const MANUAL_INDEX = Object.keys(FR_NAMES).filter(sci=>!_isSciAliasSource(sci)).map(sci=>{
   const anc = (typeof FR_NAMES_ANCIENS === 'object') ? FR_NAMES_ANCIENS[sci] : null;
   return { sci, fr:FR_NAMES[sci], normFr:_mnorm(FR_NAMES[sci]), normSci:_mnorm(sci), normAnc: anc ? _mnorm(anc) : '' };
 });
@@ -15062,7 +15025,6 @@ function _pkdxRender(){
       // Dedup taxonomique : si `sci` est le vieux nom (source d'un SCI_ALIAS) ET le nom
       // canonique existe aussi dans FR_NAMES, on saute la vieille entree.
       if(_isSciAliasSource(sci)) continue;
-      if(isHiddenSpecies(sci, country)) continue;   // perroquets de cage, sauf naturalises ici
       // Park-only worldwide (Bernache nene, Dendrocygnes tropicaux, Flamants ornementaux,
       // Grues couronnees...) : exclus SAUF si natifs dans le pays courant (dans bar chart
       // local + pas listes exotique par eBird) OU marques N/P par eBird localement.
