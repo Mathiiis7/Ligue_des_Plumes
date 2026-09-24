@@ -11768,9 +11768,12 @@ function _renderSpeciesRarityCard(key){
     // Couleur de fond : par defaut, couleur du tier (rareté). Pour l'exotique tier 0
     // (X/C echappe non-etabli), on force gris neutre pour signifier "hors barème".
     const pillBg = (w === 0 && isExo) ? '#7e8a99' : color;
-    // Taille fixe (width + box-sizing) pour eviter que la position du label bouge selon
-    // que le pill affiche 'X' (1 char), '10' (2 chars) ou 'N' (1 char).
-    const pill = `<span style="display:inline-block;box-sizing:border-box;background:${pillBg};color:#fff;padding:3px 0;border-radius:8px;font-weight:800;font-size:15px;width:48px;text-align:center;margin-right:10px;flex-shrink:0;" title="tier ${w}">${pillTxt}</span>`;
+    // La pastille commune, comme partout ailleurs. Elle avait ici sa propre taille - 48 px
+    // de large, 15 px de police - pour que la position du libelle ne bouge pas entre un
+    // « X » et un « 10 ». Le format unique prime : l'ecart restant entre un et deux
+    // caracteres est de quelques pixels, et il ne se voit qu'en comparant deux fiches.
+    const pill = '<span style="margin-right:10px; flex-shrink:0; display:inline-flex;">'
+      + tierChip(pillTxt, pillBg, { title: 'palier ' + w }) + '</span>';
     // Mini-badge cat retire quand le pill affiche deja la lettre (evite doublon N + N).
     const catMiniPill = (isExo && cat && w > 0 && !useCatLetter) ? `<span style="display:inline-block;background:var(--surface-2);color:var(--ink-2);padding:1px 7px;border-radius:5px;font-weight:800;font-size:11px;margin-left:10px;vertical-align:middle;" title="${esc(catLbl)}">${cat}</span>` : '';
     // Icone "?" avec tooltip explicatif : remplace l'ancien depliant. Petit cercle
@@ -11883,8 +11886,7 @@ function _renderSpeciesRarityCard(key){
           <summary style="cursor:pointer;font-size:12px;color:var(--ink-3);user-select:none;padding:2px 0;">▸ Détails du calcul</summary>
           <div style="padding:6px 0 4px 4px;border-left:2px solid var(--line);margin:4px 0 2px 6px;padding-left:10px;">
             <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">${entete}</div>
-            ${tierAffiche ? `<div style="display:flex;align-items:center;gap:8px;padding:5px 0 2px 0;">
-              ${tierChip(tierAffiche, realColor(tierAffiche))}
+            ${tierAffiche ? `<div style="padding:5px 0 2px 0;">
               <span style="font-size:12px;color:var(--ink);font-weight:600;">${mesure}</span>
             </div>` : ''}
             <div style="font-size:10.5px;color:var(--ink-3);margin-top:6px;opacity:.85;line-height:1.4;">${note}</div>
