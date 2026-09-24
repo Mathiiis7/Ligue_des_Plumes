@@ -465,7 +465,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .reg-picker-panel[hidden] { display:none; }
   /* Colonne des valeurs à largeur FIXE : en auto, « 0.62% » était plus large que « 3.4% »,
      ce qui décalait la barre d'une ligne à l'autre. Les barres sont ainsi toutes alignées. */
-  .reg-picker-item { display:grid; grid-template-columns:22px 1fr 60px 44px; gap:8px; align-items:center; padding:6px 10px; cursor:pointer; border-radius:6px; font-size:12px; color:var(--ink); }
+  .reg-picker-item { display:grid; grid-template-columns:26px 1fr 60px 44px; gap:8px; align-items:center; padding:6px 10px; cursor:pointer; border-radius:6px; font-size:12px; color:var(--ink); }
   .reg-picker-item:hover { background:var(--surface-2); }
   /* Sélection courante : teinte d'accent plutôt que gris. Le gris se confondait avec un
      état désactivé, alors que cette ligne est justement celle qu'on regarde. */
@@ -474,9 +474,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .reg-picker-item.national { grid-template-columns:1fr; padding:8px 10px; border-bottom:1px solid var(--line-2); margin-bottom:4px; font-weight:600; }
   /* Le palier, ecrit, plutot qu'une pastille de couleur a decoder : c'est le meme
      rectangle que partout ailleurs dans l'appli. La couleur reste, elle devient le fond. */
-  .reg-picker-tier { min-width:22px; padding:1px 0; border-radius:5px; color:#fff; font-weight:800;
-    font-size:11px; line-height:1.45; text-align:center; font-variant-numeric:tabular-nums; }
-  .reg-picker-item.absent .reg-picker-tier { color:var(--ink-3); }
+  .reg-picker-item.absent .tier-chip { color:var(--ink-3); }
   .reg-picker-bar { height:5px; background:var(--line-2); border-radius:3px; overflow:hidden; }
   .reg-picker-bar > div { height:100%; border-radius:3px; }
   .reg-picker-val { font-size:10.5px; color:var(--ink-3); text-align:right; white-space:nowrap; }
@@ -1239,6 +1237,16 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .req-del { background:none; border:none; color:var(--ink-3); cursor:pointer; font-size:11.5px; padding:0; }
   .req-del:hover { color:#c33; text-decoration:underline; }
   .map-controls { display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 10px; align-items:center; }
+  /* Pastille de palier : UN seul format dans toute l'appli. Il en existait cinq (rond du
+     birdydex, trois tailles de rectangle sur les fiches, pastille de la liste des zones),
+     si bien que le meme chiffre changeait d'allure selon l'ecran ou on le lisait. La
+     couleur reste porteuse du palier ; seule la taille varie, et elle garde les memes
+     proportions. */
+  .tier-chip { display:inline-flex; align-items:center; justify-content:center; min-width:22px;
+    padding:1px 6px; border-radius:6px; color:#fff; font:800 12px/1.5 system-ui;
+    font-variant-numeric:tabular-nums; vertical-align:middle; text-align:center; }
+  .tier-chip-sm { min-width:20px; padding:1px 5px; font-size:11px; }
+  .tier-chip-lg { min-width:26px; padding:2px 8px; font-size:13.5px; }
   .rar-chips { display:inline-flex; gap:3px; flex-wrap:wrap; }
   .rar-chip { display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:24px; padding:0 5px; border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink-3); border-radius:6px; font:600 11px/1 system-ui; cursor:pointer; }
   .rar-chip:hover { filter:brightness(0.97); }
@@ -1752,7 +1760,8 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
     content-visibility:auto; contain-intrinsic-size:220px; }
   .pkdx-card:hover { transform:translateY(-2px); box-shadow:0 6px 14px rgba(0,0,0,.12); border-color:var(--accent); }
   .pkdx-card .pkdx-num { position:absolute; top:6px; left:8px; font:700 10px ui-monospace, monospace; color:var(--ink-3); background:rgba(255,255,255,.85); padding:1px 6px; border-radius:8px; z-index:2; }
-  .pkdx-card .pkdx-tier { position:absolute; top:6px; right:8px; width:20px; height:20px; border-radius:50%; color:#fff; font:800 10px system-ui; display:grid; place-items:center; box-shadow:0 1px 3px rgba(0,0,0,.3); z-index:2; }
+  /* Ne porte plus que son ancrage : la forme vient de .tier-chip, comme partout ailleurs. */
+  .pkdx-card .pkdx-tier { position:absolute; top:6px; right:8px; box-shadow:0 1px 3px rgba(0,0,0,.3); z-index:2; }
   /* Repere des especes nettement saisonnieres : pic mensuel >= 3x la moyenne annuelle. Le
      tier repose sur l annuel et ne le dit pas, alors qu il suffit souvent de viser le bon
      mois. Pose sous le numero, a gauche, pour ne pas concurrencer la pastille de tier. */

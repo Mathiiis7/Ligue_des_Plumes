@@ -1724,7 +1724,8 @@ function sciColorForCountry(sci, country){
 const COUNTRY_FLAG = CC_FLAGS;
 function _rarityBadge(w, country, sci){
   const c = country || 'FR';
-  const pillFor = tier => tier ? `<span style="display:inline-block;background:${realColor(tier)};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11.5px;vertical-align:middle;">${tier}</span>` : '<span style="display:inline-block;background:#94a3b8;color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">?</span>';
+  const pillFor = tier => tier ? tierChip(tier, realColor(tier), { sm:true })
+    : tierChip('?', '#94a3b8', { sm:true });
   // sciKey normalise pour tester _horsAire (couvre les alias taxo).
   const sciKey = (() => { if(!sci) return ''; let k=(sci||'').trim().toLowerCase(); if(SCI_ALIAS[k]) k=SCI_ALIAS[k]; return k; })();
   const lineFor = (cc, tier) => {
@@ -1751,16 +1752,16 @@ function _rarityBadge(w, country, sci){
       if(isEstab){
         // Bar chart eBird du pays (meme signal que les sauvages depuis 2026-09-21).
         const t = rarityForCountry(sci, cc) || 1;
-        const pill = `<span style="display:inline-block;background:${realColor(t)};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">${t}</span>`;
+        const pill = tierChip(t, realColor(t), { sm:true });
         return `${flgSpan}${pill} ${REAL_LABELS[t]||''} <span style="opacity:.7;font-size:11px;">· ${catLbl}</span>`;
       }
-      const pill = `<span style="display:inline-block;background:${realColor(0)};color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">${cat || 'X'}</span>`;
+      const pill = tierChip(cat || 'X', realColor(0), { sm:true });
       return `${flgSpan}${pill} Exotique <span style="opacity:.7;font-size:11px;">· ${catLbl}</span>`;
     }
     // Espece hors aire : pas de bar chart ici, mais mesuree dans un autre pays de l'app.
     // Badge gris "Hors aire" plutot qu'un tier invente.
     if(sciKey && _horsAire(sciKey, cc)){
-      const pill = `<span style="display:inline-block;background:#7e8a99;color:#fff;padding:1px 7px;border-radius:5px;font-weight:700;font-size:11px;vertical-align:middle;">-</span>`;
+      const pill = tierChip('·', '#7e8a99', { sm:true });
       return `${flgSpan}${pill} Hors aire`;
     }
     if(tier) return `${flgSpan}${pillFor(tier)} ${REAL_LABELS[tier]||''}`;
@@ -1946,6 +1947,17 @@ function tierFor(k, N){
   return { id:String(k), count:k, ord:k, label, color:rarityColor(k,N) };
 }
 const REAL_LABELS={0:'Parc semi-libre',1:'Omniprésent',2:'Très commun',3:'Commun',4:'Assez commun',5:'Peu commun',6:'Assez rare',7:'Rare',8:'Très rare',9:'Ultra rare',10:'Exceptionnel'};
+// Pastille de palier. Toutes les vues passent par ici : la liste des zones, la carte, la
+// fiche, le birdydex, les badges pays. Le texte n'est pas toujours un chiffre (les
+// exotiques affichent leur categorie N/P/X/C, une zone sans donnee un tiret), d'ou le
+// premier argument libre.
+function tierChip(texte, couleur, opts){
+  const o = opts || {};
+  const cls = 'tier-chip' + (o.sm ? ' tier-chip-sm' : '') + (o.lg ? ' tier-chip-lg' : '')
+    + (o.cls ? ' ' + o.cls : '');
+  const t = o.title ? ' title="' + esc(o.title) + '"' : '';
+  return '<span class="' + cls + '" style="background:' + couleur + ';"' + t + '>' + texte + '</span>';
+}
 function realColor(w){
   if(w === 0) return 'hsl(0 0% 55%)';    // tier 0 (parcs semi-libres) -> gris neutre
   // Palette 10 tiers : vert (1) -> jaune (5) -> rouge (9) -> magenta fonce (10).
@@ -11100,7 +11112,7 @@ async function _renderExoticMap(sci, cc){
   const NATIVE_COLOR = '#3b82f6';
   // Meme mise en evidence que la carte de rarete, pour que les deux se lisent pareil.
   const selection = _zonesSelectionnees(cc, Object.keys(paths.zones));
-  const svgZones = _ordonnerSelectionDevant(Object.keys(paths.zones), selection).map(code => {
+  const rendreZoneExo = (code, echelle) => {
     const r = paths.zones[code];
     const cat = perZone[code];
     const isNative = !cat && nativeZones.has(code);
@@ -11108,8 +11120,11 @@ async function _renderExoticMap(sci, cc){
     const title = cat ? `${r.name} — ${CAT_LABEL[cat]} (${cat})`
                 : isNative ? `${r.name} — native (présente, non taguée exotique)`
                 : `${r.name} — non listé (sauvage / absent)`;
-    return _pathZone(r.path, fill, title, selection.has(code), selection.size > 0);
-  }).join('');
+    return _pathZone(r.path, fill, title, selection.has(code), selection.size > 0, null, echelle);
+  };
+  const svgZones = _ordonnerSelectionDevant(Object.keys(paths.zones), selection)
+    .map(code => rendreZoneExo(code, 1)).join('')
+    + _encartCarte(cc, paths, rendreZoneExo);
   const legendItem = (col, label) => `<span style="display:inline-flex; align-items:center; gap:4px;"><span style="display:inline-block; width:10px; height:10px; background:${col}; border-radius:2px;"></span>${label}</span>`;
   const zoneWord = cc === 'FR' ? 'département' : 'région';
   // Persist l'etat ouvert/ferme du details entre les switchs d'especes (fleches).
@@ -11172,6 +11187,53 @@ function _ordonnerSelectionDevant(zones, selection){
 }
 // Rend une zone de carte. Quand une selection existe, les zones hors selection sont
 // attenuees et la selection recoit un contour sombre appuye.
+// Zones trop petites pour etre lues, et donc visees, a l'echelle du pays. La petite
+// couronne parisienne tient dans 32 unites de carte sur 1000 : a 320 px de large, Paris
+// fait 3 px de cote. On la reprend agrandie dans un encart pose sur un coin vide, comme
+// le font les cartes administratives. Le cadre est en coordonnees du viewBox du pays.
+const _ENCART_CARTE = {
+  FR: { titre: 'Petite couronne', cadre: { x:14, y:636, w:190, h:212 },
+        codes: ['FR-IDF-75C', 'FR-IDF-92', 'FR-IDF-93', 'FR-IDF-94'] },
+};
+// Boite englobante d'une liste de chemins SVG. Les cartes du projet n'emploient que des
+// commandes M et L en coordonnees absolues, donc lire les nombres deux a deux suffit.
+function _bboxChemins(chemins){
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for(const d of chemins){
+    const n = String(d || '').match(/-?\d+(?:\.\d+)?/g);
+    if(!n) continue;
+    for(let i = 0; i + 1 < n.length; i += 2){
+      const x = +n[i], y = +n[i + 1];
+      if(x < x0) x0 = x; if(x > x1) x1 = x;
+      if(y < y0) y0 = y; if(y > y1) y1 = y;
+    }
+  }
+  return (x1 > x0 && y1 > y0) ? { x0, y0, x1, y1 } : null;
+}
+// Rend l'encart du pays, ou '' s'il n'en a pas. `rendre(code, echelle)` vient de la carte
+// appelante : l'encart herite ainsi exactement de ses couleurs, de ses infobulles et de
+// son clic, au lieu de reimplementer un rendu qui deriverait avec le temps.
+function _encartCarte(cc, paths, rendre){
+  const cfg = _ENCART_CARTE[cc];
+  if(!cfg || !paths || !paths.zones) return '';
+  const codes = cfg.codes.filter(z => paths.zones[z]);
+  if(codes.length < 2) return '';
+  const bb = _bboxChemins(codes.map(z => paths.zones[z].path));
+  if(!bb) return '';
+  const c = cfg.cadre, marge = 8, bandeau = 16;
+  const dispoW = c.w - marge * 2, dispoH = c.h - marge * 2 - bandeau;
+  const k = Math.min(dispoW / (bb.x1 - bb.x0), dispoH / (bb.y1 - bb.y0));
+  const tx = c.x + marge + (dispoW - (bb.x1 - bb.x0) * k) / 2 - bb.x0 * k;
+  const ty = c.y + marge + bandeau + (dispoH - (bb.y1 - bb.y0) * k) / 2 - bb.y0 * k;
+  return '<g>'
+    + '<rect x="' + c.x + '" y="' + c.y + '" width="' + c.w + '" height="' + c.h + '" rx="10"'
+      + ' fill="var(--surface, #fff)" stroke="var(--line-2, #ccc)" stroke-width="1.5"/>'
+    + '<text x="' + (c.x + c.w / 2) + '" y="' + (c.y + 15) + '" text-anchor="middle"'
+      + ' font-size="12.5" font-family="system-ui" fill="var(--ink-3, #7c8783)">' + esc(cfg.titre) + '</text>'
+    + '<g transform="translate(' + tx.toFixed(2) + ',' + ty.toFixed(2) + ') scale(' + k.toFixed(3) + ')">'
+      + codes.map(z => rendre(z, k)).join('')
+    + '</g></g>';
+}
 // Applique une selection de zone a la fiche. Renseigne par le selecteur de zones, qui
 // detient le libelle du declencheur et la liste a mettre a jour ; la carte l'appelle
 // plutot que de reimplementer le meme enchainement de redessins de son cote.
@@ -11179,10 +11241,17 @@ let _appliquerZoneFiche = null;
 // `code` rend la zone cliquable : la carte devient un selecteur, au lieu d'obliger a
 // retrouver dans une liste deroulante le departement qu'on vient de pointer du doigt.
 // Les cartes qui ne selectionnent rien (statut exotique) l'omettent et restent inertes.
-function _pathZone(d, fill, titre, estSelectionnee, selectionActive, code){
+// `echelle` : facteur d'agrandissement du groupe qui contient la zone (1 sur la carte,
+// ~6 dans l'encart). Les epaisseurs sont divisees par lui pour que le trait garde la
+// meme finesse a l'ecran des deux cotes.
+function _pathZone(d, fill, titre, estSelectionnee, selectionActive, code, echelle){
   const attenuee = selectionActive && !estSelectionnee;
-  const stroke = estSelectionnee ? 'var(--ink, #1a1a1a)' : 'var(--surface, #fff)';
-  const largeur = estSelectionnee ? 2 : 0.5;
+  // Le contour de la zone selectionnee etait noir plein : pose sur les aplats clairs de la
+  // palette, il la faisait lire comme barree plutot que designee. L'encre secondaire la
+  // detache autant et suit le theme clair / sombre.
+  const stroke = estSelectionnee ? 'var(--ink-2, #47534f)' : 'var(--surface, #fff)';
+  const e = echelle > 0 ? echelle : 1;
+  const largeur = (estSelectionnee ? 1.6 : 0.5) / e;
   const opacite = attenuee ? ' opacity="0.35"' : '';
   const cliquable = code ? ' data-zone="' + String(code).replace(/"/g, '&quot;') + '" style="cursor:pointer"' : '';
   return `<path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="${largeur}"` +
@@ -11259,8 +11328,8 @@ async function _renderRarityMap(sci, cc){
     ? REAL_FREQ_MONTHLY_BY_REGION_MULTI[cc] : null;
   // Codes que le selecteur de zones sait nommer et surligner ; la carte n'autorise le
   // clic que sur ceux-la.
-  const zonesSelectionnables = new Set(
-    (typeof zonesFichePourPays === 'function' ? zonesFichePourPays(cc) : []).map(r => r.code));
+  const zonesFiche = (typeof zonesFichePourPays === 'function' ? zonesFichePourPays(cc) : []);
+  const zonesSelectionnables = new Set(zonesFiche.map(r => r.code));
   const paths = byZone ? await _loadExoticMapPaths(cc) : null;
   if(!byZone || !paths){ container.innerHTML = ''; return; }
   // Une espece jamais vue nulle part dans l'annee n'a pas de carte a montrer.
@@ -11275,7 +11344,10 @@ async function _renderRarityMap(sci, cc){
   // la carte est au departement alors que la selection est une region : on retient donc
   // aussi les zones prefixees (FR-ARA -> FR-ARA-01, FR-ARA-03...).
   const selection = _zonesSelectionnees(cc, zones);
-  const svgZones = _ordonnerSelectionDevant(zones, selection).map(z => {
+  const fmtP = (x) => x >= 0.1 ? Math.round(x*100)+'%' : x >= 0.01 ? (x*100).toFixed(1)+'%' : (x*100).toFixed(2)+'%';
+  // Rendu d'une zone, isole pour que l'encart montre exactement la meme chose que la
+  // carte : memes couleurs, memes infobulles, meme clic.
+  const rendreZone = (z, echelle) => {
     const arr = byZone[z] && byZone[z][key];
     // Vue "année" : MOYENNE des douze mois, pas le pic. Le pic classait en tete des zones
     // ou l'espece n'a ete vue qu'une fois un mois peu couvert - une seule observation
@@ -11291,7 +11363,6 @@ async function _renderRarityMap(sci, cc){
       v = surAnnee ? _valeurAnnuelleZone(arr, cc, z) : (arr[mois] || 0);
     }
     const nom = paths.zones[z].name;
-    const fmtP = (x) => x >= 0.1 ? Math.round(x*100)+'%' : x >= 0.01 ? (x*100).toFixed(1)+'%' : (x*100).toFixed(2)+'%';
     let fill = ABSENT;
     let titre = surAnnee ? `${nom} — jamais observée` : `${nom} — absente en ${libellePeriode}`;
     if(v > 0){
@@ -11308,13 +11379,45 @@ async function _renderRarityMap(sci, cc){
     // selectionner un code que le libelle du declencheur ne sait pas nommer, et la
     // fiche afficherait des donnees locales sous une etiquette "France entier".
     return _pathZone(paths.zones[z].path, fill, titre, selection.has(z), selection.size > 0,
-      zonesSelectionnables.has(z) ? z : null);
-  }).join('');
-  const chip = (val, label, actif) =>
-    `<button type="button" data-mois="${val}" style="border:1px solid ${actif ? 'var(--accent)' : 'var(--line-2)'}; background:${actif ? 'var(--accent)' : 'var(--surface)'}; color:${actif ? '#fff' : 'var(--ink-2)'}; font:${actif ? '700' : '400'} 10.5px system-ui; padding:2px 6px; border-radius:6px; cursor:pointer;">${label}</button>`;
-  const moisBtns = chip('an', 'année', surAnnee)
-    + `<span style="width:6px;"></span>`
-    + _MOIS_COURTS.map((m, i) => chip(i, m, !surAnnee && i === mois)).join('');
+      zonesSelectionnables.has(z) ? z : null, echelle);
+  };
+  const svgZones = _ordonnerSelectionDevant(zones, selection).map(z => rendreZone(z, 1)).join('')
+    + _encartCarte(cc, paths, rendreZone);
+  // Les douze mois passent en colonne le long de la carte, chacun colore par SON propre
+  // palier : la colonne se lit alors comme un calendrier de chances, et la bonne saison
+  // saute aux yeux sans avoir a cliquer les mois un par un.
+  //
+  // Reference : la zone selectionnee si elle est mesuree, sinon le pays entier. C'est la
+  // portee de l'entete "Quand la trouver", pour que les deux ne disent pas deux choses
+  // differentes du meme mois.
+  const zonePort = (_speciesRegion && byZone[_speciesRegion]) ? _speciesRegion : '';
+  const serieRef = (zonePort
+    ? byZone[zonePort][key]
+    : ((COUNTRIES_REG[cc] && COUNTRIES_REG[cc].monthly) ? COUNTRIES_REG[cc].monthly()[key] : null)) || [];
+  const nomPort = zonePort
+    ? ((zonesFiche.find(r => r.code === zonePort) || {}).name || zonePort)
+    : ((COUNTRIES_REG[cc] && COUNTRIES_REG[cc].name) || cc);
+  const chipMois = (val, label, actif, valeur, annuel) => {
+    const vu = valeur > 0;
+    const t = vu ? (annuel ? annualFreqToTier(valeur) : monthlyFreqToTier(valeur)) : 0;
+    const lbl = vu ? ((typeof REAL_LABELS === 'object' && REAL_LABELS[t]) || ('palier ' + t))
+                   : (annuel ? 'jamais notée' : 'absente ce mois-ci');
+    const tip = label + ' · ' + nomPort + ' — ' + (vu ? fmtP(valeur) + ' des listes · ' + lbl + ' (' + t + ')' : lbl);
+    // L'etat courant ne peut pas se marquer par la couleur, elle porte deja le palier :
+    // un anneau sombre autour de la pastille, detache du fond par un lisere clair.
+    const anneau = actif ? ' box-shadow:0 0 0 1.5px var(--surface-2, #fafafa), 0 0 0 3px var(--ink-2);' : '';
+    return '<button type="button" data-mois="' + val + '" title="' + esc(tip) + '"'
+      + ' style="display:flex; align-items:center; justify-content:space-between; gap:4px;'
+      + ' width:100%; padding:2px 6px; border:0; border-radius:5px;'
+      + ' background:' + (vu ? realColor(t) : ABSENT) + '; color:' + (vu ? '#fff' : 'var(--ink-3)') + ';'
+      + ' font:' + (actif ? '800' : '600') + ' 10.5px/1.5 system-ui; cursor:pointer;' + anneau + '">'
+      + '<span>' + label + '</span>'
+      + '<span style="opacity:.85; font-variant-numeric:tabular-nums;">' + (vu ? t : '–') + '</span>'
+      + '</button>';
+  };
+  const moisBtns = chipMois('an', 'année', surAnnee, _valeurAnnuelleZone(serieRef, cc, zonePort || null), true)
+    + '<span style="height:4px;"></span>'
+    + _MOIS_COURTS.map((m, i) => chipMois(i, m, !surAnnee && i === mois, serieRef[i] || 0, false)).join('');
   const legendItem = (col, label) => `<span style="display:inline-flex; align-items:center; gap:4px;"><span style="display:inline-block; width:10px; height:10px; background:${col}; border-radius:2px;"></span>${label}</span>`;
   const zoneWord = cc === 'FR' ? 'département' : 'région';
   const openState = window._smRarityMapOpen ? ' open' : '';
@@ -11325,10 +11428,12 @@ async function _renderRarityMap(sci, cc){
         ▸ Rareté par ${zoneWord} (${libellePeriode})
       </summary>
       <div style="margin-top:6px; padding:10px 12px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2, #fafafa);">
-        <div id="smRarityMapMois" style="display:flex; flex-wrap:wrap; gap:3px; justify-content:center; margin-bottom:8px;">${moisBtns}</div>
-        <svg viewBox="${paths.viewBox}" style="width:100%; max-width:320px; height:auto; display:block; margin:0 auto;" role="img" aria-label="Rareté par ${zoneWord} sur ${libellePeriode}">
-          ${svgZones}
-        </svg>
+        <div style="display:flex; align-items:flex-start; justify-content:center; gap:10px;">
+          <div id="smRarityMapMois" style="display:flex; flex-direction:column; gap:2px; flex:0 0 auto; width:64px;">${moisBtns}</div>
+          <div style="flex:1 1 320px; min-width:0; max-width:320px;"><svg viewBox="${paths.viewBox}" style="width:100%; height:auto; display:block;" role="img" aria-label="Rareté par ${zoneWord} sur ${libellePeriode}">
+            ${svgZones}
+          </svg></div>
+        </div>
         <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; font-size:11px; color:var(--ink-2); justify-content:center;">
           ${legendItem(realColor(1),'Commun')}
           ${legendItem(realColor(5),'Peu commun')}
@@ -11336,7 +11441,7 @@ async function _renderRarityMap(sci, cc){
           ${legendItem(ABSENT,'Absente')}
         </div>
         <div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line-2); font-size:10.5px; color:var(--ink-3); text-align:center; line-height:1.4; opacity:.9;">
-          ⓘ Part des listes eBird du ${zoneWord} où l'espèce a été notée, agrégée sur 2019-2026. Sur l'année, chaque ${zoneWord} est évalué sur la part de ses listes qui mentionnent l'espèce, pondérée par l'effort d'observation de chaque mois — la même mesure que la rareté nationale. Reflète la facilité de rencontre, pas l'effectif.
+          ⓘ Part des listes eBird du ${zoneWord} où l'espèce a été notée, agrégée sur 2019-2026. Sur l'année, chaque ${zoneWord} est évalué sur la part de ses listes qui mentionnent l'espèce, pondérée par l'effort d'observation de chaque mois — la même mesure que la rareté nationale. La colonne de mois donne le palier de chaque mois sur ${esc(nomPort)}. Reflète la facilité de rencontre, pas l'effectif.
         </div>
       </div>
     </details>`;
@@ -11452,7 +11557,7 @@ function _renderSpeciesRarityCard(key){
           (s.moisPic >= 0 ? ` · jusqu'à ${fmt(s.pic)} en ${_MOIS_COURTS[s.moisPic]}` : '') +
           ` · présente ${s.nbMois} mois sur 12`;
       return `<div class="reg-picker-item${absent?' absent':''}${s.code===_speciesRegion?' on':''}" data-code="${esc(s.code)}" title="${esc(titre)}">
-        <span class="reg-picker-tier" style="background:${absent ? 'var(--line-2)' : col};">${absent ? '–' : tier}</span>
+        ${tierChip(absent ? '–' : tier, absent ? 'var(--line-2)' : col, { sm:true })}
         <span>${esc(s.name)}</span>
         <div class="reg-picker-bar"><div style="width:${barW}%; background:${col};"></div></div>
         <span class="reg-picker-val">${esc(val)}</span>
@@ -11684,7 +11789,7 @@ function _renderSpeciesRarityCard(key){
           <div style="padding:6px 0 4px 4px;border-left:2px solid var(--line);margin:4px 0 2px 6px;padding-left:10px;">
             <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">${entete}</div>
             ${tierAffiche ? `<div style="display:flex;align-items:center;gap:8px;padding:5px 0 2px 0;">
-              <span style="display:inline-block;background:${realColor(tierAffiche)};color:#fff;padding:2px 8px;border-radius:6px;font-weight:800;font-size:13px;min-width:22px;text-align:center;">${tierAffiche}</span>
+              ${tierChip(tierAffiche, realColor(tierAffiche), { lg:true })}
               <span style="font-size:12px;color:var(--ink);font-weight:600;">${mesure}</span>
             </div>` : ''}
             <div style="font-size:10.5px;color:var(--ink-3);margin-top:6px;opacity:.85;line-height:1.4;">${note}</div>
@@ -14993,7 +15098,7 @@ function _pkdxRender(){
     return `<div class="pkdx-card${r.owned?'':' missing'}" data-sci="${esc(r.sci)}">
       <span class="pkdx-num">#${num}</span>
       ${r.saison ? `<span class="pkdx-saison" title="Espèce nettement saisonnière : son pic mensuel vaut au moins 3 fois sa moyenne annuelle. Viser le bon mois change tout.">◑</span>` : ''}
-      <span class="pkdx-tier" style="background:${tierBg};" title="Tier ${r.tier}${catLetter ? ' · '+catLetter : ''}">${badgeText}</span>
+      <span class="pkdx-tier tier-chip tier-chip-sm" style="background:${tierBg};" title="Tier ${r.tier}${catLetter ? ' · '+catLetter : ''}">${badgeText}</span>
       <div class="pkdx-img" data-pkdx-lazy="${esc(r.sci)}">${r.owned ? '🐦' : ''}</div>
       <div class="pkdx-name">${esc(r.nm)}</div>
       <div class="pkdx-sci">${esc(r.sci)}</div>
