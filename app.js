@@ -12557,17 +12557,20 @@ function _renderSpeciesFreqChart(key, country){
     else if(i === curIdx) strokeAttr = ' stroke="var(--accent)" stroke-width="1.5"';
     out += `<rect class="bar" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(0.5,w).toFixed(1)}" height="${Math.max(1.5,h).toFixed(1)}" fill="${fill}" opacity="${op}" rx="1"${strokeAttr}><title>${title}</title></rect>`;
   }
-  // Labels axe x : 12 labels mois centres sur leur groupe de ~4.33 semaines.
+  // Labels axe x : chaque mois est centre sur sa part des N barres. Le pas etait ecrit en dur
+  // (4,33 barres par mois, soit 52 pour l annee) alors que la serie en compte 48 depuis que
+  // les quinzaines sont servies par zone : decembre se posait a la barre 49,6 sur 48, donc
+  // hors du graphique, et les onze autres mois derivaient d autant.
   for(let m=0; m<12; m++){
-    const centerWeek = m * 4.33 + 2;
+    const centerWeek = (m + 0.5) * N / 12;
     const x = PL + centerWeek * bw;
-    const isHiMonth = Math.floor(bestIdx / 4.33) === m || Math.floor(curIdx / 4.33) === m;
+    const isHiMonth = Math.floor(bestIdx * 12 / N) === m || Math.floor(curIdx * 12 / N) === m;
     out += `<text x="${x.toFixed(1)}" y="${(H-8).toFixed(1)}" font-size="9" fill="${isHiMonth?'var(--ink)':'var(--ink-3)'}" text-anchor="middle" font-weight="${isHiMonth?700:400}">${_MONTH_ABBR3[m]}</text>`;
   }
   // Petit '?' dans l'angle bas-gauche du chart (entre '0%' et 'janv') avec tooltip explicatif.
   out += `<g style="cursor:help;">
-    <circle cx="10" cy="${(H-8).toFixed(1)}" r="5.5" fill="var(--surface-2)" stroke="var(--line)"/>
-    <text x="10" y="${(H-5.5).toFixed(1)}" text-anchor="middle" font-size="8" font-weight="700" fill="var(--ink-3)">?</text>
+    <circle cx="10" cy="${(H-11).toFixed(1)}" r="5.5" fill="var(--surface-2)" stroke="var(--line)"/>
+    <text x="10" y="${(H-8.2).toFixed(1)}" text-anchor="middle" font-size="8" font-weight="700" fill="var(--ink-3)">?</text>
     <title>% checklists = fraction des sorties eBird qui ont coché l'espèce. Ex : 23% en mars = 1 sortie sur 4 a vu l'espèce en mars.</title>
   </g>`;
   svg.innerHTML = out;
