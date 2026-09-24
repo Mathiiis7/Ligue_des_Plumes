@@ -1276,7 +1276,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
      ligne se deplace de (padding-haut - padding-bas)/2, il faut donc 1 px d ecart entre les
      deux. Mesure faite sur l encre reelle (canvas actualBoundingBox) : une mesure de la
      boite de ligne avait conclu l inverse et fait corriger dans le mauvais sens. */
-  .rar-chip, .tier-chip { display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:24px; padding:0 5px 1px; border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink-3); border-radius:6px; font:800 13px/1 system-ui; }
+  .rar-chip, .tier-chip { display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:24px; padding:0 5px 1px; border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink-3); border-radius:6px; font:600 13px/1 system-ui; }
   /* Un carre reste un carre, meme a deux chiffres : « 10 » poussait sur son padding et
      sortait de la rangee. Largeur fixe pour tout ce qui porte un palier ; les libelles
      (« Tout », « Vide ») gardent leur padding, eux ne sont pas des carres. */
