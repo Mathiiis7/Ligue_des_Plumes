@@ -123,17 +123,32 @@ const REGIONS = {
 // il diluait la Sittelle corse (tier 7 national, tier 1 en Corse-du-Sud) sur toute la France.
 // Dans le TEMPS il prenait le pic. Les deux dimensions etaient traitees a l oppose.
 //
-// Seuils recalibres sur les 12 632 taxons-pays des 15 bar charts nationaux, a effectifs
-// constants, SAUF le tier 1 : releve de 21 % a 30 % pour que "Omnipresent" le soit vraiment.
-// A 21 % le Martinet noir y figurait alors qu il est absent sept mois sur douze, porte par
-// son seul pic de juin. A 30 % la France compte 15 especes tier 1 — Rougegorge, Pigeon
-// ramier, Corneille noire, Merle noir, Mesange charbonniere... — et le Martinet comme
-// l Hirondelle rustique passent en tier 2 "Tres commun", ce qui leur va mieux.
-// constants : la repartition des couleurs ne bouge pas, seul l ordre change.
+// Seuils lisibles comme une difficulte : chacun est une chance de rencontre par sortie.
+//   tier 1  >= 30 %    soit 1 sortie sur 3
+//   tier 2  >= 10 %    1 sur 10
+//   tier 3  >= 5 %     1 sur 20
+//   tier 4  >= 2 %     1 sur 50
+//   tier 5  >= 1 %     1 sur 100
+//   tier 6  >= 0,6 %   1 sur 170
+//   tier 7  >= 0,2 %   1 sur 500
+//   tier 8  >= 0,05 %  1 sur 2 000
+//   tier 9  >= 0,01 %  1 sur 10 000
+//   tier 10 en dessous
+//
+// Calibres sur le catalogue NETTOYE des accidentelles (cf. _estReguliere) : 7 659 couples
+// espece-pays, 480 especes en France. Les seuils precedents avaient ete cales sur un
+// catalogue qui contenait encore 122 accidentels, et ils s effondraient une fois ceux-ci
+// partis : 195 des 480 especes francaises tombaient en tier 7, les tiers 8 a 10 restant
+// quasi vides. La repartition francaise est desormais 9 · 36 · 28 · 66 · 43 · 21 · 73 · 76
+// · 92 · 36.
+//
+// Le tier 6 est a 0,6 % et non 0,5 % : a 0,5 % le Gypaete barbu (0,527 %) ressortait
+// "Assez rare", alors qu il faut monter en montagne pour le chercher. Seul seuil non rond
+// de l echelle, assume.
 const THRESHOLDS = [
-  [0.23, 1], [0.078, 2], [0.035, 3], [0.016, 4],
-  [0.0069, 5], [0.0018, 6], [0.000038, 7], [0.000017, 8],
-  [0.0000084, 9],
+  [0.30, 1], [0.10, 2], [0.05, 3], [0.02, 4],
+  [0.01, 5], [0.006, 6], [0.002, 7], [0.0005, 8],
+  [0.0001, 9],
 ];
 function weightFor(v){ for(const [min, w] of THRESHOLDS) if(v >= min) return w; return 10; }
 // Moyenne ponderee par l effort : somme(frequence x nb de listes) / somme(nb de listes).
