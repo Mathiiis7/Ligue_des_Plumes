@@ -5943,6 +5943,57 @@ async function _loadFreq48(cc){
   return _freq48Promises[cc];
 }
 
+// Les 48 quinzaines d'UNE zone. freq_by_region.json ne porte que 12 moyennes mensuelles :
+// l'histogramme les etirait sur ses creneaux, affichant des groupes de barres identiques
+// la ou eBird publie bien 48 valeurs. Ce que l'etirement effacait n'est pas du detail :
+// 32 % des quinzaines s'ecartent d'au moins 1 point de la moyenne de leur mois, et la
+// Fauvette a tete noire passe de 7,2 % a 39,5 % a l'interieur du seul mois de mars.
+//
+// Un fichier par zone (~31 Ko) plutot qu'un par pays (2,8 Mo pour la France) : on ne
+// telecharge que la zone regardee. Les valeurs sont encodees sur deux caracteres en base
+// 36 a l'echelle racine — la precision suit la valeur, erreur maximale 0,073 point — et
+// les especes designees par leur rang dans freq48_index.json, charge une fois par pays.
+const REAL_FREQ_48_ZONE = {};      // cc -> { zone -> { sci: [48] } }
+const _freq48ZoneIndex = {};       // cc -> [sci, ...]
+const _freq48ZonePromises = {};
+function _decode48(code){
+  const out = new Array(48);
+  for(let i = 0; i < 48; i++){
+    const n = parseInt(code.slice(i * 2, i * 2 + 2), 36);
+    const v = n / 1295;
+    out[i] = +(v * v).toFixed(5);
+  }
+  return out;
+}
+async function _loadFreq48Zone(cc, zone){
+  const cle = cc + '|' + zone;
+  if(_freq48ZonePromises[cle]) return _freq48ZonePromises[cle];
+  _freq48ZonePromises[cle] = (async () => {
+    try{
+      const base = 'data/countries/' + cc.toLowerCase() + '/';
+      if(!_freq48ZoneIndex[cc]){
+        const idx = await fetch(base + 'freq48_index.json?v=20260924').then(r => r.ok ? r.json() : null);
+        if(!Array.isArray(idx)) return;      // sans index, le fichier de zone est illisible
+        _freq48ZoneIndex[cc] = idx;
+      }
+      const brut = await fetch(base + 'freq48/' + zone + '.json?v=20260924').then(r => r.ok ? r.json() : null);
+      if(!brut) return;
+      const idx = _freq48ZoneIndex[cc];
+      const out = {};
+      for(const [num, code] of Object.entries(brut)){
+        const sci = idx[parseInt(num, 36)];
+        if(sci && typeof code === 'string' && code.length === 96) out[sci] = _decode48(code);
+      }
+      if(!REAL_FREQ_48_ZONE[cc]) REAL_FREQ_48_ZONE[cc] = {};
+      REAL_FREQ_48_ZONE[cc][zone] = out;
+    }catch(err){
+      console.warn('Erreur load freq48 ' + cle + ' :', err.message);
+      _freq48ZonePromises[cle] = null;       // reessayable
+    }
+  })();
+  return _freq48ZonePromises[cle];
+}
+
 async function _loadFreqDataForCountry(cc){
   if(_freqDataPromises[cc]) return _freqDataPromises[cc];
   const filename = 'data/countries/' + cc.toLowerCase() + '/freq_by_region.json?v=20260830';
@@ -12032,6 +12083,18 @@ function _renderSpeciesFreqChart(key, country){
   const regionBelongsToCC = _speciesRegion &&
     zonesFichePourPays(cc).some(r => r.code === _speciesRegion);
   const strictRegional = !!regionBelongsToCC;
+  // Les 48 quinzaines de la zone selectionnee : premier rendu avec les 12 mois etires,
+  // redessine des qu'elles arrivent. Pose apres strictRegional pour ne demander que des
+  // zones appartenant au pays affiche — sinon une region restee en memoire d'une fiche
+  // d'un autre pays declencherait un 404 a chaque ouverture.
+  if(strictRegional && typeof _loadFreq48Zone === 'function'
+     && !(REAL_FREQ_48_ZONE[cc] && REAL_FREQ_48_ZONE[cc][_speciesRegion])){
+    const zoneDemandee = _speciesRegion;
+    _loadFreq48Zone(cc, zoneDemandee).then(() => {
+      if(REAL_FREQ_48_ZONE[cc] && REAL_FREQ_48_ZONE[cc][zoneDemandee]
+         && _speciesRegion === zoneDemandee && !_ccFicheObsolete(cc)) _renderSpeciesFreqChart(key, cc);
+    });
+  }
   // Decision 2026-09-22 : le bar chart utilise TOUJOURS le bar chart % checklists
   // (plus intuitif pour un birder : "quand est-ce qu'on la voit"). Le S&T Cornell reste
   // utilise pour le tier composite et la carte de repartition.
@@ -12062,7 +12125,12 @@ function _renderSpeciesFreqChart(key, country){
       // eBird publie 48 quinzaines : on les affiche telles quelles quand on les a, plutot
       // que d'etirer 12 moyennes mensuelles sur 52 creneaux, ce qui produisait des groupes
       // de 4 barres strictement identiques. A defaut, on retombe sur l'etirement.
-      const q48 = (!strictRegional && REAL_FREQ_48_MULTI[cc]) ? REAL_FREQ_48_MULTI[cc][key] : null;
+      // En mode region on prend les 48 quinzaines DE LA ZONE ; hors mode region, celles du
+      // pays. Melanger les deux afficherait une courbe nationale sous un titre regional.
+      const q48 = regionScope
+        ? ((REAL_FREQ_48_ZONE[cc] && REAL_FREQ_48_ZONE[cc][regionScope]
+            && REAL_FREQ_48_ZONE[cc][regionScope][key]) || null)
+        : ((REAL_FREQ_48_MULTI[cc] && REAL_FREQ_48_MULTI[cc][key]) || null);
       if(Array.isArray(q48) && q48.length === 48){
         arr = q48.slice();
       } else {
