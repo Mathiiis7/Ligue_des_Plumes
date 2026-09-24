@@ -1,3 +1,9 @@
+# PERIME - ne plus lancer. Sa sortie, data/countries/<cc>/abundance_st_by_region.json, a
+# ete supprimee le 2026-09-24 : plus personne ne la lisait depuis que le selecteur de zones
+# et le graphique de saisonnalite sont passes au bar chart seul (decision du 2026-09-22).
+# 4,1 Mo de fichiers, dont 732 Ko telecharges a chaque ouverture de fiche francaise.
+# Conserve pour documenter la chaine ebirdst, au cas ou le S&T regional revienne.
+
 # build-abundance-by-region-multi.R
 #
 # Genere le S&T weekly par region pour les pays non-FR : ES/IT/GB/PT/ME.

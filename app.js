@@ -316,9 +316,6 @@ function _isEstablishedExotic(cat){ return cat === 'N'; }
 // dans les statistiques de rarete. Renvoie false pour une espece non exotique (cat vide).
 function _isUnestablishedExotic(cat){ return cat === 'P' || cat === 'X' || cat === 'C'; }
 // Seuils de conversion valeur -> tier de rarete (1 = omnipresent, 10 = exceptionnel).
-// _WEEKLY_THR : abondance hebdomadaire Cornell S&T (individus/heure). C'est une autre
-// unite, elle garde donc sa table ; la conversion entre les deux passe par les paliers.
-const _WEEKLY_THR  = [[2.2596,1],[0.8496,2],[0.34178,3],[0.12404,4],[0.04666,5],[0.01880,6],[0.00440,7],[0.00114,8],[0.00009,9]];
 // L'UNIQUE echelle de rarete de l'appli : part des listes qui citent l'espece, sur la
 // periode qu'on regarde. Elle vaut pour le palier national, pour la valeur annuelle d'une
 // zone, pour un mois precis et pour les barres du graphique de saisonnalite.
@@ -358,7 +355,6 @@ const _PIC_MINI_SAISON = 0.005;
 const _ANNUAL_THR = [[0.24,1],[0.12,2],[0.06,3],[0.03,4],[0.015,5],[0.0075,6],[0.002,7],[0.0005,8],[0.0001,9]];
 const _tierFromThresholds = (v, thr) => { if(!(v > 0)) return 10; for(const [lim, t] of thr) if(v >= lim) return t; return 10; };
 const annualFreqToTier = v => _tierFromThresholds(v, _ANNUAL_THR);
-const weeklyAbundanceToTier = v => _tierFromThresholds(v, _WEEKLY_THR);
 // Tier pour un exotique. Selon la categorie, on prime la source la plus juste :
 //   N (etabli sauvage) / C (domestique) -> eBird (effort-normalise, refllete la vraie
 //     frequence de rencontre en pleine nature).
@@ -416,11 +412,6 @@ const REAL_FREQ_MONTHLY = {"dendrocygna viduata":[0,0.00036,0.00013,0.00034,0.00
 let REAL_FREQ_MONTHLY_BY_REGION = {};   // stub, chargé par _loadMapData() (lazy, ~5 MB de data)
 let REAL_ABUNDANCE_DEPT = {};   // stub, chargé par _loadMapData() (lazy, ~5 MB de data)
 let REAL_ABUNDANCE_DEPT_MEAN = {};   // stub, chargé par _loadMapData() (lazy, ~5 MB de data)
-let REAL_ABUNDANCE_ST_BY_REGION_FR = {};   // stub, chargé par _loadAbundanceRegionData() (lazy, ~3 MB) - S&T weekly par région FR
-// Dict multi-pays des S&T weekly par region : { FR: {...}, ME: {...}, ES: {...}, ... }
-// Charge lazy par _loadAbundanceRegionData(cc). Coexiste avec REAL_ABUNDANCE_ST_BY_REGION_FR
-// (qui reste peuplee pour compat) mais REAL_ABUNDANCE_ST_BY_REGION.FR pointe sur le meme dict.
-let REAL_ABUNDANCE_ST_BY_REGION = {};
 
 // Ajout 2026-09-21 : rarete + freq mensuel pour Suisse, Norvege, Grece, Islande, Sri Lanka, Namibie.
 const REAL_RARITY_CH_EBIRD = {"dendrocygna viduata":9,"dendrocygna autumnalis":8,"dendrocygna bicolor":9,"dendrocygna arcuata":10,"anser indicus":8,"anser anser":3,"anser cygnoides":9,"anser albifrons":7,"anser serrirostris":8,"anser brachyrhynchus":8,"branta bernicla":9,"branta leucopsis":10,"branta hutchinsii":10,"branta canadensis":7,"branta sandvicensis":10,"branta ruficollis":8,"cygnus olor":2,"cygnus atratus":8,"cygnus columbianus":8,"cygnus cygnus":7,"oressochen melanopterus":10,"alopochen aegyptiaca":4,"tadorna ferruginea":5,"tadorna cana":9,"tadorna tadorna":5,"cairina moschata":8,"callonetta leucophrys":8,"aix sponsa":10,"aix galericulata":7,"chenonetta jubata":10,"sibirionetta formosa":10,"spatula querquedula":5,"spatula hottentota":10,"spatula cyanoptera":10,"spatula clypeata":3,"mareca strepera":3,"mareca falcata":9,"mareca penelope":5,"mareca sibilatrix":9,"anas platyrhynchos":1,"anas bahamensis":8,"anas erythrorhyncha":10,"anas acuta":5,"anas georgica":9,"anas crecca":3,"anas flavirostris":10,"anas aucklandica":10,"netta rufina":3,"netta peposaca":10,"aythya ferina":3,"aythya collaris":8,"aythya nyroca":7,"aythya baeri":10,"aythya fuligula":2,"aythya marila":7,"aythya affinis":9,"somateria mollissima":7,"histrionicus histrionicus":10,"melanitta perspicillata":9,"melanitta fusca":7,"melanitta nigra":8,"clangula hyemalis":8,"bucephala clangula":5,"mergellus albellus":8,"lophodytes cucullatus":9,"mergus merganser":2,"mergus serrator":7,"oxyura jamaicensis":10,"colinus virginianus":10,"tetrastes bonasia":8,"lagopus muta":7,"tetrao urogallus":8,"lyrurus tetrix":7,"perdix perdix":10,"syrmaticus reevesii":10,"phasianus colchicus":7,"lophura nycthemera":10,"pavo cristatus":10,"coturnix coturnix":7,"coturnix japonica":10,"alectoris graeca":7,"columba livia":2,"columba oenas":4,"columba palumbus":1,"streptopelia turtur":7,"streptopelia orientalis":9,"streptopelia decaocto":2,"tetrax tetrax":10,"clamator glandarius":10,"cuculus canorus":4,"caprimulgus europaeus":8,"tachymarptis melba":4,"apus apus":2,"apus pallidus":8,"rallus aquaticus":3,"crex crex":9,"porzana porzana":7,"gallinula chloropus":2,"fulica atra":1,"porphyrio porphyrio":10,"zapornia parva":8,"zapornia pusilla":9,"grus grus":7,"burhinus oedicnemus":9,"himantopus himantopus":7,"recurvirostra avosetta":8,"haematopus ostralegus":8,"pluvialis squatarola":7,"pluvialis apricaria":8,"pluvialis fulva":10,"eudromias morinellus":8,"charadrius hiaticula":6,"thinornis dubius":5,"vanellus vanellus":4,"vanellus gregarius":9,"anarhynchus alexandrinus":9,"numenius phaeopus":7,"numenius arquata":4,"limosa lapponica":8,"limosa limosa":7,"lymnocryptes minimus":7,"scolopax rusticola":7,"gallinago media":9,"gallinago gallinago":3,"phalaropus fulicarius":9,"phalaropus lobatus":8,"xenus cinereus":9,"actitis hypoleucos":4,"actitis macularius":9,"tringa ochropus":5,"tringa stagnatilis":9,"tringa glareola":5,"tringa totanus":7,"tringa flavipes":10,"tringa erythropus":7,"tringa nebularia":5,"arenaria interpres":8,"calidris canutus":8,"calidris pugnax":5,"calidris falcinellus":9,"calidris ferruginea":7,"calidris temminckii":7,"calidris alba":8,"calidris alpina":5,"calidris minuta":7,"calidris melanotos":9,"calidris mauri":10,"glareola pratincola":9,"glareola nordmanni":9,"stercorarius longicaudus":9,"stercorarius parasiticus":9,"stercorarius pomarinus":9,"stercorarius skua":9,"hydrocoloeus minutus":7,"rissa tridactyla":9,"xema sabini":10,"chroicocephalus genei":9,"chroicocephalus philadelphia":9,"chroicocephalus ridibundus":2,"leucophaeus atricilla":10,"leucophaeus pipixcan":10,"ichthyaetus audouinii":9,"ichthyaetus melanocephalus":6,"larus canus":4,"larus cachinnans":7,"larus argentatus":7,"larus michahellis":1,"larus marinus":8,"larus fuscus":6,"sternula albifrons":9,"gelochelidon nilotica":9,"hydroprogne caspia":7,"chlidonias hybrida":8,"chlidonias niger":6,"chlidonias leucopterus":8,"sterna paradisaea":9,"sterna hirundo":4,"sterna dougallii":10,"thalasseus sandvicensis":9,"phoenicopterus roseus":8,"tachybaptus ruficollis":2,"podiceps auritus":7,"podiceps grisegena":7,"podiceps cristatus":1,"podiceps nigricollis":5,"gavia stellata":8,"gavia arctica":7,"gavia immer":8,"ciconia nigra":8,"ciconia ciconia":3,"microcarbo pygmaeus":7,"phalacrocorax carbo":1,"plegadis falcinellus":8,"threskiornis aethiopicus":8,"geronticus eremita":8,"platalea leucorodia":7,"botaurus stellaris":6,"botaurus minutus":6,"nycticorax nycticorax":6,"egretta garzetta":5,"ardeola ralloides":8,"ardea ibis":7,"ardea alba":3,"ardea cinerea":1,"ardea purpurea":6,"cathartes aura":10,"pandion haliaetus":7,"elanus caeruleus":8,"gypaetus barbatus":6,"neophron percnopterus":10,"pernis apivorus":6,"aegypius monachus":8,"gyps fulvus":7,"circaetus gallicus":7,"clanga pomarina":10,"clanga clanga":10,"hieraaetus pennatus":9,"aquila heliaca":10,"aquila chrysaetos":5,"aquila fasciata":10,"accipiter nisus":4,"astur gentilis":6,"circus aeruginosus":4,"circus cyaneus":7,"circus macrourus":9,"circus pygargus":8,"milvus milvus":1,"milvus migrans":2,"haliaeetus albicilla":8,"buteo lagopus":9,"buteo buteo":1,"buteo rufinus":10,"tyto alba":8,"otus scops":8,"bubo bubo":7,"glaucidium passerinum":8,"athene noctua":8,"strix aluco":6,"asio otus":7,"asio flammeus":8,"aegolius funereus":8,"upupa epops":7,"merops apiaster":7,"alcedo atthis":3,"coracias garrulus":8,"jynx torquilla":5,"picoides tridactylus":8,"dendrocoptes medius":5,"dendrocopos leucotos":9,"dendrocopos major":2,"dryobates minor":5,"picus canus":7,"picus viridis":2,"dryocopus martius":4,"daptrius megalopterus":10,"falco naumanni":10,"falco tinnunculus":2,"falco vespertinus":7,"falco columbarius":8,"falco subbuteo":5,"falco cherrug":10,"falco peregrinus":5,"nymphicus hollandicus":10,"psittacula eupatria":10,"psittacula krameri":9,"melopsittacus undulatus":9,"trichoglossus haematodus":10,"poicephalus senegalus":10,"oriolus oriolus":5,"lanius collurio":4,"lanius cristatus":10,"lanius excubitor":7,"lanius minor":9,"lanius senator":9,"garrulus glandarius":2,"pica pica":1,"nucifraga caryocatactes":4,"pyrrhocorax pyrrhocorax":8,"pyrrhocorax graculus":4,"coloeus monedula":3,"corvus frugilegus":3,"corvus corone":1,"corvus cornix":5,"corvus corax":3,"periparus ater":2,"lophophanes cristatus":3,"poecile palustris":2,"poecile montanus":4,"cyanistes caeruleus":1,"parus major":1,"remiz pendulinus":7,"lullula arborea":7,"alauda arvensis":4,"galerida cristata":10,"calandrella brachydactyla":9,"melanocorypha calandra":10,"alaudala rufescens":10,"panurus biarmicus":6,"cisticola juncidis":8,"hippolais polyglotta":7,"hippolais icterina":8,"acrocephalus paludicola":9,"acrocephalus melanopogon":9,"acrocephalus schoenobaenus":6,"acrocephalus dumetorum":9,"acrocephalus palustris":6,"acrocephalus scirpaceus":3,"acrocephalus arundinaceus":5,"locustella fluviatilis":10,"locustella luscinioides":5,"locustella naevia":7,"riparia riparia":5,"ptyonoprogne rupestris":4,"hirundo rustica":2,"delichon urbicum":2,"cecropis rufula":9,"pycnonotus leucotis":10,"phylloscopus sibilatrix":7,"phylloscopus bonelli":5,"phylloscopus inornatus":9,"phylloscopus humei":10,"phylloscopus proregulus":10,"phylloscopus fuscatus":10,"phylloscopus trochilus":4,"phylloscopus collybita":1,"phylloscopus ibericus":9,"cettia cetti":7,"aegithalos caudatus":2,"sylvia atricapilla":1,"sylvia borin":4,"curruca curruca":5,"curruca melanocephala":9,"curruca subalpina":10,"curruca iberiae":9,"curruca cantillans":9,"curruca communis":6,"curruca conspicillata":10,"curruca undata":9,"regulus regulus":3,"regulus ignicapilla":3,"tichodroma muraria":7,"sitta europaea":2,"certhia familiaris":4,"certhia brachydactyla":2,"troglodytes troglodytes":2,"cinclus cinclus":5,"sturnus vulgaris":1,"pastor roseus":9,"lamprotornis splendidus":10,"lamprotornis superbus":10,"turdus viscivorus":3,"turdus philomelos":3,"turdus iliacus":6,"turdus merula":1,"turdus pilaris":3,"turdus torquatus":6,"muscicapa striata":4,"erithacus rubecula":1,"luscinia megarhynchos":4,"luscinia svecica":7,"ficedula parva":10,"ficedula hypoleuca":4,"ficedula albicollis":8,"phoenicurus phoenicurus":4,"phoenicurus ochruros":1,"monticola saxatilis":7,"monticola solitarius":8,"saxicola rubetra":5,"saxicola rubicola":4,"saxicola maurus":9,"oenanthe oenanthe":4,"oenanthe isabellina":10,"oenanthe hispanica":10,"oenanthe melanoleuca":9,"bombycilla garrulus":10,"euplectes afer":10,"lonchura punctulata":10,"lonchura malacca":10,"prunella collaris":6,"prunella modularis":4,"passer domesticus":1,"passer italiae":5,"passer hispaniolensis":10,"passer montanus":2,"montifringilla nivalis":6,"motacilla cinerea":3,"motacilla flava":4,"motacilla citreola":9,"motacilla alba":1,"anthus richardi":10,"anthus campestris":8,"anthus pratensis":4,"anthus trivialis":5,"anthus hodgsoni":10,"anthus cervinus":8,"anthus spinoletta":3,"fringilla coelebs":1,"fringilla montifringilla":5,"coccothraustes coccothraustes":4,"carpodacus erythrinus":8,"pyrrhula pyrrhula":4,"chloris chloris":2,"linaria cannabina":4,"acanthis flammea":6,"loxia curvirostra":5,"carduelis carduelis":1,"carduelis citrinella":7,"serinus serinus":3,"serinus canaria":10,"spinus spinus":3,"spinus magellanicus":10,"calcarius lapponicus":10,"plectrophenax nivalis":9,"emberiza melanocephala":9,"emberiza calandra":6,"emberiza cia":6,"emberiza cirlus":6,"emberiza citrinella":3,"emberiza leucocephalos":9,"emberiza hortulana":8,"emberiza schoeniclus":3,"emberiza pusilla":9,"emberiza rustica":10,"geothlypis trichas":9,"gubernatrix cristata":10};
@@ -753,7 +744,7 @@ function _openCountryPicker(currentCode, opts = {}){
     // declenchait que pour 6 especes francaises, toutes pourvues d'un tier bar chart et
     // seulement privees de tableau mensuel. Elles scorent desormais 0 comme les 40 autres
     // especes dans le meme cas, ce qui est au moins coherent. Meme choix que le panneau
-    // regional, ou useST est fige a false.
+    // regional, qui ne lit plus que le bar chart lui aussi.
     const scoreCountryForSpecies = (cc) => {
       const reg = COUNTRIES_REG[cc];
       const monArr = reg.monthly()[focusSci];
@@ -763,7 +754,6 @@ function _openCountryPicker(currentCode, opts = {}){
       }
       return { score: 0, isSt: false };
     };
-    const fmtST = v => v >= 10 ? Math.round(v)+' ind/h' : v >= 1 ? v.toFixed(1)+' ind/h' : v >= 0.01 ? v.toFixed(2)+' ind/h' : v >= 0.001 ? v.toFixed(3)+' ind/h' : v > 0 ? '<0.001 ind/h' : '-';
     // Une decimale au maximum, comme dans la liste des zones : « 0.62% » est plus large que
     // « 3.4% » et decalerait les barres d'une ligne a l'autre.
     const fmtPct = v => { if(!(v>0)) return '-'; const p = v*100; if(p >= 10) return Math.round(p)+'%'; if(p >= 0.1) return p.toFixed(1)+'%'; return '<0.1%'; };
@@ -6152,30 +6142,6 @@ async function _loadAbundanceData(){
 }
 // Compat : ancien nom, redirige vers freq (le seul requis pour tous les modes non-abondance).
 async function _loadMapData(){ return _loadFreqData(); }
-// Fetch cache par pays pour eviter double-fetch (chaque pays lazy-loade sa data S&T regionale).
-const _abundanceRegionPromises = {};
-async function _loadAbundanceRegionData(cc){
-  const country = cc || 'FR';
-  if(_abundanceRegionPromises[country]) return _abundanceRegionPromises[country];
-  _abundanceRegionPromises[country] = (async () => {
-    const filename = 'data/countries/' + country.toLowerCase() + '/abundance_st_by_region.json?v=20260830';
-    try{
-      const data = await fetch(filename).then(r => {
-        if(!r.ok) throw new Error('HTTP '+r.status);
-        return r.json();
-      });
-      REAL_ABUNDANCE_ST_BY_REGION[country] = data;
-      // Compat : REAL_ABUNDANCE_ST_BY_REGION_FR reste peuplee pour code existant.
-      if(country === 'FR') REAL_ABUNDANCE_ST_BY_REGION_FR = data;
-    }catch(err){
-      console.warn(filename + ' indisponible (fallback national) :', err.message);
-      REAL_ABUNDANCE_ST_BY_REGION[country] = {};
-      if(country === 'FR') REAL_ABUNDANCE_ST_BY_REGION_FR = {};
-      _abundanceRegionPromises[country] = null;   // permet retry
-    }
-  })();
-  return _abundanceRegionPromises[country];
-}
 // Traits Avonet (ecologie + morphologie), lazy load 1.4 MB au 1er open de fiche.
 let AVONET_TRAITS = null;
 let _avonetTraitsPromise = null;
@@ -11613,22 +11579,14 @@ function _renderSpeciesRarityCard(key){
     const regList = zonesFichePourPays(cc);
     if(!regList.length) return '';
     const reg = COUNTRIES_REG[cc];
-    const stByReg = (typeof REAL_ABUNDANCE_ST_BY_REGION === 'object' && REAL_ABUNDANCE_ST_BY_REGION[cc]) || {};
     const freqByReg = (reg && typeof reg.monthlyByRegion === 'function') ? (reg.monthlyByRegion() || {}) : {};
-    // Toujours utiliser le bar chart mensuel (%) pour cohérence avec le reste de la fiche
-    // (choix produit : plus d'ind/h nulle part). Le S&T weekly ind/h existe mais est
-    // subjectivement pas comparable au %, donc retire du picker regional aussi.
-    const useST = false;
-    const fmtST = v => v >= 10 ? Math.round(v)+' ind/h' : v >= 1 ? v.toFixed(1)+' ind/h' : v >= 0.01 ? v.toFixed(2)+' ind/h' : v >= 0.001 ? v.toFixed(3)+' ind/h' : v > 0 ? '<0.001 ind/h' : '-';
     // Une decimale au maximum : "0.62%" etait plus large que "3.4%", ce qui elargissait
     // la colonne des valeurs et decalait les barres d une ligne a l autre.
     const fmtPct = v => { if(!(v>0)) return '-'; const p = v*100; if(p >= 10) return Math.round(p)+'%'; if(p >= 0.1) return p.toFixed(1)+'%'; return '<0.1%'; };
     // Score = valeur annuelle (cf. _valeurAnnuelleZone), le meme critere que la carte
     // pour que l'ordre de la liste et les couleurs racontent la meme chose.
     const scored = regList.map(r => {
-      const serie = useST
-        ? (stByReg[r.code] && stByReg[r.code][k] || {}).w
-        : (freqByReg[r.code] && freqByReg[r.code][k]);
+      const serie = freqByReg[r.code] && freqByReg[r.code][k];
       const score = _valeurAnnuelleZone(serie, cc, r.code);
       // Pic conserve pour l'infobulle : "en moyenne X, jusqu'a Y en <mois>".
       let pic = 0, moisPic = -1;
@@ -11645,7 +11603,7 @@ function _renderSpeciesRarityCard(key){
       // serait-ce qu'un mois a un score non nul : le cas special qui les rattrapait n'a
       // plus lieu d'etre.
       const absent = s.score === 0;
-      const tier = absent ? 10 : (useST ? weeklyAbundanceToTier(s.score) : annualFreqToTier(s.score));
+      const tier = absent ? 10 : annualFreqToTier(s.score);
       const col = realColor(tier);
       // Remplissage ABSOLU, pas relatif au maximum : la barre doit dire la meme chose que
       // le pourcentage affiche a cote. En relatif, la zone de tete etait toujours pleine,
@@ -11653,10 +11611,10 @@ function _renderSpeciesRarityCard(key){
       // presence tres faible reste visible ; l'ordre de la liste porte deja la comparaison
       // entre zones, que le mode relatif etait cense apporter.
       const barW = s.score > 0 ? Math.min(100, Math.max(3, Math.round(s.score * 100))) : 0;
-      const val = absent ? 'absente' : (useST ? fmtST(s.score) : fmtPct(s.score));
+      const val = absent ? 'absente' : fmtPct(s.score);
       // Infobulle : le nombre affiche est une moyenne annuelle, on donne le pic et le
       // nombre de mois de presence pour que la saisonnalite reste lisible.
-      const fmt = useST ? fmtST : fmtPct;
+      const fmt = fmtPct;
       const titre = absent
         ? `${s.name} — jamais observée`
         : `${s.name} — ${fmt(s.score)} sur l'année` +
@@ -11928,8 +11886,7 @@ function _renderSpeciesRarityCard(key){
   const loadRegionalDataFor = (cc) => {
     const proms = [];
     if(typeof _loadFreqDataForCountry === 'function') proms.push(_loadFreqDataForCountry(cc));
-    // S&T regional dispo pour FR/ES/IT/GB/PT/ME (fichier par pays, chargement lazy).
-    if(typeof _loadAbundanceRegionData === 'function') proms.push(_loadAbundanceRegionData(cc));
+
     return proms.length ? Promise.all(proms) : Promise.resolve();
   };
   loadRegionalDataFor(initCountry).then(() => {
@@ -12311,7 +12268,6 @@ function _renderSpeciesFreqChart(key, country){
   // Decision 2026-09-22 : le bar chart utilise TOUJOURS le bar chart % checklists
   // (plus intuitif pour un birder : "quand est-ce qu'on la voit"). Le S&T Cornell reste
   // utilise pour le tier composite et la carte de repartition.
-  const stByReg = REAL_ABUNDANCE_ST_BY_REGION[cc];
   let monthlyArr = null;   // source mensuelle si fallback : garde pour tooltips "mois"
   if(!arr){
     // Bar chart mensuel REGIONAL prime en mode strict regional (Fix 2026-09-22 : avant,
