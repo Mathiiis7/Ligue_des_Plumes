@@ -10684,44 +10684,6 @@ function _wireCustomAudioPlayer(playerEl){
     });
   }
 }
-// Chips info (rareté + famille + habitats + IUCN) sous le titre de la fiche.
-// Palette et labels IUCN standard, cohérents avec eBird / IUCN Red List. Applique
-// aux statuts nationaux (FR - liste rouge oiseaux nicheurs 2016) et mondiaux.
-const IUCN_COLORS = {
-  EX: '#000000', EW: '#542344', RE: '#78216d',
-  CR: '#d81e05', EN: '#fc7f3f', VU: '#f9e814',
-  NT: '#cce226', LC: '#60c659',
-  DD: '#d1d1c6', NE: '#ffffff',
-  NAa: '#e7e7e7', NAb: '#e7e7e7', NAc: '#e7e7e7', NAd: '#e7e7e7'
-};
-const IUCN_LABELS = {
-  EX: 'Éteinte', EW: 'Éteinte à l\'état sauvage', RE: 'Éteinte en France',
-  CR: 'En danger critique', EN: 'En danger', VU: 'Vulnérable',
-  NT: 'Quasi menacée', LC: 'Préoccupation mineure',
-  DD: 'Données insuffisantes', NE: 'Non évaluée',
-  NAa: 'Non applicable (introduite)', NAb: 'Non applicable (occasionnelle)',
-  NAc: 'Non applicable (marginale)', NAd: 'Non applicable (données historiques)'
-};
-function _iucnBadge(sci, scope){
-  if(typeof REDLIST !== 'object') return '';
-  const k = (sci||'').toLowerCase().trim();
-  let entry = REDLIST[k];
-  // Fallback pour les exotiques (cage/voliere/parc) absents de la Liste Rouge France :
-  // ils ne sont pas evalues sur la LR FR (pas nicheurs sauvages). On affiche NAa FR
-  // (Non applicable - introduite) pour signaler visuellement leur statut.
-  if(!entry && typeof isExotic === 'function' && isExotic(k)){
-    entry = { fr: 'NAa', global: null };
-  }
-  if(!entry) return '';
-  const code = entry[scope]; if(!code) return '';
-  const col = IUCN_COLORS[code] || '#999';
-  const lbl = IUCN_LABELS[code] || code;
-  // Contour noir sur les statuts pale (NE, NA*, DD) pour lisibilite du texte.
-  const border = ['NE','NAa','NAb','NAc','NAd','DD'].includes(code) ? 'border:1px solid var(--line);' : '';
-  const textColor = ['VU','NT','NE','NAa','NAb','NAc','NAd','DD'].includes(code) ? '#000' : '#fff';
-  const scopeLbl = scope === 'fr' ? 'France' : 'Monde';
-  return `<span class="chip" title="${esc(scopeLbl)} : ${esc(lbl)} (IUCN ${esc(code)})" style="background:${col}; color:${textColor}; font-weight:800; letter-spacing:.3px; ${border}">${esc(code)}<span style="opacity:.75; margin-left:4px; font-weight:600; font-size:9px; text-transform:uppercase;">${scope==='fr'?'FR':'⊕'}</span></span>`;
-}
 // Rendu de la card Traits (Avonet) : ecologie + morphologie de l'espece.
 // Lazy fetch au 1er open (1.4 MB de data), puis affichage compact.
 async function _renderSpeciesTraitsCard(key){
@@ -11152,11 +11114,11 @@ function _renderSpeciesConfuseCard(sci){
 function _renderSpeciesInfoChips(key){
   const box = $('#smInfoChips'); if(!box) return;
   const chips = [];
-  // Statut IUCN France + Global (si different + evalue).
-  const iucnFr = _iucnBadge(key, 'fr');
-  if(iucnFr) chips.push(iucnFr);
-  const rl = (typeof REDLIST === 'object') ? REDLIST[key] : null;
-  if(rl && rl.global && rl.global !== rl.fr && rl.global !== 'NE') chips.push(_iucnBadge(key, 'global'));
+  // Les pastilles de statut IUCN (France + Monde) se posaient ici. Retirees le 2026-09-24 :
+  // montrer un statut Liste rouge aux autres utilisateurs d'une appli web est du
+  // « reposting » au sens de la section 4 des conditions de l'IUCN, et demande leur
+  // autorisation ecrite prealable - que nous n'avons pas. Le fait que la donnee venait de
+  // Wikipedia (statut France) et de GBIF (statut mondial) ne change pas ce qui etait affiche.
   // Famille + habitats
   const fam = familyOf(key); if(fam) chips.push(`<span class="chip" title="Famille taxonomique">${esc(fam)}</span>`);
   const habs = (typeof habitatsOf === 'function') ? habitatsOf(key) : null;
@@ -12316,18 +12278,9 @@ async function _generatePortrait(sci){
       }
     }
   }catch(_){}
-  // 4. Statut IUCN
-  try{
-    const rl = (typeof REDLIST === 'object') ? REDLIST[key] : null;
-    if(rl){
-      const IUCN_TXT = {
-        CR:'En danger critique d\'extinction.', EN:'En danger.', VU:'Vulnérable.',
-        NT:'Quasi menacée.', RE:'Éteinte à l\'état sauvage en France.', EX:'Espèce éteinte.', EW:'Éteinte à l\'état sauvage.'
-      };
-      const status = rl.fr && IUCN_TXT[rl.fr] ? IUCN_TXT[rl.fr] : (rl.global && IUCN_TXT[rl.global] ? IUCN_TXT[rl.global] : null);
-      if(status) sentences.push(`⚠️ ${status}`);
-    }
-  }catch(_){}
+  // Le statut de conservation ecrivait ici « En danger. », « Vulnerable. » etc. Retire
+  // en meme temps que les pastilles : c'est la meme donnee Liste rouge, la supprimer
+  // d'un cote et la garder de l'autre n'aurait rien change.
   return sentences.length ? sentences.join(' ') : null;
 }
 // Descriptions curated (style Merlin) generees et commit dans data/species-descriptions.json.
