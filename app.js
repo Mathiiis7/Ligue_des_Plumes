@@ -11767,16 +11767,19 @@ function _renderSpeciesRarityCard(key){
     // souchet est "Assez commun" au Portugal et deux crans plus rare aux Acores, et afficher
     // le palier national sous une zone selectionnee contredisait la carte juste en dessous.
     // Zone sans donnee pour cette espece : on garde le national plutot que d annoncer 10.
-    let w = rarityForCountry(k, cc);
+    let w = rarityForCountry(k, cc), absenteZone = false;
     const zoneLue = (_speciesRegion && typeof zonesFichePourPays === 'function'
       && zonesFichePourPays(cc).some(r => r.code === _speciesRegion)) ? _speciesRegion : '';
     if(zoneLue){
       const byZone = (typeof REAL_FREQ_MONTHLY_BY_REGION_MULTI === 'object')
         ? REAL_FREQ_MONTHLY_BY_REGION_MULTI[cc] : null;
       const serie = byZone && byZone[zoneLue] ? byZone[zoneLue][k] : null;
-      if(Array.isArray(serie)){
-        const v = _valeurAnnuelleZone(serie, cc, zoneLue);
-        if(v > 0) w = annualFreqToTier(v);
+      // byZone absent = donnees pas encore chargees : on garde le national en attendant.
+      // byZone present mais serie vide = l espece n a jamais ete notee ici, et c est une
+      // information, pas un trou : on l affiche comme telle.
+      if(byZone && byZone[zoneLue]){
+        const v = Array.isArray(serie) ? _valeurAnnuelleZone(serie, cc, zoneLue) : 0;
+        if(v > 0) w = annualFreqToTier(v); else absenteZone = true;
       }
     }
     // isExo est PER-PAYS via isExoticInCountry (le Pelican gris est exotique X en ME
@@ -11816,7 +11819,11 @@ function _renderSpeciesRarityCard(key){
     // Fix 2026-09-22 : N/P avec w=0 (aucun bar chart aggrege sur 7 ans) -> "Absente"
     // au lieu de "Parc semi-libre" (label REAL_LABELS[0] trompeur). Ex Flamant rose P en GB.
     const noBarData = isEstab && w === 0;
-    const label = noBarData
+    const nomZone = zoneLue
+      ? ((zonesFichePourPays(cc).find(r => r.code === zoneLue) || {}).name || zoneLue) : '';
+    const label = absenteZone
+      ? 'Jamais notée ' + (nomZone ? 'en ' + nomZone : 'ici')
+      : noBarData
       ? 'Absente du bar chart'
       : (isExo
           ? (isEstab ? ((typeof REAL_LABELS === 'object' && REAL_LABELS[w]) || ('niveau '+w)) : 'Exotique')
@@ -11833,10 +11840,10 @@ function _renderSpeciesRarityCard(key){
     // exotiques etablis N/P (aligne avec le comportement des cartes Birdydex). X et C
     // avec tier > 0 restent numeriques. Tier 0 exotique : lettre cat (N/P/X/C).
     const useCatLetter = isExo && _isEstablishedExotic(cat) && w > 0;
-    const pillTxt = (w === 0 && isExo) ? (cat || 'X') : (useCatLetter ? cat : w);
+    const pillTxt = absenteZone ? '–' : ((w === 0 && isExo) ? (cat || 'X') : (useCatLetter ? cat : w));
     // Couleur de fond : par defaut, couleur du tier (rareté). Pour l'exotique tier 0
     // (X/C echappe non-etabli), on force gris neutre pour signifier "hors barème".
-    const pillBg = (w === 0 && isExo) ? '#7e8a99' : color;
+    const pillBg = absenteZone ? 'var(--line-2)' : ((w === 0 && isExo) ? '#7e8a99' : color);
     // La pastille commune, comme partout ailleurs. Elle avait ici sa propre taille - 48 px
     // de large, 15 px de police - pour que la position du libelle ne bouge pas entre un
     // « X » et un « 10 ». Le format unique prime : l'ecart restant entre un et deux
