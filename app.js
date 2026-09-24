@@ -11564,9 +11564,13 @@ async function _renderRarityMap(sci, cc){
       <div style="margin-top:6px; padding:10px 12px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2, #fafafa);">
         <div style="display:flex; align-items:flex-start; justify-content:flex-start; gap:8px;">
           <div id="smRarityMapMois" style="display:flex; flex-direction:column; gap:2px; flex:0 0 auto; width:62px;">${moisBtns}</div>
-          <div style="flex:1 1 auto; min-width:0; max-width:420px; margin:0 auto;"><svg viewBox="${paths.viewBox}" style="width:100%; height:auto; display:block;" role="img" aria-label="Rareté par ${zoneWord} sur ${libellePeriode}">
+          <div style="flex:1 1 auto; min-width:0;"><svg viewBox="${paths.viewBox}" style="width:100%; max-width:320px; height:auto; display:block; margin:0 auto;" role="img" aria-label="Rareté par ${zoneWord} sur ${libellePeriode}">
             ${svgZones}
           </svg></div>
+          <!-- Colonne fantome de la largeur du selecteur de mois : sans elle, la carte se
+               centrerait dans la place restante et non dans le panneau, donc pas au meme
+               endroit que la carte de statut exotique juste en dessous. -->
+          <div style="flex:0 0 62px;" aria-hidden="true"></div>
         </div>
         <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; font-size:11px; color:var(--ink-2); justify-content:center;">
           ${legendItem(realColor(1),'Commun')}
