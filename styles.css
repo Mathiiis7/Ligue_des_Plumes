@@ -1749,6 +1749,12 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .pkdx-card:hover { transform:translateY(-2px); box-shadow:0 6px 14px rgba(0,0,0,.12); border-color:var(--accent); }
   .pkdx-card .pkdx-num { position:absolute; top:6px; left:8px; font:700 10px ui-monospace, monospace; color:var(--ink-3); background:rgba(255,255,255,.85); padding:1px 6px; border-radius:8px; z-index:2; }
   .pkdx-card .pkdx-tier { position:absolute; top:6px; right:8px; width:20px; height:20px; border-radius:50%; color:#fff; font:800 10px system-ui; display:grid; place-items:center; box-shadow:0 1px 3px rgba(0,0,0,.3); z-index:2; }
+  /* Repere des especes nettement saisonnieres : pic mensuel >= 3x la moyenne annuelle. Le
+     tier repose sur l annuel et ne le dit pas, alors qu il suffit souvent de viser le bon
+     mois. Pose sous le numero, a gauche, pour ne pas concurrencer la pastille de tier. */
+  .pkdx-card .pkdx-saison { position:absolute; top:24px; left:8px; font-size:11px; line-height:1;
+    color:var(--ink-3); background:var(--surface); border-radius:50%; width:16px; height:16px;
+    display:grid; place-items:center; cursor:help; }
   .pkdx-card .pkdx-img { width:100%; aspect-ratio:1/1; background:var(--surface-2); border-radius:8px; overflow:hidden; margin-bottom:6px; display:grid; place-items:center; color:var(--ink-3); font-size:28px; }
   .pkdx-card .pkdx-img img { width:100%; height:100%; object-fit:cover; display:block; }
   .pkdx-card .pkdx-name { font:600 12.5px system-ui; color:var(--ink); text-align:center; line-height:1.25; word-wrap:break-word; }

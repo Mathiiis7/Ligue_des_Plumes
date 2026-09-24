@@ -11529,6 +11529,29 @@ function _renderSpeciesRarityCard(key){
         : stSecours
         ? "Aucun bar chart eBird pour cette espèce dans ce pays. Le tier vient du modèle Status &amp; Trends de Cornell, seule source disponible."
         : "Aucune donnée de fréquence dans le bar chart eBird " + esc(cc) + ". L'espèce y est signalée mais trop peu notée pour être agrégée.";
+      // Le tier repose sur la moyenne annuelle ponderee, insensible a la saison : c'est ce
+      // qui le rend comparable entre pays. Mais 325 des 480 especes francaises ont un pic
+      // au moins deux fois superieur a cette moyenne, et 179 au moins trois fois. Un
+      // Gobemouche noir classe "Assez commun" (2,6 % sur l'annee) est en fait plus facile
+      // qu'un Pigeon biset si on sort en septembre : 14,5 % contre 20,3 %.
+      //
+      // Plutot que de tordre le tier pour dire deux choses a la fois, on affiche la seconde
+      // a cote. Le graphique de saisonnalite donne le detail, cette ligne donne le resume.
+      const m12Pays = (regCC && regCC.monthly) ? regCC.monthly()[k] : null;
+      let noteSaison = '';
+      if(Array.isArray(m12Pays) && m12Pays.length === 12){
+        const annuel = _valeurAnnuelleZone(m12Pays, cc);
+        let pic = 0, moisPic = -1;
+        m12Pays.forEach((v, i) => { if((v || 0) > pic){ pic = v; moisPic = i; } });
+        const pct = x => x >= 0.1 ? Math.round(x*100)+' %' : x >= 0.01 ? (x*100).toFixed(1)+' %' : (x*100).toFixed(2)+' %';
+        // En dessous de x2 la saison ne change rien d'utile, on ne surcharge pas.
+        if(annuel > 0 && moisPic >= 0 && pic / annuel >= 2){
+          noteSaison = `<div style="font-size:10.5px;color:var(--ink-2);margin-top:5px;line-height:1.4;">`
+            + `${pct(annuel)} sur l'année, mais <b>${pct(pic)} en ${_MOIS_COURTS[moisPic]}</b>, sa meilleure période.`
+            + (pic / annuel >= 3 ? ` Espèce nettement saisonnière : viser le bon mois change tout.` : '')
+            + `</div>`;
+        }
+      }
       // Regularite : sur combien des 8 annees de la fenetre l'espece a ete observee dans ce
       // pays. C'est le critere qui decide de son entree au catalogue, il a sa place ici.
       const annees = (typeof ANNEES_PRESENCE === 'object' && ANNEES_PRESENCE[cc])
@@ -11551,6 +11574,7 @@ function _renderSpeciesRarityCard(key){
               <span style="font-size:12px;color:var(--ink);font-weight:600;">${mesure}</span>
             </div>` : ''}
             <div style="font-size:10.5px;color:var(--ink-3);margin-top:6px;opacity:.85;line-height:1.4;">${note}</div>
+            ${noteSaison}
             ${noteAnnees}
             ${noteOverride}
           </div>
@@ -14625,6 +14649,7 @@ function _pkdxRender(){
   const country = _pkdxFilters.country || 'FR';
   if(!_pkdxAllSorted){
     const all = [];
+    const regPkdx = COUNTRIES_REG[country];
     for(const sci in FR_NAMES){
       // Dedup taxonomique : si `sci` est le vieux nom (source d'un SCI_ALIAS) ET le nom
       // canonique existe aussi dans FR_NAMES, on saute la vieille entree.
@@ -14676,9 +14701,21 @@ function _pkdxRender(){
       // n est reconstruit qu au changement de pays, alors que la liste de l utilisateur
       // peut arriver apres le premier rendu.
       const accidentelle = !_estReguliere(sci, country);
+      // Espece nettement saisonniere : son pic mensuel vaut au moins 3x sa moyenne annuelle.
+      // Le tier, fonde sur l annuel, ne le dit pas — 179 especes francaises sont dans ce cas.
+      // Un repere sur la carte evite de croire qu une espece est hors de portee alors qu il
+      // suffit de viser le bon mois.
+      let saison = false;
+      {
+        const m = (regPkdx && regPkdx.monthly) ? regPkdx.monthly()[sci] : null;
+        if(Array.isArray(m) && m.length === 12){
+          const a = _valeurAnnuelleZone(m, country), p = Math.max(...m);
+          saison = a > 0 && p / a >= 3;
+        }
+      }
       // Categorie exotique pour ce pays (N/P/X/C ou '') utilisee par les filtres N/P/X.
       const cat = exo ? (exoticCategoryInCountry(sci, country) || _exoticCategory(sci) || '') : '';
-      all.push({ sci, nm, fam, tier, exo, cat, accidentelle });
+      all.push({ sci, nm, fam, tier, exo, cat, accidentelle, saison });
     }
     // Tri : par ordre taxonomique IOC/eBird (FAMILY_ORDER), puis dans chaque famille du
     // moins rare au plus rare (tier ascendant, 1 = tres commun). Nom en tie-break stable.
@@ -14698,7 +14735,7 @@ function _pkdxRender(){
   const ownedF = _pkdxFilters.owned || '';
   const rows = [];
   for(const r of _pkdxAllSorted){
-    const { sci, nm, fam, tier, exo, cat, accidentelle } = r;
+    const { sci, nm, fam, tier, exo, cat, accidentelle, saison } = r;
     // Accidentelle non cochee : hors catalogue, on ne l affiche pas. Cochee, elle reste —
     // l utilisateur l a bien vue, ce n est pas a nous de l effacer de sa collection.
     if(accidentelle && !mine.has(sci)) continue;
@@ -14716,7 +14753,7 @@ function _pkdxRender(){
     const owned = _mineHasStrict(mine, sci);
     if(ownedF === 'owned' && !owned) continue;
     if(ownedF === 'missing' && owned) continue;
-    rows.push({ sci, nm, fam, tier, exo, cat, owned });
+    rows.push({ sci, nm, fam, tier, exo, cat, owned, saison });
   }
   // Rendu des chips rareté : style unifie avec le filtre carte (.rar-chip compact).
   const chipsBox = document.getElementById('pkdxTierChips');
@@ -14797,6 +14834,7 @@ function _pkdxRender(){
     const badgeText = catLetter || r.tier;
     return `<div class="pkdx-card${r.owned?'':' missing'}" data-sci="${esc(r.sci)}">
       <span class="pkdx-num">#${num}</span>
+      ${r.saison ? `<span class="pkdx-saison" title="Espèce nettement saisonnière : son pic mensuel vaut au moins 3 fois sa moyenne annuelle. Viser le bon mois change tout.">◑</span>` : ''}
       <span class="pkdx-tier" style="background:${tierBg};" title="Tier ${r.tier}${catLetter ? ' · '+catLetter : ''}">${badgeText}</span>
       <div class="pkdx-img" data-pkdx-lazy="${esc(r.sci)}">${r.owned ? '🐦' : ''}</div>
       <div class="pkdx-name">${esc(r.nm)}</div>
