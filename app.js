@@ -11237,6 +11237,10 @@ async function _renderExoticMap(sci, cc){
   const NATIVE_COLOR = '#3b82f6';
   // Meme mise en evidence que la carte de rarete, pour que les deux se lisent pareil.
   const selection = _zonesSelectionnees(cc, Object.keys(paths.zones));
+  // Memes zones cliquables que la carte de rarete : le selecteur doit savoir nommer et
+  // surligner ce qu'on clique.
+  const zonesSelectionnables = new Set(
+    (typeof zonesFichePourPays === 'function' ? zonesFichePourPays(cc) : []).map(r => r.code));
   const rendreZoneExo = (code, echelle) => {
     const r = paths.zones[code];
     const cat = perZone[code];
@@ -11245,7 +11249,8 @@ async function _renderExoticMap(sci, cc){
     const title = cat ? `${r.name} — ${CAT_LABEL[cat]} (${cat})`
                 : isNative ? `${r.name} — native (présente, non taguée exotique)`
                 : `${r.name} — non listé (sauvage / absent)`;
-    return _pathZone(r.path, fill, title, selection.has(code), selection.size > 0, null, echelle);
+    return _pathZone(r.path, fill, title, selection.has(code), selection.size > 0,
+      zonesSelectionnables.has(code) ? code : null, echelle);
   };
   const svgZones = _ordonnerSelectionDevant(Object.keys(paths.zones), selection)
     .map(code => rendreZoneExo(code, 1)).join('')
@@ -11280,6 +11285,17 @@ async function _renderExoticMap(sci, cc){
         </div>
       </div>
     </details>`;
+  // Cliquer une zone la selectionne, comme sur la carte de rarete. Recliquer celle qui
+  // est deja choisie revient au national.
+  const svgExo = document.querySelector('#smExoticMap svg');
+  if(svgExo && typeof _appliquerZoneFiche === 'function'){
+    svgExo.onclick = (e) => {
+      const p = e.target.closest('[data-zone]');
+      if(!p) return;
+      const z = p.dataset.zone;
+      _appliquerZoneFiche(z === _speciesRegion ? '' : z);
+    };
+  }
   const det = document.getElementById('smExoticMapDetails');
   if(det){
     det.ontoggle = () => { window._smExoticMapOpen = det.open; };
@@ -15411,6 +15427,18 @@ document.addEventListener('click', e => {
   // dans cet ordre.
   const siblings = [...document.querySelectorAll('#pkdxGrid .pkdx-card[data-sci]')].map(c => c.dataset.sci);
   setSpeciesNavPool(siblings, card.dataset.sci);
+  // La fiche s'ouvre a l'echelle ou la grille etait lue : meme pays, meme zone. Sans ca on
+  // cliquait une espece vue « palier 1 en Camargue » pour tomber sur son palier national.
+  if(_pkdxFilters){
+    const cc = _pkdxFilters.country || 'FR';
+    _speciesCountry = cc;
+    try{ localStorage.setItem('mb-species-country', cc); }catch(_){}
+    const z = _pkdxFilters.zone || '';
+    if(z !== _speciesRegion){
+      _speciesRegion = z;
+      try{ localStorage.setItem('mb-species-region', z); }catch(_){}
+    }
+  }
   openSpeciesModal(card.dataset.sci);
 });
 // Pool d'especes selon le niveau (rarete max). Utilise toutes les especes FR
