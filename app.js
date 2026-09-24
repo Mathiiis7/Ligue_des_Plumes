@@ -15144,12 +15144,17 @@ function _pkdxRender(){
     //
     // Les exotiques ouvraient leur famille : celles des parcs et des echappees portent le
     // tier 0, qui passait avant le 1. Une famille commencait donc par ses oiseaux de voliere
-    // au lieu de ses oiseaux sauvages les plus communs. Le critere est le statut exotique
-    // dans le pays affiche, pas le tier : une naturalisee gardee au milieu du classement par
-    // sa raretie aurait laisse le bloc a moitie fait.
+    // au lieu de ses oiseaux sauvages les plus communs.
+    //
+    // Seules les exotiques SANS population etablie sont reléguées - echappees, provisoires,
+    // domestiques. Les naturalisees (categorie N : Perruche a collier, Bernache du Canada,
+    // Ouette d'Egypte) gardent leur rang de rarete : elles se rencontrent comme les sauvages
+    // du coin, et les reléguer les rendrait plus difficiles a trouver dans la grille qu'elles
+    // ne le sont sur le terrain. 14 especes en France, sur 116 exotiques.
+    const relegue = (r) => (r.exo && !_isEstablishedExotic(r.cat)) ? 1 : 0;
     all.sort((a,b) =>
       ((FAMILY_ORDER[a.fam] ?? 9999) - (FAMILY_ORDER[b.fam] ?? 9999))
-      || ((a.exo ? 1 : 0) - (b.exo ? 1 : 0))
+      || (relegue(a) - relegue(b))
       || a.tier - b.tier
       || a.nm.localeCompare(b.nm, 'fr')
     );
