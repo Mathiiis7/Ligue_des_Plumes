@@ -12205,7 +12205,7 @@ async function _fetchWikiDesc(sci){
   return d;
 }
 // Compose un Portrait synthetique riche a partir de TOUTES les donnees dispos.
-// Combine Avonet + freq France + IUCN + famille + confusion groups pour une prose
+// Combine Avonet + freq France + famille + confusion groups pour une prose
 // coherente et unique a l'app (contenu que Wikipedia n'a pas). Sert d'intro qui
 // est toujours presente meme quand Wikipedia est sparse.
 async function _generatePortrait(sci){
