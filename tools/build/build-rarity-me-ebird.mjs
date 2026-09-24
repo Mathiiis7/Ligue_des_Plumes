@@ -1,5 +1,17 @@
 #!/usr/bin/env node
 /*
+  PERIME - ne plus lancer. Remplace par build-rarity-me-quinzaines.mjs le 2026-09-24.
+
+  Ce script mesurait la rarete par le PIC des 48 quinzaines (Math.max) et la convertissait
+  avec l ancienne table mensuelle. Les deux ont ete abandonnes : la mesure est la moyenne des
+  48 quinzaines ponderee par le nombre de listes de chacune, l echelle est _ANNUAL_THR.
+  Resultat de l ecart : 224 des 308 especes du Montenegro etaient stockees plus communes
+  qu elles ne le sont - le Grebe esclavon ressortait "Tres commun" sur un pic de 15,8 %
+  atteint en decembre, mois qui ne porte que 1,4 % des listes du pays, pour 0,24 % sur l annee.
+
+  Conserve pour sa table BAR_CHART_ALIAS, que le nouveau script relit.
+*/
+/*
   build-rarity-me-ebird.mjs - Rareté ME depuis le bar chart eBird (comme la FR).
 
   Utilise ebird-barchart-ME-2015-2026.txt téléchargé depuis
