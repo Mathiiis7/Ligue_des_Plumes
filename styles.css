@@ -1276,21 +1276,15 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
      ligne se deplace de (padding-haut - padding-bas)/2, il faut donc 1 px d ecart entre les
      deux. Mesure faite sur l encre reelle (canvas actualBoundingBox) : une mesure de la
      boite de ligne avait conclu l inverse et fait corriger dans le mauvais sens. */
-  /* ESSAI : la pastille ronde du birdydex, partout - un cran plus grande que la sienne
-     (24 px contre 20) et sans filet. Les libelles (« Tout », « Vide ») restent des
-     gelules, un mot ne tient pas dans un rond.
-     Revenir au carre : padding:0 5px 1px, border:1px solid var(--line-2),
-     border-radius:6px, font:600 13px/1 system-ui ; rendre son filet interne a
-     .rar-chip.on (border-color:transparent; box-shadow:inset 0 0 0 1px rgba(0,0,0,.2))
-     et supprimer la regle ronde juste en dessous. */
-  .rar-chip, .tier-chip { display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:24px; padding:0 8px; border:0; background:var(--surface-2); color:var(--ink-3); border-radius:12px; font:800 12px/1 system-ui; }
+  /* Le rond du birdydex a ete essaye ici (v492-v493) puis abandonne : garder le carre. */
+  .rar-chip, .tier-chip { display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:24px; padding:0 5px 1px; border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink-3); border-radius:6px; font:600 13px/1 system-ui; }
   /* Un carre reste un carre, meme a deux chiffres : « 10 » poussait sur son padding et
      sortait de la rangee. Largeur fixe pour tout ce qui porte un palier ; les libelles
      (« Tout », « Vide ») gardent leur padding, eux ne sont pas des carres. */
-  .tier-chip, .rar-chip[data-tier], .rar-chip[data-rar], .rar-chip[data-cat] { width:24px; padding:0; border-radius:50%; }
+  .tier-chip, .rar-chip[data-tier], .rar-chip[data-rar], .rar-chip[data-cat] { width:24px; padding:0 0 1px; }
   .rar-chip { cursor:pointer; }
   .rar-chip:hover { filter:brightness(0.97); }
-  .rar-chip.on, .tier-chip { color:#fff; box-shadow:none; }
+  .rar-chip.on, .tier-chip { color:#fff; border-color:transparent; box-shadow:inset 0 0 0 1px rgba(0,0,0,.2); }
   .tier-chip { vertical-align:middle; font-variant-numeric:tabular-nums; }
   .rar-chip.rar-exo.on { background:#7e8a99; }
   /* Retire les flèches spinner natives sur #mapEbMinTodo (on a nos propres boutons +/-) */
