@@ -1298,7 +1298,26 @@ const EXOTIQUES_MASQUEES = new Set([
   'nymphicus hollandicus','poicephalus senegalus','psittacus erithacus',
   'taeniopygia guttata','serinus canaria','estrilda melpoda',
 ]);
-function isHiddenSpecies(sci){ return EXOTIQUES_MASQUEES.has((sci||'').trim().toLowerCase()); }
+// Oiseaux de cage, masques partout... sauf la ou eBird leur reconnait une population
+// etablie. La liste etait globale, ce qui la rendait fausse des qu on sortait de France :
+// la Conure a tete bleue y est une echappee (categorie X), mais le Portugal la classe
+// naturalisee (N) et son bar chart la trouve sur 0,5 a 0,7 % des listes tous les mois de
+// l annee. Elle etait pourtant invisible dans le fil, le birdydex et le reste.
+//
+// Sept des 25 especes masquees sont dans ce cas quelque part : Conure a tete bleue
+// (ES, PT), Conure de Guayaquil et Conure mitree (ES, US), Inseparable rosegorge (US),
+// Perruche omnicolore (NZ), Loriquet a tete bleue (AU), Astrild a joues orange (ES).
+//
+// Sans pays, le comportement d avant : masquee. C est le bon defaut pour les vues
+// centrees sur la France (classement, trophees, suggestions).
+function isHiddenSpecies(sci, cc){
+  const k = (sci||'').trim().toLowerCase();
+  if(!EXOTIQUES_MASQUEES.has(k)) return false;
+  if(!cc) return true;
+  const cat = (typeof EXOTIQUES_EBIRD_PAR_PAYS === 'object' && EXOTIQUES_EBIRD_PAR_PAYS[cc])
+    ? EXOTIQUES_EBIRD_PAR_PAYS[cc][k] : null;
+  return !_isEstablishedExotic(cat);
+}
 // EXOTIQUES_PARCS (liste 'captif worldwide') supprimee 2026-09-22 : rendue redondante
 // par les autres filtres. Le pipeline actuel exclut deja les especes park-only en FR :
 //   - si pas dans EXOTIQUES_EBIRD_PAR_PAYS.FR ET pas dans bar chart FR -> line 14448 continue
@@ -5293,7 +5312,9 @@ function renderFeed(){
       }
       // Filtre rareté : 1..9 (rareté réelle) ou 'exo' (exotiques/échappés).
       const sci = (v.sci||'').toLowerCase();
-      if(isHiddenSpecies(sci)) continue;   // perroquets cage etc., jamais dans le fil
+      // Le pays de l observation, pas celui de l affichage : une Conure a tete bleue vue au
+      // Portugal y est naturalisee, meme si le fil est lu depuis la France.
+      if(isHiddenSpecies(sci, v.country)) continue;   // perroquets de cage
       if(feedTier !== 'any'){
         // Chip 'exo' = P/X/C (provisoires, echappes, domestiques). Seules les N (naturalisees)
         // sont exposees sous leur vrai tier via rarityForFilter.
@@ -5310,24 +5331,9 @@ function renderFeed(){
       });
     }
   }
-  // Evenements trophees (uniquement en mode "nouveautes", filtre rareté ignore).
-  // On garde les 3 types : unlock (debloque), transfer (prend a X), demote (passe de A a B).
-  if(feedMode==='new' && feedTier==='any'){
-    // Set des noms de trophees actifs pour purger les events historiques dont le trophee
-    // n'existe plus (renommé ex Astérix→Terroir, ou retiré ex 'Bear Grylls', 'Armée d'aigles royaux').
-    const activeTrophyNames = new Set();
-    if(typeof TROPHIES === 'object' && Array.isArray(TROPHIES)){
-      for(const t of TROPHIES) if(t && t.name) activeTrophyNames.add(t.name);
-    }
-    for(const ev of _computeTrophyEvents()){
-      if(ev.kind === 'demote') continue;
-      // Filtre les events dont le trophee n'existe plus (renommé ou retiré).
-      if(ev.trophyName && !activeTrophyNames.has(ev.trophyName)) continue;
-      // Le filtre "personne" affiche les evts ou cette personne est impliquee (uid OU fromUid).
-      if(feedPerson !== 'any' && ev.uid !== feedPerson && ev.fromUid !== feedPerson) continue;
-      items.push({ ...ev, ord:0, disp:'', addedAt:ev.at||ev.addedAt||0 });
-    }
-  }
+  // Les trophees ne sont plus verses dans le fil : ils arrivent par salves - un import de
+  // liste en declenche plusieurs d un coup - et noyaient les observations, qui sont ce
+  // qu on vient y lire. Ils restent sur leur propre page.
   if(feedMode==='new') items.sort((a,b)=>(b.addedAt-a.addedAt) || (b.ord-a.ord));
   else                 items.sort((a,b)=>(b.ord-a.ord) || (b.addedAt-a.addedAt));
   const top=items.slice(0,60);
@@ -5342,24 +5348,6 @@ function renderFeed(){
   el.innerHTML=top.map(it=>{
     const isNew = it.addedAt && it.addedAt > lastSeen;
     const badge = isNew ? ' <span class="feed-new">🆕 nouveau</span>' : '';
-    if(it.kind === 'unlock'){
-      return `<div class="feed-item"><span class="feed-emoji">🏆</span>
-        <div class="feed-body"><div><b>${esc(it.name)}</b> a débloqué le trophée <b>${esc(it.trophyName)}</b>${badge}</div>
-        <div class="feed-date">Trophée</div></div></div>`;
-    }
-    if(it.kind === 'transfer'){
-      const takes = it.fromName
-        ? `prend le trophée <b>${esc(it.trophyName)}</b> à <b>${esc(it.fromName)}</b>`
-        : `s'empare du trophée <b>${esc(it.trophyName)}</b>`;
-      return `<div class="feed-item"><span class="feed-emoji">🏆</span>
-        <div class="feed-body"><div><b>${esc(it.name)}</b> ${takes} <span class="feed-tag">#birdygoat</span>${badge}</div>
-        <div class="feed-date">Transfert</div></div></div>`;
-    }
-    if(it.kind === 'demote'){
-      return `<div class="feed-item"><span class="feed-emoji">📉</span>
-        <div class="feed-body"><div><b>${esc(it.name)}</b> passe de <b>${esc(it.fromTrophy)}</b> à <b>${esc(it.toTrophy)}</b> <span class="feed-tag">#birdyseum</span>${badge}</div>
-        <div class="feed-date">Rétrogradé</div></div></div>`;
-    }
     // Observation classique
     const tt=realTier(it.sci, it.abroad);
     const target='obs:'+it.uid+':'+it.sci.toLowerCase();
@@ -15074,7 +15062,7 @@ function _pkdxRender(){
       // Dedup taxonomique : si `sci` est le vieux nom (source d'un SCI_ALIAS) ET le nom
       // canonique existe aussi dans FR_NAMES, on saute la vieille entree.
       if(_isSciAliasSource(sci)) continue;
-      if(isHiddenSpecies(sci)) continue;   // perroquets cage etc.
+      if(isHiddenSpecies(sci, country)) continue;   // perroquets de cage, sauf naturalises ici
       // Park-only worldwide (Bernache nene, Dendrocygnes tropicaux, Flamants ornementaux,
       // Grues couronnees...) : exclus SAUF si natifs dans le pays courant (dans bar chart
       // local + pas listes exotique par eBird) OU marques N/P par eBird localement.
