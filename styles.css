@@ -1262,10 +1262,13 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
      palier posee partout ailleurs. Elles etaient ecrites separement et avaient deja diverge
      - 800 12px contre 600 11px, et pas de bordure, donc une boite interieure de 24 px au
      lieu de 22. Partagees, elles ne peuvent plus. */
-  /* padding-top de 2px : align-items centre la BOITE DE LIGNE, pas le glyphe. Avec
-     line-height:1 le chiffre ressortait 0,8 px trop haut, visible sur une pastille de 24 px.
-     Mesure : -0,79 px sans correction, +0,21 px avec. */
-  .rar-chip, .tier-chip { display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:24px; padding:2px 5px 0; border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink-3); border-radius:6px; font:600 11px/1 system-ui; }
+  /* Le padding-bas de 1px centre le CHIFFRE, pas sa boite de ligne. align-items ne sait
+     centrer que la seconde, et avec line-height:1 sur une police dont l ascendante vaut
+     12/11 em, l encre du chiffre tombait 1,5 px sous le centre de la pastille. La boite de
+     ligne se deplace de (padding-haut - padding-bas)/2, il faut donc 1 px d ecart entre les
+     deux. Mesure faite sur l encre reelle (canvas actualBoundingBox) : une mesure de la
+     boite de ligne avait conclu l inverse et fait corriger dans le mauvais sens. */
+  .rar-chip, .tier-chip { display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:24px; padding:0 5px 1px; border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink-3); border-radius:6px; font:600 11px/1 system-ui; }
   .rar-chip { cursor:pointer; }
   .rar-chip:hover { filter:brightness(0.97); }
   .rar-chip.on, .tier-chip { color:#fff; border-color:transparent; box-shadow:inset 0 0 0 1px rgba(0,0,0,.2); }
