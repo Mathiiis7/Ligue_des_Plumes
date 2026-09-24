@@ -41,21 +41,10 @@ let unsubRequests = null, requests = [], unsubReqVotes = null, reqVotesMap = new
 // hardcode de Mathis sert de bootstrap pour le cas ou la collection est vide.
 const ADMIN_UIDS = new Set(['pCf1HuUeIkNJTXC0wujsX04UsFs2']);
 const isAdmin = () => myUid && ADMIN_UIDS.has(myUid);
-// Email du titulaire de chaque ligne, par UID. Alimentee par la collection accounts, que
-// seuls un admin et le titulaire peuvent lire : c est ce qui permet de rattacher une ligne
-// du classement a un compte sans exposer les adresses a toute la ligue.
-const _emailsComptes = new Map();
-let _unsubComptes = null;
-function subscribeComptes(){
-  if(_unsubComptes || !isAdmin()) return;
-  try{
-    _unsubComptes = onSnapshot(collection(db, 'leagues', leagueId, 'accounts'), snap => {
-      _emailsComptes.clear();
-      snap.forEach(d => { const e = d.data() && d.data().email; if(e) _emailsComptes.set(d.id, e); });
-      try{ renderMembers(); }catch(_){}
-    }, () => {});
-  }catch(_){}
-}
+// L email du titulaire vit dans leagues/<id>/accounts/<uid>, en lecture admin seule. Il
+// n est affiche nulle part : la fiche joueur est ouvrable par tout le monde, et l UID y
+// suffit a distinguer deux lignes du meme nom. Il reste consultable en console quand l UID
+// seul ne tranche pas - d ou l ecriture, sans abonnement cote client.
 const EMOJIS = [
   '👍','👎','❤️','🔥','💯','🎉','✨','⭐','🏆','🥇','🎁','✅','❌','⚠️','🚀','💡','👀','💤',
   '😀','😄','😁','😊','🙂','😉','😍','🥰','😘','😎','🤩','🥳','😂','🤣','🥹','😋','😜','🤪','🤗','🤭','🤔','😴','🥱','😌','😔','😢','😭','😤','😠','😡','🥺','😱','😅','🙄','😏','😐','🤢','🤠','🥲','😈','👻','💀','🤡','👶',
@@ -2299,7 +2288,7 @@ function renderMembers(){
     const online = isOnline(p.id);
     const statusLine = p.status ? `<div class="pcard-status">${esc(p.status)}</div>` : '';
     const adminTools = admin && !p.isMe
-      ? `<div class="pcard-admin" title="${esc(_emailsComptes.get(p.id) || 'compte inconnu (aucun import depuis le 2026-09-24)')} · ${esc(p.id)}"><button class="pcard-admin-btn" data-adm-rename="${esc(p.id)}" data-adm-name="${esc(p.name)}" title="Renommer">✎</button><button class="pcard-admin-btn pcard-admin-del" data-adm-remove="${esc(p.id)}" data-adm-name="${esc(p.name)}" data-adm-email="${esc(_emailsComptes.get(p.id) || '')}" title="Retirer">✕</button></div>`
+      ? `<div class="pcard-admin" title="${esc(p.id)}"><button class="pcard-admin-btn" data-adm-rename="${esc(p.id)}" data-adm-name="${esc(p.name)}" title="Renommer">✎</button><button class="pcard-admin-btn pcard-admin-del" data-adm-remove="${esc(p.id)}" data-adm-name="${esc(p.name)}" title="Retirer">✕</button></div>`
       : '';
     return `<div class="pcard${p.isMe?' is-me':''}${online?' is-online':''}" style="--series:var(--s${p.si})">
       <div class="pcard-avatar-wrap">${_avatarHtml(p.avatar||'', p.name||'?', 44)}${online?'<span class="pcard-online-dot" title="en ligne"></span>':''}</div>
@@ -2339,12 +2328,81 @@ document.addEventListener('click', async e=>{
     if(!isAdmin()) return;
     const uid = del.dataset.admRemove;
     const old = del.dataset.admName;
-    // Le compte est rappele ici : devant deux lignes du meme joueur, c'est la seule chose
-    // qui les distingue.
-    const mail = del.dataset.admEmail;
-    if(!confirm(`Retirer "${old}" de la ligue ?\n${mail ? 'Compte : ' + mail : 'Compte inconnu (aucun import depuis le 24/09/2026)'}\nUID : ${uid}\n\nSes obs et son profil seront supprimés (irréversible).`)) return;
+    // L'UID suffit a distinguer deux lignes du meme nom. L'email du titulaire n'apparait
+    // nulle part dans l'interface : il reste dans la collection accounts, consultable en
+    // console par un admin quand l'UID seul ne tranche pas.
+    if(!confirm(`Retirer "${old}" de la ligue ?\nUID : ${uid}\n\nSes obs et son profil seront supprimés (irréversible).`)) return;
     try{ await deleteDoc(doc(db,'leagues',leagueId,'members',uid)); }catch(err){ showError(err); }
   }
+});
+
+// Fiche d'un joueur, ouverte en cliquant son nom dans le classement. La vue "Profil" de
+// l'appli ne montre que la sienne ; il n'y avait aucun moyen de regarder celle des autres,
+// alors que chacun y renseigne son objectif, son oiseau fetiche et son oiseau de reve.
+//
+// Elle porte aussi le retrait admin, qui vivait sur les cartes membres - un ecran devenu
+// inatteignable, son conteneur etant reste `hidden` dans index.html.
+//
+// L'email du titulaire n'y figure pas : la fiche est ouvrable par n'importe quel joueur.
+// Pour departager deux lignes du meme nom, l'admin y lit l'UID et la date de derniere
+// mise a jour, et retrouve le compte correspondant dans la console Firebase.
+function ouvrirFicheJoueur(uid){
+  const p = realPeople.find(x => x.id === uid);
+  if(!p) return;
+  const admin = isAdmin();
+  const dateFr = (ms) => ms ? new Date(ms).toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' }) : null;
+  const ligne = (lbl, val) => val
+    ? '<div style="display:flex; gap:10px; padding:7px 0; border-top:1px solid var(--line);">'
+      + '<span style="flex:0 0 130px; color:var(--ink-3); font-size:12px;">' + lbl + '</span>'
+      + '<span style="flex:1; font-size:13px;">' + esc(String(val)) + '</span></div>'
+    : '';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'cp-modal-backdrop';
+  backdrop.innerHTML = '<div class="cp-modal-inner">'
+    + '<div class="cp-modal-title"><span>Fiche joueur</span>'
+      + '<button type="button" class="cp-modal-close" aria-label="Fermer">×</button></div>'
+    + '<div style="display:flex; align-items:center; gap:12px; padding:2px 0 10px;">'
+      + _avatarHtml(p.avatar || '', p.name || '?', 52)
+      + '<div><div style="font:700 17px system-ui;">' + esc(p.name) + (p.isMe ? ' <span class="youtag">vous</span>' : '') + '</div>'
+      + (p.status ? '<div style="font-size:12.5px; color:var(--ink-2); margin-top:2px;">' + esc(p.status) + '</div>' : '')
+      + '</div></div>'
+    + '<div class="cp-list">'
+      + ligne('Espèces', p.species.size)
+      + ligne('Objectif', p.goal)
+      + ligne('Oiseau fétiche', p.fav)
+      + ligne('Oiseau de rêve', p.dream)
+      + ligne('Plus belle obs', p.rare)
+      + ligne('Dans la ligue depuis', dateFr(p.joinedAt ? p.joinedAt * 1000 : 0))
+      + ligne('Dernière mise à jour', dateFr(p.updatedAt))
+      + (admin ? ligne('UID', p.id) : '')
+    + '</div>'
+    + (admin && !p.isMe
+      ? '<div style="margin-top:12px; padding-top:10px; border-top:1px dashed var(--line-2); text-align:right;">'
+        + '<button type="button" class="btn tiny" data-fiche-retirer="' + esc(p.id) + '"'
+        + ' style="background:var(--surface); color:#b91c1c; border:1px solid #b91c1c;">'
+        + 'Retirer de la ligue</button></div>'
+      : '')
+    + '</div>';
+  const fermer = () => { backdrop.remove(); document.removeEventListener('keydown', echap); };
+  const echap = (e) => { if(e.key === 'Escape') fermer(); };
+  document.addEventListener('keydown', echap);
+  backdrop.addEventListener('click', async (e) => {
+    if(e.target === backdrop || e.target.closest('.cp-modal-close')){ fermer(); return; }
+    const ret = e.target.closest('[data-fiche-retirer]');
+    if(!ret || !isAdmin()) return;
+    // Le nombre d'especes et la date de mise a jour sont rappeles : devant deux lignes du
+    // meme nom, c'est ce qui distingue la vivante de celle laissee par un ancien compte.
+    if(!confirm('Retirer « ' + p.name + ' » de la ligue ?\n'
+      + p.species.size + ' espèces · dernière mise à jour ' + (dateFr(p.updatedAt) || 'inconnue') + '\n'
+      + 'UID : ' + p.id + '\n\nSes observations et son profil seront supprimés (irréversible).')) return;
+    try{ await deleteDoc(doc(db, 'leagues', leagueId, 'members', p.id)); fermer(); }
+    catch(err){ showError(err); }
+  });
+  document.body.appendChild(backdrop);
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-fiche-joueur]');
+  if(b) ouvrirFicheJoueur(b.dataset.ficheJoueur);
 });
 
 // Flags "dirty" pour render lazy : quand renderResults est appele mais que la view
@@ -2469,7 +2527,7 @@ function renderBoard(){
     </tr></thead>
     <tbody>${ranked.map((p,i)=>`<tr class="${i===0?'lead':''}">
       <td class="c-rank">${i===0?'★':(i+1)}</td>
-      <td class="who-cell" style="--series:var(--s${p.si})"><span class="dot"></span>${isOnline(p.id)?'<span class="pname-dot" title="en ligne"></span>':''}${esc(p.name)}${p.isMe?'<span class="youtag">vous</span>':''}</td>
+      <td class="who-cell" style="--series:var(--s${p.si})"><span class="dot"></span>${isOnline(p.id)?'<span class="pname-dot" title="en ligne"></span>':''}<button type="button" class="who-name" data-fiche-joueur="${esc(p.id)}" title="Voir la fiche de ${esc(p.name)}">${esc(p.name)}</button>${p.isMe?'<span class="youtag">vous</span>':''}</td>
       ${scoreTd(p)}
       <td class="c-txt">${parseInt(p.goal,10)>0 ? `${p.total} / ${parseInt(p.goal,10)}` : cell(p.goal)}</td>
       <td class="c-txt">${cell(p.fav)}</td>
@@ -14361,7 +14419,6 @@ function subscribeAdmins(){
       // Re-render la page trophees UNIQUEMENT si le statut admin de l'utilisateur
       // a change (evite un render redondant a chaque snapshot Firestore).
       const nowAdmin = isAdmin();
-      if(nowAdmin) subscribeComptes();
       if(_lastKnownIsAdmin !== nowAdmin){
         _lastKnownIsAdmin = nowAdmin;
         try{ if(trophyData) renderTrophies(trophyData); }catch(_){}
