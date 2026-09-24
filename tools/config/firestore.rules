@@ -60,6 +60,23 @@ service cloud.firestore {
         allow write: if isSelf(memberId) || isAdmin();
       }
 
+      // ------------------------------------------------------------
+      // COMPTES : email du titulaire de chaque ligne du classement. Rien ne reliait
+      // une ligne a un compte - la cle du document membre est l UID, que l interface
+      // n affiche nulle part - si bien qu un admin devant deux lignes du meme joueur ne
+      // pouvait pas savoir laquelle supprimer.
+      //
+      // Collection a part, et non un champ du document membre : celui-ci est lisible par
+      // tout signed-in, ce qui exposerait l email de chacun a tous les autres. Ici la
+      // lecture est reservee a l admin et au titulaire.
+      // ------------------------------------------------------------
+      match /accounts/{accountId} {
+        allow read: if isAdmin() || isSelf(accountId);
+        allow write: if isSelf(accountId)
+          && hasOnlyKeys(['email', 'updatedAt'])
+          && (!('email' in request.resource.data) || isBoundedString(request.resource.data.email, 0, 200));
+      }
+
       // ============================================================
       // COLLECTIONS MEMBRES-ONLY : lecture ET ecriture reservees aux membres.
       // Un anon (juste signed-in mais pas inscrit) ne peut RIEN voir ici.

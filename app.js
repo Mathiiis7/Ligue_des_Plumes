@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, EmailAuthProvider, linkWithCredential } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, onSnapshot, serverTimestamp, addDoc, query, orderBy, limit, where, getDocs, writeBatch }
+import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, deleteField, collection, onSnapshot, serverTimestamp, addDoc, query, orderBy, limit, where, getDocs, writeBatch }
   from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 /* ---------------- Firebase ---------------- */
@@ -41,6 +41,21 @@ let unsubRequests = null, requests = [], unsubReqVotes = null, reqVotesMap = new
 // hardcode de Mathis sert de bootstrap pour le cas ou la collection est vide.
 const ADMIN_UIDS = new Set(['pCf1HuUeIkNJTXC0wujsX04UsFs2']);
 const isAdmin = () => myUid && ADMIN_UIDS.has(myUid);
+// Email du titulaire de chaque ligne, par UID. Alimentee par la collection accounts, que
+// seuls un admin et le titulaire peuvent lire : c est ce qui permet de rattacher une ligne
+// du classement a un compte sans exposer les adresses a toute la ligue.
+const _emailsComptes = new Map();
+let _unsubComptes = null;
+function subscribeComptes(){
+  if(_unsubComptes || !isAdmin()) return;
+  try{
+    _unsubComptes = onSnapshot(collection(db, 'leagues', leagueId, 'accounts'), snap => {
+      _emailsComptes.clear();
+      snap.forEach(d => { const e = d.data() && d.data().email; if(e) _emailsComptes.set(d.id, e); });
+      try{ renderMembers(); }catch(_){}
+    }, () => {});
+  }catch(_){}
+}
 const EMOJIS = [
   '👍','👎','❤️','🔥','💯','🎉','✨','⭐','🏆','🥇','🎁','✅','❌','⚠️','🚀','💡','👀','💤',
   '😀','😄','😁','😊','🙂','😉','😍','🥰','😘','😎','🤩','🥳','😂','🤣','🥹','😋','😜','🤪','🤗','🤭','🤔','😴','🥱','😌','😔','😢','😭','😤','😠','😡','🥺','😱','😅','🙄','😏','😐','🤢','🤠','🥲','😈','👻','💀','🤡','👶',
@@ -2284,7 +2299,7 @@ function renderMembers(){
     const online = isOnline(p.id);
     const statusLine = p.status ? `<div class="pcard-status">${esc(p.status)}</div>` : '';
     const adminTools = admin && !p.isMe
-      ? `<div class="pcard-admin" title="${esc(p.email || 'compte inconnu (ligne anterieure au 2026-09-24)')} · ${esc(p.id)}"><button class="pcard-admin-btn" data-adm-rename="${esc(p.id)}" data-adm-name="${esc(p.name)}" title="Renommer">✎</button><button class="pcard-admin-btn pcard-admin-del" data-adm-remove="${esc(p.id)}" data-adm-name="${esc(p.name)}" data-adm-email="${esc(p.email || '')}" title="Retirer">✕</button></div>`
+      ? `<div class="pcard-admin" title="${esc(_emailsComptes.get(p.id) || 'compte inconnu (aucun import depuis le 2026-09-24)')} · ${esc(p.id)}"><button class="pcard-admin-btn" data-adm-rename="${esc(p.id)}" data-adm-name="${esc(p.name)}" title="Renommer">✎</button><button class="pcard-admin-btn pcard-admin-del" data-adm-remove="${esc(p.id)}" data-adm-name="${esc(p.name)}" data-adm-email="${esc(_emailsComptes.get(p.id) || '')}" title="Retirer">✕</button></div>`
       : '';
     return `<div class="pcard${p.isMe?' is-me':''}${online?' is-online':''}" style="--series:var(--s${p.si})">
       <div class="pcard-avatar-wrap">${_avatarHtml(p.avatar||'', p.name||'?', 44)}${online?'<span class="pcard-online-dot" title="en ligne"></span>':''}</div>
@@ -2327,7 +2342,7 @@ document.addEventListener('click', async e=>{
     // Le compte est rappele ici : devant deux lignes du meme joueur, c'est la seule chose
     // qui les distingue.
     const mail = del.dataset.admEmail;
-    if(!confirm(`Retirer "${old}" de la ligue ?\n${mail ? 'Compte : ' + mail : 'Compte inconnu (ligne enregistrée avant le 24/09/2026)'}\nUID : ${uid}\n\nSes obs et son profil seront supprimés (irréversible).`)) return;
+    if(!confirm(`Retirer "${old}" de la ligue ?\n${mail ? 'Compte : ' + mail : 'Compte inconnu (aucun import depuis le 24/09/2026)'}\nUID : ${uid}\n\nSes obs et son profil seront supprimés (irréversible).`)) return;
     try{ await deleteDoc(doc(db,'leagues',leagueId,'members',uid)); }catch(err){ showError(err); }
   }
 });
@@ -4581,11 +4596,7 @@ function memberToPerson(id, data, si){
   return { id, name:data.name||'Joueur', filename:'', si, species, isMe:id===myUid,
     goal:data.goal||'', fav:data.fav||'', dream:data.dream||'', rare:data.rare||'', status:data.status||'', avatar:data.avatar||'',
     regionsFR: new Set(regions),                  // régions FR-XX visitées (issues du CSV)
-    // Email du compte qui detient la ligne. Sans lui, rien ne relie une ligne du classement
-    // a un compte : la cle du document est l'UID Firebase, que l'interface n'affiche nulle
-    // part. Un admin devant deux lignes du meme joueur ne pouvait pas savoir laquelle
-    // supprimer. Absent des lignes enregistrees avant le 2026-09-24.
-    email: data.email || '',
+
     joinedAt: data.joinedAt?.seconds || 0,
     updatedAt: data.updatedAt?.toMillis ? data.updatedAt.toMillis() : 0 };
 }
@@ -8909,8 +8920,9 @@ async function saveMyList(name, speciesMap, regions){
       .normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/\s+/g, ' ');
     const jumelle = realPeople.find(p => p.id !== myUid && cle(p.name) === cle(name));
     if(jumelle){
-      // L'email de l'autre ligne n'est pas montre ici : la personne qui importe n'est pas
-      // forcement admin, et le nom avec le nombre d'especes suffit a se reconnaitre.
+      // L'email de l'autre ligne n'est de toute facon pas lisible ici : la collection
+      // accounts est reservee aux admins. Le nom et le nombre d'especes suffisent a se
+      // reconnaitre.
       const ok = confirm(
         '« ' + jumelle.name + ' » est déjà dans la ligue, avec ' + jumelle.species.size + ' espèces.\n\n'
         + 'Si c\'est toi, tu es connecté avec un autre compte que la dernière fois. Continuer\n'
@@ -8920,8 +8932,14 @@ async function saveMyList(name, speciesMap, regions){
       if(!ok) return;
     }
   }
-  const payload={ name, species:arr, updatedAt: serverTimestamp() };
-  if(monEmail) payload.email = monEmail;
+  // L email va dans la collection accounts, pas ici : le document membre est lisible par
+  // tout utilisateur connecte. deleteField retire celui qu une version precedente y avait
+  // ecrit, sur les quelques lignes enregistrees entre-temps.
+  if(monEmail){
+    setDoc(doc(db, 'leagues', leagueId, 'accounts', myUid),
+      { email: monEmail, updatedAt: serverTimestamp() }, { merge:true }).catch(() => {});
+  }
+  const payload={ name, species:arr, updatedAt: serverTimestamp(), email: deleteField() };
   if(Array.isArray(regions)) payload.regions = regions;   // codes FR-XX visités (issus du CSV) - omis si absent (merge conserve l'ancien)
   if(!iAmInLeague) payload.joinedAt = serverTimestamp();
   await setDoc(ref, payload, {merge:true});
@@ -14343,6 +14361,7 @@ function subscribeAdmins(){
       // Re-render la page trophees UNIQUEMENT si le statut admin de l'utilisateur
       // a change (evite un render redondant a chaque snapshot Firestore).
       const nowAdmin = isAdmin();
+      if(nowAdmin) subscribeComptes();
       if(_lastKnownIsAdmin !== nowAdmin){
         _lastKnownIsAdmin = nowAdmin;
         try{ if(trophyData) renderTrophies(trophyData); }catch(_){}
