@@ -11862,8 +11862,13 @@ function _renderSpeciesRarityCard(key){
     // de large, 15 px de police - pour que la position du libelle ne bouge pas entre un
     // « X » et un « 10 ». Le format unique prime : l'ecart restant entre un et deux
     // caracteres est de quelques pixels, et il ne se voit qu'en comparant deux fiches.
-    const pill = '<span style="margin-right:10px; flex-shrink:0; display:inline-flex;">'
-      + tierChip(pillTxt, pillBg, { title: 'palier ' + w }) + '</span>';
+    // Ici, et ici seulement, la pastille prend la forme ronde du birdydex : c'est la meme
+    // espece vue a deux endroits, autant qu'elle porte le meme jeton. Les filtres et les
+    // listes gardent le carre, ou les pastilles s'alignent en colonnes.
+    // Les 8 px de marge repondent aux 8 px du drapeau : le rond tombe a egale distance
+    // du drapeau et du libelle.
+    const pill = '<span style="margin-right:8px; flex-shrink:0; display:inline-flex; align-items:center;">'
+      + tierChip(pillTxt, pillBg, { title: 'palier ' + w, cls: 'tier-rond' }) + '</span>';
     // Mini-badge cat retire quand le pill affiche deja la lettre (evite doublon N + N).
     const catMiniPill = (isExo && cat && w > 0 && !useCatLetter) ? `<span style="display:inline-block;background:var(--surface-2);color:var(--ink-2);padding:1px 7px;border-radius:5px;font-weight:800;font-size:11px;margin-left:10px;vertical-align:middle;" title="${esc(catLbl)}">${cat}</span>` : '';
     // Icone "?" avec tooltip explicatif : remplace l'ancien depliant. Petit cercle
