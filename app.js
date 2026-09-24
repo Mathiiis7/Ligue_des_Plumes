@@ -11956,6 +11956,24 @@ function _weekToLabel(wi){
   const phase = day <= 10 ? 'début ' : day <= 20 ? 'mi-' : 'fin ';
   return phase + m;
 }
+// Score annuel affiche a cote du nom de zone dans "Quand la trouver". C'est exactement la
+// valeur qui decide du palier, calculee sur la zone que montre le graphique : region si
+// une region est selectionnee, pays sinon. L'entete ne donnait jusqu'ici que le pic, ce qui
+// laissait croire que le tier en decoulait ; les deux chiffres sont maintenant cote a cote.
+function _scoreAnnuelLbl(m12, cc){
+  if(!Array.isArray(m12) || m12.length !== 12) return '';
+  const v = _valeurAnnuelleZone(m12, cc);
+  if(!(v > 0)) return '';
+  // Meme cascade de precision que le pic affiche juste apres : un exotique a 0,006 %
+  // ne doit pas s'arrondir a "0 %".
+  const t = v >= 0.10   ? Math.round(v * 100)
+          : v >= 0.01   ? (v * 100).toFixed(1)
+          : v >= 0.001  ? (v * 100).toFixed(2)
+          : v >= 0.0001 ? (v * 100).toFixed(3)
+          : '&lt;0.01';
+  const tip = "Fréquence annuelle pondérée par l'effort d'observation : la part des listes de la zone qui citent l'espèce. C'est elle qui détermine le palier de rareté.";
+  return ` · <b title="${esc(tip)}" style="font-weight:700;color:var(--ink-2);">${t} %</b>`;
+}
 function _renderSpeciesFreqChart(key, country){
   const wrap = $('#smFreqWrap'), card = $('#smFreqCard'), svg = $('#smFreqChart'), srcEl = $('#smFreqSrc');
   if(!svg) return;
@@ -12132,7 +12150,7 @@ function _renderSpeciesFreqChart(key, country){
             : maxV >= 0.001 ? (maxV*100).toFixed(2) // 0.1-1%
             : maxV >= 0.0001 ? (maxV*100).toFixed(3)// 0.01-0.1%
             : '<0.01';
-    srcEl.innerHTML = `${esc(ccLabel)}${fallbackNote}`;
+    srcEl.innerHTML = `${esc(ccLabel)}${_scoreAnnuelLbl(monthlyArr, cc)}${fallbackNote}`;
   }
   // Layout du chart : toujours 520x130. Source unique = bar chart % checklists.
   const W = 520, H = 130, PT = 12, PB = 26, PL = 32, PR = 8;
