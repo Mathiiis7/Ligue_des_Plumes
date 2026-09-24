@@ -150,8 +150,8 @@ const REGIONS = {
 // "Assez rare", alors qu il faut monter en montagne pour le chercher. Seul seuil non rond
 // de l echelle, assume.
 const THRESHOLDS = [
-  [0.20, 1], [0.10, 2], [0.05, 3], [0.02, 4],
-  [0.01, 5], [0.006, 6], [0.002, 7], [0.0005, 8],
+  [0.24, 1], [0.12, 2], [0.06, 3], [0.03, 4],
+  [0.015, 5], [0.0075, 6], [0.002, 7], [0.0005, 8],
   [0.0001, 9],
 ];
 function weightFor(v){ for(const [min, w] of THRESHOLDS) if(v >= min) return w; return 10; }
