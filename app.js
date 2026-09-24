@@ -11191,7 +11191,7 @@ function _ordonnerSelectionDevant(zones, selection){
 // fait 3 px de cote. On la reprend agrandie dans un encart pose sur un coin vide, comme
 // le font les cartes administratives. Le cadre est en coordonnees du viewBox du pays.
 const _ENCART_CARTE = {
-  FR: { titre: 'Petite couronne', cadre: { x:14, y:636, w:190, h:212 },
+  FR: { titre: 'Petite couronne', cadre: { x:820, y:4, w:176, h:164 },
         codes: ['FR-IDF-75C', 'FR-IDF-92', 'FR-IDF-93', 'FR-IDF-94'] },
 };
 // Boite englobante d'une liste de chemins SVG. Les cartes du projet n'emploient que des
@@ -11219,16 +11219,16 @@ function _encartCarte(cc, paths, rendre){
   if(codes.length < 2) return '';
   const bb = _bboxChemins(codes.map(z => paths.zones[z].path));
   if(!bb) return '';
-  const c = cfg.cadre, marge = 8, bandeau = 16;
+  const c = cfg.cadre, marge = 6, bandeau = 14;
   const dispoW = c.w - marge * 2, dispoH = c.h - marge * 2 - bandeau;
   const k = Math.min(dispoW / (bb.x1 - bb.x0), dispoH / (bb.y1 - bb.y0));
   const tx = c.x + marge + (dispoW - (bb.x1 - bb.x0) * k) / 2 - bb.x0 * k;
   const ty = c.y + marge + bandeau + (dispoH - (bb.y1 - bb.y0) * k) / 2 - bb.y0 * k;
   return '<g>'
-    + '<rect x="' + c.x + '" y="' + c.y + '" width="' + c.w + '" height="' + c.h + '" rx="10"'
+    + '<rect x="' + c.x + '" y="' + c.y + '" width="' + c.w + '" height="' + c.h + '" rx="8"'
       + ' fill="var(--surface, #fff)" stroke="var(--line-2, #ccc)" stroke-width="1.5"/>'
-    + '<text x="' + (c.x + c.w / 2) + '" y="' + (c.y + 15) + '" text-anchor="middle"'
-      + ' font-size="12.5" font-family="system-ui" fill="var(--ink-3, #7c8783)">' + esc(cfg.titre) + '</text>'
+    + '<text x="' + (c.x + c.w / 2) + '" y="' + (c.y + 13) + '" text-anchor="middle"'
+      + ' font-size="11.5" font-family="system-ui" fill="var(--ink-3, #7c8783)">' + esc(cfg.titre) + '</text>'
     + '<g transform="translate(' + tx.toFixed(2) + ',' + ty.toFixed(2) + ') scale(' + k.toFixed(3) + ')">'
       + codes.map(z => rendre(z, k)).join('')
     + '</g></g>';
@@ -11405,17 +11405,24 @@ async function _renderRarityMap(sci, cc){
     // L'etat courant ne peut pas se marquer par la couleur, elle porte deja le palier :
     // un anneau sombre autour de la pastille, detache du fond par un lisere clair.
     const anneau = actif ? ' box-shadow:0 0 0 1.5px var(--surface-2, #fafafa), 0 0 0 3px var(--ink-2);' : '';
+    // L'annee n'est pas un treizieme mois, c'est le resume des douze. Elle prend donc une
+    // forme franchement differente - gelule, libelle en capitales espacees, un cran plus
+    // haute - suivie d'un filet. Meme code couleur, mais on ne la confond plus avec un mois
+    // en balayant la colonne.
+    const forme = annuel
+      ? ' padding:4px 7px; border-radius:999px; font:' + (actif ? '800' : '700') + ' 9.5px/1.2 system-ui; letter-spacing:.7px; text-transform:uppercase;'
+      : ' padding:2px 6px; border-radius:5px; font:' + (actif ? '800' : '600') + ' 10.5px/1.5 system-ui;';
     return '<button type="button" data-mois="' + val + '" title="' + esc(tip) + '"'
       + ' style="display:flex; align-items:center; justify-content:space-between; gap:4px;'
-      + ' width:100%; padding:2px 6px; border:0; border-radius:5px;'
+      + ' width:100%; border:0; cursor:pointer;' + forme
       + ' background:' + (vu ? realColor(t) : ABSENT) + '; color:' + (vu ? '#fff' : 'var(--ink-3)') + ';'
-      + ' font:' + (actif ? '800' : '600') + ' 10.5px/1.5 system-ui; cursor:pointer;' + anneau + '">'
+      + anneau + '">'
       + '<span>' + label + '</span>'
       + '<span style="opacity:.85; font-variant-numeric:tabular-nums;">' + (vu ? t : '–') + '</span>'
       + '</button>';
   };
   const moisBtns = chipMois('an', 'année', surAnnee, _valeurAnnuelleZone(serieRef, cc, zonePort || null), true)
-    + '<span style="height:4px;"></span>'
+    + '<span style="display:block; height:1px; margin:5px 3px; background:var(--line-2);"></span>'
     + _MOIS_COURTS.map((m, i) => chipMois(i, m, !surAnnee && i === mois, serieRef[i] || 0, false)).join('');
   const legendItem = (col, label) => `<span style="display:inline-flex; align-items:center; gap:4px;"><span style="display:inline-block; width:10px; height:10px; background:${col}; border-radius:2px;"></span>${label}</span>`;
   const zoneWord = cc === 'FR' ? 'département' : 'région';
@@ -11427,9 +11434,9 @@ async function _renderRarityMap(sci, cc){
         ▸ Rareté par ${zoneWord} (${libellePeriode})
       </summary>
       <div style="margin-top:6px; padding:10px 12px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2, #fafafa);">
-        <div style="display:flex; align-items:flex-start; justify-content:center; gap:10px;">
-          <div id="smRarityMapMois" style="display:flex; flex-direction:column; gap:2px; flex:0 0 auto; width:64px;">${moisBtns}</div>
-          <div style="flex:1 1 320px; min-width:0; max-width:320px;"><svg viewBox="${paths.viewBox}" style="width:100%; height:auto; display:block;" role="img" aria-label="Rareté par ${zoneWord} sur ${libellePeriode}">
+        <div style="display:flex; align-items:flex-start; justify-content:flex-start; gap:8px;">
+          <div id="smRarityMapMois" style="display:flex; flex-direction:column; gap:2px; flex:0 0 auto; width:62px;">${moisBtns}</div>
+          <div style="flex:1 1 auto; min-width:0; max-width:520px; margin:0 auto;"><svg viewBox="${paths.viewBox}" style="width:100%; height:auto; display:block;" role="img" aria-label="Rareté par ${zoneWord} sur ${libellePeriode}">
             ${svgZones}
           </svg></div>
         </div>
