@@ -11328,10 +11328,13 @@ let _appliquerZoneFiche = null;
 // meme finesse a l'ecran des deux cotes.
 function _pathZone(d, fill, titre, estSelectionnee, selectionActive, code, echelle){
   const attenuee = selectionActive && !estSelectionnee;
-  // Le contour de la zone selectionnee etait noir plein : pose sur les aplats clairs de la
-  // palette, il la faisait lire comme barree plutot que designee. L'encre secondaire la
-  // detache autant et suit le theme clair / sombre.
-  const stroke = estSelectionnee ? 'var(--ink-2, #47534f)' : 'var(--surface, #fff)';
+  // Contour de la zone selectionnee : du noir translucide, pas une encre a lui. Pose sur le
+  // remplissage, il en donne la teinte en plus sombre, quelle que soit cette teinte - palier
+  // vert, palier rouge, gris d'une zone jamais observee. C'est le procede du lisere des
+  // pastilles de palier (box-shadow inset noir a 20 %), qui n'a pas d'equivalent en SVG.
+  // Deux encres pleines ont ete essayees avant : noire, la zone se lisait barree ; encre
+  // secondaire, elle restait etrangere a sa propre couleur.
+  const stroke = estSelectionnee ? 'rgba(0,0,0,0.45)' : 'var(--surface, #fff)';
   const e = echelle > 0 ? echelle : 1;
   const largeur = (estSelectionnee ? 1.6 : 0.5) / e;
   const opacite = attenuee ? ' opacity="0.35"' : '';
