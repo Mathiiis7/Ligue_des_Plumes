@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, EmailAuthProvider, linkWithCredential } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, EmailAuthProvider, linkWithCredential } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, deleteField, collection, onSnapshot, serverTimestamp, addDoc, query, orderBy, limit, where, getDocs, writeBatch }
   from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
@@ -14459,8 +14459,18 @@ document.addEventListener('click', e => {
   if(e.target.closest('[data-map-render-toggle]')) _toggleMapRender();
 });
 onAuthStateChanged(auth, user=>{
-  if(user){ myUid=user.uid; subscribeAdmins(); updateAuthUI(user); boot(); }
-  else { myUid=null; signInAnonymously(auth).catch(err=>{ showError(err); }); }
+  // L app ne demarre que pour un vrai compte. Elle signait en anonyme des qu une page
+  // s ouvrait sans session : un compte Firebase par visite - huit en huit jours dans la
+  // console - et, plus genant, boot() tournait pour eux. Le portail masque bien l interface
+  // (html[data-auth="signed-out"] .wrap { display:none }), mais les abonnements Firestore
+  // partaient quand meme, et la regle de lecture est isSignedIn() : n importe qui ouvrant
+  // le lien telechargeait la liste des membres et le chat. C etait du masquage, pas une
+  // protection.
+  //
+  // Les sessions anonymes deja ouvertes ne sont pas fermees : elles restent valides pour
+  // linkWithCredential, qui transforme une session anonyme en compte en gardant son UID.
+  if(user && isRealAccount(user)){ myUid=user.uid; subscribeAdmins(); updateAuthUI(user); boot(); }
+  else { myUid=null; updateAuthUI(user || null); }
 });
 /* ---------------- Quiz chants (xeno-canto v3) ---------------- */
 // Deux modes distincts (basculables par les tabs "🏆 Classe" / "🎯 Entrainement") :
