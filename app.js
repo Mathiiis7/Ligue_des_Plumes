@@ -1724,7 +1724,7 @@ function sciColorForCountry(sci, country){
 const COUNTRY_FLAG = CC_FLAGS;
 function _rarityBadge(w, country, sci){
   const c = country || 'FR';
-  const pillFor = tier => tier ? tierChip(tier, realColor(tier), { sm:true })
+  const pillFor = tier => tier ? tierChip(tier, realColor(tier))
     : tierChip('?', '#94a3b8', { sm:true });
   // sciKey normalise pour tester _horsAire (couvre les alias taxo).
   const sciKey = (() => { if(!sci) return ''; let k=(sci||'').trim().toLowerCase(); if(SCI_ALIAS[k]) k=SCI_ALIAS[k]; return k; })();
@@ -1752,16 +1752,16 @@ function _rarityBadge(w, country, sci){
       if(isEstab){
         // Bar chart eBird du pays (meme signal que les sauvages depuis 2026-09-21).
         const t = rarityForCountry(sci, cc) || 1;
-        const pill = tierChip(t, realColor(t), { sm:true });
+        const pill = tierChip(t, realColor(t));
         return `${flgSpan}${pill} ${REAL_LABELS[t]||''} <span style="opacity:.7;font-size:11px;">· ${catLbl}</span>`;
       }
-      const pill = tierChip(cat || 'X', realColor(0), { sm:true });
+      const pill = tierChip(cat || 'X', realColor(0));
       return `${flgSpan}${pill} Exotique <span style="opacity:.7;font-size:11px;">· ${catLbl}</span>`;
     }
     // Espece hors aire : pas de bar chart ici, mais mesuree dans un autre pays de l'app.
     // Badge gris "Hors aire" plutot qu'un tier invente.
     if(sciKey && _horsAire(sciKey, cc)){
-      const pill = tierChip('·', '#7e8a99', { sm:true });
+      const pill = tierChip('-', '#7e8a99');
       return `${flgSpan}${pill} Hors aire`;
     }
     if(tier) return `${flgSpan}${pillFor(tier)} ${REAL_LABELS[tier]||''}`;
@@ -1953,8 +1953,7 @@ const REAL_LABELS={0:'Parc semi-libre',1:'Omniprésent',2:'Très commun',3:'Comm
 // premier argument libre.
 function tierChip(texte, couleur, opts){
   const o = opts || {};
-  const cls = 'tier-chip' + (o.sm ? ' tier-chip-sm' : '') + (o.lg ? ' tier-chip-lg' : '')
-    + (o.cls ? ' ' + o.cls : '');
+  const cls = 'tier-chip' + (o.cls ? ' ' + o.cls : '');
   const t = o.title ? ' title="' + esc(o.title) + '"' : '';
   return '<span class="' + cls + '" style="background:' + couleur + ';"' + t + '>' + texte + '</span>';
 }
@@ -11557,7 +11556,7 @@ function _renderSpeciesRarityCard(key){
           (s.moisPic >= 0 ? ` · jusqu'à ${fmt(s.pic)} en ${_MOIS_COURTS[s.moisPic]}` : '') +
           ` · présente ${s.nbMois} mois sur 12`;
       return `<div class="reg-picker-item${absent?' absent':''}${s.code===_speciesRegion?' on':''}" data-code="${esc(s.code)}" title="${esc(titre)}">
-        ${tierChip(absent ? '–' : tier, absent ? 'var(--line-2)' : col, { sm:true })}
+        ${tierChip(absent ? '–' : tier, absent ? 'var(--line-2)' : col)}
         <span>${esc(s.name)}</span>
         <div class="reg-picker-bar"><div style="width:${barW}%; background:${col};"></div></div>
         <span class="reg-picker-val">${esc(val)}</span>
@@ -11789,7 +11788,7 @@ function _renderSpeciesRarityCard(key){
           <div style="padding:6px 0 4px 4px;border-left:2px solid var(--line);margin:4px 0 2px 6px;padding-left:10px;">
             <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;">${entete}</div>
             ${tierAffiche ? `<div style="display:flex;align-items:center;gap:8px;padding:5px 0 2px 0;">
-              ${tierChip(tierAffiche, realColor(tierAffiche), { lg:true })}
+              ${tierChip(tierAffiche, realColor(tierAffiche))}
               <span style="font-size:12px;color:var(--ink);font-weight:600;">${mesure}</span>
             </div>` : ''}
             <div style="font-size:10.5px;color:var(--ink-3);margin-top:6px;opacity:.85;line-height:1.4;">${note}</div>
@@ -15098,7 +15097,7 @@ function _pkdxRender(){
     return `<div class="pkdx-card${r.owned?'':' missing'}" data-sci="${esc(r.sci)}">
       <span class="pkdx-num">#${num}</span>
       ${r.saison ? `<span class="pkdx-saison" title="Espèce nettement saisonnière : son pic mensuel vaut au moins 3 fois sa moyenne annuelle. Viser le bon mois change tout.">◑</span>` : ''}
-      <span class="pkdx-tier tier-chip tier-chip-sm" style="background:${tierBg};" title="Tier ${r.tier}${catLetter ? ' · '+catLetter : ''}">${badgeText}</span>
+      <span class="pkdx-tier" style="background:${tierBg};" title="Tier ${r.tier}${catLetter ? ' · '+catLetter : ''}">${badgeText}</span>
       <div class="pkdx-img" data-pkdx-lazy="${esc(r.sci)}">${r.owned ? '🐦' : ''}</div>
       <div class="pkdx-name">${esc(r.nm)}</div>
       <div class="pkdx-sci">${esc(r.sci)}</div>

@@ -1242,11 +1242,10 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
      si bien que le meme chiffre changeait d'allure selon l'ecran ou on le lisait. La
      couleur reste porteuse du palier ; seule la taille varie, et elle garde les memes
      proportions. */
-  .tier-chip { display:inline-flex; align-items:center; justify-content:center; min-width:22px;
-    padding:1px 6px; border-radius:6px; color:#fff; font:800 12px/1.5 system-ui;
-    font-variant-numeric:tabular-nums; vertical-align:middle; text-align:center; }
-  .tier-chip-sm { min-width:20px; padding:1px 5px; font-size:11px; }
-  .tier-chip-lg { min-width:26px; padding:2px 8px; font-size:13.5px; }
+  .tier-chip { display:inline-flex; align-items:center; justify-content:center; min-width:24px;
+    height:24px; padding:0 5px; border-radius:6px; color:#fff; font:800 12px/1 system-ui;
+    font-variant-numeric:tabular-nums; vertical-align:middle; text-align:center;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.2); }
   .rar-chips { display:inline-flex; gap:3px; flex-wrap:wrap; }
   .rar-chip { display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:24px; padding:0 5px; border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink-3); border-radius:6px; font:600 11px/1 system-ui; cursor:pointer; }
   .rar-chip:hover { filter:brightness(0.97); }
@@ -1760,8 +1759,9 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
     content-visibility:auto; contain-intrinsic-size:220px; }
   .pkdx-card:hover { transform:translateY(-2px); box-shadow:0 6px 14px rgba(0,0,0,.12); border-color:var(--accent); }
   .pkdx-card .pkdx-num { position:absolute; top:6px; left:8px; font:700 10px ui-monospace, monospace; color:var(--ink-3); background:rgba(255,255,255,.85); padding:1px 6px; border-radius:8px; z-index:2; }
-  /* Ne porte plus que son ancrage : la forme vient de .tier-chip, comme partout ailleurs. */
-  .pkdx-card .pkdx-tier { position:absolute; top:6px; right:8px; box-shadow:0 1px 3px rgba(0,0,0,.3); z-index:2; }
+  /* Seule exception au carre commun : dans la grille, le rond se pose sur la photo sans
+     entrer en concurrence avec le numero d espece, qui est deja un rectangle de texte. */
+  .pkdx-card .pkdx-tier { position:absolute; top:6px; right:8px; width:20px; height:20px; border-radius:50%; color:#fff; font:800 10px system-ui; display:grid; place-items:center; box-shadow:0 1px 3px rgba(0,0,0,.3); z-index:2; }
   /* Repere des especes nettement saisonnieres : pic mensuel >= 3x la moyenne annuelle. Le
      tier repose sur l annuel et ne le dit pas, alors qu il suffit souvent de viser le bon
      mois. Pose sous le numero, a gauche, pour ne pas concurrencer la pastille de tier. */
