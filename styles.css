@@ -1774,6 +1774,17 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   tr.missing { opacity:.5; }
   .mcard.missing { opacity:.55; }
   /* ============ POKEDEX GRID ============ */
+  /* En-tete de groupe, seulement en tri par milieu : la grille reste plate en tri par
+     famille et par rarete, ou les en-tetes n apprendraient rien. */
+  .pkdx-groupe { grid-column:1/-1; margin:14px 0 2px; padding:6px 2px 4px;
+    border-bottom:1px solid var(--line); font:700 13px system-ui; color:var(--ink-2);
+    text-transform:uppercase; letter-spacing:.4px; }
+  .pkdx-groupe:first-child { margin-top:0; }
+  .pkdx-groupe-n { font-weight:600; color:var(--ink-3); letter-spacing:0; text-transform:none; }
+  /* Absente de la zone choisie : la case reste, en retrait. La masquer ferait croire que
+     l espece n existe pas, alors qu elle est seulement ailleurs. */
+  .pkdx-card.hors-zone { opacity:.42; }
+  .pkdx-card.hors-zone .pkdx-tier { filter:grayscale(1); }
   .pkdx-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:10px; margin-top:6px; }
   .pkdx-card {
     /* Virtualisation native : le navigateur skip completement le rendu (layout, paint,

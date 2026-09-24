@@ -14742,7 +14742,7 @@ function renderQuizInit(){
 
 /* ---------------- Pokedex : grille de toutes les especes FR ---------------- */
 // Etat local pour les filtres. Persistant en localStorage pour retrouver la meme vue.
-var _pkdxFilters = { search:'', country:(_globalCountry||'FR'), family:'', habitat:'', owned:'' };
+var _pkdxFilters = { search:'', country:(_globalCountry||'FR'), zone:'', family:'', habitat:'', owned:'', sort:'famille' };
 try{ Object.assign(_pkdxFilters, JSON.parse(localStorage.getItem('mb-pkdx-filters')||'{}')); }catch(_){}
 // Le pays global override le pays local Birdydex (le global est la source de verite).
 _pkdxFilters.country = _globalCountry || _pkdxFilters.country || 'FR';
@@ -14802,7 +14802,7 @@ function renderPokedex(){
   // Garde defensive : si render est appele avant que le module ait initialise les vars
   // (ex : boot restore last-tab + race conditions), init avec defaults et continue.
   if(typeof _pkdxFilters === 'undefined' || !_pkdxFilters){
-    _pkdxFilters = { search:'', country:(typeof _globalCountry !== 'undefined' && _globalCountry) || 'FR', family:'', habitat:'', owned:'' };
+    _pkdxFilters = { search:'', country:(typeof _globalCountry !== 'undefined' && _globalCountry) || 'FR', zone:'', sort:'famille', family:'', habitat:'', owned:'' };
   }
   if(typeof _pkdxTierExcl === 'undefined' || !_pkdxTierExcl) _pkdxTierExcl = new Set();
   if(!_pkdxInit){
@@ -14936,6 +14936,27 @@ function renderPokedex(){
         _pkdxRender();
       });
     }
+    // Tri de la grille : famille (defaut), rarete, milieu.
+    const sortBtn = document.getElementById('pkdxSort');
+    if(sortBtn){
+      const SORT_LABEL = { famille:'Par famille', rarete:'Par rareté', habitat:'Par milieu' };
+      _syncPkdxFilterBtn('pkdxSort', SORT_LABEL[_pkdxFilters.sort] || SORT_LABEL.famille);
+      sortBtn.addEventListener('click', async () => {
+        const chosen = await _openFilterPicker(_pkdxFilters.sort || 'famille', {
+          title: 'Trier la grille', searchable: false,
+          options: [
+            { value:'famille', label:'Par famille' },
+            { value:'rarete',  label:'Par rareté' },
+            { value:'habitat', label:'Par milieu' },
+          ],
+        });
+        if(chosen == null) return;
+        _pkdxFilters.sort = chosen || 'famille';
+        _pkdxSaveFilters();
+        _syncPkdxFilterBtn('pkdxSort', SORT_LABEL[_pkdxFilters.sort]);
+        _pkdxRender();
+      });
+    }
     // Habitat : modal picker.
     const habBtn = document.getElementById('pkdxHabitat');
     if(habBtn){
@@ -14993,24 +15014,96 @@ function renderPokedex(){
     if(ccBtn){
       // Sync le label initial depuis le state
       _syncCountryButton(ccBtn, _pkdxFilters.country || 'FR');
+      _majEtiquetteZone();
+      // Meme selecteur a deux onglets que les fiches espece : le pays et sa zone sont le
+      // meme choix, l'endroit ou on lit la rarete.
+      const appliquerPays = (cc2) => {
+        if(!cc2 || cc2 === _pkdxFilters.country) return;
+        _pkdxFilters.country = cc2;
+        _pkdxFilters.zone = '';   // une zone n'appartient qu'a son pays
+        _pkdxSaveFilters();
+        _pkdxAllSorted = null; _pkdxNumById = null; _pkdxLastRowsHash = null;   // le pays change la liste + numeros
+        _syncCountryButton(ccBtn, cc2);
+        _pkdxRender();
+        // Sync le pays global pour que les autres onglets (Carte, Cette semaine, fiche espece) suivent.
+        if(typeof _setGlobalCountry === 'function' && cc2 !== _globalCountry) _setGlobalCountry(cc2);
+      };
       ccBtn.addEventListener('click', async () => {
-        const chosen = await _openCountryPicker(_pkdxFilters.country || 'FR');
-        if(chosen && chosen !== _pkdxFilters.country){
-          _pkdxFilters.country = chosen;
-          _pkdxSaveFilters();
-          _pkdxAllSorted = null; _pkdxNumById = null; _pkdxLastRowsHash = null;   // le pays change la liste + numeros
-          _syncCountryButton(ccBtn, chosen);
-          _pkdxRender();
-          // Sync le pays global pour que les autres onglets (Carte, Cette semaine, fiche espece) suivent.
-          if(typeof _setGlobalCountry === 'function' && chosen !== _globalCountry){
-            _setGlobalCountry(chosen);
-          }
-        }
+        const res = await _openCountryPicker(_pkdxFilters.country || 'FR', {
+          zones: (cc2) => _pkdxLignesZones(cc2),
+          onPays: async (cc2) => { appliquerPays(cc2); try{ await _loadFreqDataForCountry(cc2); }catch(_){} },
+          motZone: (cc2) => cc2 === 'FR' ? 'Départements' : 'Régions',
+        });
+        if(!res || res.type !== 'zone') return;
+        _pkdxFilters.zone = res.code || '';
+        _pkdxSaveFilters();
+        _pkdxLastRowsHash = null;
+        _syncCountryButton(ccBtn, _pkdxFilters.country || 'FR');
+        _majEtiquetteZone();
+        try{ await _loadFreqDataForCountry(_pkdxFilters.country || 'FR'); }catch(_){}
+        _pkdxRender();
       });
     }
     _pkdxInit = true;
   }
   _pkdxRender();
+}
+// Lecture d'une ligne a l'echelle demandee. Sans zone, les valeurs nationales calculees
+// une fois pour toutes. Avec une zone, son propre bar chart : une espece peut y etre
+// commune et rare ailleurs, ou absente. Les numeros du birdydex, eux, restent nationaux -
+// ils identifient l'espece, pas sa frequence ici.
+// Lignes de zones du selecteur du birdydex. Plus legeres que celles des fiches espece :
+// il n'y a pas d'espece courante dont montrer la frequence, alors on montre ce qui aide a
+// choisir - le nombre d'especes que le bar chart de la zone connait.
+function _pkdxLignesZones(cc){
+  const zones = (typeof zonesFichePourPays === 'function' ? zonesFichePourPays(cc) : []);
+  if(!zones.length) return '';
+  const byZone = (typeof REAL_FREQ_MONTHLY_BY_REGION_MULTI === 'object')
+    ? (REAL_FREQ_MONTHLY_BY_REGION_MULTI[cc] || {}) : {};
+  const choisie = _pkdxFilters.zone || '';
+  const nb = (z) => byZone[z] ? Object.keys(byZone[z]).length : 0;
+  const max = Math.max(1, ...zones.map(r => nb(r.code)));
+  const pays = (COUNTRIES_REG[cc] && COUNTRIES_REG[cc].name) || cc;
+  const lignes = zones.slice().sort((a, b) => a.name.localeCompare(b.name, 'fr')).map(r => {
+    const n = nb(r.code);
+    return '<div class="reg-picker-item' + (n ? '' : ' absent') + (r.code === choisie ? ' on' : '')
+      + '" data-code="' + esc(r.code) + '">'
+      + '<span>' + esc(r.name) + '</span>'
+      + '<span class="reg-picker-val">' + (n ? n + ' esp.' : '—') + '</span>'
+      + '<div class="reg-picker-bar"><div style="width:' + Math.round(n / max * 100) + '%; background:var(--accent);"></div></div>'
+      + '<span></span></div>';
+  }).join('');
+  return '<div class="reg-picker-item national' + (choisie ? '' : ' on') + '" data-code="">'
+    + esc(pays) + ' entier</div>' + lignes;
+}
+// Le bouton pays affiche la zone quand il y en a une : sans ca, rien ne dirait a quelle
+// echelle les paliers de la grille sont lus.
+function _majEtiquetteZone(){
+  const btn = document.getElementById('pkdxCountry');
+  if(!btn) return;
+  const lbl = btn.querySelector('.cp-btn-label');
+  if(!lbl) return;
+  const cc = _pkdxFilters.country || 'FR';
+  const z = _pkdxFilters.zone || '';
+  const nom = z
+    ? ((zonesFichePourPays(cc).find(r => r.code === z) || {}).name || z)
+    : ((COUNTRIES_REG[cc] && COUNTRIES_REG[cc].name) || cc);
+  lbl.textContent = z ? '📍 ' + nom : nom;
+}
+function _pkdxVue(r, cc, zone){
+  if(!zone) return { tier:r.tier, val:r.val, cat:r.cat, absente:false };
+  const byZone = (typeof REAL_FREQ_MONTHLY_BY_REGION_MULTI === 'object')
+    ? REAL_FREQ_MONTHLY_BY_REGION_MULTI[cc] : null;
+  // Donnees de zone pas encore arrivees : on reste au national. Sans ce repli, toute la
+  // grille s afficherait en "absente" le temps du chargement.
+  if(!byZone || !byZone[zone]) return { tier:r.tier, val:r.val, cat:r.cat, absente:false };
+  const serie = byZone[zone][r.sci];
+  const v = Array.isArray(serie) ? _valeurAnnuelleZone(serie, cc, zone) : 0;
+  // Statut exotique local : eBird le tague par departement / region, une espece peut etre
+  // naturalisee dans un coin et simple echappee dans un autre.
+  const parZone = (typeof _exoticStatusByZone === 'function') ? _exoticStatusByZone(cc) : null;
+  const catZone = (parZone && parZone[zone] && parZone[zone][r.sci]) || r.cat;
+  return { tier: v > 0 ? annualFreqToTier(v) : 10, val: v, cat: catZone, absente: !(v > 0) };
 }
 function _pkdxSaveFilters(){ try{ localStorage.setItem('mb-pkdx-filters', JSON.stringify(_pkdxFilters)); }catch(_){} }
 function _pkdxRender(){
@@ -15080,17 +15173,20 @@ function _pkdxRender(){
       // premiere chose ; sans la seconde, le repere se posait sur des especes que viser le
       // bon mois ne rend pas trouvables pour autant, au point d en marquer la majorite des
       // cartes. Meme garde-fou que la note de la fiche, pour que les deux concordent.
-      let saison = false;
+      // Frequence annuelle nationale, gardee pour le tri par rarete : le palier ne suffit
+      // pas, il met dans le meme sac tout un intervalle de 1 a 2.
+      let saison = false, val = 0;
       {
         const m = (regPkdx && regPkdx.monthly) ? regPkdx.monthly()[sci] : null;
         if(Array.isArray(m) && m.length === 12){
-          const a = _valeurAnnuelleZone(m, country), p = Math.max(...m);
-          saison = a > 0 && p >= _PIC_MINI_SAISON && p / a >= 3;
+          val = _valeurAnnuelleZone(m, country);
+          const p = Math.max(...m);
+          saison = val > 0 && p >= _PIC_MINI_SAISON && p / val >= 3;
         }
       }
       // Categorie exotique pour ce pays (N/P/X/C ou '') utilisee par les filtres N/P/X.
       const cat = exo ? (exoticCategoryInCountry(sci, country) || _exoticCategory(sci) || '') : '';
-      all.push({ sci, nm, fam, tier, exo, cat, accidentelle, saison });
+      all.push({ sci, nm, fam, tier, val, exo, cat, accidentelle, saison });
     }
     // Tri : par ordre taxonomique IOC/eBird (FAMILY_ORDER), puis les exotiques rejetees en
     // fin de famille, puis du moins rare au plus rare (tier ascendant, 1 = tres commun).
@@ -15196,7 +15292,28 @@ function _pkdxRender(){
   empty.style.display = 'none';
   // Skip rebuild grille si rows + owned inchange depuis dernier render (evite le
   // innerHTML = ... de 597 cards qui coute 300ms sur switch d'onglet).
-  const rowsHash = rows.length + '|' + country + '|' + rows.map(r => r.sci + (r.owned?'1':'0')).join(',');
+  // Echelle de lecture : le pays, ou la zone choisie dans le selecteur. Calculee ici et non
+  // dans _pkdxAllSorted pour que les numeros du birdydex restent nationaux - ils
+  // identifient l'espece, ils ne doivent pas bouger quand on change de departement.
+  const zone = _pkdxFilters.zone || '';
+  // Les frequences par zone sont chargees a la demande : si elles manquent, on les demande
+  // et on redessine a leur arrivee.
+  if(zone && typeof _loadFreqDataForCountry === 'function'){
+    const byZ = (typeof REAL_FREQ_MONTHLY_BY_REGION_MULTI === 'object') ? REAL_FREQ_MONTHLY_BY_REGION_MULTI[country] : null;
+    if(!byZ || !byZ[zone]){
+      _loadFreqDataForCountry(country).then(() => { _pkdxLastRowsHash = null; _pkdxRender(); }).catch(() => {});
+    }
+  }
+  const vues = new Map(rows.map(r => [r.sci, _pkdxVue(r, country, zone)]));
+  const tri = _pkdxFilters.sort || 'famille';
+  if(tri === 'rarete'){
+    // Sur la frequence precise, pas sur le palier : celui-ci met dans le meme sac tout un
+    // intervalle - le palier 2 va de 12 a 24 % des listes. Du plus commun au plus rare.
+    rows = rows.slice().sort((a, b) =>
+      (vues.get(b.sci).val - vues.get(a.sci).val) || a.nm.localeCompare(b.nm, 'fr'));
+  }
+  const rowsHash = rows.length + '|' + country + '|' + zone + '|' + tri + '|'
+    + rows.map(r => r.sci + (r.owned ? '1' : '0')).join(',');
   if(rowsHash === _pkdxLastRowsHash && grid.children.length === rows.length){
     return;   // DOM deja a jour
   }
@@ -15204,30 +15321,57 @@ function _pkdxRender(){
   // Rendu grille : numero + photo lazy + nom + tier. Le statut exotique n'apparait plus
   // sur la carte (ni badge violet, ni bordure) : c'est le tier "0" gris qui signale les
   // exotiques de parcs, et le detail (categorie N/P/X/C) est visible sur la fiche espece.
-  grid.innerHTML = rows.map(r => {
+  const carte = (r) => {
+    const vue = vues.get(r.sci) || { tier:r.tier, cat:r.cat, absente:false };
     const num = String(_pkdxNumById.get(r.sci) || 0).padStart(3, '0');
     // Couleur du badge tier : realColor(tier) pour matcher EXACTEMENT le numero affiche.
     // Avant : sciColorForCountry utilisait le bar chart tier brut, alors que r.tier vient
     // de rarityForCountry qui merge S&T + overrides EXOTIQUES_TIER_FORCE_FR. Divergence
     // possible : Ibis sacre affichait '6' sur fond rouge (couleur du tier 7 bar chart brut).
-    const tierBg = realColor(r.tier);
+    const tierBg = realColor(vue.tier);
     // Categorie exotique : tier 0 affiche toujours la lettre (N/P/X/C au lieu de "0").
     // Tier > 0 : affiche la lettre uniquement pour N (Naturalise) et P (Provisoire) car
     // ce sont les cas ou l'espece a une pop etablie ou reguliere alors que le chiffre
     // rareté pourrait tromper (ex Cygne noir tier 7 mais N). X et C gardent le tier
     // numerique (deja evidemment rare/echappe).
-    const cat = exoticCategoryInCountry(r.sci, country) || _exoticCategory(r.sci) || '';
-    const catLetter = r.tier === 0 ? cat : (_isEstablishedExotic(cat) ? cat : '');
-    const badgeText = catLetter || r.tier;
-    return `<div class="pkdx-card${r.owned?'':' missing'}" data-sci="${esc(r.sci)}">
+    const cat = vue.cat || exoticCategoryInCountry(r.sci, country) || _exoticCategory(r.sci) || '';
+    const catLetter = vue.tier === 0 ? cat : (_isEstablishedExotic(cat) ? cat : '');
+    const badgeText = catLetter || vue.tier;
+    // Absente de la zone choisie : la case reste, en retrait. La masquer ferait croire que
       <span class="pkdx-num">#${num}</span>
       ${r.saison ? `<span class="pkdx-saison" title="Espèce nettement saisonnière : son pic mensuel vaut au moins 3 fois sa moyenne annuelle. Viser le bon mois change tout.">◑</span>` : ''}
-      <span class="pkdx-tier" style="background:${tierBg};" title="Tier ${r.tier}${catLetter ? ' · '+catLetter : ''}">${badgeText}</span>
+      <span class="pkdx-tier" style="background:${tierBg};" title="Palier ${vue.tier}${catLetter ? ' · '+catLetter : ''}${vue.absente ? ' · jamais notée ici' : ''}">${badgeText}</span>
       <div class="pkdx-img" data-pkdx-lazy="${esc(r.sci)}">${r.owned ? '🐦' : ''}</div>
       <div class="pkdx-name">${esc(r.nm)}</div>
       <div class="pkdx-sci">${esc(r.sci)}</div>
     </div>`;
-  }).join('');
+  };
+  if(tri === 'habitat'){
+    // Une espece vit souvent dans deux milieux : elle apparait sous chacun, comme le filtre
+    // par milieu la retient pour chacun. Sa case est la meme, son numero aussi.
+    const parMilieu = new Map();
+    for(const r of rows){
+      const hs = (typeof habitatsOf === 'function' ? habitatsOf(r.sci) : []) || [];
+      for(const h of (hs.length ? hs : [''])){
+        if(!parMilieu.has(h)) parMilieu.set(h, []);
+        parMilieu.get(h).push(r);
+      }
+    }
+    const ordre = (typeof HABITAT_CATS !== 'undefined' ? HABITAT_CATS : []).concat(['']);
+    const cles = [...parMilieu.keys()].sort((a, b) => {
+      const ia = ordre.indexOf(a), ib = ordre.indexOf(b);
+      return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib);
+    });
+    grid.innerHTML = cles.map(h => {
+      const titre = h ? ((typeof HABITAT_LABELS === 'object' && HABITAT_LABELS[h]) || h) : 'Milieu inconnu';
+      const lot = parMilieu.get(h);
+      return '<div class="pkdx-groupe">' + esc(titre)
+        + ' <span class="pkdx-groupe-n">' + lot.length + '</span></div>'
+        + lot.map(carte).join('');
+    }).join('');
+  } else {
+    grid.innerHTML = rows.map(carte).join('');
+  }
   // Lazy loading photos via IntersectionObserver.
   _pkdxLazyPhotos();
 }
