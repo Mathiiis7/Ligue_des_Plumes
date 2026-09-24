@@ -142,11 +142,15 @@ const REGIONS = {
 // quasi vides. La repartition francaise est desormais 9 · 36 · 28 · 66 · 43 · 21 · 73 · 76
 // · 92 · 36.
 //
+// Borne du tier 1 descendue de 30 % a 20 % le 2026-09-24 : a 30 %, le tier 2 couvrait un
+// rapport de 3 (10 % a 30 %), le plus large du haut de l echelle. A 20 % il couvre un
+// rapport de 2, comme les tiers 3 et 5. 165 couples espece-pays montent en tier 1, qui en
+// compte 286 au lieu de 121 ; en France, 20 especes au lieu de 9.
 // Le tier 6 est a 0,6 % et non 0,5 % : a 0,5 % le Gypaete barbu (0,527 %) ressortait
 // "Assez rare", alors qu il faut monter en montagne pour le chercher. Seul seuil non rond
 // de l echelle, assume.
 const THRESHOLDS = [
-  [0.30, 1], [0.10, 2], [0.05, 3], [0.02, 4],
+  [0.20, 1], [0.10, 2], [0.05, 3], [0.02, 4],
   [0.01, 5], [0.006, 6], [0.002, 7], [0.0005, 8],
   [0.0001, 9],
 ];
