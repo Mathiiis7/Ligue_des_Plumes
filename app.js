@@ -339,6 +339,11 @@ const _WEEKLY_THR  = [[2.2596,1],[0.8496,2],[0.34178,3],[0.12404,4],[0.04666,5],
 // estimee. Genere par build-rarity-multi-country.mjs, injecte par inject-rarity-multi-country.mjs.
 const EFFORT_MENSUEL_PAR_PAYS = {"FR":[0.06767,0.06821,0.08632,0.11993,0.13197,0.09483,0.0983,0.09653,0.06698,0.0692,0.04545,0.05461],"ES":[0.09301,0.08348,0.09931,0.12275,0.1088,0.07325,0.06757,0.07789,0.07278,0.06958,0.06267,0.06891],"IT":[0.07934,0.06734,0.09224,0.12544,0.13134,0.0946,0.0906,0.07754,0.06623,0.07624,0.0473,0.05178],"GB":[0.09737,0.07724,0.09267,0.1137,0.11554,0.0898,0.0825,0.08325,0.06712,0.06882,0.05574,0.05627],"PT":[0.08232,0.07706,0.0856,0.11249,0.11255,0.08862,0.07479,0.07604,0.07435,0.08483,0.06406,0.06729],"CH":[0.07809,0.07334,0.09493,0.11442,0.11516,0.09554,0.09337,0.08716,0.0819,0.06469,0.0512,0.0502],"NO":[0.05437,0.04993,0.0794,0.09967,0.14954,0.156,0.11985,0.10086,0.06857,0.05376,0.03855,0.0295],"GR":[0.05229,0.05069,0.07057,0.17613,0.17365,0.07995,0.07044,0.07849,0.09686,0.07117,0.04072,0.03904],"IS":[0.04513,0.04223,0.0616,0.09124,0.13006,0.16361,0.14656,0.11153,0.0787,0.06021,0.03521,0.03391],"LK":[0.12429,0.11549,0.10317,0.08193,0.0696,0.06084,0.06438,0.06664,0.05823,0.07697,0.07976,0.0987],"NA":[0.04814,0.07466,0.06132,0.07271,0.06617,0.0626,0.08863,0.10882,0.12701,0.11272,0.10956,0.06767],"AU":[0.09944,0.07531,0.07813,0.08242,0.07898,0.07767,0.08501,0.09073,0.09296,0.08904,0.07842,0.07189],"NZ":[0.1183,0.09372,0.08317,0.0805,0.07317,0.06536,0.06678,0.06467,0.06877,0.091,0.09892,0.09564],"US":[0.08987,0.09019,0.0929,0.1166,0.1346,0.08354,0.06907,0.06932,0.07037,0.06375,0.05718,0.06261],"CA":[0.07315,0.07082,0.08266,0.1189,0.15638,0.09886,0.07739,0.07664,0.07445,0.06395,0.05163,0.05516]};
 
+// Plancher du pic mensuel sous lequel on ne parle plus de saisonnalite : au meilleur mois,
+// moins d'une liste sur 200 signale l'espece. Le rapport pic/moyenne y devient a la fois
+// invisible en pratique et fragile — il se calcule sur des frequences de quelques
+// centiemes de pourcent, ou une observation isolee suffit a tripler le rapport.
+const _PIC_MINI_SAISON = 0.005;
 const _ANNUAL_THR = [[0.30,1],[0.10,2],[0.05,3],[0.02,4],[0.01,5],[0.006,6],[0.002,7],[0.0005,8],[0.0001,9]];
 const _tierFromThresholds = (v, thr) => { if(!(v > 0)) return 10; for(const [lim, t] of thr) if(v >= lim) return t; return 10; };
 const monthlyFreqToTier = v => _tierFromThresholds(v, _MONTHLY_THR);
@@ -5910,6 +5915,13 @@ function _mapMarker(pt, groupSize){
 // Cache multi-pays de la data monthly regionale (lazy-loadee HTTP par pays).
 // cc -> { region: { sci: [12] } }
 const REAL_FREQ_MONTHLY_BY_REGION_MULTI = {};
+// Profil d'effort mensuel PAR ZONE (region / departement), charge avec les frequences
+// regionales. Jusqu'ici toute zone empruntait le profil national de son pays, alors que la
+// valeur d'une zone se mesure sur SON calendrier de prospection : le Finistere concentre
+// 31 % de ses listes en octobre, le Cantal 0,6 % en novembre. Mesure sur les 95
+// departements francais : 13,45 % des couples zone-espece changeaient de palier.
+// cc -> { 'FR-BRE-29': [12 parts sommant a 1] }. Zone absente = on retombe sur le pays.
+const EFFORT_PAR_ZONE = {};
 const _freqDataPromises = {};
 // Series en 48 quinzaines du bar chart national, chargees a la demande (~200 Ko par pays).
 // L'histogramme de saisonnalite etirait jusqu'ici 12 valeurs mensuelles sur ses 52 creneaux,
@@ -5941,6 +5953,13 @@ async function _loadFreqDataForCountry(cc){
         REAL_FREQ_MONTHLY_BY_REGION_MULTI[cc] = data;
         if(cc === 'FR') REAL_FREQ_MONTHLY_BY_REGION = data;   // compat ancien code
       }
+      // ~12 Ko par pays, charge dans la foulee : il n'est utile que la ou les frequences
+      // regionales le sont, et son absence est sans consequence (repli sur le pays).
+      try{
+        const eff = await fetch('data/countries/' + cc.toLowerCase() + '/effort_by_zone.json?v=20260924')
+          .then(r => r.ok ? r.json() : null);
+        if(eff) EFFORT_PAR_ZONE[cc] = eff;
+      }catch(_){}
     }catch(err){
       console.warn('Erreur load freq_by_region_' + cc + ':', err.message);
       _freqDataPromises[cc] = null;
@@ -11119,8 +11138,8 @@ const _MOIS_COURTS = ['janv','févr','mars','avr','mai','juin','juil','août','s
 //
 // La moyenne corrige ce bruit mais decale l'echelle de +1,55 cran vers "plus rare", parce
 // que les seuils annuels sont calibres sur la MEME mesure que les tiers nationaux, la
-// moyenne du pic et de la moyenne des 12 mois (cf. _ANNUAL_THR et THRESHOLDS dans
-// build-rarity-multi-country.mjs). Colorier une mesure avec les seuils d'une autre rendait
+// moyenne des 12 mois ponderee par l'effort d'observation (cf. _ANNUAL_THR et
+// _valeurAnnuelleZone). Colorier une mesure avec les seuils d'une autre rendait
 // les cartes beaucoup trop rouges : le tier 1 tombait de 6988 a 2702 zones.
 //
 // Valeur annuelle d'une zone : part de ses listes eBird qui mentionnent l'espece, soit la
@@ -11137,9 +11156,17 @@ const _MOIS_COURTS = ['janv','févr','mars','avr','mai','juin','juil','août','s
 //
 // Celle-ci n'arbitre plus rien : c'est une frequence observee, pas une construction. Le
 // pays fournit le profil d'effort mensuel, sans quoi on retombe sur une moyenne simple.
-function _valeurAnnuelleZone(arr, cc){
+// Le 3e argument est le code de la zone mesuree ('FR-BRE-29'). Quand il est fourni et que
+// le profil local existe, c'est lui qui pondere : une zone se mesure sur son propre
+// calendrier, comme un pays se mesure deja sur le sien. Sans zone, ou zone inconnue, on
+// garde le profil national - le comportement d'avant.
+function _valeurAnnuelleZone(arr, cc, zone){
   if(!Array.isArray(arr) || !arr.length) return 0;
-  const poids = (typeof EFFORT_MENSUEL_PAR_PAYS === 'object' && EFFORT_MENSUEL_PAR_PAYS[cc || 'FR']) || null;
+  const pays = cc || 'FR';
+  const local = (zone && typeof EFFORT_PAR_ZONE === 'object'
+    && EFFORT_PAR_ZONE[pays] && EFFORT_PAR_ZONE[pays][zone]) || null;
+  const poids = local
+    || ((typeof EFFORT_MENSUEL_PAR_PAYS === 'object' && EFFORT_MENSUEL_PAR_PAYS[pays]) || null);
   let num = 0, den = 0;
   for(let i = 0; i < arr.length; i++){
     const w = poids ? (poids[i] || 0) : 1;
@@ -11151,10 +11178,10 @@ function _valeurAnnuelleZone(arr, cc){
 // Carte de rarete par zone : colore chaque departement / region avec le tier deduit de
 // sa frequence mensuelle locale, sur la meme echelle de couleurs que le reste de l'appli.
 // Distincte de la carte de statut exotique, qui repond a une autre question.
-// Periode affichee : 'an' par defaut (maximum sur les 12 mois, soit la meilleure periode
-// pour trouver l'espece dans chaque zone), ou un mois precis via les pastilles. Le
-// maximum est la meme agregation que le selecteur de regions, les deux vues concordent
-// donc. Le choix est conserve d'une espece a l'autre pour comparer plusieurs fiches.
+// Periode affichee : 'an' par defaut (moyenne des 12 mois ponderee par l'effort LOCAL de
+// la zone, soit la chance de rencontrer l'espece lors d'une sortie prise au hasard dans
+// l'annee), ou un mois precis via les pastilles. C'est la meme agregation que le selecteur
+// de regions, les deux vues concordent donc. Le choix est conserve d'une espece a l'autre pour comparer plusieurs fiches.
 async function _renderRarityMap(sci, cc){
   const container = document.getElementById('smRarityMap');
   if(!container) return;
@@ -11197,7 +11224,7 @@ async function _renderRarityMap(sci, cc){
         if(x > 0) nbMois++;
         if(x > pic){ pic = x; moisPic = i; }
       }
-      v = surAnnee ? _valeurAnnuelleZone(arr, cc) : (arr[mois] || 0);
+      v = surAnnee ? _valeurAnnuelleZone(arr, cc, z) : (arr[mois] || 0);
     }
     const nom = paths.zones[z].name;
     const fmtP = (x) => x >= 0.1 ? Math.round(x*100)+'%' : x >= 0.01 ? (x*100).toFixed(1)+'%' : (x*100).toFixed(2)+'%';
@@ -11312,7 +11339,7 @@ function _renderSpeciesRarityCard(key){
       const serie = useST
         ? (stByReg[r.code] && stByReg[r.code][k] || {}).w
         : (freqByReg[r.code] && freqByReg[r.code][k]);
-      const score = _valeurAnnuelleZone(serie, cc);
+      const score = _valeurAnnuelleZone(serie, cc, r.code);
       // Pic conserve pour l'infobulle : "en moyenne X, jusqu'a Y en <mois>".
       let pic = 0, moisPic = -1;
       if(Array.isArray(serie)) serie.forEach((v, i) => { if((v || 0) > pic){ pic = v; moisPic = i; } });
@@ -11323,9 +11350,9 @@ function _renderSpeciesRarityCard(key){
     const flag = FLAG_EMOJI[cc] || '';
     const nationalRow = `<div class="reg-picker-item national${_speciesRegion===''?' on':''}" data-code="">${flag} ${esc(nationalLbl)} entier</div>`;
     const items = scored.map(s => {
-      // Depuis que la valeur annuelle est la moyenne du pic et de la moyenne, une zone ou
-      // l'espece a ete vue ne serait-ce qu'un mois a un score non nul : le cas special qui
-      // les rattrapait n'a plus lieu d'etre.
+      // La valeur annuelle etant une moyenne ponderee, une zone ou l'espece a ete vue ne
+      // serait-ce qu'un mois a un score non nul : le cas special qui les rattrapait n'a
+      // plus lieu d'etre.
       const absent = s.score === 0;
       const tier = absent ? 10 : (useST ? weeklyAbundanceToTier(s.score) : annualFreqToTier(s.score));
       const col = realColor(tier);
@@ -11544,8 +11571,15 @@ function _renderSpeciesRarityCard(key){
         let pic = 0, moisPic = -1;
         m12Pays.forEach((v, i) => { if((v || 0) > pic){ pic = v; moisPic = i; } });
         const pct = x => x >= 0.1 ? Math.round(x*100)+' %' : x >= 0.01 ? (x*100).toFixed(1)+' %' : (x*100).toFixed(2)+' %';
-        // En dessous de x2 la saison ne change rien d'utile, on ne surcharge pas.
-        if(annuel > 0 && moisPic >= 0 && pic / annuel >= 2){
+        // Deux conditions, qui repondent a deux objections differentes :
+        //   - sous x2, la saison ne change rien d'utile ;
+        //   - sous 0,5 % au pic, la phrase "viser le bon mois change tout" est fausse :
+        //     meme au meilleur moment l'espece reste hors de portee, et on affichait des
+        //     lignes du type "0,01 % sur l'annee, mais 0,05 % en novembre". Le critere se
+        //     lit seul (au mieux, une liste sur 200 la signale) et n'a pas besoin de
+        //     parler de paliers : sur 446 notes, il en retire 287, dont 240 des 241 qui
+        //     concernaient un tier 9 ou 10.
+        if(annuel > 0 && moisPic >= 0 && pic >= _PIC_MINI_SAISON && pic / annuel >= 2){
           noteSaison = `<div style="font-size:10.5px;color:var(--ink-2);margin-top:5px;line-height:1.4;">`
             + `${pct(annuel)} sur l'année, mais <b>${pct(pic)} en ${_MOIS_COURTS[moisPic]}</b>, sa meilleure période.`
             + (pic / annuel >= 3 ? ` Espèce nettement saisonnière : viser le bon mois change tout.` : '')
@@ -11960,9 +11994,9 @@ function _weekToLabel(wi){
 // valeur qui decide du palier, calculee sur la zone que montre le graphique : region si
 // une region est selectionnee, pays sinon. L'entete ne donnait jusqu'ici que le pic, ce qui
 // laissait croire que le tier en decoulait ; les deux chiffres sont maintenant cote a cote.
-function _scoreAnnuelLbl(m12, cc){
+function _scoreAnnuelLbl(m12, cc, zone){
   if(!Array.isArray(m12) || m12.length !== 12) return '';
-  const v = _valeurAnnuelleZone(m12, cc);
+  const v = _valeurAnnuelleZone(m12, cc, zone);
   if(!(v > 0)) return '';
   // Meme cascade de precision que le pic affiche juste apres : un exotique a 0,006 %
   // ne doit pas s'arrondir a "0 %".
@@ -12150,7 +12184,7 @@ function _renderSpeciesFreqChart(key, country){
             : maxV >= 0.001 ? (maxV*100).toFixed(2) // 0.1-1%
             : maxV >= 0.0001 ? (maxV*100).toFixed(3)// 0.01-0.1%
             : '<0.01';
-    srcEl.innerHTML = `${esc(ccLabel)}${_scoreAnnuelLbl(monthlyArr, cc)}${fallbackNote}`;
+    srcEl.innerHTML = `${esc(ccLabel)}${_scoreAnnuelLbl(monthlyArr, cc, regionScope)}${fallbackNote}`;
   }
   // Layout du chart : toujours 520x130. Source unique = bar chart % checklists.
   const W = 520, H = 130, PT = 12, PB = 26, PL = 32, PR = 8;
@@ -14719,16 +14753,17 @@ function _pkdxRender(){
       // n est reconstruit qu au changement de pays, alors que la liste de l utilisateur
       // peut arriver apres le premier rendu.
       const accidentelle = !_estReguliere(sci, country);
-      // Espece nettement saisonniere : son pic mensuel vaut au moins 3x sa moyenne annuelle.
-      // Le tier, fonde sur l annuel, ne le dit pas — 179 especes francaises sont dans ce cas.
-      // Un repere sur la carte evite de croire qu une espece est hors de portee alors qu il
-      // suffit de viser le bon mois.
+      // Espece nettement saisonniere : son pic mensuel vaut au moins 3x sa moyenne annuelle
+      // ET ce pic depasse _PIC_MINI_SAISON. Le tier, fonde sur l annuel, ne dit pas la
+      // premiere chose ; sans la seconde, le repere se posait sur des especes que viser le
+      // bon mois ne rend pas trouvables pour autant, au point d en marquer la majorite des
+      // cartes. Meme garde-fou que la note de la fiche, pour que les deux concordent.
       let saison = false;
       {
         const m = (regPkdx && regPkdx.monthly) ? regPkdx.monthly()[sci] : null;
         if(Array.isArray(m) && m.length === 12){
           const a = _valeurAnnuelleZone(m, country), p = Math.max(...m);
-          saison = a > 0 && p / a >= 3;
+          saison = a > 0 && p >= _PIC_MINI_SAISON && p / a >= 3;
         }
       }
       // Categorie exotique pour ce pays (N/P/X/C ou '') utilisee par les filtres N/P/X.
