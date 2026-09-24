@@ -471,7 +471,9 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
      ce qui décalait la barre d'une ligne à l'autre. Les barres sont ainsi toutes alignées. */
   /* Meme ordre que les lignes du selecteur de pays : le nom d'abord, la pastille de palier
      tout a droite. La valeur chiffree vient se poser juste avant sa barre, qu'elle decrit. */
-  .reg-picker-item { display:grid; grid-template-columns:1fr 44px 60px 30px; gap:8px; align-items:center; padding:6px 10px; cursor:pointer; border-radius:6px; font-size:12px; color:var(--ink); }
+  /* 14px comme .cp-item : les deux listes sont les deux onglets du meme selecteur, une zone
+     ne se lit pas plus petit qu'un pays. */
+  .reg-picker-item { display:grid; grid-template-columns:1fr 44px 60px 30px; gap:8px; align-items:center; padding:6px 10px; cursor:pointer; border-radius:6px; font-size:14px; color:var(--ink); }
   .reg-picker-item:hover { background:var(--surface-2); }
   /* Selection courante : la meme que celle d'un pays (voir .cp-item.on, plus bas, dont
      cette regle partage la declaration). Les deux listes vivent dans le meme modal, une

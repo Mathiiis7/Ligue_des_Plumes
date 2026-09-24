@@ -758,9 +758,12 @@ function _openCountryPicker(currentCode, opts = {}){
       }
       return { score: 0, isSt: false };
     };
-    // Une decimale au maximum, comme dans la liste des zones : « 0.62% » est plus large que
-    // « 3.4% » et decalerait les barres d'une ligne a l'autre.
-    const fmtPct = v => { if(!(v>0)) return '-'; const p = v*100; if(p >= 10) return Math.round(p)+'%'; if(p >= 0.1) return p.toFixed(1)+'%'; return '<0.1%'; };
+    // Meme format que la liste des zones, au chiffre pres : les deux listes se lisent
+    // l'une apres l'autre dans le meme selecteur.
+    const fmtPct = v => { if(!(v>0)) return '-'; const p = v*100;
+      if(p >= 10) return Math.round(p)+'%';
+      if(p >= 0.1) return p.toFixed(1)+'%';
+      return Number(p.toPrecision(1))+'%'; };
     // Grouper par continent (avec optionnel score espece)
     const grouped = {};
     for(const cc of allCodes){
@@ -11726,9 +11729,14 @@ function _renderSpeciesRarityCard(key){
     if(!regList.length) return '';
     const reg = COUNTRIES_REG[cc];
     const freqByReg = (reg && typeof reg.monthlyByRegion === 'function') ? (reg.monthlyByRegion() || {}) : {};
-    // Une decimale au maximum : "0.62%" etait plus large que "3.4%", ce qui elargissait
-    // la colonne des valeurs et decalait les barres d une ligne a l autre.
-    const fmtPct = v => { if(!(v>0)) return '-'; const p = v*100; if(p >= 10) return Math.round(p)+'%'; if(p >= 0.1) return p.toFixed(1)+'%'; return '<0.1%'; };
+    // Une decimale tant que le chiffre en a besoin, puis un seul chiffre significatif :
+    // « 0.62% » etait plus large que « 3.4% » et decalait les barres d une ligne a l autre.
+    // En dessous de 0,1 % on donne quand meme la vraie valeur - « <0.1% » mettait dans le
+    // meme sac une zone a 0,09 % et une a 0,003 %, soit trente fois plus rare.
+    const fmtPct = v => { if(!(v>0)) return '-'; const p = v*100;
+      if(p >= 10) return Math.round(p)+'%';
+      if(p >= 0.1) return p.toFixed(1)+'%';
+      return Number(p.toPrecision(1))+'%'; };
     // Score = valeur annuelle (cf. _valeurAnnuelleZone), le meme critere que la carte
     // pour que l'ordre de la liste et les couleurs racontent la meme chose.
     const scored = regList.map(r => {
@@ -11826,25 +11834,11 @@ function _renderSpeciesRarityCard(key){
     // montrer, donc les appeler ici suffit a nettoyer.
     if(typeof _renderRarityMap === 'function') _renderRarityMap(k, cc);
     if(typeof _renderExoticMap === 'function') _renderExoticMap(k, cc);
-    // Palier lu a l echelle choisie. Avec une zone selectionnee, c est SA rarete : le Canard
-    // souchet est "Assez commun" au Portugal et deux crans plus rare aux Acores, et afficher
-    // le palier national sous une zone selectionnee contredisait la carte juste en dessous.
-    // Zone sans donnee pour cette espece : on garde le national plutot que d annoncer 10.
-    let w = rarityForCountry(k, cc), absenteZone = false;
-    const zoneLue = (_speciesRegion && typeof zonesFichePourPays === 'function'
-      && zonesFichePourPays(cc).some(r => r.code === _speciesRegion)) ? _speciesRegion : '';
-    if(zoneLue){
-      const byZone = (typeof REAL_FREQ_MONTHLY_BY_REGION_MULTI === 'object')
-        ? REAL_FREQ_MONTHLY_BY_REGION_MULTI[cc] : null;
-      const serie = byZone && byZone[zoneLue] ? byZone[zoneLue][k] : null;
-      // byZone absent = donnees pas encore chargees : on garde le national en attendant.
-      // byZone present mais serie vide = l espece n a jamais ete notee ici, et c est une
-      // information, pas un trou : on l affiche comme telle.
-      if(byZone && byZone[zoneLue]){
-        const v = Array.isArray(serie) ? _valeurAnnuelleZone(serie, cc, zoneLue) : 0;
-        if(v > 0) w = annualFreqToTier(v); else absenteZone = true;
-      }
-    }
+    // Cette ligne dit toujours la rarete NATIONALE. Elle a brievement suivi la zone choisie,
+    // mais le palier de la zone se lit deja juste en dessous, sur la carte et dans la liste :
+    // deux chiffres differents pour la meme espece au meme moment se lisaient comme une
+    // contradiction. Ici le repere fixe, en dessous la lecture locale.
+    const w = rarityForCountry(k, cc);
     // isExo est PER-PAYS via isExoticInCountry (le Pelican gris est exotique X en ME
     // via EXOTIQUES_EBIRD_PAR_PAYS mais pas dans le dict EXOTIQUES_CONNUES_FR global centre FR).
     const isExo = isExoticInCountry(k, cc);
@@ -11882,11 +11876,7 @@ function _renderSpeciesRarityCard(key){
     // Fix 2026-09-22 : N/P avec w=0 (aucun bar chart aggrege sur 7 ans) -> "Absente"
     // au lieu de "Parc semi-libre" (label REAL_LABELS[0] trompeur). Ex Flamant rose P en GB.
     const noBarData = isEstab && w === 0;
-    const nomZone = zoneLue
-      ? ((zonesFichePourPays(cc).find(r => r.code === zoneLue) || {}).name || zoneLue) : '';
-    const label = absenteZone
-      ? 'Jamais notée ' + (nomZone ? 'en ' + nomZone : 'ici')
-      : noBarData
+    const label = noBarData
       ? 'Absente du bar chart'
       : (isExo
           ? (isEstab ? ((typeof REAL_LABELS === 'object' && REAL_LABELS[w]) || ('niveau '+w)) : 'Exotique')
@@ -11903,10 +11893,10 @@ function _renderSpeciesRarityCard(key){
     // exotiques etablis N/P (aligne avec le comportement des cartes Birdydex). X et C
     // avec tier > 0 restent numeriques. Tier 0 exotique : lettre cat (N/P/X/C).
     const useCatLetter = isExo && (cat === 'N' || cat === 'P') && w > 0;
-    const pillTxt = absenteZone ? '–' : ((w === 0 && isExo) ? (cat || 'X') : (useCatLetter ? cat : w));
+    const pillTxt = (w === 0 && isExo) ? (cat || 'X') : (useCatLetter ? cat : w);
     // Couleur de fond : par defaut, couleur du tier (rareté). Pour l'exotique tier 0
     // (X/C echappe non-etabli), on force gris neutre pour signifier "hors barème".
-    const pillBg = absenteZone ? 'var(--line-2)' : ((w === 0 && isExo) ? '#7e8a99' : color);
+    const pillBg = (w === 0 && isExo) ? '#7e8a99' : color;
     // La pastille commune, comme partout ailleurs. Elle avait ici sa propre taille - 48 px
     // de large, 15 px de police - pour que la position du libelle ne bouge pas entre un
     // « X » et un « 10 ». Le format unique prime : l'ecart restant entre un et deux
@@ -12393,7 +12383,9 @@ function _scoreAnnuelLbl(m12, cc, zone){
           : v >= 0.01   ? (v * 100).toFixed(1)
           : v >= 0.001  ? (v * 100).toFixed(2)
           : v >= 0.0001 ? (v * 100).toFixed(3)
-          : '&lt;0.01';
+          // Sous 0,01 % on donnait « <0.01 », qui confondait une espece a 0,009 % et une a
+          // 0,0002 %. Deux chiffres significatifs : la vraie valeur, sans zeros inutiles.
+          : String(Number((v * 100).toPrecision(2)));
   const tip = "Fréquence annuelle pondérée par l'effort d'observation : la part des listes de la zone qui citent l'espèce. C'est elle qui détermine le palier de rareté.";
   return ` · <b title="${esc(tip)}" style="font-weight:700;color:var(--ink-2);">${t} %</b>`;
 }
