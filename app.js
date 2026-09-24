@@ -711,8 +711,25 @@ function _syncCountryButton(btn, cc){
 }
 // Ouvre le modal, retourne une promesse resolue avec le code pays choisi (ou null si ferme).
 // availableFilter : optionnel, fonction (cc) => bool pour disable certains pays.
+// Selecteur geographique plein ecran. Avec `opts.zones`, il gagne un second onglet et
+// devient le selecteur unique : pays et zone sont le meme choix - l'endroit ou on lit la
+// rarete - et ils vivaient dans deux objets differents, un modal plein ecran pour le pays
+// et un panneau deroulant pour la zone. Changer de pays puis de departement demandait de
+// fermer l'un pour ouvrir l'autre.
+//   opts.zones(cc)   -> le HTML des lignes .reg-picker-item du pays cc
+//   opts.onPays(cc)  -> applique le changement de pays et attend ses donnees
+//   opts.motZone     -> 'Départements' / 'Régions', chaine ou fonction de cc
+//   opts.onglet      -> 'zones' pour ouvrir directement sur les zones
+// Resolution : sans zones, le code pays comme avant ; avec zones, { type:'zone', code }
+// quand une zone est choisie, null a la fermeture - le changement de pays, lui, a deja
+// ete applique par opts.onPays.
 function _openCountryPicker(currentCode, opts = {}){
   return new Promise((resolve) => {
+    const avecZones = typeof opts.zones === 'function';
+    let ccCourant = currentCode;
+    let onglet = (opts.onglet === 'zones' && avecZones) ? 'zones' : 'pays';
+    const motZone = (cc) => typeof opts.motZone === 'function' ? opts.motZone(cc)
+      : (opts.motZone || 'Régions');
     const availableCodes = opts.availableCodes || Object.keys(COUNTRIES_REG);
     const allCodes = availableCodes.filter(cc => COUNTRIES_REG[cc]);
     // Si opts.sci est passe (appel depuis fiche espece), on trie par abondance pour
@@ -757,9 +774,13 @@ function _openCountryPicker(currentCode, opts = {}){
     backdrop.innerHTML = `
       <div class="cp-modal-inner">
         <div class="cp-modal-title">
-          <span>Choisir un pays</span>
+          <span>${avecZones ? 'Où lire la rareté' : 'Choisir un pays'}</span>
           <button type="button" class="cp-modal-close" aria-label="Fermer">×</button>
         </div>
+        ${avecZones ? `<div class="cp-tabs">
+          <button type="button" class="cp-tab" data-onglet="pays">Pays</button>
+          <button type="button" class="cp-tab" data-onglet="zones">${esc(motZone(ccCourant))}</button>
+        </div>` : ''}
         <input type="search" name="cp-search" aria-label="Rechercher par nom francais" class="cp-search" placeholder="Rechercher (nom fr)…" autofocus>
         <div class="cp-list"></div>
       </div>`;
@@ -769,6 +790,23 @@ function _openCountryPicker(currentCode, opts = {}){
 
     const render = (filter = '') => {
       const fLC = filter.toLowerCase().trim();
+      if(avecZones){
+        backdrop.querySelectorAll('.cp-tab').forEach(t => t.classList.toggle('on', t.dataset.onglet === onglet));
+        const onglZone = backdrop.querySelector('.cp-tab[data-onglet="zones"]');
+        if(onglZone) onglZone.textContent = motZone(ccCourant);
+        searchEl.placeholder = onglet === 'pays' ? 'Rechercher un pays…' : 'Rechercher…';
+      }
+      if(onglet === 'zones'){
+        // Les lignes viennent de l'appelant : c'est lui qui sait quelle espece est affichee
+        // et quelle zone est selectionnee. Le filtre se fait sur le rendu, ces listes tiennent
+        // en une centaine de lignes.
+        listEl.innerHTML = opts.zones(ccCourant)
+          || '<div style="padding:16px; text-align:center; color:var(--ink-3);">Ce pays n\'a pas de découpage disponible.</div>';
+        if(fLC) listEl.querySelectorAll('.reg-picker-item').forEach(r => {
+          if(!r.textContent.toLowerCase().includes(fLC)) r.style.display = 'none';
+        });
+        return;
+      }
       let html = '';
       for(const cont of CONTINENT_ORDER){
         const items = (grouped[cont] || []).filter(x => {
@@ -843,7 +881,7 @@ function _openCountryPicker(currentCode, opts = {}){
            // ET pas exotique local) au lieu de it.score seul. Sinon FR avec tier 7 via
           // S&T Cornell mais aucune data monthly apparaît grisée à tort.
           const absentCls = focusSci && typeof absent !== 'undefined' && absent ? ' absent' : '';
-          html += `<div class="cp-item${cc === currentCode ? ' on' : ''}${absentCls}" data-cc="${esc(cc)}">
+          html += `<div class="cp-item${cc === ccCourant ? ' on' : ''}${absentCls}" data-cc="${esc(cc)}">
             <span class="cp-item-flag">${flag}</span>
             <span class="cp-item-name">${esc(reg.name || cc)}</span>
             ${meta}
@@ -865,12 +903,33 @@ function _openCountryPicker(currentCode, opts = {}){
     });
     closeBtn.addEventListener('click', () => { cleanup(); resolve(null); });
     searchEl.addEventListener('input', () => render(searchEl.value));
-    listEl.addEventListener('click', e => {
+    const tabsEl = backdrop.querySelector('.cp-tabs');
+    if(tabsEl) tabsEl.addEventListener('click', e => {
+      const t = e.target.closest('.cp-tab');
+      if(!t) return;
+      onglet = t.dataset.onglet;
+      searchEl.value = '';
+      render();
+    });
+    listEl.addEventListener('click', async e => {
+      const zone = e.target.closest('.reg-picker-item');
+      if(zone && avecZones){ cleanup(); resolve({ type: 'zone', code: zone.dataset.code || '' }); return; }
       const it = e.target.closest('.cp-item');
       if(!it || it.classList.contains('disabled')) return;
       const cc = it.dataset.cc;
-      cleanup();
-      resolve(cc);
+      if(!avecZones){ cleanup(); resolve(cc); return; }
+      // Choisir un pays ne ferme pas le modal : on applique, puis on bascule sur ses zones,
+      // qui sont le plus souvent la raison pour laquelle on en a change.
+      if(cc !== ccCourant){
+        it.style.opacity = '.5';
+        await opts.onPays(cc);
+        ccCourant = cc;
+      }
+      // Un pays sans decoupage n'a pas d'onglet zones a montrer : on reste sur la liste des
+      // pays, ou le surlignage dit deja que le changement a ete pris.
+      onglet = opts.zones(cc) ? 'zones' : 'pays';
+      searchEl.value = '';
+      render();
     });
     document.body.appendChild(backdrop);
     setTimeout(() => searchEl.focus(), 50);
@@ -11598,11 +11657,10 @@ function _renderSpeciesRarityCard(key){
         <span class="cp-btn-arrow">▾</span>
       </button>
       <div class="reg-picker" id="smRegPicker" style="display:none;">
-        <button type="button" class="reg-picker-trigger" id="smRegPickerBtn" title="Histogramme S&T par région">
+        <button type="button" class="reg-picker-trigger" id="smRegPickerBtn" title="Choisir la zone où lire la rareté">
           <span id="smRegPickerLabel">${esc(getTriggerLabel(initCountry))}</span>
           <span style="opacity:.6;">▾</span>
         </button>
-        <div class="reg-picker-panel" id="smRegPickerPanel" hidden>${buildRegPanel(initCountry)}</div>
       </div>`;
   if(geoHost) geoHost.innerHTML = geoHtml;
   box.innerHTML = `
@@ -11829,9 +11887,8 @@ function _renderSpeciesRarityCard(key){
     return proms.length ? Promise.all(proms) : Promise.resolve();
   };
   loadRegionalDataFor(initCountry).then(() => {
-    // Rebuild du panel avec les vraies data + tri par abondance.
-    const p = $('#smRegPickerPanel');
-    if(p) p.innerHTML = buildRegPanel(initCountry);
+    // La liste des zones est construite a l'ouverture du selecteur, elle n'a plus besoin
+    // d'etre pre-rendue ici.
     if(_speciesRegion) _renderSpeciesFreqChart(k, initCountry);
     // Ne PAS re-render la rarity card ici : ca replace le bouton #smRarityCountrySel
     // dans le DOM et les event listeners attaches plus bas (line 11353+) pointent sur
@@ -11865,92 +11922,52 @@ function _renderSpeciesRarityCard(key){
       }
     }
     loadRegionalDataFor(chosen).then(() => {
-      const p = $('#smRegPickerPanel');
-      if(p) p.innerHTML = buildRegPanel(chosen);
       const lbl = $('#smRegPickerLabel');
       if(lbl) lbl.textContent = getTriggerLabel(chosen);
       _renderSpeciesFreqChart(k, chosen);
     });
     try{ _renderSpeciesMap(k); }catch(_){}
   };
+  // Selectionner une zone : depuis le selecteur, ou depuis la carte via _appliquerZoneFiche.
+  const appliquer = (code) => {
+    _speciesRegion = code || '';
+    try{ localStorage.setItem('mb-species-region', _speciesRegion); }catch(_){}
+    const cc2 = $('#smRarityCountrySel')?.dataset.cc || 'FR';
+    const lbl = $('#smRegPickerLabel');
+    if(lbl) lbl.textContent = getTriggerLabel(cc2);
+    loadRegionalDataFor(cc2).then(() => {
+      _renderSpeciesFreqChart(k, cc2);
+      // Les cartes mettent en evidence la zone choisie : il faut les redessiner.
+      if(typeof _renderRarityMap === 'function') _renderRarityMap(k, cc2);
+      if(typeof _renderExoticMap === 'function') _renderExoticMap(k, cc2);
+    });
+  };
+  _appliquerZoneFiche = appliquer;
+  // Le selecteur geographique, ouvert sur l'un ou l'autre de ses onglets. Les trois points
+  // d'entree - bouton pays de la fiche, bouton pays de la carte, bouton de zone - ouvrent
+  // desormais le meme modal.
+  const ouvrirGeo = async (onglet) => {
+    const ccAct = (sel && sel.dataset.cc) || initCountry;
+    const res = await _openCountryPicker(ccAct, {
+      availableCodes: avail.map(a => a.code),
+      sci: k,
+      zones: (cc2) => buildRegPanel(cc2),
+      onPays: async (cc2) => { applyCountryChange(cc2); await loadRegionalDataFor(cc2); },
+      motZone: (cc2) => cc2 === 'FR' ? 'Départements' : 'Régions',
+      onglet,
+    });
+    if(res && res.type === 'zone') appliquer(res.code);
+  };
   // Sync initial de #smMapCountrySel
   if(mapSel) _syncCountryButton(mapSel, initCountry);
-  if(sel){
-    // Handler bouton -> modal country picker (filtre aux pays qui ont cette espece)
-    sel.addEventListener('click', async () => {
-      const availableCodes = avail.map(a => a.code);
-      const chosen = await _openCountryPicker(sel.dataset.cc, { availableCodes, sci: k });
-      if(!chosen || chosen === sel.dataset.cc) return;
-      applyCountryChange(chosen);
-    });
-  }
-  if(mapSel){
-    // Meme handler que sel : ouvre le meme picker modal, applique le meme changement.
-    mapSel.addEventListener('click', async () => {
-      const availableCodes = avail.map(a => a.code);
-      const chosen = await _openCountryPicker(mapSel.dataset.cc, { availableCodes, sci: k });
-      if(!chosen || chosen === mapSel.dataset.cc) return;
-      applyCountryChange(chosen);
-    });
-  }
+  if(sel) sel.addEventListener('click', () => ouvrirGeo('pays'));
+  if(mapSel) mapSel.addEventListener('click', () => ouvrirGeo('pays'));
   if(regPick){
+    // Le bouton de zone ouvre le meme modal que le bouton pays, sur son onglet zones.
+    // Il ouvrait avant un panneau deroulant ancre sous lui, qu il fallait repositionner a
+    // la main quand il debordait du modal fiche, et fermer sur clic exterieur ou Echap.
     const btn = regPick.querySelector('.reg-picker-trigger');
-    const panel = regPick.querySelector('.reg-picker-panel');
-    const lbl = regPick.querySelector('#smRegPickerLabel');
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      panel.hidden = !panel.hidden;
-      // Reposition auto : par defaut le panel est ancre a droite du trigger (right:0),
-      // s'etend donc vers la gauche. Si le trigger est trop a gauche du modal fiche,
-      // le panel deborde a gauche et est tronque. Detecte ce cas et swap sur left:0.
-      if(!panel.hidden){
-        panel.style.right = '0'; panel.style.left = 'auto';   // reset defaut
-        requestAnimationFrame(() => {
-          const rect = panel.getBoundingClientRect();
-          const parent = panel.closest('.sm-scroll, .sm-box, body') || document.body;
-          const parentRect = parent.getBoundingClientRect();
-          if(rect.left < parentRect.left + 8){
-            panel.style.right = 'auto'; panel.style.left = '0';
-          }
-        });
-      }
-    });
-    // Pas de handler molette ici : le redirecteur du modal laisse desormais passer
-    // .reg-picker-panel, et le CSS overscroll-behavior:contain empeche le scroll de
-    // se propager a la fiche en butee. Le defilement natif conserve son inertie.
-    // Selectionner une zone : depuis la liste, ou depuis la carte via _appliquerZoneFiche.
-    const appliquer = (code) => {
-      _speciesRegion = code || '';
-      try{ localStorage.setItem('mb-species-region', _speciesRegion); }catch(_){}
-      const cc2 = $('#smRarityCountrySel')?.dataset.cc || 'FR';
-      if(lbl) lbl.textContent = getTriggerLabel(cc2);
-      panel.querySelectorAll('.reg-picker-item.on').forEach(x => x.classList.remove('on'));
-      // La ligne correspondante peut ne pas exister si la liste n'a jamais ete ouverte :
-      // la selection reste valide, seul le surlignage attend le prochain rendu.
-      const ligne = panel.querySelector('.reg-picker-item[data-code="' + (_speciesRegion || '') + '"]');
-      if(ligne) ligne.classList.add('on');
-      panel.hidden = true;
-      loadRegionalDataFor(cc2).then(() => {
-        _renderSpeciesFreqChart(k, cc2);
-        // Les cartes mettent en evidence la region choisie : il faut les redessiner.
-        if(typeof _renderRarityMap === 'function') _renderRarityMap(k, cc2);
-        if(typeof _renderExoticMap === 'function') _renderExoticMap(k, cc2);
-      });
-    };
-    _appliquerZoneFiche = appliquer;
-    panel.addEventListener('click', e => {
-      const it = e.target.closest('.reg-picker-item');
-      if(!it) return;
-      appliquer(it.dataset.code || '');
-    });
-    // Click outside : ferme le panel
-    document.addEventListener('click', e => {
-      if(!panel.hidden && !regPick.contains(e.target)) panel.hidden = true;
-    });
-    // Escape ferme aussi
-    document.addEventListener('keydown', e => {
-      if(e.key === 'Escape' && !panel.hidden) panel.hidden = true;
-    });
+    if(btn) btn.addEventListener('click', () => ouvrirGeo('zones'));
   }
 }
 // Description Wikipedia : fetch les sections nommees (Description, Habitat, Reproduction,
@@ -12949,7 +12966,7 @@ function openSpeciesModal(sci){
       // liste deroulante des regions. Sans ce dernier cas, arriver en butee de la liste
       // faisait defiler la fiche derriere le panneau : le handler du panneau ne bloquait
       // la propagation que tant qu'il restait du scroll disponible.
-      if(e.target.closest('.sm-map, audio, .sm-panel[data-sm-panel=map], .reg-picker-panel')) return;
+      if(e.target.closest('.sm-map, audio, .sm-panel[data-sm-panel=map]')) return;
       e.preventDefault();
       // Facteur 1.5 : compense l'absence d'acceleration/momentum sur scrollTop manuel,
       // sans donner l'impression de scroll trop rapide (on etait a 2 avant).
