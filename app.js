@@ -2284,7 +2284,7 @@ function renderMembers(){
     const online = isOnline(p.id);
     const statusLine = p.status ? `<div class="pcard-status">${esc(p.status)}</div>` : '';
     const adminTools = admin && !p.isMe
-      ? `<div class="pcard-admin"><button class="pcard-admin-btn" data-adm-rename="${esc(p.id)}" data-adm-name="${esc(p.name)}" title="Renommer">✎</button><button class="pcard-admin-btn pcard-admin-del" data-adm-remove="${esc(p.id)}" data-adm-name="${esc(p.name)}" title="Retirer">✕</button></div>`
+      ? `<div class="pcard-admin" title="${esc(p.email || 'compte inconnu (ligne anterieure au 2026-09-24)')} · ${esc(p.id)}"><button class="pcard-admin-btn" data-adm-rename="${esc(p.id)}" data-adm-name="${esc(p.name)}" title="Renommer">✎</button><button class="pcard-admin-btn pcard-admin-del" data-adm-remove="${esc(p.id)}" data-adm-name="${esc(p.name)}" data-adm-email="${esc(p.email || '')}" title="Retirer">✕</button></div>`
       : '';
     return `<div class="pcard${p.isMe?' is-me':''}${online?' is-online':''}" style="--series:var(--s${p.si})">
       <div class="pcard-avatar-wrap">${_avatarHtml(p.avatar||'', p.name||'?', 44)}${online?'<span class="pcard-online-dot" title="en ligne"></span>':''}</div>
@@ -2324,7 +2324,10 @@ document.addEventListener('click', async e=>{
     if(!isAdmin()) return;
     const uid = del.dataset.admRemove;
     const old = del.dataset.admName;
-    if(!confirm(`Retirer "${old}" de la ligue ? Ses obs et son profil seront supprimés (irréversible).`)) return;
+    // Le compte est rappele ici : devant deux lignes du meme joueur, c'est la seule chose
+    // qui les distingue.
+    const mail = del.dataset.admEmail;
+    if(!confirm(`Retirer "${old}" de la ligue ?\n${mail ? 'Compte : ' + mail : 'Compte inconnu (ligne enregistrée avant le 24/09/2026)'}\nUID : ${uid}\n\nSes obs et son profil seront supprimés (irréversible).`)) return;
     try{ await deleteDoc(doc(db,'leagues',leagueId,'members',uid)); }catch(err){ showError(err); }
   }
 });
@@ -4578,6 +4581,11 @@ function memberToPerson(id, data, si){
   return { id, name:data.name||'Joueur', filename:'', si, species, isMe:id===myUid,
     goal:data.goal||'', fav:data.fav||'', dream:data.dream||'', rare:data.rare||'', status:data.status||'', avatar:data.avatar||'',
     regionsFR: new Set(regions),                  // régions FR-XX visitées (issues du CSV)
+    // Email du compte qui detient la ligne. Sans lui, rien ne relie une ligne du classement
+    // a un compte : la cle du document est l'UID Firebase, que l'interface n'affiche nulle
+    // part. Un admin devant deux lignes du meme joueur ne pouvait pas savoir laquelle
+    // supprimer. Absent des lignes enregistrees avant le 2026-09-24.
+    email: data.email || '',
     joinedAt: data.joinedAt?.seconds || 0,
     updatedAt: data.updatedAt?.toMillis ? data.updatedAt.toMillis() : 0 };
 }
@@ -8885,7 +8893,35 @@ async function saveMyList(name, speciesMap, regions){
     if(v.addedAt) e.a = v.addedAt;                                  // horodatage d'apparition (pour tri "nouveautés" du fil)
     return e; });
   const ref=doc(db,'leagues',leagueId,'members',myUid);
+  // Une ligne de ligue est identifiee par l'UID Firebase, et par rien d'autre : deux comptes
+  // font deux lignes, meme personne et meme nom. C'est arrive a quelqu'un qui, ayant oublie
+  // son mot de passe, a pris l'onglet "Creer mon compte" au lieu du lien "Mot de passe
+  // oublie" - avec une adresse un peu differente, sans quoi Firebase aurait refuse. Vu de
+  // lui, il refaisait son mot de passe ; vu de l'app, c'etait un nouveau joueur.
+  //
+  // L'email ne sert pas a detecter le cas - justement, les deux comptes en ont un different.
+  // C'est le NOM qui les rapproche, et c'est donc lui qu'on regarde avant de creer une
+  // seconde ligne. L'email, lui, est enregistre pour qu'un admin puisse enfin rattacher une
+  // ligne a un compte au moment de trancher.
+  const monEmail = ((auth.currentUser && auth.currentUser.email) || '').trim().toLowerCase();
+  if(!iAmInLeague){
+    const cle = (x) => String(x || '').trim().toLowerCase()
+      .normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/\s+/g, ' ');
+    const jumelle = realPeople.find(p => p.id !== myUid && cle(p.name) === cle(name));
+    if(jumelle){
+      // L'email de l'autre ligne n'est pas montre ici : la personne qui importe n'est pas
+      // forcement admin, et le nom avec le nombre d'especes suffit a se reconnaitre.
+      const ok = confirm(
+        '« ' + jumelle.name + ' » est déjà dans la ligue, avec ' + jumelle.species.size + ' espèces.\n\n'
+        + 'Si c\'est toi, tu es connecté avec un autre compte que la dernière fois. Continuer\n'
+        + 'créera une SECONDE ligne à ton nom, et il faudra demander à un admin d\'en retirer\n'
+        + 'une. Mieux vaut annuler et te reconnecter avec ton compte habituel — au besoin via\n'
+        + '« Mot de passe oublié ».\n\nCharger quand même ma liste ?');
+      if(!ok) return;
+    }
+  }
   const payload={ name, species:arr, updatedAt: serverTimestamp() };
+  if(monEmail) payload.email = monEmail;
   if(Array.isArray(regions)) payload.regions = regions;   // codes FR-XX visités (issus du CSV) - omis si absent (merge conserve l'ancien)
   if(!iAmInLeague) payload.joinedAt = serverTimestamp();
   await setDoc(ref, payload, {merge:true});
