@@ -12467,19 +12467,20 @@ function _renderSpeciesFreqChart(key, country){
       if(Array.isArray(q48) && q48.length === 48){
         arr = q48.slice();
       } else {
-        arr = new Array(52);
-        for(let w = 0; w < 52; w++){
-          const dayOfYear = w * 7 + 4;   // milieu de la semaine
-          const monthIdx = Math.min(11, Math.floor(dayOfYear / 30.44));   // 365/12
-          arr[w] = monthlyArr[monthIdx] || 0;
-        }
+        // Repli quand les quinzaines manquent - aujourd'hui le seul cas est le Montenegro,
+        // qui n'a pas de fichier freq_48, plus l'instant ou le fichier d'une zone charge.
+        // On etire sur 48 creneaux et non 52 : quatre par mois, meme geometrie que les vraies
+        // quinzaines, donc un seul format a gerer en aval.
+        arr = new Array(48);
+        for(let q = 0; q < 48; q++) arr[q] = monthlyArr[Math.floor(q / 4)] || 0;
       }
       isWeekly = false;   // rendu 52 slots mais source mensuelle -> unite %
       unitLabel = '%';
     }
   }
-  // Le graphique accepte 48 creneaux (quinzaines eBird) ou 52 (semaines S&T).
-  if(!arr || (arr.length !== 48 && arr.length !== 52)){
+  // Le graphique n'accepte que 48 creneaux : les vraies quinzaines eBird, ou les douze
+  // moyennes mensuelles etirees quatre par quatre.
+  if(!arr || arr.length !== 48){
     const cc2 = country || 'FR';
     // Cas 1 : espece absente de la region choisie (mode strict). On l'affiche
     // explicitement pour ne pas confondre avec un fallback national trompeur.
@@ -12723,11 +12724,10 @@ function _renderSpeciesFreqChart(key, country){
           ? `${_PLAGES[i % 4]} ${_MONTH_FR[Math.floor(i / 4)]}`
           : _MONTH_FR[Math.min(11, Math.floor((i * _joursParSlot + _joursParSlot / 2) / 30.44))]);
     const title = `${titleLbl} : ${titleVal}${titleUnit}`;
-    // Coloration tier partout : pic + semaine/mois courant repérés via contour distinct
-    // (or / accent) plutot que via la couleur du fill.
+    // Le pic n'est plus souligne : c'est la barre la plus haute, elle se voit. Seul le
+    // creneau courant garde un contour, pour situer ou on en est dans l'annee.
     let strokeAttr = '';
-    if(i === bestIdx) strokeAttr = ' stroke="var(--gold)" stroke-width="1.5"';
-    else if(i === curIdx) strokeAttr = ' stroke="var(--accent)" stroke-width="1.5"';
+    if(i === curIdx) strokeAttr = ' stroke="var(--accent)" stroke-width="1.5"';
     out += `<rect class="bar" data-mois="${moisBarre}" style="cursor:pointer" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(0.5,w).toFixed(1)}" height="${Math.max(1.5,h).toFixed(1)}" fill="${fill}" opacity="${op}" rx="1"${strokeAttr}><title>${title}</title></rect>`;
   }
   // Labels axe x : chaque mois est centre sur sa part des N barres. Le pas etait ecrit en dur
@@ -12737,7 +12737,9 @@ function _renderSpeciesFreqChart(key, country){
   for(let m=0; m<12; m++){
     const centerWeek = (m + 0.5) * N / 12;
     const x = PL + centerWeek * bw;
-    const isHiMonth = Math.floor(bestIdx * 12 / N) === m || Math.floor(curIdx * 12 / N) === m;
+    // Gras reserve au mois choisi. Le mois courant n'a plus a se signaler ici : son creneau
+    // porte deja un contour sur le graphique.
+    const isHiMonth = _moisMisEnAvant === m;
     out += `<text x="${x.toFixed(1)}" y="${(H-8).toFixed(1)}" font-size="9" fill="${isHiMonth?'var(--ink)':'var(--ink-3)'}" text-anchor="middle" font-weight="${isHiMonth?700:400}">${_MONTH_ABBR3[m]}</text>`;
   }
   // Petit '?' dans l'angle bas-gauche du chart (entre '0%' et 'janv') avec tooltip explicatif.
@@ -12773,7 +12775,6 @@ function _renderSpeciesFreqChart(key, country){
                   : '×' + _freqZoom.toFixed(2);
     legEl.innerHTML = `
       <span class="sm-freq-lg" title="Vert = espèce facile à voir, magenta = très rare"><span style="display:inline-flex;height:12px;border:1px solid var(--line);border-radius:2px;overflow:hidden;">${palette}</span>&nbsp;facile → rare</span>
-      <span class="sm-freq-lg"><span class="sm-freq-sw" style="background:transparent;border:2px solid var(--gold);width:10px;height:10px;box-sizing:border-box;"></span>Pic</span>
       <span class="sm-freq-lg"><span class="sm-freq-sw" style="background:transparent;border:2px solid var(--accent);width:10px;height:10px;box-sizing:border-box;"></span>${nowLbl}</span>
       <span class="sm-freq-lg" style="opacity:.75;font-size:10px;">🖱 molette sur le chart : zoom (${zoomLbl})</span>`;
     // Zoom molette : onwheel direct sur SVG + wrapper. Re-render immediat (rAF).
