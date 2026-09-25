@@ -899,7 +899,7 @@ function _openCountryPicker(currentCode, opts = {}){
               ? '<span class="reg-picker-val">absente</span><div class="reg-picker-bar"></div>'
                 + tierChip('–', 'var(--line-2)')
               : '<span class="reg-picker-val">' + esc(fmtPct(vAn)) + '</span>'
-                + '<div class="reg-picker-bar"><div style="width:' + barW + '%; background:' + col + ';"></div></div>'
+                + '<div class="reg-picker-bar"><div style="width:' + barW + '%; color:' + col + ';"></div></div>'
                 + tierChip(chipText, col, { title: 'palier ' + tier });
           } else {
             // Nb d'especes calibrees pour ce pays = le bar chart, qui est la source de la
@@ -11473,15 +11473,18 @@ const _MOIS_COURTS = ['janv','févr','mars','avr','mai','juin','juil','août','s
 // donnaient exactement la meme barre. Le palier de rarete est lui-meme logarithmique,
 // chaque cran valant moitie moins que le precedent : la barre suit la meme lecture.
 //
-// Bornes : de 0,001 % (une liste sur cent mille, une decade sous le plancher du palier 9)
-// a 100 %. En contrepartie le haut se tasse - 37 % et 53 % ne different plus que de trois
-// points de barre - mais a ce niveau la barre dit "presente partout", et c'est le chiffre
-// juste a cote qui donne le detail.
+// Longueur de la barre d'une ligne de zone ou de pays, en pourcentage de la piste.
+//
+// Proportionnelle a la frequence, tout simplement : une zone ou l'espece sort sur la moitie
+// des listes remplit la moitie de la barre. L'echelle logarithmique a ete essayee (v503) et
+// abandonnee - elle etirait le bas mais tassait le haut, ou vivent la plupart des especes.
+//
+// Plancher a 3 % de la piste, soit moins de deux pixels : en dessous de 3 % de frequence la
+// barre ne dit plus rien de precis, mais ce trait a peine visible distingue quand meme "vue
+// une fois sur mille listes" de "jamais vue", qui n'a pas de barre du tout.
 function _longueurBarre(v){
   if(!(v > 0)) return 0;
-  const BAS = 1e-5;
-  const p = (Math.log10(v) - Math.log10(BAS)) / (0 - Math.log10(BAS));
-  return Math.min(100, Math.max(3, Math.round(p * 100)));
+  return Math.min(100, Math.max(3, Math.round(v * 100)));
 }
 function _valeurAnnuelleZone(arr, cc, zone){
   if(!Array.isArray(arr) || !arr.length) return 0;
@@ -11762,7 +11765,7 @@ function _renderSpeciesRarityCard(key){
       return `<div class="reg-picker-item${absent?' absent':''}${s.code===_speciesRegion?' on':''}" data-code="${esc(s.code)}" title="${esc(titre)}">
         <span>${esc(s.name)}</span>
         <span class="reg-picker-val">${esc(val)}</span>
-        <div class="reg-picker-bar"><div style="width:${barW}%; background:${col};"></div></div>
+        <div class="reg-picker-bar"><div style="width:${barW}%; color:${col};"></div></div>
         ${tierChip(absent ? '–' : tier, absent ? 'var(--line-2)' : col)}
       </div>`;
     }).join('');
@@ -15144,7 +15147,7 @@ function _pkdxLignesZones(cc){
       + '" data-code="' + esc(r.code) + '">'
       + '<span>' + esc(r.name) + '</span>'
       + '<span class="reg-picker-val">' + (n ? n + ' esp.' : '—') + '</span>'
-      + '<div class="reg-picker-bar"><div style="width:' + Math.round(n / max * 100) + '%; background:var(--accent);"></div></div>'
+      + '<div class="reg-picker-bar"><div style="width:' + Math.round(n / max * 100) + '%; color:var(--accent);"></div></div>'
       + '<span></span></div>';
   }).join('');
   return '<div class="reg-picker-item national' + (choisie ? '' : ' on') + '" data-code="">'

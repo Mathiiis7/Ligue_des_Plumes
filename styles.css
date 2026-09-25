@@ -500,12 +500,17 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
      barre doivent tomber au meme endroit dans les deux onglets du selecteur. */
   .cp-item .reg-picker-val { flex:0 0 44px; }
   .cp-item .reg-picker-bar { flex:0 0 60px; }
-  /* 8 px et non 5 : a 5 px, l'arrondi au pixel ecran donnait tantot 5 tantot 6 selon la
-     hauteur a laquelle la barre tombait dans la liste - un cinquieme d'epaisseur en plus,
-     tres visible sur un filet aussi fin. Le meme pixel d'ecart sur 8 px ne se voit plus.
-     Mesure sur la capture : 5,6,5,5,5,5,5,6,6,6,5,5,5,5. */
-  .reg-picker-bar { height:8px; background:var(--line-2); border-radius:4px; overflow:hidden; }
-  .reg-picker-bar > div { height:100%; border-radius:4px; }
+  /* La barre est PEINTE, elle n'est plus un bloc.
+     Un bloc de 5 px de haut est cale sur la grille de pixels de l'ecran : quand l'echelle
+     d'affichage n'est pas entiere, son bord haut tombe a une position fractionnaire qui
+     change d'une ligne a l'autre, et le bloc ressort tantot a 5 pixels tantot a 6. Mesure
+     sur la capture du 25/09, quatorze lignes : 5,6,5,5,5,5,5,6,6,6,5,5,5,5. Epaissir la
+     barre ne reglait rien, ca ne faisait que diluer l'ecart.
+     Ici la boite fait 16 px - haute, donc stable - et la bande de 5 px est un degre de
+     couleur peint en son centre. Un degrade est lisse, pas cale sur la grille : la bande a
+     la meme epaisseur a toutes les lignes. On y perd les bouts arrondis. */
+  .reg-picker-bar { height:16px; background:linear-gradient(var(--line-2), var(--line-2)) left center/100% 5px no-repeat; }
+  .reg-picker-bar > div { height:100%; background:linear-gradient(currentColor, currentColor) left center/100% 5px no-repeat; }
   /* Chiffres a chasse fixe : sans ca le « 1 » est bien plus etroit que le « 2 », si bien
      qu'en alignant a droite le bord GAUCHE de « 19% » tombait 4 px plus loin que celui de
      « 42% ». La colonne etait rigide, c'est le texte dedans qui dansait d'une ligne a l'autre. */
