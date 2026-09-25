@@ -15440,7 +15440,10 @@ function _pkdxRender(){
   // de zone ni au changement de tri.
   let rows = [];
   for(const r of _pkdxAllSorted){
-    const { sci, nm, fam, tier, exo, cat, accidentelle, saison } = r;
+    // val - la frequence annuelle - doit voyager jusqu au rendu : c est sur elle que trie
+    // le mode « par rareté ». Sans elle la soustraction donnait NaN et le tri retombait
+    // silencieusement sur l ordre alphabétique, son seul départage.
+    const { sci, nm, fam, tier, val, exo, cat, accidentelle, saison } = r;
     // Accidentelle non cochee : hors catalogue, on ne l affiche pas. Cochee, elle reste —
     // l utilisateur l a bien vue, ce n est pas a nous de l effacer de sa collection.
     if(accidentelle && !mine.has(sci)) continue;
@@ -15458,7 +15461,7 @@ function _pkdxRender(){
     const owned = _mineHasStrict(mine, sci);
     if(ownedF === 'owned' && !owned) continue;
     if(ownedF === 'missing' && owned) continue;
-    rows.push({ sci, nm, fam, tier, exo, cat, owned, saison });
+    rows.push({ sci, nm, fam, tier, val, exo, cat, owned, saison });
   }
   // Rendu des chips rareté : style unifie avec le filtre carte (.rar-chip compact).
   const chipsBox = document.getElementById('pkdxTierChips');
