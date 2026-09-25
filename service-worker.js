@@ -3,7 +3,7 @@
 //   puis rafraichit en background. Prochain reload = nouvelle version.
 // - Requetes cross-origin (Firestore, iNaturalist, xeno-canto, Wikipedia, etc.) : reseau seul.
 // - Bump CACHE_VERSION quand on veut invalider volontairement.
-const CACHE_VERSION = 'v523-2026-09-26-birdydex-montre-le-statut-exotique';
+const CACHE_VERSION = 'v524-2026-09-26-deux-natives-locales-perimees';
 const CACHE_NAME = 'lmb-' + CACHE_VERSION;
 
 self.addEventListener('install', (e) => {
