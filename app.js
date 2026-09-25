@@ -859,7 +859,14 @@ function _openCountryPicker(currentCode, opts = {}){
             // Dindon sauvage affichait tier 9 sur la fiche mais "absente" sur le picker.
             // On aligne : absent = rarityForCountry retourne 0 ET pas exotique local.
             const tier = rarityForCountry(focusSci, cc);
-            const absent = tier === 0 && !isExoLocal;
+            const monCC = reg.monthly()[focusSci];
+            const vAn = Array.isArray(monCC) ? _valeurAnnuelleZone(monCC, cc) : 0;
+            // Un tag exotique sans la moindre ligne de bar chart ne prouve aucune presence :
+            // il dit seulement qu'un reviewer a prevu un classement si l'espece se montre.
+            // Meme regle que la fiche (noBarData), sans quoi le selecteur affichait « P » pour
+            // l'Erismature a tete blanche au Royaume-Uni pendant que la fiche, juste derriere,
+            // disait « jamais notee au Royaume-Uni entre 2019 et 2026 ».
+            const absent = tier === 0 && (!isExoLocal || vAn === 0);
             const col = realColor(tier);
             // Chip letter : aligne le comportement sur la fiche espece (renderLine).
             // - Tier 0 exotique : affiche la lettre categorie (N/P/X/C)
@@ -885,9 +892,7 @@ function _openCountryPicker(currentCode, opts = {}){
             // Le libelle ("Omnipresent", "Introduit etabli") passe en infobulle : il repetait le
             // plus souvent ce que le palier dit deja, et il empechait d'aligner les deux listes
             // du meme selecteur.
-            const monCC = reg.monthly()[focusSci];
-            const vAn = Array.isArray(monCC) ? _valeurAnnuelleZone(monCC, cc) : 0;
-            const barW = vAn > 0 ? Math.min(100, Math.max(3, Math.round(vAn * 100))) : 0;
+            const barW = _longueurBarre(vAn);
             titreLigne = (reg.name || cc) + ' — ' + lbl
               + (vAn > 0 ? ' · ' + fmtPct(vAn) + ' des listes sur l\'année' : '');
             meta = absent
@@ -11459,6 +11464,25 @@ const _MOIS_COURTS = ['janv','févr','mars','avr','mai','juin','juil','août','s
 // le profil local existe, c'est lui qui pondere : une zone se mesure sur son propre
 // calendrier, comme un pays se mesure deja sur le sien. Sans zone, ou zone inconnue, on
 // garde le profil national - le comportement d'avant.
+// Longueur de la barre d'une ligne de zone ou de pays, en pourcentage de la piste.
+//
+// Echelle logarithmique, et non proportionnelle. Les frequences s'etalent sur cinq
+// decades : une espece peut etre notee sur 53 % des listes d'un departement et sur
+// 0,007 % de celles d'un autre. En proportionnel, tout ce qui passait sous 1 % tombait
+// sous le pixel et se retrouvait colle au minimum de 3 % - 1,4 %, 0,2 % et 0,007 %
+// donnaient exactement la meme barre. Le palier de rarete est lui-meme logarithmique,
+// chaque cran valant moitie moins que le precedent : la barre suit la meme lecture.
+//
+// Bornes : de 0,001 % (une liste sur cent mille, une decade sous le plancher du palier 9)
+// a 100 %. En contrepartie le haut se tasse - 37 % et 53 % ne different plus que de trois
+// points de barre - mais a ce niveau la barre dit "presente partout", et c'est le chiffre
+// juste a cote qui donne le detail.
+function _longueurBarre(v){
+  if(!(v > 0)) return 0;
+  const BAS = 1e-5;
+  const p = (Math.log10(v) - Math.log10(BAS)) / (0 - Math.log10(BAS));
+  return Math.min(100, Math.max(3, Math.round(p * 100)));
+}
 function _valeurAnnuelleZone(arr, cc, zone){
   if(!Array.isArray(arr) || !arr.length) return 0;
   const pays = cc || 'FR';
@@ -11725,7 +11749,7 @@ function _renderSpeciesRarityCard(key){
       // ce qui affichait une barre remplie a cote d'un "55 %". Plancher a 3 % pour qu'une
       // presence tres faible reste visible ; l'ordre de la liste porte deja la comparaison
       // entre zones, que le mode relatif etait cense apporter.
-      const barW = s.score > 0 ? Math.min(100, Math.max(3, Math.round(s.score * 100))) : 0;
+      const barW = _longueurBarre(s.score);
       const val = absent ? 'absente' : fmtPct(s.score);
       // Infobulle : le nombre affiche est une moyenne annuelle, on donne le pic et le
       // nombre de mois de presence pour que la saisonnalite reste lisible.
