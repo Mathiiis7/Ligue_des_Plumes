@@ -2818,18 +2818,37 @@ function _initInfobulle(){
   // La boite suit le curseur et se rabat quand elle toucherait un bord : sinon un survol
   // pres du bas de l'ecran l'affiche hors champ.
   const placer = (e) => {
-    const m = 14, r = box.getBoundingClientRect();
-    let x = e.clientX + m, y = e.clientY + m;
-    if(x + r.width > innerWidth - 8) x = e.clientX - m - r.width;
+    // offsetWidth/Height et non getBoundingClientRect : ces dernieres sont multipliees par le
+    // zoom de la page, alors que innerWidth et style.left ne le sont pas. Melanger les deux
+    // faussait le recadrage des que le navigateur n'etait pas a 100 %.
+    const m = 14, r = { width: box.offsetWidth, height: box.offsetHeight };
+    // Horizontalement on rentre la boite dans l'ecran en la faisant glisser, sans jamais la
+    // renvoyer a gauche du curseur : sur une fenetre etroite, une boite large depasse presque
+    // toujours, et le basculement l'expediait a deux cents pixels de ce qu'on survolait.
+    // Verticalement, en revanche, passer au-dessus garde la boite collee au curseur.
+    const x = Math.min(e.clientX + m, innerWidth - 8 - r.width);
+    let y = e.clientY + m;
     if(y + r.height > innerHeight - 8) y = e.clientY - m - r.height;
     box.style.left = Math.max(8, x) + 'px';
     box.style.top = Math.max(8, y) + 'px';
   };
   document.addEventListener('mouseover', (e) => {
-    const el = e.target && e.target.closest ? e.target.closest('[data-tip]') : null;
+    const el = e.target && e.target.closest ? e.target.closest('[data-tip], [title]') : null;
     if(!el || el === cible) return;
+    // Reprise a la volee de title : plutot que de convertir a la main les cent trente
+    // attributs disperses dans l'appli - et de devoir y penser pour chaque nouveau - on
+    // deplace le texte au premier survol. title doit partir, sinon les deux infobulles se
+    // superposent. Un lecteur d'ecran, lui, ne survole pas : il lit l'attribut intact.
+    if(!el.hasAttribute('data-tip')){
+      const t = el.getAttribute('title');
+      if(!t){ return; }
+      el.setAttribute('data-tip', t);
+      el.removeAttribute('title');
+    }
+    const txt = el.getAttribute('data-tip') || '';
+    if(!txt) return;
     cible = el;
-    box.textContent = el.getAttribute('data-tip') || '';
+    box.textContent = txt;
     box.classList.add('on');
     placer(e);
   });
@@ -11359,7 +11378,7 @@ function _ordonnerSelectionDevant(zones, selection){
 // leur agrandissement reste donc modeste - x1,6, de 8 a 14 px pour la plus grande ile -
 // la ou Madere, ramassee, passe a x3,1 et 21 px.
 const _ENCART_CARTE = {
-  FR: [{ titre: 'Petite couronne', cadre: { x:820, y:4, w:176, h:164 },
+  FR: [{ titre: '', cadre: { x:820, y:4, w:176, h:164 },
          codes: ['FR-IDF-75C', 'FR-IDF-92', 'FR-IDF-93', 'FR-IDF-94'] }],
   PT: [{ titre: 'Açores', cadre: { x:640, y:420, w:350, h:290 }, codes: ['PT-20'], coteACote: true },
        { titre: 'Madère', cadre: { x:15, y:420, w:250, h:460 }, codes: ['PT-30'], coteACote: true }],
@@ -11434,16 +11453,21 @@ function _unEncart(cfg, paths, rendre){
   if(!codes.length) return '';
   const bb = _bboxChemins(codes.map(z => paths.zones[z].path));
   if(!bb) return '';
-  const c = cfg.cadre, marge = 2, bandeau = 20;
+  // Un encart peut se passer de titre : la petite couronne autour de Paris se reconnait sans
+  // qu'on l'ecrive, alors que « Açores » et « Madère » ne se devinent pas. Sans titre, le
+  // bandeau qui lui etait reserve revient a la carte, qui occupe donc toute la boite.
+  const c = cfg.cadre, marge = 2, bandeau = cfg.titre ? 20 : 0;
+  const titreSvg = cfg.titre
+    ? '<text x="' + (c.x + c.w / 2) + '" y="' + (c.y + 16) + '" text-anchor="middle"'
+      + ' font-size="20" font-weight="600" font-family="system-ui" fill="var(--ink-2, #47534f)">'
+      + esc(cfg.titre) + '</text>'
+    : '';
   // Archipel trop etale pour un simple agrandissement : on repose ses iles cote a cote.
   if(cfg.coteACote && codes.length === 1){
     const boite = { x: c.x + marge, y: c.y + marge + bandeau,
                     w: c.w - marge * 2, h: c.h - marge * 2 - bandeau };
     const pose = _reposerIles(paths.zones[codes[0]].path, boite, 4);
-    if(pose) return '<g>'
-      + '<text x="' + (c.x + c.w / 2) + '" y="' + (c.y + 16) + '" text-anchor="middle"'
-        + ' font-size="20" font-weight="600" font-family="system-ui" fill="var(--ink-2, #47534f)">'
-        + esc(cfg.titre) + '</text>'
+    if(pose) return '<g>' + titreSvg
       + rendre(codes[0], pose.echelle, pose.d)
       + '</g>';
   }
@@ -11451,10 +11475,7 @@ function _unEncart(cfg, paths, rendre){
   const k = Math.min(dispoW / (bb.x1 - bb.x0), dispoH / (bb.y1 - bb.y0));
   const tx = c.x + marge + (dispoW - (bb.x1 - bb.x0) * k) / 2 - bb.x0 * k;
   const ty = c.y + marge + bandeau + (dispoH - (bb.y1 - bb.y0) * k) / 2 - bb.y0 * k;
-  return '<g>'
-    + '<text x="' + (c.x + c.w / 2) + '" y="' + (c.y + 16) + '" text-anchor="middle"'
-      + ' font-size="20" font-weight="600" font-family="system-ui" fill="var(--ink-2, #47534f)">'
-      + esc(cfg.titre) + '</text>'
+  return '<g>' + titreSvg
     + '<g transform="translate(' + tx.toFixed(2) + ',' + ty.toFixed(2) + ') scale(' + k.toFixed(3) + ')">'
       + codes.map(z => rendre(z, k)).join('')
     + '</g></g>';
@@ -12786,11 +12807,14 @@ function _renderSpeciesFreqChart(key, country){
     const isHiMonth = _moisMisEnAvant === m;
     out += `<text x="${x.toFixed(1)}" y="${(H-8).toFixed(1)}" font-size="9" fill="${isHiMonth?'var(--ink)':'var(--ink-3)'}" text-anchor="middle" font-weight="${isHiMonth?700:400}">${_MONTH_ABBR3[m]}</text>`;
   }
-  // Petit '?' dans l'angle bas-gauche du chart (entre '0%' et 'janv') avec tooltip explicatif.
-  out += `<g style="cursor:help;">
-    <circle cx="10" cy="${(H-11).toFixed(1)}" r="5.5" fill="var(--surface-2)" stroke="var(--line)"/>
-    <text x="10" y="${(H-8.2).toFixed(1)}" text-anchor="middle" font-size="8" font-weight="700" fill="var(--ink-3)">?</text>
-    <title>% checklists = fraction des sorties eBird qui ont coché l'espèce. Ex : 23% en mars = 1 sortie sur 4 a vu l'espèce en mars.</title>
+  // Le '?' se pose pile au croisement des deux axes. En x : les pourcentages sont alignes a
+  // droite sur PL-4, et le plus large ("36%", 9 px de corps) commence vers PL-21 - le milieu
+  // de leur colonne est donc a PL-12,5. En y : les mois ont leur ligne de base a H-8, dont
+  // le milieu optique est 3,2 px plus haut.
+  const xAide = PL - 12.5, yAide = H - 11.2;
+  out += `<g style="cursor:help;" data-tip="% checklists = fraction des sorties eBird qui ont coché l'espèce. Ex : 23% en mars = 1 sortie sur 4 a vu l'espèce en mars.">
+    <circle cx="${xAide}" cy="${yAide.toFixed(1)}" r="5.5" fill="var(--surface-2)" stroke="var(--line)"/>
+    <text x="${xAide}" y="${(yAide + 2.8).toFixed(1)}" text-anchor="middle" font-size="8" font-weight="700" fill="var(--ink-3)">?</text>
   </g>`;
   svg.innerHTML = out;
   // Cliquer une barre choisit son mois, exactement comme la colonne a cote de la carte -
