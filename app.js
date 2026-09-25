@@ -15562,19 +15562,25 @@ function _pkdxRender(){
     // ce sont les cas ou l'espece a une pop etablie ou reguliere alors que le chiffre
     // rareté pourrait tromper (ex Cygne noir tier 7 mais N). X et C gardent le tier
     // numerique (deja evidemment rare/echappe).
-    const cat = vue.cat || exoticCategoryInCountry(r.sci, country) || _exoticCategory(r.sci) || '';
-    // La lettre s affiche pour les exotiques dont la population tient : N naturalisee et
-    // P provisoire. Le test ne portait que sur N, alors que le commentaire au-dessus annonce
-    // les deux - le Canard carolin, P au Royaume-Uni, ressortait "10" comme une sauvage ultra
-    // rare, quand la carte le donnait exotique dans deux regions.
-    const catLetter = vue.tier === 0 ? cat : ((cat === 'N' || cat === 'P') ? cat : '');
-    const badgeText = catLetter || vue.tier;
+    // _exoticCategory est la table FR : hors de France elle taguerait des especes qui y sont
+    // sauvages. On ne s'en sert donc que pour la France.
+    const cat = vue.cat || exoticCategoryInCountry(r.sci, country)
+      || (country === 'FR' ? _exoticCategory(r.sci) : '') || '';
+    // Une espece exotique a l'echelle lue affiche sa CATEGORIE, jamais son palier : celui-ci
+    // est calcule sur des oiseaux echappes ou relaches, il ne dit rien de la difficulte a la
+    // trouver. Le Cygne noir aux Etats-Unis sortait "9", une meta-rarete sauvage, alors qu'il
+    // n'y est qu'un echappe de collection.
+    const badgeText = cat || vue.tier;
+    // Le fond suit le palier pour les naturalisees, dont la population tient et dont le
+    // palier veut donc dire quelque chose. Pour les autres - echappees, provisoires,
+    // captives - un gris neutre, qui dit "hors bareme" au lieu de mimer une rarete.
+    const fondBadge = (cat && !_isEstablishedExotic(cat)) ? '#7e8a99' : tierBg;
     // Absente de la zone choisie : la case reste, en retrait. La masquer ferait croire que
     // l'espece n'existe pas, alors qu'elle est seulement ailleurs.
     return `<div class="pkdx-card${r.owned?'':' missing'}" data-sci="${esc(r.sci)}">
       <span class="pkdx-num">#${num}</span>
       ${r.saison ? `<span class="pkdx-saison" title="Espèce nettement saisonnière : son pic mensuel vaut au moins 3 fois sa moyenne annuelle. Viser le bon mois change tout.">◑</span>` : ''}
-      <span class="pkdx-tier" style="background:${tierBg};" title="Palier ${vue.tier}${catLetter ? ' · '+catLetter : ''}${vue.absente ? ' · jamais notée ici' : ''}">${badgeText}</span>
+      <span class="pkdx-tier" style="background:${fondBadge};" data-tip="${cat ? esc(EXOTIC_CATEGORY_LABEL[cat] || 'Exotique ' + cat) : 'Palier ' + vue.tier}${vue.absente ? ' · jamais notée ici' : ''}">${badgeText}</span>
       <div class="pkdx-img" data-pkdx-lazy="${esc(r.sci)}">${r.owned ? '🐦' : ''}</div>
       <div class="pkdx-name">${esc(r.nm)}</div>
       <div class="pkdx-sci">${esc(r.sci)}</div>
