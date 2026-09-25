@@ -11732,7 +11732,13 @@ async function _renderRarityMap(sci, cc){
       </summary>
       <div class="sm-fold-corps">
         <div style="display:flex; align-items:flex-start; justify-content:flex-start; gap:8px;">
-          <div id="smRarityMapMois" style="display:flex; flex-direction:column; gap:2px; flex:0 0 auto; width:62px;">${moisBtns}</div>
+          <div id="smRarityMapMois" style="display:flex; flex-direction:column; gap:2px; flex:0 0 auto; width:62px;">
+            <!-- La colonne se lit a l'echelle de la zone choisie, la ligne RARETE en haut de
+                 la fiche reste nationale. Sans cette etiquette les deux se contredisaient a
+                 l'ecran : le Geai bleu sort a 32 % des listes aux Etats-Unis, palier 1, alors
+                 que la colonne peut afficher 10 dans un Etat ou il ne passe pas. -->
+            <div style="font:700 8.5px/1.3 system-ui; letter-spacing:.4px; text-transform:uppercase; color:var(--ink-3); margin-bottom:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" data-tip="${esc(nomPort)}">${esc(nomPort)}</div>
+            ${moisBtns}</div>
           <div style="flex:1 1 auto; min-width:0;"><svg viewBox="${paths.viewBox}" style="width:100%; max-width:320px; height:auto; display:block; margin:0 auto;" role="img" aria-label="Rareté par ${zoneWord} sur ${libellePeriode}">
             ${svgZones}
           </svg></div>
