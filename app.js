@@ -2814,32 +2814,29 @@ function _initInfobulle(){
   const box = document.createElement('div');
   box.id = 'tipbox';
   document.body.appendChild(box);
-  let cible = null, minuteur = null;
+  let cible = null, minuteur = null, dernier = { clientX: 0, clientY: 0 };
   // Delai avant apparition, comme le fait le navigateur : sans lui, un simple passage de la
   // souris sur une rangee de boutons fait clignoter une infobulle par bouton.
   const DELAI = 450;
   // La boite suit le curseur et se rabat quand elle toucherait un bord : sinon un survol
   // pres du bas de l'ecran l'affiche hors champ.
-  // La boite se place par rapport a L'ELEMENT survole, pas au curseur. Suivre le curseur
-  // paraissait naturel mais donnait des placements imprevisibles : une boite large pres d'un
-  // bord devait etre recadree, et elle se retrouvait a deux cents pixels de la barre qu'on
-  // pointait. Ancree sur l'element, elle est toujours a la meme place par rapport a lui.
+  // La boite suit le curseur, comme l'infobulle du navigateur. L'ancrage sur l'element a ete
+  // essaye : il centrait la boite sur ce qu'on survole, donc a cote et souvent loin quand
+  // l'element est petit et le texte long.
   const placer = () => {
-    if(!cible) return;
-    const b = cible.getBoundingClientRect();
-    const r = box.getBoundingClientRect();
-    const m = 10;
-    // Centree sur l'element, puis rentree dans la fenetre par simple glissement.
-    let x = b.left + b.width / 2 - r.width / 2;
-    x = Math.max(8, Math.min(x, innerWidth - 8 - r.width));
-    // Au-dessus par defaut - on ne masque pas ce qu'on regarde - en dessous s'il n'y a pas
-    // la place.
-    let y = b.top - m - r.height;
-    if(y < 8) y = b.bottom + m;
-    box.style.left = x.toFixed(1) + 'px';
+    // offsetWidth/Height et non getBoundingClientRect : ces dernieres sont multipliees par le
+    // zoom de la page, alors que innerWidth et style.left ne le sont pas.
+    const m = 18, r = { width: box.offsetWidth, height: box.offsetHeight };
+    // Pres d'un bord on fait GLISSER la boite pour la rentrer dans l'ecran. La renvoyer de
+    // l'autre cote du curseur, comme au debut, l'expediait a deux cents pixels du survol.
+    const x = Math.min(dernier.clientX + m, innerWidth - 8 - r.width);
+    let y = dernier.clientY + m;
+    if(y + r.height > innerHeight - 8) y = dernier.clientY - m - r.height;
+    box.style.left = Math.max(8, x).toFixed(1) + 'px';
     box.style.top = Math.max(8, y).toFixed(1) + 'px';
   };
   document.addEventListener('mouseover', (e) => {
+    dernier = { clientX: e.clientX, clientY: e.clientY };
     const el = e.target && e.target.closest ? e.target.closest('[data-tip], [title]') : null;
     if(!el || el === cible) return;
     // Reprise a la volee de title : plutot que de convertir a la main les cent trente
@@ -2864,6 +2861,10 @@ function _initInfobulle(){
       box.classList.add('on');
       placer();
     }, DELAI);
+  });
+  document.addEventListener('mousemove', (e) => {
+    dernier = { clientX: e.clientX, clientY: e.clientY };
+    if(cible && box.classList.contains('on')) placer();
   });
   document.addEventListener('mouseout', (e) => {
     if(!cible) return;
@@ -12802,27 +12803,13 @@ function _renderSpeciesFreqChart(key, country){
     // entiere, mais savoir ou on regarde.
     const moisBarre = Math.min(11, Math.floor(i * 12 / _nSlots));
     if(_moisMisEnAvant != null && moisBarre !== _moisMisEnAvant) op *= 0.25;
-    const titleUnit = isWeekly ? ' ind/h' : ' %';
-    const titleVal = isWeekly
-      ? fmtAbd(v)
-      : (v*100 < 0.1 ? '<0.1' : v*100 < 1 ? (v*100).toFixed(1) : Math.round(v*100));
-    // Label tooltip : "mi-mai" pour weekly S&T, "mai" pour monthly stretched (l'index i
-    // 0..51 correspond a une semaine dans les deux cas, mais monthly n'a que 12 valeurs
-    // distinctes reparties par mois → tooltip mois-only plus honnete).
-    // Libelle d'un creneau. En 48 quinzaines, quatre barres tombent dans le meme mois : on
-    // donne la plage de jours, sans quoi l'infobulle repete "mars" avec quatre valeurs.
-    const _PLAGES = ['1-7', '8-15', '16-23', '24-fin'];
-    const titleLbl = isWeekly
-      ? _weekToLabel(i)
-      : (_nSlots === 48
-          ? `${_PLAGES[i % 4]} ${_MONTH_FR[Math.floor(i / 4)]}`
-          : _MONTH_FR[Math.min(11, Math.floor((i * _joursParSlot + _joursParSlot / 2) / 30.44))]);
-    const title = `${titleLbl} : ${titleVal}${titleUnit}`;
+    // Les barres n'ont plus d'infobulle : le libelle du creneau et sa valeur se lisaient deja
+    // sur l'axe et dans l'en-tete, et la boite masquait le graphique qu'on venait consulter.
     // Le pic n'est plus souligne : c'est la barre la plus haute, elle se voit. Seul le
     // creneau courant garde un contour, pour situer ou on en est dans l'annee.
     let strokeAttr = '';
     if(i === curIdx) strokeAttr = ' stroke="var(--accent)" stroke-width="1.5"';
-    out += `<rect class="bar" data-mois="${moisBarre}" style="cursor:pointer" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(0.5,w).toFixed(1)}" height="${Math.max(1.5,h).toFixed(1)}" fill="${fill}" opacity="${op}" rx="1"${strokeAttr} data-tip="${esc(title)}"></rect>`;
+    out += `<rect class="bar" data-mois="${moisBarre}" style="cursor:pointer" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(0.5,w).toFixed(1)}" height="${Math.max(1.5,h).toFixed(1)}" fill="${fill}" opacity="${op}" rx="1"${strokeAttr}></rect>`;
   }
   // Labels axe x : chaque mois est centre sur sa part des N barres. Le pas etait ecrit en dur
   // (4,33 barres par mois, soit 52 pour l annee) alors que la serie en compte 48 depuis que
