@@ -1309,7 +1309,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
      qu elle ne vole jamais le survol a l element qui l a declenchee. */
   #tipbox { position:fixed; z-index:2147483647; pointer-events:none; opacity:0;
     transform:translateY(3px); transition:opacity .11s ease, transform .11s ease;
-    max-width:280px; padding:7px 10px; border-radius:9px; background:var(--ink, #1f2a28);
+    max-width:280px; padding:7px 10px; border-radius:9px; background:rgba(62,76,72,.97);
     color:#fff; font:12px/1.45 system-ui; box-shadow:0 6px 20px rgba(0,0,0,.28); }
   #tipbox.on { opacity:1; transform:translateY(0); }
   .rar-chips { display:inline-flex; gap:3px; flex-wrap:wrap; }

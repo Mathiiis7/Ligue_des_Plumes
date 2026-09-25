@@ -2814,23 +2814,30 @@ function _initInfobulle(){
   const box = document.createElement('div');
   box.id = 'tipbox';
   document.body.appendChild(box);
-  let cible = null;
+  let cible = null, minuteur = null;
+  // Delai avant apparition, comme le fait le navigateur : sans lui, un simple passage de la
+  // souris sur une rangee de boutons fait clignoter une infobulle par bouton.
+  const DELAI = 450;
   // La boite suit le curseur et se rabat quand elle toucherait un bord : sinon un survol
   // pres du bas de l'ecran l'affiche hors champ.
-  const placer = (e) => {
-    // offsetWidth/Height et non getBoundingClientRect : ces dernieres sont multipliees par le
-    // zoom de la page, alors que innerWidth et style.left ne le sont pas. Melanger les deux
-    // faussait le recadrage des que le navigateur n'etait pas a 100 %.
-    const m = 14, r = { width: box.offsetWidth, height: box.offsetHeight };
-    // Horizontalement on rentre la boite dans l'ecran en la faisant glisser, sans jamais la
-    // renvoyer a gauche du curseur : sur une fenetre etroite, une boite large depasse presque
-    // toujours, et le basculement l'expediait a deux cents pixels de ce qu'on survolait.
-    // Verticalement, en revanche, passer au-dessus garde la boite collee au curseur.
-    const x = Math.min(e.clientX + m, innerWidth - 8 - r.width);
-    let y = e.clientY + m;
-    if(y + r.height > innerHeight - 8) y = e.clientY - m - r.height;
-    box.style.left = Math.max(8, x) + 'px';
-    box.style.top = Math.max(8, y) + 'px';
+  // La boite se place par rapport a L'ELEMENT survole, pas au curseur. Suivre le curseur
+  // paraissait naturel mais donnait des placements imprevisibles : une boite large pres d'un
+  // bord devait etre recadree, et elle se retrouvait a deux cents pixels de la barre qu'on
+  // pointait. Ancree sur l'element, elle est toujours a la meme place par rapport a lui.
+  const placer = () => {
+    if(!cible) return;
+    const b = cible.getBoundingClientRect();
+    const r = box.getBoundingClientRect();
+    const m = 10;
+    // Centree sur l'element, puis rentree dans la fenetre par simple glissement.
+    let x = b.left + b.width / 2 - r.width / 2;
+    x = Math.max(8, Math.min(x, innerWidth - 8 - r.width));
+    // Au-dessus par defaut - on ne masque pas ce qu'on regarde - en dessous s'il n'y a pas
+    // la place.
+    let y = b.top - m - r.height;
+    if(y < 8) y = b.bottom + m;
+    box.style.left = x.toFixed(1) + 'px';
+    box.style.top = Math.max(8, y).toFixed(1) + 'px';
   };
   document.addEventListener('mouseover', (e) => {
     const el = e.target && e.target.closest ? e.target.closest('[data-tip], [title]') : null;
@@ -2848,19 +2855,25 @@ function _initInfobulle(){
     const txt = el.getAttribute('data-tip') || '';
     if(!txt) return;
     cible = el;
-    box.textContent = txt;
-    box.classList.add('on');
-    placer(e);
+    // On attend avant d'afficher. Sans ce delai, traverser une rangee de boutons faisait
+    // clignoter une infobulle par bouton.
+    clearTimeout(minuteur);
+    minuteur = setTimeout(() => {
+      if(cible !== el) return;
+      box.textContent = txt;
+      box.classList.add('on');
+      placer();
+    }, DELAI);
   });
-  document.addEventListener('mousemove', (e) => { if(cible) placer(e); });
   document.addEventListener('mouseout', (e) => {
     if(!cible) return;
     const vers = e.relatedTarget;
     if(vers && vers.closest && vers.closest('[data-tip]') === cible) return;
+    clearTimeout(minuteur);
     cible = null; box.classList.remove('on');
   });
   // Le defilement laisse la boite orpheline : on la ferme.
-  window.addEventListener('scroll', () => { if(cible){ cible = null; box.classList.remove('on'); } }, true);
+  window.addEventListener('scroll', () => { if(cible){ clearTimeout(minuteur); cible = null; box.classList.remove('on'); } }, true);
 }
 if(document.body) _initInfobulle();
 else document.addEventListener('DOMContentLoaded', _initInfobulle);
@@ -11686,7 +11699,9 @@ async function _renderRarityMap(sci, cc){
     const forme = annuel
       ? ' padding:4px 7px; border-radius:999px; font:' + (actif ? '800' : '700') + ' 9.5px/1.2 system-ui; letter-spacing:.7px; text-transform:uppercase;'
       : ' padding:2px 6px; border-radius:5px; font:' + (actif ? '800' : '600') + ' 10.5px/1.5 system-ui;';
-    return '<button type="button" data-mois="' + val + '" data-tip="' + esc(tip) + '" aria-label="' + esc(tip) + '"'
+    // Pas de data-tip : l'infobulle repetait ce que la pastille montre deja, son mois et son
+    // palier. aria-label reste, pour qui ne distingue pas la couleur.
+    return '<button type="button" data-mois="' + val + '" aria-label="' + esc(tip) + '"'
       + ' style="display:flex; align-items:center; justify-content:space-between; gap:4px;'
       + ' width:100%; border:0; cursor:pointer;' + forme
       + ' background:' + (vu ? realColor(t) : ABSENT) + '; color:' + (vu ? '#fff' : 'var(--ink-3)') + ';'
@@ -12439,8 +12454,14 @@ function _weekToLabel(wi){
 // laissait croire que le tier en decoulait ; les deux chiffres sont maintenant cote a cote.
 function _scoreAnnuelLbl(m12, cc, zone){
   if(!Array.isArray(m12) || m12.length !== 12) return '';
-  const v = _valeurAnnuelleZone(m12, cc, zone);
-  if(!(v > 0)) return '';
+  // Un mois choisi dans la colonne de la carte remplace le chiffre annuel par le sien :
+  // l'en-tete doit dire ce que la carte et le graphique montrent en dessous, pas autre chose.
+  const mm = window._smRarityMapMonth;
+  const mois = (typeof mm === 'number' && mm >= 0 && mm <= 11) ? mm : null;
+  const suffixe = mois == null ? '' : ' en ' + _MOIS_COURTS[mois];
+  const v = mois == null ? _valeurAnnuelleZone(m12, cc, zone) : (m12[mois] || 0);
+  if(!(v > 0)) return mois == null ? ''
+    : ` · <b style="font-weight:700;color:var(--ink-3);">jamais notée${suffixe}</b>`;
   // Meme cascade de precision que le pic affiche juste apres : un exotique a 0,006 %
   // ne doit pas s'arrondir a "0 %".
   const t = v >= 0.10   ? Math.round(v * 100)
@@ -12450,8 +12471,10 @@ function _scoreAnnuelLbl(m12, cc, zone){
           // Sous 0,01 % on donnait « <0.01 », qui confondait une espece a 0,009 % et une a
           // 0,0002 %. Deux chiffres significatifs : la vraie valeur, sans zeros inutiles.
           : String(Number((v * 100).toPrecision(2)));
-  const tip = "Fréquence annuelle pondérée par l'effort d'observation : la part des listes de la zone qui citent l'espèce. C'est elle qui détermine le palier de rareté.";
-  return ` · <b title="${esc(tip)}" style="font-weight:700;color:var(--ink-2);">${t} %</b>`;
+  const tip = mois == null
+    ? "Fréquence annuelle pondérée par l'effort d'observation : la part des listes de la zone qui citent l'espèce. C'est elle qui détermine le palier de rareté."
+    : "Part des listes de la zone qui citent l'espèce sur ce seul mois.";
+  return ` · <b data-tip="${esc(tip)}" style="font-weight:700;color:var(--ink-2);">${t} %${suffixe}</b>`;
 }
 function _renderSpeciesFreqChart(key, country){
   const wrap = $('#smFreqWrap'), card = $('#smFreqCard'), svg = $('#smFreqChart'), srcEl = $('#smFreqSrc');
@@ -12837,14 +12860,12 @@ function _renderSpeciesFreqChart(key, country){
     const palette = [1,2,3,4,5,6,7,8,9,10]
       .map(t => `<span style="width:8px;height:12px;background:${realColor(t)};display:inline-block;"></span>`).join('');
     const nowLbl = isWeekly ? 'Cette semaine' : 'Mois actuel';
-    // Legende + hint zoom molette
-    const zoomLbl = _freqZoom >= 10 ? '×' + Math.round(_freqZoom)
-                  : _freqZoom >= 1 ? '×' + _freqZoom.toFixed(1)
-                  : '×' + _freqZoom.toFixed(2);
+    // Le niveau de zoom a la molette etait affiche ici : il se voit sur l'axe, et personne
+    // n'a besoin de lire « x0.98 ».
     legEl.innerHTML = `
       <span class="sm-freq-lg" title="Vert = espèce facile à voir, magenta = très rare"><span style="display:inline-flex;height:12px;border:1px solid var(--line);border-radius:2px;overflow:hidden;">${palette}</span>&nbsp;facile → rare</span>
       <span class="sm-freq-lg"><span class="sm-freq-sw" style="background:transparent;border:2px solid var(--accent);width:10px;height:10px;box-sizing:border-box;"></span>${nowLbl}</span>
-      <span class="sm-freq-lg" style="opacity:.75;font-size:10px;">🖱 molette sur le chart : zoom (${zoomLbl})</span>`;
+`;
     // Zoom molette : onwheel direct sur SVG + wrapper. Re-render immediat (rAF).
     const chartWrap = card ? card.querySelector('.sm-freq-chart-wrap') : null;
     let _wheelRAF = null;
