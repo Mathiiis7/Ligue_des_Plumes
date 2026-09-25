@@ -1308,7 +1308,16 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   /* Un carre reste un carre, meme a deux chiffres : « 10 » poussait sur son padding et
      sortait de la rangee. Largeur fixe pour tout ce qui porte un palier ; les libelles
      (« Tout », « Vide ») gardent leur padding, eux ne sont pas des carres. */
-  .tier-chip, .rar-chip[data-tier], .rar-chip[data-rar], .rar-chip[data-cat] { width:22px; padding:0 0 1px; }
+  /* Un carre de 22 px se cale sur la grille de pixels de l'ecran, et pas forcement pareil en
+     largeur et en hauteur : mesure a zoom 1,07, on obtenait 24x24, 24x23, 24x24, 24x23... Des
+     pastilles ni carrees ni egales entre elles.
+     Meme remede que pour les barres : on peint une boite de taille double, ramenee de moitie
+     par une transformation. Un element transforme est rasterise en sous-pixel au lieu d'etre
+     cale sur la grille. Les marges negatives rendent a la mise en page les 22 px qu'elle
+     attend, et l'alignement a droite de la colonne ne bouge pas. */
+  .tier-chip, .rar-chip[data-tier], .rar-chip[data-rar], .rar-chip[data-cat] {
+    width:44px; height:44px; min-width:0; margin:-11px; transform:scale(.5);
+    border-radius:12px; font-size:24px; padding:0 0 2px; }
   .rar-chip { cursor:pointer; box-shadow:inset 0 0 0 1px var(--line-2); }
   .rar-chip:hover { filter:brightness(0.97); }
   .rar-chip.on, .tier-chip { color:#fff; box-shadow:none; }
@@ -1316,7 +1325,9 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   /* Variante ronde, reservee a la ligne RARETE de la fiche espece : exactement le jeton
      du birdydex (.pkdx-tier) - 20 px, corps 10, ombre portee, aucun filet. Le carre reste
      partout ou les pastilles s'alignent en colonnes. */
-  .tier-chip.tier-rond { width:26px; min-width:26px; height:26px; padding:0; border:0; border-radius:50%; font:800 13px/1 system-ui; box-shadow:0 1px 3px rgba(0,0,0,.3); }
+  /* margin et transform remis a zero : la regle du carre au-dessus les pose, et le rond,
+     seul sur sa ligne, n'a pas de voisin avec qui se comparer. */
+  .tier-chip.tier-rond { width:26px; min-width:26px; height:26px; margin:0; transform:none; padding:0; border:0; border-radius:50%; font:800 13px/1 system-ui; box-shadow:0 1px 3px rgba(0,0,0,.3); }
   .rar-chip.rar-exo.on { background:#7e8a99; }
   /* Retire les flèches spinner natives sur #mapEbMinTodo (on a nos propres boutons +/-) */
   #mapEbMinTodo::-webkit-outer-spin-button, #mapEbMinTodo::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
