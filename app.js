@@ -11876,7 +11876,7 @@ function _renderSpeciesRarityCard(key){
     // pour le charger direct avec la fiche.
     const flgFixed = (country.flag||'')
       .replace(' loading="lazy"', '')
-      .replace('<img ', '<img width="19" height="14" style="height:14px;width:19px;object-fit:cover;object-position:center;vertical-align:middle;border-radius:2px;margin-right:8px;box-shadow:0 0 0 1px rgba(0,0,0,.08);flex-shrink:0;" ');
+      .replace('<img ', '<img width="19" height="14" style="height:14px;width:19px;object-fit:cover;object-position:center;vertical-align:middle;border-radius:2px;margin-right:9px;box-shadow:0 0 0 1px rgba(0,0,0,.08);flex-shrink:0;" ');
     // Pill : affiche la lettre categorie (N/P) au lieu du chiffre du tier pour les
     // exotiques etablis N/P (aligne avec le comportement des cartes Birdydex). X et C
     // avec tier > 0 restent numeriques. Tier 0 exotique : lettre cat (N/P/X/C).
