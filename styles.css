@@ -478,7 +478,9 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
      la droite. La barre gardait ses 60 px mais commencait 15 px plus loin qu'a la ligne
      d'au-dessus, ce qui se lit comme des barres de longueurs differentes. Le nom se coupe
      maintenant en points de suspension et les trois colonnes de droite ne bougent plus. */
-  .reg-picker-item { display:grid; grid-template-columns:minmax(0,1fr) 44px 60px 30px; gap:8px; align-items:center; padding:6px 10px; cursor:pointer; border-radius:6px; font-size:14px; color:var(--ink); }
+  /* Hauteur figee plutot que deduite du contenu : une ligne ne peut plus grandir parce que
+     son nom, sa valeur ou sa pastille auraient change de taille. */
+  .reg-picker-item { display:grid; grid-template-columns:minmax(0,1fr) 44px 60px 30px; gap:8px; align-items:center; height:34px; padding:0 10px; cursor:pointer; border-radius:6px; font-size:14px; color:var(--ink); }
   .reg-picker-item > span:first-child { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .reg-picker-item:hover { background:var(--surface-2); }
   /* Selection courante : la meme que celle d'un pays (voir .cp-item.on, plus bas, dont
@@ -486,7 +488,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
      ligne choisie doit s'y voir pareil. */
   .reg-picker-item.on { background:var(--surface-2); font-weight:700; }
   .reg-picker-item.absent { opacity:.5; }
-  .reg-picker-item.national { grid-template-columns:1fr; padding:8px 10px; border-bottom:1px solid var(--line-2); margin-bottom:4px; font-weight:600; }
+  .reg-picker-item.national { grid-template-columns:1fr; height:auto; padding:8px 10px; border-bottom:1px solid var(--line-2); margin-bottom:4px; font-weight:600; }
   /* Le palier, ecrit, plutot qu'une pastille de couleur a decoder : c'est le meme
      rectangle que partout ailleurs dans l'appli. La couleur reste, elle devient le fond. */
   .reg-picker-item.absent .tier-chip { color:var(--ink-3); }
