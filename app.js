@@ -11686,6 +11686,8 @@ async function _renderRarityMap(sci, cc){
       // 'an' = agregat annuel, sinon l'index du mois.
       window._smRarityMapMonth = b.dataset.mois === 'an' ? 'an' : +b.dataset.mois;
       _renderRarityMap(sci, cc);
+      // Le graphique en dessous suit : il met en avant les barres du mois choisi.
+      if(typeof _renderSpeciesFreqChart === 'function') _renderSpeciesFreqChart(sci, cc);
     };
   }
 }
@@ -12675,6 +12677,10 @@ function _renderSpeciesFreqChart(key, country){
   // ou monthly stretched). Couleur de fond = realColor(tier de l'abondance) en mode weekly
   // -> feedback visuel de difficulte cette semaine. Mois actuel et pic garde un contour
   // distinct (or / accent) pour rester repérables.
+  // Mois choisi dans la colonne de la carte de rarete. 'an' ou absent = pas de mise en
+  // avant, toutes les barres a pleine force.
+  const _mm = window._smRarityMapMonth;
+  const _moisMisEnAvant = (typeof _mm === 'number' && _mm >= 0 && _mm <= 11) ? _mm : null;
   for(let i=0; i<N; i++){
     const v = arr[i];
     // Cap la hauteur au ceiling : necessaire quand le user zoome IN (yMax reduit,
@@ -12689,6 +12695,11 @@ function _renderSpeciesFreqChart(key, country){
     // _valToTier utilise les seuils appropries selon isWeekly.
     fill = (v > 0) ? realColor(_valToTier(v)) : 'var(--ink-3)';
     op = (v > 0) ? 0.95 : 0.3;
+    // Le mois choisi dans la colonne a cote de la carte se retrouve ici : ses barres gardent
+    // leur force, les autres s'effacent sans disparaitre - on veut toujours lire la saison
+    // entiere, mais savoir ou on regarde.
+    const moisBarre = Math.min(11, Math.floor(i * 12 / _nSlots));
+    if(_moisMisEnAvant != null && moisBarre !== _moisMisEnAvant) op *= 0.25;
     const titleUnit = isWeekly ? ' ind/h' : ' %';
     const titleVal = isWeekly
       ? fmtAbd(v)
@@ -12710,7 +12721,7 @@ function _renderSpeciesFreqChart(key, country){
     let strokeAttr = '';
     if(i === bestIdx) strokeAttr = ' stroke="var(--gold)" stroke-width="1.5"';
     else if(i === curIdx) strokeAttr = ' stroke="var(--accent)" stroke-width="1.5"';
-    out += `<rect class="bar" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(0.5,w).toFixed(1)}" height="${Math.max(1.5,h).toFixed(1)}" fill="${fill}" opacity="${op}" rx="1"${strokeAttr}><title>${title}</title></rect>`;
+    out += `<rect class="bar" data-mois="${moisBarre}" style="cursor:pointer" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(0.5,w).toFixed(1)}" height="${Math.max(1.5,h).toFixed(1)}" fill="${fill}" opacity="${op}" rx="1"${strokeAttr}><title>${title}</title></rect>`;
   }
   // Labels axe x : chaque mois est centre sur sa part des N barres. Le pas etait ecrit en dur
   // (4,33 barres par mois, soit 52 pour l annee) alors que la serie en compte 48 depuis que
@@ -12729,6 +12740,16 @@ function _renderSpeciesFreqChart(key, country){
     <title>% checklists = fraction des sorties eBird qui ont coché l'espèce. Ex : 23% en mars = 1 sortie sur 4 a vu l'espèce en mars.</title>
   </g>`;
   svg.innerHTML = out;
+  // Cliquer une barre choisit son mois, exactement comme la colonne a cote de la carte -
+  // et la carte se redessine avec. Recliquer le mois deja choisi revient a l'annee.
+  svg.onclick = (ev) => {
+    const r = ev.target.closest('[data-mois]');
+    if(!r) return;
+    const m = +r.dataset.mois;
+    window._smRarityMapMonth = (window._smRarityMapMonth === m) ? 'an' : m;
+    if(typeof _renderRarityMap === 'function') _renderRarityMap(key, cc);
+    _renderSpeciesFreqChart(key, cc);
+  };
   // Legende adaptee au mode : en weekly, la couleur des barres = tier, donc on montre
   // une palette compacte + contours "Pic" et "Cette semaine". En monthly stretched,
   // on garde l'ancienne legende (accent = mois actuel, gold = pic).
