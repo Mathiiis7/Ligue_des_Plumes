@@ -2167,7 +2167,9 @@ function flagImg(cc){
   // un rendu uniforme cross-platform.
   cc=(cc||'').toLowerCase();
   if(!/^[a-z]{2}$/.test(cc)) return '';
-  return `<img class="flag" src="https://flagcdn.com/w20/${cc}.png" srcset="https://flagcdn.com/w40/${cc}.png 2x" alt="${esc(cc.toUpperCase())}" loading="lazy">`;
+  // alt vide : le drapeau est decoratif, le nom du pays est toujours ecrit a cote. Avec un
+  // alt, une image qui ne charge pas affichait "FR" en toutes lettres a cote de "France".
+  return `<img class="flag" src="https://flagcdn.com/w20/${cc}.png" srcset="https://flagcdn.com/w40/${cc}.png 2x" alt="" loading="lazy">`;
 }
 const COUNTRY_NAMES={FR:'France',ES:'Espagne',PT:'Portugal',IT:'Italie',DE:'Allemagne',GB:'Royaume-Uni',IE:'Irlande',BE:'Belgique',NL:'Pays-Bas',LU:'Luxembourg',CH:'Suisse',AT:'Autriche',GR:'Grèce',HR:'Croatie',NO:'Norvège',SE:'Suède',FI:'Finlande',DK:'Danemark',IS:'Islande',PL:'Pologne',CZ:'Tchéquie',HU:'Hongrie',RO:'Roumanie',BG:'Bulgarie',TR:'Turquie',MA:'Maroc',TN:'Tunisie',DZ:'Algérie',EG:'Égypte',SN:'Sénégal',ZA:'Afrique du Sud',KE:'Kenya',TZ:'Tanzanie',US:'États-Unis',CA:'Canada',MX:'Mexique',CR:'Costa Rica',BR:'Brésil',PE:'Pérou',EC:'Équateur',AR:'Argentine',CL:'Chili',IN:'Inde',TH:'Thaïlande',JP:'Japon',CN:'Chine',AU:'Australie',NZ:'Nouvelle-Zélande'};
 function countryLabel(cc){ cc=(cc||'').toUpperCase(); return COUNTRY_NAMES[cc]||cc; }   // nom seul (pour <option> et tooltips)
@@ -11241,13 +11243,13 @@ async function _renderExoticMap(sci, cc){
   const openState = window._smExoticMapOpen ? ' open' : '';
   if(_ccFicheObsolete(cc)) return;
   container.innerHTML = `
-    <details${openState} style="margin-top:10px;" id="smExoticMapDetails">
-      <summary style="cursor:pointer; padding:6px 10px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2, #fafafa); font-size:12px; color:var(--ink-2); user-select:none;">
+    <details${openState} class="sm-fold" style="margin-top:10px;" id="smExoticMapDetails">
+      <summary>
         ▸ ${nationalExotic
              ? `Statut exotique par ${zoneWord} (eBird)`
              : `Sauvage en ${(COUNTRIES_REG[cc] && COUNTRIES_REG[cc].name) || cc}, exotique dans ${nZonesTaggees} ${zoneWord}${nZonesTaggees > 1 ? 's' : ''} (eBird)`}
       </summary>
-      <div style="margin-top:6px; padding:10px 12px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2, #fafafa);">
+      <div class="sm-fold-corps">
         <svg viewBox="${paths.viewBox}" style="width:100%; max-width:320px; height:auto; display:block; margin:0 auto;" role="img" aria-label="Statut exotique par ${zoneWord}">
           ${svgZones}
         </svg>
@@ -11636,11 +11638,11 @@ async function _renderRarityMap(sci, cc){
   const openState = window._smRarityMapOpen ? ' open' : '';
   if(_ccFicheObsolete(cc)) return;
   container.innerHTML = `
-    <details${openState} style="margin-top:10px;" id="smRarityMapDetails">
-      <summary style="cursor:pointer; padding:6px 10px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2, #fafafa); font-size:12px; color:var(--ink-2); user-select:none;">
+    <details${openState} class="sm-fold" style="margin-top:10px;" id="smRarityMapDetails">
+      <summary>
         ▸ Rareté par ${zoneWord} (${libellePeriode})
       </summary>
-      <div style="margin-top:6px; padding:10px 12px; border:1px solid var(--line-2); border-radius:8px; background:var(--surface-2, #fafafa);">
+      <div class="sm-fold-corps">
         <div style="display:flex; align-items:flex-start; justify-content:flex-start; gap:8px;">
           <div id="smRarityMapMois" style="display:flex; flex-direction:column; gap:2px; flex:0 0 auto; width:62px;">${moisBtns}</div>
           <div style="flex:1 1 auto; min-width:0;"><svg viewBox="${paths.viewBox}" style="width:100%; max-width:320px; height:auto; display:block; margin:0 auto;" role="img" aria-label="Rareté par ${zoneWord} sur ${libellePeriode}">
@@ -14920,10 +14922,14 @@ function renderPokedex(){
         // restaure tous les tier chips.
         const catBtn = e.target.closest('button[data-cat]');
         if(catBtn){
-          const c = catBtn.dataset.cat;
+          // Une pastille peut porter plusieurs categories (« X / P ») : elles s'allument et
+          // s'eteignent ensemble, la pastille n'est cochee que si toutes le sont.
+          const cats = catBtn.dataset.cat.split(',');
           const wasEmpty = _pkdxCatSelected.size === 0;
-          if(_pkdxCatSelected.has(c)) _pkdxCatSelected.delete(c);
-          else _pkdxCatSelected.add(c);
+          const toutesCochees = cats.every(c => _pkdxCatSelected.has(c));
+          for(const c of cats){
+            if(toutesCochees) _pkdxCatSelected.delete(c); else _pkdxCatSelected.add(c);
+          }
           if(wasEmpty && _pkdxCatSelected.size > 0){
             _pkdxTierExcl = new Set([0,1,2,3,4,5,6,7,8,9,10]);
           } else if(!wasEmpty && _pkdxCatSelected.size === 0){
@@ -15110,6 +15116,7 @@ function renderPokedex(){
         _pkdxSaveFilters();
         _pkdxAllSorted = null; _pkdxNumById = null; _pkdxLastRowsHash = null;   // le pays change la liste + numeros
         _syncCountryButton(ccBtn, cc2);
+        _majEtiquetteZone();   // sinon le bouton retombe sur le nom nu apres un changement de pays
         _pkdxRender();
         // Sync le pays global pour que les autres onglets (Carte, Cette semaine, fiche espece) suivent.
         if(typeof _setGlobalCountry === 'function' && cc2 !== _globalCountry) _setGlobalCountry(cc2);
@@ -15174,7 +15181,9 @@ function _majEtiquetteZone(){
   const nom = z
     ? ((zonesFichePourPays(cc).find(r => r.code === z) || {}).name || z)
     : ((COUNTRIES_REG[cc] && COUNTRIES_REG[cc].name) || cc);
-  lbl.textContent = z ? '📍 ' + nom : nom;
+  // Sans zone, on ecrit « France entier » comme la ligne d'en-tete de la liste des zones :
+  // le bouton dit l'echelle de lecture, pas seulement le pays.
+  lbl.textContent = z ? '📍 ' + nom : nom + ' entier';
 }
 function _pkdxVue(r, cc, zone){
   if(!zone) return { tier:r.tier, val:r.val, cat:r.cat, absente:false };
@@ -15348,12 +15357,17 @@ function _pkdxRender(){
     // Multi-select : X + N + P peuvent etre coches ensemble (union). Default OFF (gris).
     const CAT_COLOR = { X:'#ef4444', N:'#22c55e', P:'#f59e0b' };
     const CAT_LABEL = { X:'Échappé (X)', N:'Naturalisé (N)', P:'Provisoire (P)' };
-    const catChipsHtml = ['X', 'N', 'P'].map(c => {
-      const on = _pkdxCatSelected.has(c);
+    // X et P sont regroupes : ce sont les deux facons de ne pas etre etabli - echappe d'un
+    // cote, population provisoire de l'autre - et on les cherche ensemble. N reste seul,
+    // c'est le seul cas ou l'espece compte comme installee.
+    const CAT_GROUPES = [['X', 'P'], ['N']];
+    const catChipsHtml = CAT_GROUPES.map(g => {
+      const on = g.every(c => _pkdxCatSelected.has(c));
       // Off = default rar-chip (comme les tier chips non selectionnes). On = gris fonce
       // pour signaler "filtre applique". Coherent avec les tier chips.
       const bgStyle = on ? `background:#7e8a99;color:#fff;` : '';
-      return `<button type="button" class="rar-chip${on?' on':''}" data-cat="${c}" style="${bgStyle}" title="${esc(CAT_LABEL[c])}">${c}</button>`;
+      const cls = 'rar-chip' + (on ? ' on' : '') + (g.length > 1 ? ' cat-multi' : '');
+      return `<button type="button" class="${cls}" data-cat="${g.join(',')}" style="${bgStyle}" title="${esc(g.map(c => CAT_LABEL[c]).join(' / '))}">${g.join(' / ')}</button>`;
     }).join('');
     chipsBox.innerHTML = '<span style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; align-self:center; margin-right:6px;">Rareté</span>'
       + chipsHtml

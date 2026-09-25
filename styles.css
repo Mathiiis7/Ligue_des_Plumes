@@ -1293,6 +1293,17 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
      si bien que le meme chiffre changeait d'allure selon l'ecran ou on le lisait. La
      couleur reste porteuse du palier ; seule la taille varie, et elle garde les memes
      proportions. */
+  /* Depliant des cartes de la fiche : l en-tete et le contenu ne faisaient que se suivre,
+     chacun avec ses quatre coins arrondis et 6 px de vide entre eux - deux blocs poses cote
+     a cote plutot qu un seul. Ouvert, l en-tete perd ses arrondis du bas et le corps ceux du
+     haut, le corps colle a l en-tete et abandonne sa bordure haute : la bordure basse de
+     l en-tete sert de separation. Ferme, l en-tete redevient une pastille autonome. */
+  .sm-fold > summary { cursor:pointer; padding:6px 10px; border:1px solid var(--line-2);
+    border-radius:8px; background:var(--surface-2, #fafafa); font-size:12px; color:var(--ink-2);
+    user-select:none; }
+  .sm-fold[open] > summary { border-radius:8px 8px 0 0; }
+  .sm-fold-corps { padding:10px 12px; border:1px solid var(--line-2); border-top:0;
+    border-radius:0 0 8px 8px; background:var(--surface-2, #fafafa); }
   .rar-chips { display:inline-flex; gap:3px; flex-wrap:wrap; }
   /* Une seule declaration pour les deux : le chip de filtre du birdydex et la pastille de
      palier posee partout ailleurs. Elles etaient ecrites separement et avaient deja diverge
@@ -1321,6 +1332,12 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .tier-chip, .rar-chip[data-tier], .rar-chip[data-rar], .rar-chip[data-cat] {
     width:44px; height:44px; min-width:0; margin:-11px; transform:scale(.5);
     border-radius:12px; font-size:24px; padding:0 0 2px; }
+  /* Une pastille qui groupe deux categories (« X / P ») ne tient pas dans le carre : elle
+     reprend la forme de gelule de « Tout » et « Vide », sans la boite doublee - le truc des
+     marges negatives suppose une largeur fixe. Sur une gelule large, le pixel d'arrondi ne
+     se voit pas. */
+  .rar-chip.cat-multi { width:auto; min-width:0; height:22px; margin:0; transform:none;
+    border-radius:6px; font-size:12px; padding:0 7px 1px; }
   .rar-chip { cursor:pointer; box-shadow:inset 0 0 0 1px var(--line-2); }
   .rar-chip:hover { filter:brightness(0.97); }
   .rar-chip.on, .tier-chip { color:#fff; box-shadow:none; }
