@@ -737,6 +737,10 @@ function _openCountryPicker(currentCode, opts = {}){
     let onglet = (opts.onglet === 'zones' && avecZones) ? 'zones' : 'pays';
     const motZone = (cc) => typeof opts.motZone === 'function' ? opts.motZone(cc)
       : (opts.motZone || 'Régions');
+    const _ZONE_SINGULIER = {
+      'Départements': 'un département', 'Régions': 'une région', 'Provinces': 'une province',
+      'Cantons': 'un canton', 'États': 'un état', 'Comtés': 'un comté',
+    };
     const availableCodes = opts.availableCodes || Object.keys(COUNTRIES_REG);
     const allCodes = availableCodes.filter(cc => COUNTRIES_REG[cc]);
     // Si opts.sci est passe (appel depuis fiche espece), on trie par abondance pour
@@ -792,7 +796,7 @@ function _openCountryPicker(currentCode, opts = {}){
           <button type="button" class="cp-tab" data-onglet="pays">Pays</button>
           <button type="button" class="cp-tab" data-onglet="zones">${esc(motZone(ccCourant))}</button>
         </div>` : ''}
-        <input type="search" name="cp-search" aria-label="Rechercher par nom francais" class="cp-search" placeholder="Rechercher (nom fr)…" autofocus>
+        <input type="search" name="cp-search" aria-label="Rechercher par nom francais" class="cp-search" placeholder="Rechercher un pays…" autofocus>
         <div class="cp-list"></div>
       </div>`;
     const listEl = backdrop.querySelector('.cp-list');
@@ -805,7 +809,12 @@ function _openCountryPicker(currentCode, opts = {}){
         backdrop.querySelectorAll('.cp-tab').forEach(t => t.classList.toggle('on', t.dataset.onglet === onglet));
         const onglZone = backdrop.querySelector('.cp-tab[data-onglet="zones"]');
         if(onglZone) onglZone.textContent = motZone(ccCourant);
-        searchEl.placeholder = onglet === 'pays' ? 'Rechercher un pays…' : 'Rechercher…';
+        // Le champ dit ce qu'on y cherche, comme pour les pays. Le singulier est derive du
+        // mot au pluriel qui sert deja d'etiquette a l'onglet, plutot que de reclamer un
+        // second libelle a l'appelant.
+        const mz = motZone(ccCourant);
+        searchEl.placeholder = onglet === 'pays' ? 'Rechercher un pays…'
+          : 'Rechercher ' + (_ZONE_SINGULIER[mz] || mz.toLowerCase()) + '…';
       }
       if(onglet === 'zones'){
         // Les lignes viennent de l'appelant : c'est lui qui sait quelle espece est affichee
