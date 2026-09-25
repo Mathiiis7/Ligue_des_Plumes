@@ -924,7 +924,7 @@ function _openCountryPicker(currentCode, opts = {}){
            // ET pas exotique local) au lieu de it.score seul. Sinon FR avec tier 7 via
           // S&T Cornell mais aucune data monthly apparaît grisée à tort.
           const absentCls = focusSci && typeof absent !== 'undefined' && absent ? ' absent' : '';
-          html += `<div class="cp-item${cc === ccCourant ? ' on' : ''}${absentCls}" data-cc="${esc(cc)}"${titreLigne ? ` title="${esc(titreLigne)}"` : ''}>
+          html += `<div class="cp-item${cc === ccCourant ? ' on' : ''}${absentCls}" data-cc="${esc(cc)}"${titreLigne ? ` data-tip="${esc(titreLigne)}"` : ''}>
             <span class="cp-item-flag">${flag}</span>
             <span class="cp-item-name">${esc(reg.name || cc)}</span>
             ${meta}
@@ -2043,7 +2043,9 @@ const REAL_LABELS={0:'Parc semi-libre',1:'Omniprésent',2:'Très commun',3:'Comm
 function tierChip(texte, couleur, opts){
   const o = opts || {};
   const cls = 'tier-chip' + (o.cls ? ' ' + o.cls : '');
-  const t = o.title ? ' title="' + esc(o.title) + '"' : '';
+  // data-tip pour l'infobulle maison, aria-label pour les lecteurs d'ecran que title
+  // servait jusqu'ici.
+  const t = o.title ? ' data-tip="' + esc(o.title) + '" aria-label="' + esc(o.title) + '"' : '';
   return '<span class="' + cls + '" style="background:' + couleur + ';"' + t + '>' + texte + '</span>';
 }
 function realColor(w){
@@ -2803,6 +2805,46 @@ function renderMatrix({universe,N}){
 }
 
 function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+// Infobulle maison. Celle du navigateur n'est pas stylable - rectangle blanc a angles vifs,
+// police systeme, apparition lente - et on ne peut pas non plus la positionner. On garde le
+// meme principe : un texte porte par l'element, mais sous data-tip au lieu de title, et une
+// seule boite reutilisee pour tout le document.
+function _initInfobulle(){
+  if(document.getElementById('tipbox')) return;
+  const box = document.createElement('div');
+  box.id = 'tipbox';
+  document.body.appendChild(box);
+  let cible = null;
+  // La boite suit le curseur et se rabat quand elle toucherait un bord : sinon un survol
+  // pres du bas de l'ecran l'affiche hors champ.
+  const placer = (e) => {
+    const m = 14, r = box.getBoundingClientRect();
+    let x = e.clientX + m, y = e.clientY + m;
+    if(x + r.width > innerWidth - 8) x = e.clientX - m - r.width;
+    if(y + r.height > innerHeight - 8) y = e.clientY - m - r.height;
+    box.style.left = Math.max(8, x) + 'px';
+    box.style.top = Math.max(8, y) + 'px';
+  };
+  document.addEventListener('mouseover', (e) => {
+    const el = e.target && e.target.closest ? e.target.closest('[data-tip]') : null;
+    if(!el || el === cible) return;
+    cible = el;
+    box.textContent = el.getAttribute('data-tip') || '';
+    box.classList.add('on');
+    placer(e);
+  });
+  document.addEventListener('mousemove', (e) => { if(cible) placer(e); });
+  document.addEventListener('mouseout', (e) => {
+    if(!cible) return;
+    const vers = e.relatedTarget;
+    if(vers && vers.closest && vers.closest('[data-tip]') === cible) return;
+    cible = null; box.classList.remove('on');
+  });
+  // Le defilement laisse la boite orpheline : on la ferme.
+  window.addEventListener('scroll', () => { if(cible){ cible = null; box.classList.remove('on'); } }, true);
+}
+if(document.body) _initInfobulle();
+else document.addEventListener('DOMContentLoaded', _initInfobulle);
 // Rate limiter client-side pour empecher le spam. Non-cryptographique (contournable
 // avec devtools), utile juste pour eviter les erreurs / abus non intentionnels.
 // bucket = nom de la file (chat, comment, photo, request), max = nb autorises / minute.
@@ -11440,8 +11482,10 @@ function _pathZone(d, fill, titre, estSelectionnee, selectionActive, code, echel
   const largeur = (estSelectionnee ? 1.6 : 0.5) / e;
   const opacite = attenuee ? ' opacity="0.35"' : '';
   const cliquable = code ? ' data-zone="' + String(code).replace(/"/g, '&quot;') + '" style="cursor:pointer"' : '';
+  // data-tip et non <title> : l'infobulle du navigateur n'est pas stylable, celle de l'appli
+  // reprend le meme texte dans une boite arrondie qui apparait sans delai.
   return `<path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="${largeur}"` +
-         ` stroke-linejoin="round"${opacite}${cliquable}><title>${titre.replace(/</g,'&lt;')}</title></path>`;
+         ` stroke-linejoin="round"${opacite}${cliquable} data-tip="${esc(titre)}"></path>`;
 }
 const _MOIS_COURTS = ['janv','févr','mars','avr','mai','juin','juil','août','sept','oct','nov','déc'];
 // Valeur annuelle d'une zone : la moyenne de ses 12 mois ponderee par l'effort LOCAL,
@@ -11621,7 +11665,7 @@ async function _renderRarityMap(sci, cc){
     const forme = annuel
       ? ' padding:4px 7px; border-radius:999px; font:' + (actif ? '800' : '700') + ' 9.5px/1.2 system-ui; letter-spacing:.7px; text-transform:uppercase;'
       : ' padding:2px 6px; border-radius:5px; font:' + (actif ? '800' : '600') + ' 10.5px/1.5 system-ui;';
-    return '<button type="button" data-mois="' + val + '" title="' + esc(tip) + '"'
+    return '<button type="button" data-mois="' + val + '" data-tip="' + esc(tip) + '" aria-label="' + esc(tip) + '"'
       + ' style="display:flex; align-items:center; justify-content:space-between; gap:4px;'
       + ' width:100%; border:0; cursor:pointer;' + forme
       + ' background:' + (vu ? realColor(t) : ABSENT) + '; color:' + (vu ? '#fff' : 'var(--ink-3)') + ';'
@@ -11777,7 +11821,7 @@ function _renderSpeciesRarityCard(key){
         : `${s.name} — ${fmt(s.score)} sur l'année` +
           (s.moisPic >= 0 ? ` · jusqu'à ${fmt(s.pic)} en ${_MOIS_COURTS[s.moisPic]}` : '') +
           ` · présente ${s.nbMois} mois sur 12`;
-      return `<div class="reg-picker-item${absent?' absent':''}${s.code===_speciesRegion?' on':''}" data-code="${esc(s.code)}" title="${esc(titre)}">
+      return `<div class="reg-picker-item${absent?' absent':''}${s.code===_speciesRegion?' on':''}" data-code="${esc(s.code)}" data-tip="${esc(titre)}">
         <span>${esc(s.name)}</span>
         <span class="reg-picker-val">${esc(val)}</span>
         <div class="reg-picker-bar"><div style="width:${barW}%; color:${col};"></div></div>
@@ -12728,7 +12772,7 @@ function _renderSpeciesFreqChart(key, country){
     // creneau courant garde un contour, pour situer ou on en est dans l'annee.
     let strokeAttr = '';
     if(i === curIdx) strokeAttr = ' stroke="var(--accent)" stroke-width="1.5"';
-    out += `<rect class="bar" data-mois="${moisBarre}" style="cursor:pointer" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(0.5,w).toFixed(1)}" height="${Math.max(1.5,h).toFixed(1)}" fill="${fill}" opacity="${op}" rx="1"${strokeAttr}><title>${title}</title></rect>`;
+    out += `<rect class="bar" data-mois="${moisBarre}" style="cursor:pointer" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(0.5,w).toFixed(1)}" height="${Math.max(1.5,h).toFixed(1)}" fill="${fill}" opacity="${op}" rx="1"${strokeAttr} data-tip="${esc(title)}"></rect>`;
   }
   // Labels axe x : chaque mois est centre sur sa part des N barres. Le pas etait ecrit en dur
   // (4,33 barres par mois, soit 52 pour l annee) alors que la serie en compte 48 depuis que

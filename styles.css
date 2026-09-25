@@ -1304,6 +1304,14 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .sm-fold[open] > summary { border-radius:8px 8px 0 0; }
   .sm-fold-corps { padding:10px 12px; border:1px solid var(--line-2); border-top:0;
     border-radius:0 0 8px 8px; background:var(--surface-2, #fafafa); }
+  /* Infobulle maison, en remplacement de celle du navigateur : arrondie, ombree, lisible,
+     et qui apparait tout de suite au lieu d attendre une seconde. pointer-events:none pour
+     qu elle ne vole jamais le survol a l element qui l a declenchee. */
+  #tipbox { position:fixed; z-index:2147483647; pointer-events:none; opacity:0;
+    transform:translateY(3px); transition:opacity .11s ease, transform .11s ease;
+    max-width:280px; padding:7px 10px; border-radius:9px; background:var(--ink, #1f2a28);
+    color:#fff; font:12px/1.45 system-ui; box-shadow:0 6px 20px rgba(0,0,0,.28); }
+  #tipbox.on { opacity:1; transform:translateY(0); }
   .rar-chips { display:inline-flex; gap:3px; flex-wrap:wrap; }
   /* Une seule declaration pour les deux : le chip de filtre du birdydex et la pastille de
      palier posee partout ailleurs. Elles etaient ecrites separement et avaient deja diverge
