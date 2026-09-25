@@ -11523,10 +11523,11 @@ function _pathZone(d, fill, titre, estSelectionnee, selectionActive, code, echel
   const largeur = (estSelectionnee ? 1.6 : 0.5) / e;
   const opacite = attenuee ? ' opacity="0.35"' : '';
   const cliquable = code ? ' data-zone="' + String(code).replace(/"/g, '&quot;') + '" style="cursor:pointer"' : '';
-  // data-tip et non <title> : l'infobulle du navigateur n'est pas stylable, celle de l'appli
-  // reprend le meme texte dans une boite arrondie qui apparait sans delai.
+  // Plus d'infobulle sur les zones : la boite recouvrait la carte qu'on etait en train de
+  // lire, et la liste juste en dessous donne deja le nom, le pourcentage et le palier de
+  // chaque zone. Le parametre `titre` reste pour l'accessibilite.
   return `<path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="${largeur}"` +
-         ` stroke-linejoin="round"${opacite}${cliquable} data-tip="${esc(titre)}"></path>`;
+         ` stroke-linejoin="round"${opacite}${cliquable} aria-label="${esc(titre)}"></path>`;
 }
 const _MOIS_COURTS = ['janv','févr','mars','avr','mai','juin','juil','août','sept','oct','nov','déc'];
 // Valeur annuelle d'une zone : la moyenne de ses 12 mois ponderee par l'effort LOCAL,
