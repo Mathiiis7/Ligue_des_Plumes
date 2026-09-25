@@ -10837,7 +10837,13 @@ async function _renderSpeciesTraitsCard(key){
   if(t.bl != null)   morphLines.push({ k:'Bec (culmen)', v: `${cm(t.bl)} cm`, hint:'Culmen : arête supérieure du bec, du front à la pointe. Mesure standard pour comparer la taille des becs' });
   if(t.tail != null) morphLines.push({ k:'Queue',        v: `${cm(t.tail)} cm`, hint:'Longueur de la queue, base à extrémité de la plus longue rectrice' });
   if(!ecoLines.length && !morphLines.length) return;
-  const renderLine = ({k, v, hint}) => `<div style="display:flex; justify-content:space-between; gap:12px; padding:3px 0; font-size:13px;"><span style="color:var(--ink-3);${hint?' cursor:help;':''}"${hint?` title="${esc(hint)}"`:''}>${esc(k)}</span><span style="color:var(--ink); font-weight:600; text-align:right;">${v}</span></div>`;
+  // Les deux sections sont ecrites dans le meme corps - mesure : 13 px, graisse 600, hauteur
+  // de ligne 16,6 des deux cotes. Ce qui donnait a l'ecologie l'air d'etre ecrite plus gros,
+  // c'est son emoji de tete : a taille egale, un emoji occupe plus de place qu'une lettre. On
+  // le rend donc un cran plus petit, et les deux blocs se lisent enfin pareil.
+  const petitEmoji = (v) => String(v).replace(/^(\p{Extended_Pictographic}️?)\s*/u,
+    '<span style="font-size:.82em; vertical-align:1px;">$1</span> ');
+  const renderLine = ({k, v, hint}) => `<div style="display:flex; justify-content:space-between; gap:12px; padding:3px 0; font-size:13px;"><span style="color:var(--ink-3);${hint?' cursor:help;':''}"${hint?` data-tip="${esc(hint)}"`:''}>${esc(k)}</span><span style="color:var(--ink); font-weight:600; text-align:right;">${petitEmoji(v)}</span></div>`;
   box.innerHTML = `
     <div class="sm-card-title" style="display:flex; align-items:center; gap:8px;">Traits <span style="font-size:10.5px; color:var(--ink-3); text-transform:none; font-weight:400; letter-spacing:0;">- Avonet (Tobias et al. 2022)</span></div>
     ${ecoLines.length ? `
