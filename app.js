@@ -11683,8 +11683,10 @@ async function _renderRarityMap(sci, cc){
     barre.onclick = (e) => {
       const b = e.target.closest('[data-mois]');
       if(!b) return;
-      // 'an' = agregat annuel, sinon l'index du mois.
-      window._smRarityMapMonth = b.dataset.mois === 'an' ? 'an' : +b.dataset.mois;
+      // 'an' = agregat annuel, sinon l'index du mois. Recliquer le mois deja choisi le
+      // deselectionne et revient a l'annee, comme un clic sur sa barre dans le graphique.
+      const choix = b.dataset.mois === 'an' ? 'an' : +b.dataset.mois;
+      window._smRarityMapMonth = (choix !== 'an' && window._smRarityMapMonth === choix) ? 'an' : choix;
       _renderRarityMap(sci, cc);
       // Le graphique en dessous suit : il met en avant les barres du mois choisi.
       if(typeof _renderSpeciesFreqChart === 'function') _renderSpeciesFreqChart(sci, cc);
@@ -12453,10 +12455,15 @@ function _renderSpeciesFreqChart(key, country){
       // de 4 barres strictement identiques. A defaut, on retombe sur l'etirement.
       // En mode region on prend les 48 quinzaines DE LA ZONE ; hors mode region, celles du
       // pays. Melanger les deux afficherait une courbe nationale sous un titre regional.
+      // Le scrape des quinzaines utilise la taxonomie eBird courante, la table mensuelle
+      // traine encore d'anciens noms : sans l'alias, huit especes francaises retombaient sur
+      // l'etirement en 52 creneaux alors que leurs 48 quinzaines existaient sous un autre
+      // genre - Fauvette grisette, Autour des palombes, Heron garde-boeufs...
+      const kq = (typeof SCI_ALIAS === 'object' && SCI_ALIAS[key]) || key;
+      const zone48 = regionScope && REAL_FREQ_48_ZONE[cc] ? REAL_FREQ_48_ZONE[cc][regionScope] : null;
       const q48 = regionScope
-        ? ((REAL_FREQ_48_ZONE[cc] && REAL_FREQ_48_ZONE[cc][regionScope]
-            && REAL_FREQ_48_ZONE[cc][regionScope][key]) || null)
-        : ((REAL_FREQ_48_MULTI[cc] && REAL_FREQ_48_MULTI[cc][key]) || null);
+        ? ((zone48 && (zone48[key] || zone48[kq])) || null)
+        : ((REAL_FREQ_48_MULTI[cc] && (REAL_FREQ_48_MULTI[cc][key] || REAL_FREQ_48_MULTI[cc][kq])) || null);
       if(Array.isArray(q48) && q48.length === 48){
         arr = q48.slice();
       } else {
