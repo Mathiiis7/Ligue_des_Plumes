@@ -473,7 +473,13 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
      tout a droite. La valeur chiffree vient se poser juste avant sa barre, qu'elle decrit. */
   /* 14px comme .cp-item : les deux listes sont les deux onglets du meme selecteur, une zone
      ne se lit pas plus petit qu'un pays. */
-  .reg-picker-item { display:grid; grid-template-columns:1fr 44px 60px 30px; gap:8px; align-items:center; padding:6px 10px; cursor:pointer; border-radius:6px; font-size:14px; color:var(--ink); }
+  /* minmax(0,1fr) et non 1fr : une piste 1fr ne descend pas sous la largeur minimale de son
+     contenu, si bien qu'un nom long - « Pyrénées-Atlantiques » - poussait toute la ligne vers
+     la droite. La barre gardait ses 60 px mais commencait 15 px plus loin qu'a la ligne
+     d'au-dessus, ce qui se lit comme des barres de longueurs differentes. Le nom se coupe
+     maintenant en points de suspension et les trois colonnes de droite ne bougent plus. */
+  .reg-picker-item { display:grid; grid-template-columns:minmax(0,1fr) 44px 60px 30px; gap:8px; align-items:center; padding:6px 10px; cursor:pointer; border-radius:6px; font-size:14px; color:var(--ink); }
+  .reg-picker-item > span:first-child { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .reg-picker-item:hover { background:var(--surface-2); }
   /* Selection courante : la meme que celle d'un pays (voir .cp-item.on, plus bas, dont
      cette regle partage la declaration). Les deux listes vivent dans le meme modal, une
@@ -524,7 +530,9 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .cp-item.on { background:var(--surface-2); font-weight:700; }
   .cp-item-flag { display:inline-flex; align-items:center; justify-content:center; width:28px; }
   .cp-btn-flag { display:inline-flex; align-items:center; }
-  .cp-item-name { flex:1; }
+  /* min-width:0 pour la meme raison que la premiere colonne des lignes de zone : sans lui un
+     nom long refuse de retrecir et decale la valeur, la barre et la pastille. */
+  .cp-item-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .cp-item-meta { font-size:11px; color:var(--ink-3); }
   .cp-item.disabled { opacity:.5; cursor:not-allowed; }
   .cp-item.disabled:hover { background:transparent; }
