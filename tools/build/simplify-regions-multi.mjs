@@ -316,10 +316,15 @@ const CLIP_LON = {
 
 // Territoires eloignes places en encart (sinon ils etirent la bbox et ecrasent le pays).
 // box = [x, y, w, h] dans le viewBox 1000x900.
+// Poses a DROITE : le corps du pays reste centre dans le cadre, et la colonne de droite est
+// vide sur la plupart des cartes. A gauche, ils poussaient l Espagne et le Portugal de cote.
+// Ceuta et Melilla ne sont pas loin mais minuscules - 7 et 3 px sur la carte, invisibles et
+// incliquables. Elles rejoignent donc les encarts, pour la taille et non pour la distance.
 const INSETS = {
   US: { 'US-AK': [10, 600, 260, 260], 'US-HI': [285, 720, 170, 145] },
-  PT: { 'PT-20': [10, 20, 220, 180], 'PT-30': [10, 230, 160, 130] },
-  ES: { 'ES-CN': [30, 706, 300, 170] },
+  PT: { 'PT-20': [650, 80, 330, 190], 'PT-30': [650, 310, 330, 110] },
+  ES: { 'ES-CN': [650, 600, 330, 170],
+        'ES-CE': [680, 800, 90, 62], 'ES-ML': [830, 800, 90, 62] },
   NZ: { 'NZ-CI': [780, 20, 200, 160] },
 };
 

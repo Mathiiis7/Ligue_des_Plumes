@@ -12409,9 +12409,11 @@ async function _renderExoticMap(sci, cc){
     return _pathZone(dRemplace || r.path, fill, title, selection.has(code), selection.size > 0,
       zonesSelectionnables.has(code) ? code : null, echelle);
   };
-  const svgZones = _ordonnerSelectionDevant(Object.keys(paths.zones), selection)
+  const horsCarte = _codesEnEncart(cc);
+  const zonesCarte = Object.keys(paths.zones).filter(z => !horsCarte || !horsCarte.has(z));
+  const svgZones = _ordonnerSelectionDevant(zonesCarte, selection)
     .map(code => rendreZoneExo(code, 1)).join('')
-    + _encartCarte(cc, paths, rendreZoneExo);
+    + _encartCarte(cc, paths, rendreZoneExo) + _cadresEncarts(cc, paths);
   const legendItem = (col, label) => `<span style="display:inline-flex; align-items:center; gap:4px;"><span style="display:inline-block; width:10px; height:10px; background:${col}; border-radius:2px;"></span>${label}</span>`;
   const zoneWord = cc === 'FR' ? 'département' : 'région';
   // Persist l'etat ouvert/ferme du details entre les switchs d'especes (fleches).
@@ -12493,12 +12495,67 @@ function _ordonnerSelectionDevant(zones, selection){
 // qui n ont ni la meme forme ni le meme coin libre. Les Acores s etalent sur 600 km d ocean,
 // leur agrandissement reste donc modeste - x1,6, de 8 a 14 px pour la plus grande ile -
 // la ou Madere, ramassee, passe a x3,1 et 21 px.
+// Zones sorties de la carte principale et reposees dans un cadre, a droite, la ou il y a de
+// la place. Deux raisons de le faire :
+//   - la zone est trop loin : les Canaries a leur vraie place obligent a dezoomer l'Espagne
+//     au point que la metropole n'occupe plus qu'un coin ;
+//   - la zone est trop petite : Melilla fait 3 px de large, on ne la voit ni ne la clique.
+// Les codes listes ici ne sont PAS dessines sur la carte principale (cf. _codesEnEncart),
+// sinon ils y apparaitraient une seconde fois - ce que faisaient les Acores jusqu'ici.
 const _ENCART_CARTE = {
   FR: [{ titre: '', cadre: { x:820, y:4, w:176, h:164 },
          codes: ['FR-IDF-75C', 'FR-IDF-92', 'FR-IDF-93', 'FR-IDF-94'] }],
-  PT: [{ titre: 'Açores', cadre: { x:640, y:420, w:350, h:290 }, codes: ['PT-20'], coteACote: true },
-       { titre: 'Madère', cadre: { x:15, y:420, w:250, h:460 }, codes: ['PT-30'], coteACote: true }],
 };
+// Territoires que le GENERATEUR a deja sortis de la carte et reposes dans un coin (table
+// INSETS de simplify-regions-multi.mjs). Leur geometrie est donc deja a sa place : il ne
+// reste qu'a l'entourer d'un filet pointille et a la nommer, sinon rien ne dit que ce
+// morceau n'est ni a l'echelle ni a sa position reelle.
+//
+// L'app dessinait en plus sa propre copie agrandie des Acores et de Madere, qui se
+// retrouvaient donc deux fois sur la carte - une fois minuscules a l'endroit choisi par le
+// generateur, une fois grandes par-dessus.
+const _ZONES_ENCART = {
+  US: { 'US-AK': 'Alaska', 'US-HI': 'Hawaï' },
+  PT: { 'PT-20': 'Açores', 'PT-30': 'Madère' },
+  ES: { 'ES-CN': 'Canaries', 'ES-CE': 'Ceuta', 'ES-ML': 'Melilla' },
+  NZ: { 'NZ-CI': 'Chatham' },
+};
+// Filet pointille + nom autour de chaque territoire deporte, calcule sur sa propre boite.
+function _cadresEncarts(cc, paths){
+  const noms = _ZONES_ENCART[cc];
+  if(!noms || !paths || !paths.zones) return '';
+  let out = '';
+  for(const [code, nom] of Object.entries(noms)){
+    const z = paths.zones[code];
+    if(!z) continue;
+    const bb = _bboxChemins([z.path]);
+    if(!bb) continue;
+    const m = 10, x = bb.x0 - m, y = bb.y0 - m - 18, w = (bb.x1 - bb.x0) + m * 2,
+          h = (bb.y1 - bb.y0) + m * 2 + 18;
+    out += '<g pointer-events="none">'
+      + '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1)
+      + '" height="' + h.toFixed(1) + '" fill="none" stroke="var(--line-2, #cfd8d4)"'
+      + ' stroke-width="2" stroke-dasharray="7 6" rx="10" ry="10"/>'
+      + '<text x="' + (x + w / 2).toFixed(1) + '" y="' + (y + 15).toFixed(1) + '"'
+      + ' text-anchor="middle" font-size="17" font-weight="600" font-family="system-ui"'
+      + ' fill="var(--ink-3, #7b8884)">' + esc(nom) + '</text>'
+      + '</g>';
+  }
+  return out;
+}
+// `deplace` distingue deux usages du meme cadre :
+//   - une loupe : la petite couronne parisienne est agrandie mais reste aussi a sa place,
+//     sinon la carte de France aurait un trou autour de Paris ;
+//   - un deplacement : les Canaries, les Acores, Ceuta sont sorties de la carte. Elles ne
+//     doivent plus y figurer, sinon elles apparaissent deux fois - ce que faisaient les
+//     Acores et Madere jusqu'ici, minuscules a leur vraie place et grandes dans l'encart.
+function _codesEnEncart(cc){
+  const liste = _ENCART_CARTE[cc];
+  if(!Array.isArray(liste)) return null;
+  const s = new Set();
+  for(const cfg of liste) if(cfg.deplace) for(const z of cfg.codes) s.add(z);
+  return s.size ? s : null;
+}
 // Boite englobante d'une liste de chemins SVG. Les cartes du projet n'emploient que des
 // commandes M et L en coordonnees absolues, donc lire les nombres deux a deux suffit.
 function _bboxChemins(chemins){
@@ -12578,12 +12635,17 @@ function _unEncart(cfg, paths, rendre){
       + ' font-size="20" font-weight="600" font-family="system-ui" fill="var(--ink-2, #47534f)">'
       + esc(cfg.titre) + '</text>'
     : '';
+  // Un filet pointille gris dit que ce cadre n'est pas a l'echelle ni a sa place : sans lui,
+  // les Canaries posees a cote de l'Andalousie se lisent comme une region voisine.
+  const cadreSvg = '<rect x="' + c.x + '" y="' + c.y + '" width="' + c.w + '" height="' + c.h + '"'
+    + ' fill="none" stroke="var(--line-2, #cfd8d4)" stroke-width="2" stroke-dasharray="7 6"'
+    + ' rx="10" ry="10" pointer-events="none"/>';
   // Archipel trop etale pour un simple agrandissement : on repose ses iles cote a cote.
   if(cfg.coteACote && codes.length === 1){
     const boite = { x: c.x + marge, y: c.y + marge + bandeau,
                     w: c.w - marge * 2, h: c.h - marge * 2 - bandeau };
     const pose = _reposerIles(paths.zones[codes[0]].path, boite, 4);
-    if(pose) return '<g>' + titreSvg
+    if(pose) return '<g>' + cadreSvg + titreSvg
       + rendre(codes[0], pose.echelle, pose.d)
       + '</g>';
   }
@@ -12591,7 +12653,7 @@ function _unEncart(cfg, paths, rendre){
   const k = Math.min(dispoW / (bb.x1 - bb.x0), dispoH / (bb.y1 - bb.y0));
   const tx = c.x + marge + (dispoW - (bb.x1 - bb.x0) * k) / 2 - bb.x0 * k;
   const ty = c.y + marge + bandeau + (dispoH - (bb.y1 - bb.y0) * k) / 2 - bb.y0 * k;
-  return '<g>' + titreSvg
+  return '<g>' + cadreSvg + titreSvg
     + '<g transform="translate(' + tx.toFixed(2) + ',' + ty.toFixed(2) + ') scale(' + k.toFixed(3) + ')">'
       + codes.map(z => rendre(z, k)).join('')
     + '</g></g>';
@@ -12771,8 +12833,10 @@ async function _renderRarityMap(sci, cc){
     return _pathZone(dRemplace || paths.zones[z].path, fill, titre, selection.has(z), selection.size > 0,
       zonesSelectionnables.has(z) ? z : null, echelle);
   };
-  const svgZones = _ordonnerSelectionDevant(zones, selection).map(z => rendreZone(z, 1)).join('')
-    + _encartCarte(cc, paths, rendreZone);
+  const horsCarte = _codesEnEncart(cc);
+  const zonesCarte = horsCarte ? zones.filter(z => !horsCarte.has(z)) : zones;
+  const svgZones = _ordonnerSelectionDevant(zonesCarte, selection).map(z => rendreZone(z, 1)).join('')
+    + _encartCarte(cc, paths, rendreZone) + _cadresEncarts(cc, paths);
   // Les douze mois passent en colonne le long de la carte, chacun colore par SON propre
   // palier : la colonne se lit alors comme un calendrier de chances, et la bonne saison
   // saute aux yeux sans avoir a cliquer les mois un par un.
