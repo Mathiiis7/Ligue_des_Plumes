@@ -98,20 +98,11 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .auth-gate { position:fixed; inset:0; z-index:9000; display:flex; align-items:center; justify-content:center;
     background:linear-gradient(135deg, color-mix(in srgb, var(--accent) 20%, var(--surface)) 0%, var(--surface-2) 60%);
     overflow:hidden; padding:24px; box-sizing:border-box; }
-  .auth-gate-bg { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
-  .auth-bird { position:absolute; opacity:.22; animation:auth-float 18s ease-in-out infinite; user-select:none; pointer-events:none; object-fit:contain; mix-blend-mode:multiply; }
-  .auth-bird-1 { top:6%; left:8%; width:180px; height:180px; animation-delay:0s; }
-  .auth-bird-2 { top:16%; right:10%; width:150px; height:150px; animation-delay:-4s; }
-  .auth-bird-3 { bottom:14%; left:5%; width:200px; height:200px; animation-delay:-8s; }
-  .auth-bird-4 { bottom:8%; right:6%; width:170px; height:170px; animation-delay:-12s; }
-  @media (max-width:600px){
-    .auth-bird { opacity:.09; }
-    .auth-bird-1 { width:120px; height:120px; }
-    .auth-bird-2 { width:100px; height:100px; }
-    .auth-bird-3 { width:130px; height:130px; }
-    .auth-bird-4 { width:110px; height:110px; }
-  }
-  @keyframes auth-float { 0%,100% { transform:translateY(0) rotate(-3deg); } 50% { transform:translateY(-16px) rotate(4deg); } }
+  /* Le decor d oiseaux flottants de l ecran de connexion a ete retire le 26/09/2026 :
+     quatre PNG de 1500x1500 affiches a 200px au plus, 5,19 Mo au total, telecharges a
+     chaque visite meme connecte - un <img> dans un sous-arbre display:none est quand meme
+     recupere par le navigateur. Regles .auth-gate-bg / .auth-bird* et keyframes auth-float
+     supprimees avec lui. */
   .auth-gate-card { position:relative; background:var(--surface); border:1px solid var(--line-2); border-radius:22px;
     width:min(520px, 100%); padding:40px 38px; box-shadow:0 24px 60px rgba(0,0,0,.18);
     max-height:calc(100vh - 48px); overflow-y:auto; z-index:1; }
@@ -1906,6 +1897,9 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .pkdx-card.missing .pkdx-img { background:var(--line-2); }
   .pkdx-card.missing .pkdx-name { color:var(--ink-3); font-style:italic; }
   .pkdx-card.missing .pkdx-sci { visibility:hidden; }
-  .pkdx-card.missing .pkdx-tier { opacity:.4; filter:grayscale(.5); }
+  /* La puce exotique s efface comme la pastille de palier : sur une espece pas encore
+     cochee, les deux decrivent un oiseau qu on n a pas, elles doivent reculer ensemble. */
+  .pkdx-card.missing .pkdx-tier,
+  .pkdx-card.missing .pkdx-exo { opacity:.4; filter:grayscale(.5); }
   @media (max-width:600px){ .pkdx-grid { grid-template-columns:repeat(auto-fill, minmax(105px, 1fr)); gap:8px; } .pkdx-card { padding:6px 6px 8px; } }
 
