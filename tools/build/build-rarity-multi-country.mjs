@@ -18,7 +18,14 @@ import { dirname, join } from 'node:path';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 
-const COUNTRIES = ['FR', 'ES', 'IT', 'GB', 'PT', 'CH', 'NO', 'GR', 'IS', 'LK', 'NA', 'AU', 'NZ', 'US', 'CA'];
+// Ajout du 2026-09-26 : toute l'Europe. Le Vatican, Monaco, Saint-Marin, le Liechtenstein
+// et Andorre sont ecartes - de 46 a 178 especes chacun, pour des pays de 2 a 470 km2, ca
+// ne fait pas un birdydex. Ecartes aussi les niveaux de zones trop fins pour etre lisibles,
+// mais ca se regle dans REGIONS, pas ici : leur donnee nationale reste complete.
+const COUNTRIES = ['FR', 'ES', 'IT', 'GB', 'PT', 'CH', 'NO', 'GR', 'IS', 'LK', 'NA', 'AU', 'NZ', 'US', 'CA',
+  'AL', 'AT', 'BA', 'BE', 'BG', 'BY', 'CY', 'CZ', 'DE', 'DK', 'EE', 'FI', 'FO', 'GG', 'GI',
+  'HR', 'HU', 'IE', 'IM', 'JE', 'LT', 'LU', 'LV', 'MD', 'MK', 'MT', 'NL', 'PL', 'RO', 'RS',
+  'RU', 'SE', 'SI', 'SJ', 'SK', 'UA', 'XK'];
 
 // La France est passee sur ce generateur le 2026-09-23. Elle dependait jusque-la de
 // build-rarity-ebird.mjs, devenu obsolete : il lisait FR_NAMES depuis index.html (la table
