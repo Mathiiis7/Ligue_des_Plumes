@@ -1382,6 +1382,7 @@ function _openCountryPicker(currentCode, opts = {}){
     const cleanup = () => {
       backdrop.remove();
       document.removeEventListener('keydown', escHandler);
+      clearTimeout(minuteurSurvol);   // pas de prechargement declenche apres fermeture
     };
     const escHandler = e => { if(e.key === 'Escape'){ cleanup(); resolve(null); } };
     document.addEventListener('keydown', escHandler);
@@ -1390,6 +1391,28 @@ function _openCountryPicker(currentCode, opts = {}){
     });
     closeBtn.addEventListener('click', () => { cleanup(); resolve(null); });
     searchEl.addEventListener('input', () => render(searchEl.value));
+    // Precharge les frequences regionales d'un pays avant qu'on le clique. Elles pesent
+    // 2,6 Mo pour la France : les demander au survol laisse le temps du trajet souris-clic,
+    // souvent assez pour que la liste des zones s'affiche deja remplie.
+    // opts.precharger ne doit rien appliquer, juste charger - sinon survoler changerait
+    // le pays courant. La memoisation est faite par l'appelant (_freqDataPromises), un
+    // second appel ne coute rien.
+    const dejaDemande = new Set();
+    let minuteurSurvol = null;
+    const precharger = (cc) => {
+      if(!cc || dejaDemande.has(cc) || typeof opts.precharger !== 'function') return;
+      dejaDemande.add(cc);
+      try { Promise.resolve(opts.precharger(cc)).catch(() => {}); } catch(_) {}
+    };
+    precharger(ccCourant);
+    listEl.addEventListener('mouseover', e => {
+      const it = e.target.closest('.cp-item');
+      if(!it || !it.dataset.cc) return;
+      // Un delai court : sans lui, faire defiler la liste declencherait les 53 pays.
+      clearTimeout(minuteurSurvol);
+      const cc = it.dataset.cc;
+      minuteurSurvol = setTimeout(() => precharger(cc), 120);
+    });
     const tabsEl = backdrop.querySelector('.cp-tabs');
     if(tabsEl) tabsEl.addEventListener('click', e => {
       const t = e.target.closest('.cp-tab');
@@ -13302,6 +13325,7 @@ function _renderSpeciesRarityCard(key){
       sci: k,
       zones: (cc2) => buildRegPanel(cc2),
       onPays: async (cc2) => { applyCountryChange(cc2); await loadRegionalDataFor(cc2); },
+      precharger: (cc2) => loadRegionalDataFor(cc2),
       motZone: (cc2) => cc2 === 'FR' ? 'Départements' : 'Régions',
       onglet,
     });
@@ -16340,6 +16364,7 @@ function renderPokedex(){
         const res = await _openCountryPicker(_pkdxFilters.country || 'FR', {
           zones: (cc2) => _pkdxLignesZones(cc2),
           onPays: async (cc2) => { appliquerPays(cc2); try{ await _loadFreqDataForCountry(cc2); }catch(_){} },
+          precharger: (cc2) => _loadFreqDataForCountry(cc2),
           motZone: (cc2) => cc2 === 'FR' ? 'Départements' : 'Régions',
         });
         if(!res || res.type !== 'zone') return;
