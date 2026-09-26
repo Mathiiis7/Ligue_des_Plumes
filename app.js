@@ -1420,6 +1420,26 @@ function exoticCategoryInCountry(sci, country){
   }
   return '';
 }
+// Une meme espece porte souvent plusieurs statuts dans un pays : le Cygne tubercule est N
+// dans certains Etats americains, P dans d'autres et X ailleurs. Le tag national n'en retient
+// qu'un seul, et jusqu'ici la carte par zone etait le seul endroit ou l'on voyait le reste.
+// Renvoie donc toutes les lettres presentes dans le pays, ordre N / P / X / C.
+//
+// Ne se declenche que si exoticCategoryInCountry a deja conclu "exotique" : l'override qui
+// annule un X ou P trompeur (espece sauvage ailleurs dans le pays) doit rester maitre, sinon
+// les lettres supprimees reviendraient par la porte des zones.
+const _ORDRE_CAT_EXO = ['N', 'P', 'X', 'C'];
+function exoticCategoriesInCountry(sci, country){
+  const principale = exoticCategoryInCountry(sci, country);
+  if(!principale) return [];
+  const cc = country || 'FR';
+  const parZone = (typeof _exoticStatusByZone === 'function') ? _exoticStatusByZone(cc) : null;
+  if(!parZone) return [principale];
+  const k = (sci || '').trim().toLowerCase();
+  const vues = new Set([principale]);
+  for(const byZone of Object.values(parZone)){ const c = byZone[k]; if(c) vues.add(c); }
+  return _ORDRE_CAT_EXO.filter(c => vues.has(c));
+}
 // Depuis migration S&T (26/08/2026) : rarityReal renvoie le tier apres merge S&T+bar chart
 // (via _tierFromSTvsBarChart) pour rester coherent avec le tier affiche sur les fiches.
 // Anciennement : REAL_RARITY[k] || 1 pur bar chart.
@@ -15602,13 +15622,19 @@ function _pkdxRender(){
     // dit d'ou il sort. Les faire s'exclure obligeait a choisir laquelle perdre.
     const badgeText = vue.tier;
     const fondBadge = tierBg;
+    // La puce liste tous les statuts du pays, pas seulement celui qu'eBird a retenu au
+    // national : "N/P/X" previent qu'il y a ici des populations etablies, des presences
+    // provisoires et des echappes isoles, et que le statut du coin depend de la region.
+    const catsZones = cat ? exoticCategoriesInCountry(r.sci, country) : [];
+    const cats = cat ? (catsZones.length ? catsZones : [cat]) : [];
+    const exoLbl = cats.map(c => `${EXOTIC_CATEGORY_LABEL[c] || 'Exotique ' + c} (${c})`).join(' · ');
     // Absente de la zone choisie : la case reste, en retrait. La masquer ferait croire que
     // l'espece n'existe pas, alors qu'elle est seulement ailleurs.
     return `<div class="pkdx-card${r.owned?'':' missing'}" data-sci="${esc(r.sci)}">
       <span class="pkdx-num">#${num}</span>
       ${r.saison ? `<span class="pkdx-saison" data-tip="Espèce nettement saisonnière : son pic mensuel vaut au moins 3 fois sa moyenne annuelle. Viser le bon mois change tout.">◑</span>` : ''}
-      ${cat ? `<span class="pkdx-exo" data-tip="${esc(EXOTIC_CATEGORY_LABEL[cat] || ('Exotique ' + cat))} (${cat})">${cat}</span>` : ''}
-      <span class="pkdx-tier" style="background:${fondBadge};" data-tip="${cat ? esc(EXOTIC_CATEGORY_LABEL[cat] || 'Exotique ' + cat) : 'Palier ' + vue.tier}${vue.absente ? ' · jamais notée ici' : ''}">${badgeText}</span>
+      ${cats.length ? `<span class="pkdx-exo" data-tip="${esc(exoLbl)}${cats.length > 1 ? ' — le statut change selon la région' : ''}">${cats.join('/')}</span>` : ''}
+      <span class="pkdx-tier" style="background:${fondBadge};" data-tip="${cats.length ? esc(exoLbl) : 'Palier ' + vue.tier}${vue.absente ? ' · jamais notée ici' : ''}">${badgeText}</span>
       <div class="pkdx-img" data-pkdx-lazy="${esc(r.sci)}">${r.owned ? '🐦' : ''}</div>
       <div class="pkdx-name">${esc(r.nm)}</div>
       <div class="pkdx-sci">${esc(r.sci)}</div>
