@@ -12901,7 +12901,7 @@ function _renderSpeciesRarityCard(key){
     // Les deux doivent dire la meme chose, sans quoi la carte colore un departement en vert
     // pendant que la liste le donne rouge juste en dessous.
     const mm = window._smRarityMapMonth;
-    const moisLu = (typeof mm === number && mm >= 0 && mm <= 11) ? mm : null;
+    const moisLu = (typeof mm === 'number' && mm >= 0 && mm <= 11) ? mm : null;
     const scored = regList.map(r => {
       const serie = freqByReg[r.code] && freqByReg[r.code][k];
       const score = moisLu == null ? _valeurAnnuelleZone(serie, cc, r.code)
