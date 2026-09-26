@@ -1331,12 +1331,16 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .tier-chip, .rar-chip[data-tier], .rar-chip[data-rar], .rar-chip[data-cat] {
     width:44px; height:44px; min-width:0; margin:-11px; transform:scale(.5);
     border-radius:12px; font-size:24px; padding:0 0 2px; }
-  /* Une pastille qui groupe deux categories (« X / P ») ne tient pas dans le carre : elle
-     reprend la forme de gelule de « Tout » et « Vide », sans la boite doublee - le truc des
-     marges negatives suppose une largeur fixe. Sur une gelule large, le pixel d'arrondi ne
-     se voit pas. */
-  .rar-chip.cat-multi { width:auto; min-width:0; height:22px; margin:0; transform:none;
-    border-radius:6px; font-size:12px; padding:0 7px 1px; }
+  /* Les deux filtres de statut exotique prennent le jeton rond du birdydex : ils ne
+     designent pas un palier de l'echelle mais d'ou sort l'oiseau, et la forme le dit avant
+     la lecture. Pas de boite doublee ici - le truc des marges negatives suppose une largeur
+     fixe, et sur un disque de 26 px le pixel d'arrondi ne se voit pas. */
+  .rar-chip[data-cat] { width:26px; min-width:26px; height:26px; margin:0; transform:none;
+    padding:0; border-radius:50%; font:800 11px/1 system-ui; }
+  /* « X/P » tient a 26 px en descendant d'un cran et demi. */
+  .rar-chip.cat-multi { font-size:9.5px; }
+  /* Coche : meme ombre portee que la pastille du birdydex, au lieu du filet du repos. */
+  .rar-chip[data-cat].on { box-shadow:0 1px 3px rgba(0,0,0,.3); }
   .rar-chip { cursor:pointer; box-shadow:inset 0 0 0 1px var(--line-2); }
   .rar-chip:hover { filter:brightness(0.97); }
   .rar-chip.on, .tier-chip { color:#fff; box-shadow:none; }
@@ -1880,10 +1884,12 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
      remplacent pas. Gris neutre, pour ne pas concurrencer la couleur du palier. */
   /* Gris plein, encre blanche : sur une carte manquante, dont la vignette est deja grise
      claire, un fond clair rendait la lettre illisible. Le gris tient sur les deux fonds.
-     Bords entierement arrondis comme le repere saisonnier d en face, et top:30px et non 24
-     parce que la pastille de palier descend jusqu a 26px - les deux se chevauchaient de
-     2px. 30 laisse le meme filet de 4px que celui menageant le numero. */
-  .pkdx-card .pkdx-exo { position:absolute; top:30px; right:8px; font:700 9.5px/1 system-ui;
+     Bords entierement arrondis comme le repere saisonnier d en face.
+     Posee a GAUCHE de la pastille de palier et non dessous : sous elle, elle mordait sur la
+     photo - le cou du Cygne tubercule disparaissait derriere un « N/P/X ». En haut, elle
+     reste dans la bande deja occupee par le numero et la pastille. right:30px = les 6px de
+     la pastille + ses 20px + 4px de filet ; top:8px la centre sur elle. */
+  .pkdx-card .pkdx-exo { position:absolute; top:8px; right:30px; font:700 9.5px/1 system-ui;
     color:#fff; background:#7e8a99; border-radius:999px; min-width:16px;
     height:16px; padding:0 5px; display:grid; place-items:center;
     z-index:2; cursor:help; }
@@ -1901,5 +1907,12 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
      cochee, les deux decrivent un oiseau qu on n a pas, elles doivent reculer ensemble. */
   .pkdx-card.missing .pkdx-tier,
   .pkdx-card.missing .pkdx-exo { opacity:.4; filter:grayscale(.5); }
-  @media (max-width:600px){ .pkdx-grid { grid-template-columns:repeat(auto-fill, minmax(105px, 1fr)); gap:8px; } .pkdx-card { padding:6px 6px 8px; } }
+  @media (max-width:600px){ .pkdx-grid { grid-template-columns:repeat(auto-fill, minmax(105px, 1fr)); gap:8px; } .pkdx-card { padding:6px 6px 8px; }
+    /* Sur une carte de 105 px, un « N/P/X » en taille bureau mordait sur le numero d espece
+       de 7 px. Reduit juste assez pour que les deux respirent ; top:9 le recentre sur la
+       pastille de palier, qui ne change pas de taille, elle. */
+    .pkdx-card .pkdx-exo { font-size:8px; padding:0 3px; min-width:14px; height:14px; top:9px; }
+    /* Et le numero rend 4 px de son rembourrage : sans ca les deux se touchaient encore,
+       a 0,3 px pres, sur la plus etroite des cartes. */
+    .pkdx-card .pkdx-num { padding:1px 4px; } }
 

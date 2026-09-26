@@ -15538,13 +15538,17 @@ function _pkdxRender(){
       // pour signaler "filtre applique". Coherent avec les tier chips.
       const bgStyle = on ? `background:#7e8a99;color:#fff;` : '';
       const cls = 'rar-chip' + (on ? ' on' : '') + (g.length > 1 ? ' cat-multi' : '');
-      return `<button type="button" class="${cls}" data-cat="${g.join(',')}" style="${bgStyle}" title="${esc(g.map(c => CAT_LABEL[c]).join(' / '))}">${g.join(' / ')}</button>`;
+      // Sans espaces autour de la barre : ces deux jetons sont devenus ronds, et « X / P »
+      // n'y tenait pas. Le libelle complet reste dans l'infobulle.
+      return `<button type="button" class="${cls}" data-cat="${g.join(',')}" style="${bgStyle}" title="${esc(g.map(c => CAT_LABEL[c]).join(' / '))}">${g.join('/')}</button>`;
     }).join('');
     chipsBox.innerHTML = '<span style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; align-self:center; margin-right:6px;">Rareté</span>'
       + chipsHtml
-      + catChipsHtml
       + '<button type="button" class="rar-chip" data-tier-all title="Cocher toutes les raretés">Tout</button>'
-      + '<button type="button" class="rar-chip" data-tier-none title="Décocher toutes les raretés">Vide</button>';
+      + '<button type="button" class="rar-chip" data-tier-none title="Décocher toutes les raretés">Vide</button>'
+      // Rejetes tout a droite : ils ne filtrent pas un palier mais un statut, et melanges
+      // a la suite des chiffres ils se lisaient comme la fin de l'echelle.
+      + catChipsHtml;
   }
   // Compteur : X vues / Y filtrees / Z total FR.
   // Le denominateur ne compte que les cases reellement affichables : les accidentelles
