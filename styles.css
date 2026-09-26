@@ -1883,7 +1883,7 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   /* Repere des especes nettement saisonnieres : pic mensuel >= 3x la moyenne annuelle. Le
      tier repose sur l annuel et ne le dit pas, alors qu il suffit souvent de viser le bon
      mois. Pose sous le numero, a gauche, pour ne pas concurrencer la pastille de tier. */
-  .pkdx-card .pkdx-saison { position:absolute; top:24px; left:8px; font-size:11px; line-height:1;
+  .pkdx-card .pkdx-saison { position:absolute; top:24px; left:11px; font-size:11px; line-height:1;
     color:var(--ink-3); background:var(--surface); border-radius:50%; width:16px; height:16px;
     display:grid; place-items:center; cursor:help; }
   /* Statut exotique, sous la pastille de palier et du meme cote. Le palier dit la difficulte

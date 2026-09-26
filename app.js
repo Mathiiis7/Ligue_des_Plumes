@@ -356,6 +356,39 @@ const EFFORT_MENSUEL_PAR_PAYS = {"FR":[0.06767,0.06821,0.08632,0.11993,0.13197,0
 // invisible en pratique et fragile — il se calcule sur des frequences de quelques
 // centiemes de pourcent, ou une observation isolee suffit a tripler le rapport.
 const _PIC_MINI_SAISON = 0.005;
+// Espece nettement saisonniere. Deux criteres, dont un seul suffit.
+//
+// Le rapport pic / moyenne annuelle, seul, ratait les migrateurs les plus evidents : mesure
+// sur 19 temoins francais le 2026-09-26, il en manquait 13 - Hirondelle rustique, Martinet
+// noir, Loriot, Milan noir, Tourterelle des bois, Huppe fasciee... La raison est mecanique :
+// un oiseau present six mois pleins a un pic qui vaut deux fois sa moyenne, pas trois, et la
+// moyenne est ponderee par l'effort d'observation, lui-meme maximal au printemps - donc
+// justement quand ces oiseaux sont la. Le rapport s'ecrase.
+//
+// D'ou le second critere : meilleur semestre glissant contre pire semestre. Il mesure
+// l'absence plutot que la pointe, et separe net - Loriot 2097, Martinet noir 254, Milan noir
+// 49, contre Mesange charbonniere 1,4, Pie bavarde 1,3, Buse variable 1,2.
+//
+// Les deux ensemble prennent 19 migrateurs sur 19 et aucun des 6 sedentaires ni des 3
+// migrateurs partiels temoins. Le rapport pic/moyenne reste utile pour le seul cas que le
+// semestre rate, le Balbuzard pecheur (2,7 au semestre, 4,1 au pic) : sa saison est large
+// mais son passage reste marque.
+function _rapportSemestriel(m12){
+  let meilleur = 0, pire = Infinity;
+  for(let d = 0; d < 12; d++){
+    let s = 0;
+    for(let k = 0; k < 6; k++) s += m12[(d + k) % 12] || 0;
+    if(s > meilleur) meilleur = s;
+    if(s < pire) pire = s;
+  }
+  return pire > 0 ? meilleur / pire : (meilleur > 0 ? Infinity : 0);
+}
+function _estSaisonniere(m12, moyenneAnnuelle){
+  if(!Array.isArray(m12) || m12.length !== 12 || !(moyenneAnnuelle > 0)) return false;
+  const pic = Math.max(...m12);
+  if(pic < _PIC_MINI_SAISON) return false;
+  return _rapportSemestriel(m12) >= 3 || pic / moyenneAnnuelle >= 3;
+}
 const _ANNUAL_THR = [[0.24,1],[0.12,2],[0.06,3],[0.03,4],[0.015,5],[0.0075,6],[0.002,7],[0.0005,8],[0.0001,9]];
 const _tierFromThresholds = (v, thr) => { if(!(v > 0)) return 10; for(const [lim, t] of thr) if(v >= lim) return t; return 10; };
 const annualFreqToTier = v => _tierFromThresholds(v, _ANNUAL_THR);
@@ -12133,7 +12166,7 @@ function _renderSpeciesRarityCard(key){
         if(annuel > 0 && moisPic >= 0 && pic >= _PIC_MINI_SAISON && pic / annuel >= 2){
           noteSaison = `<div style="font-size:10.5px;color:var(--ink-2);margin-top:5px;line-height:1.4;">`
             + `${pct(annuel)} sur l'année, mais <b>${pct(pic)} en ${_MOIS_COURTS[moisPic]}</b>, sa meilleure période.`
-            + (pic / annuel >= 3 ? ` Espèce nettement saisonnière : viser le bon mois change tout.` : '')
+            + (_estSaisonniere(m12Pays, annuel) ? ` Espèce nettement saisonnière : viser le bon mois change tout.` : '')
             + `</div>`;
         }
       }
@@ -15443,8 +15476,7 @@ function _pkdxRender(){
         const m = (regPkdx && regPkdx.monthly) ? regPkdx.monthly()[sci] : null;
         if(Array.isArray(m) && m.length === 12){
           val = _valeurAnnuelleZone(m, country);
-          const p = Math.max(...m);
-          saison = val > 0 && p >= _PIC_MINI_SAISON && p / val >= 3;
+          saison = _estSaisonniere(m, val);
         }
       }
       // Categorie exotique pour ce pays (N/P/X/C ou '') utilisee par les filtres N/P/X.
