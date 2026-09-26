@@ -12317,7 +12317,7 @@ async function _renderExoticMap(sci, cc){
              : `Sauvage en ${(COUNTRIES_REG[cc] && COUNTRIES_REG[cc].name) || cc}, exotique dans ${nZonesTaggees} ${zoneWord}${nZonesTaggees > 1 ? 's' : ''} (eBird)`}
       </summary>
       <div class="sm-fold-corps">
-        <svg viewBox="${paths.viewBox}" style="width:100%; max-width:320px; height:auto; display:block; margin:0 auto;" role="img" aria-label="Statut exotique par ${zoneWord}">
+        <svg viewBox="${_viewBoxAvecEncarts(cc, paths.viewBox)}" style="width:100%; max-width:320px; height:auto; display:block; margin:0 auto;" role="img" aria-label="Statut exotique par ${zoneWord}">
           ${svgZones}
         </svg>
         <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; font-size:11px; color:var(--ink-2); justify-content:center;">
@@ -12391,7 +12391,7 @@ function _ordonnerSelectionDevant(zones, selection){
 // Les codes listes ici ne sont PAS dessines sur la carte principale (cf. _codesEnEncart),
 // sinon ils y apparaitraient une seconde fois - ce que faisaient les Acores jusqu'ici.
 const _ENCART_CARTE = {
-  FR: [{ titre: 'Petite couronne', cadre: { x:838, y:34, w:158, h:150 },
+  FR: [{ titre: 'Petite couronne', cadre: { x:1016, y:120, w:162, h:152 },
          codes: ['FR-IDF-75C', 'FR-IDF-92', 'FR-IDF-93', 'FR-IDF-94'] }],
 };
 // Territoires que le GENERATEUR a deja sortis de la carte et reposes dans un coin (table
@@ -12423,10 +12423,12 @@ function _cadresEncarts(cc, paths){
     // fond de la couleur de la carte interrompt les pointilles, et le texte s'y loge.
     // Pose a l'interieur du cadre, il flottait au-dessus du territoire et se lisait comme
     // une etiquette de zone ; et a 17 px dans un viewBox de 1000 il faisait 8 px a l'ecran.
-    const m = 12, CORPS = 27;
+    const m = 12;
     const x = bb.x0 - m, y = bb.y0 - m, w = (bb.x1 - bb.x0) + m * 2, h = (bb.y1 - bb.y0) + m * 2;
     // Largeur approchee du texte : pas de mesure possible en SVG pur, 0,56 em par caractere
-    // convient pour du system-ui en demi-gras.
+    // convient pour du system-ui en demi-gras. Le corps se reduit si le nom deborderait du
+    // cadre, sinon « Petite couronne » sortait du viewBox et s'affichait coupe.
+    const CORPS = Math.max(15, Math.min(27, (w - 20) / (nom.length * 0.56)));
     const lw = nom.length * CORPS * 0.56 + 16;
     const lx = x + 16;
     out += '<g pointer-events="none">'
@@ -12436,7 +12438,7 @@ function _cadresEncarts(cc, paths){
       + '<rect x="' + lx.toFixed(1) + '" y="' + (y - CORPS * 0.62).toFixed(1) + '" width="' + lw.toFixed(1)
       + '" height="' + (CORPS * 1.2).toFixed(1) + '" rx="7" ry="7" fill="var(--surface, #fff)"/>'
       + '<text x="' + (lx + 8).toFixed(1) + '" y="' + (y + CORPS * 0.3).toFixed(1) + '"'
-      + ' font-size="' + CORPS + '" font-weight="700" font-family="system-ui"'
+      + ' style="user-select:none" font-size="' + CORPS + '" font-weight="700" font-family="system-ui"'
       + ' fill="var(--ink-2, #47534f)">' + esc(nom) + '</text>'
       + '</g>';
   }
@@ -12448,6 +12450,19 @@ function _cadresEncarts(cc, paths){
 //   - un deplacement : les Canaries, les Acores, Ceuta sont sorties de la carte. Elles ne
 //     doivent plus y figurer, sinon elles apparaissent deux fois - ce que faisaient les
 //     Acores et Madere jusqu'ici, minuscules a leur vraie place et grandes dans l'encart.
+// Un encart pose par l app peut sortir du cadre du pays. La France occupe tout son
+// viewBox - 0 a 1000 en largeur, 0 a 900 en hauteur - et son coin haut-droit est l Ardenne,
+// pas de la mer : poser l encart dedans le faisait chevaucher le territoire. On elargit
+// donc le cadre a droite, ce qui rapetissit un peu la carte mais degage une colonne libre.
+function _viewBoxAvecEncarts(cc, viewBox){
+  const liste = _ENCART_CARTE[cc];
+  if(!Array.isArray(liste) || !viewBox) return viewBox;
+  const p = String(viewBox).trim().split(/s+/).map(Number);
+  if(p.length !== 4 || p.some(v => !isFinite(v))) return viewBox;
+  let droite = p[0] + p[2];
+  for(const cfg of liste) if(cfg.cadre) droite = Math.max(droite, cfg.cadre.x + cfg.cadre.w + 14);
+  return p[0] + " " + p[1] + " " + Math.round(droite - p[0]) + " " + p[3];
+}
 function _codesEnEncart(cc){
   const liste = _ENCART_CARTE[cc];
   if(!Array.isArray(liste)) return null;
@@ -12534,11 +12549,11 @@ function _unEncart(cfg, paths, rendre){
   // flotter a l'interieur au-dessus de la carte.
   const CORPS = 27;
   const titreSvg = cfg.titre
-    ? '<rect x="' + (c.x + 16) + '" y="' + (c.y - CORPS * 0.62).toFixed(1) + '" width="'
+    ? '<g pointer-events="none"><rect x="' + (c.x + 16) + '" y="' + (c.y - CORPS * 0.62).toFixed(1) + '" width="'
       + (cfg.titre.length * CORPS * 0.56 + 16).toFixed(1) + '" height="' + (CORPS * 1.2).toFixed(1)
       + '" rx="7" ry="7" fill="var(--surface, #fff)"/>'
       + '<text x="' + (c.x + 24) + '" y="' + (c.y + CORPS * 0.3).toFixed(1) + '"'
-      + ' font-size="' + CORPS + '" font-weight="700" font-family="system-ui"'
+      + ' style="user-select:none" font-size="' + CORPS + '" font-weight="700" font-family="system-ui"'
       + ' fill="var(--ink-2, #47534f)">' + esc(cfg.titre) + '</text>'
     : '';
   // Un filet pointille gris dit que ce cadre n'est pas a l'echelle ni a sa place : sans lui,
@@ -12805,7 +12820,7 @@ async function _renderRarityMap(sci, cc){
                  que la colonne peut afficher 10 dans un Etat ou il ne passe pas. -->
             <div style="font:700 8.5px/1.3 system-ui; letter-spacing:.4px; text-transform:uppercase; color:var(--ink-3); margin-bottom:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" data-tip="${esc(nomPort)}">${esc(nomPort)}</div>
             ${moisBtns}</div>
-          <div style="flex:1 1 auto; min-width:0;"><svg viewBox="${paths.viewBox}" style="width:100%; max-width:320px; height:auto; display:block; margin:0 auto;" role="img" aria-label="Rareté par ${zoneWord} sur ${libellePeriode}">
+          <div style="flex:1 1 auto; min-width:0;"><svg viewBox="${_viewBoxAvecEncarts(cc, paths.viewBox)}" style="width:100%; max-width:320px; height:auto; display:block; margin:0 auto;" role="img" aria-label="Rareté par ${zoneWord} sur ${libellePeriode}">
             ${svgZones}
           </svg></div>
           <!-- Colonne fantome de la largeur du selecteur de mois : sans elle, la carte se
