@@ -13079,6 +13079,19 @@ function _restoreSmScroll(scrollEl, target){
 }
 function openSpeciesModal(sci){
   if(!sci) return;
+  // Invariant : une zone appartient toujours au pays affiche. Le pays et la zone sont poses
+  // par plusieurs chemins - heritage du birdydex, selecteur de la fiche, restauration depuis
+  // localStorage au demarrage - et chacun ne connait que sa moitie. Il suffit que deux
+  // d'entre eux se succedent pour laisser une region italienne sous un drapeau britannique.
+  // On le verifie donc ici, le seul passage oblige.
+  if(_speciesRegion){
+    const cc = _speciesCountry || _globalCountry || 'FR';
+    const zones = (typeof zonesFichePourPays === 'function') ? zonesFichePourPays(cc) : [];
+    if(!zones.some(r => r.code === _speciesRegion)){
+      _speciesRegion = '';
+      try{ localStorage.setItem('mb-species-region', ''); }catch(_){}
+    }
+  }
   // Preserve la position de scroll quand on navigue entre fiches (‹ ›) : sinon
   // le contenu re-rendu remet la sm-scroll a 0. On restore juste apres l'update DOM sync.
   const _modalEl = document.getElementById('speciesModal');
