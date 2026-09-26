@@ -7210,7 +7210,7 @@ async function _loadFreq48(cc){
   if(_freq48Promises[cc]) return _freq48Promises[cc];
   _freq48Promises[cc] = (async () => {
     try{
-      const data = await fetch('data/countries/' + cc.toLowerCase() + '/freq_48.json?v=20260923').then(r => r.ok ? r.json() : null);
+      const data = await fetch('data/countries/' + cc.toLowerCase() + '/freq_48.json?v=20260926').then(r => r.ok ? r.json() : null);
       if(data) REAL_FREQ_48_MULTI[cc] = data;
     }catch(err){
       console.warn('Erreur load freq_48_' + cc + ' :', err.message);
@@ -7249,11 +7249,11 @@ async function _loadFreq48Zone(cc, zone){
     try{
       const base = 'data/countries/' + cc.toLowerCase() + '/';
       if(!_freq48ZoneIndex[cc]){
-        const idx = await fetch(base + 'freq48_index.json?v=20260924').then(r => r.ok ? r.json() : null);
+        const idx = await fetch(base + 'freq48_index.json?v=20260926').then(r => r.ok ? r.json() : null);
         if(!Array.isArray(idx)) return;      // sans index, le fichier de zone est illisible
         _freq48ZoneIndex[cc] = idx;
       }
-      const brut = await fetch(base + 'freq48/' + zone + '.json?v=20260924').then(r => r.ok ? r.json() : null);
+      const brut = await fetch(base + 'freq48/' + zone + '.json?v=20260926').then(r => r.ok ? r.json() : null);
       if(!brut) return;
       const idx = _freq48ZoneIndex[cc];
       const out = {};
@@ -7273,7 +7273,7 @@ async function _loadFreq48Zone(cc, zone){
 
 async function _loadFreqDataForCountry(cc){
   if(_freqDataPromises[cc]) return _freqDataPromises[cc];
-  const filename = 'data/countries/' + cc.toLowerCase() + '/freq_by_region.json?v=20260830';
+  const filename = 'data/countries/' + cc.toLowerCase() + '/freq_by_region.json?v=20260926';
   _freqDataPromises[cc] = (async () => {
     try{
       const data = await fetch(filename).then(r => r.ok ? r.json() : null);
