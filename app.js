@@ -12525,7 +12525,7 @@ function _cadresEncarts(cc, paths){
       + '" height="' + h.toFixed(1) + '" fill="none" stroke="var(--line-2, #cfd8d4)"'
       + ' stroke-width="2.5" stroke-dasharray="8 7" rx="12" ry="12"/>'
       + '<rect x="' + lx.toFixed(1) + '" y="' + (y - CORPS * 0.62).toFixed(1) + '" width="' + lw.toFixed(1)
-      + '" height="' + (CORPS * 1.2).toFixed(1) + '" fill="var(--surface, #fff)"/>'
+      + '" height="' + (CORPS * 1.2).toFixed(1) + '" rx="7" ry="7" fill="var(--surface, #fff)"/>'
       + '<text x="' + (lx + 8).toFixed(1) + '" y="' + (y + CORPS * 0.3).toFixed(1) + '"'
       + ' font-size="' + CORPS + '" font-weight="700" font-family="system-ui"'
       + ' fill="var(--ink-2, #47534f)">' + esc(nom) + '</text>'

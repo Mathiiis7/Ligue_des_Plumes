@@ -328,8 +328,8 @@ const CLIP_LON = {
 const INSETS = {
   US: { 'US-AK': [10, 600, 260, 260], 'US-HI': [285, 720, 170, 145] },
   PT: { 'PT-20': [650, 80, 330, 190], 'PT-30': [650, 310, 330, 110] },
-  ES: { 'ES-CN': [650, 600, 330, 170],
-        'ES-CE': [680, 800, 90, 62], 'ES-ML': [830, 800, 90, 62] },
+  ES: { 'ES-CN': [650, 575, 330, 160],
+        'ES-CE': [672, 800, 92, 64], 'ES-ML': [868, 800, 92, 64] },
   NZ: { 'NZ-CI': [780, 20, 200, 160] },
 };
 
@@ -543,6 +543,17 @@ function buildCountry(features, cc){
   //    quelle que soit la taille (0.008 deg pour la France ~ span 11 deg).
   const span = Math.max(mainBbox.maxLon - mainBbox.minLon, mainBbox.maxLat - mainBbox.minLat);
   const tol = Math.max(0.004, span * 0.0007);
+  // Un encart est projete dans SA propre boite, a son propre grossissement : lui appliquer
+  // la tolerance du pays entier revient a le simplifier des dizaines de fois trop fort.
+  // Ceuta fait 0,05 degre de large et la tolerance espagnole vaut 0,0095 : il n en restait
+  // qu un triangle. Chaque encart recoit donc la tolerance de sa propre etendue.
+  const tolDe = (code) => {
+    if(!insetCfg[code]) return tol;
+    const b = bboxOf([byCode[code]]);
+    if(!b) return tol;
+    const s = Math.max(b.maxLon - b.minLon, b.maxLat - b.minLat);
+    return Math.max(0.00015, s * 0.0007);
+  };
 
   const out = {};
   for(const code of codes){
@@ -551,7 +562,7 @@ function buildCountry(features, cc){
     for(const ring of byCode[code]){
       // Ignore les micro-ilots : sous 6 points apres simplification ils n'apportent rien
       // mais gonflent le fichier (l'Alaska a ~2000 anneaux d'iles).
-      const simplified = douglasPeucker(ring, tol);
+      const simplified = douglasPeucker(ring, tolDe(code));
       if(simplified.length < 4) continue;
       const proj = simplified.map(project);
       paths.push('M' + proj.map(([x,y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' L') + ' Z');
