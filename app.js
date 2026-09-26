@@ -4313,6 +4313,21 @@ function zonesFichePourPays(cc){
   if(cc === 'FR') return FR_DEPARTEMENTS;
   return (typeof REGIONS_BY_COUNTRY === 'object' && REGIONS_BY_COUNTRY[cc]) || [];
 }
+// Nom francais d une zone. Les contours SVG portent leur propre nom, celui que Natural
+// Earth donne - en anglais pour la Russie et la Finlande, translittere du bielorusse, ou
+// a la forme adjectivale pour la Croatie. Les infobulles des cartes s en servaient, si
+// bien qu une zone pouvait s appeler « Vitebsk » dans le selecteur et « Vicebskaja
+// voblasc' » sur la carte. La liste des zones fait foi ; le nom du contour ne sert plus
+// que de secours.
+const _nomsZonesCache = {};
+function nomZone(cc, code, secours){
+  let t = _nomsZonesCache[cc];
+  if(!t){
+    t = _nomsZonesCache[cc] = {};
+    for(const r of zonesFichePourPays(cc)) if(r && r.code) t[r.code] = r.name;
+  }
+  return t[code] || secours || code;
+}
 const REGIONS_BY_COUNTRY = {
   // --- Europe, ajoutee le 2026-09-26 -----------------------------------------
   // Noms tels qu eBird les donne (ref/region/list), pas de traduction : ce sont eux
@@ -4339,15 +4354,15 @@ const REGIONS_BY_COUNTRY = {
     { code:"NL-DR", name:"Drenthe" },
     { code:"NL-FL", name:"Flevoland" },
     { code:"NL-FR", name:"Frise" },
-    { code:"NL-GE", name:"Gelderland" },
+    { code:"NL-GE",name:"Gueldre" },
     { code:"NL-GR", name:"Groningen" },
-    { code:"NL-LI", name:"Limburg" },
-    { code:"NL-NB", name:"Noord-Brabant" },
-    { code:"NL-NH", name:"Noord-Holland" },
+    { code:"NL-LI",name:"Limbourg" },
+    { code:"NL-NB",name:"Brabant-Septentrional" },
+    { code:"NL-NH",name:"Hollande-Septentrionale" },
     { code:"NL-OV", name:"Overijssel" },
     { code:"NL-UT", name:"Utrecht" },
-    { code:"NL-ZE", name:"Zeeland" },
-    { code:"NL-ZH", name:"Zuid-Holland" },
+    { code:"NL-ZE",name:"Zélande" },
+    { code:"NL-ZH",name:"Hollande-Méridionale" },
   ],
   PL: [
     { code:"PL-DS", name:"Basse-Silésie" },
@@ -4405,42 +4420,42 @@ const REGIONS_BY_COUNTRY = {
   RO: [
     { code:"RO-AB", name:"Alba" },
     { code:"RO-AR", name:"Arad" },
-    { code:"RO-AG", name:"Arges" },
-    { code:"RO-BC", name:"Bacau" },
+    { code:"RO-AG",name:"Argeș" },
+    { code:"RO-BC",name:"Bacău" },
     { code:"RO-BH", name:"Bihor" },
-    { code:"RO-BN", name:"Bistrita-Nasaud" },
-    { code:"RO-BT", name:"Botosani" },
-    { code:"RO-BR", name:"Braila" },
-    { code:"RO-BV", name:"Brasov" },
-    { code:"RO-B", name:"Bucuresti" },
-    { code:"RO-BZ", name:"Buzau" },
-    { code:"RO-CL", name:"Calarasi" },
-    { code:"RO-CS", name:"Caras-Severin" },
+    { code:"RO-BN",name:"Bistrița-Năsăud" },
+    { code:"RO-BT",name:"Botoșani" },
+    { code:"RO-BR",name:"Brăila" },
+    { code:"RO-BV",name:"Brașov" },
+    { code:"RO-B",name:"Bucarest" },
+    { code:"RO-BZ",name:"Buzău" },
+    { code:"RO-CL",name:"Călărași" },
+    { code:"RO-CS",name:"Caraș-Severin" },
     { code:"RO-CJ", name:"Cluj" },
-    { code:"RO-CT", name:"Constanta" },
+    { code:"RO-CT",name:"Constanța" },
     { code:"RO-CV", name:"Covasna" },
     { code:"RO-DJ", name:"Dolj" },
-    { code:"RO-DB", name:"Dâmbovita" },
-    { code:"RO-GL", name:"Galati" },
+    { code:"RO-DB",name:"Dâmbovița" },
+    { code:"RO-GL",name:"Galați" },
     { code:"RO-GR", name:"Giurgiu" },
     { code:"RO-GJ", name:"Gorj" },
     { code:"RO-HR", name:"Harghita" },
     { code:"RO-HD", name:"Hunedoara" },
-    { code:"RO-IL", name:"Ialomita" },
-    { code:"RO-IS", name:"Iasi" },
+    { code:"RO-IL",name:"Ialomița" },
+    { code:"RO-IS",name:"Iași" },
     { code:"RO-IF", name:"Ilfov" },
-    { code:"RO-MM", name:"Maramures" },
-    { code:"RO-MH", name:"Mehedinti" },
-    { code:"RO-MS", name:"Mures" },
-    { code:"RO-NT", name:"Neamt" },
+    { code:"RO-MM",name:"Maramureș" },
+    { code:"RO-MH",name:"Mehedinți" },
+    { code:"RO-MS",name:"Mureș" },
+    { code:"RO-NT",name:"Neamț" },
     { code:"RO-OT", name:"Olt" },
     { code:"RO-PH", name:"Prahova" },
-    { code:"RO-SJ", name:"Salaj" },
+    { code:"RO-SJ",name:"Sălaj" },
     { code:"RO-SM", name:"Satu Mare" },
     { code:"RO-SB", name:"Sibiu" },
     { code:"RO-SV", name:"Suceava" },
     { code:"RO-TR", name:"Teleorman" },
-    { code:"RO-TM", name:"Timis" },
+    { code:"RO-TM",name:"Timiș" },
     { code:"RO-TL", name:"Tulcea" },
     { code:"RO-VS", name:"Vaslui" },
     { code:"RO-VN", name:"Vrancea" },
@@ -4466,8 +4481,8 @@ const REGIONS_BY_COUNTRY = {
     { code:"BG-19", name:"Silistra" },
     { code:"BG-20", name:"Sliven" },
     { code:"BG-21", name:"Smolyan" },
-    { code:"BG-23", name:"Sofia" },
-    { code:"BG-22", name:"Sofia-Grad" },
+    { code:"BG-23",name:"Sofia (oblast)" },
+    { code:"BG-22",name:"Sofia (ville)" },
     { code:"BG-24", name:"Stara Zagora" },
     { code:"BG-25", name:"Targovishte" },
     { code:"BG-03", name:"Varna" },
@@ -4477,27 +4492,27 @@ const REGIONS_BY_COUNTRY = {
     { code:"BG-28", name:"Yambol" },
   ],
   HR: [
-    { code:"HR-07", name:"Bjelovarsko-bilogorska" },
-    { code:"HR-12", name:"Brodsko-posavska" },
-    { code:"HR-19", name:"Dubrovacko-neretvanska" },
-    { code:"HR-21", name:"Grad Zagreb" },
-    { code:"HR-18", name:"Istarska" },
-    { code:"HR-04", name:"Karlovacka" },
-    { code:"HR-06", name:"Koprivnicko-križevacka" },
-    { code:"HR-02", name:"Krapinsko-zagorska" },
-    { code:"HR-09", name:"Licko-senjska" },
-    { code:"HR-20", name:"Medimurska" },
-    { code:"HR-14", name:"Osjecko-baranjska" },
-    { code:"HR-11", name:"Požeško-slavonska" },
-    { code:"HR-08", name:"Primorsko-goranska" },
-    { code:"HR-03", name:"Sisacko-moslavacka" },
-    { code:"HR-17", name:"Splitsko-dalmatinska" },
-    { code:"HR-05", name:"Varaždinska" },
-    { code:"HR-10", name:"Viroviticko-podravska" },
-    { code:"HR-16", name:"Vukovarsko-srijemska" },
-    { code:"HR-13", name:"Zadarska" },
-    { code:"HR-01", name:"Zagrebacka" },
-    { code:"HR-15", name:"Šibensko-kninska" },
+    { code:"HR-07",name:"Bjelovar-Bilogora" },
+    { code:"HR-12",name:"Brod-Posavina" },
+    { code:"HR-19",name:"Dubrovnik-Neretva" },
+    { code:"HR-21",name:"Zagreb (ville)" },
+    { code:"HR-18",name:"Istrie" },
+    { code:"HR-04",name:"Karlovac" },
+    { code:"HR-06",name:"Koprivnica-Križevci" },
+    { code:"HR-02",name:"Krapina-Zagorje" },
+    { code:"HR-09",name:"Lika-Senj" },
+    { code:"HR-20",name:"Međimurje" },
+    { code:"HR-14",name:"Osijek-Baranja" },
+    { code:"HR-11",name:"Požega-Slavonie" },
+    { code:"HR-08",name:"Primorje-Gorski Kotar" },
+    { code:"HR-03",name:"Sisak-Moslavina" },
+    { code:"HR-17",name:"Split-Dalmatie" },
+    { code:"HR-05",name:"Varaždin" },
+    { code:"HR-10",name:"Virovitica-Podravina" },
+    { code:"HR-16",name:"Vukovar-Syrmie" },
+    { code:"HR-13",name:"Zadar" },
+    { code:"HR-01",name:"Zagreb (comitat)" },
+    { code:"HR-15",name:"Šibenik-Knin" },
   ],
   RS: [
     { code:"RS-00", name:"Beograd" },
@@ -4521,8 +4536,8 @@ const REGIONS_BY_COUNTRY = {
     { code:"RS-12", name:"Šumadija" },
   ],
   BA: [
-    { code:"BA-BIH", name:"Federacija Bosna i Hercegovina" },
-    { code:"BA-SRP", name:"Republika Srpska" },
+    { code:"BA-BIH",name:"Fédération de Bosnie-et-Herzégovine" },
+    { code:"BA-SRP",name:"République serbe de Bosnie" },
   ],
   AL: [
     { code:"AL-01", name:"Berat" },
@@ -4562,23 +4577,23 @@ const REGIONS_BY_COUNTRY = {
     { code:"SE-E", name:"Östergötland" },
   ],
   FI: [
-    { code:"FI-08", name:"Central Finland" },
-    { code:"FI-07", name:"Central Ostrobothnia" },
+    { code:"FI-08",name:"Finlande-Centrale" },
+    { code:"FI-07",name:"Ostrobotnie-Centrale" },
     { code:"FI-05", name:"Kainuu" },
     { code:"FI-09", name:"Kymenlaakso" },
-    { code:"FI-10", name:"Lapland" },
-    { code:"FI-13", name:"North Karelia" },
-    { code:"FI-14", name:"Northern Ostrobothnia" },
-    { code:"FI-15", name:"Northern Savonia" },
-    { code:"FI-12", name:"Ostrobothnia" },
+    { code:"FI-10",name:"Laponie" },
+    { code:"FI-13",name:"Carélie-du-Nord" },
+    { code:"FI-14",name:"Ostrobotnie-du-Nord" },
+    { code:"FI-15",name:"Savonie-du-Nord" },
+    { code:"FI-12",name:"Ostrobotnie" },
     { code:"FI-11", name:"Pirkanmaa" },
     { code:"FI-16", name:"Päijät-Häme" },
     { code:"FI-17", name:"Satakunta" },
-    { code:"FI-02", name:"South Karelia" },
-    { code:"FI-03", name:"Southern Ostrobothnia" },
-    { code:"FI-04", name:"Southern Savonia" },
-    { code:"FI-19", name:"Southwest Finland" },
-    { code:"FI-06", name:"Tavastia Proper" },
+    { code:"FI-02",name:"Carélie-du-Sud" },
+    { code:"FI-03",name:"Ostrobotnie-du-Sud" },
+    { code:"FI-04",name:"Savonie-du-Sud" },
+    { code:"FI-19",name:"Finlande-du-Sud-Ouest" },
+    { code:"FI-06",name:"Häme" },
     { code:"FI-18", name:"Uusimaa" },
     { code:"FI-01", name:"Åland" },
   ],
@@ -4600,24 +4615,24 @@ const REGIONS_BY_COUNTRY = {
     { code:"EE-86", name:"Võrumaa" },
   ],
   LT: [
-    { code:"LT-AL", name:"Alytaus" },
-    { code:"LT-KU", name:"Kauno" },
-    { code:"LT-KL", name:"Klaipedos" },
-    { code:"LT-MR", name:"Marijampoles" },
-    { code:"LT-PN", name:"Panevežio" },
-    { code:"LT-TA", name:"Taurages" },
-    { code:"LT-TE", name:"Telšiu" },
-    { code:"LT-UT", name:"Utenos" },
-    { code:"LT-VL", name:"Vilniaus" },
-    { code:"LT-SA", name:"Šiauliu" },
+    { code:"LT-AL",name:"Alytus" },
+    { code:"LT-KU",name:"Kaunas" },
+    { code:"LT-KL",name:"Klaipėda" },
+    { code:"LT-MR",name:"Marijampolė" },
+    { code:"LT-PN",name:"Panevėžys" },
+    { code:"LT-TA",name:"Tauragė" },
+    { code:"LT-TE",name:"Telšiai" },
+    { code:"LT-UT",name:"Utena" },
+    { code:"LT-VL",name:"Vilnius" },
+    { code:"LT-SA",name:"Šiauliai" },
   ],
   BY: [
-    { code:"BY-BR", name:"Brèsckaja voblasc'" },
-    { code:"BY-HO", name:"Homel'skaja voblasc'" },
-    { code:"BY-HR", name:"Hrodzenskaja voblasc'" },
-    { code:"BY-MA", name:"Mahilioúskaja voblasc'" },
-    { code:"BY-MI", name:"Minskaja voblasc'" },
-    { code:"BY-VI", name:"Vicebskaja voblasc'" },
+    { code:"BY-BR",name:"Brest" },
+    { code:"BY-HO",name:"Homiel" },
+    { code:"BY-HR",name:"Hrodna" },
+    { code:"BY-MA",name:"Moguilev" },
+    { code:"BY-MI",name:"Minsk" },
+    { code:"BY-VI",name:"Vitebsk" },
   ],
   UA: [
     { code:"UA-71", name:"Tcherkassy" },
@@ -4649,89 +4664,89 @@ const REGIONS_BY_COUNTRY = {
     { code:"UA-18", name:"Jytomyr" },
   ],
   RU: [
-    { code:"RU-AD", name:"Adygea" },
-    { code:"RU-ALT", name:"Altai Krai" },
-    { code:"RU-AL", name:"Altai Republic" },
-    { code:"RU-AMU", name:"Amur" },
+    { code:"RU-AD",name:"Adyguée" },
+    { code:"RU-ALT",name:"Kraï de l'Altaï" },
+    { code:"RU-AL",name:"République de l'Altaï" },
+    { code:"RU-AMU",name:"Amour" },
     { code:"RU-ARK", name:"Arkhangelsk" },
     { code:"RU-AST", name:"Astrakhan" },
-    { code:"RU-BA", name:"Bashkortostan" },
+    { code:"RU-BA",name:"Bachkortostan" },
     { code:"RU-BEL", name:"Belgorod" },
-    { code:"RU-BRY", name:"Bryansk" },
-    { code:"RU-BU", name:"Buryatia" },
-    { code:"RU-CE", name:"Chechnya" },
-    { code:"RU-CHE", name:"Chelyabinsk" },
-    { code:"RU-CHU", name:"Chukotka Autonomous Okrug" },
-    { code:"RU-CU", name:"Chuvashia" },
-    { code:"RU-DA", name:"Dagestan" },
-    { code:"RU-IN", name:"Ingushetia" },
-    { code:"RU-IRK", name:"Irkutsk" },
+    { code:"RU-BRY",name:"Briansk" },
+    { code:"RU-BU",name:"Bouriatie" },
+    { code:"RU-CE",name:"Tchétchénie" },
+    { code:"RU-CHE",name:"Tcheliabinsk" },
+    { code:"RU-CHU",name:"Tchoukotka" },
+    { code:"RU-CU",name:"Tchouvachie" },
+    { code:"RU-DA",name:"Daghestan" },
+    { code:"RU-IN",name:"Ingouchie" },
+    { code:"RU-IRK",name:"Irkoutsk" },
     { code:"RU-IVA", name:"Ivanovo" },
-    { code:"RU-YEV", name:"Jewish Autonomous" },
-    { code:"RU-KB", name:"Kabardino-Balkaria" },
+    { code:"RU-YEV",name:"Oblast autonome juif" },
+    { code:"RU-KB",name:"Kabardino-Balkarie" },
     { code:"RU-KGD", name:"Kaliningrad" },
-    { code:"RU-KL", name:"Kalmykia" },
-    { code:"RU-KLU", name:"Kaluga" },
-    { code:"RU-KAM", name:"Kamchatka Krai" },
-    { code:"RU-KC", name:"Karachay-Cherkessia" },
+    { code:"RU-KL",name:"Kalmoukie" },
+    { code:"RU-KLU",name:"Kalouga" },
+    { code:"RU-KAM",name:"Kamtchatka" },
+    { code:"RU-KC",name:"Karatchaïévo-Tcherkessie" },
     { code:"RU-KEM", name:"Kemerovo" },
-    { code:"RU-KHA", name:"Khabarovsk Krai" },
-    { code:"RU-KK", name:"Khakassia" },
-    { code:"RU-KHM", name:"Khanty-Mansi Autonomous Okrug" },
+    { code:"RU-KHA",name:"Kraï de Khabarovsk" },
+    { code:"RU-KK",name:"Khakassie" },
+    { code:"RU-KHM",name:"Khantys-Mansis" },
     { code:"RU-KIR", name:"Kirov" },
-    { code:"RU-KO", name:"Komi" },
+    { code:"RU-KO",name:"Komis" },
     { code:"RU-KOS", name:"Kostroma" },
-    { code:"RU-KDA", name:"Krasnodar Krai" },
-    { code:"RU-KYA", name:"Krasnoyarsk Krai" },
-    { code:"RU-KGN", name:"Kurgan" },
-    { code:"RU-KRS", name:"Kursk" },
-    { code:"RU-LEN", name:"Leningrad" },
+    { code:"RU-KDA",name:"Kraï de Krasnodar" },
+    { code:"RU-KYA",name:"Kraï de Krasnoïarsk" },
+    { code:"RU-KGN",name:"Kourgan" },
+    { code:"RU-KRS",name:"Koursk" },
+    { code:"RU-LEN",name:"Léningrad" },
     { code:"RU-LIP", name:"Lipetsk" },
     { code:"RU-MAG", name:"Magadan" },
-    { code:"RU-ME", name:"Mari El" },
-    { code:"RU-MO", name:"Mordovia" },
-    { code:"RU-MOW", name:"Moscow" },
-    { code:"RU-MOS", name:"Moscow" },
-    { code:"RU-MUR", name:"Murmansk" },
-    { code:"RU-NEN", name:"Nenets Autonomous Okrug" },
-    { code:"RU-NIZ", name:"Nizhny Novgorod" },
-    { code:"RU-SE", name:"North Ossetia-Alania" },
+    { code:"RU-ME",name:"Maris" },
+    { code:"RU-MO",name:"Mordovie" },
+    { code:"RU-MOW",name:"Moscou (ville)" },
+    { code:"RU-MOS",name:"Moscou (oblast)" },
+    { code:"RU-MUR",name:"Mourmansk" },
+    { code:"RU-NEN",name:"Nénétsie" },
+    { code:"RU-NIZ",name:"Nijni Novgorod" },
+    { code:"RU-SE",name:"Ossétie-du-Nord" },
     { code:"RU-NGR", name:"Novgorod" },
-    { code:"RU-NVS", name:"Novosibirsk" },
+    { code:"RU-NVS",name:"Novossibirsk" },
     { code:"RU-OMS", name:"Omsk" },
-    { code:"RU-ORE", name:"Orenburg" },
-    { code:"RU-ORL", name:"Oryol" },
+    { code:"RU-ORE",name:"Orenbourg" },
+    { code:"RU-ORL",name:"Orel" },
     { code:"RU-PNZ", name:"Penza" },
-    { code:"RU-PER", name:"Perm Krai" },
-    { code:"RU-PRI", name:"Primorsky Krai" },
+    { code:"RU-PER",name:"Kraï de Perm" },
+    { code:"RU-PRI",name:"Primorié" },
     { code:"RU-PSK", name:"Pskov" },
-    { code:"RU-KR", name:"Republic of Karelia" },
+    { code:"RU-KR",name:"Carélie" },
     { code:"RU-ROS", name:"Rostov" },
-    { code:"RU-RYA", name:"Ryazan" },
-    { code:"RU-SPE", name:"Saint Petersburg" },
-    { code:"RU-SA", name:"Sakha" },
-    { code:"RU-SAK", name:"Sakhalin" },
+    { code:"RU-RYA",name:"Riazan" },
+    { code:"RU-SPE",name:"Saint-Pétersbourg" },
+    { code:"RU-SA",name:"Iakoutie" },
+    { code:"RU-SAK",name:"Sakhaline" },
     { code:"RU-SAM", name:"Samara" },
     { code:"RU-SAR", name:"Saratov" },
     { code:"RU-SMO", name:"Smolensk" },
-    { code:"RU-STA", name:"Stavropol Krai" },
+    { code:"RU-STA",name:"Kraï de Stavropol" },
     { code:"RU-SVE", name:"Sverdlovsk" },
     { code:"RU-TAM", name:"Tambov" },
     { code:"RU-TA", name:"Tatarstan" },
     { code:"RU-TOM", name:"Tomsk" },
-    { code:"RU-TUL", name:"Tula" },
-    { code:"RU-TY", name:"Tuva" },
+    { code:"RU-TUL",name:"Toula" },
+    { code:"RU-TY",name:"Touva" },
     { code:"RU-TVE", name:"Tver" },
-    { code:"RU-TYU", name:"Tyumen" },
-    { code:"RU-UD", name:"Udmurtia" },
-    { code:"RU-ULY", name:"Ulyanovsk" },
+    { code:"RU-TYU",name:"Tioumen" },
+    { code:"RU-UD",name:"Oudmourtie" },
+    { code:"RU-ULY",name:"Oulianovsk" },
     { code:"RU-VLA", name:"Vladimir" },
     { code:"RU-VGG", name:"Volgograd" },
     { code:"RU-VLG", name:"Vologda" },
-    { code:"RU-VOR", name:"Voronezh" },
-    { code:"RU-YAN", name:"Yamalo-Nenets Autonomous Okrug" },
-    { code:"RU-YAR", name:"Yaroslavl" },
-    { code:"RU-CHI", name:"Zabaykalsky Krai" },
+    { code:"RU-VOR",name:"Voronej" },
+    { code:"RU-YAN",name:"Iamalie" },
+    { code:"RU-YAR",name:"Iaroslavl" },
+    { code:"RU-CHI",name:"Transbaïkalie" },
   ],
   AT: [
     { code:"AT-1", name:"Burgenland" },
@@ -4745,18 +4760,18 @@ const REGIONS_BY_COUNTRY = {
     { code:"AT-9", name:"Vienne" },
   ],
   SI: [
-    { code:"SI-R01", name:"Gorenjska" },
-    { code:"SI-R02", name:"Goriška" },
-    { code:"SI-R03", name:"Jugovzhodna Slovenija" },
-    { code:"SI-R04", name:"Koroška" },
-    { code:"SI-R05", name:"Notranjsko-kraška" },
-    { code:"SI-R06", name:"Obalno-kraška" },
-    { code:"SI-R07", name:"Osrednjeslovenska" },
-    { code:"SI-R08", name:"Podravska" },
-    { code:"SI-R09", name:"Pomurska" },
-    { code:"SI-R10", name:"Savinjska" },
-    { code:"SI-R11", name:"Spodnjeposavska" },
-    { code:"SI-R12", name:"Zasavska" },
+    { code:"SI-R01",name:"Haute-Carniole" },
+    { code:"SI-R02",name:"Gorizia" },
+    { code:"SI-R03",name:"Slovénie du Sud-Est" },
+    { code:"SI-R04",name:"Carinthie slovène" },
+    { code:"SI-R05",name:"Carniole-Intérieure" },
+    { code:"SI-R06",name:"Littoral-Karst" },
+    { code:"SI-R07",name:"Slovénie centrale" },
+    { code:"SI-R08",name:"Drave" },
+    { code:"SI-R09",name:"Mura" },
+    { code:"SI-R10",name:"Savinja" },
+    { code:"SI-R11",name:"Basse-Save" },
+    { code:"SI-R12",name:"Save centrale" },
   ],
   LV: [
     { code:"LV-R01", name:"Kurzeme" },
@@ -4789,7 +4804,7 @@ const REGIONS_BY_COUNTRY = {
     { code:"CY-05", name:"Pafos" },
   ],
   IE: [
-    { code:"IE-C", name:"Connaught" },
+    { code:"IE-C",name:"Connacht" },
     { code:"IE-L", name:"Leinster" },
     { code:"IE-M", name:"Munster" },
     { code:"IE-U", name:"Ulster" },
@@ -12218,7 +12233,10 @@ const _exoticMapPathsPromises = {};
 function _exoticMapFileFor(cc){
   return cc === 'FR'
     ? 'data/departements-fr-simplified.json'
-    : `data/regions-${cc.toLowerCase()}-simplified.json`;
+    // Les contours sont caches dans lmb-data, qui survit aux changements de version du
+    // service worker : sans ce parametre, un visiteur deja venu garderait indefiniment
+    // l ancienne Bosnie amputee de sa Republique serbe.
+    : `data/regions-${cc.toLowerCase()}-simplified.json?v=20260926b`;
 }
 async function _loadExoticMapPaths(cc){
   if(_exoticMapPathsCache[cc] !== undefined) return _exoticMapPathsCache[cc];
@@ -12291,9 +12309,10 @@ async function _renderExoticMap(sci, cc){
     const cat = perZone[code];
     const isNative = !cat && nativeZones.has(code);
     const fill = cat ? CAT_COLOR[cat] : (isNative ? NATIVE_COLOR : '#d4d4d8');
-    const title = cat ? `${r.name} — ${CAT_LABEL[cat]} (${cat})`
-                : isNative ? `${r.name} — pas de classement exotique (présente, eBird ne la tague pas ici)`
-                : `${r.name} — non listé (sauvage / absent)`;
+    const nomR = nomZone(cc, code, r.name);
+    const title = cat ? `${nomR} — ${CAT_LABEL[cat]} (${cat})`
+                : isNative ? `${nomR} — pas de classement exotique (présente, eBird ne la tague pas ici)`
+                : `${nomR} — non listé (sauvage / absent)`;
     return _pathZone(dRemplace || r.path, fill, title, selection.has(code), selection.size > 0,
       zonesSelectionnables.has(code) ? code : null, echelle);
   };
@@ -12317,7 +12336,7 @@ async function _renderExoticMap(sci, cc){
              : `Sauvage en ${(COUNTRIES_REG[cc] && COUNTRIES_REG[cc].name) || cc}, exotique dans ${nZonesTaggees} ${zoneWord}${nZonesTaggees > 1 ? 's' : ''} (eBird)`}
       </summary>
       <div class="sm-fold-corps">
-        <svg viewBox="${_viewBoxAvecEncarts(cc, paths.viewBox)}" style="width:100%; max-width:320px; height:auto; display:block; margin:0 auto;" role="img" aria-label="Statut exotique par ${zoneWord}">
+        <svg viewBox="${_viewBoxCarte(cc, paths)}" style="${_styleCarte(cc, paths)}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Statut exotique par ${zoneWord}">
           ${svgZones}
         </svg>
         <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; font-size:11px; color:var(--ink-2); justify-content:center;">
@@ -12410,26 +12429,43 @@ const _ZONES_ENCART = {
   GB: { 'GB-ZET': 'Shetland' },
 };
 // Filet pointille + nom autour de chaque territoire deporte, calcule sur sa propre boite.
-function _cadresEncarts(cc, paths){
+// Geometrie des cadres, calculee a part : le viewBox doit la connaitre pour ne rien
+// couper, et le rendu doit la dessiner. Deux lectures d'une meme source.
+//
+// Le cadre s'elargit au besoin pour que son nom tienne : les Shetland, hautes et etroites,
+// donnaient un cadre de 60 unites de large sous une legende « Shetland » qui en demande
+// 83, et le nom debordait dans le vide a droite du filet.
+function _boitesEncarts(cc, paths){
   const noms = _ZONES_ENCART[cc];
-  if(!noms || !paths || !paths.zones) return '';
-  let out = '';
+  if(!noms || !paths || !paths.zones) return [];
+  const boites = [];
   for(const [code, nom] of Object.entries(noms)){
     const z = paths.zones[code];
     if(!z) continue;
     const bb = _bboxChemins([z.path]);
     if(!bb) continue;
-    // Le nom se pose EN LEGENDE sur le filet, comme le titre d'un fieldset : un petit
-    // fond de la couleur de la carte interrompt les pointilles, et le texte s'y loge.
-    // Pose a l'interieur du cadre, il flottait au-dessus du territoire et se lisait comme
-    // une etiquette de zone ; et a 17 px dans un viewBox de 1000 il faisait 8 px a l'ecran.
     const m = 12;
-    const x = bb.x0 - m, y = bb.y0 - m, w = (bb.x1 - bb.x0) + m * 2, h = (bb.y1 - bb.y0) + m * 2;
+    const y = bb.y0 - m, h = (bb.y1 - bb.y0) + m * 2;
+    let x = bb.x0 - m, w = (bb.x1 - bb.x0) + m * 2;
     // Largeur approchee du texte : pas de mesure possible en SVG pur, 0,56 em par caractere
     // convient pour du system-ui en demi-gras. Le corps se reduit si le nom deborderait du
     // cadre, sinon « Petite couronne » sortait du viewBox et s'affichait coupe.
     const CORPS = Math.max(15, Math.min(27, (w - 20) / (nom.length * 0.56)));
     const lw = nom.length * CORPS * 0.56 + 16;
+    const mini = lw + 32;
+    if(w < mini){ x -= (mini - w) / 2; w = mini; }
+    boites.push({ nom, x, y, w, h, CORPS, lw });
+  }
+  return boites;
+}
+// Filet pointille + nom autour de chaque territoire deporte, calcule sur sa propre boite.
+function _cadresEncarts(cc, paths){
+  let out = '';
+  for(const { nom, x, y, w, h, CORPS, lw } of _boitesEncarts(cc, paths)){
+    // Le nom se pose EN LEGENDE sur le filet, comme le titre d'un fieldset : un petit
+    // fond de la couleur de la carte interrompt les pointilles, et le texte s'y loge.
+    // Pose a l'interieur du cadre, il flottait au-dessus du territoire et se lisait comme
+    // une etiquette de zone ; et a 17 px dans un viewBox de 1000 il faisait 8 px a l'ecran.
     const lx = x + 16;
     out += '<g pointer-events="none">'
       + '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1)
@@ -12444,6 +12480,50 @@ function _cadresEncarts(cc, paths){
   }
   return out;
 }
+// Les contours sont projetes dans un viewBox carre de 1000x900, le meme pour tous les
+// pays, et le pays y est CENTRE : un pays large et plat n'en occupe donc qu'une bande
+// horizontale. La Russie s'etend sur 170 degres de longitude pour 40 de latitude, si bien
+// qu'elle ne remplit que 490 des 900 unites de hauteur - le reste est du vide, mais ce
+// vide compte quand meme dans la largeur affichee, plafonnee a 320 px. Resultat : la
+// Russie se dessinait a la meme taille qu'un pays deux fois moins etendu.
+//
+// On recadre donc le viewBox sur ce qui est reellement dessine, encarts compris, et on
+// laisse le plafond de largeur suivre la forme du pays : un pays plat a droit a plus de
+// largeur, a hauteur affichee constante.
+const _viewBoxTightCache = {};
+function _viewBoxCarte(cc, paths){
+  if(_viewBoxTightCache[cc] !== undefined) return _viewBoxTightCache[cc];
+  let vb = paths && paths.viewBox;
+  if(paths && paths.zones){
+    const bb = _bboxChemins(Object.values(paths.zones).map(z => z.path));
+    // Les cadres pointilles et leurs legendes debordent des contours qu'ils entourent :
+    // les inclure ici evite de recadrer sur les seuls chemins et de couper le filet.
+    if(bb) for(const b of _boitesEncarts(cc, paths)){
+      if(b.x < bb.x0) bb.x0 = b.x;
+      if(b.y - b.CORPS * 0.62 < bb.y0) bb.y0 = b.y - b.CORPS * 0.62;
+      if(b.x + b.w > bb.x1) bb.x1 = b.x + b.w;
+      if(b.y + b.h > bb.y1) bb.y1 = b.y + b.h;
+    }
+    if(bb){
+      const m = 8;
+      vb = (bb.x0 - m).toFixed(0) + ' ' + (bb.y0 - m).toFixed(0) + ' '
+         + (bb.x1 - bb.x0 + m * 2).toFixed(0) + ' ' + (bb.y1 - bb.y0 + m * 2).toFixed(0);
+    }
+  }
+  return (_viewBoxTightCache[cc] = _viewBoxAvecEncarts(cc, vb));
+}
+// Hauteur affichee gardee constante (~290 px) : c'est la largeur qui s'adapte. Le plancher
+// de 320 px preserve la taille actuelle des pays compacts, le plafond de 560 px evite
+// qu'une carte ne prenne toute la fiche.
+const _STYLE_CARTE_BASE = 'height:auto; display:block; margin:0 auto; max-height:290px;';
+function _styleCarte(cc, paths){
+  const p = String(_viewBoxCarte(cc, paths) || '').trim().split(/\s+/).map(Number);
+  let large = 320;
+  if(p.length === 4 && p.every(v => isFinite(v)) && p[3] > 0){
+    large = Math.round(Math.max(320, Math.min(560, 290 * p[2] / p[3])));
+  }
+  return 'width:100%; max-width:' + large + 'px; ' + _STYLE_CARTE_BASE;
+}
 // `deplace` distingue deux usages du meme cadre :
 //   - une loupe : la petite couronne parisienne est agrandie mais reste aussi a sa place,
 //     sinon la carte de France aurait un trou autour de Paris ;
@@ -12457,7 +12537,7 @@ function _cadresEncarts(cc, paths){
 function _viewBoxAvecEncarts(cc, viewBox){
   const liste = _ENCART_CARTE[cc];
   if(!Array.isArray(liste) || !viewBox) return viewBox;
-  const p = String(viewBox).trim().split(/s+/).map(Number);
+  const p = String(viewBox).trim().split(/\s+/).map(Number);
   if(p.length !== 4 || p.some(v => !isFinite(v))) return viewBox;
   let droite = p[0] + p[2];
   for(const cfg of liste) if(cfg.cadre) droite = Math.max(droite, cfg.cadre.x + cfg.cadre.w + 14);
@@ -12735,7 +12815,7 @@ async function _renderRarityMap(sci, cc){
       }
       v = surAnnee ? _valeurAnnuelleZone(arr, cc, z) : (arr[mois] || 0);
     }
-    const nom = paths.zones[z].name;
+    const nom = nomZone(cc, z, paths.zones[z].name);
     let fill = ABSENT;
     let titre = surAnnee ? `${nom} — jamais observée` : `${nom} — absente en ${libellePeriode}`;
     if(v > 0){
@@ -12820,7 +12900,7 @@ async function _renderRarityMap(sci, cc){
                  que la colonne peut afficher 10 dans un Etat ou il ne passe pas. -->
             <div style="font:700 8.5px/1.3 system-ui; letter-spacing:.4px; text-transform:uppercase; color:var(--ink-3); margin-bottom:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" data-tip="${esc(nomPort)}">${esc(nomPort)}</div>
             ${moisBtns}</div>
-          <div style="flex:1 1 auto; min-width:0;"><svg viewBox="${_viewBoxAvecEncarts(cc, paths.viewBox)}" style="width:100%; max-width:320px; height:auto; display:block; margin:0 auto;" role="img" aria-label="Rareté par ${zoneWord} sur ${libellePeriode}">
+          <div style="flex:1 1 auto; min-width:0;"><svg viewBox="${_viewBoxCarte(cc, paths)}" style="${_styleCarte(cc, paths)}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Rareté par ${zoneWord} sur ${libellePeriode}">
             ${svgZones}
           </svg></div>
           <!-- Colonne fantome de la largeur du selecteur de mois : sans elle, la carte se

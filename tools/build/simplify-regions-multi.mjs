@@ -56,6 +56,13 @@ const ISO_FIXUP = {
   'NZ-CIT':'NZ-CI',   // Chatham Islands
   // Natural Earth nomme encore la Zabaikalie par son ancien nom, Tchita.
   'RU-ZAB':'RU-CHI',
+  // Natural Earth donne a Minsk-ville son propre code, que eBird n a pas : sans ce
+  // renvoi vers l oblast qui l entoure, la capitale devenait un trou au centre du pays.
+  'BY-HM':'BY-MI',
+  // Meme cas en Islande : Natural Earth detache Reykjavik-ville de la region capitale.
+  // Elle etait jusqu ici rangee parmi les codes a ignorer, ce qui laissait une encoche
+  // de 351 km2 dans le sud-ouest du pays.
+  'IS-0':'IS-1',
 };
 
 // Vojvodine : eBird en fait une seule zone, Natural Earth la livre en 7 districts.
@@ -81,6 +88,13 @@ const IE_PROVINCE = {
 // Belgique : eBird a 3 regions, Natural Earth 11 provinces qui portent deja leur
 // rattachement dans le champ 'region'.
 const BE_REGION = { 'Flemish':'BE-VLG', 'Walloon':'BE-WAL', 'Capital Region':'BE-BRU' };
+// Bosnie : Natural Earth ne met le code iso_3166_2 de l entite QUE sur deux features -
+// deux cantons qui le portent par accident, Herzegovine-Neretva pour la Federation et
+// Posavina pour la Republique serbe. Les huit regions de la Republique serbe portent des
+// codes de remplissage BA-X0n~ qui ne matchaient rien : la moitie est du pays manquait
+// donc sur la carte. C est le champ region qui dit l entite - avec une coquille dans la
+// source, « Repuplika » pour « Republika », qu il faut reproduire telle quelle.
+const BA_ENTITE = { 'Federacija Bosna i Hercegovina':'BA-BIH', 'Repuplika Srpska':'BA-SRP' };
 
 
 // Royaume-Uni : eBird descend au comte (109), Natural Earth va encore plus fin (232
@@ -121,7 +135,7 @@ function resolveGB(props){
 }
 
 // Pays ou une region eBird agrege plusieurs features Natural Earth (-> dissolve requis).
-const AGGREGATED = new Set(['ES', 'IT', 'GB', 'IE', 'BE', 'RS', 'SI', 'LV', 'CH', 'DK', 'HU']);
+const AGGREGATED = new Set(['ES', 'IT', 'GB', 'IE', 'BE', 'RS', 'SI', 'LV', 'CH', 'DK', 'HU', 'BY', 'BA', 'IS']);
 
 // Pays dont les zones sont des REGROUPEMENTS : Suisse, Slovenie, Lettonie, Hongrie,
 // Royaume-Uni. La table zones-agregees.json dit a quelle zone-cible chaque zone source
@@ -148,6 +162,7 @@ function resolveCodeBrut(cc, props){
   if(cc === 'GB') return resolveGB(props);
   if(cc === 'IE') return IE_PROVINCE[props.name] || null;
   if(cc === 'BE') return BE_REGION[props.region] || null;
+  if(cc === 'BA') return BA_ENTITE[props.region] || null;
   if(cc === 'HR' && props.adm1_code === HR_POZEGA) return 'HR-11';
   if(cc === 'RS' && RS_VOJVODINE.has(props.iso_3166_2)) return 'RS-VO';
   const iso = props.iso_3166_2;
@@ -311,8 +326,15 @@ const EBIRD_REGIONS = {
 // Par defaut le pays occupe presque tout le viewBox, ce qui le fait chevaucher ses
 // encarts : l'Espagne continentale descendait jusqu'a y=809 alors que les Canaries
 // etaient posees a partir de y=700. box = [x, y, w, h].
+// Le projecteur CENTRE le pays dans sa boite, alors que les encarts sont poses a une
+// place fixe : un pays haut et etroit, qui n occupe donc qu une colonne au milieu du
+// viewBox, vient chevaucher l encart pose a droite. Le Portugal montait ainsi jusqu a
+// x=711 et les Acores commencaient a x=638. La parade est de retrecir la boite du corps
+// principal, ce qui le repousse vers la gauche sans le deformer.
 const MAIN_BOX = {
   ES: [20, 10, 960, 670],   // laisse la bande basse libre pour les Canaries
+  PT: [20, 18, 560, 864],   // colonne de droite reservee aux Acores et a Madere
+  GB: [20, 18, 690, 864],   // colonne de droite reservee aux Shetland
 };
 
 // Certaines regions trainent un chapelet d'ilots tres lointains qui etire leur bbox et
