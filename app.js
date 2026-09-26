@@ -15596,20 +15596,18 @@ function _pkdxRender(){
     // sauvages. On ne s'en sert donc que pour la France.
     const cat = vue.cat || exoticCategoryInCountry(r.sci, country)
       || (country === 'FR' ? _exoticCategory(r.sci) : '') || '';
-    // Une espece exotique a l'echelle lue affiche sa CATEGORIE, jamais son palier : celui-ci
-    // est calcule sur des oiseaux echappes ou relaches, il ne dit rien de la difficulte a la
-    // trouver. Le Cygne noir aux Etats-Unis sortait "9", une meta-rarete sauvage, alors qu'il
-    // n'y est qu'un echappe de collection.
-    const badgeText = cat || vue.tier;
-    // Le fond suit le palier pour les naturalisees, dont la population tient et dont le
-    // palier veut donc dire quelque chose. Pour les autres - echappees, provisoires,
-    // captives - un gris neutre, qui dit "hors bareme" au lieu de mimer une rarete.
-    const fondBadge = (cat && !_isEstablishedExotic(cat)) ? '#7e8a99' : tierBg;
+    // La pastille garde toujours le palier, et le statut exotique se dit a cote, dans une
+    // petite puce grise - comme le repere des saisonnieres. Les deux repondent a des
+    // questions differentes : le palier dit la difficulte a rencontrer l'oiseau, la lettre
+    // dit d'ou il sort. Les faire s'exclure obligeait a choisir laquelle perdre.
+    const badgeText = vue.tier;
+    const fondBadge = tierBg;
     // Absente de la zone choisie : la case reste, en retrait. La masquer ferait croire que
     // l'espece n'existe pas, alors qu'elle est seulement ailleurs.
     return `<div class="pkdx-card${r.owned?'':' missing'}" data-sci="${esc(r.sci)}">
       <span class="pkdx-num">#${num}</span>
-      ${r.saison ? `<span class="pkdx-saison" title="Espèce nettement saisonnière : son pic mensuel vaut au moins 3 fois sa moyenne annuelle. Viser le bon mois change tout.">◑</span>` : ''}
+      ${r.saison ? `<span class="pkdx-saison" data-tip="Espèce nettement saisonnière : son pic mensuel vaut au moins 3 fois sa moyenne annuelle. Viser le bon mois change tout.">◑</span>` : ''}
+      ${cat ? `<span class="pkdx-exo" data-tip="${esc(EXOTIC_CATEGORY_LABEL[cat] || ('Exotique ' + cat))} (${cat})">${cat}</span>` : ''}
       <span class="pkdx-tier" style="background:${fondBadge};" data-tip="${cat ? esc(EXOTIC_CATEGORY_LABEL[cat] || 'Exotique ' + cat) : 'Palier ' + vue.tier}${vue.absente ? ' · jamais notée ici' : ''}">${badgeText}</span>
       <div class="pkdx-img" data-pkdx-lazy="${esc(r.sci)}">${r.owned ? '🐦' : ''}</div>
       <div class="pkdx-name">${esc(r.nm)}</div>

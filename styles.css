@@ -1881,6 +1881,13 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .pkdx-card .pkdx-saison { position:absolute; top:24px; left:8px; font-size:11px; line-height:1;
     color:var(--ink-3); background:var(--surface); border-radius:50%; width:16px; height:16px;
     display:grid; place-items:center; cursor:help; }
+  /* Statut exotique, sous la pastille de palier et du meme cote. Le palier dit la difficulte
+     a rencontrer l oiseau, cette lettre dit d ou il sort : les deux sont utiles et ne se
+     remplacent pas. Gris neutre, pour ne pas concurrencer la couleur du palier. */
+  .pkdx-card .pkdx-exo { position:absolute; top:24px; right:8px; font:700 9px/1 system-ui;
+    color:#fff; background:#7e8a99; border-radius:4px; min-width:14px; height:14px;
+    padding:0 3px; display:grid; place-items:center; box-shadow:0 1px 2px rgba(0,0,0,.2);
+    z-index:2; cursor:help; }
   .pkdx-card .pkdx-img { width:100%; aspect-ratio:1/1; background:var(--surface-2); border-radius:8px; overflow:hidden; margin-bottom:6px; display:grid; place-items:center; color:var(--ink-3); font-size:28px; }
   .pkdx-card .pkdx-img img { width:100%; height:100%; object-fit:cover; display:block; }
   .pkdx-card .pkdx-name { font:600 12.5px system-ui; color:var(--ink); text-align:center; line-height:1.25; word-wrap:break-word; }
