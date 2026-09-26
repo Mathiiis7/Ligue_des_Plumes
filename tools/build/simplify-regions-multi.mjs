@@ -54,7 +54,16 @@ const GB_UNIT = {
 const ISO_FIXUP = {
   'GR-A1':'GR-I',     // Attique
   'NZ-CIT':'NZ-CI',   // Chatham Islands
+  // Natural Earth nomme encore la Zabaikalie par son ancien nom, Tchita.
+  'RU-ZAB':'RU-CHI',
 };
+
+// Vojvodine : eBird en fait une seule zone, Natural Earth la livre en 7 districts.
+const RS_VOJVODINE = new Set(['RS-01','RS-02','RS-03','RS-04','RS-05','RS-06','RS-07']);
+// Natural Earth etiquette DEUX polygones croates « HR-12 ». Mesure des centres :
+// HRV-1602 est a 45,22N 17,81E (Brod-Posavina) et HRV-1604 a 45,41N 17,68E - c'est la
+// Pozega-Slavonie, HR-11, que le fichier a mal nommee.
+const HR_POZEGA = 'HRV-1604';
 
 
 // Irlande : eBird utilise les 4 provinces historiques, Natural Earth les 34 comtes.
@@ -73,15 +82,55 @@ const IE_PROVINCE = {
 // rattachement dans le champ 'region'.
 const BE_REGION = { 'Flemish':'BE-VLG', 'Walloon':'BE-WAL', 'Capital Region':'BE-BRU' };
 
+
+// Royaume-Uni : eBird descend au comte (109), Natural Earth va encore plus fin (232
+// autorites unitaires et boroughs). Quatre chemins, essayes dans cet ordre :
+//   1. le nom colle directement                        -> 100 contours
+//   2. le champ 'region' nomme le comte ceremonial      -> Greater London, West Midlands...
+//   3. 'region_cod' pour les comtes que NE eclate       -> Bedfordshire, Berkshire...
+//   4. une poignee de cas nommes a la main
+// Remplace l'ancien decoupage en 4 nations : une zone de 60 900 km2 ne dit rien d'utile
+// a qui cherche ou aller voir un oiseau.
+const GB_REGION_COD = {
+  'GB.BD':'GB-ENG-BDF', 'GB.BK':'GB-ENG-BRC', 'GB.SY':'GB-ENG-BNS', 'GB.WY':'GB-ENG-WKF',
+};
+const GB_NOM_EXPLICITE = {
+  // Cheshire ceremonial : NE le livre en quatre morceaux.
+  'Cheshire West and Chester':'GB-ENG-CHS', 'Cheshire East':'GB-ENG-CHS',
+  'Halton':'GB-ENG-CHS', 'Warrington':'GB-ENG-CHS',
+  // Tyne and Wear, idem.
+  'Newcastle upon Tyne':'GB-ENG-GAT', 'North Tyneside':'GB-ENG-GAT',
+  'South Tyneside':'GB-ENG-GAT', 'Gateshead':'GB-ENG-GAT', 'Sunderland':'GB-ENG-GAT',
+  // eBird dit « Orkney Islands », Natural Earth « Orkney ».
+  'Orkney':'GB-SCT-ORK',
+  // Coquille dans Natural Earth : il manque le r de Ayrshire.
+  'North Ayshire':'GB-SCT-NAY',
+};
+// Les 33 boroughs londoniens portent chacun leur nom ; c'est leur champ 'region' qui dit
+// Londres, et eBird n'en fait qu'une zone.
+const GB_REGION_EXPLICITE = { 'Greater London':'GB-ENG-LND' };
+const GB_PAR_NOM = new Map([["bedfordshire","GB-ENG-BDF"],["berkshire","GB-ENG-BRC"],["bristol","GB-ENG-BST"],["buckinghamshire","GB-ENG-BKM"],["cambridgeshire","GB-ENG-CAM"],["cheshire","GB-ENG-CHS"],["cornwall","GB-ENG-CON"],["cumbria","GB-ENG-CMA"],["derbyshire","GB-ENG-DBY"],["devon","GB-ENG-DEV"],["dorset","GB-ENG-DOR"],["durham","GB-ENG-DUR"],["east riding of yorkshire","GB-ENG-ERY"],["east sussex","GB-ENG-ESX"],["essex","GB-ENG-ESS"],["gloucestershire","GB-ENG-GLS"],["halton","GB-ENG-HAL"],["hampshire","GB-ENG-HAM"],["herefordshire","GB-ENG-HEF"],["hertfordshire","GB-ENG-HRT"],["isle of wight","GB-ENG-IOW"],["kent","GB-ENG-KEN"],["lancashire","GB-ENG-LAN"],["leicestershire","GB-ENG-LEC"],["lincolnshire","GB-ENG-LIN"],["london","GB-ENG-LND"],["manchester","GB-ENG-MAN"],["merseyside","GB-ENG-KWL"],["norfolk","GB-ENG-NFK"],["north yorkshire","GB-ENG-NYK"],["northamptonshire","GB-ENG-NTH"],["northumberland","GB-ENG-NBL"],["nottinghamshire","GB-ENG-NTT"],["oxfordshire","GB-ENG-OXF"],["rutland","GB-ENG-RUT"],["shropshire","GB-ENG-SHR"],["somerset","GB-ENG-SOM"],["south yorkshire","GB-ENG-BNS"],["staffordshire","GB-ENG-STS"],["stockton-on-tees","GB-ENG-STT"],["suffolk","GB-ENG-SFK"],["surrey","GB-ENG-SRY"],["tyne and wear","GB-ENG-GAT"],["warwickshire","GB-ENG-WAR"],["west midlands","GB-ENG-SAW"],["west sussex","GB-ENG-WSX"],["west yorkshire","GB-ENG-WKF"],["wiltshire","GB-ENG-WIL"],["worcestershire","GB-ENG-WOR"],["aberdeen","GB-SCT-ABE"],["aberdeenshire","GB-SCT-ABD"],["angus","GB-SCT-ANS"],["argyll and bute","GB-SCT-AGB"],["clackmannanshire","GB-SCT-CLK"],["dumfries and galloway","GB-SCT-DGY"],["dundee","GB-SCT-DND"],["east ayrshire","GB-SCT-EAY"],["east dunbartonshire","GB-SCT-EDU"],["east lothian","GB-SCT-ELN"],["edinburgh","GB-SCT-EDH"],["eilean siar","GB-SCT-ELS"],["falkirk","GB-SCT-FAL"],["fife","GB-SCT-FIF"],["glasgow","GB-SCT-GLG"],["highland","GB-SCT-HLD"],["midlothian","GB-SCT-MLN"],["moray","GB-SCT-MRY"],["north ayrshire","GB-SCT-NAY"],["north lanarkshire","GB-SCT-NLK"],["orkney islands","GB-SCT-ORK"],["perthshire and kinross","GB-SCT-PKN"],["renfrewshire","GB-SCT-RFW"],["scottish borders","GB-SCT-SCB"],["shetland islands","GB-SCT-ZET"],["south ayrshire","GB-SCT-SAY"],["south lanarkshire","GB-SCT-SLK"],["stirling","GB-SCT-STG"],["west dunbartonshire","GB-SCT-WDU"],["west lothian","GB-SCT-WLN"],["anglesey","GB-WLS-AGY"],["blaenau gwent","GB-WLS-BGW"],["bridgend","GB-WLS-BGE"],["caerphilly","GB-WLS-CAY"],["cardiff","GB-WLS-CRF"],["carmarthenshire","GB-WLS-CMN"],["ceredigion","GB-WLS-CGN"],["conwy","GB-WLS-CWY"],["denbighshire","GB-WLS-DEN"],["flintshire","GB-WLS-FLN"],["gwynedd","GB-WLS-GWN"],["merthyr tydfil","GB-WLS-MTY"],["monmouthshire","GB-WLS-MON"],["neath port talbot","GB-WLS-NTL"],["newport","GB-WLS-NWP"],["pembrokeshire","GB-WLS-PEM"],["powys","GB-WLS-POW"],["rhondda, cynon, taff","GB-WLS-RCT"],["swansea","GB-WLS-SWA"],["torfaen","GB-WLS-TOF"],["vale of glamorgan","GB-WLS-VGL"],["wrexham","GB-WLS-WRX"],["antrim","GB-NIR-ANT"],["armagh","GB-NIR-ARM"],["belfast","GB-NIR-BFS"],["derry","GB-NIR-DRY"],["down","GB-NIR-DOW"],["fermanagh","GB-NIR-FER"],["newry and mourne","GB-NIR-NYM"],["omagh","GB-NIR-OMH"]]);
+function resolveGB(props){
+  const n = (props.name || '').toLowerCase();
+  if(GB_PAR_NOM.has(n)) return GB_PAR_NOM.get(n);
+  const r = (props.region || '').toLowerCase();
+  if(GB_PAR_NOM.has(r)) return GB_PAR_NOM.get(r);
+  if(GB_REGION_EXPLICITE[props.region]) return GB_REGION_EXPLICITE[props.region];
+  if(GB_REGION_COD[props.region_cod]) return GB_REGION_COD[props.region_cod];
+  return GB_NOM_EXPLICITE[props.name] || null;
+}
+
 // Pays ou une region eBird agrege plusieurs features Natural Earth (-> dissolve requis).
-const AGGREGATED = new Set(['ES', 'IT', 'GB', 'IE', 'BE']);
+const AGGREGATED = new Set(['ES', 'IT', 'GB', 'IE', 'BE', 'RS']);
 
 function resolveCode(cc, props){
   if(cc === 'ES') return ES_HASC[props.code_hasc] || null;
   if(cc === 'IT') return IT_REGION[props.region] || null;
-  if(cc === 'GB') return GB_UNIT[props.geonunit] || null;
+  if(cc === 'GB') return resolveGB(props);
   if(cc === 'IE') return IE_PROVINCE[props.name] || null;
   if(cc === 'BE') return BE_REGION[props.region] || null;
+  if(cc === 'HR' && props.adm1_code === HR_POZEGA) return 'HR-11';
+  if(cc === 'RS' && RS_VOJVODINE.has(props.iso_3166_2)) return 'RS-VO';
   const iso = props.iso_3166_2;
   if(!iso) return null;
   const fixed = ISO_FIXUP[iso] || iso;
@@ -192,7 +241,25 @@ const EBIRD_REGIONS = {
        'AT-9'],
   IE: ['IE-C','IE-L','IE-M','IE-U'],
   BE: ['BE-BRU','BE-VLG','BE-WAL'],
-  GB: ['GB-ENG','GB-SCT','GB-WLS','GB-NIR'],
+  GB: ['GB-ENG-BDF','GB-ENG-BRC','GB-ENG-BST','GB-ENG-BKM','GB-ENG-CAM','GB-ENG-CHS',
+       'GB-ENG-CON','GB-ENG-CMA','GB-ENG-DBY','GB-ENG-DEV','GB-ENG-DOR','GB-ENG-DUR',
+       'GB-ENG-ERY','GB-ENG-ESX','GB-ENG-ESS','GB-ENG-GLS','GB-ENG-HAL','GB-ENG-HAM',
+       'GB-ENG-HEF','GB-ENG-HRT','GB-ENG-IOW','GB-ENG-KEN','GB-ENG-LAN','GB-ENG-LEC',
+       'GB-ENG-LIN','GB-ENG-LND','GB-ENG-MAN','GB-ENG-KWL','GB-ENG-NFK','GB-ENG-NYK',
+       'GB-ENG-NTH','GB-ENG-NBL','GB-ENG-NTT','GB-ENG-OXF','GB-ENG-RUT','GB-ENG-SHR',
+       'GB-ENG-SOM','GB-ENG-BNS','GB-ENG-STS','GB-ENG-STT','GB-ENG-SFK','GB-ENG-SRY',
+       'GB-ENG-GAT','GB-ENG-WAR','GB-ENG-SAW','GB-ENG-WSX','GB-ENG-WKF','GB-ENG-WIL',
+       'GB-ENG-WOR','GB-SCT-ABE','GB-SCT-ABD','GB-SCT-ANS','GB-SCT-AGB','GB-SCT-CLK',
+       'GB-SCT-DGY','GB-SCT-DND','GB-SCT-EAY','GB-SCT-EDU','GB-SCT-ELN','GB-SCT-EDH',
+       'GB-SCT-ELS','GB-SCT-FAL','GB-SCT-FIF','GB-SCT-GLG','GB-SCT-HLD','GB-SCT-MLN',
+       'GB-SCT-MRY','GB-SCT-NAY','GB-SCT-NLK','GB-SCT-ORK','GB-SCT-PKN','GB-SCT-RFW',
+       'GB-SCT-SCB','GB-SCT-ZET','GB-SCT-SAY','GB-SCT-SLK','GB-SCT-STG','GB-SCT-WDU',
+       'GB-SCT-WLN','GB-WLS-AGY','GB-WLS-BGW','GB-WLS-BGE','GB-WLS-CAY','GB-WLS-CRF',
+       'GB-WLS-CMN','GB-WLS-CGN','GB-WLS-CWY','GB-WLS-DEN','GB-WLS-FLN','GB-WLS-GWN',
+       'GB-WLS-MTY','GB-WLS-MON','GB-WLS-NTL','GB-WLS-NWP','GB-WLS-PEM','GB-WLS-POW',
+       'GB-WLS-RCT','GB-WLS-SWA','GB-WLS-TOF','GB-WLS-VGL','GB-WLS-WRX','GB-NIR-ANT',
+       'GB-NIR-ARM','GB-NIR-BFS','GB-NIR-DRY','GB-NIR-DOW','GB-NIR-FER','GB-NIR-NYM',
+       'GB-NIR-OMH'],
   ES: ['ES-AN','ES-AR','ES-AS','ES-CB','ES-CE','ES-CL','ES-CM','ES-CN','ES-CT','ES-EX',
        'ES-GA','ES-IB','ES-MC','ES-MD','ES-ML','ES-NC','ES-PV','ES-RI','ES-VC'],
   IT: ['IT-21','IT-23','IT-25','IT-32','IT-34','IT-36','IT-42','IT-45','IT-52','IT-55',
@@ -505,7 +572,11 @@ let totalKB = 0;
 for(const cc of COUNTRIES){
   const a3 = ADM0[cc];
   if(!a3){ console.warn(`${cc} : pays inconnu, skip.`); continue; }
-  const feats = raw.features.filter(f => f.properties.adm0_a3 === a3);
+  // Le second test rattrape les regions que Natural Earth range sous un autre pays que
+  // celui qui les code : la Crimee et Sebastopol y sont sous adm0_a3 = RUS alors qu'eBird
+  // les appelle UA-43 et UA-40.
+  const feats = raw.features.filter(f => f.properties.adm0_a3 === a3
+    || (f.properties.iso_3166_2 || '').startsWith(cc + '-'));
   const res = buildCountry(feats, cc);
   if(!res){ console.warn(`${cc} : aucune region resolue sur ${feats.length} features.`); continue; }
   const payload = { viewBox: `0 0 ${W} ${H}`, regions: res.out };
