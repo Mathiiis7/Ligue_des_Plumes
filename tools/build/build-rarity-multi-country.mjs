@@ -117,6 +117,7 @@ const REGIONS = {
   AT: ['AT-1','AT-2','AT-3','AT-4','AT-5','AT-6','AT-7','AT-8',
        'AT-9'],
   IE: ['IE-C','IE-L','IE-M','IE-U'],
+  CY: ['CY-01','CY-02','CY-03','CY-04','CY-05','CY-06'],
   BE: ['BE-BRU','BE-VLG','BE-WAL'],
 // La France est volontairement absente de cette table. Son data/countries/fr/
 // freq_by_region.json contient 109 zones — les 13 regions ET les 96 departements — pour

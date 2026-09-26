@@ -121,7 +121,7 @@ function resolveGB(props){
 }
 
 // Pays ou une region eBird agrege plusieurs features Natural Earth (-> dissolve requis).
-const AGGREGATED = new Set(['ES', 'IT', 'GB', 'IE', 'BE', 'RS']);
+const AGGREGATED = new Set(['ES', 'IT', 'GB', 'IE', 'BE', 'RS', 'SI', 'LV']);
 
 function resolveCode(cc, props){
   if(cc === 'ES') return ES_HASC[props.code_hasc] || null;
@@ -240,6 +240,15 @@ const EBIRD_REGIONS = {
   AT: ['AT-1','AT-2','AT-3','AT-4','AT-5','AT-6','AT-7','AT-8',
        'AT-9'],
   IE: ['IE-C','IE-L','IE-M','IE-U'],
+  // Chypre : les 6 districts, Keryneia comprise. Contours geoBoundaries (OpenStreetMap,
+  // ODbL) - Natural Earth ne fournit que les 5 du sud, arretes a la ligne verte.
+  CY: ['CY-01','CY-02','CY-03','CY-04','CY-05','CY-06'],
+  // Slovenie et Lettonie : eBird descend a la commune (193 et 119), soit 104 et 546 km2
+  // par zone. On regroupe dans leurs regions officielles, que Natural Earth porte deja
+  // dans son champ region. Les frequences sont agregees en parallele, ponderees par le
+  // nombre de listes de chaque commune - le bar chart le donne, donc c'est exact.
+  SI: ['SI-R01','SI-R02','SI-R03','SI-R04','SI-R05','SI-R06','SI-R07','SI-R08','SI-R09','SI-R10','SI-R11','SI-R12'],
+  LV: ['LV-R01','LV-R02','LV-R03','LV-R04','LV-R05'],
   BE: ['BE-BRU','BE-VLG','BE-WAL'],
   GB: ['GB-ENG-BDF','GB-ENG-BRC','GB-ENG-BST','GB-ENG-BKM','GB-ENG-CAM','GB-ENG-CHS',
        'GB-ENG-CON','GB-ENG-CMA','GB-ENG-DBY','GB-ENG-DEV','GB-ENG-DOR','GB-ENG-DUR',
@@ -559,7 +568,7 @@ const ADM0 = {
   DE:'DEU', NL:'NLD', BE:'BEL', AT:'AUT', PL:'POL', CZ:'CZE', SK:'SVK', HU:'HUN',
   RO:'ROU', BG:'BGR', HR:'HRV', RS:'SRB', BA:'BIH', AL:'ALB', SI:'SVN',
   DK:'DNK', SE:'SWE', FI:'FIN', EE:'EST', LT:'LTU', LV:'LVA', BY:'BLR',
-  UA:'UKR', RU:'RUS', IE:'IRL',
+  UA:'UKR', RU:'RUS', IE:'IRL', CY:'CYP', LV:'LVA',
 };
 const filter = process.argv[3];
 const COUNTRIES = filter ? filter.split(',').map(s => s.trim().toUpperCase()) : Object.keys(ADM0);

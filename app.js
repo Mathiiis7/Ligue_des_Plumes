@@ -931,8 +931,10 @@ const COUNTRIES_REG = {
     barTier: () => (typeof REAL_RARITY_CY_EBIRD !== 'undefined') ? REAL_RARITY_CY_EBIRD : {},
     monthly: () => (typeof REAL_FREQ_MONTHLY_CY !== 'undefined') ? REAL_FREQ_MONTHLY_CY : {},
     st: () => ({}),
-    monthlyByRegion: () => null,
-    zonesMesurables: false,
+    // Chypre retrouve ses zones : 6 districts a 3 100 listes chacun, la meilleure densite
+    // d Europe apres les Pays-Bas. Elle en avait ete privee tant que Keryneia, en Chypre du
+    // Nord, n avait pas de contour - Natural Earth n en livre que les 5 du sud.
+    monthlyByRegion: () => REAL_FREQ_MONTHLY_BY_REGION_MULTI['CY'] || null,
     hasBarchart: true,
   },
   MD: {
@@ -4741,6 +4743,35 @@ const REGIONS_BY_COUNTRY = {
     { code:"AT-7", name:"Tirol" },
     { code:"AT-8", name:"Vorarlberg" },
     { code:"AT-9", name:"Wien" },
+  ],
+  SI: [
+    { code:"SI-R01", name:"Gorenjska" },
+    { code:"SI-R02", name:"Goriška" },
+    { code:"SI-R03", name:"Jugovzhodna Slovenija" },
+    { code:"SI-R04", name:"Koroška" },
+    { code:"SI-R05", name:"Notranjsko-kraška" },
+    { code:"SI-R06", name:"Obalno-kraška" },
+    { code:"SI-R07", name:"Osrednjeslovenska" },
+    { code:"SI-R08", name:"Podravska" },
+    { code:"SI-R09", name:"Pomurska" },
+    { code:"SI-R10", name:"Savinjska" },
+    { code:"SI-R11", name:"Spodnjeposavska" },
+    { code:"SI-R12", name:"Zasavska" },
+  ],
+  LV: [
+    { code:"LV-R01", name:"Kurzeme" },
+    { code:"LV-R02", name:"Latgale" },
+    { code:"LV-R03", name:"Riga" },
+    { code:"LV-R04", name:"Vidzeme" },
+    { code:"LV-R05", name:"Zemgale" },
+  ],
+  CY: [
+    { code:"CY-04", name:"Ammochostos" },
+    { code:"CY-06", name:"Keryneia" },
+    { code:"CY-03", name:"Larnaka" },
+    { code:"CY-01", name:"Lefkosia" },
+    { code:"CY-02", name:"Lemesos" },
+    { code:"CY-05", name:"Pafos" },
   ],
   IE: [
     { code:"IE-C", name:"Connaught" },

@@ -35,7 +35,7 @@
 <!-- Preload le module principal : le browser commence le fetch de app.js des le premier
      scan du <head>, en parallele du parsing HTML, au lieu d'attendre le <script> tout en
      bas (~1000 lignes plus loin). Gain ~200-400ms sur 3G/4G. -->
-<link rel="modulepreload" href="app.js?v=134">
+<link rel="modulepreload" href="app.js?v=135">
 <!-- Preload aussi le CSS principal (deja bloquant mais explicite ici). -->
 <link rel="preload" href="styles.css" as="style">
 <!-- Preconnect anticipe l'ouverture TCP+TLS vers les CDN critiques (Leaflet, Firebase, iNat, xeno-canto). -->
@@ -908,6 +908,8 @@
           <li><b>GBIF</b> - données d'occurrence, utilisées par la carte d'observations de la fiche espèce</li>
           <li><b>xeno-canto</b> - chants et cris (onglet Quiz)</li>
           <li><b>Wikipedia</b> - descriptions et photos</li>
+          <li><b>Natural Earth</b> (domaine public) - contours des régions sur les cartes par zone</li>
+          <li><b>geoBoundaries</b> - contours des communes danoises (domaine public), d'Åland et des six districts chypriotes. Ces deux derniers dérivent d'<b>OpenStreetMap</b> : © les contributeurs OpenStreetMap, sous <a href="https://opendatacommons.org/licenses/odbl/1-0/" target="_blank" rel="noopener">ODbL 1.0</a>, licence qui s'étend aux contours simplifiés publiés ici (<code>data/regions-cy-simplified.json</code> et <code>data/regions-fi-simplified.json</code>).</li>
         </ul>
 
         <h3 style="margin:20px 0 8px; font-size:16px; color:var(--ink);">📅 Versions des données</h3>
@@ -1185,4 +1187,4 @@
   </footer>
 </div>
 
-<script type="module" src="app.js?v=134"></script>
+<script type="module" src="app.js?v=135"></script>
