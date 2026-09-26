@@ -17,7 +17,13 @@ import { dirname, join } from 'node:path';
 const __dir = dirname(fileURLToPath(import.meta.url));
 const OUT = join(__dir, 'exotic-per-country-scraped.generated.js');
 
-const COUNTRIES = ['FR', 'ME', 'ES', 'IT', 'GB', 'PT', 'CH', 'NO', 'GR', 'IS', 'LK', 'NA', 'AU', 'NZ', 'US', 'CA'];
+// Les 53 pays de COUNTRIES_REG (Europe entiere ajoutee le 2026-09-26). Le fichier de sortie
+// est reecrit en entier a chaque run : il faut donc les passer tous, pas seulement les
+// nouveaux, sous peine de perdre les anciens.
+const COUNTRIES = ['FR', 'ME', 'ES', 'IT', 'GB', 'PT', 'CH', 'NO', 'GR', 'IS', 'LK', 'NA', 'AU', 'NZ', 'US', 'CA',
+  'AL', 'AT', 'BA', 'BE', 'BG', 'BY', 'CY', 'CZ', 'DE', 'DK', 'EE', 'FI', 'FO', 'GG', 'GI',
+  'HR', 'HU', 'IE', 'IM', 'JE', 'LT', 'LU', 'LV', 'MD', 'MK', 'MT', 'NL', 'PL', 'RO', 'RS',
+  'RU', 'SE', 'SI', 'SJ', 'SK', 'UA', 'XK'];
 // Sous-set pour un run cible : CLI arg 1 en CSV, sinon tous. Ex: node scrape... AU,NZ
 const CLI_COUNTRIES = (process.argv[2] || '').split(',').map(s => s.trim()).filter(Boolean);
 const RUN_COUNTRIES = CLI_COUNTRIES.length > 0 ? CLI_COUNTRIES : COUNTRIES;

@@ -56,13 +56,32 @@ const ISO_FIXUP = {
   'NZ-CIT':'NZ-CI',   // Chatham Islands
 };
 
+
+// Irlande : eBird utilise les 4 provinces historiques, Natural Earth les 34 comtes.
+// Rattachement par nom de comte - aucune autre source ne porte la province.
+const IE_PROVINCE = {
+  'Galway':'IE-C','Leitrim':'IE-C','Mayo':'IE-C','Roscommon':'IE-C','Sligo':'IE-C',
+  'Carlow':'IE-L','Dublin':'IE-L','Dún Laoghaire–Rathdown':'IE-L','Fingal':'IE-L',
+  'South Dublin':'IE-L','Kildare':'IE-L','Kilkenny':'IE-L','Laoighis':'IE-L',
+  'Longford':'IE-L','Louth':'IE-L','Meath':'IE-L','Offaly':'IE-L','Westmeath':'IE-L',
+  'Wexford':'IE-L','Wicklow':'IE-L',
+  'Clare':'IE-M','Cork':'IE-M','Kerry':'IE-M','Limerick':'IE-M','North Tipperary':'IE-M',
+  'South Tipperary':'IE-M','Waterford':'IE-M',
+  'Cavan':'IE-U','Donegal':'IE-U','Monaghan':'IE-U',
+};
+// Belgique : eBird a 3 regions, Natural Earth 11 provinces qui portent deja leur
+// rattachement dans le champ 'region'.
+const BE_REGION = { 'Flemish':'BE-VLG', 'Walloon':'BE-WAL', 'Capital Region':'BE-BRU' };
+
 // Pays ou une region eBird agrege plusieurs features Natural Earth (-> dissolve requis).
-const AGGREGATED = new Set(['ES', 'IT', 'GB']);
+const AGGREGATED = new Set(['ES', 'IT', 'GB', 'IE', 'BE']);
 
 function resolveCode(cc, props){
   if(cc === 'ES') return ES_HASC[props.code_hasc] || null;
   if(cc === 'IT') return IT_REGION[props.region] || null;
   if(cc === 'GB') return GB_UNIT[props.geonunit] || null;
+  if(cc === 'IE') return IE_PROVINCE[props.name] || null;
+  if(cc === 'BE') return BE_REGION[props.region] || null;
   const iso = props.iso_3166_2;
   if(!iso) return null;
   const fixed = ISO_FIXUP[iso] || iso;
@@ -104,6 +123,75 @@ const NAMES = {
 // (NO-21 Bouvet a -54 de latitude, GR-69 Mont Athos, IS-0, iles australiennes...)
 // qui etirent la bbox et ecrasent le pays dans le viewBox.
 const EBIRD_REGIONS = {
+  // --- Europe, ajoutee le 2026-09-26 -------------------------------------------
+  // Codes eBird (subnational1). Les contours viennent de iso_3166_2 dans Natural Earth,
+  // qui s'y apparie de 93 a 100 % selon le pays - sauf Irlande, Belgique et Danemark,
+  // traites plus bas. Malte, Macedoine du Nord, Luxembourg, Chypre et Moldavie n'ont
+  // volontairement pas de zones : leur niveau 1 eBird est la commune, donc illisible.
+  DE: ['DE-BW','DE-BY','DE-BE','DE-BB','DE-HB','DE-HH','DE-HE','DE-MV',
+       'DE-NI','DE-NW','DE-RP','DE-SL','DE-SN','DE-ST','DE-SH','DE-TH'],
+  NL: ['NL-DR','NL-FL','NL-FR','NL-GE','NL-GR','NL-LI','NL-NB','NL-NH',
+       'NL-OV','NL-UT','NL-ZE','NL-ZH'],
+  PL: ['PL-DS','PL-KP','PL-LU','PL-LB','PL-MZ','PL-MA','PL-OP','PL-PK',
+       'PL-PD','PL-PM','PL-WN','PL-WP','PL-ZP','PL-LD','PL-SL','PL-SK'],
+  CZ: ['CZ-PR','CZ-JM','CZ-JC','CZ-KA','CZ-VY','CZ-KR','CZ-LI','CZ-MO',
+       'CZ-OL','CZ-PA','CZ-PL','CZ-ST','CZ-ZL','CZ-US'],
+  SK: ['SK-BC','SK-BL','SK-KI','SK-NI','SK-PV','SK-TC','SK-TA','SK-ZI'],
+  HU: ['HU-BA','HU-BZ','HU-BU','HU-BK','HU-BE','HU-BC','HU-CS','HU-DE',
+       'HU-DU','HU-EG','HU-FE','HU-GY','HU-GS','HU-HB','HU-HE','HU-HV',
+       'HU-JN','HU-KV','HU-KM','HU-KE','HU-MI','HU-NK','HU-NY','HU-NO',
+       'HU-PE','HU-PS','HU-ST','HU-SO','HU-SN','HU-SZ','HU-SD','HU-SS',
+       'HU-SK','HU-SH','HU-SF','HU-TB','HU-TO','HU-VA','HU-VE','HU-VM',
+       'HU-ZA','HU-ZE'],
+  RO: ['RO-AB','RO-AR','RO-AG','RO-BC','RO-BH','RO-BN','RO-BT','RO-BR',
+       'RO-BV','RO-B','RO-BZ','RO-CL','RO-CS','RO-CJ','RO-CT','RO-CV',
+       'RO-DJ','RO-DB','RO-GL','RO-GR','RO-GJ','RO-HR','RO-HD','RO-IL',
+       'RO-IS','RO-IF','RO-MM','RO-MH','RO-MS','RO-NT','RO-OT','RO-PH',
+       'RO-SJ','RO-SM','RO-SB','RO-SV','RO-TR','RO-TM','RO-TL','RO-VS',
+       'RO-VN','RO-VL'],
+  BG: ['BG-01','BG-02','BG-08','BG-07','BG-26','BG-09','BG-10','BG-11',
+       'BG-12','BG-13','BG-14','BG-15','BG-16','BG-17','BG-18','BG-27',
+       'BG-19','BG-20','BG-21','BG-23','BG-22','BG-24','BG-25','BG-03',
+       'BG-04','BG-05','BG-06','BG-28'],
+  HR: ['HR-07','HR-12','HR-19','HR-21','HR-18','HR-04','HR-06','HR-02',
+       'HR-09','HR-20','HR-14','HR-11','HR-08','HR-03','HR-17','HR-05',
+       'HR-10','HR-16','HR-13','HR-01','HR-15'],
+  RS: ['RS-00','RS-14','RS-11','RS-23','RS-09','RS-08','RS-17','RS-20',
+       'RS-24','RS-22','RS-10','RS-13','RS-19','RS-18','RS-21','RS-VO',
+       'RS-15','RS-16','RS-12'],
+  BA: ['BA-BIH','BA-SRP'],
+  AL: ['AL-01','AL-09','AL-02','AL-03','AL-04','AL-05','AL-06','AL-07',
+       'AL-08','AL-10','AL-11','AL-12'],
+  SE: ['SE-K','SE-W','SE-I','SE-X','SE-N','SE-Z','SE-F','SE-H',
+       'SE-G','SE-BD','SE-M','SE-AB','SE-D','SE-C','SE-S','SE-AC',
+       'SE-Y','SE-U','SE-O','SE-T','SE-E'],
+  FI: ['FI-08','FI-07','FI-05','FI-09','FI-10','FI-13','FI-14','FI-15',
+       'FI-12','FI-11','FI-16','FI-17','FI-02','FI-03','FI-04','FI-19',
+       'FI-06','FI-18','FI-01'],
+  EE: ['EE-37','EE-39','EE-44','EE-51','EE-49','EE-59','EE-57','EE-67',
+       'EE-65','EE-70','EE-74','EE-78','EE-82','EE-84','EE-86'],
+  LT: ['LT-AL','LT-KU','LT-KL','LT-MR','LT-PN','LT-TA','LT-TE','LT-UT',
+       'LT-VL','LT-SA'],
+  BY: ['BY-BR','BY-HO','BY-HR','BY-MA','BY-MI','BY-VI'],
+  UA: ['UA-71','UA-74','UA-77','UA-12','UA-14','UA-26','UA-63','UA-65',
+       'UA-68','UA-35','UA-30','UA-32','UA-46','UA-09','UA-48','UA-51',
+       'UA-53','UA-43','UA-56','UA-40','UA-59','UA-61','UA-05','UA-07',
+       'UA-21','UA-23','UA-18'],
+  RU: ['RU-AD','RU-ALT','RU-AL','RU-AMU','RU-ARK','RU-AST','RU-BA','RU-BEL',
+       'RU-BRY','RU-BU','RU-CE','RU-CHE','RU-CHU','RU-CU','RU-DA','RU-IN',
+       'RU-IRK','RU-IVA','RU-YEV','RU-KB','RU-KGD','RU-KL','RU-KLU','RU-KAM',
+       'RU-KC','RU-KEM','RU-KHA','RU-KK','RU-KHM','RU-KIR','RU-KO','RU-KOS',
+       'RU-KDA','RU-KYA','RU-KGN','RU-KRS','RU-LEN','RU-LIP','RU-MAG','RU-ME',
+       'RU-MO','RU-MOW','RU-MOS','RU-MUR','RU-NEN','RU-NIZ','RU-SE','RU-NGR',
+       'RU-NVS','RU-OMS','RU-ORE','RU-ORL','RU-PNZ','RU-PER','RU-PRI','RU-PSK',
+       'RU-KR','RU-ROS','RU-RYA','RU-SPE','RU-SA','RU-SAK','RU-SAM','RU-SAR',
+       'RU-SMO','RU-STA','RU-SVE','RU-TAM','RU-TA','RU-TOM','RU-TUL','RU-TY',
+       'RU-TVE','RU-TYU','RU-UD','RU-ULY','RU-VLA','RU-VGG','RU-VLG','RU-VOR',
+       'RU-YAN','RU-YAR','RU-CHI'],
+  AT: ['AT-1','AT-2','AT-3','AT-4','AT-5','AT-6','AT-7','AT-8',
+       'AT-9'],
+  IE: ['IE-C','IE-L','IE-M','IE-U'],
+  BE: ['BE-BRU','BE-VLG','BE-WAL'],
   GB: ['GB-ENG','GB-SCT','GB-WLS','GB-NIR'],
   ES: ['ES-AN','ES-AR','ES-AS','ES-CB','ES-CE','ES-CL','ES-CM','ES-CN','ES-CT','ES-EX',
        'ES-GA','ES-IB','ES-MC','ES-MD','ES-ML','ES-NC','ES-PV','ES-RI','ES-VC'],
@@ -399,6 +487,12 @@ if(!srcPath){
 const ADM0 = {
   GB:'GBR', ES:'ESP', IT:'ITA', PT:'PRT', CH:'CHE', NO:'NOR', GR:'GRC',
   IS:'ISL', LK:'LKA', NA:'NAM', AU:'AUS', NZ:'NZL', US:'USA', CA:'CAN',
+  // Europe, ajoutee le 2026-09-26. Codes ISO alpha-3, ceux que Natural Earth met
+  // dans adm0_a3.
+  DE:'DEU', NL:'NLD', BE:'BEL', AT:'AUT', PL:'POL', CZ:'CZE', SK:'SVK', HU:'HUN',
+  RO:'ROU', BG:'BGR', HR:'HRV', RS:'SRB', BA:'BIH', AL:'ALB', SI:'SVN',
+  DK:'DNK', SE:'SWE', FI:'FIN', EE:'EST', LT:'LTU', LV:'LVA', BY:'BLR',
+  UA:'UKR', RU:'RUS', IE:'IRL',
 };
 const filter = process.argv[3];
 const COUNTRIES = filter ? filter.split(',').map(s => s.trim().toUpperCase()) : Object.keys(ADM0);
