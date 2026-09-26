@@ -15664,14 +15664,19 @@ function _pkdxRender(){
     // Reste le seul cas que la pastille est seule a savoir : l'espece n'a jamais ete notee
     // dans la zone choisie.
     const infoPastille = vue.absente ? 'jamais notée ici' : '';
+    // Seules les cases cochees portent une photo : une manquante reste une silhouette, et
+    // telecharger 500 Ko pour la griser n'apporterait rien.
+    const photoConnue = r.owned ? _photoCarteConnue(r.sci) : '';
     // Absente de la zone choisie : la case reste, en retrait. La masquer ferait croire que
     // l'espece n'existe pas, alors qu'elle est seulement ailleurs.
     return `<div class="pkdx-card${r.owned?'':' missing'}" data-sci="${esc(r.sci)}">
       <span class="pkdx-num">#${num}</span>
-      ${r.saison ? `<span class="pkdx-saison" data-tip="Espèce nettement saisonnière : son pic mensuel vaut au moins 3 fois sa moyenne annuelle. Viser le bon mois change tout.">◑</span>` : ''}
+      ${r.saison ? `<span class="pkdx-saison" data-tip="Espèce nettement saisonnière : elle déserte une bonne partie de l'année. Viser le bon mois change tout.">◑</span>` : ''}
       ${cats.length ? `<span class="pkdx-exo" data-tip="${esc(exoLbl)}${cats.length > 1 ? ' — le statut change selon la région' : ''}">${cats.join('/')}</span>` : ''}
       <span class="pkdx-tier" style="background:${fondBadge};"${infoPastille ? ` data-tip="${infoPastille}"` : ''}>${badgeText}</span>
-      <div class="pkdx-img" data-pkdx-lazy="${esc(r.sci)}">${r.owned ? '🐦' : ''}</div>
+      <div class="pkdx-img"${photoConnue ? '' : ` data-pkdx-lazy="${esc(r.sci)}"`}>${photoConnue
+        ? `<img loading="lazy" src="${esc(photoConnue)}" alt="${esc(r.nm)}" onerror="this.parentElement.textContent='🐦'">`
+        : (r.owned ? '🐦' : '')}</div>
       <div class="pkdx-name">${esc(r.nm)}</div>
       <div class="pkdx-sci">${esc(r.sci)}</div>
     </div>`;
@@ -15704,6 +15709,17 @@ function _pkdxRender(){
   }
   // Lazy loading photos via IntersectionObserver.
   _pkdxLazyPhotos();
+}
+// Photo deja connue, lue sans attendre : on la pose directement dans le HTML de la carte.
+// Sans ca, chaque re-rendu de la grille - cocher un filtre, changer de tri - repassait par
+// l'emoji le temps qu'une promesse deja resolue rende la main, et on voyait clignoter un
+// oiseau en emoji derriere chaque photo.
+function _photoCarteConnue(sci){
+  const k = (sci || '').toLowerCase();
+  const ovr = (typeof PHOTO_OVERRIDE_WIKI === 'object') ? PHOTO_OVERRIDE_WIKI[k] : null;
+  if(ovr && ovr.url) return ovr.thumb || ovr.url;
+  const c = _spPhotoCache.get(k);
+  return (c && (c.thumb || c.url)) || '';
 }
 function _pkdxLazyPhotos(){
   const els = document.querySelectorAll('#pkdxGrid .pkdx-img[data-pkdx-lazy]');
