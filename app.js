@@ -12391,7 +12391,7 @@ function _ordonnerSelectionDevant(zones, selection){
 // Les codes listes ici ne sont PAS dessines sur la carte principale (cf. _codesEnEncart),
 // sinon ils y apparaitraient une seconde fois - ce que faisaient les Acores jusqu'ici.
 const _ENCART_CARTE = {
-  FR: [{ titre: '', cadre: { x:820, y:4, w:176, h:164 },
+  FR: [{ titre: 'Petite couronne', cadre: { x:838, y:34, w:158, h:150 },
          codes: ['FR-IDF-75C', 'FR-IDF-92', 'FR-IDF-93', 'FR-IDF-94'] }],
 };
 // Territoires que le GENERATEUR a deja sortis de la carte et reposes dans un coin (table
@@ -12528,11 +12528,18 @@ function _unEncart(cfg, paths, rendre){
   // Un encart peut se passer de titre : la petite couronne autour de Paris se reconnait sans
   // qu'on l'ecrive, alors que « Açores » et « Madère » ne se devinent pas. Sans titre, le
   // bandeau qui lui etait reserve revient a la carte, qui occupe donc toute la boite.
-  const c = cfg.cadre, marge = 2, bandeau = cfg.titre ? 20 : 0;
+  const c = cfg.cadre, marge = 2, bandeau = 0;
+  // Meme legende que les encarts poses par le generateur (cf. _cadresEncarts) : le nom
+  // s'ecrit SUR le filet, sur un petit fond qui interrompt les pointilles, au lieu de
+  // flotter a l'interieur au-dessus de la carte.
+  const CORPS = 27;
   const titreSvg = cfg.titre
-    ? '<text x="' + (c.x + c.w / 2) + '" y="' + (c.y + 16) + '" text-anchor="middle"'
-      + ' font-size="20" font-weight="600" font-family="system-ui" fill="var(--ink-2, #47534f)">'
-      + esc(cfg.titre) + '</text>'
+    ? '<rect x="' + (c.x + 16) + '" y="' + (c.y - CORPS * 0.62).toFixed(1) + '" width="'
+      + (cfg.titre.length * CORPS * 0.56 + 16).toFixed(1) + '" height="' + (CORPS * 1.2).toFixed(1)
+      + '" rx="7" ry="7" fill="var(--surface, #fff)"/>'
+      + '<text x="' + (c.x + 24) + '" y="' + (c.y + CORPS * 0.3).toFixed(1) + '"'
+      + ' font-size="' + CORPS + '" font-weight="700" font-family="system-ui"'
+      + ' fill="var(--ink-2, #47534f)">' + esc(cfg.titre) + '</text>'
     : '';
   // Un filet pointille gris dit que ce cadre n'est pas a l'echelle ni a sa place : sans lui,
   // les Canaries posees a cote de l'Andalousie se lisent comme une region voisine.

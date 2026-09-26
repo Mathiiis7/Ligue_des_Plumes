@@ -319,8 +319,20 @@ const MAIN_BOX = {
 // ecrase la partie habitee. Hawai porte ainsi les iles du Nord-Ouest jusqu'a Midway :
 // 23.5 degres de longitude au lieu de 5.4 pour les huit iles principales, qui se
 // retrouvaient reduites a 8 pixels. On ne garde que les anneaux dans la fenetre indiquee.
+// Anneaux que Natural Earth attribue a DEUX zones a la fois. On les retire de celle a
+// laquelle ils n appartiennent pas. Fenetre en degres : un anneau entierement dedans part.
+const DOUBLONS_NE = {
+  // Les enclaves fribourgeoises du pays de Vaud - Estavayer-le-Lac, Surpierre, Vuissens.
+  // Elles sont fribourgeoises : on les enleve de Vaud, qui ne fait que les entourer.
+  'CH-VD': [{ lon: [6.74, 6.90], lat: [46.71, 46.78] }],
+};
+
 const CLIP_LON = {
   'US-HI': { min: -161 },   // ecarte Midway, Kure et le reste de la chaine du Nord-Ouest
+  // Natural Earth rattache Jan Mayen au Nordland. A 8 degres ouest contre 4,5 est pour le
+  // continent, l ile etirait la carte de moitie : la Norvege n'occupait plus que deux tiers
+  // de sa largeur utile. Elle est inhabitee et ne porte aucune donnee propre.
+  'NO-18': { min: 0 },
 };
 
 // Territoires eloignes places en encart (sinon ils etirent la bbox et ecrasent le pays).
@@ -513,6 +525,25 @@ function buildCountry(features, cc){
   if(!codes.length) return null;
   const missing = [...allowed].filter(c => !byCode[c]);
 
+  // Natural Earth attribue parfois le MEME anneau a deux zones voisines. Les enclaves
+  // fribourgeoises du pays de Vaud - Estavayer-le-Lac, Surpierre, Vuissens - figurent ainsi
+  // a la fois dans CH-VD et dans CH-FR. Tant qu'on affichait les 26 cantons ca ne se voyait
+  // pas, les deux dessins se superposant. Mais des qu'on regroupe, Vaud part en Lemanique et
+  // Fribourg en Mittelland : le meme sol se retrouve colore dans deux regions differentes.
+  //
+  // Le retrait est CIBLE, pas automatique. Une detection generique par forme identique
+  // supprimait Berlin, Bruxelles, Vienne, Prague, Bucarest, Kyiv et l'ACT australien : une
+  // ville-Etat enclavee a le meme contour que le TROU qu'elle creuse dans la region qui
+  // l'entoure, et rien ne distingue les deux une fois les anneaux mis a plat.
+  let deDoublonnes = 0;
+  for(const [code, fenetres] of Object.entries(DOUBLONS_NE)){
+    if(!byCode[code]) continue;
+    const avant = byCode[code].length;
+    byCode[code] = byCode[code].filter(ring => !fenetres.some(f => ring.every(([x, y]) =>
+      x >= f.lon[0] && x <= f.lon[1] && y >= f.lat[0] && y <= f.lat[1])));
+    deDoublonnes += avant - byCode[code].length;
+  }
+
   // 1bis. ES/IT/GB : fusionne les provinces d'une meme region eBird en supprimant
   // leurs frontieres internes. Les autres pays sont deja en 1:1 avec eBird.
   let dissolved = 0, dissolveFailed = 0;
@@ -575,7 +606,7 @@ function buildCountry(features, cc){
     if(!paths.length) continue;
     out[code] = { name: NAMES[code] || neNames[code] || code, path: paths.join(' ') };
   }
-  return { out, skipped, tol, missing, dissolved, dissolveFailed, clipped,
+  return { out, skipped, tol, missing, dissolved, dissolveFailed, clipped, deDoublonnes,
            nRings: codes.reduce((a,c) => a + byCode[c].length, 0) };
 }
 
@@ -623,6 +654,7 @@ for(const cc of COUNTRIES){
     `${res.nRings} anneaux bruts, tol=${res.tol.toFixed(4)}deg -> ${kb.toFixed(1)} KB`);
   if(res.missing.length) console.warn(`  ⚠ MANQUE : ${res.missing.join(',')}`);
   if(res.clipped) console.log(`  clip : ${res.clipped} ilots lointains retires (CLIP_LON)`);
+  if(res.deDoublonnes) console.log('  anneaux dupliques dans Natural Earth, retires : ' + res.deDoublonnes);
   if(res.dissolved) console.log(`  dissolve : ${res.dissolved} regions fusionnees` +
     (res.dissolveFailed ? `, ${res.dissolveFailed} en echec (contours d'origine gardes)` : ''));
 }
