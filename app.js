@@ -1409,8 +1409,20 @@ function _openCountryPicker(currentCode, opts = {}){
       // qui sont le plus souvent la raison pour laquelle on en a change.
       if(cc !== ccCourant){
         it.style.opacity = '.5';
-        await opts.onPays(cc);
+        // On n'attend PAS la fin du chargement pour basculer. Les frequences regionales
+        // pesent 2,6 Mo pour la France et 2,3 pour le Royaume-Uni : le modal restait fige
+        // une seconde entiere apres le clic. Or les noms des zones sont deja en memoire -
+        // on les affiche tout de suite, et on redessine quand les valeurs arrivent.
+        const chargement = opts.onPays(cc);
         ccCourant = cc;
+        onglet = opts.zones(cc) ? 'zones' : 'pays';
+        searchEl.value = '';
+        render();
+        try { await chargement; } catch(_) {}
+        // Le modal a pu etre ferme pendant le telechargement.
+        if(!backdrop.isConnected) return;
+        render();
+        return;
       }
       // Un pays sans decoupage n'a pas d'onglet zones a montrer : on reste sur la liste des
       // pays, ou le surlignage dit deja que le changement a ete pris.
@@ -12911,7 +12923,12 @@ function _renderSpeciesRarityCard(key){
       if(Array.isArray(serie)) serie.forEach((v, i) => { if((v || 0) > pic){ pic = v; moisPic = i; } });
       return { code: r.code, name: r.name, score, pic, moisPic, nbMois: Array.isArray(serie) ? serie.filter(v => v > 0).length : 0 };
     });
-    scored.sort((a, b) => b.score - a.score);
+    // Tant que les frequences ne sont pas arrivees, tous les scores valent zero : trier
+    // dessus laisserait l'ordre brut d'eBird, qui n'a l'air de rien. On trie alors par nom,
+    // ce qui donne une liste lisible tout de suite, puis par abondance des qu'on sait.
+    const aDesValeurs = scored.some(s => s.score > 0);
+    scored.sort(aDesValeurs ? (a, b) => b.score - a.score
+                            : (a, b) => a.name.localeCompare(b.name, 'fr'));
     const nationalLbl = (COUNTRIES_REG[cc] && COUNTRIES_REG[cc].name) || cc;
     // Sans drapeau : l'emoji tombe en lettres "FR" sur Windows, et le pays est deja nomme
     // juste a cote, dans l'onglet voisin et sur le bouton qui a ouvert le selecteur.
