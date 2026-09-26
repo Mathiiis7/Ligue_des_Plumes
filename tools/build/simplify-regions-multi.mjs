@@ -15,7 +15,7 @@
     node tools/build/simplify-regions-multi.mjs ne_admin1.geojson          # tous
     node tools/build/simplify-regions-multi.mjs ne_admin1.geojson US,CA    # subset
 */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -123,7 +123,26 @@ function resolveGB(props){
 // Pays ou une region eBird agrege plusieurs features Natural Earth (-> dissolve requis).
 const AGGREGATED = new Set(['ES', 'IT', 'GB', 'IE', 'BE', 'RS', 'SI', 'LV', 'CH', 'DK', 'HU']);
 
+// Pays dont les zones sont des REGROUPEMENTS : Suisse, Slovenie, Lettonie, Hongrie,
+// Royaume-Uni. La table zones-agregees.json dit a quelle zone-cible chaque zone source
+// appartient, et c'est la meme table qui sert a agreger les frequences (agreger-zones.mjs,
+// agreger-ch.mjs). La lire ici plutot que de pre-etiqueter le fichier Natural Earth a la
+// main rend la generation rejouable depuis le depot seul.
+const AGREGE = (() => {
+  try {
+    const p = join(__dir, 'zones-agregees.json');
+    return existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')).parCommune || {} : {};
+  } catch(e){ return {}; }
+})();
+
 function resolveCode(cc, props){
+  if(AGREGE[cc]){
+    const base = resolveCodeBrut(cc, props);
+    return base ? (AGREGE[cc][base] || null) : null;
+  }
+  return resolveCodeBrut(cc, props);
+}
+function resolveCodeBrut(cc, props){
   if(cc === 'ES') return ES_HASC[props.code_hasc] || null;
   if(cc === 'IT') return IT_REGION[props.region] || null;
   if(cc === 'GB') return resolveGB(props);
@@ -255,25 +274,10 @@ const EBIRD_REGIONS = {
   SI: ['SI-R01','SI-R02','SI-R03','SI-R04','SI-R05','SI-R06','SI-R07','SI-R08','SI-R09','SI-R10','SI-R11','SI-R12'],
   LV: ['LV-R01','LV-R02','LV-R03','LV-R04','LV-R05'],
   BE: ['BE-BRU','BE-VLG','BE-WAL'],
-  GB: ['GB-ENG-BDF','GB-ENG-BRC','GB-ENG-BST','GB-ENG-BKM','GB-ENG-CAM','GB-ENG-CHS',
-       'GB-ENG-CON','GB-ENG-CMA','GB-ENG-DBY','GB-ENG-DEV','GB-ENG-DOR','GB-ENG-DUR',
-       'GB-ENG-ERY','GB-ENG-ESX','GB-ENG-ESS','GB-ENG-GLS','GB-ENG-HAL','GB-ENG-HAM',
-       'GB-ENG-HEF','GB-ENG-HRT','GB-ENG-IOW','GB-ENG-KEN','GB-ENG-LAN','GB-ENG-LEC',
-       'GB-ENG-LIN','GB-ENG-LND','GB-ENG-MAN','GB-ENG-KWL','GB-ENG-NFK','GB-ENG-NYK',
-       'GB-ENG-NTH','GB-ENG-NBL','GB-ENG-NTT','GB-ENG-OXF','GB-ENG-RUT','GB-ENG-SHR',
-       'GB-ENG-SOM','GB-ENG-BNS','GB-ENG-STS','GB-ENG-STT','GB-ENG-SFK','GB-ENG-SRY',
-       'GB-ENG-GAT','GB-ENG-WAR','GB-ENG-SAW','GB-ENG-WSX','GB-ENG-WKF','GB-ENG-WIL',
-       'GB-ENG-WOR','GB-SCT-ABE','GB-SCT-ABD','GB-SCT-ANS','GB-SCT-AGB','GB-SCT-CLK',
-       'GB-SCT-DGY','GB-SCT-DND','GB-SCT-EAY','GB-SCT-EDU','GB-SCT-ELN','GB-SCT-EDH',
-       'GB-SCT-ELS','GB-SCT-FAL','GB-SCT-FIF','GB-SCT-GLG','GB-SCT-HLD','GB-SCT-MLN',
-       'GB-SCT-MRY','GB-SCT-NAY','GB-SCT-NLK','GB-SCT-ORK','GB-SCT-PKN','GB-SCT-RFW',
-       'GB-SCT-SCB','GB-SCT-ZET','GB-SCT-SAY','GB-SCT-SLK','GB-SCT-STG','GB-SCT-WDU',
-       'GB-SCT-WLN','GB-WLS-AGY','GB-WLS-BGW','GB-WLS-BGE','GB-WLS-CAY','GB-WLS-CRF',
-       'GB-WLS-CMN','GB-WLS-CGN','GB-WLS-CWY','GB-WLS-DEN','GB-WLS-FLN','GB-WLS-GWN',
-       'GB-WLS-MTY','GB-WLS-MON','GB-WLS-NTL','GB-WLS-NWP','GB-WLS-PEM','GB-WLS-POW',
-       'GB-WLS-RCT','GB-WLS-SWA','GB-WLS-TOF','GB-WLS-VGL','GB-WLS-WRX','GB-NIR-ANT',
-       'GB-NIR-ARM','GB-NIR-BFS','GB-NIR-DRY','GB-NIR-DOW','GB-NIR-FER','GB-NIR-NYM',
-       'GB-NIR-OMH'],
+  // Royaume-Uni : 16 regions NUTS-1 au lieu de 109 comtes (2 235 km2 chacun, plus fin
+  // qu un departement francais et illisible), plus les Shetland a part - a 60,85 de
+  // latitude contre 59,36 pour le reste, elles mangeaient 16 % de la hauteur de carte.
+  GB: ['GB-R01','GB-R02','GB-R03','GB-R04','GB-R05','GB-R06','GB-R07','GB-R08','GB-R09','GB-R10','GB-R11','GB-R12','GB-R13','GB-R14','GB-R15','GB-R16','GB-ZET'],
   ES: ['ES-AN','ES-AR','ES-AS','ES-CB','ES-CE','ES-CL','ES-CM','ES-CN','ES-CT','ES-EX',
        'ES-GA','ES-IB','ES-MC','ES-MD','ES-ML','ES-NC','ES-PV','ES-RI','ES-VC'],
   IT: ['IT-21','IT-23','IT-25','IT-32','IT-34','IT-36','IT-42','IT-45','IT-52','IT-55',
@@ -331,6 +335,7 @@ const INSETS = {
   ES: { 'ES-CN': [650, 575, 330, 160],
         'ES-CE': [672, 800, 92, 64], 'ES-ML': [868, 800, 92, 64] },
   NZ: { 'NZ-CI': [780, 20, 200, 160] },
+  GB: { 'GB-ZET': [700, 55, 240, 215] },
 };
 
 // ---------------------------------------------------------------------------

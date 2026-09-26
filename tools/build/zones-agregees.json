@@ -354,6 +354,145 @@
    "HU-BC": "HU-R3",
    "HU-DE": "HU-R4",
    "HU-NY": "HU-R4"
+  },
+  "GB": {
+   "GB-NIR-DRY": "GB-R10",
+   "GB-NIR-FER": "GB-R10",
+   "GB-NIR-ARM": "GB-R10",
+   "GB-NIR-NYM": "GB-R10",
+   "GB-WLS-FLN": "GB-R15",
+   "GB-ENG-CHS": "GB-R09",
+   "GB-WLS-WRX": "GB-R15",
+   "GB-ENG-SHR": "GB-R14",
+   "GB-WLS-POW": "GB-R15",
+   "GB-ENG-HEF": "GB-R14",
+   "GB-WLS-MON": "GB-R15",
+   "GB-ENG-GLS": "GB-R12",
+   "GB-SCT-SCB": "GB-R04",
+   "GB-ENG-NBL": "GB-R07",
+   "GB-ENG-CMA": "GB-R09",
+   "GB-SCT-DGY": "GB-R13",
+   "GB-NIR-BFS": "GB-R10",
+   "GB-NIR-DOW": "GB-R10",
+   "GB-SCT-CLK": "GB-R04",
+   "GB-SCT-STG": "GB-R04",
+   "GB-SCT-FAL": "GB-R04",
+   "GB-SCT-WLN": "GB-R04",
+   "GB-SCT-EDH": "GB-R04",
+   "GB-SCT-MLN": "GB-R04",
+   "GB-SCT-ELN": "GB-R04",
+   "GB-ENG-GAT": "GB-R07",
+   "GB-ENG-DUR": "GB-R07",
+   "GB-ENG-NYK": "GB-R16",
+   "GB-ENG-ERY": "GB-R16",
+   "GB-ENG-LIN": "GB-R02",
+   "GB-ENG-NFK": "GB-R01",
+   "GB-ENG-SFK": "GB-R01",
+   "GB-ENG-ESS": "GB-R01",
+   "GB-ENG-KEN": "GB-R11",
+   "GB-ENG-ESX": "GB-R11",
+   "GB-ENG-WSX": "GB-R11",
+   "GB-ENG-HAM": "GB-R11",
+   "GB-ENG-DOR": "GB-R12",
+   "GB-ENG-DEV": "GB-R12",
+   "GB-ENG-CON": "GB-R12",
+   "GB-ENG-SOM": "GB-R12",
+   "GB-ENG-BST": "GB-R12",
+   "GB-WLS-NWP": "GB-R15",
+   "GB-WLS-CRF": "GB-R15",
+   "GB-WLS-VGL": "GB-R15",
+   "GB-WLS-BGE": "GB-R03",
+   "GB-WLS-NTL": "GB-R03",
+   "GB-WLS-SWA": "GB-R03",
+   "GB-WLS-CMN": "GB-R03",
+   "GB-WLS-PEM": "GB-R03",
+   "GB-WLS-CGN": "GB-R03",
+   "GB-WLS-GWN": "GB-R03",
+   "GB-WLS-CWY": "GB-R03",
+   "GB-WLS-DEN": "GB-R03",
+   "GB-ENG-HAL": "GB-R09",
+   "GB-ENG-LAN": "GB-R09",
+   "GB-SCT-SAY": "GB-R13",
+   "GB-SCT-NAY": "GB-R13",
+   "GB-SCT-RFW": "GB-R13",
+   "GB-SCT-WDU": "GB-R13",
+   "GB-SCT-AGB": "GB-R06",
+   "GB-SCT-HLD": "GB-R06",
+   "GB-SCT-MRY": "GB-R06",
+   "GB-SCT-ABD": "GB-R08",
+   "GB-SCT-ABE": "GB-R08",
+   "GB-SCT-ANS": "GB-R04",
+   "GB-SCT-DND": "GB-R04",
+   "GB-SCT-PKN": "GB-R04",
+   "GB-SCT-FIF": "GB-R04",
+   "GB-ENG-IOW": "GB-R11",
+   "GB-WLS-AGY": "GB-R03",
+   "GB-SCT-ELS": "GB-R06",
+   "GB-SCT-ORK": "GB-R06",
+   "GB-SCT-ZET": "GB-ZET",
+   "GB-WLS-CAY": "GB-R03",
+   "GB-WLS-RCT": "GB-R03",
+   "GB-WLS-BGW": "GB-R03",
+   "GB-WLS-TOF": "GB-R03",
+   "GB-WLS-MTY": "GB-R03",
+   "GB-SCT-NLK": "GB-R13",
+   "GB-SCT-EDU": "GB-R13",
+   "GB-SCT-GLG": "GB-R13",
+   "GB-SCT-EAY": "GB-R13",
+   "GB-SCT-SLK": "GB-R13",
+   "GB-NIR-OMH": "GB-R10",
+   "GB-NIR-ANT": "GB-R10",
+   "GB-ENG-LND": "GB-R05",
+   "GB-ENG-STT": "GB-R07",
+   "GB-ENG-KWL": "GB-R09",
+   "GB-ENG-HRT": "GB-R01",
+   "GB-ENG-CAM": "GB-R01",
+   "GB-ENG-BKM": "GB-R11",
+   "GB-ENG-BDF": "GB-R01",
+   "GB-ENG-RUT": "GB-R02",
+   "GB-ENG-NTT": "GB-R02",
+   "GB-ENG-NTH": "GB-R02",
+   "GB-ENG-BNS": "GB-R16",
+   "GB-ENG-LEC": "GB-R02",
+   "GB-ENG-DBY": "GB-R02",
+   "GB-ENG-SAW": "GB-R14",
+   "GB-ENG-STS": "GB-R14",
+   "GB-ENG-WOR": "GB-R14",
+   "GB-ENG-WAR": "GB-R14",
+   "GB-ENG-OXF": "GB-R11",
+   "GB-ENG-BRC": "GB-R11",
+   "GB-ENG-SRY": "GB-R11",
+   "GB-ENG-WIL": "GB-R12",
+   "GB-ENG-WKF": "GB-R16",
+   "GB-ENG-MAN": "GB-R09"
+  },
+  "CH": {
+   "CH-VD": "CH-R1",
+   "CH-VS": "CH-R1",
+   "CH-GE": "CH-R1",
+   "CH-BE": "CH-R2",
+   "CH-FR": "CH-R2",
+   "CH-SO": "CH-R2",
+   "CH-NE": "CH-R2",
+   "CH-JU": "CH-R2",
+   "CH-BS": "CH-R3",
+   "CH-BL": "CH-R3",
+   "CH-AG": "CH-R3",
+   "CH-ZH": "CH-R4",
+   "CH-GL": "CH-R5",
+   "CH-SH": "CH-R5",
+   "CH-AR": "CH-R5",
+   "CH-AI": "CH-R5",
+   "CH-SG": "CH-R5",
+   "CH-GR": "CH-R5",
+   "CH-TG": "CH-R5",
+   "CH-LU": "CH-R6",
+   "CH-UR": "CH-R6",
+   "CH-SZ": "CH-R6",
+   "CH-OW": "CH-R6",
+   "CH-NW": "CH-R6",
+   "CH-ZG": "CH-R6",
+   "CH-TI": "CH-R7"
   }
  },
  "noms": {
@@ -457,6 +596,106 @@
    {
     "code": "HU-R7",
     "name": "Transdanubie occidentale"
+   }
+  ],
+  "GB": [
+   {
+    "code": "GB-R01",
+    "name": "Est de l’Angleterre"
+   },
+   {
+    "code": "GB-R02",
+    "name": "Midlands de l’Est"
+   },
+   {
+    "code": "GB-R03",
+    "name": "Galles de l’Est"
+   },
+   {
+    "code": "GB-R04",
+    "name": "Est (Écosse)"
+   },
+   {
+    "code": "GB-R05",
+    "name": "Grand Londres"
+   },
+   {
+    "code": "GB-R06",
+    "name": "Highlands et îles"
+   },
+   {
+    "code": "GB-R07",
+    "name": "Nord-Est (Angleterre)"
+   },
+   {
+    "code": "GB-R08",
+    "name": "Nord-Est (Écosse)"
+   },
+   {
+    "code": "GB-R09",
+    "name": "Nord-Ouest (Angleterre)"
+   },
+   {
+    "code": "GB-R10",
+    "name": "Irlande du Nord"
+   },
+   {
+    "code": "GB-R11",
+    "name": "Sud-Est (Angleterre)"
+   },
+   {
+    "code": "GB-R12",
+    "name": "Sud-Ouest (Angleterre)"
+   },
+   {
+    "code": "GB-R13",
+    "name": "Sud-Ouest (Écosse)"
+   },
+   {
+    "code": "GB-R14",
+    "name": "Midlands de l’Ouest"
+   },
+   {
+    "code": "GB-R15",
+    "name": "Galles de l’Ouest"
+   },
+   {
+    "code": "GB-R16",
+    "name": "Yorkshire et Humber"
+   },
+   {
+    "code": "GB-ZET",
+    "name": "Shetland"
+   }
+  ],
+  "CH": [
+   {
+    "code": "CH-R1",
+    "name": "Région lémanique"
+   },
+   {
+    "code": "CH-R2",
+    "name": "Espace Mittelland"
+   },
+   {
+    "code": "CH-R3",
+    "name": "Suisse du Nord-Ouest"
+   },
+   {
+    "code": "CH-R4",
+    "name": "Zurich"
+   },
+   {
+    "code": "CH-R5",
+    "name": "Suisse orientale"
+   },
+   {
+    "code": "CH-R6",
+    "name": "Suisse centrale"
+   },
+   {
+    "code": "CH-R7",
+    "name": "Tessin"
    }
   ]
  }
