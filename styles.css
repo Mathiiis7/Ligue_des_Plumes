@@ -1874,7 +1874,10 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .pkdx-card .pkdx-num { position:absolute; top:6px; left:8px; font:700 10px ui-monospace, monospace; color:var(--ink-3); background:rgba(255,255,255,.85); padding:1px 6px; border-radius:8px; z-index:2; }
   /* Seule exception au carre commun : dans la grille, le rond se pose sur la photo sans
      entrer en concurrence avec le numero d espece, qui est deja un rectangle de texte. */
-  .pkdx-card .pkdx-tier { position:absolute; top:6px; right:8px; width:20px; height:20px; border-radius:50%; color:#fff; font:800 10px system-ui; display:grid; place-items:center; box-shadow:0 1px 3px rgba(0,0,0,.3); z-index:2; }
+  /* right:6px et non 8px : la photo commence a 8px (padding de la carte), donc a 8px la
+     pastille affleurait le bord droit de l image alors qu elle la depassait de 2px en haut.
+     Le debord est maintenant le meme des deux cotes, et le coin se lit comme un coin. */
+  .pkdx-card .pkdx-tier { position:absolute; top:6px; right:6px; width:20px; height:20px; border-radius:50%; color:#fff; font:800 10px system-ui; display:grid; place-items:center; box-shadow:0 1px 3px rgba(0,0,0,.3); z-index:2; }
   /* Repere des especes nettement saisonnieres : pic mensuel >= 3x la moyenne annuelle. Le
      tier repose sur l annuel et ne le dit pas, alors qu il suffit souvent de viser le bon
      mois. Pose sous le numero, a gauche, pour ne pas concurrencer la pastille de tier. */
@@ -1884,9 +1887,14 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   /* Statut exotique, sous la pastille de palier et du meme cote. Le palier dit la difficulte
      a rencontrer l oiseau, cette lettre dit d ou il sort : les deux sont utiles et ne se
      remplacent pas. Gris neutre, pour ne pas concurrencer la couleur du palier. */
-  .pkdx-card .pkdx-exo { position:absolute; top:24px; right:8px; font:700 9px/1 system-ui;
-    color:#fff; background:#7e8a99; border-radius:4px; min-width:14px; height:14px;
-    padding:0 3px; display:grid; place-items:center; box-shadow:0 1px 2px rgba(0,0,0,.2);
+  /* Meme traitement que le repere saisonnier d en face : fond clair, encre grise, bords
+     entierement arrondis. Le gris plein a fond fonce jurait avec le reste de la carte et
+     concurrencait la pastille de palier, la seule qui doive porter de la couleur.
+     top:30px et non 24 : la pastille de palier descend jusqu a 26px, les deux se
+     chevauchaient de 2px. 30 laisse le meme filet de 4px que sous le numero. */
+  .pkdx-card .pkdx-exo { position:absolute; top:30px; right:8px; font:700 9.5px/1 system-ui;
+    color:var(--ink-3); background:var(--surface); border-radius:999px; min-width:16px;
+    height:16px; padding:0 4px; display:grid; place-items:center;
     z-index:2; cursor:help; }
   .pkdx-card .pkdx-img { width:100%; aspect-ratio:1/1; background:var(--surface-2); border-radius:8px; overflow:hidden; margin-bottom:6px; display:grid; place-items:center; color:var(--ink-3); font-size:28px; }
   .pkdx-card .pkdx-img img { width:100%; height:100%; object-fit:cover; display:block; }
