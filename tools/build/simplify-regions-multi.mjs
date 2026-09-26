@@ -324,7 +324,10 @@ const MAIN_BOX = {
 const DOUBLONS_NE = {
   // Les enclaves fribourgeoises du pays de Vaud - Estavayer-le-Lac, Surpierre, Vuissens.
   // Elles sont fribourgeoises : on les enleve de Vaud, qui ne fait que les entourer.
-  'CH-VD': [{ lon: [6.74, 6.90], lat: [46.71, 46.78] }],
+  // Attention : la cle est la zone TELLE QU ELLE SORT du regroupement. La Suisse etant
+  // agregee, les anneaux vaudois sont deja ranges sous CH-R1 (Lemanique) quand ce filtre
+  // s applique - chercher 'CH-VD' ne trouvait rien.
+  'CH-R1': [{ lon: [6.74, 6.90], lat: [46.71, 46.78] }],
 };
 
 const CLIP_LON = {
