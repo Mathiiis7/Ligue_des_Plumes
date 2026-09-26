@@ -1331,14 +1331,15 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   .tier-chip, .rar-chip[data-tier], .rar-chip[data-rar], .rar-chip[data-cat] {
     width:44px; height:44px; min-width:0; margin:-11px; transform:scale(.5);
     border-radius:12px; font-size:24px; padding:0 0 2px; }
-  /* Les deux filtres de statut exotique prennent le jeton rond du birdydex : ils ne
-     designent pas un palier de l'echelle mais d'ou sort l'oiseau, et la forme le dit avant
-     la lecture. Pas de boite doublee ici - le truc des marges negatives suppose une largeur
-     fixe, et sur un disque de 26 px le pixel d'arrondi ne se voit pas. */
-  .rar-chip[data-cat] { width:26px; min-width:26px; height:26px; margin:0; transform:none;
+  /* Les filtres de statut exotique prennent le jeton rond du birdydex : ils ne designent
+     pas un palier de l'echelle mais d'ou sort l'oiseau, et la forme le dit avant la
+     lecture. 22 px, la hauteur des autres pastilles de la barre, pour que la rangee reste
+     d'un seul tenant. Pas de boite doublee ici - le truc des marges negatives suppose une
+     largeur fixe, et sur un disque le pixel d'arrondi ne se voit pas. */
+  .rar-chip[data-cat] { width:22px; min-width:22px; height:22px; margin:0; transform:none;
     padding:0; border-radius:50%; font:800 11px/1 system-ui; }
-  /* « X/P » tient a 26 px en descendant d'un cran et demi. */
-  .rar-chip.cat-multi { font-size:9.5px; }
+  /* Pousse au bout de la rangee, loin de l'echelle de rarete qu'ils ne prolongent pas. */
+  .rar-cats { margin-left:auto; display:inline-flex; align-items:center; gap:6px; }
   /* Coche : meme ombre portee que la pastille du birdydex, au lieu du filet du repos. */
   .rar-chip[data-cat].on { box-shadow:0 1px 3px rgba(0,0,0,.3); }
   .rar-chip { cursor:pointer; box-shadow:inset 0 0 0 1px var(--line-2); }
@@ -1853,7 +1854,10 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
     text-transform:uppercase; letter-spacing:.4px; }
   .pkdx-groupe:first-child { margin-top:0; }
   .pkdx-groupe-n { font-weight:600; color:var(--ink-3); letter-spacing:0; text-transform:none; }
-  .pkdx-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:10px; margin-top:6px; }
+  /* 180 px et non 130 : sur un ecran large, 130 laissait tenir dix oiseaux par rangee et la
+     photo tombait sous 120 px - trop petite pour reconnaitre l'espece, alors que c'est tout
+     ce qu'on demande a cette grille. A 180 on en a sept, avec des photos de pres de 200 px. */
+  .pkdx-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:10px; margin-top:6px; }
   .pkdx-card {
     /* Virtualisation native : le navigateur skip completement le rendu (layout, paint,
        style) des cards hors ecran. 597 cards mais seules ~30 sont reellement rendues.

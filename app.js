@@ -15528,27 +15528,26 @@ function _pkdxRender(){
     // Multi-select : X + N + P peuvent etre coches ensemble (union). Default OFF (gris).
     const CAT_COLOR = { X:'#ef4444', N:'#22c55e', P:'#f59e0b' };
     const CAT_LABEL = { X:'Échappé (X)', N:'Naturalisé (N)', P:'Provisoire (P)' };
-    // X et P sont regroupes : ce sont les deux facons de ne pas etre etabli - echappe d'un
-    // cote, population provisoire de l'autre - et on les cherche ensemble. N reste seul,
-    // c'est le seul cas ou l'espece compte comme installee.
-    const CAT_GROUPES = [['X', 'P'], ['N']];
+    // Une pastille par categorie. X et P avaient ete regroupes tant que les pastilles
+    // etaient des carres a texte ; en rond, « X/P » ne tenait plus et les separer laisse de
+    // toute facon choisir l'un sans l'autre - elles restent cumulables.
+    const CAT_GROUPES = [['X'], ['P'], ['N']];
     const catChipsHtml = CAT_GROUPES.map(g => {
       const on = g.every(c => _pkdxCatSelected.has(c));
       // Off = default rar-chip (comme les tier chips non selectionnes). On = gris fonce
       // pour signaler "filtre applique". Coherent avec les tier chips.
       const bgStyle = on ? `background:#7e8a99;color:#fff;` : '';
-      const cls = 'rar-chip' + (on ? ' on' : '') + (g.length > 1 ? ' cat-multi' : '');
-      // Sans espaces autour de la barre : ces deux jetons sont devenus ronds, et « X / P »
-      // n'y tenait pas. Le libelle complet reste dans l'infobulle.
+      const cls = 'rar-chip' + (on ? ' on' : '');
       return `<button type="button" class="${cls}" data-cat="${g.join(',')}" style="${bgStyle}" title="${esc(g.map(c => CAT_LABEL[c]).join(' / '))}">${g.join('/')}</button>`;
     }).join('');
     chipsBox.innerHTML = '<span style="font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px; font-weight:700; align-self:center; margin-right:6px;">Rareté</span>'
       + chipsHtml
       + '<button type="button" class="rar-chip" data-tier-all title="Cocher toutes les raretés">Tout</button>'
       + '<button type="button" class="rar-chip" data-tier-none title="Décocher toutes les raretés">Vide</button>'
-      // Rejetes tout a droite : ils ne filtrent pas un palier mais un statut, et melanges
-      // a la suite des chiffres ils se lisaient comme la fin de l'echelle.
-      + catChipsHtml;
+      // Rejetes a l'autre bout de la barre (margin-left:auto sur le groupe) : ils ne
+      // filtrent pas un palier mais un statut, et colles a la suite des chiffres ils se
+      // lisaient comme la fin de l'echelle.
+      + '<span class="rar-cats">' + catChipsHtml + '</span>';
   }
   // Compteur : X vues / Y filtrees / Z total FR.
   // Le denominateur ne compte que les cases reellement affichables : les accidentelles
