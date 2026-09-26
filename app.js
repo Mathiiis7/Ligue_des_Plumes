@@ -12530,15 +12530,25 @@ function _cadresEncarts(cc, paths){
     if(!z) continue;
     const bb = _bboxChemins([z.path]);
     if(!bb) continue;
-    const m = 10, x = bb.x0 - m, y = bb.y0 - m - 18, w = (bb.x1 - bb.x0) + m * 2,
-          h = (bb.y1 - bb.y0) + m * 2 + 18;
+    // Le nom se pose EN LEGENDE sur le filet, comme le titre d'un fieldset : un petit
+    // fond de la couleur de la carte interrompt les pointilles, et le texte s'y loge.
+    // Pose a l'interieur du cadre, il flottait au-dessus du territoire et se lisait comme
+    // une etiquette de zone ; et a 17 px dans un viewBox de 1000 il faisait 8 px a l'ecran.
+    const m = 12, CORPS = 27;
+    const x = bb.x0 - m, y = bb.y0 - m, w = (bb.x1 - bb.x0) + m * 2, h = (bb.y1 - bb.y0) + m * 2;
+    // Largeur approchee du texte : pas de mesure possible en SVG pur, 0,56 em par caractere
+    // convient pour du system-ui en demi-gras.
+    const lw = nom.length * CORPS * 0.56 + 16;
+    const lx = x + 16;
     out += '<g pointer-events="none">'
       + '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1)
       + '" height="' + h.toFixed(1) + '" fill="none" stroke="var(--line-2, #cfd8d4)"'
-      + ' stroke-width="2" stroke-dasharray="7 6" rx="10" ry="10"/>'
-      + '<text x="' + (x + w / 2).toFixed(1) + '" y="' + (y + 15).toFixed(1) + '"'
-      + ' text-anchor="middle" font-size="17" font-weight="600" font-family="system-ui"'
-      + ' fill="var(--ink-3, #7b8884)">' + esc(nom) + '</text>'
+      + ' stroke-width="2.5" stroke-dasharray="8 7" rx="12" ry="12"/>'
+      + '<rect x="' + lx.toFixed(1) + '" y="' + (y - CORPS * 0.62).toFixed(1) + '" width="' + lw.toFixed(1)
+      + '" height="' + (CORPS * 1.2).toFixed(1) + '" fill="var(--surface, #fff)"/>'
+      + '<text x="' + (lx + 8).toFixed(1) + '" y="' + (y + CORPS * 0.3).toFixed(1) + '"'
+      + ' font-size="' + CORPS + '" font-weight="700" font-family="system-ui"'
+      + ' fill="var(--ink-2, #47534f)">' + esc(nom) + '</text>'
       + '</g>';
   }
   return out;
