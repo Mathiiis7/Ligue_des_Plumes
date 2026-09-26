@@ -15610,13 +15610,8 @@ function _pkdxRender(){
     // de rarityForCountry qui merge S&T + overrides EXOTIQUES_TIER_FORCE_FR. Divergence
     // possible : Ibis sacre affichait '6' sur fond rouge (couleur du tier 7 bar chart brut).
     const tierBg = realColor(vue.tier);
-    // Categorie exotique : tier 0 affiche toujours la lettre (N/P/X/C au lieu de "0").
-    // Tier > 0 : affiche la lettre uniquement pour N (Naturalise) et P (Provisoire) car
-    // ce sont les cas ou l'espece a une pop etablie ou reguliere alors que le chiffre
-    // rareté pourrait tromper (ex Cygne noir tier 7 mais N). X et C gardent le tier
-    // numerique (deja evidemment rare/echappe).
-    // _exoticCategory est la table FR : hors de France elle taguerait des especes qui y sont
-    // sauvages. On ne s'en sert donc que pour la France.
+    // Categorie exotique de l'espece ici. _exoticCategory est la table FR : hors de France
+    // elle taguerait des especes qui y sont sauvages, on ne s'en sert donc que pour la France.
     const cat = vue.cat || exoticCategoryInCountry(r.sci, country)
       || (country === 'FR' ? _exoticCategory(r.sci) : '') || '';
     // La pastille garde toujours le palier, et le statut exotique se dit a cote, dans une
@@ -15631,13 +15626,18 @@ function _pkdxRender(){
     const catsZones = cat ? exoticCategoriesInCountry(r.sci, country) : [];
     const cats = cat ? (catsZones.length ? catsZones : [cat]) : [];
     const exoLbl = cats.map(c => `${EXOTIC_CATEGORY_LABEL[c] || 'Exotique ' + c} (${c})`).join(' · ');
+    // Pas d'infobulle pour dire « Palier 4 » sur une pastille qui affiche deja 4 : elle
+    // n'apparait que quand elle a quelque chose a apprendre - le statut exotique, ou le fait
+    // que l'espece n'a jamais ete notee dans la zone choisie.
+    const infoPastille = [cats.length ? esc(exoLbl) : '', vue.absente ? 'jamais notée ici' : '']
+      .filter(Boolean).join(' · ');
     // Absente de la zone choisie : la case reste, en retrait. La masquer ferait croire que
     // l'espece n'existe pas, alors qu'elle est seulement ailleurs.
     return `<div class="pkdx-card${r.owned?'':' missing'}" data-sci="${esc(r.sci)}">
       <span class="pkdx-num">#${num}</span>
       ${r.saison ? `<span class="pkdx-saison" data-tip="Espèce nettement saisonnière : son pic mensuel vaut au moins 3 fois sa moyenne annuelle. Viser le bon mois change tout.">◑</span>` : ''}
       ${cats.length ? `<span class="pkdx-exo" data-tip="${esc(exoLbl)}${cats.length > 1 ? ' — le statut change selon la région' : ''}">${cats.join('/')}</span>` : ''}
-      <span class="pkdx-tier" style="background:${fondBadge};" data-tip="${cats.length ? esc(exoLbl) : 'Palier ' + vue.tier}${vue.absente ? ' · jamais notée ici' : ''}">${badgeText}</span>
+      <span class="pkdx-tier" style="background:${fondBadge};"${infoPastille ? ` data-tip="${infoPastille}"` : ''}>${badgeText}</span>
       <div class="pkdx-img" data-pkdx-lazy="${esc(r.sci)}">${r.owned ? '🐦' : ''}</div>
       <div class="pkdx-name">${esc(r.nm)}</div>
       <div class="pkdx-sci">${esc(r.sci)}</div>
