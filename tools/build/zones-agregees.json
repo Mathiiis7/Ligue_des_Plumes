@@ -309,6 +309,51 @@
    "LV-VMR": "LV-R04",
    "LV-022": "LV-R04",
    "LV-055": "LV-R04"
+  },
+  "HU": {
+   "HU-SZ": "HU-R4",
+   "HU-BE": "HU-R3",
+   "HU-HB": "HU-R4",
+   "HU-CS": "HU-R3",
+   "HU-GS": "HU-R7",
+   "HU-SN": "HU-R7",
+   "HU-VA": "HU-R7",
+   "HU-BK": "HU-R3",
+   "HU-SD": "HU-R3",
+   "HU-ZA": "HU-R7",
+   "HU-SO": "HU-R6",
+   "HU-BA": "HU-R6",
+   "HU-BZ": "HU-R5",
+   "HU-NO": "HU-R5",
+   "HU-ST": "HU-R5",
+   "HU-KE": "HU-R2",
+   "HU-PE": "HU-R1",
+   "HU-JN": "HU-R4",
+   "HU-FE": "HU-R2",
+   "HU-VE": "HU-R2",
+   "HU-TO": "HU-R6",
+   "HU-SK": "HU-R4",
+   "HU-BU": "HU-R1",
+   "HU-ED": "HU-R1",
+   "HU-HE": "HU-R5",
+   "HU-EG": "HU-R5",
+   "HU-MI": "HU-R5",
+   "HU-HV": "HU-R3",
+   "HU-DU": "HU-R2",
+   "HU-KM": "HU-R3",
+   "HU-TB": "HU-R2",
+   "HU-GY": "HU-R7",
+   "HU-SH": "HU-R7",
+   "HU-ZE": "HU-R7",
+   "HU-NK": "HU-R7",
+   "HU-VM": "HU-R2",
+   "HU-KV": "HU-R6",
+   "HU-PS": "HU-R6",
+   "HU-SS": "HU-R6",
+   "HU-SF": "HU-R2",
+   "HU-BC": "HU-R3",
+   "HU-DE": "HU-R4",
+   "HU-NY": "HU-R4"
   }
  },
  "noms": {
@@ -382,6 +427,36 @@
    {
     "code": "LV-R05",
     "name": "Zemgale"
+   }
+  ],
+  "HU": [
+   {
+    "code": "HU-R1",
+    "name": "Hongrie centrale"
+   },
+   {
+    "code": "HU-R2",
+    "name": "Transdanubie centrale"
+   },
+   {
+    "code": "HU-R3",
+    "name": "Grande Plaine méridionale"
+   },
+   {
+    "code": "HU-R4",
+    "name": "Grande Plaine septentrionale"
+   },
+   {
+    "code": "HU-R5",
+    "name": "Hongrie du Nord"
+   },
+   {
+    "code": "HU-R6",
+    "name": "Transdanubie méridionale"
+   },
+   {
+    "code": "HU-R7",
+    "name": "Transdanubie occidentale"
    }
   ]
  }

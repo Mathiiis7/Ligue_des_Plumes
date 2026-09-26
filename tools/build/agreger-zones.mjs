@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  agreger-si-lv.mjs - Regroupe les communes slovenes et lettones dans leurs regions
+  agreger-zones.mjs - Regroupe les communes slovenes et lettones dans leurs regions
   officielles : 12 regions statistiques pour la Slovenie, 5 regions de planification pour
   la Lettonie.
 
@@ -8,7 +8,7 @@
   departement francais en fait 5 450. Illisible sur une carte de fiche espece.
 
   Le rattachement commune -> region vient du champ region de Natural Earth, fige ici dans
-  si-lv-communes.json pour que le script tourne sans retelecharger les 39 Mo du fichier.
+  zones-agregees.json pour que le script tourne sans retelecharger les 39 Mo du fichier.
 
   L agregation est exacte : la frequence eBird vaut listes citant l espece / listes
   totales, donc la somme ponderee par le nombre de listes de chaque commune redonne la
@@ -17,7 +17,7 @@
   Ces deux pays sont absents de la table REGIONS de build-rarity-multi-country.mjs : ce
   script ecrit le meme fichier et serait ecrase.
 
-  Usage : node tools/build/agreger-si-lv.mjs
+  Usage : node tools/build/agreger-zones.mjs
 */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -27,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const RAW = join(ROOT, 'tools', 'ebird-barcharts-raw');
 const SD = join(ROOT, 'tools', 'build');
-const carte = JSON.parse(readFileSync(join(SD, 'si-lv-communes.json'), 'utf8'));
+const carte = JSON.parse(readFileSync(join(SD, 'zones-agregees.json'), 'utf8'));
 
 const TOKEN = 'dbflh4atmsom';
 const tax = await (await fetch('https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json&locale=fr_FR&cat=species',
@@ -56,7 +56,7 @@ const lire = (code) => {
   return { effort, esp };
 };
 
-for(const cc of ['SI', 'LV']){
+for(const cc of Object.keys(carte.parCommune)){
   const communes = carte.parCommune[cc];
   const parRegion = {};                  // region -> { effort[48], esp: {sci: [48 sommes]} }
   let lues = 0;

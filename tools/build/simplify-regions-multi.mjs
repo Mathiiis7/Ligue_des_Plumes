@@ -121,7 +121,7 @@ function resolveGB(props){
 }
 
 // Pays ou une region eBird agrege plusieurs features Natural Earth (-> dissolve requis).
-const AGGREGATED = new Set(['ES', 'IT', 'GB', 'IE', 'BE', 'RS', 'SI', 'LV', 'CH', 'DK']);
+const AGGREGATED = new Set(['ES', 'IT', 'GB', 'IE', 'BE', 'RS', 'SI', 'LV', 'CH', 'DK', 'HU']);
 
 function resolveCode(cc, props){
   if(cc === 'ES') return ES_HASC[props.code_hasc] || null;
@@ -186,12 +186,12 @@ const EBIRD_REGIONS = {
   CZ: ['CZ-PR','CZ-JM','CZ-JC','CZ-KA','CZ-VY','CZ-KR','CZ-LI','CZ-MO',
        'CZ-OL','CZ-PA','CZ-PL','CZ-ST','CZ-ZL','CZ-US'],
   SK: ['SK-BC','SK-BL','SK-KI','SK-NI','SK-PV','SK-TC','SK-TA','SK-ZI'],
-  HU: ['HU-BA','HU-BZ','HU-BU','HU-BK','HU-BE','HU-BC','HU-CS','HU-DE',
-       'HU-DU','HU-EG','HU-FE','HU-GY','HU-GS','HU-HB','HU-HE','HU-HV',
-       'HU-JN','HU-KV','HU-KM','HU-KE','HU-MI','HU-NK','HU-NY','HU-NO',
-       'HU-PE','HU-PS','HU-ST','HU-SO','HU-SN','HU-SZ','HU-SD','HU-SS',
-       'HU-SK','HU-SH','HU-SF','HU-TB','HU-TO','HU-VA','HU-VE','HU-VM',
-       'HU-ZA','HU-ZE'],
+  // Hongrie : eBird y liste 42 zones, dont 23 villes de rang departemental pour
+  // lesquelles il ne publie aucun bar chart - Debrecen, Miskolc, Pecs... Elles laissaient
+  // 22 trous gris sur la carte. Regroupee dans ses 7 regions statistiques, que Natural
+  // Earth porte deja dans son champ region, chaque region garde 2 a 3 comitats pourvus
+  // et les villes sont absorbees dans leur region.
+  HU: ['HU-R1','HU-R2','HU-R3','HU-R4','HU-R5','HU-R6','HU-R7'],
   RO: ['RO-AB','RO-AR','RO-AG','RO-BC','RO-BH','RO-BN','RO-BT','RO-BR',
        'RO-BV','RO-B','RO-BZ','RO-CL','RO-CS','RO-CJ','RO-CT','RO-CV',
        'RO-DJ','RO-DB','RO-GL','RO-GR','RO-GJ','RO-HR','RO-HD','RO-IL',
