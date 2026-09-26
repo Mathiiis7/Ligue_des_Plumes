@@ -121,7 +121,7 @@ function resolveGB(props){
 }
 
 // Pays ou une region eBird agrege plusieurs features Natural Earth (-> dissolve requis).
-const AGGREGATED = new Set(['ES', 'IT', 'GB', 'IE', 'BE', 'RS', 'SI', 'LV']);
+const AGGREGATED = new Set(['ES', 'IT', 'GB', 'IE', 'BE', 'RS', 'SI', 'LV', 'CH']);
 
 function resolveCode(cc, props){
   if(cc === 'ES') return ES_HASC[props.code_hasc] || null;
@@ -275,9 +275,8 @@ const EBIRD_REGIONS = {
        'IT-57','IT-62','IT-65','IT-67','IT-72','IT-75','IT-77','IT-78','IT-82','IT-88'],
   PT: ['PT-01','PT-02','PT-03','PT-04','PT-05','PT-06','PT-07','PT-08','PT-09','PT-10',
        'PT-11','PT-12','PT-13','PT-14','PT-15','PT-16','PT-17','PT-18','PT-20','PT-30'],
-  CH: ['CH-AG','CH-AI','CH-AR','CH-BE','CH-BL','CH-BS','CH-FR','CH-GE','CH-GL','CH-GR',
-       'CH-JU','CH-LU','CH-NE','CH-NW','CH-OW','CH-SG','CH-SH','CH-SO','CH-SZ','CH-TG',
-       'CH-TI','CH-UR','CH-VD','CH-VS','CH-ZG','CH-ZH'],
+  // Suisse : les 7 grandes regions de l OFS, pas les 26 cantons.
+  CH: ['CH-R1','CH-R2','CH-R3','CH-R4','CH-R5','CH-R6','CH-R7'],
   NO: ['NO-01','NO-02','NO-03','NO-04','NO-05','NO-06','NO-07','NO-08','NO-09','NO-10',
        'NO-11','NO-12','NO-14','NO-15','NO-16','NO-17','NO-18','NO-19','NO-20'],
   GR: ['GR-A','GR-B','GR-C','GR-D','GR-E','GR-F','GR-G','GR-H','GR-I','GR-J','GR-K','GR-L','GR-M'],
