@@ -15626,11 +15626,12 @@ function _pkdxRender(){
     const catsZones = cat ? exoticCategoriesInCountry(r.sci, country) : [];
     const cats = cat ? (catsZones.length ? catsZones : [cat]) : [];
     const exoLbl = cats.map(c => `${EXOTIC_CATEGORY_LABEL[c] || 'Exotique ' + c} (${c})`).join(' · ');
-    // Pas d'infobulle pour dire « Palier 4 » sur une pastille qui affiche deja 4 : elle
-    // n'apparait que quand elle a quelque chose a apprendre - le statut exotique, ou le fait
-    // que l'espece n'a jamais ete notee dans la zone choisie.
-    const infoPastille = [cats.length ? esc(exoLbl) : '', vue.absente ? 'jamais notée ici' : '']
-      .filter(Boolean).join(' · ');
+    // Pas d'infobulle pour dire « Palier 4 » sur une pastille qui affiche deja 4, et pas le
+    // statut exotique non plus : il se lit sur la puce d'a cote, qui porte deja sa propre
+    // infobulle. Le repeter ici faisait sortir la meme bulle a deux endroits voisins.
+    // Reste le seul cas que la pastille est seule a savoir : l'espece n'a jamais ete notee
+    // dans la zone choisie.
+    const infoPastille = vue.absente ? 'jamais notée ici' : '';
     // Absente de la zone choisie : la case reste, en retrait. La masquer ferait croire que
     // l'espece n'existe pas, alors qu'elle est seulement ailleurs.
     return `<div class="pkdx-card${r.owned?'':' missing'}" data-sci="${esc(r.sci)}">
