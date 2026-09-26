@@ -11290,7 +11290,10 @@ async function _renderExoticMap(sci, cc){
   const nZonesTaggees = Object.keys(perZone).length;
   const paths = await _loadExoticMapPaths(cc);
   if(!paths){ container.innerHTML = ''; return; }
-  // Zones ou eBird ne tague pas l'espece alors qu'elle y est observee : native locale.
+  // Zones ou eBird ne tague pas l'espece alors qu'elle y est observee. On dit "pas de
+  // classement exotique" et non "native" : l'absence de tag prouve seulement qu'eBird ne la
+  // tient pas pour exotique ici, pas qu'elle y soit indigene. Le Canard de Chine en Alaska
+  // est un divagant asiatique - sauvage, mais pas natif.
   // Colorees distinctement pour montrer que le tag national ne vaut pas partout.
   const nativeZones = new Set(nativeRegionsDespiteNationalTag(key, cc));
   const CAT_COLOR = { N:'#22c55e', P:'#f59e0b', X:'#ef4444' };
@@ -11308,7 +11311,7 @@ async function _renderExoticMap(sci, cc){
     const isNative = !cat && nativeZones.has(code);
     const fill = cat ? CAT_COLOR[cat] : (isNative ? NATIVE_COLOR : '#d4d4d8');
     const title = cat ? `${r.name} — ${CAT_LABEL[cat]} (${cat})`
-                : isNative ? `${r.name} — native (présente, non taguée exotique)`
+                : isNative ? `${r.name} — pas de classement exotique (présente, eBird ne la tague pas ici)`
                 : `${r.name} — non listé (sauvage / absent)`;
     return _pathZone(dRemplace || r.path, fill, title, selection.has(code), selection.size > 0,
       zonesSelectionnables.has(code) ? code : null, echelle);
@@ -11338,7 +11341,7 @@ async function _renderExoticMap(sci, cc){
           ${legendItem('#22c55e','N Établi')}
           ${legendItem('#f59e0b','P Provisoire')}
           ${legendItem('#ef4444','X Échappé')}
-          ${nativeZones.size ? legendItem(NATIVE_COLOR,'Native locale') : ''}
+          ${nativeZones.size ? legendItem(NATIVE_COLOR,'Pas de classement exotique') : ''}
           ${legendItem('#d4d4d8','Sauvage / absent')}
         </div>
         <div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line-2); font-size:10.5px; color:var(--ink-3); text-align:center; line-height:1.4; opacity:.9;">
