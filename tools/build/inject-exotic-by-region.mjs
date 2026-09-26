@@ -50,19 +50,37 @@ function readNationalExotics(appSrc){
   return JSON.parse(m[1]);
 }
 
-// Nombre de mois de presence exiges dans une region pour la considerer comme native
-// malgre un tag exotique national. Aligne sur _MOIS_MIN_X_VISIBLE cote app, qui ecarte de
-// la meme facon les echappees trop ponctuelles.
-const MOIS_MIN_NATIF = 6;
+// Nombre de mois de presence exiges dans une region pour la considerer comme native malgre
+// un tag exotique national.
+//
+// Passe de 6 a 1 le 2026-09-26. Le seuil de 6 avait ete pose contre un sur-octroi francais -
+// 34 exceptions accordees a des oiseaux de cage, Perroquet jaco, Diamant mandarin, Ibis
+// rouge - mais ce sur-octroi venait d'une comparaison a la mauvaise echelle : la France etait
+// jugee sur ses 13 regions alors qu'eBird la tague au departement. Corrige juste en dessous,
+// elle tombe a ZERO exception, seuil ou pas. Le garde-fou ne protegeait donc rien et ecartait
+// cinq divagants americains parfaitement sauvages - Canard de Chine et Oie naine en Alaska,
+// Canard des Bahamas en Floride - vus trop peu de mois pour lui.
+//
+// La regle est maintenant celle-ci, et elle se dit en une phrase : si eBird ne tague pas
+// l'espece dans une zone ou elle a ete vue, le tag national ne s'applique pas. Les zones ou
+// elle EST taguee gardent leur X ou leur P.
+const MOIS_MIN_NATIF = 1;
 
 function computeNativeRegions(appSrc){
   const national = readNationalExotics(appSrc);
+  // Table francaise par departement, si elle est deja dans app.js (elle y est injectee par
+  // inject-exotic-by-dep-fr.mjs). Absente, on retombe sur les regions.
+  const mDep = appSrc.match(/const EXOTIC_STATUS_BY_DEP_FR = (\{[\s\S]*?\});\n/);
+  const depFr = mDep ? JSON.parse(mDep[1]) : null;
   const out = {};
   for(const cc of Object.keys(merged)){
     const freqFile = join(__dir, '..', '..', 'data', 'countries', cc.toLowerCase(), 'freq_by_region.json');
     if(!existsSync(freqFile)) continue;
     const freq = JSON.parse(readFileSync(freqFile, 'utf8'));
-    const exoByRegion = merged[cc];
+    // France : eBird tague au DEPARTEMENT, et c'est ce que la carte de la fiche affiche.
+    // Comparer ses 13 regions a des frequences departementales faisait passer chaque
+    // departement pour non tague, d'ou 34 fausses exceptions. On prend donc la table fine.
+    const exoByRegion = (cc === 'FR' && depFr) ? depFr : merged[cc];
     const natTags = national[cc] || {};
     const perSpecies = {};
     for(const [sci, cat] of Object.entries(natTags)){
