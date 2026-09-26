@@ -737,6 +737,10 @@ function _openCountryPicker(currentCode, opts = {}){
     let onglet = (opts.onglet === 'zones' && avecZones) ? 'zones' : 'pays';
     const motZone = (cc) => typeof opts.motZone === 'function' ? opts.motZone(cc)
       : (opts.motZone || 'Régions');
+    // Mois choisi sur la carte de la fiche. Le selecteur s'aligne dessus : son titre l'annonce,
+    // et ses deux listes donnent la valeur de ce mois au lieu de la moyenne annuelle.
+    const _mmSel = window._smRarityMapMonth;
+    const moisLu = (typeof _mmSel === 'number' && _mmSel >= 0 && _mmSel <= 11) ? _mmSel : null;
     const _ZONE_SINGULIER = {
       'Départements': 'un département', 'Régions': 'une région', 'Provinces': 'une province',
       'Cantons': 'un canton', 'États': 'un état', 'Comtés': 'un comté',
@@ -789,7 +793,7 @@ function _openCountryPicker(currentCode, opts = {}){
     backdrop.innerHTML = `
       <div class="cp-modal-inner">
         <div class="cp-modal-title">
-          <span>${avecZones ? 'Où lire la rareté' : 'Choisir un pays'}</span>
+          <span>${avecZones ? 'Rareté' + (moisLu == null ? '' : ' · ' + _MOIS_COURTS[moisLu]) : 'Choisir un pays'}</span>
           <button type="button" class="cp-modal-close" aria-label="Fermer">×</button>
         </div>
         ${avecZones ? `<div class="cp-tabs">
@@ -869,7 +873,11 @@ function _openCountryPicker(currentCode, opts = {}){
             // On aligne : absent = rarityForCountry retourne 0 ET pas exotique local.
             const tier = rarityForCountry(focusSci, cc);
             const monCC = reg.monthly()[focusSci];
-            const vAn = Array.isArray(monCC) ? _valeurAnnuelleZone(monCC, cc) : 0;
+            // Meme bascule que la liste des zones : un mois choisi sur la carte se lit ici
+            // aussi, sinon les deux onglets du meme selecteur ne parleraient pas de la meme
+            // periode.
+            const vAn = !Array.isArray(monCC) ? 0
+              : (moisLu == null ? _valeurAnnuelleZone(monCC, cc) : (monCC[moisLu] || 0));
             // Un tag exotique sans la moindre ligne de bar chart ne prouve aucune presence :
             // il dit seulement qu'un reviewer a prevu un classement si l'espece se montre.
             // Meme regle que la fiche (noBarData), sans quoi le selecteur affichait « P » pour
@@ -11839,9 +11847,15 @@ function _renderSpeciesRarityCard(key){
       return Number(p.toPrecision(1))+'%'; };
     // Score = valeur annuelle (cf. _valeurAnnuelleZone), le meme critere que la carte
     // pour que l'ordre de la liste et les couleurs racontent la meme chose.
+    // Mois choisi sur la carte : la liste bascule dessus, sinon elle reste sur l annuel.
+    // Les deux doivent dire la meme chose, sans quoi la carte colore un departement en vert
+    // pendant que la liste le donne rouge juste en dessous.
+    const mm = window._smRarityMapMonth;
+    const moisLu = (typeof mm === number && mm >= 0 && mm <= 11) ? mm : null;
     const scored = regList.map(r => {
       const serie = freqByReg[r.code] && freqByReg[r.code][k];
-      const score = _valeurAnnuelleZone(serie, cc, r.code);
+      const score = moisLu == null ? _valeurAnnuelleZone(serie, cc, r.code)
+        : (Array.isArray(serie) ? (serie[moisLu] || 0) : 0);
       // Pic conserve pour l'infobulle : "en moyenne X, jusqu'a Y en <mois>".
       let pic = 0, moisPic = -1;
       if(Array.isArray(serie)) serie.forEach((v, i) => { if((v || 0) > pic){ pic = v; moisPic = i; } });
