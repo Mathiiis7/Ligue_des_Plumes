@@ -118,6 +118,7 @@ const REGIONS = {
        'AT-9'],
   IE: ['IE-C','IE-L','IE-M','IE-U'],
   CY: ['CY-01','CY-02','CY-03','CY-04','CY-05','CY-06'],
+  DK: ['DK-01','DK-02','DK-03','DK-04','DK-05','DK-06','DK-07','DK-08','DK-09','DK-10','DK-11','DK-12','DK-13'],
   BE: ['BE-BRU','BE-VLG','BE-WAL'],
 // La France est volontairement absente de cette table. Son data/countries/fr/
 // freq_by_region.json contient 109 zones — les 13 regions ET les 96 departements — pour
@@ -154,10 +155,10 @@ const REGIONS = {
        'IT-45', 'IT-52', 'IT-55', 'IT-57', 'IT-62', 'IT-65', 'IT-67',
        'IT-72', 'IT-75', 'IT-77', 'IT-78', 'IT-82', 'IT-88'],
   // Ajouts 2026-09-21 : CH/NO/GR/IS/LK/NA.
-  CH: ['CH-AG','CH-AI','CH-AR','CH-BE','CH-BL','CH-BS','CH-FR','CH-GE',
-       'CH-GL','CH-GR','CH-JU','CH-LU','CH-NE','CH-NW','CH-OW','CH-SG',
-       'CH-SH','CH-SO','CH-SZ','CH-TG','CH-TI','CH-UR','CH-VD','CH-VS',
-       'CH-ZG','CH-ZH'],
+  // La Suisse est VOLONTAIREMENT absente : depuis le 2026-09-26 ses zones sont les 7
+  // grandes regions de l OFS, pas les 26 cantons, et leurs frequences sont produites par
+  // une agregation ponderee des cantons (tools/build/agreger-ch.mjs). Relancer ce build
+  // avec la liste des cantons ici ecraserait ce travail - c est arrive une fois.
   NO: ['NO-01','NO-02','NO-03','NO-04','NO-05','NO-06','NO-07','NO-08',
        'NO-09','NO-10','NO-11','NO-12','NO-14','NO-15','NO-16','NO-17',
        'NO-18','NO-19','NO-20'],

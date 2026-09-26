@@ -121,7 +121,7 @@ function resolveGB(props){
 }
 
 // Pays ou une region eBird agrege plusieurs features Natural Earth (-> dissolve requis).
-const AGGREGATED = new Set(['ES', 'IT', 'GB', 'IE', 'BE', 'RS', 'SI', 'LV', 'CH']);
+const AGGREGATED = new Set(['ES', 'IT', 'GB', 'IE', 'BE', 'RS', 'SI', 'LV', 'CH', 'DK']);
 
 function resolveCode(cc, props){
   if(cc === 'ES') return ES_HASC[props.code_hasc] || null;
@@ -243,6 +243,11 @@ const EBIRD_REGIONS = {
   // Chypre : les 6 districts, Keryneia comprise. Contours geoBoundaries (OpenStreetMap,
   // ODbL) - Natural Earth ne fournit que les 5 du sud, arretes a la ligne verte.
   CY: ['CY-01','CY-02','CY-03','CY-04','CY-05','CY-06'],
+  // Danemark : Natural Earth ne connait que les 5 regions modernes, soit PLUS grossier
+  // que les 13 zones eBird - la fusion ne pouvait rien. Les contours viennent donc des
+  // 98 communes de geoBoundaries (domaine public), regroupees par la zone parente que le
+  // code eBird de niveau 2 donne lui-meme : DK-07-01 depend de DK-07.
+  DK: ['DK-01','DK-02','DK-03','DK-04','DK-05','DK-06','DK-07','DK-08','DK-09','DK-10','DK-11','DK-12','DK-13'],
   // Slovenie et Lettonie : eBird descend a la commune (193 et 119), soit 104 et 546 km2
   // par zone. On regroupe dans leurs regions officielles, que Natural Earth porte deja
   // dans son champ region. Les frequences sont agregees en parallele, ponderees par le
