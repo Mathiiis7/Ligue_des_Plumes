@@ -1887,14 +1887,14 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
   /* Statut exotique, sous la pastille de palier et du meme cote. Le palier dit la difficulte
      a rencontrer l oiseau, cette lettre dit d ou il sort : les deux sont utiles et ne se
      remplacent pas. Gris neutre, pour ne pas concurrencer la couleur du palier. */
-  /* Meme traitement que le repere saisonnier d en face : fond clair, encre grise, bords
-     entierement arrondis. Le gris plein a fond fonce jurait avec le reste de la carte et
-     concurrencait la pastille de palier, la seule qui doive porter de la couleur.
-     top:30px et non 24 : la pastille de palier descend jusqu a 26px, les deux se
-     chevauchaient de 2px. 30 laisse le meme filet de 4px que sous le numero. */
+  /* Gris plein, encre blanche : sur une carte manquante, dont la vignette est deja grise
+     claire, un fond clair rendait la lettre illisible. Le gris tient sur les deux fonds.
+     Bords entierement arrondis comme le repere saisonnier d en face, et top:30px et non 24
+     parce que la pastille de palier descend jusqu a 26px - les deux se chevauchaient de
+     2px. 30 laisse le meme filet de 4px que celui menageant le numero. */
   .pkdx-card .pkdx-exo { position:absolute; top:30px; right:8px; font:700 9.5px/1 system-ui;
-    color:var(--ink-3); background:var(--surface); border-radius:999px; min-width:16px;
-    height:16px; padding:0 4px; display:grid; place-items:center;
+    color:#fff; background:#7e8a99; border-radius:999px; min-width:16px;
+    height:16px; padding:0 5px; display:grid; place-items:center;
     z-index:2; cursor:help; }
   .pkdx-card .pkdx-img { width:100%; aspect-ratio:1/1; background:var(--surface-2); border-radius:8px; overflow:hidden; margin-bottom:6px; display:grid; place-items:center; color:var(--ink-3); font-size:28px; }
   .pkdx-card .pkdx-img img { width:100%; height:100%; object-fit:cover; display:block; }
