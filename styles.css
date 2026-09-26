@@ -1854,10 +1854,13 @@ body[data-map-render="sharp"] .sharp-overlay { image-rendering: pixelated; image
     text-transform:uppercase; letter-spacing:.4px; }
   .pkdx-groupe:first-child { margin-top:0; }
   .pkdx-groupe-n { font-weight:600; color:var(--ink-3); letter-spacing:0; text-transform:none; }
-  /* 180 px et non 130 : sur un ecran large, 130 laissait tenir dix oiseaux par rangee et la
-     photo tombait sous 120 px - trop petite pour reconnaitre l'espece, alors que c'est tout
-     ce qu'on demande a cette grille. A 180 on en a sept, avec des photos de pres de 200 px. */
-  .pkdx-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:10px; margin-top:6px; }
+  /* 150 px et non 130 : sur une grille de 1474 px, 130 laissait tenir dix oiseaux par rangee
+     et la photo tombait a 117 px - trop petite pour reconnaitre l'espece, alors que c'est
+     tout ce qu'on demande a cette grille. A 150 on en a neuf, photo 135 px.
+     La fenetre utile est etroite : sous 139 px on retombe a dix, au-dessus de 155 on tombe
+     a huit. 150 se tient au milieu, donc une fenetre un peu plus large ou plus etroite ne
+     fait pas sauter la rangee d'un cran. */
+  .pkdx-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px; margin-top:6px; }
   .pkdx-card {
     /* Virtualisation native : le navigateur skip completement le rendu (layout, paint,
        style) des cards hors ecran. 597 cards mais seules ~30 sont reellement rendues.
