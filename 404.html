@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<title>L’Ornithèque - nouvelle adresse</title>
+<meta name="robots" content="noindex">
+<!-- GitHub Pages sert cette page pour TOUT chemin manquant sous /Ligue_des_Plumes/.
+     C'est ce qui permet de garder le chemin : celui qui a enregistré le lien de la démo,
+     .../Ligue_des_Plumes/demo/, atterrit sur .../ornitheque/demo/ et pas sur une page
+     d'erreur. La démo circule, ça vaut le détour.
+     Pas de balise meta refresh ici : la destination dépend du chemin, elle ne peut pas
+     être écrite à l'avance. Sans JavaScript, le bouton reste. -->
+<script>
+(function(){
+  var ANCIEN = '/Ligue_des_Plumes';
+  var NOUVEAU = '/ornitheque';
+  var chemin = location.pathname;
+  // indexOf et non startsWith : on veut marcher aussi sur les vieux navigateurs des
+  // téléphones qui trainent, et ce fichier ne sera plus jamais retouché.
+  // Le caractère qui suit doit être un / ou rien : sans ce test, /Ligue_des_Plumes_data
+  // deviendrait /ornitheque_data, alors que le dépôt de données s'appelle ornitheque-data.
+  // Ce cas ne peut pas arriver tant que ce fichier reste dans son dépôt, mais il coûte
+  // une ligne et il survivra à un copier-coller.
+  var reste = chemin.slice(ANCIEN.length);
+  var colle = chemin.indexOf(ANCIEN) === 0 && (reste === '' || reste.charAt(0) === '/');
+  var suite = colle ? reste : '/';
+  var cible = location.origin + NOUVEAU + suite + location.search + location.hash;
+  var lien = document.getElementById('lien');
+  if (lien) { lien.href = cible; }
+  location.replace(cible);
+})();
+</script>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+         background: #eef2f1; color: #15201e; margin: 0;
+         min-height: 100vh; display: flex; align-items: center; justify-content: center;
+         padding: 24px; box-sizing: border-box; text-align: center; }
+  .carte { background: #fff; border-radius: 16px; padding: 32px 28px; max-width: 420px;
+           box-shadow: 0 8px 30px rgba(0,0,0,.08); }
+  h1 { font-size: 22px; margin: 0 0 12px; }
+  p { color: #5a6b67; line-height: 1.55; margin: 0 0 20px; }
+  a.bouton { display: inline-block; background: #0b7c77; color: #fff; text-decoration: none;
+             padding: 12px 22px; border-radius: 10px; font-weight: 600; }
+</style>
+<div class="carte">
+  <h1>L’Ornithèque a une nouvelle adresse</h1>
+  <p>La Ligue des Birds s’appelle maintenant <strong>L’Ornithèque</strong>.
+     Tes listes, ton classement et tes trophées n’ont pas bougé.</p>
+  <a class="bouton" id="lien" href="https://mathiiis7.github.io/ornitheque/">Aller sur L’Ornithèque</a>
+</div>
+</html>
